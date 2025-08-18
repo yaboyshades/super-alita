@@ -5,7 +5,7 @@ from typing import Any, Type
 
 try:  # pragma: no cover - import guard
     import orjson as _json
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     import json as _json  # type: ignore
 
 
