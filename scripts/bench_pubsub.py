@@ -6,7 +6,7 @@ import redis
 
 try:  # pragma: no cover
     import orjson as jsonlib
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     import json as jsonlib
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
