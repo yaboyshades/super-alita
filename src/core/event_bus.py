@@ -122,7 +122,11 @@ class EventBus:
         self._serializer = Serializer()
         self._redis_enabled = _EVENTBUS_REDIS
         self._redis_channel = _EVENTBUS_CHANNEL
-        self.redis_client = redis.from_url(_REDIS_URL, decode_responses=_REDIS_DECODE)
+        try:
+            self.redis_client = redis.from_url(_REDIS_URL, decode_responses=_REDIS_DECODE)
+        except Exception as e:
+            logging.error(f"Failed to connect to Redis at {_REDIS_URL}: {e}")
+            raise RuntimeError(f"Could not connect to Redis at {_REDIS_URL}. Please check your Redis server and connection settings.") from e
         self.pubsub = None
         self._redis_listener_task: Optional[asyncio.Task] = None
     
