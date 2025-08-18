@@ -221,7 +221,10 @@ class EventBus:
                 )
             except Exception:
                 pass
-
+            except redis.exceptions.RedisError as e:
+                logging.error(f"Redis publish failed: {e}")
+            except Exception as e:
+                logging.error(f"Unexpected error during Redis publish: {e}")
     async def _process_events(self) -> None:
         """Process events from the queue."""
         while self._running:
