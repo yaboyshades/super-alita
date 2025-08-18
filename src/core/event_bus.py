@@ -1,19 +1,25 @@
-"""
-Async Protobuf event bus for Super Alita agent communication.
-Provides semantic routing and version-aware event handling.
-"""
+"""Async event bus backed by Redis for Super Alita."""
 
 import asyncio
-from typing import Dict, List, Callable, Optional, Any, Set
+import os
 from collections import defaultdict
-import json
-import weakref
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import uuid
-import numpy as np
-from concurrent.futures import ThreadPoolExecutor
+import weakref
+from typing import Any, Callable, Dict, List, Optional, Set
 
+import numpy as np
+import redis
+
+from .serialization import Serializer
 from .events import BaseEvent, create_event, serialize_event, deserialize_event
+
+# Defaults can be overridden by environment
+_REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+_EVENTBUS_REDIS = os.getenv("EVENTBUS_REDIS", "1") == "1"
+_EVENTBUS_CHANNEL = os.getenv("EVENTBUS_CHANNEL", "events")
+_REDIS_DECODE = False  # keep bytes; hiredis used automatically if installed
 
 
 class EventSubscription:
@@ -106,18 +112,28 @@ class EventBus:
             "events_emitted": 0,
             "events_handled": 0,
             "subscriptions_created": 0,
-            "errors": 0
+            "errors": 0,
         }
         self._lock = asyncio.Lock()
         self._running = False
         self._event_queue: asyncio.Queue = asyncio.Queue()
         self._processing_task: Optional[asyncio.Task] = None
+        # Redis bridge configuration
+        self._serializer = Serializer()
+        self._redis_enabled = _EVENTBUS_REDIS
+        self._redis_channel = _EVENTBUS_CHANNEL
+        self.redis_client = redis.from_url(_REDIS_URL, decode_responses=_REDIS_DECODE)
+        self.pubsub = None
+        self._redis_listener_task: Optional[asyncio.Task] = None
     
     async def start(self) -> None:
         """Start the event bus processing."""
         if not self._running:
             self._running = True
             self._processing_task = asyncio.create_task(self._process_events())
+            if self._redis_enabled:
+                self.pubsub = self.redis_client.pubsub(ignore_subscribe_messages=True)
+                self._redis_listener_task = asyncio.create_task(self._redis_listener())
     
     async def stop(self) -> None:
         """Stop the event bus processing."""
@@ -128,9 +144,56 @@ class EventBus:
                 await self._processing_task
             except asyncio.CancelledError:
                 pass
-        
+
         self._executor.shutdown(wait=True)
-    
+        if self._redis_listener_task:
+            self._redis_listener_task.cancel()
+            try:
+                await self._redis_listener_task
+            except asyncio.CancelledError:
+                pass
+            self._redis_listener_task = None
+        if self.pubsub is not None:
+            try:
+                self.pubsub.close()
+            except Exception:
+                pass
+            self.pubsub = None
+
+    async def _redis_listener(self) -> None:
+        """Listen to the Redis channel and enqueue events."""
+        try:
+            assert self.pubsub is not None
+            self.pubsub.subscribe(self._redis_channel)
+        except Exception:
+            self._redis_enabled = False
+            return
+        loop = asyncio.get_running_loop()
+        while self._running:
+            msg = await loop.run_in_executor(None, self.pubsub.get_message, True, 1.0)
+            if not msg or msg.get("type") != "message":
+                await asyncio.sleep(0)
+                continue
+            try:
+                payload = self._serializer.decode(msg["data"], dict)
+                evt = deserialize_event(payload)
+                await self._event_queue.put(evt)
+            except Exception:
+                continue
+
+    async def publish(self, event: BaseEvent, broadcast: bool = True) -> None:
+        """Publish an event locally and optionally via Redis."""
+        await self._event_queue.put(event)
+        if broadcast and self._redis_enabled:
+            try:
+                data = serialize_event(event)
+                blob = self._serializer.encode(data)
+                await asyncio.get_running_loop().run_in_executor(
+                    None, self.redis_client.publish, self._redis_channel, blob
+                )
+            except Exception:
+                pass
+
     async def _process_events(self) -> None:
         """Process events from the queue."""
         while self._running:
@@ -171,14 +234,14 @@ class EventBus:
             embedding=embedding,
             **kwargs
         )
-        
+
         # Add to queue for processing
-        await self._event_queue.put(event)
+        await self.publish(event)
         self._stats["events_emitted"] += 1
     
     async def emit_event(self, event: BaseEvent) -> None:
         """Emit a pre-created event."""
-        await self._event_queue.put(event)
+        await self.publish(event)
         self._stats["events_emitted"] += 1
     
     async def _handle_event_internal(self, event: BaseEvent) -> None:
@@ -419,11 +482,12 @@ class EventBus:
             "events": [serialize_event(event) for event in events],
             "export_timestamp": datetime.utcnow().isoformat(),
             "total_events": len(events),
-            "stats": await self.get_stats()
+            "stats": await self.get_stats(),
         }
-        
-        with open(filepath, 'w') as f:
-            json.dump(export_data, f, indent=2, default=str)
+
+        data = self._serializer.encode(export_data)
+        with open(filepath, "wb") as f:
+            f.write(data)
 
 
 # Global event bus instance

@@ -1,22 +1,24 @@
 # Core dependencies
-asyncio
 pydantic>=2.0
 protobuf>=4.0
 pyyaml
-numpy>=1.24.0
+numpy>=1.26.0
 networkx>=3.0
 
 # Vector storage and embeddings
-faiss-cpu>=1.7.4
+faiss-cpu>=1.12.0
 chromadb>=0.4.0
 sentence-transformers>=2.2.0
 
 # ML and evolution
-scikit-learn>=1.3.0
-scipy>=1.10.0
+scikit-learn>=1.4.0
+scipy>=1.12.0
+
 
 # Graph export
-python-graphml>=1.0
+lxml>=4.9            # GraphML writer backend used by networkx
+hiredis>=2.3         # Faster Redis protocol parser
+orjson>=3.9          # Fast JSON in hot paths
 
 # Testing
 pytest>=7.0
