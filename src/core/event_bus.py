@@ -192,7 +192,7 @@ class EventBus:
             if self.pubsub is None:
                 raise RuntimeError("Redis pubsub is not initialized in _redis_listener.")
             self.pubsub.subscribe(self._redis_channel)
-        except Exception:
+        except (redis.ConnectionError, redis.RedisError):
             self._redis_enabled = False
             return
         loop = asyncio.get_running_loop()
