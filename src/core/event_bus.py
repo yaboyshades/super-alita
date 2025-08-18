@@ -189,7 +189,8 @@ class EventBus:
     async def _redis_listener(self) -> None:
         """Listen to the Redis channel and enqueue events."""
         try:
-            assert self.pubsub is not None
+            if self.pubsub is None:
+                raise RuntimeError("Redis pubsub is not initialized in _redis_listener.")
             self.pubsub.subscribe(self._redis_channel)
         except Exception:
             self._redis_enabled = False
