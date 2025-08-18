@@ -115,6 +115,29 @@ class AtomBirthEvent(BaseEvent):
     lineage_metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
+class ToolCallEvent(BaseEvent):
+    """Event for tool calls."""
+    
+    event_type: str = "tool_call"
+    conversation_id: str
+    session_id: str
+    tool_name: str
+    parameters: Dict[str, Any]
+    tool_call_id: str
+
+
+class ToolResultEvent(BaseEvent):
+    """Event for tool results."""
+    
+    event_type: str = "tool_result"
+    conversation_id: str
+    session_id: str
+    tool_call_id: str
+    success: bool
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+
+
 class SystemEvent(BaseEvent):
     """System-level events."""
     
@@ -143,6 +166,8 @@ EVENT_TYPES = {
     "fsm_state_change": FSMStateEvent,
     "evolution": EvolutionEvent,
     "atom_birth": AtomBirthEvent,
+    "tool_call": ToolCallEvent,
+    "tool_result": ToolResultEvent,
     "system": SystemEvent,
     "health_check": HealthCheckEvent,
 }

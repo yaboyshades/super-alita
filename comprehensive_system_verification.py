@@ -26,12 +26,8 @@ sys.path.append(str(Path(__file__).parent / "src"))
 try:
     from src.core.event_bus import EventBus
     from src.core.events import ToolCallEvent, ToolResultEvent
-    from src.core.neural_atom import (
-        NeuralAtom,
-        NeuralAtomMetadata,
-        NeuralStore,
-        TextualMemoryAtom,
-    )
+    from src.core.neural_atom import (NeuralAtom, NeuralAtomMetadata,
+                                      NeuralStore, TextualMemoryAtom)
     from src.plugins.core_utils_plugin_dynamic import CoreUtilsPlugin
     from src.tools.core_utils import CoreUtils
 except ImportError as e:
@@ -56,7 +52,7 @@ class ComprehensiveVerifier:
 
     def __init__(self):
         self.results: List[VerificationResult] = []
-        self.mock_event_bus: Optional["MockEventBus"] = None
+        self.mock_event_bus: Optional[MockEventBus] = None
         self.neural_store: Optional[NeuralStore] = None
 
     async def setup(self):
