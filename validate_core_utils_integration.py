@@ -37,6 +37,19 @@ class MockEventBus:
             for handler in self.subscribers[event_type]:
                 await handler(event)
 
+    async def emit(self, event_type: str, **kwargs):
+        """Mock emit method for plugin interface compatibility."""
+        # Create a mock event object from the parameters
+        from src.core.events import ToolResultEvent
+
+        if event_type == "tool_result":
+            event = ToolResultEvent(
+                event_type=event_type,
+                source_plugin=kwargs.get("source_plugin", "unknown"),
+                **{k: v for k, v in kwargs.items() if k != "source_plugin"}
+            )
+            await self.publish(event)
+
     async def subscribe(self, event_type: str, handler):
         """Mock subscribe - registers handlers."""
         if event_type not in self.subscribers:
