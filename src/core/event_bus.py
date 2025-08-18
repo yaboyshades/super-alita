@@ -4,6 +4,7 @@ Provides semantic routing and version-aware event handling.
 """
 
 import asyncio
+import os
 from typing import Dict, List, Callable, Optional, Any, Set
 from collections import defaultdict
 import json
@@ -12,6 +13,7 @@ from datetime import datetime
 import uuid
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
+import redis
 
 from .events import BaseEvent, create_event, serialize_event, deserialize_event
 
@@ -106,12 +108,16 @@ class EventBus:
             "events_emitted": 0,
             "events_handled": 0,
             "subscriptions_created": 0,
-            "errors": 0
+            "errors": 0,
         }
         self._lock = asyncio.Lock()
         self._running = False
         self._event_queue: asyncio.Queue = asyncio.Queue()
         self._processing_task: Optional[asyncio.Task] = None
+        # decode_responses=False keeps bytes, hiredis kicks in automatically if installed
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.redis_client = redis.from_url(redis_url, decode_responses=False)
+        self.pubsub = None
     
     async def start(self) -> None:
         """Start the event bus processing."""
