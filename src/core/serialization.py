@@ -5,7 +5,11 @@ from typing import Any, Type
 
 try:  # pragma: no cover - import guard
     import orjson as _json
+#<<<<<<< codex/create-agents.md-file-in-codebase-ym7471
 except ImportError:  # pragma: no cover
+#=======
+except Exception:  # pragma: no cover
+#>>>>>>> master
     import json as _json  # type: ignore
 
 

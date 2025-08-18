@@ -2,6 +2,10 @@
 
 import asyncio
 import os
+#<<<<<<< codex/create-agents.md-file-in-codebase-ym7471
+#=======
+from typing import Dict, List, Callable, Optional, Any, Set
+#>>>>>>> master
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -10,6 +14,10 @@ import weakref
 from typing import Any, Callable, Dict, List, Optional, Set
 
 import numpy as np
+#<<<<<<< codex/create-agents.md-file-in-codebase-ym7471
+#=======
+from concurrent.futures import ThreadPoolExecutor
+#>>>>>>> master
 import redis
 
 from .serialization import Serializer
@@ -118,6 +126,7 @@ class EventBus:
         self._running = False
         self._event_queue: asyncio.Queue = asyncio.Queue()
         self._processing_task: Optional[asyncio.Task] = None
+#<<<<<<< codex/create-agents.md-file-in-codebase-ym7471
         # Redis bridge configuration
         self._serializer = Serializer()
         self._redis_enabled = _EVENTBUS_REDIS
@@ -125,6 +134,12 @@ class EventBus:
         self.redis_client = redis.from_url(_REDIS_URL, decode_responses=_REDIS_DECODE)
         self.pubsub = None
         self._redis_listener_task: Optional[asyncio.Task] = None
+#=======
+        # decode_responses=False keeps bytes, hiredis kicks in automatically if installed
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.redis_client = redis.from_url(redis_url, decode_responses=False)
+        self.pubsub = None
+#>>>>>>> master
     
     async def start(self) -> None:
         """Start the event bus processing."""
