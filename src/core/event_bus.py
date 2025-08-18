@@ -133,7 +133,33 @@ class EventBus:
             self._processing_task = asyncio.create_task(self._process_events())
             if self._redis_enabled:
                 self.pubsub = self.redis_client.pubsub(ignore_subscribe_messages=True)
-                self._redis_listener_task = asyncio.create_task(self._redis_listener())
+        self.redis_client = None  # Will be created lazily
+        self.pubsub = None
+        self._redis_listener_task: Optional[asyncio.Task] = None
+    
+    def _get_redis_client(self):
+        """Lazily create and return the Redis client, handling connection errors."""
+        if self.redis_client is None:
+            try:
+                self.redis_client = redis.from_url(_REDIS_URL, decode_responses=_REDIS_DECODE)
+            except Exception as e:
+                self._stats["errors"] += 1
+                # Optionally log the error here
+                self.redis_client = None
+        return self.redis_client
+    async def start(self) -> None:
+        """Start the event bus processing."""
+        if not self._running:
+            self._running = True
+            self._processing_task = asyncio.create_task(self._process_events())
+            if self._redis_enabled:
+                redis_client = self._get_redis_client()
+                if redis_client is not None:
+                    self.pubsub = redis_client.pubsub(ignore_subscribe_messages=True)
+                    self._redis_listener_task = asyncio.create_task(self._redis_listener())
+                else:
+                    # Optionally log that Redis is unavailable
+                    self.pubsub = None
     
     async def stop(self) -> None:
         """Stop the event bus processing."""
