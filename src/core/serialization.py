@@ -26,7 +26,11 @@ class Serializer:
         if isinstance(data, bytes):
             payload = _json.loads(data)
         else:
-            payload = _json.loads(data.encode("utf-8"))
+            # orjson.loads expects bytes, json.loads expects str
+            if _json.__name__ == "orjson":
+                payload = _json.loads(data.encode("utf-8"))
+            else:
+                payload = _json.loads(data)
         if hasattr(target_cls, "model_validate"):
             return target_cls.model_validate(payload)
         return payload
