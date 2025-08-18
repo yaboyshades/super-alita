@@ -1,0 +1,81 @@
+# Super Alita Agent Configuration
+
+# Core settings
+agent:
+  name: "Super Alita"
+  version: "1.0.0"
+  max_memory_mb: 1024
+  
+# Event bus configuration
+event_bus:
+  max_history: 1000
+  max_workers: 4
+  
+# Neural store configuration
+neural_store:
+  max_atoms: 10000
+  cleanup_interval_hours: 24
+  fitness_threshold: 0.1
+
+# Plugin configurations
+plugins:
+  semantic_memory:
+    enabled: true
+    db_path: "./data/chroma_db"
+    collection_name: "alita_memory"
+    embedding_model: "models/text-embedding-004"
+    gemini_api_key: "${GEMINI_API_KEY}"  # Set via environment variable
+    
+  semantic_fsm:
+    enabled: true
+    encoder_model: "all-MiniLM-L6-v2"
+    default_fsm: "agent_lifecycle"
+    
+  skill_discovery:
+    enabled: true
+    base_skills:
+      - "data_processing"
+      - "text_analysis" 
+      - "pattern_recognition"
+      - "optimization"
+      - "problem_solving"
+      - "learning"
+    discovery_interval_minutes: 30
+    proposals_per_cycle: 3
+    acceptance_threshold: 0.6
+    evolution_iterations: 500
+    
+  ladder_aog:
+    enabled: true
+    mcts_iterations: 100
+    max_planning_depth: 10
+    exploration_weight: 1.4
+    simulation_depth: 5
+    domains:
+      - "task_planning"
+      - "causal_diagnosis"
+    save_aog_graphs: true
+    
+  self_heal:
+    enabled: true
+    health_check_interval_seconds: 60
+    auto_restart_failed_plugins: true
+
+# Genealogy settings
+genealogy:
+  export_interval_hours: 24
+  auto_export_graphml: true
+  export_directory: "data/genealogy"
+  
+# Logging configuration
+logging:
+  level: "INFO"
+  file: "logs/super_alita.log"
+  max_file_size_mb: 100
+  backup_count: 5
+  
+# Development settings
+development:
+  debug_mode: false
+  enable_profiling: false
+  mock_external_services: false
