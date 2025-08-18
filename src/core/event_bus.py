@@ -205,7 +205,8 @@ class EventBus:
                 payload = self._serializer.decode(msg["data"], dict)
                 evt = deserialize_event(payload)
                 await self._event_queue.put(evt)
-            except Exception:
+            except Exception as e:
+                logger.error("Error decoding or enqueuing event from Redis: %s", e, exc_info=True)
                 continue
 
     async def publish(self, event: BaseEvent, broadcast: bool = True) -> None:
