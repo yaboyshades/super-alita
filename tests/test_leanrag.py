@@ -71,3 +71,29 @@ async def test_hierarchy_and_retrieval_pipeline(monkeypatch):
     )
     assert result["brief"]
     assert len(result["seeds"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_gnn_aggregation_runtime_selection(monkeypatch):
+    monkeypatch.setenv("CORTEX_LEANRAG_ENABLE", "1")
+    monkeypatch.setenv("CORTEX_LEANRAG_MAX_DEPTH", "2")
+    monkeypatch.setenv("CORTEX_LEANRAG_MIN_CLUSTER", "4")
+    monkeypatch.setenv("CORTEX_LEANRAG_GMM_K", "4")
+    monkeypatch.setenv("CORTEX_LEANRAG_LINK_THRESH", "0.02")
+    monkeypatch.setenv("CORTEX_LEANRAG_SEEDS_K", "3")
+
+    class MockEmbedder:
+        def embed_text(self, text):  # pragma: no cover - simple mock
+            return np.random.rand(32).astype(np.float32)
+
+    g = _mk_graph()
+    emb = MockEmbedder()
+    leanrag = LeanRAG(emb, LR_FLAGS)
+
+    graph_with_hierarchy = leanrag.build_hierarchy(g, aggregation="gnn")
+    agg_nodes = [
+        n
+        for n, d in graph_with_hierarchy.nodes(data=True)
+        if d.get("type") == "aggregate"
+    ]
+    assert len(agg_nodes) > 0

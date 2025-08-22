@@ -1,5 +1,6 @@
 # cortex/kg/leanrag.py
 import heapq
+from typing import Literal
 
 import networkx as nx
 import numpy as np
@@ -37,8 +38,20 @@ class LeanRAG:
             parts.append(node_data["content"])
         return " ".join(parts)
 
-    def build_hierarchy(self, graph: nx.Graph) -> nx.Graph:
-        """Build hierarchical knowledge graph using GMM clustering"""
+    def build_hierarchy(
+        self, graph: nx.Graph, aggregation: Literal["heuristic", "gnn"] = "heuristic"
+    ) -> nx.Graph:
+        """Build hierarchical knowledge graph.
+
+        Parameters
+        ----------
+        graph:
+            Base knowledge graph.
+        aggregation:
+            "heuristic" (default) uses the GaussianMixture based aggregation.  "gnn"
+            trains a simple message-passing GNN over existing edges to refine
+            embeddings and predict new relations before clustering.
+        """
         # Ensure all base nodes have vectors and level=0 with parents=[]
         for node in graph.nodes:
             nd = graph.nodes[node]
@@ -52,6 +65,9 @@ class LeanRAG:
                 nd["type"] = "entity"
             nd.setdefault("level", 0)
             nd.setdefault("parents", [])
+
+        if aggregation == "gnn":
+            self._train_gnn_embeddings(graph)
 
         # Recursive aggregation
         current_level = 1  # aggregate levels start at 1
@@ -132,6 +148,96 @@ class LeanRAG:
             current_level += 1
 
         return graph
+
+    # --- GNN aggregation ----------------------------------------------------
+
+    def _train_gnn_embeddings(self, graph: nx.Graph) -> None:
+        """Train a tiny message-passing GNN using only NumPy.
+
+        The model performs one round of neighbor aggregation followed by a
+        learnable linear projection. We optimise the projection matrix to
+        predict existing edges using negative sampling. Embeddings are then
+        used to infer additional ``relates`` edges.
+        """
+
+        nodes = list(graph.nodes)
+        if not nodes:
+            return
+        index = {n: i for i, n in enumerate(nodes)}
+        feats = np.array([graph.nodes[n]["vec"] for n in nodes], dtype=np.float32)
+
+        # Normalised adjacency for message passing
+        adj = np.zeros((len(nodes), len(nodes)), dtype=np.float32)
+        for u, v in graph.edges():
+            adj[index[u], index[v]] = 1.0
+            adj[index[v], index[u]] = 1.0
+        deg = adj.sum(axis=1, keepdims=True)
+        deg[deg == 0] = 1.0
+        adj_norm = adj / deg
+
+        h = adj_norm @ feats
+        dim = feats.shape[1]
+        rng = np.random.default_rng(42)
+        W = rng.normal(scale=0.01, size=(dim, dim)).astype(np.float32)
+
+        pos_edges = [(index[u], index[v]) for u, v in graph.edges()]
+        n_edges = len(pos_edges)
+        epochs = getattr(self.flags, "gnn_epochs", 20)
+        lr = 0.01
+
+        def sigmoid(x: float) -> float:
+            return 1.0 / (1.0 + np.exp(-x))
+
+        for _ in range(epochs):
+            emb = h @ W
+            grad_W = np.zeros_like(W)
+            for u, v in pos_edges:
+                zu, zv = emb[u], emb[v]
+                score = float(zu @ zv)
+                prob = sigmoid(score)
+                g = 1 - prob
+                grad_W += np.outer(h[u], g * zv) + np.outer(h[v], g * zu)
+            for _ in range(n_edges):
+                u = rng.integers(0, len(nodes))
+                v = rng.integers(0, len(nodes))
+                zu, zv = emb[u], emb[v]
+                score = float(zu @ zv)
+                prob = sigmoid(score)
+                g = -prob
+                grad_W += np.outer(h[u], g * zv) + np.outer(h[v], g * zu)
+            W += lr * grad_W / (2 * n_edges)
+
+        emb = h @ W
+        for i, node in enumerate(nodes):
+            graph.nodes[node]["vec"] = self._normalize(emb[i])
+
+        self._predict_new_relations(graph, emb)
+
+    def _predict_new_relations(self, graph: nx.Graph, emb: np.ndarray) -> None:
+        nodes = list(graph.nodes)
+        if not nodes:
+            return
+        for i, ni in enumerate(nodes):
+            for j in range(i + 1, len(nodes)):
+                nj = nodes[j]
+                if graph.has_edge(ni, nj) or graph.has_edge(nj, ni):
+                    continue
+                score = float(emb[i] @ emb[j])
+                if score >= self.flags.link_threshold:
+                    graph.add_edge(
+                        ni,
+                        nj,
+                        kind=self.EDGE_RELATES,
+                        weight=score,
+                        level=0,
+                    )
+                    graph.add_edge(
+                        nj,
+                        ni,
+                        kind=self.EDGE_RELATES,
+                        weight=score,
+                        level=0,
+                    )
 
     def _create_cross_cluster_relations(
         self, graph: nx.Graph, aggregate_nodes: list[str], level: int
