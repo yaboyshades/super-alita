@@ -11,7 +11,7 @@ import json
 from typing import Any
 
 from src.core.clock import MonotonicClock
-from src.mcp.clients import MCPClientPool
+from src.mcp_local.clients import MCPClientPool
 
 
 class MCPRouter:

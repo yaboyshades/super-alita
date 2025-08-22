@@ -201,8 +201,8 @@ async def mcp_router(
     For now, this defines the interface we need.
     """
     # Import the real MCPRouter
-    from src.mcp.clients import MCPClientPool
-    from src.mcp.router import MCPRouter
+    from src.mcp_local.clients import MCPClientPool
+    from src.mcp_local.router import MCPRouter
 
     # Create client pool with our mock client
     client_pool = MCPClientPool(clock=mock_clock)
@@ -433,8 +433,8 @@ class TestMCPRouterCircuitBreaker:
     ):
         """Test circuit breaker open state prevents execution"""
         # Import the real MCPRouter
-        from src.mcp.clients import MCPClientPool
-        from src.mcp.router import MCPRouter
+        from src.mcp_local.clients import MCPClientPool
+        from src.mcp_local.router import MCPRouter
 
         # Create breaker factory that returns open breaker
         def open_breaker_factory(tool_key: str):

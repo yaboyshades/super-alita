@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../ATLAI/super-alita/.vscode"
+		},
+		{
+			"path": "../ATLAI/super-alita/.github"
+		}
+	],
+	"settings": {}
+}

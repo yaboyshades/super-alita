@@ -16,8 +16,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from uvicorn import Config, Server
 
-from src.mcp.registry import ToolRegistry
-from src.mcp.super_alita import register_super_alita_handlers
+from src.mcp_local.registry import ToolRegistry
+from src.mcp_local.super_alita import register_super_alita_handlers
 
 # Configure logging
 logging.basicConfig(

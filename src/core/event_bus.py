@@ -27,7 +27,7 @@ from typing import (
 import redis.asyncio as redis
 
 # Import core contracts and serializer at module level
-from src.core.events import BaseEvent
+from .events import BaseEvent
 
 # Fast JSON parsing for throughput optimization
 try:
@@ -223,6 +223,17 @@ class EventBus:
                 f"Could not connect to Memurai at {self.redis_url}. Is Memurai running? Error: {e}"
             )
             raise
+
+    async def initialize(self) -> None:
+        """Initialize the event bus by connecting and starting all services."""
+        try:
+            await self.connect()
+            await self.start()
+            logger.info("✅ EventBus initialized successfully")
+        except Exception as e:
+            logger.error(f"❌ EventBus initialization failed: {e}")
+            # Don't re-raise to allow graceful fallback
+            pass
 
     async def start(self) -> None:
         """Start the event bus and Redis connection."""
@@ -506,7 +517,7 @@ class EventBus:
             # Deserialize event data back to Pydantic objects
             event_obj: Any
             try:
-                from src.core.events import deserialize_event
+                from .events import deserialize_event
 
                 event_obj = deserialize_event(event_data)
                 self.logger.debug(f"📦 Deserialized to {type(event_obj).__name__}")

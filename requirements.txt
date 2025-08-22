@@ -34,5 +34,9 @@ ruff~=0.4
 black
 mypy
 
+# Web framework and API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
 # LLM integrations
 google-generativeai~=0.5.2

@@ -1,0 +1,126 @@
+From 9e6a1a6a6c4f0e4e5a8d0b1d4a2f6c4d0d2a3b5e Mon Sep 17 00:00:00 2001
+From: Cortex Dev <dev@cortex.local>
+Date: Fri, 22 Aug 2025 12:00:00 +0000
+Subject: [PATCH 1/4] Add TODO models with LADDER stages and in-memory store
+
+diff --git a/cortex/todo/__init__.py b/cortex/todo/__init__.py
+new file mode 100644
+index 0000000..7b2a9f1
+--- /dev/null
++++ b/cortex/todo/__init__.py
+@@ -0,0 +1,6 @@
++"""Cortex TODO subsystem with hierarchical tasks and LADDER stages."""
++from .models import Todo, TodoStatus, LadderStage, Evidence, ExitCriteria, TodoEvent
++from .store import InMemoryTodoStore
++
++__all__ = [
++    "Todo", "TodoStatus", "LadderStage", "Evidence", "ExitCriteria", "TodoEvent", "InMemoryTodoStore"]
+diff --git a/cortex/todo/models.py b/cortex/todo/models.py
+new file mode 100644
+index 0000000..b4b3c3e
+--- /dev/null
++++ b/cortex/todo/models.py
+@@ -0,0 +1,137 @@
++from __future__ import annotations
++from typing import List, Optional, Dict, Literal, Set
++from enum import Enum
++from pydantic import BaseModel, Field
++from datetime import datetime
++import uuid
++
++
++class LadderStage(str, Enum):
++    LOCALIZE = "L"
++    ASSESS = "A"
++    DECOMPOSE = "D1"
++    DECIDE = "D2"
++    EXECUTE = "E"
++    REVIEW = "R"
++
++
++class TodoStatus(str, Enum):
++    PENDING = "pending"
++    IN_PROGRESS = "in_progress"
++    BLOCKED = "blocked"
++    DONE = "done"
++    CANCELLED = "cancelled"
++
++
++class Evidence(BaseModel):
++    kind: Literal["log", "trace", "metric", "artifact", "note"] = "note"
++    ref: Optional[str] = None
++    summary: Optional[str] = None
++    score: Optional[float] = None  # confidence or relevance
++
++
++class ExitCriteria(BaseModel):
++    description: str
++    validator: Optional[str] = None  # name of a check/tool
++    must_pass: bool = True
++
++
++class Todo(BaseModel):
++    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
++    title: str
++    description: Optional[str] = None
++
++    parent_id: Optional[str] = None
++    children_ids: List[str] = Field(default_factory=list)
++    depends_on: Set[str] = Field(default_factory=set)  # DAG edges
++
++    stage: LadderStage = LadderStage.LOCALIZE
++    status: TodoStatus = TodoStatus.PENDING
++    energy: float = 0.0
++    priority: float = 0.0
++    confidence: float = 0.0
++
++    owner: Optional[str] = None
++    tool_hint: Optional[str] = None
++    exit_criteria: List[ExitCriteria] = Field(default_factory=list)
++    evidence: List[Evidence] = Field(default_factory=list)
++
++    created_at: datetime = Field(default_factory=datetime.utcnow)
++    updated_at: datetime = Field(default_factory=datetime.utcnow)
++
++    class Config:
++        arbitrary_types_allowed = True
++
++
++class TodoEvent(BaseModel):
++    kind: str  # e.g., "todo.created", "plan.decomposed"
++    todo_id: Optional[str] = None
++    payload: Dict = Field(default_factory=dict)
++    ts: datetime = Field(default_factory=datetime.utcnow)
+diff --git a/cortex/todo/store.py b/cortex/todo/store.py
+new file mode 100644
+index 0000000..a1d2c8b
+--- /dev/null
++++ b/cortex/todo/store.py
+@@ -0,0 +1,44 @@
++from __future__ import annotations
++from typing import Dict, Optional, List
++from .models import Todo
++
++
++class InMemoryTodoStore:
++    """Simple in-memory store. Replace with persistent backend as needed."""
++
++    def __init__(self):
++        self._by_id: Dict[str, Todo] = {}
++
++    def upsert(self, t: Todo) -> None:
++        self._by_id[t.id] = t
++
++    def get(self, todo_id: str) -> Optional[Todo]:
++        return self._by_id.get(todo_id)
++
++    def children_of(self, todo_id: str) -> List[Todo]:
++        t = self.get(todo_id)
++        if not t:
++            return []
++        return [self.get(cid) for cid in t.children_ids if self.get(cid) is not None]
++
++    def all(self) -> List[Todo]:
++        return list(self._by_id.values())
+--
+2.45.0

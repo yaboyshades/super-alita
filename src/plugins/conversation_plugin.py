@@ -42,7 +42,7 @@ except Exception as _e:
 
 # NEW: Tool registry
 try:
-    from src.mcp.registry import ToolRegistry
+    from src.mcp_local.registry import ToolRegistry
 except Exception as _e:
     ToolRegistry = None  # type: ignore
 

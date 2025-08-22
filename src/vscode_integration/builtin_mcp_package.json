@@ -1,0 +1,69 @@
+{
+  "name": "super-alita-builtin-mcp",
+  "displayName": "Super Alita Built-in MCP Provider",
+  "description": "Built-in MCP server provider for Super Alita Agent using VS Code's native MCP support",
+  "version": "1.0.0",
+  "publisher": "super-alita",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "mcp",
+    "model context protocol",
+    "ai agent",
+    "super-alita",
+    "built-in"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/builtin_mcp_provider.js",
+  "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "super-alita-agent-provider",
+        "label": "Super Alita Agent Provider"
+      }
+    ],
+    "commands": [
+      {
+        "command": "superAlita.refreshMcpServers",
+        "title": "Refresh MCP Servers",
+        "category": "Super Alita"
+      },
+      {
+        "command": "superAlita.showMcpStatus",
+        "title": "Show MCP Status",
+        "category": "Super Alita"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "superAlita.refreshMcpServers",
+          "when": "true"
+        },
+        {
+          "command": "superAlita.showMcpStatus",
+          "when": "true"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

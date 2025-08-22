@@ -1,0 +1,51 @@
+From 7c4d1e2f3a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d Mon Sep 17 00:00:00 2001
+From: Cortex Dev <dev@cortex.local>
+Date: Fri, 22 Aug 2025 12:02:00 +0000
+Subject: [PATCH 3/4] Add orchestrator adapter: handle user events with
+ LadderPlanner (opt-in)
+
+diff --git a/cortex/orchestrator/ladder_adapter.py b/cortex/orchestrator/ladder_adapter.py
+new file mode 100644
+index 0000000..c3d2b1a
+--- /dev/null
++++ b/cortex/orchestrator/ladder_adapter.py
+@@ -0,0 +1,83 @@
++from __future__ import annotations
++from typing import Any, Dict
++from cortex.planner import LadderPlanner
++from cortex.todo import InMemoryTodoStore
++
++
++class _NoopEventBus:
++    async def emit(self, kind: str, **kwargs) -> None:
++        return None
++
++    def emit_sync(self, kind: str, **kwargs) -> None:
++        return None
++
++
++class _DefaultOrchestrator:
++    """Lightweight default orchestrator stub if none exists; replace with real impl."""
++
++    def __init__(self, kg, bandit, event_bus=None):
++        self.kg = kg
++        self.bandit = bandit
++        self.event_bus = event_bus or _NoopEventBus()
++
++    async def execute_action(self, tool: str, todo, context: str, shadow: bool = True) -> str:
++        # Replace with your tool runner; this is a placeholder
++        return f"Simulated run of {tool} on {todo.title}"
++
++
++async def handle_user_event(kg, bandit, user_event, orchestrator=None) -> Dict[str, Any]:
++    """
++    Drop-in function to route a user event into the LADDER planner.
++    Returns minimal planning result (root id and child ids).
++    """
++    orch = orchestrator or _DefaultOrchestrator(kg=kg, bandit=bandit)
++    store = InMemoryTodoStore()
++    planner = LadderPlanner(kg=kg, bandit=bandit, store=store, orchestrator=orch)
++    root = await planner.plan_from_user_event(user_event)
++    return {"root_todo_id": root.id, "children": root.children_ids}
+--
+2.45.0

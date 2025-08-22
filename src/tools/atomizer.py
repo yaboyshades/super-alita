@@ -8,8 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from core.structures import Atom, Bond, generate_atom_id
-
-from mcp.registry import ToolRegistry
+from mcp_local.registry import ToolRegistry
 
 NS = uuid.UUID("12345678-1234-5678-1234-567812345678")
 

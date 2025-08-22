@@ -4,7 +4,7 @@ Tests for MCP capabilities tool functionality.
 
 from unittest.mock import MagicMock, patch
 
-from src.mcp.capabilities_tool import (
+from src.mcp_local.capabilities_tool import (
     _collect_event_capabilities,
     _collect_plugin_capabilities,
     _collect_system_capabilities,
@@ -36,8 +36,8 @@ class TestCapabilitiesCollection:
 class TestPluginCapabilities:
     """Test plugin capability collection."""
 
-    @patch("src.mcp.capabilities_tool.load_plugin_manifest")
-    @patch("src.mcp.capabilities_tool.get_plugin_info")
+    @patch("src.mcp_local.capabilities_tool.load_plugin_manifest")
+    @patch("src.mcp_local.capabilities_tool.get_plugin_info")
     def test_collect_plugins_with_manifest(self, mock_get_info, mock_load_manifest):
         """Test collecting plugin capabilities with manifest available."""
         # Mock manifest data
@@ -63,7 +63,7 @@ class TestPluginCapabilities:
         assert plugins[0]["status"] == "configured"
         assert plugins[0]["enabled"] is True
 
-    @patch("src.mcp.capabilities_tool.load_plugin_manifest")
+    @patch("src.mcp_local.capabilities_tool.load_plugin_manifest")
     def test_collect_plugins_no_manifest(self, mock_load_manifest):
         """Test collecting plugin capabilities with no manifest."""
         mock_load_manifest.return_value = []
@@ -76,7 +76,7 @@ class TestPluginCapabilities:
 
     def test_collect_plugins_import_error(self):
         """Test collecting plugin capabilities with import error."""
-        with patch("src.mcp.capabilities_tool.load_plugin_manifest") as mock_load:
+        with patch("src.mcp_local.capabilities_tool.load_plugin_manifest") as mock_load:
             mock_load.side_effect = ImportError("Module not found")
 
             plugins = _collect_plugin_capabilities()
@@ -84,7 +84,7 @@ class TestPluginCapabilities:
             assert len(plugins) == 1
             assert plugins[0]["name"] == "fallback_detection"
 
-    @patch("src.mcp.capabilities_tool.load_plugin_manifest")
+    @patch("src.mcp_local.capabilities_tool.load_plugin_manifest")
     def test_collect_plugins_general_error(self, mock_load_manifest):
         """Test collecting plugin capabilities with general error."""
         mock_load_manifest.side_effect = Exception("General error")
@@ -100,7 +100,7 @@ class TestPluginCapabilities:
 class TestEventCapabilities:
     """Test event capability collection."""
 
-    @patch("src.mcp.capabilities_tool.list_events")
+    @patch("src.mcp_local.capabilities_tool.list_events")
     def test_collect_events_with_registry(self, mock_list_events):
         """Test collecting event capabilities with registry available."""
         from src.core.event_types import EventDescriptor
@@ -139,14 +139,14 @@ class TestEventCapabilities:
 
     def test_collect_events_import_error(self):
         """Test collecting event capabilities with import error."""
-        with patch("src.mcp.capabilities_tool.list_events") as mock_list:
+        with patch("src.mcp_local.capabilities_tool.list_events") as mock_list:
             mock_list.side_effect = ImportError("Module not found")
 
             events = _collect_event_capabilities()
 
             assert events["status"] == "registry_not_available"
 
-    @patch("src.mcp.capabilities_tool.list_events")
+    @patch("src.mcp_local.capabilities_tool.list_events")
     def test_collect_events_general_error(self, mock_list_events):
         """Test collecting event capabilities with general error."""
         mock_list_events.side_effect = Exception("General error")
@@ -190,7 +190,7 @@ class TestSystemCapabilities:
         assert isinstance(system["platform"], str)
         assert len(system["platform"]) > 0
 
-    @patch("src.mcp.capabilities_tool.psutil")
+    @patch("src.mcp_local.capabilities_tool.psutil")
     def test_collect_system_with_psutil(self, mock_psutil):
         """Test system capability collection with psutil available."""
         # Mock psutil
@@ -211,7 +211,7 @@ class TestSystemCapabilities:
 
     def test_collect_system_without_psutil(self):
         """Test system capability collection without psutil."""
-        with patch("src.mcp.capabilities_tool.psutil", side_effect=ImportError):
+        with patch("src.mcp_local.capabilities_tool.psutil", side_effect=ImportError):
             system = _collect_system_capabilities()
 
             assert system["memory_usage"] is None
@@ -243,7 +243,7 @@ class TestUtilityFunctions:
 
     def test_get_timestamp(self):
         """Test timestamp generation."""
-        from src.mcp.capabilities_tool import _get_timestamp
+        from src.mcp_local.capabilities_tool import _get_timestamp
 
         timestamp = _get_timestamp()
         assert isinstance(timestamp, float)
@@ -251,7 +251,7 @@ class TestUtilityFunctions:
 
     def test_get_python_version(self):
         """Test Python version detection."""
-        from src.mcp.capabilities_tool import _get_python_version
+        from src.mcp_local.capabilities_tool import _get_python_version
 
         version = _get_python_version()
         assert isinstance(version, str)
@@ -259,7 +259,7 @@ class TestUtilityFunctions:
 
     def test_get_platform_info(self):
         """Test platform information detection."""
-        from src.mcp.capabilities_tool import _get_platform_info
+        from src.mcp_local.capabilities_tool import _get_platform_info
 
         platform_info = _get_platform_info()
         assert isinstance(platform_info, str)
@@ -267,7 +267,7 @@ class TestUtilityFunctions:
 
     def test_check_optional_dependencies(self):
         """Test optional dependencies checking."""
-        from src.mcp.capabilities_tool import _check_optional_dependencies
+        from src.mcp_local.capabilities_tool import _check_optional_dependencies
 
         deps = _check_optional_dependencies()
         assert isinstance(deps, dict)
