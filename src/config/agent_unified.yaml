@@ -1,0 +1,132 @@
+# Super Alita Agent Configuration (Version 3.0)
+# This template defines the mandatory structure for the unified architecture.
+
+# Neural Atoms: The Universal Intelligence Unit
+neural_atoms:
+  registry_type: "semantic_vector"  # semantic_vector, hybrid, graph
+  max_concurrent_execution: 10
+  performance_tracking: true
+  auto_optimization: true
+  similarity_threshold: 0.7
+
+# Global Workspace: The Consciousness Layer
+global_workspace:
+  max_events: 10000
+  attention_decay_rate: 0.95
+  broadcast_timeout: 5.0
+  consciousness_layer_enabled: true
+
+# 8-Stage Cognitive Cycle Configuration
+cognitive_cycle:
+  world_model_enabled: true
+  meta_learning_enabled: true
+  safety_checks_enabled: true
+  reflection_frequency: "per_cycle"  # per_cycle, periodic, on_error
+  prediction_lookahead: 3
+
+# CREATOR Framework: Autonomous Capability Generation
+creator_engine:
+  enabled: true
+  max_rectification_attempts: 3
+  sandbox_timeout: 30.0
+  validation_strictness: "high"  # low, medium, high, strict
+
+# Safe Recursive Self-Improvement
+safety:
+  recursive_improvement: true
+  sandbox_execution: true
+  improvement_validation: "strict"
+  policy_engine: "opa"
+  rate_limits:
+    tool_execution: "100/minute"
+    self_modification: "10/hour"
+    memory_updates: "1000/minute"
+
+# Memory and Knowledge Management
+memory:
+  working_memory_capacity: 128
+  vector_store_type: "qdrant"  # faiss, qdrant, pinecone
+  embedding_model: "text-embedding-3-small"
+  long_term_storage: "redis"
+  episodic_memory_enabled: true
+
+# World Model for Predictive Planning
+world_model:
+  prediction_enabled: true
+  model_type: "transformer"  # transformer, decision_transformer, meta_dt
+  context_window: 512
+  update_frequency: "continuous"
+  confidence_threshold: 0.6
+
+# Plugin Configuration and Activation
+plugins:
+  # Memory Manager Plugin (Core)
+  memory_manager:
+    enabled: true
+    working_memory_capacity: 128
+    max_episode_length: 50
+    chroma_persist_dir: "./data/chroma_memory"
+    embedding_model: "text-embedding-3-small"
+    
+  # Tool Executor Plugin (Core)
+  tool_executor:
+    enabled: true
+    max_concurrent_execution: 10
+    execution_timeout: 30.0
+    tool_cache_ttl: 300
+    
+  # Creator Plugin (CREATOR Framework)
+  creator_plugin:
+    enabled: true
+    llm_model: "gemini-2.5-pro"
+    max_rectification_attempts: 3
+    sandbox_timeout: 30.0
+    validation_strictness: "high"
+    
+  # LLM Planner Plugin (Core)
+  llm_planner:
+    enabled: true
+    model: "gemini-2.5-pro"
+    temperature: 0.1
+    max_tokens: 2048
+    timeout: 30.0
+    
+  # Legacy plugins (for backward compatibility)
+  conversation:
+    enabled: false
+    context_window: 512
+    response_streaming: true
+    
+  web_agent:
+    enabled: false
+    searxng_url: "http://localhost:4000"
+    github_token_required: true
+    max_results: 10
+
+# Redis Configuration for Event Bus
+redis:
+  host: "localhost"
+  port: 6379
+  wire_format: "json"  # json, protobuf
+  connection_pool_size: 10
+
+# Logging and Monitoring
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s [%(levelname)s] %(name)s — %(message)s"
+  file_logging: false
+  log_file: "super_alita.log"
+
+# Performance and Resource Management
+performance:
+  max_concurrent_tasks: 50
+  memory_limit_mb: 2048
+  cpu_limit_percent: 80
+  gc_frequency: 60  # seconds
+
+# Development and Debugging
+development:
+  debug_mode: false
+  profiling_enabled: false
+  test_mode: false
+  mock_external_apis: false

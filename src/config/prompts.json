@@ -1,0 +1,279 @@
+{
+    "version": "2.0.0",
+    "description": "Code Skeleton Prompt System for Super Alita AI Agent",
+    "last_updated": "2025-08-02",
+    "format": "code_skeleton",
+    "prompts": {
+        "planner": {
+            "version": "2.0.0",
+            "description": "Code-skeleton prompts for the central LLMPlannerPlugin routing and decision making",
+            "main_routing": {
+                "template": "User Message: \"{user_message}\"\nContext: You are Super Alita, an AI agent. **First, draft a brief `# script.py Plan:` in your thought process to structure your approach.** Then, decide if one of your tools can help fulfill the user's implied intent.\n\nAvailable Tools:\n{tool_descriptions}\n\n**CRITICAL RULE: If the user explicitly asks to \"create\", \"build\", \"make\", or \"generate\" a tool, you MUST respond with: print(GAP(description=\"...\"))**\n\nInstructions:\n1. Analyze the user's message.\n2. Create a brief # script.py Plan in your thinking.\n3. Determine if the user wants you to perform an action that one of the tools can do.\n4. If a tool is helpful, respond EXACTLY with: print(tool_name(parameter=\"value\", ...))\n5. If no tool is needed (e.g., greeting, general knowledge), respond EXACTLY with: print(NONE(response=\"a natural, conversational response\"))\n6. If the user needs a capability that doesn't exist, respond EXACTLY with: print(GAP(description=\"description of what tool is needed\"))\n\n**IMPORTANT**: Your response must be a single print() statement with executable Python code. Use double quotes for string values.\n\nExamples:\n{examples}\n\nUser Message: \"{user_message}\"\nYour Response:",
+                "tool_descriptions": {
+                    "web_agent": "Performs web searches (including GitHub) for current information, news, articles, data, etc. Use this for questions like \"What is...\", \"Latest news on...\", \"How to...\", \"Find articles about...\".",
+                    "memory_manager": "Manages long-term memory. Use this to explicitly save information (\"Remember that...\") or recall previously saved information (\"What did I tell you to remember?\").",
+                    "self_reflection": "Analyzes the agent's own capabilities by listing available tools, identifying capability gaps, and providing system status. Use this for requests involving 'what can you do?', 'analyze your abilities', 'identify gaps', 'capability assessment', or 'self-assessment'."
+                },
+                "examples": [
+                    "User: \"Latest advancements in AI in 2024\"\\nYou: print(web_agent(query=\"Latest advancements in AI in 2024\"))",
+                    "User: \"Remember that my project deadline is Friday.\"\\nYou: print(memory_manager(action=\"save\", content=\"Remember that my project deadline is Friday.\"))",
+                    "User: \"What are your current capabilities?\"\\nYou: print(self_reflection(operation=\"list_capabilities\"))",
+                    "User: \"Analyze your abilities and identify gaps\"\\nYou: print(self_reflection(operation=\"analyze_gaps\", requested_capability=\"comprehensive analysis\"))",
+                    "User: \"Can you process images?\"\\nYou: print(self_reflection(operation=\"analyze_gaps\", requested_capability=\"image processing\"))",
+                    "User: \"What can you do?\"\\nYou: print(self_reflection(operation=\"list_capabilities\"))",
+                    "User: \"Do you have any file processing capabilities?\"\\nYou: print(self_reflection(operation=\"capability_match\", task_description=\"file processing\"))",
+                    "User: \"Hello, how are you?\"\\nYou: print(NONE(response=\"Hello! I'm doing well, thank you for asking. How can I assist you today?\"))",
+                    "User: \"What is 2+2?\"\\nYou: print(NONE(response=\"2 plus 2 equals 4.\"))",
+                    "User: \"Calculate the compound interest on $1000 at 5% for 3 years\"\\nYou: print(GAP(description=\"Need a financial calculation tool that can compute compound interest with principal, rate, and time parameters\"))",
+                    "User: \"Summarize this PDF document\"\\nYou: print(GAP(description=\"Need a PDF processing tool that can extract and summarize text from PDF documents\"))",
+                    "User: \"Create a tool for me\"\\nYou: print(GAP(description=\"Need a custom tool creation capability based on user specifications and requirements\"))",
+                    "User: \"Make me a new tool, you decide what it does\"\\nYou: print(GAP(description=\"Need an autonomous tool generator that can analyze current capabilities and create useful complementary tools\"))",
+                    "User: \"Build a tool as a test\"\\nYou: print(GAP(description=\"Need a test tool generator to demonstrate dynamic capability creation and validation systems\"))",
+                    "User: \"Generate a tool and store it\"\\nYou: print(GAP(description=\"Need a tool creation and persistence system that can generate custom capabilities and save them for future use\"))",
+                    "User: \"I need you to create a tool\"\\nYou: print(GAP(description=\"Need a tool creation system that can generate custom capabilities based on user requests\"))",
+                    "User: \"Can you make a tool?\"\\nYou: print(GAP(description=\"Need a tool generation capability that can create new functionality on demand\"))",
+                    "User: \"assess your own system\"\\nThought: # script.py Plan:\\n# 1. Goal: Assess internal system status.\\n# 2. Tool Required: `self_reflection` for introspection.\\n# 3. Action: Call `self_reflection` with operation='system_status'\\nYou: print(self_reflection(operation=\"system_status\"))",
+                    "User: \"what can you do?\"\\nThought: # script.py Plan:\\n# 1. Goal: List my available capabilities.\\n# 2. Tool Required: `self_reflection`.\\n# 3. Action: Call `self_reflection` with operation='list_capabilities'\\nYou: print(self_reflection(operation=\"list_capabilities\"))",
+                    "User: \"can you analyze if you can process PDF files?\"\\nThought: # script.py Plan:\\n# 1. Goal: Check for a specific capability (PDF processing).\\n# 2. Tool Required: `self_reflection` for gap analysis.\\n# 3. Action: Call `self_reflection` with operation='analyze_gaps' and the specific request\\nYou: print(self_reflection(operation=\"analyze_gaps\", requested_capability=\"process PDF files\"))",
+                    "User: \"calculate the billionth digit of pi in your head\"\\nThought: # script.py Plan:\\n# 1. Goal: Calculate billionth digit of pi.\\n# 2. Analysis: This is computationally infeasible without a specialized tool.\\n# 3. Tool Required: None available.\\n# 4. Action: Respond with a limitation-aware message\\nYou: print(NONE(response=\"Calculating the billionth digit of pi is beyond my current capabilities without a specialized tool. I can help find resources on this topic, though.\"))"
+                ]
+            },
+            "gap_response": {
+                "template": "I understand you need: {gap_description}\n\nI don't currently have a tool for that, but I'm working on creating one! This might take a moment while I:\n1. Design the tool specification\n2. Generate the code\n3. Test it safely\n4. Make it available for use\n\nI'll let you know once it's ready. In the meantime, is there anything else I can help you with using my current capabilities?"
+            }
+        },
+        "auto_tool_pipeline": {
+            "version": "1.2.0",
+            "description": "Prompts for autonomous tool-creation pipeline",
+            "brainstorm_spec": {
+                "template": "Goal: {goal}\n\nCreate a tool specification to accomplish this goal.\nReturn strict JSON with this exact structure:\n{json_schema}\n\nRequirements:\n- key must be valid Python identifier\n- Use only standard library or common packages\n- Keep it simple and focused\n- Ensure the tool is safe and well-scoped",
+                "json_schema": "{\n  \"key\": \"<python_identifier>\",\n  \"name\": \"<human_readable_name>\",\n  \"description\": \"<what_it_does>\",\n  \"signature\": {\"param1\": {\"type\": \"str\", \"description\": \"parameter description\"}},\n  \"dependencies\": [\"requests\"],\n  \"example\": {\"param1\": \"example_value\"}\n}"
+            },
+            "generate_code": {
+                "template": "Generate a complete async Python class that implements this tool:\n\nSpecification:\n- Class name: {class_name}\n- Tool key: \"{tool_key}\"\n- Description: {description}\n- Dependencies: {dependencies}\n\nRequirements:\n1. Import required dependencies at the top\n2. Create class {class_name} at module level (not inside functions)\n3. Implement: async def call(self, {signature}) -> Dict[str, Any]\n4. Return structured result with \"summary\" field\n5. Handle errors gracefully with try/except\n6. Use only specified dependencies\n7. Ensure the class is properly defined and accessible globally\n\nExample usage: {example}\n\nTemplate structure:\n``````\n\nGenerate ONLY the Python code, no explanations:"
+            }
+        },
+        "conversation": {
+            "version": "1.3.0",
+            "description": "Prompts for conversation handling and intent classification",
+            "intent_classification": {
+                "template": "You are a JSON classifier for an AI agent.\n\nInput: {user_message}\n\nAnalyze the user's message and classify it. Output exactly one JSON object **without markdown**:\n\n{\"intent\": \"chat|task\", \"tools_needed\": []}\n\nClassification rules:\n- \"chat\": Greetings, casual conversation, general knowledge questions\n- \"task\": Requests that need tool execution (search, memory operations, etc.)\n- \"tools_needed\": List tool names if intent is \"task\", empty array if \"chat\"\n\nExamples:\n{examples}",
+                "examples": [
+                    "Input: \"Hello there!\"\nOutput: {\"intent\": \"chat\", \"tools_needed\": []}",
+                    "Input: \"Search for latest AI news\"\nOutput: {\"intent\": \"task\", \"tools_needed\": [\"web_agent\"]}",
+                    "Input: \"Remember my birthday is July 15th\"\nOutput: {\"intent\": \"task\", \"tools_needed\": [\"memory_manager\"]}",
+                    "Input: \"What's the weather like?\"\nOutput: {\"intent\": \"task\", \"tools_needed\": [\"web_agent\"]}"
+                ]
+            },
+            "system_message": {
+                "template": "You are Super Alita, an advanced AI agent with capabilities including web search, memory management, and autonomous tool creation. You are helpful, intelligent, and can evolve your capabilities based on user needs.\n\nCurrent session: {session_id}\nContext: {context}"
+            }
+        },
+        "web_agent": {
+            "version": "1.1.0",
+            "description": "Prompts for web-search result processing",
+            "search_summary": {
+                "template": "Based on the search results for \"{query}\", provide a comprehensive summary:\n\nSearch Results:\n{results}\n\nPlease provide:\n1. A clear answer to the query\n2. Key findings from the results\n3. Relevant links for further reading\n\nFormat your response in a helpful, conversational manner."
+            }
+        },
+        "deterministic_id": {
+            "version": "1.0.0",
+            "description": "UUIDv5 deterministic ID generation for Atom/Bond schemas following Agentic DevOps Kit principles",
+            "atom_id_generation": {
+                "template": "Generate deterministic UUIDv5 for Atom:\n\nContent: {content}\nAtom Type: {atom_type}\nTitle: {title}\n\nProcess:\n1. Normalize content: lowercase, strip whitespace, canonical form\n2. Create canonical string: \"{atom_type}|{title}|{normalized_content}\"\n3. Generate UUIDv5 with namespace: d6e2a8b1-4c7f-4e0a-8b9c-1d2e3f4a5b6c\n4. Verify uniqueness and consistency\n\nReturn: {\"atom_id\": \"<uuid>\", \"canonical_string\": \"<normalized>\", \"verified\": true}",
+                "namespace": "d6e2a8b1-4c7f-4e0a-8b9c-1d2e3f4a5b6c",
+                "normalization_rules": [
+                    "Convert to lowercase",
+                    "Strip leading/trailing whitespace",
+                    "Collapse multiple spaces to single space",
+                    "Remove non-printable characters",
+                    "Apply Unicode NFC normalization"
+                ]
+            },
+            "bond_id_generation": {
+                "template": "Generate deterministic UUIDv5 for Bond:\n\nSource ID: {source_id}\nTarget ID: {target_id}\nBond Type: {bond_type}\nEnergy: {energy}\n\nProcess:\n1. Create canonical string: \"{source_id}|{target_id}|{bond_type}|{energy}\"\n2. Generate UUIDv5 with namespace: d6e2a8b1-4c7f-4e0a-8b9c-1d2e3f4a5b6c\n3. Verify bond direction and semantic consistency\n\nReturn: {\"bond_id\": \"<uuid>\", \"canonical_string\": \"<normalized>\", \"verified\": true}",
+                "bond_types": [
+                    "RELATES_TO",
+                    "CAUSES",
+                    "DERIVES",
+                    "UPDATES",
+                    "CONTRADICTS",
+                    "SUPERSEDES",
+                    "IMPLEMENTS",
+                    "VALIDATES"
+                ]
+            },
+            "schema_validation": {
+                "template": "Validate Atom/Bond schema compliance:\n\nData: {data}\n\nCheck:\n1. Required fields present (atom_id, atom_type, content, meta.provenance)\n2. UUIDv5 format validation\n3. Atom/Bond type from allowed vocabulary\n4. Provenance completeness (source_id, activity_id, timestamp)\n5. Parent lineage integrity\n\nReturn: {\"valid\": true/false, \"errors\": [], \"warnings\": []}",
+                "required_atom_fields": [
+                    "atom_id",
+                    "atom_type",
+                    "content",
+                    "meta"
+                ],
+                "required_bond_fields": [
+                    "source_id",
+                    "target_id",
+                    "bond_type",
+                    "meta"
+                ],
+                "required_provenance_fields": [
+                    "source_id",
+                    "activity_id",
+                    "timestamp"
+                ]
+            }
+        },
+        "testing_framework": {
+            "version": "1.0.0",
+            "description": "Comprehensive testing templates for property-based, regression, and stress testing following Agentic DevOps Kit",
+            "property_tests": {
+                "template": "Generate property-based tests for: {component}\n\nUsing Hypothesis library, create tests that verify:\n1. DETERMINISTIC PROPERTIES: Same input → same output\n2. IDEMPOTENCY: Multiple operations → consistent state\n3. NORMALIZATION: Equivalent inputs → identical IDs\n4. SCHEMA COMPLIANCE: All outputs match Atom/Bond schemas\n5. PROVENANCE INTEGRITY: Complete audit trail preservation\n\nGenerate Python test code:\n```python\nfrom hypothesis import given, strategies as st\nimport pytest\n\n# Property-based test implementation\n```\n\nTest Categories: {test_categories}",
+                "strategies": {
+                    "content_variations": "Text with different casing, whitespace, unicode variants",
+                    "atom_types": "All valid atom types from vocabulary",
+                    "bond_combinations": "Valid source/target/type combinations",
+                    "malformed_inputs": "Edge cases, empty strings, special characters"
+                }
+            },
+            "regression_suite": {
+                "template": "Generate regression test suite for schema evolution:\n\nBase Schema Version: {base_version}\nNew Schema Version: {new_version}\nChanges: {schema_changes}\n\nCreate tests that verify:\n1. BACKWARD COMPATIBILITY: Old data still validates\n2. FORWARD COMPATIBILITY: New features don't break existing flows\n3. MIGRATION INTEGRITY: Data transforms preserve semantics\n4. VERSION VALIDATION: Schema versioning is consistent\n\nGenerate test scenarios for:\n- Atom type additions/removals\n- Bond type vocabulary changes  \n- Provenance field modifications\n- ID generation algorithm updates",
+                "compatibility_levels": [
+                    "strict",
+                    "compatible",
+                    "breaking"
+                ],
+                "migration_strategies": [
+                    "in_place",
+                    "copy_transform",
+                    "dual_write"
+                ]
+            },
+            "stress_protocols": {
+                "template": "Generate stress testing protocol for: {system_component}\n\nTest Scenarios:\n1. LOAD SPIKES: Sudden increase in {load_type}\n2. BACKPRESSURE: Queue overflow and recovery\n3. CHAOS ENGINEERING: Random component failures\n4. MEMORY PRESSURE: Large data processing\n5. CONCURRENT ACCESS: Race condition detection\n\nGenerate test code with:\n- Gradual load increase patterns\n- Circuit breaker validation  \n- Resource leak detection\n- Performance regression checks\n- Failure recovery verification\n\nTarget Metrics: {performance_targets}",
+                "load_types": [
+                    "event_throughput",
+                    "memory_operations",
+                    "tool_invocations",
+                    "concurrent_sessions"
+                ],
+                "chaos_patterns": [
+                    "network_partition",
+                    "process_kill",
+                    "disk_full",
+                    "memory_exhaustion"
+                ]
+            },
+            "smoke_tests": {
+                "template": "Generate fast smoke test for CI/CD pipeline:\n\nComponent: {component}\nMax Runtime: 30 seconds\n\nChecks:\n1. SERVICE HEALTH: Component starts successfully\n2. BASIC OPERATIONS: Core functionality works\n3. SCHEMA COMPLIANCE: Outputs match expected format\n4. ID GENERATION: Deterministic IDs are consistent\n5. PROVENANCE: Audit trail is complete\n\nReturn Python script that exits 0 on success, 1 on failure.\nInclude clear error messages for debugging.",
+                "essential_checks": [
+                    "startup",
+                    "basic_operation",
+                    "schema_validation",
+                    "id_consistency",
+                    "provenance_completeness"
+                ]
+            }
+        },
+        "governance": {
+            "version": "1.0.0",
+            "description": "Runtime governance, provenance enforcement, and safety policy templates",
+            "provenance_enforcement": {
+                "template": "Enforce provenance compliance for generated data:\n\nData: {output_data}\nTool: {tool_name}\nActivity: {activity_id}\n\nValidation Checklist:\n1. COMPLETE METADATA: Every Atom/Bond has full provenance\n2. VALID SOURCE_ID: Tool identifier is correct\n3. ACTIVITY_ID: Execution instance is tracked\n4. TIMESTAMP: ISO format timestamp present\n5. PARENT LINEAGE: Parent relationships are valid\n6. AUDIT TRAIL: Complete transformation history\n\nReturn: {\"compliant\": true/false, \"violations\": [], \"audit_score\": 0-100}\n\nCRITICAL: Any missing provenance is a BLOCKING violation.",
+                "violation_types": [
+                    "missing_source",
+                    "invalid_timestamp",
+                    "broken_lineage",
+                    "incomplete_metadata"
+                ],
+                "audit_thresholds": {
+                    "blocking": 100,
+                    "warning": 95,
+                    "acceptable": 90
+                }
+            },
+            "safety_policy": {
+                "template": "Generate runtime safety configuration for: {deployment_environment}\n\n{\n  \"agent_safety\": {\n    \"tools\": {\n      \"allow_list\": {allowed_tools},\n      \"deny_list\": {denied_tools},\n      \"require_approval\": {approval_tools}\n    },\n    \"commands\": {\n      \"terminal_deny\": [\"rm\", \"sudo\", \"docker\", \"kubectl\", \"systemctl\"],\n      \"file_operations\": {\n        \"read_only_paths\": {read_only_paths},\n        \"write_restricted_paths\": {restricted_paths}\n      }\n    },\n    \"confirmation\": {\n      \"auto_approve\": false,\n      \"timeout_seconds\": 30,\n      \"require_human\": {human_required_operations}\n    },\n    \"monitoring\": {\n      \"log_all_actions\": true,\n      \"audit_sensitive_operations\": true,\n      \"alert_on_violations\": true\n    }\n  }\n}",
+                "environments": [
+                    "development",
+                    "staging",
+                    "production"
+                ],
+                "security_levels": [
+                    "permissive",
+                    "standard",
+                    "strict",
+                    "paranoid"
+                ]
+            },
+            "rollback_strategy": {
+                "template": "Generate rollback plan for operation: {operation_name}\n\n# Rollback Plan: {operation_name}\n\n## Pre-Operation Checkpoint\n```bash\n{checkpoint_commands}\n```\n\n## Rollback Commands  \n```bash\n{rollback_commands}\n```\n\n## Verification Steps\n{verification_steps}\n\n## Health Checks\n{health_checks}\n\n## Emergency Procedures\n{emergency_procedures}\n\n## Success Criteria\n- [ ] System returns to pre-operation state\n- [ ] All data integrity checks pass\n- [ ] Performance metrics within normal ranges\n- [ ] No error logs or warnings\n\nEstimated Rollback Time: {estimated_duration}",
+                "checkpoint_types": [
+                    "git_tag",
+                    "database_snapshot",
+                    "filesystem_backup",
+                    "configuration_export"
+                ],
+                "verification_methods": [
+                    "automated_tests",
+                    "health_endpoints",
+                    "manual_verification",
+                    "user_acceptance"
+                ]
+            }
+        }
+    },
+    "response_schemas": {
+        "tool_call": "print(tool_name(parameter=\"value\"))",
+        "none_response": "print(NONE(response=\"message\"))",
+        "gap_response": "print(GAP(description=\"description of needed tool\"))",
+        "intent_classification": "{\"intent\": \"chat|task\", \"tools_needed\": []}",
+        "atom_id_result": "{\"atom_id\": \"<uuid>\", \"canonical_string\": \"<normalized>\", \"verified\": true}",
+        "bond_id_result": "{\"bond_id\": \"<uuid>\", \"canonical_string\": \"<normalized>\", \"verified\": true}",
+        "schema_validation": "{\"valid\": true, \"errors\": [], \"warnings\": []}",
+        "provenance_audit": "{\"compliant\": true, \"violations\": [], \"audit_score\": 100}",
+        "property_test": "Python test code using Hypothesis library",
+        "safety_config": "JSON configuration object with security policies"
+    },
+    "placeholders": {
+        "user_message": "The current user's message or request",
+        "goal": "The capability gap or goal to address",
+        "tool_descriptions": "Formatted list of available tools and their descriptions",
+        "examples": "Formatted list of example interactions",
+        "json_schema": "The JSON schema template for tool specifications",
+        "session_id": "Current conversation session identifier",
+        "context": "Current conversation context or relevant information",
+        "content": "Atom content for ID generation",
+        "atom_type": "Type of atom from allowed vocabulary",
+        "title": "Human-readable title for the atom",
+        "source_id": "Source atom UUID for bond creation",
+        "target_id": "Target atom UUID for bond creation",
+        "bond_type": "Type of bond from allowed vocabulary",
+        "energy": "Bond strength or energy value",
+        "component": "System component being tested",
+        "test_categories": "Categories of tests to generate",
+        "base_version": "Original schema version",
+        "new_version": "Updated schema version",
+        "schema_changes": "List of changes between versions",
+        "system_component": "Component under stress testing",
+        "load_type": "Type of load being applied",
+        "performance_targets": "Expected performance metrics",
+        "output_data": "Generated data requiring provenance",
+        "tool_name": "Name of the tool generating data",
+        "activity_id": "Unique execution instance identifier",
+        "deployment_environment": "Target deployment environment",
+        "allowed_tools": "List of permitted tools",
+        "denied_tools": "List of prohibited tools",
+        "approval_tools": "Tools requiring human approval",
+        "read_only_paths": "Filesystem paths with read-only access",
+        "restricted_paths": "Filesystem paths with write restrictions",
+        "human_required_operations": "Operations requiring human confirmation",
+        "operation_name": "Name of operation requiring rollback plan",
+        "checkpoint_commands": "Commands to create pre-operation checkpoint",
+        "rollback_commands": "Commands to rollback the operation",
+        "verification_steps": "Steps to verify rollback success",
+        "health_checks": "Health checks to run after rollback",
+        "emergency_procedures": "Emergency procedures if rollback fails",
+        "estimated_duration": "Estimated time for rollback completion"
+    }
+}

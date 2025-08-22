@@ -1,0 +1,254 @@
+# src/config/agent.yaml
+#
+# --- Super Alita Agent Configuration ---
+# This file is the single source of truth for the agent's behavior,
+# plugin settings, and core system parameters.
+
+# --- Global Settings ---
+logging:
+  level: INFO # Can be DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+# --- Neural Atoms Configuration ---
+neural_atoms:
+  default_capacity: 1000
+  learning_rate: 0.01
+  evolution_enabled: true
+
+# --- Global Workspace Configuration ---
+global_workspace:
+  max_events: 10000
+  attention_threshold: 0.5
+  consciousness_enabled: true
+
+# --- Safety Configuration ---
+safety:
+  recursive_improvement: true
+  sandbox_execution: true
+  validation_enabled: true
+  max_execution_time: 30
+
+redis:
+  host: "localhost"
+  port: 6379
+  wire_format: "json" # Options: "json", "protobuf"
+
+neural_store:
+  learning_rate: 0.01
+
+# --- Plugin Configuration ---
+# Each top-level key under 'plugins' corresponds to a plugin's `name`.
+# The 'enabled' flag controls whether the orchestrator loads the plugin.
+plugins:
+  event_bus:
+    enabled: true
+    # This plugin is a lightweight wrapper, so it has no specific config.
+
+  semantic_memory:
+    enabled: true
+    db_path: "./data/chroma_db"
+    collection_name: "alita_memory"
+    embedding_model: "models/text-embedding-004"
+    # IMPORTANT: The API key should be set as an environment variable for security.
+    # The plugin code will look for 'GEMINI_API_KEY'.
+    gemini_api_key: "${GEMINI_API_KEY}"
+
+  semantic_fsm:
+    enabled: true
+    default_threshold: 0.75
+    state_descriptions:
+      idle: "The agent is idle, awaiting new goals or user input."
+      planning: "The agent is actively analyzing a problem, consulting memory, and formulating a multi-step plan."
+      executing: "The agent is executing a plan, running tools, and interacting with its environment."
+      learning: "The agent is in a reflective state, analyzing the outcomes of its actions to update its skills and memory."
+      self_heal: "The agent has detected an anomaly and is performing diagnostic and corrective actions."
+      awaiting_input: "The agent has completed a step and is waiting for further clarification or input from the user."
+    # Transition thresholds can be tuned here for agent personality
+    # Format: [ [from_state, to_state], threshold ]
+    transition_thresholds:
+      - [["idle", "planning"], 0.8]
+      - [["planning", "executing"], 0.85]
+
+  ladder_aog:
+    enabled: true
+    # This plugin's AOG is currently seeded in code, but a future version
+    # could load the graph structure from this config file.
+    mcts_iterations: 100
+    max_planning_depth: 10
+    exploration_weight: 1.4
+    simulation_depth: 5
+    domains:
+      - "task_planning"
+      - "causal_diagnosis"
+    save_aog_graphs: true
+
+  skill_discovery:
+    enabled: true
+    # Configuration for the PAE loop
+    proposer_llm: "gemini-2.5-pro"
+    evaluator_llm: "gemini-2.5-pro"
+    success_threshold: 0.8
+
+  self_heal:
+    enabled: true
+    # Configuration for the self-healing subsystem
+    max_retries: 3
+    escalation_target: "human_operator" # Could be an email, slack webhook, etc.
+
+  openai_agent:
+    enabled: false
+    api_key: "${OPENAI_API_KEY}"
+
+  system_introspection:
+    enabled: true
+    enable_detailed_diagnostics: true
+    health_check_interval_seconds: 60
+
+  atom_creator:
+    enabled: true
+    validation_level: "basic" # basic, strict, disabled
+
+  atom_executor:
+    enabled: true
+    execution_timeout: 30 # seconds
+    max_concurrent: 3
+
+  tool_lifecycle:
+    enabled: true
+    max_atoms_per_session: 10
+    execution_timeout: 15 # seconds
+    safe_execution: true
+
+  memory_manager:
+    enabled: true
+    max_memories_per_query: 5
+    enable_semantic_search: true
+
+  calculator:
+    enabled: true
+    safe_evaluation: true
+    max_expression_length: 200
+
+  core_utils:
+    enabled: true
+    # AST-based safe arithmetic calculator and string utilities
+    safe_evaluation: true
+
+  creator:
+    enabled: true
+    llm_model: "gemini-2.5-pro"
+    gemini_api_key: "${GEMINI_API_KEY}"
+    validation_enabled: true
+    sandbox_timeout: 5 # seconds for code validation
+
+  pythonic_preprocessor:
+    enabled: true
+    llm_model: "gemini-2.5-pro"
+    gemini_api_key: "${GEMINI_API_KEY}"
+    llm_timeout: 15.0 # seconds for individual LLM calls
+    max_retries: 2
+    enable_narrator: true # Enable REVERSE LADDER commentary
+    enable_commentary_events: true # Publish narrator events to event bus
+
+  llm_planner:
+    enabled: true
+    llm_model: "gemini-2.5-pro"
+    gemini_api_key: "${GEMINI_API_KEY}"
+    enable_tool_discovery: true
+    planning_timeout: 15 # seconds
+    llm_timeout: 30 # seconds for individual LLM calls
+    max_retries: 2
+    max_tokens: 1000
+    temperature: 0.1
+    tools:
+      memory_manager:
+        description: "Save, list, or recall memories and notes"
+        parameters:
+          action:
+            type: "string"
+            description: "Action to perform: 'save', 'list', or 'recall'"
+            required: true
+          content:
+            type: "string"
+            description: "Content to save (required for 'save' action)"
+            required: false
+          query:
+            type: "string"
+            description: "Search query (required for 'recall' action)"
+            required: false
+      web_agent:
+        description: "Search the web for current information"
+        parameters:
+          query:
+            type: "string"
+            description: "Search query for web search"
+            required: true
+
+  self_reflection:
+    enabled: true
+    # Self-reflection plugin for introspection and capability analysis
+    enable_detailed_analysis: true
+    cache_analysis_results: false # Always provide fresh analysis
+    max_analysis_depth: 3 # Prevent recursive loops
+
+  planner:
+    enabled: true
+    max_plan_steps: 5
+    planning_timeout: 30 # seconds
+    enable_multi_step: true
+
+  web_agent:
+    enabled: true
+    perplexica_base_url: "http://localhost:3000/api/search"
+    github_token: "${GITHUB_TOKEN}"
+    default_web_results: 5
+    default_github_results: 5
+
+  conversation:
+    enabled: true
+    llm_model: "gemini-2.5-pro"
+    # Again, API key should be an environment variable.
+    gemini_api_key: "${GEMINI_API_KEY}"
+
+  tool_executor:
+    enabled: true
+    max_concurrent_executions: 3
+    execution_timeout_seconds: 300
+    enable_parallel_execution: false
+
+  atom_tools:
+    enabled: true
+
+  brainstorm:
+    enabled: true
+    gemini_api_key: "${GEMINI_API_KEY}"
+    max_atoms_per_session: 5
+    brainstorm_categories:
+      - "data_processing"
+      - "web_interaction"
+      - "file_operations"
+      - "analysis"
+      - "automation"
+
+  compose:
+    enabled: true
+    gemini_api_key: "${GEMINI_API_KEY}"
+    max_atoms_per_composition: 5
+    enable_execution: true
+    composition_timeout_seconds: 30
+
+  auto_tools:
+    enabled: true
+    gemini_api_key: "${GEMINI_API_KEY}"
+    enable_docker_sandbox: true
+    sandbox_timeout_seconds: 30
+
+  predictive_world_model:
+    enabled: true
+    max_history: 10000
+    enable_alternative_generation: true
+    enable_risk_assessment: true
+    enable_learning: true
+    similarity_threshold: 0.8
+    confidence_threshold: 0.7
+    max_alternatives: 5
+    learning_decay: 0.95

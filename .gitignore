@@ -1,0 +1,150 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/.ropeproject
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Linting and formatting
+.ruff_cache/
+.mypy_cache/
+.bandit
+.flake8
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Package files
+*.vsix
+
+# Temporary files
+*.tmp
+*.temp
+*.backup
+*~
+
+# Node modules (if any)
+node_modules/
+
+# Redis dump
+dump.rdb
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Generated tools and artifacts
+.alita_tools_tmp/
+generated_tools/
+temp_tools/
+
+# Monitoring and metrics
+*.json.bak
+metrics_*.json
+
+# Cache directories
+.cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# VS Code extension development
+*.vsix
+out/
+node_modules/
+.vscode-test/
+
+# MCP server logs
+mcp_stdio_server.log
+*.mcp.log
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Large datasets
+data/
+datasets/
+models/
+*.model
+*.pkl
+*.pickle
+
+# Configuration overrides
+config.local.*
+settings.local.*

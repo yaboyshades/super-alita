@@ -1,0 +1,51 @@
+{
+  "priority_order": [
+    "safety",
+    "accuracy",
+    "speed",
+    "cost"
+  ],
+  "max_llm_cost_cents": 25,
+  "max_runtime_sec": 300,
+  "auto_retry": 3,
+  "execution_policy": {
+    "timeout_per_step": 120,
+    "max_concurrent_tools": 5,
+    "allow_network_access": true,
+    "sandbox_code_execution": true,
+    "allow_self_modification": true,
+    "enable_meta_programming": true,
+    "neural_atom_execution": true
+  },
+  "memory_policy": {
+    "default_ttl_days": 90,
+    "max_context_length": 16384,
+    "auto_cleanup": true,
+    "preserve_architectural_knowledge": true,
+    "enable_code_lineage_tracking": true
+  },
+  "user_context": {
+    "default_persona": "expert_python_developer_co_architect",
+    "verbosity_level": "detailed",
+    "technical_level": "expert",
+    "specialization": "ai_agent_architecture",
+    "coding_standards": "super_alita_patterns",
+    "architectural_awareness": true,
+    "cognitive_processing_enabled": true
+  },
+  "development_policy": {
+    "enforce_sacred_laws": true,
+    "require_event_contracts": true,
+    "mandate_neural_atom_patterns": true,
+    "validate_cognitive_integration": true,
+    "enable_creator_framework": true,
+    "safety_first_rsi": true
+  },
+  "collaboration_style": {
+    "planning_depth": "comprehensive",
+    "code_review_level": "thorough",
+    "architecture_discussion": "detailed",
+    "innovation_preservation": true,
+    "research_integration": "cutting_edge"
+  }
+}

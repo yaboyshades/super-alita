@@ -1,0 +1,14 @@
+# Test requirements
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# Optional protobuf support
+# protobuf>=4.0.0
+
+# Existing requirements from main application
+redis>=4.0.0
+pydantic>=2.0.0
+aioredis>=2.0.0
+chromadb>=0.4.0
+google-generativeai>=0.3.0
+numpy>=1.24.0

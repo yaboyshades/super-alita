@@ -1,0 +1,254 @@
+{
+    "host": "localhost",
+    "port": 5678,
+    "base_url": "http://localhost:5678",
+    "auth": {
+        "type": "none"
+    },
+    "tools": {
+        "echo": {
+            "description": "Echo back input value",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "description": "Value to echo back",
+                        "type": [
+                            "array",
+                            "boolean",
+                            "integer",
+                            "null",
+                            "number",
+                            "object",
+                            "string"
+                        ]
+                    }
+                },
+                "required": [
+                    "value"
+                ]
+            }
+        },
+        "ping": {
+            "description": "Health check ping",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        },
+        "get_agent_status": {
+            "description": "Get current agent status and health",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        },
+        "get_agent_telemetry": {
+            "description": "Get real-time agent telemetry data and events",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "event_type": {
+                        "description": "Filter by event type (optional)",
+                        "type": "string"
+                    },
+                    "limit": {
+                        "description": "Maximum number of events to return",
+                        "type": "integer",
+                        "default": 50
+                    }
+                }
+            }
+        },
+        "send_telemetry": {
+            "description": "Receive telemetry data from agent (internal)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "event_type": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object"
+                    },
+                    "timestamp": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "event_type",
+                    "source",
+                    "data",
+                    "timestamp"
+                ]
+            }
+        },
+        "mem0_add_memory": {
+            "description": "Store a memory in Mem0 with category and metadata",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "description": "Memory content to store",
+                        "type": "string"
+                    },
+                    "category": {
+                        "description": "Memory category",
+                        "type": "string",
+                        "enum": [
+                            "agent",
+                            "co_architect",
+                            "conversation",
+                            "debugging",
+                            "architecture",
+                            "sacred_laws"
+                        ],
+                        "default": "co_architect"
+                    },
+                    "metadata": {
+                        "description": "Additional metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "content"
+                ]
+            }
+        },
+        "mem0_get_all_memories": {
+            "description": "Get all memories, optionally filtered by category",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "description": "Filter by category",
+                        "type": "string",
+                        "enum": [
+                            "agent",
+                            "co_architect",
+                            "conversation",
+                            "debugging",
+                            "architecture",
+                            "sacred_laws"
+                        ]
+                    },
+                    "limit": {
+                        "description": "Maximum results",
+                        "type": "integer",
+                        "default": 100
+                    }
+                }
+            }
+        },
+        "mem0_search_memories": {
+            "description": "Search memories by query and optional category",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "description": "Search query",
+                        "type": "string"
+                    },
+                    "category": {
+                        "description": "Filter by category",
+                        "type": "string",
+                        "enum": [
+                            "agent",
+                            "co_architect",
+                            "conversation",
+                            "debugging",
+                            "architecture",
+                            "sacred_laws"
+                        ]
+                    },
+                    "limit": {
+                        "description": "Maximum results",
+                        "type": "integer",
+                        "default": 10
+                    }
+                },
+                "required": [
+                    "query"
+                ]
+            }
+        },
+        "mem0_store_architectural_decision": {
+            "description": "Store an architectural decision with rationale",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "decision": {
+                        "description": "Decision made",
+                        "type": "string"
+                    },
+                    "rationale": {
+                        "description": "Rationale for decision",
+                        "type": "string"
+                    },
+                    "context": {
+                        "description": "Context information",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "decision",
+                    "rationale"
+                ]
+            }
+        },
+        "mem0_store_debugging_pattern": {
+            "description": "Store a successful debugging pattern",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "problem": {
+                        "description": "Problem description",
+                        "type": "string"
+                    },
+                    "solution": {
+                        "description": "Solution description",
+                        "type": "string"
+                    },
+                    "context": {
+                        "description": "Context information",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "problem",
+                    "solution"
+                ]
+            }
+        },
+        "mem0_store_session_learning": {
+            "description": "Store a Co-Architect session learning insight",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "insight": {
+                        "description": "Learning insight",
+                        "type": "string"
+                    },
+                    "cognitive_pattern": {
+                        "description": "Cognitive pattern used",
+                        "type": "string"
+                    },
+                    "reug_phase": {
+                        "description": "REUG phase (R/E/U/G)",
+                        "type": "string"
+                    },
+                    "context": {
+                        "description": "Additional context",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "insight"
+                ]
+            }
+        }
+    }
+}
