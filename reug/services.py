@@ -24,6 +24,8 @@ except Exception:
 
 from .events import EventEmitter, hash_json, new_span_id
 
+ENFORCE_SCHEMA = os.getenv("REUG_SCHEMA_ENFORCE", "true").lower() == "true"
+
 StepKind = Literal["SEARCH","COMPUTE","ANALYZE","GENERATE","VALIDATE"]
 
 @dataclass
@@ -98,7 +100,7 @@ def default_tool_resolver(step: PlanStep, _ctx: Dict[str, Any]) -> Tuple[str, Di
 
 # ---------- Validation helpers ----------
 def _validate(schema: Optional[Dict[str, Any]], data: Any) -> Optional[str]:
-    if not schema or not jsonschema:
+    if not ENFORCE_SCHEMA or not schema or not jsonschema:
         return None
     try:
         jsonschema.validate(instance=data, schema=schema)  # type: ignore
@@ -111,9 +113,9 @@ def create_services(
     emitter: EventEmitter,
     tool_resolver: ToolResolver = default_tool_resolver,
     *,
-    per_tool_timeout_s: float = 20.0,
-    max_retries: int = 2,
-    retry_base_ms: int = 100,
+    per_tool_timeout_s: float | None = None,
+    max_retries: int | None = None,
+    retry_base_ms: int | None = None,
 ) -> Dict[str, Callable]:
     """
     Returns the four service callables expected by the FSM:
@@ -122,6 +124,10 @@ def create_services(
       - execute(tool, args, ctx) -> {status, result?|error?}
       - process_result(ctx) -> {task_complete, more_steps_needed}
     """
+    per_tool_timeout_s = float(os.getenv("REUG_EXEC_TIMEOUT_S", per_tool_timeout_s or 20.0))
+    max_retries = int(os.getenv("REUG_EXEC_MAX_RETRIES", max_retries if max_retries is not None else 2))
+    retry_base_ms = int(os.getenv("REUG_RETRY_BASE_MS", retry_base_ms if retry_base_ms is not None else 100))
+
     parser = ScriptParser() if HAVE_REAL_IMPL else _FallbackParser()
     executor = Executor() if HAVE_REAL_IMPL else _FallbackExecutor()
 
@@ -143,12 +149,14 @@ def create_services(
 
     async def select_tool(step: PlanStep, ctx: Dict[str, Any]) -> Dict[str, Any]:
         tool_id, tool_args = tool_resolver(step, ctx)
+        if not tool_id:
+            return {"status": "NOT_FOUND", "reason": "UNKNOWN_TOOL"}
         tool = {"tool_id": tool_id, "input_schema": step.args.get("_input_schema"), "output_schema": step.args.get("_output_schema")}
         # Input schema validation before we attempt execution
         err = _validate(tool.get("input_schema"), tool_args)
         if err:
             return {"status": "NOT_FOUND", "reason": f"INPUT_SCHEMA_VIOLATION: {err}"}
-        return {"status": "FOUND", "tool": tool}
+        return {"status": "FOUND", "tool": tool, "args": tool_args}
 
     async def execute(tool: Dict[str, Any], args: Dict[str, Any], ctx: Dict[str, Any]) -> Dict[str, Any]:
         correlation_id = ctx.get("correlation_id")
@@ -163,6 +171,7 @@ def create_services(
         # Retry with jitter
         attempt = 0
         last_err: Optional[str] = None
+        backoff = 0
         while attempt <= max_retries:
             try:
                 # Async timeout wrapper
@@ -174,12 +183,27 @@ def create_services(
                 err = _validate(tool.get("output_schema"), res)
                 if err:
                     raise ValueError(f"OUTPUT_SCHEMA_VIOLATION: {err}")
-                emitter.emit(
+                evt = emitter.emit(
                     event_type="TOOL_CALL_OK",
-                    payload={"tool_id": tool_id, "result": res, "output_hash": hash_json(res)},
+                    payload={
+                        "tool_id": tool_id,
+                        "result": res,
+                        "output_hash": hash_json(res),
+                        "attempt": attempt + 1,
+                        "max_retries": max_retries,
+                        "backoff_ms": backoff,
+                    },
                     correlation_id=correlation_id,
                     span_id=span_id,
                 )
+                try:
+                    from .kg import store
+                    for k, v in res.items():
+                        if isinstance(v, (str, int, float)):
+                            store.add_triple(tool_id, k, str(v), src=evt["event_id"])
+                            break
+                except Exception:
+                    pass
                 return {"status": "SUCCESS", "result": res}
             except asyncio.TimeoutError:
                 last_err = f"TIMEOUT after {per_tool_timeout_s}s"
@@ -193,7 +217,13 @@ def create_services(
 
         emitter.emit(
             event_type="TOOL_CALL_ERR",
-            payload={"tool_id": tool_id, "error": last_err or "unknown"},
+            payload={
+                "tool_id": tool_id,
+                "error": last_err or "unknown",
+                "attempt": attempt,
+                "max_retries": max_retries,
+                "backoff_ms": backoff,
+            },
             correlation_id=correlation_id,
             span_id=span_id,
         )

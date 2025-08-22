@@ -40,3 +40,4 @@ class EventEmitter:
         if "event_id" not in event:
             event["event_id"] = new_id()
         self.sink(event)
+        return event

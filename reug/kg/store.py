@@ -1,13 +1,21 @@
 import json, os, time, uuid
 from typing import Dict, List
 
-TRIPLE_PATH = "kg/triples.jsonl"
+TRIPLE_PATH = os.path.join(os.getenv("REUG_KG_DIR", "kg"), "triples.jsonl")
 
-def add_triple(s: str,p: str,o: str,conf=1.0,src=None):
-    triple = {"s":s,"p":p,"o":o,"confidence":conf,"valid_from":time.time(),"source_event_id":src or str(uuid.uuid4())}
-    os.makedirs("kg", exist_ok=True)
-    with open(TRIPLE_PATH,"a") as f:
-        f.write(json.dumps(triple)+"\n")
+
+def add_triple(s: str, p: str, o: str, conf=1.0, src=None):
+    triple = {
+        "s": s,
+        "p": p,
+        "o": o,
+        "confidence": conf,
+        "valid_from": time.time(),
+        "source_event_id": src or str(uuid.uuid4()),
+    }
+    os.makedirs(os.path.dirname(TRIPLE_PATH), exist_ok=True)
+    with open(TRIPLE_PATH, "a") as f:
+        f.write(json.dumps(triple) + "\n")
     return triple
 
 def query(s=None,p=None)->List[Dict]:
