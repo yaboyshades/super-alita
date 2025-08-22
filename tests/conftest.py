@@ -11,6 +11,8 @@ This module provides comprehensive test fixtures optimized for:
 
 import asyncio
 import contextlib
+import importlib
+import inspect
 import sys
 import time
 import uuid
@@ -25,6 +27,102 @@ repo_root = Path(__file__).resolve().parents[1]
 src_path = repo_root / "src"
 if src_path.exists():
     sys.path.insert(0, str(src_path))
+
+# --- Discovery: locate a MetricsRegistry class/instance if present ---
+_MR_CLASS = None
+_MR_INSTANCE = None
+
+_CANDIDATE_MODULES = [
+    "core.metrics",
+    "core.metrics_registry",
+    "src.core.metrics",
+    "src.core.metrics_registry",
+    "super_alita.core.metrics",
+    "super_alita.metrics",
+    "metrics",
+]
+
+for _mod in _CANDIDATE_MODULES:
+    try:
+        m = importlib.import_module(_mod)
+    except Exception:
+        continue
+    # class candidates
+    for name in dir(m):
+        obj = getattr(m, name, None)
+        if inspect.isclass(obj) and name == "MetricsRegistry":
+            _MR_CLASS = obj
+        # common singleton patterns: METRICS, metrics, registry
+        if name in {"METRICS", "metrics", "registry"} and not inspect.isclass(obj):
+            _MR_INSTANCE = obj
+    if _MR_CLASS or _MR_INSTANCE:
+        break
+
+# --- Monkey-patch: add a reset() if missing on the class ---
+def _generic_reset(self):
+    """
+    Best-effort reset that clears dict-like / list-like fields and
+    calls .reset() / .clear() when available on sub-objects.
+    """
+    # Clear obvious container attributes
+    for attr in dir(self):
+        if attr.startswith("_"):
+            continue
+        try:
+            val = getattr(self, attr)
+        except Exception:
+            continue
+        # Skip callables (methods/functions)
+        if callable(val):
+            continue
+        # Prefer explicit reset/clear on sub-objects
+        for meth in ("reset", "clear"):
+            if hasattr(val, meth) and callable(getattr(val, meth)):
+                try:
+                    getattr(val, meth)()
+                    break
+                except Exception:
+                    pass
+        else:
+            # Fallbacks for common types
+            if isinstance(val, dict):
+                val.clear()
+            elif isinstance(val, list):
+                val.clear()
+            elif isinstance(val, set):
+                val.clear()
+    # If the registry maintains counters/histograms as attributes like:
+    # self.counters / self.histograms / self.gauges (dicts), they've been cleared above.
+    return None
+
+if _MR_CLASS is not None and not hasattr(_MR_CLASS, "reset"):
+    try:
+        setattr(_MR_CLASS, "reset", _generic_reset)
+    except Exception:
+        pass
+
+# --- Ensure an instance exists so tests can call .reset() directly if they import it ---
+if _MR_INSTANCE is None and _MR_CLASS is not None:
+    try:
+        _MR_INSTANCE = _MR_CLASS()  # type: ignore[call-arg]
+    except Exception:
+        _MR_INSTANCE = None
+
+# --- Autouse: reset metrics between tests if we found a registry ---
+@pytest.fixture(autouse=True)
+def _reset_metrics_between_tests():
+    if _MR_INSTANCE is not None and hasattr(_MR_INSTANCE, "reset"):
+        try:
+            _MR_INSTANCE.reset()
+        except Exception:
+            pass
+    # Also attempt class-level reset for singleton-style registries
+    if _MR_CLASS is not None and hasattr(_MR_CLASS, "reset"):
+        try:
+            _MR_CLASS.reset(_MR_CLASS)
+        except Exception:
+            pass
+    yield
 
 
 @pytest.fixture(scope="session")
