@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Test Super Alita Agent Cortex Integration."""
+"""Interactive Super Alita Agent Cortex demonstration.
+
+This script exercises the agent's Cortex capabilities in a hands-on way
+without relying on the automated test harness. It is intended for
+debugging and exploratory development.
+"""
 
 import asyncio
 from pathlib import Path
@@ -7,21 +12,19 @@ from pathlib import Path
 from src.vscode_integration.agent_integration import SuperAlitaAgent
 
 
-async def test_agent_self_development():
-    """Test the agent using its own Cortex intelligence for development."""
-    print("🚀 Testing Super Alita Agent with Cortex Intelligence...\n")
+async def run_agent_cortex_demo() -> bool:
+    """Run the agent using its own Cortex intelligence for development."""
+    print("🚀 Running Super Alita Agent with Cortex Intelligence...\n")
 
-    # Create and initialize agent
-    agent = SuperAlitaAgent(
-        workspace_folder=Path("d:/Coding_Projects/super-alita-clean")
-    )
+    # Create and initialize agent in the current repository workspace
+    agent = SuperAlitaAgent(workspace_folder=Path.cwd())
     init_result = await agent.initialize()
     print(f"✨ Agent initialization: {init_result}")
     print(f"📁 Workspace: {agent.workspace_folder}")
     print("\n" + "=" * 60 + "\n")
 
-    # Test agent enhanced methods with proper signatures
-    print("🧠 Testing Agent Development Insights...")
+    # Exercise agent enhanced methods with proper signatures
+    print("🧠 Gathering Agent Development Insights...")
     try:
         query = "How can I improve the agent memory and learning capabilities?"
         insights = await agent.get_development_insights(query)
@@ -35,7 +38,7 @@ async def test_agent_self_development():
     except Exception as e:
         print(f"❌ Development insights error: {e}")
 
-    print("\n📋 Testing Development Task Planning...")
+    print("\n📋 Evaluating Development Task Planning...")
     try:
         task_desc = "Enhance agent memory persistence and cross-session learning"
         task_plan = await agent.plan_development_task(task_desc)
@@ -51,8 +54,8 @@ async def test_agent_self_development():
     except Exception as e:
         print(f"❌ Task planning error: {e}")
 
-    # Test development KG creation
-    print("\n🎯 Testing Development KG Creation...")
+    # Generate development knowledge graph
+    print("\n🎯 Building Development Knowledge Graph...")
     try:
         if hasattr(agent, "_create_development_kg"):
             kg = agent._create_development_kg()
@@ -69,8 +72,8 @@ async def test_agent_self_development():
     except Exception as e:
         print(f"❌ Development KG error: {e}")
 
-    # Test MCP tool handlers
-    print("\n🔧 Testing MCP Tool Integration...")
+    # Exercise MCP tool handlers
+    print("\n🔧 Exercising MCP Tool Integration...")
     try:
         # Test development insights tool
         if hasattr(agent, "handle_development_insights"):
@@ -95,5 +98,5 @@ async def test_agent_self_development():
 
 
 if __name__ == "__main__":
-    result = asyncio.run(test_agent_self_development())
-    print(f"\n🎉 Agent Cortex integration test completed: {result}")
+    result = asyncio.run(run_agent_cortex_demo())
+    print(f"\n🎉 Agent Cortex interactive demo completed: {result}")
