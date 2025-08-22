@@ -1,7 +1,7 @@
 import json, os
 from typing import Dict, Any
 
-REGISTRY_PATH = "tools_registry/tools.json"
+REGISTRY_PATH = os.path.join(os.getenv("REUG_TOOL_REGISTRY_DIR", "tools_registry"), "tools.json")
 
 def load_registry() -> Dict[str, Any]:
     if not os.path.exists(REGISTRY_PATH):
