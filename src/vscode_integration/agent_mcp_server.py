@@ -236,6 +236,34 @@ class SuperAlitaMcpServer:
                         "required": ["command"],
                     },
                 ),
+                Tool(
+                    name="get_development_insights",
+                    description="Use Cortex LeanRAG to get development insights and recommendations for a specific query",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Development question or context to get insights about",
+                            },
+                        },
+                        "required": ["query"],
+                    },
+                ),
+                Tool(
+                    name="plan_development_task",
+                    description="Use Cortex planning capabilities to create a structured plan for a development task",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "task_description": {
+                                "type": "string",
+                                "description": "Description of the development task to plan",
+                            },
+                        },
+                        "required": ["task_description"],
+                    },
+                ),
             ]
 
         @server.call_tool()
@@ -281,6 +309,14 @@ class SuperAlitaMcpServer:
                     command = arguments.get("command", "")
                     kwargs = arguments.get("kwargs", {})
                     result = await self.agent.execute_agent_command(command, **kwargs)
+
+                elif name == "get_development_insights":
+                    query = arguments.get("query", "")
+                    result = await self.agent.get_development_insights(query)
+
+                elif name == "plan_development_task":
+                    task_description = arguments.get("task_description", "")
+                    result = await self.agent.plan_development_task(task_description)
 
                 else:
                     result = {"error": f"Unknown tool: {name}"}

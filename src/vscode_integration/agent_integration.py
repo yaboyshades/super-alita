@@ -30,16 +30,24 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
+    import networkx as nx
+
     from core.event_bus import EventBus
+
+    # Import Cortex components for enhanced development assistance
+    from cortex.adapters.leanrag_adapter import build_situation_brief
     from cortex.config.planner_config import PlannerConfig
+    from cortex.kg.leanrag import LeanRAG
     from cortex.planner.ladder_enhanced import EnhancedLadderPlanner
     from vscode_integration.simple_task_provider import SimpleTodoManager
 
     IMPORTS_AVAILABLE = True
+    CORTEX_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️ Import warning: {e}")
     print("Running in standalone mode")
     IMPORTS_AVAILABLE = False
+    CORTEX_AVAILABLE = False
 
     # Create a fallback class
     class SimpleTodoManager:
@@ -80,6 +88,8 @@ class SuperAlitaAgent:
         self.todo_manager = SimpleTodoManager(self.workspace_folder)
         self.event_bus = None
         self.ladder_planner = None
+        self.leanrag = None
+        self.development_kg = None
         self.initialized = False
 
     async def initialize(self) -> bool:
@@ -383,6 +393,227 @@ class SuperAlitaAgent:
 
         except Exception as e:
             return {"error": str(e)}
+
+    async def get_development_insights(self, query: str) -> dict[str, Any]:
+        """Use Cortex LeanRAG to provide development insights and recommendations."""
+        if not CORTEX_AVAILABLE:
+            return {
+                "insights": "Cortex not available - providing basic recommendations",
+                "strategy": "fallback",
+                "recommendations": self._basic_recommendations(),
+            }
+
+        try:
+            # Create a development knowledge graph if not exists
+            if self.development_kg is None:
+                self.development_kg = self._create_development_kg()
+
+            # Use LeanRAG to get contextual insights
+            brief_result = build_situation_brief(self.development_kg, query)
+
+            # Extract actionable insights
+            insights = self._extract_development_insights(brief_result, query)
+
+            return {
+                "insights": brief_result["brief"],
+                "strategy": brief_result["strategy"],
+                "subgraph_size": brief_result["subgraph_size"],
+                "actionable_recommendations": insights,
+                "query": query,
+            }
+
+        except Exception as e:
+            return {
+                "insights": f"Error generating insights: {e}",
+                "strategy": "error",
+                "recommendations": self._basic_recommendations(),
+            }
+
+    def _create_development_kg(self) -> nx.DiGraph:
+        """Create a knowledge graph of development concepts and practices."""
+        kg = nx.DiGraph()
+
+        # Add development concepts
+        development_concepts = {
+            "agent_development": {
+                "name": "Agent Development",
+                "description": "Building autonomous software agents with planning capabilities",
+            },
+            "mcp_integration": {
+                "name": "MCP Integration",
+                "description": "Model Context Protocol integration for VS Code",
+            },
+            "event_driven_architecture": {
+                "name": "Event-Driven Architecture",
+                "description": "Asynchronous event-based system design",
+            },
+            "ladder_planning": {
+                "name": "LADDER Planning",
+                "description": "Localize, Assess, Decompose, Decide, Execute, Review methodology",
+            },
+            "leanrag_retrieval": {
+                "name": "LeanRAG Retrieval",
+                "description": "Hierarchical knowledge graph retrieval with LCA",
+            },
+            "test_driven_development": {
+                "name": "Test-Driven Development",
+                "description": "Development methodology emphasizing testing first",
+            },
+            "continuous_integration": {
+                "name": "Continuous Integration",
+                "description": "Automated testing and integration practices",
+            },
+            "code_quality": {
+                "name": "Code Quality",
+                "description": "Maintaining high standards in code structure and documentation",
+            },
+        }
+
+        for node_id, data in development_concepts.items():
+            kg.add_node(node_id, **data)
+
+        # Add relationships
+        relationships = [
+            ("agent_development", "mcp_integration", 0.9),
+            ("agent_development", "event_driven_architecture", 0.8),
+            ("agent_development", "ladder_planning", 0.9),
+            ("ladder_planning", "leanrag_retrieval", 0.7),
+            ("agent_development", "test_driven_development", 0.8),
+            ("test_driven_development", "continuous_integration", 0.8),
+            ("continuous_integration", "code_quality", 0.7),
+            ("mcp_integration", "event_driven_architecture", 0.6),
+        ]
+
+        for src, dst, weight in relationships:
+            kg.add_edge(src, dst, weight=weight)
+
+        return kg
+
+    def _extract_development_insights(
+        self, brief_result: dict, query: str
+    ) -> list[str]:
+        """Extract actionable development insights from LeanRAG results."""
+        insights = []
+        query_lower = query.lower()
+
+        if "test" in query_lower:
+            insights.extend(
+                [
+                    "🧪 Run existing tests to verify current functionality",
+                    "📝 Add comprehensive test coverage for new features",
+                    "🔄 Set up continuous testing in development workflow",
+                ]
+            )
+
+        if "integration" in query_lower:
+            insights.extend(
+                [
+                    "🔗 Verify all component interfaces are properly defined",
+                    "📡 Test event bus communication between modules",
+                    "🧩 Validate plugin architecture and dependency injection",
+                ]
+            )
+
+        if "mcp" in query_lower:
+            insights.extend(
+                [
+                    "🔌 Ensure MCP server tools are properly registered",
+                    "📋 Test VS Code integration with todo management",
+                    "🛠️ Validate tool execution and error handling",
+                ]
+            )
+
+        if "performance" in query_lower or "optimization" in query_lower:
+            insights.extend(
+                [
+                    "⚡ Profile critical code paths for bottlenecks",
+                    "💾 Optimize memory usage in long-running processes",
+                    "🚀 Implement caching for frequently accessed data",
+                ]
+            )
+
+        # Default insights if none match
+        if not insights:
+            insights = [
+                "🔍 Analyze current codebase structure and dependencies",
+                "📊 Review test coverage and identify gaps",
+                "🧠 Consider how Cortex can enhance development workflow",
+            ]
+
+        return insights
+
+    def _basic_recommendations(self) -> list[str]:
+        """Provide basic development recommendations when Cortex is unavailable."""
+        return [
+            "📋 Review and prioritize current todo items",
+            "🧪 Ensure all tests are passing",
+            "📝 Update documentation for recent changes",
+            "🔍 Code review for potential improvements",
+        ]
+
+    async def plan_development_task(self, task_description: str) -> dict[str, Any]:
+        """Use Cortex planning capabilities to break down development tasks."""
+        if not CORTEX_AVAILABLE:
+            return {
+                "plan": f"Basic task breakdown for: {task_description}",
+                "steps": [
+                    "Analyze requirements",
+                    "Implement solution",
+                    "Test thoroughly",
+                ],
+                "strategy": "fallback",
+            }
+
+        try:
+            # Get development insights for the task
+            insights = await self.get_development_insights(task_description)
+
+            # Create a structured plan
+            plan_steps = []
+
+            if "test" in task_description.lower():
+                plan_steps.extend(
+                    [
+                        "🔍 Analyze existing test coverage",
+                        "📝 Define test scenarios and edge cases",
+                        "🧪 Implement test cases",
+                        "✅ Verify all tests pass",
+                    ]
+                )
+            elif "integration" in task_description.lower():
+                plan_steps.extend(
+                    [
+                        "📋 Map component interfaces and dependencies",
+                        "🔌 Design integration contracts",
+                        "🧩 Implement integration layer",
+                        "🧪 Test end-to-end integration",
+                    ]
+                )
+            else:
+                plan_steps.extend(
+                    [
+                        "🎯 Define clear requirements and acceptance criteria",
+                        "🏗️ Design solution architecture",
+                        "💻 Implement core functionality",
+                        "🧪 Add comprehensive tests",
+                        "📝 Update documentation",
+                    ]
+                )
+
+            return {
+                "plan": f"Cortex-powered plan for: {task_description}",
+                "steps": plan_steps,
+                "insights": insights["insights"],
+                "recommendations": insights["actionable_recommendations"],
+                "strategy": "cortex_enhanced",
+            }
+
+        except Exception as e:
+            return {
+                "plan": f"Error creating plan: {e}",
+                "steps": ["Review error and retry with simpler approach"],
+                "strategy": "error_fallback",
+            }
 
     async def shutdown(self):
         """Cleanup agent resources."""
