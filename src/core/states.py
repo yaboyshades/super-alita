@@ -24,24 +24,32 @@ from datetime import UTC, datetime
 from enum import Enum, auto
 from typing import Any
 
-# Import session for concurrency controls
 from src.core.session import Session
+
+# Import state types and session for concurrency controls
+from src.core.state_types import StateType
 from src.core.tool_types import ToolSpec
 
 logger = logging.getLogger(__name__)
 
+# Circuit breaker and mailbox constants
+MAILBOX_MAX_SIZE = 100
+MAILBOX_WARNING_SIZE = 80
+TRANSITION_RATE_LIMIT = 50
+CIRCUIT_BREAKER_TIMEOUT = 30.0  # seconds
 
-class StateType(Enum):
-    """REUG v9.0 State Types"""
 
-    READY = auto()  # Initial state, waiting for input
-    ENGAGE = auto()  # Processing user request, intent detection
-    UNDERSTAND = auto()  # Context building, memory loading, tool routing
-    GENERATE = auto()  # Tool execution, response generation
-    CREATE_DYNAMIC_TOOL = auto()  # Dynamic tool creation from natural language
-    ERROR_RECOVERY = auto()  # Graceful error handling and recovery
-    COMPLETE = auto()  # Turn completion, ready for next cycle
-    SHUTDOWN = auto()  # System shutdown state
+@dataclass
+class CircuitBreakerState:
+    """Circuit breaker state for the state machine."""
+
+    is_open: bool = False
+    transition_count: int = 0
+    last_transition_time: float = 0.0
+    open_time: float = 0.0
+    failure_count: int = 0
+    last_failure_time: float = 0.0
+    transition_window_start: float = 0.0
 
 
 class TransitionTrigger(Enum):
@@ -155,6 +163,12 @@ class StateMachine:
         self.circuit_breaker = CircuitBreakerState()
 
         self.successful_turns_count = 0
+
+        # Mailbox for queued input
+        self.mailbox: list[str] = []
+
+        # Placeholder metrics registry
+        self.metrics_registry = None
 
     def _setup_transitions(self):
         """Configure all valid state transitions"""
@@ -355,10 +369,11 @@ class StateMachine:
         self.circuit_breaker.last_failure_time = time.time()
 
         # Emit metrics
-        self.metrics_registry.increment_counter(
-            "sa_fsm_circuit_breaker_trips_total", {"reason": reason}
-        )
-        self.metrics_registry.set_gauge("sa_fsm_circuit_breaker_open", 1.0)
+        if self.metrics_registry:
+            self.metrics_registry.increment_counter(
+                "sa_fsm_circuit_breaker_trips_total", {"reason": reason}
+            )
+            self.metrics_registry.set_gauge("sa_fsm_circuit_breaker_open", 1.0)
 
         logger.error(
             f"Circuit breaker tripped: {reason} (failure count: {self.circuit_breaker.failure_count})"
@@ -370,7 +385,8 @@ class StateMachine:
         self.circuit_breaker.failure_count = 0
 
         # Emit metrics
-        self.metrics_registry.set_gauge("sa_fsm_circuit_breaker_open", 0.0)
+        if self.metrics_registry:
+            self.metrics_registry.set_gauge("sa_fsm_circuit_breaker_open", 0.0)
 
         logger.info("Circuit breaker reset")
 
@@ -381,7 +397,8 @@ class StateMachine:
 
         # Update mailbox pressure metric
         mailbox_pressure = len(self.mailbox) / MAILBOX_MAX_SIZE
-        self.metrics_registry.set_gauge("sa_fsm_mailbox_pressure", mailbox_pressure)
+        if self.metrics_registry:
+            self.metrics_registry.set_gauge("sa_fsm_mailbox_pressure", mailbox_pressure)
 
         # Warning if approaching limits
         if len(self.mailbox) > MAILBOX_WARNING_SIZE:

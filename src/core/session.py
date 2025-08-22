@@ -10,7 +10,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from src.core.states import StateType
+from src.core.state_types import StateType
 
 
 class Session:
