@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "myCustomPythonAgent": {
+      "type": "stdio",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": [
+        "${workspaceFolder}\\src\\mcp_server\\server.py"
+      ],
+      "env": {
+        "GEMINI_API_KEY": "${env:GEMINI_API_KEY}",
+        "MCP_AGENT_API_KEY": "${env:GEMINI_API_KEY}"
+      },
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}

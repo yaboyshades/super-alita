@@ -1,0 +1,314 @@
+{
+  "$schema": "https://docs.github.com/copilot/toolsets/schema.json",
+  "name": "Super Alita Development Toolset v2",
+  "description": "Comprehensive toolset for Super Alita neural-symbolic agent development with full editing capabilities",
+  "version": "2.0.0",
+  "tools": [
+    // File Operations
+    {
+      "name": "create_file",
+      "description": "Create new files with content",
+      "enabled": true,
+      "permissions": [
+        "read",
+        "write"
+      ]
+    },
+    {
+      "name": "edit_file",
+      "description": "Edit existing files",
+      "enabled": true,
+      "permissions": [
+        "read",
+        "write"
+      ]
+    },
+    {
+      "name": "read_file",
+      "description": "Read file contents",
+      "enabled": true,
+      "permissions": [
+        "read"
+      ]
+    },
+    {
+      "name": "delete_file",
+      "description": "Delete files when necessary",
+      "enabled": true,
+      "permissions": [
+        "write"
+      ]
+    },
+    {
+      "name": "rename_file",
+      "description": "Rename or move files",
+      "enabled": true,
+      "permissions": [
+        "write"
+      ]
+    },
+    // Directory Operations
+    {
+      "name": "list_directory",
+      "description": "List directory contents",
+      "enabled": true,
+      "permissions": [
+        "read"
+      ]
+    },
+    {
+      "name": "create_directory",
+      "description": "Create new directories",
+      "enabled": true,
+      "permissions": [
+        "write"
+      ]
+    },
+    // Terminal Operations
+    {
+      "name": "run_terminal_command",
+      "description": "Execute terminal commands",
+      "enabled": true,
+      "permissions": [
+        "execute"
+      ]
+    },
+    {
+      "name": "run_task",
+      "description": "Run VS Code tasks",
+      "enabled": true,
+      "permissions": [
+        "execute"
+      ]
+    },
+    // Testing Operations
+    {
+      "name": "run_tests",
+      "description": "Execute test suites",
+      "enabled": true,
+      "permissions": [
+        "execute"
+      ]
+    },
+    // Code Analysis
+    {
+      "name": "analyze_code",
+      "description": "Analyze code quality and patterns",
+      "enabled": true,
+      "permissions": [
+        "read"
+      ]
+    },
+    {
+      "name": "get_errors",
+      "description": "Get current linting/compilation errors",
+      "enabled": true,
+      "permissions": [
+        "read"
+      ]
+    },
+    // Git Operations
+    {
+      "name": "git_status",
+      "description": "Check git repository status",
+      "enabled": true,
+      "permissions": [
+        "read"
+      ]
+    },
+    {
+      "name": "git_diff",
+      "description": "Show git differences",
+      "enabled": true,
+      "permissions": [
+        "read"
+      ]
+    },
+    // Super Alita Specific Tools
+    {
+      "name": "neural_atom_validator",
+      "description": "Validate Neural Atom implementations",
+      "enabled": true,
+      "permissions": [
+        "read",
+        "execute"
+      ]
+    },
+    {
+      "name": "event_system_checker",
+      "description": "Check event system integrity",
+      "enabled": true,
+      "permissions": [
+        "read",
+        "execute"
+      ]
+    },
+    {
+      "name": "plugin_lifecycle_validator",
+      "description": "Validate plugin lifecycle implementation",
+      "enabled": true,
+      "permissions": [
+        "read",
+        "execute"
+      ]
+    }
+  ],
+  "contexts": [
+    {
+      "name": "super_alita_agent",
+      "description": "Context for Super Alita agent development",
+      "files": [
+        "src/**/*.py",
+        "tests/**/*.py",
+        "*.md",
+        "*.json",
+        "*.yaml",
+        "*.toml"
+      ],
+      "tools": [
+        "create_file",
+        "edit_file",
+        "read_file",
+        "run_tests",
+        "neural_atom_validator"
+      ]
+    },
+    {
+      "name": "redis_eventbus",
+      "description": "Context for Redis event bus operations",
+      "files": [
+        "src/core/event*.py",
+        "src/core/events.py"
+      ],
+      "tools": [
+        "event_system_checker",
+        "run_terminal_command"
+      ]
+    },
+    {
+      "name": "plugin_development",
+      "description": "Context for plugin development",
+      "files": [
+        "src/plugins/**/*.py",
+        "src/core/plugin*.py"
+      ],
+      "tools": [
+        "plugin_lifecycle_validator",
+        "run_tests"
+      ]
+    }
+  ],
+  "permissions": {
+    "fileSystem": {
+      "read": [
+        "**/*"
+      ],
+      "write": [
+        "src/**/*",
+        "tests/**/*",
+        "docs/**/*",
+        "*.md",
+        "*.json",
+        "*.yaml",
+        "*.toml",
+        ".vscode/**/*",
+        ".github/**/*"
+      ],
+      "execute": [
+        "scripts/**/*",
+        "*.py",
+        "*.ps1",
+        "*.sh"
+      ]
+    },
+    "terminal": {
+      "allowed": true,
+      "restrictedCommands": [
+        "rm -rf",
+        "del /f /s /q",
+        "format",
+        "fdisk"
+      ]
+    },
+    "network": {
+      "allowed": false
+    }
+  },
+  "toolsets": {
+    "super-alita-environment-tools": {
+      "name": "Super Alita Environment Management",
+      "description": "Windows/PowerShell environment-specific tools for Super Alita development.",
+      "icon": "terminal",
+      "scope": "environment",
+      "tags": [
+        "windows",
+        "powershell",
+        "environment",
+        "redis"
+      ],
+      "validate": true,
+      "tools": [
+        {
+          "id": "github.copilot.chat.terminal.powershell",
+          "name": "Execute PowerShell Command",
+          "description": "Execute PowerShell commands with proper Windows syntax and path handling."
+        },
+        {
+          "id": "github.copilot.chat.terminal.redis",
+          "name": "Redis Health Check",
+          "description": "Test Redis connectivity with 'redis-cli ping' for event bus validation."
+        },
+        {
+          "id": "github.copilot.chat.environment.python",
+          "name": "Python Environment Validation",
+          "description": "Validate Python virtual environment and package dependencies."
+        },
+        {
+          "id": "github.copilot.chat.environment.paths",
+          "name": "Windows Path Management",
+          "description": "Handle Windows-specific path operations and environment variables."
+        }
+      ]
+    },
+    "super-alita-task-tools": {
+      "name": "Super Alita Task Management",
+      "description": "Living task list management for dynamic project tracking and coordination.",
+      "icon": "checklist",
+      "scope": "task-management",
+      "tags": [
+        "tasks",
+        "planning",
+        "tracking",
+        "coordination"
+      ],
+      "validate": true,
+      "tools": [
+        {
+          "id": "github.copilot.chat.task.list",
+          "name": "List Current Tasks",
+          "description": "Display the current task list with status and progress information."
+        },
+        {
+          "id": "github.copilot.chat.task.create",
+          "name": "Create New Task",
+          "description": "Create a new task with title, description, and optional metadata."
+        },
+        {
+          "id": "github.copilot.chat.task.update",
+          "name": "Update Task Status",
+          "description": "Update task status, progress, or add notes and completion details."
+        },
+        {
+          "id": "github.copilot.chat.task.complete",
+          "name": "Complete Task",
+          "description": "Mark a task as completed with summary and outcomes."
+        },
+        {
+          "id": "github.copilot.chat.task.prioritize",
+          "name": "Prioritize Tasks",
+          "description": "Reorder tasks by priority and dependencies for optimal workflow."
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,150 @@
+{
+    "alita_function": {
+        "prefix": "alfunc",
+        "description": "Function with Google docstring & types",
+        "body": [
+            "def ${1:name}(${2:arg}: ${3:Type}) -> ${4:ReturnType}:",
+            "    \"\"\"${5:Describe ${1:name}.}",
+            "",
+            "    Args:",
+            "        ${2:arg} (${3:Type}): ${6:Description}.",
+            "",
+            "    Returns:",
+            "        ${4:ReturnType}: ${7:Description}.",
+            "",
+            "    Raises:",
+            "        ${8:ExceptionType}: ${9:When this happens}.",
+            "    \"\"\"",
+            "    ${0:raise NotImplementedError()}"
+        ]
+    },
+    "alita_async_function": {
+        "prefix": "alafunc",
+        "description": "Async function with Google docstring & types",
+        "body": [
+            "async def ${1:name}(${2:arg}: ${3:Type}) -> ${4:ReturnType}:",
+            "    \"\"\"${5:Describe ${1:name}.}",
+            "",
+            "    Args:",
+            "        ${2:arg} (${3:Type}): ${6:Description}.",
+            "",
+            "    Returns:",
+            "        ${4:ReturnType}: ${7:Description}.",
+            "",
+            "    Raises:",
+            "        ${8:ExceptionType}: ${9:When this happens}.",
+            "    \"\"\"",
+            "    ${0:raise NotImplementedError()}"
+        ]
+    },
+    "alita_class": {
+        "prefix": "alclass",
+        "description": "Class with Google docstring",
+        "body": [
+            "class ${1:ClassName}:",
+            "    \"\"\"${2:Describe ${1:ClassName}.}",
+            "",
+            "    ${3:Detailed description of the class purpose and usage.}",
+            "",
+            "    Attributes:",
+            "        ${4:attr_name} (${5:Type}): ${6:Description}.",
+            "    \"\"\"",
+            "",
+            "    def __init__(self${7:, arg: Type}):",
+            "        \"\"\"Initialize ${1:ClassName}.",
+            "",
+            "        Args:",
+            "            ${8:arg} (${9:Type}): ${10:Description}.",
+            "        \"\"\"",
+            "        ${0:pass}"
+        ]
+    },
+    "alita_capability": {
+        "prefix": "alcap",
+        "description": "Super Alita capability function",
+        "body": [
+            "def capability() -> Capability:",
+            "    \"\"\"Describe the ${1:capability_name} capability for the relation graph.",
+            "",
+            "    Returns:",
+            "        Capability: The declared capability, including port types and QoS.",
+            "    \"\"\"",
+            "    return Capability(",
+            "        id=\"${2:category}.${3:name}\",",
+            "        inputs=[Port(\"${4:input_type}\", \"${5:input_desc}\")],",
+            "        outputs=[Port(\"${6:output_type}\", \"${7:output_desc}\")],",
+            "        qos=QoS(latency_ms_est=${8:100}, safety_tags=[]),",
+            "        metadata={\"method\": \"${9:method_name}\"}",
+            "    )"
+        ]
+    },
+    "alita_adapter": {
+        "prefix": "aladapter",
+        "description": "Super Alita adapter function",
+        "body": [
+            "async def adapter_run(data: Dict[str, Any], edge: Dict[str, Any]) -> Dict[str, Any]:",
+            "    \"\"\"${1:Description of what this adapter does}.",
+            "",
+            "    Args:",
+            "        data: Mutable message dict with input data.",
+            "        edge: Graph edge configuration parameters.",
+            "",
+            "    Returns:",
+            "        The mutated data dict with results.",
+            "",
+            "    Raises:",
+            "        ValueError: If edge parameters are invalid.",
+            "    \"\"\"",
+            "    ${2:input_data} = data.get(\"${3:input_key}\") or []",
+            "    ${4:config_param} = edge.get(\"${5:param_name}\", ${6:default_value})",
+            "    ",
+            "    # ${7:Process the data}",
+            "    ${8:results} = []",
+            "    ",
+            "    data[\"${9:output_key}\"] = ${8:results}",
+            "    return data"
+        ]
+    },
+    "alita_test": {
+        "prefix": "altest",
+        "description": "Super Alita test function with public imports",
+        "body": [
+            "def test_${1:function_name}():",
+            "    \"\"\"Test ${2:description of what is being tested}.\"\"\"",
+            "    from super_alita.public import ${3:ImportedClass}",
+            "    ",
+            "    # Arrange",
+            "    ${4:setup_code}",
+            "    ",
+            "    # Act",
+            "    result = ${5:call_under_test}",
+            "    ",
+            "    # Assert",
+            "    assert ${6:assertion}",
+            "    ${0:pass}"
+        ]
+    },
+    "alita_import": {
+        "prefix": "alimp",
+        "description": "Super Alita public import statement",
+        "body": [
+            "from super_alita.public import ${1:component_name}"
+        ]
+    },
+    "alita_guidance_header": {
+        "prefix": "alguide",
+        "description": "Super Alita guidance header for files",
+        "body": [
+            "\"\"\"${1:Module description}.\"\"\"",
+            "# Guidance for assistants:",
+            "# - Always include a Google-style docstring for every function and class.",
+            "# - Always include type hints on parameters & returns.",
+            "# - Prefer raising explicit exceptions; document them in `Raises:`.",
+            "# - Keep imports stable from `super_alita.public` (not deep internals).",
+            "",
+            "from __future__ import annotations",
+            "",
+            "${0:# Your imports here}"
+        ]
+    }
+}

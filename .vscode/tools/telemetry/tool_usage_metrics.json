@@ -1,0 +1,201 @@
+{
+  "metrics": [
+    {
+      "tool_name": "fibonacci_calculator",
+      "execution_time": 0.1015777587890625,
+      "success": true,
+      "timestamp": 1754570965.90189,
+      "session_id": "mcp_demo_session",
+      "conversation_id": "mcp_demo_conversation",
+      "user_context": "",
+      "error_details": null,
+      "memory_usage": null,
+      "cpu_usage": null
+    },
+    {
+      "tool_name": "fibonacci_calculator",
+      "execution_time": 0.10264754295349121,
+      "success": true,
+      "timestamp": 1754571387.921524,
+      "session_id": "test_session",
+      "conversation_id": "test_conversation",
+      "user_context": "",
+      "error_details": null,
+      "memory_usage": null,
+      "cpu_usage": null
+    },
+    {
+      "tool_name": "text_reverser",
+      "execution_time": 0.051906585693359375,
+      "success": true,
+      "timestamp": 1754571387.9746203,
+      "session_id": "test_session",
+      "conversation_id": "test_conversation",
+      "user_context": "",
+      "error_details": null,
+      "memory_usage": null,
+      "cpu_usage": null
+    },
+    {
+      "tool_name": "code_generator",
+      "execution_time": 0.30113911628723145,
+      "success": false,
+      "timestamp": 1754571388.276848,
+      "session_id": "test_session",
+      "conversation_id": "test_conversation",
+      "user_context": "",
+      "error_details": "",
+      "memory_usage": null,
+      "cpu_usage": null
+    },
+    {
+      "tool_name": "fibonacci_calculator",
+      "execution_time": 0.1227867603302002,
+      "success": true,
+      "timestamp": 1754571388.4005637,
+      "session_id": "test_session",
+      "conversation_id": "test_conversation",
+      "user_context": "",
+      "error_details": null,
+      "memory_usage": null,
+      "cpu_usage": null
+    },
+    {
+      "tool_name": "workflow_test_tool",
+      "execution_time": 0.2015981674194336,
+      "success": true,
+      "timestamp": 1754571396.6113238,
+      "session_id": "workflow_session",
+      "conversation_id": "workflow_conversation",
+      "user_context": "",
+      "error_details": null,
+      "memory_usage": null,
+      "cpu_usage": null
+    },
+    {
+      "tool_name": "code_generator",
+      "execution_time": 0.011219024658203125,
+      "success": true,
+      "timestamp": 1754572613.0704377,
+      "session_id": "optimization_session",
+      "conversation_id": "optimization_validation",
+      "user_context": "",
+      "error_details": null,
+      "memory_usage": null,
+      "cpu_usage": null
+    },
+    {
+      "tool_name": "code_generator",
+      "execution_time": 0.013490915298461914,
+      "success": true,
+      "timestamp": 1754572613.1070402,
+      "session_id": "optimization_session",
+      "conversation_id": "optimization_validation",
+      "user_context": "",
+      "error_details": null,
+      "memory_usage": null,
+      "cpu_usage": null
+    },
+    {
+      "tool_name": "code_generator",
+      "execution_time": 0.012427091598510742,
+      "success": true,
+      "timestamp": 1754572613.1325364,
+      "session_id": "optimization_session",
+      "conversation_id": "optimization_validation",
+      "user_context": "",
+      "error_details": null,
+      "memory_usage": null,
+      "cpu_usage": null
+    },
+    {
+      "tool_name": "code_generator",
+      "execution_time": 2.0071609020233154,
+      "success": false,
+      "timestamp": 1754572615.1402006,
+      "session_id": "optimization_session",
+      "conversation_id": "optimization_validation",
+      "user_context": "",
+      "error_details": "{'type': 'INPUT_VALIDATION_ERROR', 'message': 'Requirements cannot be empty', 'context': {'input_data': \"{'invalid': 'data'}\"}, 'version': '2.0.0'}",
+      "memory_usage": null,
+      "cpu_usage": null
+    },
+    {
+      "tool_name": "quadratic_equation_solver",
+      "execution_time": 0.0,
+      "success": true,
+      "timestamp": 1754574026.9162233,
+      "session_id": "cli_session",
+      "conversation_id": "default",
+      "user_context": "",
+      "error_details": null,
+      "memory_usage": null,
+      "cpu_usage": null
+    }
+  ],
+  "analytics": {
+    "fibonacci_calculator": {
+      "tool_name": "fibonacci_calculator",
+      "total_executions": 3,
+      "success_rate": 1.0,
+      "avg_execution_time": 0.10900402069091797,
+      "min_execution_time": 0.1015777587890625,
+      "max_execution_time": 0.1227867603302002,
+      "last_used": 1754571388.4005637,
+      "usage_frequency": 3.0,
+      "error_patterns": [],
+      "recommendation_score": 85.81991958618164
+    },
+    "text_reverser": {
+      "tool_name": "text_reverser",
+      "total_executions": 1,
+      "success_rate": 1.0,
+      "avg_execution_time": 0.051906585693359375,
+      "min_execution_time": 0.051906585693359375,
+      "max_execution_time": 0.051906585693359375,
+      "last_used": 1754571387.9746203,
+      "usage_frequency": 1.0,
+      "error_patterns": [],
+      "recommendation_score": 74.96186828613281
+    },
+    "code_generator": {
+      "tool_name": "code_generator",
+      "total_executions": 5,
+      "success_rate": 0.6,
+      "avg_execution_time": 0.4690874099731445,
+      "min_execution_time": 0.011219024658203125,
+      "max_execution_time": 2.0071609020233154,
+      "last_used": 1754572615.1402006,
+      "usage_frequency": 5.0,
+      "error_patterns": [
+        "{'type': 'INPUT_VALIDATION_ERROR', 'message': 'Requirements cannot be empty', 'context': {'input_data': \"{'invalid': 'data'}\"}, 'version': '2.0.0'}"
+      ],
+      "recommendation_score": 72.61825180053711
+    },
+    "workflow_test_tool": {
+      "tool_name": "workflow_test_tool",
+      "total_executions": 1,
+      "success_rate": 1.0,
+      "avg_execution_time": 0.2015981674194336,
+      "min_execution_time": 0.2015981674194336,
+      "max_execution_time": 0.2015981674194336,
+      "last_used": 1754571396.6113238,
+      "usage_frequency": 1.0,
+      "error_patterns": [],
+      "recommendation_score": 71.96803665161133
+    },
+    "quadratic_equation_solver": {
+      "tool_name": "quadratic_equation_solver",
+      "total_executions": 1,
+      "success_rate": 1.0,
+      "avg_execution_time": 0.0,
+      "min_execution_time": 0.0,
+      "max_execution_time": 0.0,
+      "last_used": 1754574026.9162233,
+      "usage_frequency": 1.0,
+      "error_patterns": [],
+      "recommendation_score": 76.0
+    }
+  },
+  "last_updated": 1754574029.2778192
+}

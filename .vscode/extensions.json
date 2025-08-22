@@ -1,0 +1,21 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
+    "eamodio.gitlens",
+    "usernamehw.errorlens",
+    "ryanluker.vscode-coverage-gutters",
+    "tamasfe.even-better-toml",
+    "humao.rest-client",
+    "GitHub.copilot",
+    "GitHub.copilot-chat",
+    "emeraldwalk.runonsave",
+    "ms-vscode.makefile-tools",
+    "mhutchie.git-graph",
+    "mkloubert.vs-rest-api",
+    "editorconfig.editorconfig",
+    "cschlosser.doxdocgen",
+    "ms-vscode-remote.vscode-remote-extensionpack"
+  ]
+}

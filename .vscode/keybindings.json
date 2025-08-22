@@ -1,0 +1,190 @@
+[
+  // MCP Operations
+  {
+    "key": "ctrl+alt+m",
+    "command": "workbench.action.tasks.runTask",
+    "args": "alita:mcp:start"
+  },
+  {
+    "key": "ctrl+alt+shift+m",
+    "command": "workbench.action.tasks.runTask",
+    "args": "alita:mcp:stop"
+  },
+  {
+    "key": "ctrl+alt+t",
+    "command": "workbench.action.tasks.runTask",
+    "args": "alita:mcp:test"
+  },
+  // Chemistry Plans
+  {
+    "key": "ctrl+alt+p",
+    "command": "workbench.action.tasks.runTask",
+    "args": "chemistry:new-plan"
+  },
+  {
+    "key": "ctrl+alt+shift+p",
+    "command": "workbench.action.tasks.runTask",
+    "args": "chemistry:open-prompt"
+  },
+  // Agent Development Quick Actions
+  {
+    "key": "ctrl+shift+alt+a",
+    "command": "workbench.action.tasks.runTask",
+    "args": "agents:dev"
+  },
+  {
+    "key": "ctrl+shift+alt+v",
+    "command": "workbench.action.tasks.runTask",
+    "args": "alita:validate"
+  },
+  {
+    "key": "ctrl+shift+alt+h",
+    "command": "workbench.action.tasks.runTask",
+    "args": "health:check"
+  },
+  {
+    "key": "ctrl+shift+alt+r",
+    "command": "workbench.action.tasks.runTask",
+    "args": "redis:start"
+  },
+  // Quality Pipeline
+  {
+    "key": "ctrl+shift+alt+q",
+    "command": "workbench.action.tasks.runTask",
+    "args": "quality:full"
+  },
+  {
+    "key": "ctrl+shift+alt+l",
+    "command": "workbench.action.tasks.runTask",
+    "args": "alita:lint"
+  },
+  {
+    "key": "ctrl+shift+alt+y",
+    "command": "workbench.action.tasks.runTask",
+    "args": "alita:type"
+  },
+  // Testing
+  {
+    "key": "ctrl+shift+alt+t",
+    "command": "workbench.action.tasks.runTask",
+    "args": "alita:test"
+  },
+  {
+    "key": "ctrl+alt+shift+t",
+    "command": "workbench.action.tasks.runTask",
+    "args": "coverage"
+  },
+  // Chat Mode Switching
+  {
+    "key": "ctrl+shift+alt+c",
+    "command": "github.copilot.chat.setMode",
+    "args": "co-architect"
+  },
+  // Focus Terminal
+  {
+    "key": "ctrl+shift+`",
+    "command": "workbench.action.terminal.focus"
+  },
+  // Quick File Navigation for Agent Development  
+  {
+    "key": "ctrl+shift+alt+1",
+    "command": "workbench.action.quickOpen",
+    "args": "src/core/"
+  },
+  {
+    "key": "ctrl+shift+alt+2",
+    "command": "workbench.action.quickOpen",
+    "args": "src/plugins/"
+  },
+  {
+    "key": "ctrl+shift+alt+3",
+    "command": "workbench.action.quickOpen",
+    "args": "tests/"
+  },
+  // Professional Python Tooling Shortcuts
+  {
+    "key": "ctrl+shift+alt+f",
+    "command": "workbench.action.tasks.runTask",
+    "args": "format:all"
+  },
+  {
+    "key": "ctrl+shift+alt+r",
+    "command": "workbench.action.tasks.runTask",
+    "args": "lint:ruff-fix"
+  },
+  {
+    "key": "ctrl+shift+alt+m",
+    "command": "workbench.action.tasks.runTask",
+    "args": "typecheck:mypy"
+  },
+  {
+    "key": "ctrl+shift+alt+s",
+    "command": "workbench.action.tasks.runTask",
+    "args": "security:bandit"
+  },
+  {
+    "key": "ctrl+shift+alt+p",
+    "command": "workbench.action.tasks.runTask",
+    "args": "precommit:run"
+  },
+  {
+    "key": "ctrl+shift+alt+x",
+    "command": "workbench.action.tasks.runTask",
+    "args": "toolchain:full"
+  },
+  {
+    "key": "ctrl+shift+alt+k",
+    "command": "workbench.action.tasks.runTask",
+    "args": "clean:cache"
+  },
+  // Copilot Chat with Agent Context
+  {
+    "key": "ctrl+shift+alt+i",
+    "command": "github.copilot.chat.open"
+  },
+  {
+    "key": "ctrl+shift+a",
+    "command": "github.copilot.chat.open",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+alt+c",
+    "command": "github.copilot.chat.switchMode",
+    "args": "co-architect"
+  },
+  {
+    "key": "f5",
+    "command": "workbench.action.tasks.runTask",
+    "args": "co-architect:validate"
+  },
+  {
+    "key": "ctrl+shift+t",
+    "command": "workbench.action.tasks.runTask",
+    "args": "co-architect:memory-test"
+  },
+  {
+    "key": "ctrl+alt+h",
+    "command": "workbench.action.tasks.runTask",
+    "args": "co-architect:quick-health"
+  },
+  {
+    "key": "ctrl+alt+e",
+    "command": "workbench.action.tasks.runTask",
+    "args": "co-architect:event-verify"
+  },
+  {
+    "key": "ctrl+alt+d",
+    "command": "workbench.action.tasks.runTask",
+    "args": "co-architect:dta-test"
+  },
+  {
+    "key": "ctrl+alt+f",
+    "command": "workbench.action.tasks.runTask",
+    "args": "co-architect:full-workflow"
+  },
+  {
+    "key": "ctrl+alt+i",
+    "command": "workbench.action.tasks.runTask",
+    "args": "co-architect:mcp-integration"
+  }
+]
