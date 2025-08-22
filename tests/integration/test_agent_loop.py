@@ -9,6 +9,7 @@ Tests the full cognitive loop:
 """
 
 import asyncio
+import importlib
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -19,6 +20,28 @@ import yaml
 from src.core.event_bus import EventBus
 from src.core.events import AgentResponseEvent, ConversationEvent, SystemEvent
 from src.main import SuperAlita
+
+
+pytestmark = pytest.mark.integration_redis
+
+if importlib.util.find_spec("redis") is None:
+    pytest.skip("redis not installed", allow_module_level=True)
+
+
+def _redis_running(host: str = "localhost", port: int = 6379) -> bool:
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        try:
+            sock.connect((host, port))
+            return True
+        except OSError:
+            return False
+
+
+if not _redis_running():
+    pytest.skip("Redis server not available", allow_module_level=True)
 
 
 class TestAgentCognitiveLoop:

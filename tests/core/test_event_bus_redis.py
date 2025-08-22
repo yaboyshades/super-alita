@@ -6,7 +6,9 @@ and Dead Letter Queue functionality.
 """
 
 import asyncio
+import importlib
 import logging
+import socket
 from datetime import datetime
 from typing import List
 
@@ -18,6 +20,25 @@ from src.core.serialization import JsonSerializer, ProtobufSerializer
 # Configure test logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+pytestmark = pytest.mark.integration_redis
+
+if importlib.util.find_spec("redis") is None:
+    pytest.skip("redis not installed", allow_module_level=True)
+
+
+def _redis_running(host: str = "localhost", port: int = 6379) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        try:
+            sock.connect((host, port))
+            return True
+        except OSError:
+            return False
+
+
+if not _redis_running():
+    pytest.skip("Redis server not available", allow_module_level=True)
 
 
 @pytest.fixture
