@@ -38,7 +38,7 @@ class EnhancedLadderPlanner:
         self.store = store
         self.orch = orchestrator
         self.mode = mode  # "shadow" or "active"
-        self.bandit_stats: dict[str, dict[str, float]] = {}
+        self.bandit_stats: dict[str, dict[str, Any]] = {}
         self.knowledge_base: dict[str, Any] = {}
         self.exploration_rate = 0.1  # ε for ε-greedy bandit
 
@@ -560,7 +560,11 @@ class EnhancedLadderPlanner:
         # Initialize bandit stats for new tools
         for tool in available_tools:
             if tool not in self.bandit_stats:
-                self.bandit_stats[tool] = {"wins": 0, "attempts": 0}
+                self.bandit_stats[tool] = {
+                    "wins": 0,
+                    "attempts": 0,
+                    "rewards": [],
+                }
 
         # ε-greedy selection
         if len(available_tools) > 1 and random.random() < self.exploration_rate:
@@ -729,7 +733,11 @@ class EnhancedLadderPlanner:
     def _update_bandit_stats(self, tool: str, result: dict[str, Any]) -> None:
         """Update bandit statistics based on execution result."""
         if tool not in self.bandit_stats:
-            self.bandit_stats[tool] = {"wins": 0, "attempts": 0}
+            self.bandit_stats[tool] = {
+                "wins": 0,
+                "attempts": 0,
+                "rewards": [],
+            }
 
         self.bandit_stats[tool]["attempts"] += 1
         if result.get("success", False):
@@ -739,6 +747,34 @@ class EnhancedLadderPlanner:
             f"📊 Updated bandit stats for {tool}: "
             f"{self.bandit_stats[tool]['wins']}/{self.bandit_stats[tool]['attempts']}"
         )
+
+    def _record_bandit_reward(self, tool: str, reward: float) -> None:
+        """Store reward history and update bandit with consolidation penalty."""
+        if tool not in self.bandit_stats:
+            self.bandit_stats[tool] = {
+                "wins": 0,
+                "attempts": 0,
+                "rewards": [],
+            }
+
+        rewards = self.bandit_stats[tool].setdefault("rewards", [])
+        rewards.append(reward)
+
+        penalty = self._calculate_consolidation_penalty(rewards)
+        adjusted = max(reward - penalty, 0.0)
+        self.bandit.update(tool, adjusted)
+
+        logger.debug(
+            f"📉 Bandit reward update for {tool}: reward={reward:.2f} penalty={penalty:.2f}"
+        )
+
+    def _calculate_consolidation_penalty(self, rewards: list[float]) -> float:
+        """Calculate penalty based on recent reward history to prevent dominance."""
+        if not rewards:
+            return 0.0
+        recent = rewards[-5:]
+        avg_recent = sum(recent) / len(recent)
+        return 0.1 * avg_recent
 
     # ===== R =====
     async def _enhanced_review(self, root: Todo, children: list[Todo]) -> None:
@@ -769,9 +805,9 @@ class EnhancedLadderPlanner:
             if current_child.status == TodoStatus.DONE:
                 successful_tasks += 1
 
-            # Update tool performance in bandit
+            # Update tool performance in bandit with consolidation penalty
             if child.tool_hint:
-                self.bandit.update(child.tool_hint, final_reward)
+                self._record_bandit_reward(child.tool_hint, final_reward)
                 self.kg.write_decision(child.tool_hint, child.id, final_reward)
 
             # Update knowledge base
@@ -903,7 +939,7 @@ class EnhancedLadderPlanner:
         self.mode = mode
         logger.info(f"🔄 Planner mode set to: {mode}")
 
-    def get_bandit_stats(self) -> dict[str, dict[str, float]]:
+    def get_bandit_stats(self) -> dict[str, dict[str, Any]]:
         """Get current bandit statistics."""
         return self.bandit_stats.copy()
 

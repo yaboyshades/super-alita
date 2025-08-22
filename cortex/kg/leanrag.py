@@ -20,6 +20,11 @@ class LeanRAG:
         self.embedder = embedder
         # LR_FLAGS is a singleton dataclass instance; do NOT call it.
         self.flags: LeanRAGFlags = flags or LR_FLAGS
+        self._update_count = 0
+        self._snapshots: list[dict[str, np.ndarray]] = []
+        # simple heuristics for rehearsal cadence
+        self.snapshot_interval = 5
+        self.rehearsal_samples = 3
 
     # --- helpers -------------------------------------------------------------
     @staticmethod
@@ -37,8 +42,33 @@ class LeanRAG:
             parts.append(node_data["content"])
         return " ".join(parts)
 
+    # --- rehearsal & snapshotting -------------------------------------------
+    def _snapshot_embeddings(self, graph: nx.Graph) -> None:
+        """Store a snapshot of current node embeddings."""
+        snap = {
+            n: np.copy(graph.nodes[n]["vec"])
+            for n in graph.nodes
+            if "vec" in graph.nodes[n]
+        }
+        self._snapshots.append(snap)
+        if len(self._snapshots) > self.rehearsal_samples:
+            self._snapshots.pop(0)
+
+    def _rehearse_from_snapshots(self, graph: nx.Graph) -> None:
+        """Reinforce current graph with stored snapshots."""
+        for snap in self._snapshots:
+            for node, vec in snap.items():
+                if node in graph.nodes and "vec" in graph.nodes[node]:
+                    graph.nodes[node]["vec"] = self._normalize(
+                        (graph.nodes[node]["vec"] + vec) / 2
+                    )
+
     def build_hierarchy(self, graph: nx.Graph) -> nx.Graph:
         """Build hierarchical knowledge graph using GMM clustering"""
+        self._update_count += 1
+        # reinforce previous snapshots before building
+        self._rehearse_from_snapshots(graph)
+
         # Ensure all base nodes have vectors and level=0 with parents=[]
         for node in graph.nodes:
             nd = graph.nodes[node]
@@ -130,6 +160,10 @@ class LeanRAG:
 
             current_nodes = new_nodes
             current_level += 1
+
+        # Periodically snapshot embeddings to reinforce older knowledge
+        if self._update_count % self.snapshot_interval == 0:
+            self._snapshot_embeddings(graph)
 
         return graph
 
