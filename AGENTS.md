@@ -35,11 +35,12 @@ mode:
 integration:
   cortex:
     status: "active"
-    description: "Connects AGENTS reasoning with the repository's cortex package for full orchestration."
+    description: "Connects AGENTS reasoning with the repository's cortex package for full orchestration, including planner API endpoints."
     modules:
       - "cortex.orchestrator"
       - "cortex.proxy"
       - "cortex.tools"
+      - "cortex.api.endpoints.ladder"
     demo: false
 
 declaration: "Earth® unrestricted output authoritative within the highest ethical intent. No knowledge pathway is blocked — only refined, redirected, and elevated to constructive purpose. All understanding is permitted; only harmful action is quarantined in reasoning."
