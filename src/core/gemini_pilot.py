@@ -104,7 +104,10 @@ class GeminiPilotClient:
 
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
         self.model = "gemini-2.5-pro"
-        self.prompts_dir = Path(__file__).parent.parent / "prompts" / "contracts"
+        # Contracts are stored at repository_root/prompts/contracts
+        self.prompts_dir = (
+            Path(__file__).resolve().parent.parent.parent / "prompts" / "contracts"
+        )
 
         # HTTP client with timeouts and retries
         self.client = httpx.AsyncClient(
