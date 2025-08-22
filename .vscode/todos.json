@@ -40,15 +40,33 @@
       "id": 7,
       "title": "Real-time File Watcher",
       "description": "Implement a file watcher that monitors Python files for changes and triggers automatic code analysis",
-      "status": "not-started"
+      "status": "completed"
     },
     {
       "id": 8,
       "title": "MCP Integration Test",
       "description": "Test task created via MCP integration",
       "status": "not-started"
+    },
+    {
+      "id": 9,
+      "title": "Real-time File Watcher",
+      "description": "Implement a file watcher that monitors Python files for changes and triggers automatic code analysis",
+      "status": "not-started"
+    },
+    {
+      "id": 10,
+      "title": "Demo Task",
+      "description": "Created during final demo",
+      "status": "not-started"
+    },
+    {
+      "id": 11,
+      "title": "Validation Test Task",
+      "description": "Task created during validation test",
+      "status": "completed"
     }
   ],
-  "lastModified": "2025-08-22T11:01:28.502107+00:00",
+  "lastModified": "2025-08-22T18:25:54.749867+00:00",
   "version": "1.0"
 }

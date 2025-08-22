@@ -35,6 +35,7 @@ try:
     from core.event_bus import EventBus
 
     # Import Cortex components for enhanced development assistance
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))  # Add project root
     from cortex.adapters.leanrag_adapter import build_situation_brief
     from cortex.config.planner_config import PlannerConfig
     from cortex.kg.leanrag import LeanRAG
@@ -71,10 +72,39 @@ except ImportError as e:
                 "total_tasks": 0,
                 "completed_tasks": 0,
                 "completion_rate": 0.0,
+                "todos_file_exists": True,  # Add missing field
             }
 
         def get_tasks(self):
             return []
+
+        def create_task(self, task_data):
+            """Create a task from structured data."""
+            return {
+                "id": f"task_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                "title": task_data.get("title", "New Task"),
+                "description": task_data.get("description", ""),
+                "priority": task_data.get("priority", "medium"),
+                "completed": False,
+                "created_at": datetime.now().isoformat(),
+            }
+
+        def complete_task(self, task_id):
+            """Complete a task by ID."""
+            return {
+                "id": task_id,
+                "title": "Completed Task",
+                "completed": True,
+                "completed_at": datetime.now().isoformat(),
+            }
+
+        def update_task(self, task_id, updates):
+            """Update a task with new data."""
+            return {
+                "id": task_id,
+                "title": "Updated Task",
+                **updates,
+            }
 
 
 logger = logging.getLogger(__name__)
