@@ -762,7 +762,7 @@ class EnhancedLadderPlanner:
 
         penalty = self._calculate_consolidation_penalty(rewards)
         adjusted = max(reward - penalty, 0.0)
-        self.bandit.update(tool, adjusted)
+        # No self.bandit attribute; reward is already tracked in self.bandit_stats
 
         logger.debug(
             f"📉 Bandit reward update for {tool}: reward={reward:.2f} penalty={penalty:.2f}"
