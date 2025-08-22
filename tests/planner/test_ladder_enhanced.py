@@ -475,6 +475,33 @@ class TestEnhancedLadderPlanner:
             assert "success_rate" in summary
             assert "average_reward" in summary
 
+    @pytest.mark.asyncio
+    async def test_active_inference_energy_minimization(
+        self, monkeypatch, mock_components
+    ):
+        """Ensure energy is adjusted when active inference is enabled."""
+        monkeypatch.setenv("CORTEX_LADDER_ACTIVE_INFERENCE", "1")
+        import importlib
+        import cortex.config.flags as flag_module
+        importlib.reload(flag_module)
+        import cortex.planner.ladder_enhanced as le
+        importlib.reload(le)
+
+        planner = le.EnhancedLadderPlanner(
+            kg=mock_components["kg"],
+            bandit=mock_components["bandit"],
+            store=mock_components["store"],
+            orchestrator=mock_components["orchestrator"],
+            mode="shadow",
+        )
+
+        user_event = type(
+            "UserEvent", (), {"payload": {"query": "Quick test", "context": ""}}
+        )()
+        initial_energy = planner._estimate_task_energy("Quick test", "")
+        root = await planner.plan_from_user_event(user_event)
+        assert root.energy <= initial_energy
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

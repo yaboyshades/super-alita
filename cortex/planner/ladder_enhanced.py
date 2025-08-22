@@ -8,10 +8,30 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from cortex.config.flags import FLAGS
 from cortex.planner.interfaces import KG, Bandit, Orchestrator, TodoStore
 from cortex.todo.models import Evidence, ExitCriteria, LadderStage, Todo, TodoStatus
 
 logger = logging.getLogger(__name__)
+
+
+class GenerativeStateModel:
+    """Simple generative model estimating latent task states."""
+
+    def infer(self, user_event: Any) -> dict[str, float]:
+        """Infer latent state from a user event."""
+        payload = getattr(user_event, "payload", {}) or {}
+        text = f"{payload.get('query', '')} {payload.get('context', '')}".strip()
+        words = text.split()
+        # Complexity approximated by word count
+        complexity = min(len(words) / 10.0, 5.0)
+        # Novelty signal based on random perturbation
+        novelty = random.random()
+        return {"complexity": complexity, "novelty": novelty}
+
+    def predict_energy(self, state: dict[str, float]) -> float:
+        """Predict expected energy from latent state."""
+        return state.get("complexity", 1.0)
 
 
 class EnhancedLadderPlanner:
@@ -41,16 +61,21 @@ class EnhancedLadderPlanner:
         self.bandit_stats: dict[str, dict[str, float]] = {}
         self.knowledge_base: dict[str, Any] = {}
         self.exploration_rate = 0.1  # ε for ε-greedy bandit
+        self.active_inference = FLAGS.ladder_active_inference
+        self.state_model = GenerativeStateModel() if self.active_inference else None
+        self.latent_state: dict[str, float] | None = None
 
     async def plan_from_user_event(self, user_event: Any) -> Todo:
         """Entry point: create a root TODO and run enhanced LADDER stages."""
+        if self.active_inference and self.state_model:
+            self.latent_state = self.state_model.infer(user_event)
         root = self._localize(user_event)
         await self._emit(
             "todo.created", root.id, {"title": root.title, "mode": self.mode}
         )
         self.store.upsert(root)
         await self._enhanced_ladder(root)
-        return root
+        return self.store.get(root.id) or root
 
     async def _enhanced_ladder(self, root: Todo) -> None:
         """Enhanced LADDER implementation with energy-based prioritization."""
@@ -60,23 +85,28 @@ class EnhancedLadderPlanner:
 
         # L -> A
         self._advance_stage(root, LadderStage.ASSESS)
+        root = self.store.get(root.id) or root
         root = self._enhanced_assess(root)
 
         # A -> D1
         self._advance_stage(root, LadderStage.DECOMPOSE)
+        root = self.store.get(root.id) or root
         children = await self._enhanced_decompose(root)
         root = self.store.get(root.id)  # Refresh after decomposition
 
         # D1 -> D2
         self._advance_stage(root, LadderStage.DECIDE)
+        root = self.store.get(root.id) or root
         children = self._enhanced_decide(children)
 
         # D2 -> E
         self._advance_stage(root, LadderStage.EXECUTE)
+        root = self.store.get(root.id) or root
         await self._enhanced_execute(root, children)
 
         # E -> R
         self._advance_stage(root, LadderStage.REVIEW)
+        root = self.store.get(root.id) or root
         await self._enhanced_review(root, children)
 
     # ===== L =====
@@ -126,6 +156,23 @@ class EnhancedLadderPlanner:
             energy *= 1.2
 
         return min(energy, 5.0)  # Cap at 5.0
+
+    def _compute_free_energy(self, task: Todo) -> float:
+        """Compute free-energy between predicted and observed energy."""
+        if not self.latent_state or not self.state_model:
+            return 0.0
+        predicted = self.state_model.predict_energy(self.latent_state)
+        return abs(predicted - task.energy)
+
+    def _apply_free_energy_minimization(self, task: Todo) -> tuple[float, float]:
+        """Minimize free-energy and return (free_energy, new_energy)."""
+        free_energy = self._compute_free_energy(task)
+        if free_energy == 0.0:
+            return 0.0, task.energy
+        predicted = self.state_model.predict_energy(self.latent_state or {})
+        # Gradient step towards predicted energy
+        new_energy = task.energy + (predicted - task.energy) * 0.5
+        return free_energy, max(0.1, new_energy)
 
     # ===== A =====
     def _enhanced_assess(self, t: Todo) -> Todo:
@@ -879,9 +926,25 @@ class EnhancedLadderPlanner:
     # ----- Helper methods -----
     def _advance_stage(self, t: Todo, stage: LadderStage) -> None:
         """Advance task to the next LADDER stage."""
-        updated_t = t.model_copy(update={"stage": stage, "updated_at": datetime.now()})
-        self.store.upsert(updated_t)
-        self._emit_sync("todo.stage_advanced", t.id, {"stage": stage.value})
+        if self.active_inference and self.state_model:
+            fe, new_energy = self._apply_free_energy_minimization(t)
+            updated_t = t.model_copy(
+                update={
+                    "stage": stage,
+                    "updated_at": datetime.now(),
+                    "energy": new_energy,
+                }
+            )
+            self.store.upsert(updated_t)
+            self._emit_sync(
+                "todo.stage_advanced",
+                t.id,
+                {"stage": stage.value, "free_energy": fe, "energy": new_energy},
+            )
+        else:
+            updated_t = t.model_copy(update={"stage": stage, "updated_at": datetime.now()})
+            self.store.upsert(updated_t)
+            self._emit_sync("todo.stage_advanced", t.id, {"stage": stage.value})
 
     async def _emit(
         self, kind: str, todo_id: str | None, payload: dict[str, Any]

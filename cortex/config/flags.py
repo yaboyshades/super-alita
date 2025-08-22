@@ -34,6 +34,9 @@ class PlannerFlags:
     use_ladder_router: bool = _env_bool("CORTEX_USE_LADDER_ROUTER", True)
     ladder_llm_decompose: bool = _env_bool("CORTEX_LADDER_LLM_DECOMPOSE", False)
     ladder_shadow_mode: bool = _env_bool("CORTEX_LADDER_SHADOW_MODE", True)
+    ladder_active_inference: bool = _env_bool(
+        "CORTEX_LADDER_ACTIVE_INFERENCE", False
+    )
 
 
 @dataclass(frozen=True)
