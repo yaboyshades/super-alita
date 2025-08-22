@@ -32,6 +32,17 @@ from src.core.tool_types import ToolSpec
 
 logger = logging.getLogger(__name__)
 
+# Compatibility aliases for legacy imports
+State = StateType
+
+__all__ = [
+    "StateMachine",
+    "State",
+    "TransitionTrigger",
+    "Context",
+    "ToolSpec",
+]
+
 # Circuit breaker and mailbox constants
 MAILBOX_MAX_SIZE = 100
 MAILBOX_WARNING_SIZE = 80
@@ -101,6 +112,8 @@ class StateContext:
     error_message: str | None = None
     response_content: dict[str, Any] = field(default_factory=dict)
 
+# Backwards-compatible alias
+Context = StateContext
 
 @dataclass
 class StateTransition:

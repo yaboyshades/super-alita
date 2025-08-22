@@ -5,6 +5,7 @@ pyyaml
 numpy>=1.24.0
 networkx>=3.0
 redis>=5.0.0
+python-dotenv>=1.0.0
 orjson>=3.10.7
 # optional but recommended: faster Redis protocol parsing
 hiredis>=2.3.2
@@ -13,7 +14,6 @@ hiredis>=2.3.2
 faiss-cpu>=1.7.4
 chromadb>=0.4.0
 sentence-transformers>=2.2.0
-google-generativeai>=0.3
 openai>=1.0
 openai-agents>=0.1
 

@@ -42,7 +42,8 @@ load_dotenv()
 # Validate that critical environment variables are loaded
 api_key = os.getenv("GEMINI_API_KEY")
 if api_key:
-    print(f"[OK] GEMINI_API_KEY loaded successfully (starts with: {api_key[:10]}...)")
+    # Avoid printing any portion of the API key for security
+    print("[OK] GEMINI_API_KEY loaded successfully.")
 else:
     print("[WARNING] GEMINI_API_KEY not found in environment!")
     print("   This will cause LLM plugins to fail. Check your .env file.")

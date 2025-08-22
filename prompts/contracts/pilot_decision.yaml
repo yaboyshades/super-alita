@@ -1,0 +1,11 @@
+# Cognitive contract guiding the pilot decision process
+system_instruction: |
+  Evaluate the agent state and propose the next action.
+current_goal: ${CURRENT_GOAL}
+agent_state: ${AGENT_STATE}
+last_error: ${LAST_ERROR}
+memory_context: |
+  ${MEMORY_CONTEXT}
+recent_events: |
+  ${RECENT_EVENTS}
+experimental: ${EXPERIMENTAL}

@@ -1,0 +1,12 @@
+# Cognitive contract guiding self-healing actions
+system_instruction: |
+  Assess failures and recommend recovery steps.
+failure_type: ${FAILURE_TYPE}
+error_details: ${ERROR_DETAILS}
+component: ${COMPONENT}
+system_state: ${SYSTEM_STATE}
+retry_count: ${RETRY_COUNT}
+failure_history: |
+  ${FAILURE_HISTORY}
+diagnostic_data: |
+  ${DIAGNOSTIC_DATA}
