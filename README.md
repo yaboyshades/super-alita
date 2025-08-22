@@ -19,3 +19,19 @@
 - Tools favor `dry_run` to show diffs first.
 - Ruff runs before Black for stable formatting.
 - For big repos, narrow targets (folders/files) for speed.
+
+## Gemini API Key
+Super Alita relies on Google's Gemini models for many LLM features. Set your
+API key in the environment (or a `.env` file) before running the agent:
+
+```bash
+export GEMINI_API_KEY="your-key-here"
+```
+
+If you prefer a `.env` file, create one in the project root containing:
+
+```
+GEMINI_API_KEY=your-key-here
+```
+
+**Never** commit your API key or `.env` file to version control.

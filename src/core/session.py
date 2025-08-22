@@ -136,3 +136,19 @@ class Session:
             "stale_completions_count": self.stale_completions_count,
             "ignored_triggers_count": self.ignored_triggers_count,
         }
+
+
+# Simple session registry for tests and lightweight usage
+_SESSIONS: dict[str, Session] = {}
+
+
+def get_session(session_id: str | None = None) -> Session:
+    """Return a session by id, creating it if necessary."""
+    if session_id is None:
+        return Session()
+    if session_id not in _SESSIONS:
+        _SESSIONS[session_id] = Session(session_id)
+    return _SESSIONS[session_id]
+
+
+__all__ = ["Session", "get_session"]
