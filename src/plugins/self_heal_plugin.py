@@ -6,6 +6,7 @@ Listens for failures, consults memory, escalates to Pilot, learns.
 import asyncio
 import logging
 import uuid
+from collections import defaultdict, deque
 from enum import Enum
 from typing import Any
 
@@ -44,6 +45,7 @@ class Action(str, Enum):
     ROLLBACK = "rollback"
     PATCH = "patch"
     ESCALATE = "escalate"
+    RESTART = "restart"
     IGNORE = "ignore"
 
 
@@ -68,6 +70,9 @@ class SelfHealPlugin(PluginInterface):
         self._memory: Any | None = None
         self._health = None
         self._pilot = None  # Will be initialized in setup
+        self._event_trace: deque[str] = deque(maxlen=50)
+        self._causal_graph: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        self._outcome_history: dict[str, dict[Action, int]] = defaultdict(lambda: defaultdict(int))
 
     @property
     def name(self) -> str:
@@ -98,27 +103,77 @@ class SelfHealPlugin(PluginInterface):
         await super().start()
         await self.subscribe("system_alert", self._on_failure)
         await self.subscribe("tool_execution", self._on_failure)
+        await self.subscribe("*", self._capture_event)
         logger.info("SelfHealPlugin monitoring.")
+
+    async def _capture_event(self, event: BaseEvent):
+        """Record incoming events for causal tracing."""
+        self._event_trace.append(event.event_type)
 
     async def _on_failure(self, event: BaseEvent):
         """Unified failure entry point."""
         failure = _FailureSnapshot.from_event(event)
+        trace = list(self._event_trace)
+        for ev in trace:
+            self._causal_graph[ev][failure.summary] += 1
+        root_cause = self._infer_root_cause(failure.summary)
         logger.warning(f"Healing triggered: {failure.summary}")
 
         if self._health:
             self._health.value = "recovering"
 
-        directive = await self._diagnose_with_pilot(failure)
+        directive = await self._diagnose_with_pilot(failure, root_cause)
         outcome = await self._execute(directive, failure.context)
 
-        await self._record_experience(failure, directive, outcome)
+        await self._record_experience(failure, directive, outcome, root_cause, trace)
 
         if self._health:
             self._health.value = "healthy" if outcome.success else "degraded"
 
     # ------------------------------------------------------------------ internals
-    async def _diagnose_with_pilot(self, failure: "_FailureSnapshot") -> Directive:
-        """Consult Pilot (LLM) for strategic diagnosis."""
+    def _infer_root_cause(self, failure_summary: str) -> str | None:
+        candidates = [
+            (cause, edges[failure_summary])
+            for cause, edges in self._causal_graph.items()
+            if failure_summary in edges
+        ]
+        if not candidates:
+            return None
+        return max(candidates, key=lambda x: x[1])[0]
+
+    def _select_action_from_history(self, failure_summary: str) -> Action | None:
+        stats = self._outcome_history.get(failure_summary)
+        if not stats:
+            return None
+        action, score = max(stats.items(), key=lambda kv: kv[1])
+        if score > 0:
+            return action
+        return None
+
+    async def _diagnose_with_pilot(
+        self, failure: "_FailureSnapshot", root_cause: str | None
+    ) -> Directive:
+        """Diagnose using causal history with LLM fallback."""
+        if action := self._select_action_from_history(failure.summary):
+            return Directive(action=action, reasoning="Historical success")
+        if root_cause:
+            count = self._causal_graph[root_cause][failure.summary]
+            if count <= 1:
+                return Directive(
+                    action=Action.RETRY,
+                    reasoning=f"Initial failure from {root_cause}",
+                )
+            if count == 2:
+                return Directive(
+                    action=Action.PATCH,
+                    reasoning=f"Repeated failure from {root_cause}",
+                )
+            if count > 2:
+                return Directive(
+                    action=Action.ESCALATE,
+                    reasoning=f"Persistent failure from {root_cause}",
+                )
+
         memories = []
         if self._memory:
             try:
@@ -142,7 +197,6 @@ class SelfHealPlugin(PluginInterface):
                 timeout=45,
             )
 
-            # Map Gemini response to internal Directive format
             action_mapping = {
                 "retry": Action.RETRY,
                 "restart": Action.RESTART,
@@ -209,9 +263,17 @@ class SelfHealPlugin(PluginInterface):
         return Outcome(success=success, action=d.action)
 
     async def _record_experience(
-        self, failure: "_FailureSnapshot", d: Directive, o: Outcome
+        self,
+        failure: "_FailureSnapshot",
+        d: Directive,
+        o: Outcome,
+        root_cause: str | None,
+        trace: list[str],
     ):
-        """Record healing experience in memory."""
+        """Record healing experience in memory and update statistics."""
+        if o.success:
+            stats = self._outcome_history[failure.summary]
+            stats[d.action] += 1
         if self._memory:
             try:
                 await self._memory.upsert(
@@ -222,6 +284,8 @@ class SelfHealPlugin(PluginInterface):
                         "action": d.action.value,
                         "success": o.success,
                         "reasoning": d.reasoning,
+                        "root_cause": root_cause,
+                        "trace": trace,
                     },
                     hierarchy_path=["system", "healing_log"],
                     owner_plugin=self.name,
