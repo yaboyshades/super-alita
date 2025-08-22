@@ -1,5 +1,6 @@
 # Test requirements
-pytest>=7.0.0
+# Keep pytest aligned with the minversion specified in pyproject.toml
+pytest>=8.0.0
 pytest-asyncio>=0.21.0
 
 # Optional protobuf support
