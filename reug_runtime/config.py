@@ -1,9 +1,11 @@
 import os
 from dataclasses import dataclass
 
+
 def _getenv(name: str, default: str | None = None) -> str | None:
     v = os.getenv(name, default)
     return v
+
 
 def _getenv_float(name: str, default: float) -> float:
     try:
@@ -11,17 +13,20 @@ def _getenv_float(name: str, default: float) -> float:
     except Exception:
         return default
 
+
 def _getenv_int(name: str, default: int) -> int:
     try:
         return int(os.getenv(name, str(default)))
     except Exception:
         return default
 
+
 def _getenv_bool(name: str, default: bool) -> bool:
     v = os.getenv(name)
     if v is None:
         return default
     return v.strip().lower() in {"1", "true", "yes", "on"}
+
 
 @dataclass(slots=True)
 class Settings:
@@ -36,5 +41,6 @@ class Settings:
     # Observability / storage (used indirectly by your EventBus/KG)
     event_log_dir: str | None = _getenv("REUG_EVENT_LOG_DIR")
     tool_registry_dir: str | None = _getenv("REUG_TOOL_REGISTRY_DIR")
+
 
 SETTINGS = Settings()

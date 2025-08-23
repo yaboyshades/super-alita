@@ -1,38 +1,59 @@
-import json, re, time, asyncio, math
-from typing import AsyncGenerator, Optional
+import asyncio
+import contextlib
+import json
+import re
+import time
+from collections.abc import AsyncGenerator
+
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
+
 from reug_runtime.config import SETTINGS
+
 
 # ==== Injected dependencies via app.state ====
 class EventBus: ...
+
+
 class AbilityRegistry: ...
+
+
 class KnowledgeGraph: ...
+
+
 class LLMClient: ...  # wrapper around your provider
 
+
 router = APIRouter(prefix="/v1", tags=["agent"])
+
 
 # ---------- Helpers ----------
 def _now_ms() -> int:
     return int(time.time() * 1000)
 
+
 def _new_corr(session_id: str) -> str:
     return f"turn_{session_id}_{int(time.time())}"
+
 
 def _new_span(i: int) -> str:
     return f"span_{i}_{int(time.time())}"
 
+
 def _hash_json(obj) -> str:
     try:
         import hashlib
+
         h = hashlib.sha256(json.dumps(obj, sort_keys=True).encode("utf-8")).hexdigest()
         return h[:16]
     except Exception:
         return "na"
 
+
 def _backoff_ms(base_ms: int, attempt: int) -> int:
     # attempt: 0,1,2...  -> base, 2*base, 4*base ...
     return base_ms * (2 ** max(0, attempt))
+
 
 # ---------- Block parser (robust to partial chunks) ----------
 class BlockParser:
@@ -42,14 +63,15 @@ class BlockParser:
       <tool_result tool="name">{...}</tool_result>
       <final_answer>{"content":"...","citations":[...]}</final_answer>
     """
+
     def __init__(self):
         self.buffer = ""
-        self.pattern = re.compile(r'<(\w+)([^>]*)>(\{.*?\})</\1>', re.DOTALL)
+        self.pattern = re.compile(r"<(\w+)([^>]*)>(\{.*?\})</\1>", re.DOTALL)
 
     def feed(self, chunk: str):
         self.buffer += chunk
 
-    def _extract(self, tag: str) -> Optional[tuple[dict, str]]:
+    def _extract(self, tag: str) -> tuple[dict, str] | None:
         for m in self.pattern.finditer(self.buffer):
             name, attrs, payload = m.group(1), m.group(2), m.group(3)
             if name == tag:
@@ -63,16 +85,17 @@ class BlockParser:
                 return data, attrs
         return None
 
-    def get_tool_call(self) -> Optional[dict]:
+    def get_tool_call(self) -> dict | None:
         hit = self._extract("tool_call")
         return hit[0] if hit else None
 
-    def get_final_answer(self) -> Optional[dict]:
+    def get_final_answer(self) -> dict | None:
         hit = self._extract("final_answer")
         return hit[0] if hit else None
 
     def reset(self):
         self.buffer = ""
+
 
 # ---------- Dynamic tool synthesis (contract-first) ----------
 def _synthesize_contract_from_call(tool_name: str, args: dict) -> dict:
@@ -87,9 +110,11 @@ def _synthesize_contract_from_call(tool_name: str, args: dict) -> dict:
             "type": "object",
             "properties": {
                 k: {
-                    "type": "string" if isinstance(v, str)
-                    else "number" if isinstance(v, (int, float))
-                    else "object"
+                    "type": (
+                        "string"
+                        if isinstance(v, str)
+                        else "number" if isinstance(v, int | float) else "object"
+                    )
                 }
                 for k, v in args.items()
             },
@@ -99,6 +124,7 @@ def _synthesize_contract_from_call(tool_name: str, args: dict) -> dict:
         "binding": {"type": "mcp_or_sdk", "endpoint": tool_name},
         "guard": {"pii_allowed": False},
     }
+
 
 # ---------- Core orchestrator ----------
 async def execute_turn(
@@ -115,7 +141,14 @@ async def execute_turn(
     used_spans: list[dict] = []  # for KG provenance
 
     # REUG: STATE_TRANSITION (AWAITING_INPUT -> DECOMPOSE_TASK)
-    await event_bus.emit({"type": "STATE_TRANSITION", "from": "AWAITING_INPUT", "to": "DECOMPOSE_TASK", "correlation_id": corr})
+    await event_bus.emit(
+        {
+            "type": "STATE_TRANSITION",
+            "from": "AWAITING_INPUT",
+            "to": "DECOMPOSE_TASK",
+            "correlation_id": corr,
+        }
+    )
 
     # Enrich prompt from KG
     kg_ctx = await kg.retrieve_relevant_context(user_msg)
@@ -146,15 +179,24 @@ Protocol:
         {"role": "user", "content": user_msg},
     ]
 
-    await event_bus.emit({
-        "type": "TaskStarted",
-        "correlation_id": corr,
-        "goal": goal.get("id"),
-        "user_msg_hash": _hash_json(user_msg),
-    })
+    await event_bus.emit(
+        {
+            "type": "TaskStarted",
+            "correlation_id": corr,
+            "goal": goal.get("id"),
+            "user_msg_hash": _hash_json(user_msg),
+        }
+    )
 
     # REUG: DECOMPOSE_TASK -> SELECT_TOOL (we let the model select; we only instrument)
-    await event_bus.emit({"type": "STATE_TRANSITION", "from": "DECOMPOSE_TASK", "to": "SELECT_TOOL", "correlation_id": corr})
+    await event_bus.emit(
+        {
+            "type": "STATE_TRANSITION",
+            "from": "DECOMPOSE_TASK",
+            "to": "SELECT_TOOL",
+            "correlation_id": corr,
+        }
+    )
 
     while tool_calls < SETTINGS.max_tool_calls:
         # Stream model output for this internal cycle
@@ -177,35 +219,51 @@ Protocol:
                 max_attempts = SETTINGS.max_retries + 1  # first try + retries
 
                 # REUG: SELECT_TOOL -> EXECUTE_TOOL
-                await event_bus.emit({"type": "STATE_TRANSITION", "from": "SELECT_TOOL", "to": "EXECUTE_TOOL", "correlation_id": corr})
+                await event_bus.emit(
+                    {
+                        "type": "STATE_TRANSITION",
+                        "from": "SELECT_TOOL",
+                        "to": "EXECUTE_TOOL",
+                        "correlation_id": corr,
+                    }
+                )
 
                 # Unknown tool? Trigger dynamic creation
                 knows = False
                 try:
-                    knows = getattr(registry, "knows")(tool_name)  # type: ignore[attr-defined]
+                    knows = registry.knows(tool_name)  # type: ignore[attr-defined]
                 except Exception:
                     # If registry lacks .knows, optimistically try validate
                     knows = registry.validate_args(tool_name, tool_args)
 
                 if not knows:
-                    await event_bus.emit({"type": "STATE_TRANSITION", "from": "EXECUTE_TOOL", "to": "CREATING_DYNAMIC_TOOL", "correlation_id": corr})
+                    await event_bus.emit(
+                        {
+                            "type": "STATE_TRANSITION",
+                            "from": "EXECUTE_TOOL",
+                            "to": "CREATING_DYNAMIC_TOOL",
+                            "correlation_id": corr,
+                        }
+                    )
                     contract = _synthesize_contract_from_call(tool_name, tool_args)
                     # health-check / ping
                     healthy = True
                     try:
-                        healthy = await getattr(registry, "health_check")(contract)  # type: ignore[attr-defined]
+                        healthy = await registry.health_check(contract)  # type: ignore[attr-defined]
                     except Exception:
                         # If no health_check, proceed but note it
                         healthy = True
                     if healthy:
                         try:
-                            await getattr(registry, "register")(contract)  # type: ignore[attr-defined]
-                            await event_bus.emit({
-                                "type": "TOOL_REGISTERED",
-                                "correlation_id": corr,
-                                "tool": tool_name,
-                                "contract_hash": _hash_json(contract),
-                            })
+                            await registry.register(contract)  # type: ignore[attr-defined]
+                            await event_bus.emit(
+                                {
+                                    "type": "TOOL_REGISTERED",
+                                    "correlation_id": corr,
+                                    "tool": tool_name,
+                                    "contract_hash": _hash_json(contract),
+                                }
+                            )
                         except Exception as e:
                             # Surface as a tool_error for model recovery
                             messages.append(
@@ -275,7 +333,7 @@ Protocol:
                         parser.reset()
                         tool_calls += 1
                         break  # tool execution done for this cycle
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         dur_ms = _now_ms() - start_ms
                         await event_bus.emit(
                             {
@@ -334,15 +392,11 @@ Protocol:
             if final:
                 # write provenance to KG
                 answer_atom = await kg.create_atom("ANSWER", final)
-                try:
+                with contextlib.suppress(Exception):
                     await kg.create_bond("RELATES_TO", answer_atom["id"], goal["id"])
-                except Exception:
-                    pass
                 for span_info in used_spans:
-                    try:
+                    with contextlib.suppress(Exception):
                         await kg.create_bond("CAUSED_BY", answer_atom["id"], span_info["span_id"])
-                    except Exception:
-                        pass
                 await event_bus.emit(
                     {
                         "type": "STATE_TRANSITION",
@@ -360,13 +414,16 @@ Protocol:
                 )
                 return
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             yield "\n[ERROR: model_stream_timeout]"
             break
 
     # Exceeded caps or aborted
-    await event_bus.emit({"type": "TaskFailed", "correlation_id": corr, "reason": "tool_cap_or_abort"})
+    await event_bus.emit(
+        {"type": "TaskFailed", "correlation_id": corr, "reason": "tool_cap_or_abort"}
+    )
     yield "\n[ERROR: Agent unable to complete request]"
+
 
 # ---------- FastAPI endpoint ----------
 @router.post("/chat/stream")
@@ -386,5 +443,9 @@ async def chat_stream(request: Request):
     return StreamingResponse(
         gen,
         media_type="text/plain",
-        headers={"X-Correlation-ID": f"session_{session_id}", "Cache-Control": "no-cache", "Connection": "keep-alive"},
+        headers={
+            "X-Correlation-ID": f"session_{session_id}",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
     )
