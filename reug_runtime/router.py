@@ -101,11 +101,14 @@ class BlockParser:
         for m in self.pattern.finditer(self.buffer):
             name, attrs, payload = m.group(1), m.group(2), m.group(3)
             if name == tag:
+                raw = m.group(0)
                 try:
                     data = json.loads(payload)
                 except json.JSONDecodeError:
-                    return None
-                raw = m.group(0)
+                    if tag == "final_answer":
+                        data = {"content": payload}
+                    else:
+                        continue
                 # remove the first occurrence to advance
                 self.buffer = self.buffer.replace(raw, "", 1)
                 return data, attrs
