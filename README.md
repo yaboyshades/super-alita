@@ -18,7 +18,15 @@
 ## Notes
 - Tools favor `dry_run` to show diffs first.
 - Ruff runs before Black for stable formatting.
-- For big repos, narrow targets (folders/files) for speed.
+
+## REUG Runtime
+
+A FastAPI server exposes the REUG streaming router and toolbox. See
+[docs/runtime.md](docs/runtime.md) for local and Docker quick start guides,
+endpoint descriptions, and a Codex automation task.
+
+The optional `.codex/setup.sh` script installs dependencies and prepares a
+`.env` file for local runs.
 
 ## Gemini API Key
 Super Alita relies on Google's Gemini models for many LLM features. Set your
