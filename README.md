@@ -18,6 +18,20 @@
 ## Notes
 - Tools favor `dry_run` to show diffs first.
 - Ruff runs before Black for stable formatting.
+
+## REUG Runtime
+
+For a minimal FastAPI server that exposes the REUG streaming router and
+toolbox endpoints, use `src/main.py`:
+
+```
+python src/main.py
+```
+
+Alternatively, `make run` will serve the same application via uvicorn.
+
+The optional `.codex/setup.sh` script installs dependencies and prepares a
+`.env` file for local runs.
 - For big repos, narrow targets (folders/files) for speed.
 
 ## Gemini API Key
