@@ -91,15 +91,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b chore/update-requirements-${{ github.run_id }}
-          git add requirements.txt requirements-test.txt
-          git commit -m "chore(ci): refresh requirements via gen_requirements.py"
-          git push -u origin HEAD
-
-      - name: Open PR
-        if: success() && !cancelled()
-        uses: peter-evans/create-pull-request@v6
-        with:
-          title: "chore(ci): refresh requirements"
-          body: "Automated requirements refresh from CI."
-          branch: "chore/update-requirements-${{ github.run_id }}"
           base: "main"
+          commit-message: "chore(ci): refresh requirements via gen_requirements.py"
+          add-paths: |
+            requirements.txt
+            requirements-test.txt
