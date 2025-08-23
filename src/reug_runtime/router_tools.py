@@ -1,3 +1,5 @@
+"""FastAPI routes exposing tool-style endpoints for the REUG runtime."""
+
 from __future__ import annotations
 
 import asyncio
@@ -130,6 +132,7 @@ _STREAMS: dict[str, Any] = {}
 
 @tools.get("/catalog")
 async def get_catalog() -> JSONResponse:
+    """Return the static tool catalog."""
     return JSONResponse(TOOL_CATALOG)
 
 
@@ -138,6 +141,15 @@ async def reug_start_turn(
     request: Request,
     body: dict[str, Any] = Body(...),  # noqa: B008
 ) -> dict[str, Any]:
+    """Start a new streaming turn.
+
+    Args:
+        request: Incoming FastAPI request object.
+        body: JSON body containing ``message`` and optional ``session_id``.
+
+    Returns:
+        Metadata about the started run including the ``run_id``.
+    """
     message = body["message"]
     session_id = body.get("session_id", "default")
     gen = execute_turn(
@@ -157,6 +169,14 @@ async def reug_start_turn(
 async def reug_stream_next(
     body: dict[str, Any] = Body(...),  # noqa: B008
 ) -> dict[str, Any]:
+    """Fetch the next streamed chunks for an active run.
+
+    Args:
+        body: JSON body containing the ``run_id``.
+
+    Returns:
+        A dictionary with streamed ``chunks`` and a ``finished`` flag.
+    """
     run_id = body["run_id"]
     it = _STREAMS.get(run_id)
     if it is None:
@@ -181,6 +201,14 @@ async def reug_stream_next(
 async def pytest_run(
     body: dict[str, Any] = Body(default={}),  # noqa: B008
 ) -> dict[str, Any]:
+    """Execute pytest inside the runtime container.
+
+    Args:
+        body: Optional JSON body specifying target path, markers, or quiet mode.
+
+    Returns:
+        A dictionary describing the exit code and captured output.
+    """
     target = body.get("target")
     markers = body.get("markers")
     quiet = body.get("quiet", True)
@@ -209,6 +237,14 @@ async def pytest_run(
 async def fs_read(
     body: dict[str, Any] = Body(...),  # noqa: B008
 ) -> dict[str, Any]:
+    """Read a UTF-8 text file.
+
+    Args:
+        body: JSON body containing the ``path`` of the file to read.
+
+    Returns:
+        The file contents.
+    """
     path = body["path"]
     try:
         content = await asyncio.to_thread(Path(path).read_text, encoding="utf-8")
@@ -221,6 +257,14 @@ async def fs_read(
 async def fs_write(
     body: dict[str, Any] = Body(...),  # noqa: B008
 ) -> dict[str, Any]:
+    """Write UTF-8 text to a file.
+
+    Args:
+        body: JSON body containing ``path`` and ``content`` fields.
+
+    Returns:
+        ``{"ok": True}`` when the write succeeds.
+    """
     path = body["path"]
     content = body["content"]
     await asyncio.to_thread(Path(path).write_text, content, encoding="utf-8")
@@ -231,6 +275,14 @@ async def fs_write(
 async def git_apply_patch(
     body: dict[str, Any] = Body(...),  # noqa: B008
 ) -> dict[str, Any]:
+    """Apply a unified diff patch to the repository.
+
+    Args:
+        body: JSON body containing the ``patch`` string.
+
+    Returns:
+        A dictionary with ``ok`` and captured command output.
+    """
     patch = body["patch"].encode()
     proc = await asyncio.create_subprocess_exec(
         "git",

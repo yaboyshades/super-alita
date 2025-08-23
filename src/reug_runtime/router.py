@@ -1,5 +1,13 @@
 import asyncio
 import contextlib
+"""Streaming router implementing the single-turn REUG protocol.
+
+The router exposes the ``/v1`` API used by ``main.py``.  It parses streamed LLM
+output, dispatches tool calls, and emits telemetry events.  This module is
+instrumented with Google style docstrings so the orchestration flow is easier
+to reason about and extend.
+"""
+
 import json
 import re
 import time
@@ -28,18 +36,36 @@ router = APIRouter(prefix="/v1", tags=["agent"])
 
 # ---------- Helpers ----------
 def _now_ms() -> int:
+    """Return the current time in milliseconds."""
     return int(time.time() * 1000)
 
 
 def _new_corr(session_id: str) -> str:
+    """Generate a correlation identifier for a new turn.
+
+    Args:
+        session_id: Client provided session identifier.
+
+    Returns:
+        A string suitable for tagging all telemetry for the turn.
+    """
     return f"turn_{session_id}_{int(time.time())}"
 
 
 def _new_span(i: int) -> str:
+    """Generate a unique span identifier for a tool call.
+
+    Args:
+        i: Sequential index of the tool call within the turn.
+
+    Returns:
+        Span identifier incorporating the index and current time.
+    """
     return f"span_{i}_{int(time.time())}"
 
 
 def _hash_json(obj) -> str:
+    """Return a short, stable hash for the given JSON-serializable object."""
     try:
         import hashlib
 
@@ -50,6 +76,15 @@ def _hash_json(obj) -> str:
 
 
 def _backoff_ms(base_ms: int, attempt: int) -> int:
+    """Exponential backoff helper used for retry delays.
+
+    Args:
+        base_ms: Base delay in milliseconds.
+        attempt: Zero-based retry attempt counter.
+
+    Returns:
+        Delay in milliseconds for this attempt.
+    """
     # attempt: 0,1,2...  -> base, 2*base, 4*base ...
     return base_ms * (2 ** max(0, attempt))
 
@@ -59,19 +94,29 @@ MAX_RESULT_BYTES = 200_000
 
 
 class CircuitBreaker:
+    """Simple circuit breaker for tool executions."""
+
     def __init__(self, threshold: int = 3):
+        """Initialize the breaker.
+
+        Args:
+            threshold: Number of consecutive failures before the circuit opens.
+        """
         self.threshold = threshold
         self.failures: dict[str, int] = {}
 
     def record_failure(self, tool: str) -> bool:
+        """Record a failure and return ``True`` if the circuit opens."""
         cnt = self.failures.get(tool, 0) + 1
         self.failures[tool] = cnt
         return cnt >= self.threshold
 
     def on_success(self, tool: str):
+        """Reset failure count for a tool after a successful call."""
         self.failures.pop(tool, None)
 
     def is_open(self, tool: str) -> bool:
+        """Return ``True`` if the breaker is open for ``tool``."""
         return self.failures.get(tool, 0) >= self.threshold
 
 
@@ -80,23 +125,25 @@ breaker = CircuitBreaker()
 
 # ---------- Block parser (robust to partial chunks) ----------
 class BlockParser:
-    """
-    Stateful parser for streamed tags:
-      <tool_call>{"tool":"name","args":{...}}</tool_call>
-      <tool_result tool="name">{...}</tool_result>
-      <final_answer>{"content":"...","citations":[...]}</final_answer>
-    """
+    """Stateful parser for streamed protocol tags."""
 
     def __init__(self):
+        """Initialize the parser with an empty buffer."""
         self.buffer = ""
         self.pattern = re.compile(r"<(\w+)([^>]*)>(\{.*?\})</\1>", re.DOTALL)
 
     def feed(self, chunk: str):
+        """Append a chunk of streamed text to the buffer.
+
+        Args:
+            chunk: The text chunk emitted by the model.
+        """
         self.buffer += chunk
         if len(self.buffer) > MAX_BUFFER_BYTES:
             self.buffer = self.buffer[-MAX_BUFFER_BYTES:]
 
     def _extract(self, tag: str) -> tuple[dict, str] | None:
+        """Return the first matching tag payload from the buffer."""
         for m in self.pattern.finditer(self.buffer):
             name, attrs, payload = m.group(1), m.group(2), m.group(3)
             if name == tag:
@@ -114,21 +161,30 @@ class BlockParser:
         return None
 
     def get_tool_call(self) -> dict | None:
+        """Extract a ``<tool_call>`` block if present."""
         hit = self._extract("tool_call")
         return hit[0] if hit else None
 
     def get_final_answer(self) -> dict | None:
+        """Extract a ``<final_answer>`` block if present."""
         hit = self._extract("final_answer")
         return hit[0] if hit else None
 
     def reset(self):
+        """Clear the internal buffer."""
         self.buffer = ""
 
 
 # ---------- Dynamic tool synthesis (contract-first) ----------
 def _synthesize_contract_from_call(tool_name: str, args: dict) -> dict:
-    """
-    Minimal viable contract. In a richer setup, you'd consult the KG or templates.
+    """Create a minimal tool contract from an observed call.
+
+    Args:
+        tool_name: Name of the tool invoked by the model.
+        args: Argument payload provided in the ``<tool_call>`` block.
+
+    Returns:
+        A JSON serializable contract skeleton describing the tool.
     """
     return {
         "tool_id": tool_name,
@@ -155,6 +211,15 @@ def _synthesize_contract_from_call(tool_name: str, args: dict) -> dict:
 
 
 def _shrink_result(result: dict) -> tuple[dict, dict | None]:
+    """Cap large tool results and return an artifact handle when needed.
+
+    Args:
+        result: Raw result returned by a tool execution.
+
+    Returns:
+        A tuple of ``(safe_result, artifact_handle)`` where ``safe_result`` is
+        either the original result or a placeholder referencing an artifact.
+    """
     blob = json.dumps(result).encode("utf-8")
     if len(blob) <= MAX_RESULT_BYTES:
         return result, None
@@ -174,6 +239,22 @@ async def execute_turn(
     kg: KnowledgeGraph,
     model: LLMClient,
 ) -> AsyncGenerator[str, None]:
+    """Run a single REUG turn.
+
+    This function streams model output, handles tool calls, and yields text
+    chunks back to the client.
+
+    Args:
+        user_msg: The user's input message.
+        session_id: Identifier tying the turn to a conversation session.
+        event_bus: Telemetry sink used for REUG events.
+        registry: Ability registry capable of executing tools.
+        kg: Knowledge graph for contextual retrieval and provenance.
+        model: Chat model client used to generate responses.
+
+    Yields:
+        Chunks of text to stream back to the client.
+    """
     corr = _new_corr(session_id)
     parser = BlockParser()
     tool_calls = 0
