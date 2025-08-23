@@ -52,9 +52,7 @@ make test
 
 The runtime tests use in-memory fakes and do not require Redis.
 For demo scripts such as `complete_agent_demo.py`, run a local Redis server
-(`docker run -p 6379:6379 redis`) to enable the event bus. On Windows,
-[Memurai](https://www.memurai.com/) is a drop-in replacement.
-Set `REUG_EVENTBUS=redis` to route telemetry through Redis/Memurai; otherwise
-events are appended to JSONL files under `REUG_EVENT_LOG_DIR`.
+(`docker run -p 6379:6379 redis`) to enable the event bus; otherwise the demo
+logs a connection error and falls back to a no-op bus.
 
 The `tests/` folder covers core utilities, planner logic, plugins, and integration flows.
