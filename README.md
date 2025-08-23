@@ -35,3 +35,19 @@ GEMINI_API_KEY=your-key-here
 ```
 
 **Never** commit your API key or `.env` file to version control.
+
+## Documentation
+Additional design and reference guides live in the `docs/` directory:
+
+- `docs/architecture.md` outlines the "minimal predefinition, maximal self-evolution" architecture.
+- `docs/testing.md` explains how to run the test suite and property-based checks.
+
+## Running Tests
+Install test dependencies and execute the suite:
+
+```bash
+pip install -r requirements-test.txt
+PYTHONPATH=src pytest -q
+```
+
+The `tests/` folder covers core utilities, planner logic, plugins, and integration flows.
