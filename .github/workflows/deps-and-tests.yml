@@ -1,0 +1,105 @@
+name: Deps + Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "13 3 * * 1" # weekly Monday @03:13 UTC audit
+
+jobs:
+  deps-and-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping || exit 1"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+        ports:
+          - 6379:6379
+
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit==2.* safety==3.* pre-commit==3.*  # audit tools
+          pip install -r requirements.txt -r requirements-test.txt
+
+      - name: Verify requirements are up-to-date
+        run: |
+          python tools/gen_requirements.py --src src reug_runtime --tests tests --write
+          # fail if regeneration changed files
+          git diff --exit-code -- requirements.txt requirements-test.txt
+
+      - name: Lint (pre-commit)
+        run: pre-commit run --all-files
+
+      - name: Security audit (pip-audit)
+        # Use --ignore-vuln to temporarily suppress a specific advisory if needed
+        run: pip-audit -r requirements.txt || (echo "::warning::pip-audit found issues"; exit 1)
+
+      - name: Security audit (Safety)
+        run: safety check -r requirements.txt --full-report
+
+      - name: Run tests (runtime subset)
+        env:
+          REUG_EVENTBUS: redis
+          PYTHONPATH: ./src
+        run: |
+          pytest -q tests/runtime
+
+  # Optional: open an automated PR when requirements drift is detected on main
+  regen-reqs:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerate requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+          python tools/gen_requirements.py --src src reug_runtime --tests tests --write
+          if git diff --quiet --exit-code requirements.txt requirements-test.txt; then
+            echo "No changes"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b chore/update-requirements-${{ github.run_id }}
+          git add requirements.txt requirements-test.txt
+          git commit -m "chore(ci): refresh requirements via gen_requirements.py"
+          git push -u origin HEAD
+
+      - name: Open PR
+        if: success() && !cancelled()
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "chore(ci): refresh requirements"
+          body: "Automated requirements refresh from CI."
+          branch: "chore/update-requirements-${{ github.run_id }}"
+          base: "main"
