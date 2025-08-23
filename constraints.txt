@@ -1,0 +1,16 @@
+# Minimal curated constraints (expand with pip-tools or lock files as preferred)
+anyio>=4.0
+fastapi>=0.110
+uvicorn>=0.23
+httpx>=0.25
+redis>=5.0
+pyyaml>=6.0
+python-dotenv>=1.0
+pydantic>=2.6
+requests>=2.31
+pytest>=8.0
+pytest-asyncio>=0.23
+ruff>=0.4
+black>=24.3
+mypy>=1.9
+detect-secrets>=1.5
