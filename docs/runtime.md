@@ -12,6 +12,10 @@
    - `REUG_TOOL_REGISTRY_DIR`
    - `REUG_MAX_TOOL_CALLS`, `REUG_EXEC_TIMEOUT_S`, `REUG_EXEC_MAX_RETRIES`
 
+   If `REUG_EVENTBUS` is unset or a Redis backend is unavailable, the runtime
+   gracefully falls back to appending JSONL telemetry under
+   `./logs/events/events.jsonl`.
+
    If `.env` is missing:
 
    ```bash
