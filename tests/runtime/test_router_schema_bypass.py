@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 from reug_runtime import config
 from reug_runtime.router import router
+
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG
 
 

@@ -7,7 +7,6 @@ from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
-
 from reug_runtime.config import SETTINGS
 
 
