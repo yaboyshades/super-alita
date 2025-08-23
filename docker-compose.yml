@@ -1,0 +1,31 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    container_name: reug-runtime
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/app/src
+      - REUG_EVENT_LOG_DIR=/data/logs/events
+      - REUG_TOOL_REGISTRY_DIR=/data/tools_registry
+    volumes:
+      - ./src:/app/src:rw
+      - ./app.py:/app/app.py:rw
+      - ./logs:/data/logs:rw
+      - ./tools_registry:/data/tools_registry:rw
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles: ["app"]
+
+  # Optional Redis, KG, etc. (disabled by default)
+  # redis:
+  #   image: redis:7-alpine
+  #   ports: ["6379:6379"]
+  #   profiles: ["redis"]

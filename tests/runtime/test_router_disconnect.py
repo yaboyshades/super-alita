@@ -1,7 +1,7 @@
 import pytest
 from fastapi import FastAPI
-
 from reug_runtime.router import router
+
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG, FakeLLM
 
 
