@@ -1,21 +1,23 @@
-# Restrict pre-commit checks to CI configuration files
 repos:
   - repo: https://github.com/psf/black
     rev: 24.3.0
     hooks:
       - id: black
-        args: [--line-length=100]
-        files: ^$
+        args: ['-l', '88']
+        files: '^(src/core/(yaml_utils|proc|dynamic_eval)\.py|src/sandbox/.*|tests/core/test_yaml_utils\.py|tests/sandbox/test_exec_sandbox\.py)'
+
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.4.8
     hooks:
       - id: ruff
-        args: [--fix]
-        files: ^$
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+        args: ['--fix']
+        files: '^(src/core/(yaml_utils|proc|dynamic_eval)\.py|src/sandbox/.*|tests/core/test_yaml_utils\.py|tests/sandbox/test_exec_sandbox\.py)'
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.9.0
     hooks:
-      - id: end-of-file-fixer
-        files: ^\.github/(dependabot\.yml|workflows/.*\.yml)$
-      - id: trailing-whitespace
-        files: ^\.github/(dependabot\.yml|workflows/.*\.yml)$
+      - id: mypy
+        additional_dependencies: ['types-PyYAML']
+        files: '^(src/core/(yaml_utils|proc|dynamic_eval)\.py|src/sandbox/.*)'
+
+default_stages: [commit, push]
