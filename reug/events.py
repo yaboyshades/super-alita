@@ -39,9 +39,11 @@ def _get_redis_client(url: str):
         import redis  # type: ignore  # lazy import so tests without redis still run
     except ImportError:  # pragma: no cover - redis optional
         return None
-    return redis.Redis.from_url(url)
-
-
+    try:
+        return redis.Redis.from_url(url)
+    except Exception:  # pragma: no cover - best effort
+        logger.exception("Failed to create Redis client from URL; falling back to JSONL")
+        return None
 def emit_redis(event: Dict[str, Any]) -> None:
     """Publish event to Redis channel with fallback."""
     client = _get_redis_client(os.getenv("REUG_REDIS_URL", "redis://localhost:6379/0"))
