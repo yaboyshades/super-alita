@@ -21,18 +21,12 @@
 
 ## REUG Runtime
 
-For a minimal FastAPI server that exposes the REUG streaming router and
-toolbox endpoints, use `src/main.py`:
-
-```
-python src/main.py
-```
-
-Alternatively, `make run` will serve the same application via uvicorn.
+A FastAPI server exposes the REUG streaming router and toolbox. See
+[docs/runtime.md](docs/runtime.md) for local and Docker quick start guides,
+endpoint descriptions, and a Codex automation task.
 
 The optional `.codex/setup.sh` script installs dependencies and prepares a
 `.env` file for local runs.
-- For big repos, narrow targets (folders/files) for speed.
 
 ## Gemini API Key
 Super Alita relies on Google's Gemini models for many LLM features. Set your
