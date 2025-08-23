@@ -55,6 +55,30 @@ def _backoff_ms(base_ms: int, attempt: int) -> int:
     return base_ms * (2 ** max(0, attempt))
 
 
+MAX_BUFFER_BYTES = 2_000_000  # ~2MB
+MAX_RESULT_BYTES = 200_000
+
+
+class CircuitBreaker:
+    def __init__(self, threshold: int = 3):
+        self.threshold = threshold
+        self.failures: dict[str, int] = {}
+
+    def record_failure(self, tool: str) -> bool:
+        cnt = self.failures.get(tool, 0) + 1
+        self.failures[tool] = cnt
+        return cnt >= self.threshold
+
+    def on_success(self, tool: str):
+        self.failures.pop(tool, None)
+
+    def is_open(self, tool: str) -> bool:
+        return self.failures.get(tool, 0) >= self.threshold
+
+
+breaker = CircuitBreaker()
+
+
 # ---------- Block parser (robust to partial chunks) ----------
 class BlockParser:
     """
@@ -70,6 +94,8 @@ class BlockParser:
 
     def feed(self, chunk: str):
         self.buffer += chunk
+        if len(self.buffer) > MAX_BUFFER_BYTES:
+            self.buffer = self.buffer[-MAX_BUFFER_BYTES:]
 
     def _extract(self, tag: str) -> tuple[dict, str] | None:
         for m in self.pattern.finditer(self.buffer):
@@ -124,6 +150,17 @@ def _synthesize_contract_from_call(tool_name: str, args: dict) -> dict:
         "binding": {"type": "mcp_or_sdk", "endpoint": tool_name},
         "guard": {"pii_allowed": False},
     }
+
+
+def _shrink_result(result: dict) -> tuple[dict, dict | None]:
+    blob = json.dumps(result).encode("utf-8")
+    if len(blob) <= MAX_RESULT_BYTES:
+        return result, None
+    import hashlib
+
+    sha = hashlib.sha256(blob).hexdigest()
+    handle = {"artifact_id": sha[:8], "sha256": sha, "bytes": len(blob)}
+    return {"_artifact": handle}, handle
 
 
 # ---------- Core orchestrator ----------
@@ -218,6 +255,17 @@ Protocol:
                 attempt = 0
                 max_attempts = SETTINGS.max_retries + 1  # first try + retries
 
+                if breaker.is_open(tool_name):
+                    await event_bus.emit({"type": "ToolCircuitOpen", "tool": tool_name})
+                    messages.append(
+                        {
+                            "role": "assistant",
+                            "content": f'<tool_error tool="{tool_name}">{{"error":"circuit_open"}}</tool_error>',
+                        }
+                    )
+                    parser.reset()
+                    break
+
                 # REUG: SELECT_TOOL -> EXECUTE_TOOL
                 await event_bus.emit(
                     {
@@ -284,6 +332,30 @@ Protocol:
                         parser.reset()
                         break
 
+                valid = True
+                try:
+                    valid = registry.validate_args(tool_name, tool_args)
+                except Exception:
+                    valid = True
+                if not valid:
+                    if SETTINGS.schema_enforce:
+                        messages.append(
+                            {
+                                "role": "assistant",
+                                "content": f'<tool_error tool="{tool_name}">{{"error":"invalid_args"}}</tool_error>',
+                            }
+                        )
+                        parser.reset()
+                        break
+                    else:
+                        await event_bus.emit(
+                            {
+                                "type": "SchemaBypass",
+                                "tool": tool_name,
+                                "args_hash": _hash_json(tool_args),
+                            }
+                        )
+
                 # Execute with retries/backoff
                 while attempt < max_attempts:
                     start_ms = _now_ms()
@@ -304,6 +376,16 @@ Protocol:
                             timeout=SETTINGS.tool_timeout_s,
                         )
                         dur_ms = _now_ms() - start_ms
+                        safe_result, handle = _shrink_result(result)
+                        if handle:
+                            await event_bus.emit(
+                                {
+                                    "type": "ArtifactCreated",
+                                    "tool": tool_name,
+                                    "artifact_bytes": handle["bytes"],
+                                    "sha256": handle["sha256"],
+                                }
+                            )
                         await event_bus.emit(
                             {
                                 "type": "AbilitySucceeded",
@@ -314,6 +396,7 @@ Protocol:
                                 "output_hash": _hash_json(result),
                             }
                         )
+                        breaker.on_success(tool_name)
                         # REUG: EXECUTE_TOOL -> PROCESS_TOOL_RESULT
                         await event_bus.emit(
                             {
@@ -326,7 +409,7 @@ Protocol:
                         messages.append(
                             {
                                 "role": "assistant",
-                                "content": f'<tool_result tool="{tool_name}">{json.dumps(result)}</tool_result>',
+                                "content": f'<tool_result tool="{tool_name}">{json.dumps(safe_result)}</tool_result>',
                             }
                         )
                         used_spans.append({"span_id": span, "tool": tool_name})
@@ -355,6 +438,8 @@ Protocol:
                                     "content": f'<tool_error tool="{tool_name}">{{"error":"timeout"}}</tool_error>',
                                 }
                             )
+                            if breaker.record_failure(tool_name):
+                                await event_bus.emit({"type": "ToolCircuitOpen", "tool": tool_name})
                             parser.reset()
                             break
                         await asyncio.sleep(_backoff_ms(SETTINGS.retry_base_ms, attempt - 1) / 1000)
@@ -380,6 +465,8 @@ Protocol:
                                     "content": f'<tool_error tool="{tool_name}">{{"error":"exception","message":{json.dumps(str(e))}}}</tool_error>',
                                 }
                             )
+                            if breaker.record_failure(tool_name):
+                                await event_bus.emit({"type": "ToolCircuitOpen", "tool": tool_name})
                             parser.reset()
                             break
                         await asyncio.sleep(_backoff_ms(SETTINGS.retry_base_ms, attempt - 1) / 1000)
@@ -440,8 +527,23 @@ async def chat_stream(request: Request):
         app.state.kg,
         app.state.llm_model,
     )
+
+    async def guarded_gen():
+        try:
+            async for part in gen:
+                if await request.is_disconnected():
+                    await app.state.event_bus.emit(
+                        {"type": "TaskFailed", "reason": "client_disconnected"}
+                    )
+                    await gen.aclose()
+                    break
+                yield part
+        except asyncio.CancelledError:
+            await app.state.event_bus.emit({"type": "TaskFailed", "reason": "client_disconnected"})
+            raise
+
     return StreamingResponse(
-        gen,
+        guarded_gen(),
         media_type="text/plain",
         headers={
             "X-Correlation-ID": f"session_{session_id}",
