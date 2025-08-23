@@ -43,11 +43,16 @@ Additional design and reference guides live in the `docs/` directory:
 - `docs/testing.md` explains how to run the test suite and property-based checks.
 
 ## Running Tests
-Install test dependencies and execute the suite:
+Install dependencies and execute the runtime suite:
 
 ```bash
-pip install -r requirements-test.txt
-PYTHONPATH=src pytest -q
+make deps
+make test
 ```
+
+The runtime tests use in-memory fakes and do not require Redis.
+For demo scripts such as `complete_agent_demo.py`, run a local Redis server
+(`docker run -p 6379:6379 redis`) to enable the event bus; otherwise the demo
+logs a connection error and falls back to a no-op bus.
 
 The `tests/` folder covers core utilities, planner logic, plugins, and integration flows.
