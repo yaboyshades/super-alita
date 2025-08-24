@@ -38,6 +38,7 @@ PLUGIN_ORDER = [
     "puter",  # Cloud environment integration
     "conversation",  # User interaction (legacy)
     "web_agent",  # Web search capability (legacy)
+    "perplexica_search",  # AI-powered search with reasoning
 ]
 
 # A map of plugin names to their class definitions.
@@ -66,6 +67,8 @@ def _load_unified_plugins():
         ),
         # Cloud integration plugins
         ("src.plugins.puter_plugin", "PuterPlugin", "puter"),
+        # AI-powered search plugin
+        ("src.plugins.perplexica_search_plugin", "PerplexicaSearchPlugin", "perplexica_search"),
         # Legacy plugins (fallback compatibility)
         ("src.plugins.conversation_plugin", "ConversationPlugin", "conversation"),
         ("src.atoms.web_agent_atom", "WebAgentAtom", "web_agent"),
@@ -190,6 +193,7 @@ class UnifiedSuperAlita:
                 },
                 "conversation": {"enabled": True},
                 "web_agent": {"enabled": True},
+                "perplexica_search": {"enabled": True},
             },
         }
 
@@ -301,6 +305,14 @@ class UnifiedSuperAlita:
                 logger.info(
                     f"Puter plugin configured with base URL: {env_config['puter_base_url']}"
                 )
+            
+            # Special handling for Perplexica plugin - provide WebAgent integration
+            elif plugin_name == "perplexica_search":
+                if "web_agent" in self.plugins:
+                    final_config["web_agent"] = self.plugins["web_agent"]
+                    logger.info("Perplexica plugin configured with WebAgent integration")
+                else:
+                    logger.warning("WebAgent not available for Perplexica integration")
 
             # Setup plugin with unified dependencies
             await instance.setup(self.workspace, self.store, final_config)
