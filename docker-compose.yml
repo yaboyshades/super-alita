@@ -9,6 +9,14 @@ services:
       - PYTHONPATH=/app/src
       - REUG_EVENT_LOG_DIR=/data/logs/events
       - REUG_TOOL_REGISTRY_DIR=/data/tools_registry
+      - CODEGEN_ENABLED=${CODEGEN_ENABLED:-true}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-pro}
+      - CODEGEN_MINIMAL=${CODEGEN_MINIMAL:-0}
+      - PROMPT_VERSION=${PROMPT_VERSION:-2.1.0}
+      - SCHEMA_VERSION=${SCHEMA_VERSION:-alg_extraction_v1.2}
+      - DIFY_ENABLED=${DIFY_ENABLED:-false}
+      - FLOWISE_ENABLED=${FLOWISE_ENABLED:-false}
     volumes:
       - ./src:/app/src:rw
       - ./app.py:/app/app.py:rw

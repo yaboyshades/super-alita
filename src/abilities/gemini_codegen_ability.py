@@ -10,6 +10,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import aiohttp
 from src.core.plugin_interface import PluginInterface
+from src.prompt.policy_constants import build_header, REQUIRED_FIELDS_ALG
+from src.utils.telemetry import ReadLedger, start_timer, end_timer, telemetry_footer
+from src.utils.guardrails import repo_download_integrity, hash_top_files
 
 logger = logging.getLogger(__name__)
 
@@ -73,69 +76,120 @@ class GeminiCodegenAbility(PluginInterface):
             )
         )
 
+        # --- Repo integrity snapshot (non-blocking, informational) ---
+        integrity = repo_download_integrity(repo_path)
+        hashed = hash_top_files(repo_path, top_n=5) if integrity["status"] != "partial" else []
+
+        # --- Build system prompt header with policies/guards ---
+        sys_header = build_header(role="algorithm_extraction")
+
+        # Read ledger + ceilings
+        ledger = ReadLedger()
+        t0 = start_timer()
+
+        # local fallback (no network): echo minimal diff & test (and proper envelope)
         if not self._cfg.api_key:
             diffs = [self._fake_diff(requirements)]
             tests = [self._fake_test(requirements)]
-            await self.emit_event(
-                "codegen_implementation_proposed",
-                event_type="codegen_implementation_proposed",
-                source_plugin=self.name,
-                proposal_id=proposal_id,
-                diffs=diffs,
-                tests=tests,
-                docs=[],
-                confidence=0.4,
+            payload = {
+                "event_type": "codegen_implementation_proposed",
+                "source_plugin": self.name,
+                "proposal_id": proposal_id,
+                "diffs": diffs,
+                "tests": tests,
+                "docs": [],
+                "confidence": 0.4,
+                "repo_integrity": integrity,
+                "hashed_files": hashed,
                 **{k: v for k, v in event.items() if k.endswith("_id")},
-                timestamp=_utcnow(),
-            )
+                "timestamp": _utcnow(),
+            }
+            await self.emit_event("codegen_implementation_proposed", **payload)
             return
 
+        # network path: call Gemini
         try:
-            diffs, tests, docs, confidence = await self._call_gemini(
-                requirements, repo_path, context_files
+            diffs, tests, docs, confidence, raw_obj = await self._call_gemini(
+                requirements, repo_path, context_files, sys_header=sys_header
             )
         except Exception as e:  # pragma: no cover
             logger.warning("Gemini call failed: %s", e)
-            diffs, tests, docs, confidence = [
-                self._fake_diff(requirements)
-            ], [
-                self._fake_test(requirements)
-            ], [], 0.3
+            diffs, tests, docs, confidence, raw_obj = (
+                [self._fake_diff(requirements)],
+                [self._fake_test(requirements)],
+                [],
+                0.3,
+                {"status": "MODEL_CALL_FAILED", "reason": str(e)[:160]},
+            )
 
-        await self.emit_event(
-            "codegen_implementation_proposed",
-            event_type="codegen_implementation_proposed",
-            source_plugin=self.name,
-            proposal_id=proposal_id,
-            diffs=diffs,
-            tests=tests,
-            docs=docs,
-            confidence=confidence,
-            **{k: v for k, v in event.items() if k.endswith("_id")},
-            timestamp=_utcnow(),
+        # Validation summary scaffolding inside envelope (consumer CI can check)
+        missing = [
+            f
+            for f in REQUIRED_FIELDS_ALG
+            if f
+            not in (
+                raw_obj.get("alg_extraction_v1", {})
+                if isinstance(raw_obj, dict)
+                else {}
+            )
+        ]
+        validation_summary = {"missing_required_fields": missing, "unknown_fields": []}
+        telem = telemetry_footer(
+            retrieval_rounds=int(raw_obj.get("telemetry", {}).get("retrieval_rounds", 1))
+            if isinstance(raw_obj, dict)
+            else 1,
+            segments_used=int(raw_obj.get("telemetry", {}).get("segments_used", ledger.count()))
+            if isinstance(raw_obj, dict)
+            else ledger.count(),
+            totals=raw_obj.get("telemetry", {}).get("total_extracted", {})
+            if isinstance(raw_obj, dict)
+            else {},
         )
+        telem["telemetry"]["extraction_duration_ms"] = end_timer(t0)
+
+        payload = {
+            "event_type": "codegen_implementation_proposed",
+            "source_plugin": self.name,
+            "proposal_id": proposal_id,
+            "diffs": diffs,
+            "tests": tests,
+            "docs": docs,
+            "confidence": confidence,
+            "repo_integrity": integrity,
+            "hashed_files": hashed,
+            "validation_summary": validation_summary,
+            **{k: v for k, v in event.items() if k.endswith("_id")},
+            "timestamp": _utcnow(),
+            **telem,
+        }
+        await self.emit_event("codegen_implementation_proposed", **payload)
 
     async def _call_gemini(
         self,
         requirements: str,
         repo_path: str,
         context_files: List[str],
-    ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], float]:
+        sys_header: str,
+    ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], float, Dict[str, Any]]:
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
             f"{self._cfg.model}:generateContent?key={self._cfg.api_key}"
         )
-        sys_message = (
-            "You are a repository-level code generation assistant. "
-            "Return STRICT JSON with keys: diffs (list), tests (list), docs (list), confidence (float). "
-            "Diffs entries MUST have {\"path\": str, \"patch\": str}. "
-            "Tests/docs entries MUST have {\"path\": str, \"content\": str}. "
-            "Do not include explanations or code fences."
-        )
+        sys_message = sys_header + "\n\nYou are a repository-level code generation assistant.\n"
+        # Execution cost guard is enforced by the retrieval tool on the caller side;
+        # here we just pass the ceilings inside the policy header.
         user_message = {
             "requirements": requirements,
             "repo_path": repo_path,
             "context_files": context_files,
+            "namespaces": {"root": "alg_extraction_v1"},
+            "normalization_rules": {
+                "years": "4-digit string",
+                "numeric_hparams": "numeric (no quotes) unless scientific notation",
+                "equations": "include equation_number or 'UNNUMBERED'",
+            },
+            "confidence_tags": ["source_locator"],
+            "deduplication": {"hyperparameters": True},
         }
         payload = {
             "contents": [
@@ -158,17 +212,13 @@ class GeminiCodegenAbility(PluginInterface):
             raw = data["candidates"][0]["content"]["parts"][0]["text"]
             obj = json.loads(raw)
         except Exception:
-            obj = data if isinstance(data, dict) else {
-                "diffs": [],
-                "tests": [],
-                "docs": [],
-                "confidence": 0.5,
-            }
-        diffs = obj.get("diffs") or []
-        tests = obj.get("tests") or []
-        docs = obj.get("docs") or []
-        confidence = float(obj.get("confidence") or 0.5)
-        return diffs, tests, docs, confidence
+            obj = data if isinstance(data, dict) else {"diffs": [], "tests": [], "docs": [], "confidence": 0.3}
+
+        diffs = obj.get("diffs") or obj.get("alg_extraction_v1", {}).get("diffs") or []
+        tests = obj.get("tests") or obj.get("alg_extraction_v1", {}).get("tests") or []
+        docs = obj.get("docs") or obj.get("alg_extraction_v1", {}).get("docs") or []
+        confidence = float(obj.get("confidence") or obj.get("alg_extraction_v1", {}).get("confidence", 0.5))
+        return diffs, tests, docs, confidence, obj
 
     def _fake_diff(self, requirements: str) -> Dict[str, Any]:
         return {
