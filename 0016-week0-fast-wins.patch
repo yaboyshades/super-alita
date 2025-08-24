@@ -1,0 +1,366 @@
+From 1111111111111111111111111111111111111111 Mon Sep 17 00:00:00 2001
+Subject: [feat]: Week-0 fast wins — correlation_id, turn traces, context assembler, capability validator (CI)
+
+Context:
+Implements the highest-leverage quick improvements:
+- correlation_id propagation
+- per-turn structured decision trace to logs/turns/
+- unified ContextAssembler
+- capability metadata completeness validator (CI)
+
+Changes:
+- Add src/core/correlation.py (ContextVar helper)
+- Add src/core/context_builder.py (ContextAssembler)
+- Add src/core/trace.py (turn trace writer with file output)
+- Enrich SimpleEventBus.emit with correlation_id in event.meta
+- Add scripts/validate_capabilities.py and CI workflow
+- Tests for trace write + context shape
+
+Impact:
+Improves observability, consistency, and reliability with minimal surface area.
+---
+diff --git a/src/core/correlation.py b/src/core/correlation.py
+new file mode 100644
+index 0000000..0c0c0c0
+--- /dev/null
++++ b/src/core/correlation.py
+@@
++from __future__ import annotations
++import uuid, contextvars
++
++correlation_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("correlation_id", default=None)
++session_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("session_id", default=None)
++
++def get_correlation_id() -> str:
++    cid = correlation_var.get()
++    if cid is None:
++        cid = uuid.uuid4().hex
++        correlation_var.set(cid)
++    return cid
++
++def set_correlation_id(cid: str) -> None:
++    correlation_var.set(cid)
++
++def get_session_id() -> str | None:
++    return session_var.get()
++
++def set_session_id(sid: str | None) -> None:
++    session_var.set(sid)
+diff --git a/src/core/context_builder.py b/src/core/context_builder.py
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/core/context_builder.py
+@@
++from __future__ import annotations
++from typing import Any, Dict, List
++from dataclasses import dataclass
++from datetime import datetime, timezone
++from .correlation import get_correlation_id, get_session_id
++
++CONTEXT_VERSION = "1.0"
++
++@dataclass
++class ContextAssembler:
++    """
++    Builds normalized context payloads for decision, tool execution, and memory.
++    Ensures stable shape + context_version across modules.
++    """
++    def __init__(self, *, user_input: str = "", recent_events: List[Dict[str, Any]] | None = None,
++                 memory_hits: List[Dict[str, Any]] | None = None, active_goals: List[str] | None = None,
++                 tool_inventory: List[Dict[str, Any]] | None = None, extras: Dict[str, Any] | None = None):
++        self.user_input = user_input
++        self.recent_events = recent_events or []
++        self.memory_hits = memory_hits or []
++        self.active_goals = active_goals or []
++        self.tool_inventory = tool_inventory or []
++        self.extras = extras or {}
++
++    def _base(self) -> Dict[str, Any]:
++        return {
++            "context_version": CONTEXT_VERSION,
++            "timestamp": datetime.now(timezone.utc).isoformat(),
++            "session_id": get_session_id(),
++            "correlation_id": get_correlation_id(),
++            "user_input": self.user_input,
++            "recent_events": self.recent_events,
++            "memory_hits": self._normalize_memory_hits(self.memory_hits),
++            "active_goals": self.active_goals,
++            "tool_inventory": self.tool_inventory,
++            "extras": self.extras,
++        }
++
++    def build_for_decision(self) -> Dict[str, Any]:
++        ctx = self._base()
++        ctx["for"] = "decision"
++        return ctx
++
++    def build_for_tool_execution(self, tool_name: str) -> Dict[str, Any]:
++        ctx = self._base()
++        ctx["for"] = "tool_execution"
++        ctx["tool_name"] = tool_name
++        return ctx
++
++    def build_for_memory(self) -> Dict[str, Any]:
++        ctx = self._base()
++        ctx["for"] = "memory"
++        return ctx
++
++    @staticmethod
++    def _normalize_memory_hits(hits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
++        out = []
++        for h in hits:
++            out.append({
++                "atom_id": h.get("atom_id"),
++                "score": float(h.get("score", 0.0)),
++                "truncated_content_hash": h.get("truncated_content_hash"),
++            })
++        return out
+diff --git a/src/core/trace.py b/src/core/trace.py
+new file mode 100644
+index 0000000..2222222
+--- /dev/null
++++ b/src/core/trace.py
+@@
++from __future__ import annotations
++import json, os
++from dataclasses import dataclass, field, asdict
++from datetime import datetime, timezone
++from typing import Any, Dict, List, Optional
++from .correlation import get_correlation_id, get_session_id
++
++LOG_DIR = os.environ.get("ALITA_TURN_LOG_DIR", "logs/turns")
++
++def _ensure_dir(path: str) -> None:
++    os.makedirs(path, exist_ok=True)
++
++@dataclass
++class ToolOutcome:
++    name: str
++    start: str
++    latency_ms: int
++    success: bool
++    error: Optional[str] = None
++
++@dataclass
++class TurnTrace:
++    turn_id: str
++    session_id: Optional[str]
++    correlation_id: str
++    timestamp: str
++    context_version: str
++    user_input: str
++    goals: List[str] = field(default_factory=list)
++    chosen_strategy: Optional[str] = None
++    candidate_capabilities: List[Dict[str, Any]] = field(default_factory=list)
++    selected_capabilities: List[str] = field(default_factory=list)
++    memory_hits: List[Dict[str, Any]] = field(default_factory=list)
++    plan_confidence: Optional[float] = None
++    execution: Dict[str, Any] = field(default_factory=lambda: {"tools": []})
++    outcome_summary: Optional[str] = None
++    adaptive_adjustments: List[Dict[str, Any]] = field(default_factory=list)
++
++    def add_tool_outcome(self, **kwargs) -> None:
++        self.execution["tools"].append(ToolOutcome(**kwargs).__dict__)
++
++    def save(self) -> str:
++        _ensure_dir(LOG_DIR)
++        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
++        session = self.session_id or "nosession"
++        fname = f"{ts}__{session}__{self.turn_id}.json"
++        path = os.path.join(LOG_DIR, fname)
++        with open(path, "w", encoding="utf-8") as f:
++            json.dump(asdict(self), f, indent=2, ensure_ascii=False)
++        return path
++
++def start_turn_trace(*, turn_id: str, context_version: str, user_input: str) -> TurnTrace:
++    return TurnTrace(
++        turn_id=turn_id,
++        session_id=get_session_id(),
++        correlation_id=get_correlation_id(),
++        timestamp=datetime.now(timezone.utc).isoformat(),
++        context_version=context_version,
++        user_input=user_input,
++    )
+diff --git a/src/core/event_bus.py b/src/core/event_bus.py
+index e1e1e1e..f2f2f2f 100644
+--- a/src/core/event_bus.py
++++ b/src/core/event_bus.py
+@@
+ import asyncio
+ import logging
+ from collections import defaultdict
+ from typing import Any, Awaitable, Callable, Dict, List, Type
++from .correlation import get_correlation_id
+ 
+ logger = logging.getLogger(__name__)
+ 
+ class SimpleEventBus:
+     def __init__(self):
+         self._subscribers: Dict[str, List[Callable[[Any], Awaitable[None]]]] = defaultdict(list)
+@@
+-    async def emit(self, event: Any, *, source_plugin: str | None = None):
++    async def emit(self, event: Any, *, source_plugin: str | None = None):
+         """
+-        Publish an event, ensuring provenance is attached.
++        Publish an event, ensuring provenance is attached.
+         - Adds meta.source_plugin if provided and missing
+-        - Adds meta.correlation_id if missing
++        - Adds meta.correlation_id if missing (ContextVar default)
+         """
+         # Defensive: ensure event.meta exists and is a dict
+         if not hasattr(event, "meta") or not isinstance(getattr(event, "meta"), dict):
+             try:
+                 event.meta = {}
+             except Exception:
+                 # As a last resort, attach to payload
+                 event.payload = event.payload or {}
+                 event.payload.setdefault("_meta", {})
+                 event.meta = event.payload["_meta"]
+ 
+-        event.meta.setdefault("correlation_id", str(uuid.uuid4()))
++        # Correlation id from context; create if missing
++        event.meta.setdefault("correlation_id", get_correlation_id())
+         if source_plugin and not event.meta.get("source_plugin"):
+             event.meta["source_plugin"] = source_plugin
+ 
+         handlers = self._subscribers.get(getattr(event, "kind", None), [])
+         if not handlers:
+             logger.debug("No subscribers for event kind=%s", getattr(event, "kind", None))
+             return
+         for h in handlers:
+             await h(event)
+diff --git a/scripts/validate_capabilities.py b/scripts/validate_capabilities.py
+new file mode 100644
+index 0000000..3333333
+--- /dev/null
++++ b/scripts/validate_capabilities.py
+@@
++#!/usr/bin/env python3
++"""
++Capability metadata completeness validator.
++Ensures each capability/tool exposes:
++  - name, description, schema
++  - cost_hint, latency_hint, safety_level
++  - test_reference (path or id)
++
++Exit non-zero if any are missing.
++"""
++from __future__ import annotations
++import importlib, pkgutil, sys, json
++from pathlib import Path
++
++REQUIRED_FIELDS = ["name", "description", "parameters", "cost_hint", "latency_hint", "safety_level", "test_reference"]
++
++def iter_plugins(package_root="src.plugins"):
++    pkg = importlib.import_module(package_root)
++    for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
++        if m.ispkg: 
++            continue
++        if not m.name.endswith("_plugin"):
++            continue
++        yield m.name
++
++def collect_tools(mod_name: str):
++    try:
++        mod = importlib.import_module(mod_name)
++    except Exception as e:
++        return [(mod_name, f"IMPORT_ERROR: {e}")]
++    tools = []
++    # plugin factory path
++    create = getattr(mod, "create_plugin", None)
++    if callable(create):
++        try:
++            plugin = create()
++            if hasattr(plugin, "get_tools"):
++                for spec in plugin.get_tools():
++                    tools.append(spec)
++        except Exception as e:
++            return [(mod_name, f"CREATE_ERROR: {e}")]
++    # also scan module-level TOOLS list if present
++    if hasattr(mod, "TOOLS") and isinstance(mod.TOOLS, list):
++        tools.extend(mod.TOOLS)
++    return tools
++
++def main() -> int:
++    missing = []
++    for mod_name in iter_plugins():
++        tools = collect_tools(mod_name)
++        # errors surfaced as tuples (mod, "ERROR...")
++        if tools and isinstance(tools[0], tuple):
++            missing.append({"module": tools[0][0], "issue": tools[0][1]})
++            continue
++        for t in tools:
++            for f in REQUIRED_FIELDS:
++                if f not in t or t.get(f) in (None, "", {}):
++                    missing.append({"module": mod_name, "tool": t.get("name"), "missing": f})
++    if missing:
++        print(json.dumps({"status":"fail", "missing": missing}, indent=2))
++        return 2
++    print(json.dumps({"status":"ok"}))
++    return 0
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/.github/workflows/capability-validate.yml b/.github/workflows/capability-validate.yml
+new file mode 100644
+index 0000000..4444444
+--- /dev/null
++++ b/.github/workflows/capability-validate.yml
+@@
++name: capability-metadata-validate
++on:
++  pull_request:
++  push:
++    branches: [ main, master ]
++jobs:
++  validate:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-python@v5
++        with:
++          python-version: '3.11'
++      - name: Install project (light)
++        run: |
++          python -m pip install -U pip
++          python -m pip install .
++      - name: Validate capabilities
++        run: python scripts/validate_capabilities.py
+diff --git a/tests/test_context_and_trace.py b/tests/test_context_and_trace.py
+new file mode 100644
+index 0000000..5555555
+--- /dev/null
++++ b/tests/test_context_and_trace.py
+@@
++import json, os
++from src.core.context_builder import ContextAssembler, CONTEXT_VERSION
++from src.core.trace import start_turn_trace, LOG_DIR
++from src.core.correlation import set_session_id, set_correlation_id, get_correlation_id
++
++def test_context_shape_and_trace_file(tmp_path, monkeypatch):
++    monkeypatch.setenv("ALITA_TURN_LOG_DIR", str(tmp_path))
++    set_session_id("sess-1")
++    set_correlation_id("corr-xyz")
++
++    ctx = ContextAssembler(
++        user_input="hi",
++        recent_events=[{"kind":"x"}],
++        memory_hits=[{"atom_id":"a1","score":0.7,"truncated_content_hash":"h"}],
++        active_goals=["g1"],
++        tool_inventory=[{"name":"t"}],
++    )
++    dctx = ctx.build_for_decision()
++    assert dctx["context_version"] == CONTEXT_VERSION
++    assert dctx["correlation_id"] == "corr-xyz"
++    assert dctx["session_id"] == "sess-1"
++    assert dctx["for"] == "decision"
++
++    tr = start_turn_trace(turn_id="turn-1", context_version=CONTEXT_VERSION, user_input="hi")
++    tr.add_tool_outcome(name="toolA", start="now", latency_ms=10, success=True)
++    path = tr.save()
++    assert os.path.exists(path)
++    data = json.loads(open(path, "r", encoding="utf-8").read())
++    assert data["correlation_id"] == "corr-xyz"
++    assert data["session_id"] == "sess-1"
++    assert data["execution"]["tools"][0]["name"] == "toolA"

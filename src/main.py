@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """FastAPI entrypoint for the REUG runtime."""
+
 from __future__ import annotations
 
 import os
 import sys
-import asyncio
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import Any, AsyncGenerator
+from typing import Any
 
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,10 +22,10 @@ if str(SRC) not in sys.path:
 try:
     from reug_runtime.router import router as agent_router
     from reug_runtime.router_tools import tools as tools_router
-    from reug_runtime import config as reug_config
 except Exception as e:  # pragma: no cover
     print("[WARN] reug_runtime not installed; make sure it’s on PYTHONPATH.", e)
     raise
+
 
 # --- Event bus (JSONL fallback + optional Redis) ---
 class FileEventBus:
@@ -35,21 +36,29 @@ class FileEventBus:
 
     async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
         # Keep minimal fields, append timestamp
-        import json, time
+        import json
+        import time
+
         event = {**event, "timestamp": time.time()}
         self.file.parent.mkdir(parents=True, exist_ok=True)
         with self.file.open("a", encoding="utf-8") as f:
             f.write(json.dumps(event, ensure_ascii=False) + "\n")
         return event
 
+
 class RedisEventBus:
-    def __init__(self, url: str = "redis://localhost:6379/0", channel: str = "reug-events"):
+    def __init__(
+        self, url: str = "redis://localhost:6379/0", channel: str = "reug-events"
+    ):
         import redis  # type: ignore
+
         self._r = redis.Redis.from_url(url)
         self._ch = channel
 
     async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
-        import json, time
+        import json
+        import time
+
         event = {**event, "timestamp": time.time()}
         try:
             self._r.publish(self._ch, json.dumps(event))
@@ -57,6 +66,7 @@ class RedisEventBus:
             # Soft-fail to file if Redis hiccups
             pass
         return event
+
 
 def make_event_bus() -> Any:
     backend = os.getenv("REUG_EVENTBUS", "").strip().lower()
@@ -66,8 +76,11 @@ def make_event_bus() -> Any:
         try:
             return RedisEventBus(url=url, channel=channel)
         except Exception as e:
-            print(f"[WARN] Redis event bus unavailable ({e}); falling back to file log.")
+            print(
+                f"[WARN] Redis event bus unavailable ({e}); falling back to file log."
+            )
     return FileEventBus(os.getenv("REUG_EVENT_LOG_DIR"))
+
 
 # --- Ability registry (minimal adapter; replace with your real one) ---
 class SimpleAbilityRegistry:
@@ -78,6 +91,7 @@ class SimpleAbilityRegistry:
       - register(): dynamic tool creation (contract-first)
       - execute(): your dispatch to MCP / SDK / code
     """
+
     def __init__(self):
         # Seed with a friendly "echo" tool
         self._known: set[str] = {"echo"}
@@ -85,7 +99,10 @@ class SimpleAbilityRegistry:
             "echo": {
                 "tool_id": "echo",
                 "description": "Echo back the provided payload",
-                "input_schema": {"type": "object", "properties": {"payload": {"type": "string"}}},
+                "input_schema": {
+                    "type": "object",
+                    "properties": {"payload": {"type": "string"}},
+                },
                 "output_schema": {"type": "object"},
             }
         }
@@ -118,6 +135,7 @@ class SimpleAbilityRegistry:
         # Fallback generic
         return {"ok": True, "tool": tool_name, "args": args}
 
+
 # --- Knowledge graph (minimal; replace with your store/driver) ---
 class SimpleKG:
     def __init__(self):
@@ -128,15 +146,23 @@ class SimpleKG:
         return f"(context for: {user_message[:48]}...)"
 
     async def get_goal_for_session(self, session_id: str) -> dict[str, Any]:
-        return {"id": f"goal_{session_id}", "description": f"Assist session {session_id}"}
+        return {
+            "id": f"goal_{session_id}",
+            "description": f"Assist session {session_id}",
+        }
 
     async def create_atom(self, atom_type: str, content: Any) -> dict[str, Any]:
         atom = {"id": f"atom_{len(self.atoms)}", "type": atom_type, "content": content}
         self.atoms.append(atom)
         return atom
 
-    async def create_bond(self, bond_type: str, source_atom_id: str, target_atom_id: str) -> None:
-        self.bonds.append({"type": bond_type, "src": source_atom_id, "tgt": target_atom_id})
+    async def create_bond(
+        self, bond_type: str, source_atom_id: str, target_atom_id: str
+    ) -> None:
+        self.bonds.append(
+            {"type": bond_type, "src": source_atom_id, "tgt": target_atom_id}
+        )
+
 
 # --- LLM client: choose provider by available key (Gemini > OpenAI > Claude) ---
 class LLMClient:
@@ -151,7 +177,7 @@ class LLMClient:
         if gemini:
             self._provider = "gemini"
             # lazy import; replace with your client if desired
-            from typing import AsyncGenerator as _T  # noqa: F401
+            from collections.abc import AsyncGenerator as _T  # noqa: F401
 
         elif openai_key:
             self._provider = "openai"
@@ -162,19 +188,29 @@ class LLMClient:
         else:
             self._provider = "mock"  # dev fallback
 
-    async def stream_chat(self, messages: list[dict[str, str]], timeout: float) -> AsyncGenerator[dict[str, str], None]:
+    async def stream_chat(
+        self, messages: list[dict[str, str]], timeout: float
+    ) -> AsyncGenerator[dict[str, str], None]:
         """
         IMPORTANT: This *must* yield {"content": "..."} chunks.
         The REUG streaming router will parse <tool_call> / <tool_result> / <final_answer>.
         """
         # Minimal development behavior:
         # If no tool_result yet, ask for an echo tool call; otherwise finalize.
-        has_result = any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages)
+        has_result = any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        )
         if not has_result:
             yield {"content": "Thinking... "}
-            yield {"content": '<tool_call>{"tool":"echo","args":{"payload":"hello"}}</tool_call>'}
+            yield {
+                "content": '<tool_call>{"tool":"echo","args":{"payload":"hello"}}</tool_call>'
+            }
         else:
-            yield {"content": '<final_answer>{"content":"done: hello","citations":[]}</final_answer>'}
+            yield {
+                "content": '<final_answer>{"content":"done: hello","citations":[]}</final_answer>'
+            }
+
 
 # --- FastAPI factory ---
 def create_app() -> FastAPI:
@@ -194,6 +230,11 @@ def create_app() -> FastAPI:
     async def health_check():
         return Response(status_code=200)
 
+    # Alternative health endpoint
+    @app.get("/health")
+    async def health_check_alt():
+        return {"status": "healthy", "service": "super-alita"}
+
     # Inject dependencies for the REUG router
     app.state.event_bus = make_event_bus()
     app.state.ability_registry = SimpleAbilityRegistry()
@@ -201,22 +242,30 @@ def create_app() -> FastAPI:
     app.state.llm_model = LLMClient()
 
     # Mount routers
-    app.include_router(agent_router)        # /v1/chat/stream
-    app.include_router(tools_router)        # /tools/* (toolbox – run tests, apply patches, etc.)
+    app.include_router(agent_router)  # /v1/chat/stream
+    app.include_router(
+        tools_router
+    )  # /tools/* (toolbox – run tests, apply patches, etc.)
 
     return app
+
 
 app = create_app()
 
 # Optional CLI entry (e.g., python src/main.py --no-chat just validates startup)
 if __name__ == "__main__":
     import argparse
+
     import uvicorn
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--host", default="0.0.0.0")
     ap.add_argument("--port", type=int, default=8080)
-    ap.add_argument("--no-chat", action="store_true", help="Boot only; don’t open sockets beyond uvicorn")
+    ap.add_argument(
+        "--no-chat",
+        action="store_true",
+        help="Boot only; don’t open sockets beyond uvicorn",
+    )
     args = ap.parse_args()
 
     # Just start the ASGI server; REUG handles single-turn streaming internally

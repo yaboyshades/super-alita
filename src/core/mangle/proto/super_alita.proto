@@ -1,0 +1,279 @@
+syntax = "proto3";
+
+package super_alita;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// Super Alita Agent gRPC Service
+service SuperAlitaAgent {
+    // Health and Status
+    rpc GetHealth(google.protobuf.Empty) returns (HealthResponse);
+    rpc GetStatus(google.protobuf.Empty) returns (StatusResponse);
+    
+    // Cortex Operations
+    rpc ProcessTask(TaskRequest) returns (TaskResponse);
+    rpc GetCortexStatus(google.protobuf.Empty) returns (CortexStatusResponse);
+    
+    // Telemetry Operations
+    rpc GetMetrics(google.protobuf.Empty) returns (MetricsResponse);
+    rpc GetEvents(EventsRequest) returns (EventsResponse);
+    rpc StreamEvents(EventsRequest) returns (stream EventStreamResponse);
+    
+    // Knowledge Graph Operations
+    rpc CreateConcept(CreateConceptRequest) returns (CreateConceptResponse);
+    rpc CreateRelationship(CreateRelationshipRequest) returns (CreateRelationshipResponse);
+    rpc QueryKnowledgeGraph(QueryRequest) returns (QueryResponse);
+    rpc GetKnowledgeGraphStats(google.protobuf.Empty) returns (KnowledgeGraphStatsResponse);
+    
+    // Optimization Operations
+    rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse);
+    rpc MakeDecision(DecisionRequest) returns (DecisionResponse);
+    rpc ProvideFeedback(FeedbackRequest) returns (FeedbackResponse);
+    rpc GetOptimizationStats(google.protobuf.Empty) returns (OptimizationStatsResponse);
+}
+
+// Health and Status Messages
+message HealthResponse {
+    enum Status {
+        HEALTHY = 0;
+        DEGRADED = 1;
+        UNHEALTHY = 2;
+    }
+    Status status = 1;
+    string message = 2;
+    google.protobuf.Timestamp timestamp = 3;
+    map<string, string> details = 4;
+}
+
+message StatusResponse {
+    string version = 1;
+    google.protobuf.Timestamp uptime = 2;
+    int32 active_plugins = 3;
+    int64 total_tasks_processed = 4;
+    int64 total_events_emitted = 5;
+    map<string, string> system_info = 6;
+}
+
+// Cortex Messages
+message TaskRequest {
+    string task_id = 1;
+    string content = 2;
+    string session_id = 3;
+    string user_id = 4;
+    string workspace = 5;
+    map<string, string> metadata = 6;
+    int32 timeout_seconds = 7;
+}
+
+message TaskResponse {
+    string task_id = 1;
+    string result = 2;
+    bool success = 3;
+    string error_message = 4;
+    double execution_time = 5;
+    google.protobuf.Timestamp completed_at = 6;
+    map<string, string> metrics = 7;
+}
+
+message CortexStatusResponse {
+    bool is_running = 1;
+    repeated ModuleInfo modules = 2;
+    int64 total_cycles = 3;
+    double average_cycle_time = 4;
+    google.protobuf.Timestamp last_cycle = 5;
+}
+
+message ModuleInfo {
+    string name = 1;
+    string type = 2;
+    bool is_active = 3;
+    int64 execution_count = 4;
+    double average_execution_time = 5;
+}
+
+// Telemetry Messages
+message MetricsResponse {
+    repeated MetricFamily metric_families = 1;
+    google.protobuf.Timestamp collected_at = 2;
+}
+
+message MetricFamily {
+    string name = 1;
+    string help = 2;
+    string type = 3; // counter, gauge, histogram, summary
+    repeated Metric metrics = 4;
+}
+
+message Metric {
+    map<string, string> labels = 1;
+    double value = 2;
+    google.protobuf.Timestamp timestamp = 3;
+}
+
+message EventsRequest {
+    string event_type = 1;
+    google.protobuf.Timestamp start_time = 2;
+    google.protobuf.Timestamp end_time = 3;
+    int32 limit = 4;
+    string source_plugin = 5;
+}
+
+message EventsResponse {
+    repeated Event events = 1;
+    int32 total_count = 2;
+    bool has_more = 3;
+}
+
+message EventStreamResponse {
+    Event event = 1;
+}
+
+message Event {
+    string event_id = 1;
+    string event_type = 2;
+    string source_plugin = 3;
+    google.protobuf.Timestamp timestamp = 4;
+    map<string, string> data = 5;
+    map<string, string> metadata = 6;
+}
+
+// Knowledge Graph Messages
+message CreateConceptRequest {
+    string name = 1;
+    map<string, string> metadata = 2;
+}
+
+message CreateConceptResponse {
+    string concept_id = 1;
+    bool success = 2;
+    string error_message = 3;
+}
+
+message CreateRelationshipRequest {
+    string source_id = 1;
+    string target_id = 2;
+    string relationship_type = 3;
+    map<string, string> metadata = 4;
+}
+
+message CreateRelationshipResponse {
+    string relationship_id = 1;
+    bool success = 2;
+    string error_message = 3;
+}
+
+message QueryRequest {
+    string query = 1;
+    int32 limit = 2;
+    map<string, string> filters = 3;
+}
+
+message QueryResponse {
+    repeated KnowledgeNode nodes = 1;
+    repeated KnowledgeEdge edges = 2;
+    int32 total_results = 3;
+}
+
+message KnowledgeNode {
+    string node_id = 1;
+    string node_type = 2;
+    string name = 3;
+    map<string, string> data = 4;
+    google.protobuf.Timestamp created_at = 5;
+}
+
+message KnowledgeEdge {
+    string edge_id = 1;
+    string edge_type = 2;
+    string source_id = 3;
+    string target_id = 4;
+    map<string, string> data = 5;
+    google.protobuf.Timestamp created_at = 6;
+}
+
+message KnowledgeGraphStatsResponse {
+    int64 total_atoms = 1;
+    int64 total_bonds = 2;
+    map<string, int64> atoms_by_type = 3;
+    map<string, int64> bonds_by_type = 4;
+    string database_path = 5;
+}
+
+// Optimization Messages
+message CreatePolicyRequest {
+    string name = 1;
+    string description = 2;
+    string algorithm_type = 3; // thompson, ucb1, epsilon_greedy
+    repeated PolicyArm arms = 4;
+    map<string, string> config = 5;
+}
+
+message PolicyArm {
+    string arm_id = 1;
+    string name = 2;
+    map<string, string> metadata = 3;
+}
+
+message CreatePolicyResponse {
+    string policy_id = 1;
+    bool success = 2;
+    string error_message = 3;
+}
+
+message DecisionRequest {
+    string policy_id = 1;
+    string session_id = 2;
+    string user_id = 3;
+    string task_type = 4;
+    map<string, string> context = 5;
+}
+
+message DecisionResponse {
+    string decision_id = 1;
+    string arm_id = 2;
+    string arm_name = 3;
+    double confidence = 4;
+    string algorithm = 5;
+    bool success = 6;
+    string error_message = 7;
+}
+
+message FeedbackRequest {
+    string decision_id = 1;
+    double reward = 2;
+    string source = 3;
+    map<string, string> metadata = 4;
+}
+
+message FeedbackResponse {
+    bool success = 1;
+    string error_message = 2;
+    bool policy_updated = 3;
+}
+
+message OptimizationStatsResponse {
+    int32 total_policies = 1;
+    int64 total_decisions = 2;
+    int64 total_rewards = 3;
+    double average_reward = 4;
+    repeated PolicyStats policy_stats = 5;
+}
+
+message PolicyStats {
+    string policy_id = 1;
+    string name = 2;
+    string algorithm_type = 3;
+    int64 decisions_made = 4;
+    int64 rewards_received = 5;
+    double average_reward = 6;
+    repeated ArmStats arm_stats = 7;
+}
+
+message ArmStats {
+    string arm_id = 1;
+    string name = 2;
+    int32 pulls = 3;
+    int32 successes = 4;
+    double success_rate = 5;
+}

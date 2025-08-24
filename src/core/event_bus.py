@@ -313,11 +313,12 @@ class EventBus:
             raise
 
     async def emit(self, event_type: str, **kwargs) -> None:
-        """Enhanced emit with automatic field population."""
+        """Enhanced emit with automatic field population and correlation ID support."""
         import uuid
         from datetime import UTC, datetime
 
         from .events import EVENT_TYPE_TO_MODEL, BaseEvent
+        from .correlation import get_correlation_id
 
         # Auto-fill mandatory fields if missing
         if "source_plugin" not in kwargs:
@@ -328,6 +329,10 @@ class EventBus:
             kwargs["timestamp"] = datetime.now(UTC)
         if "occurred_at" not in kwargs:
             kwargs["occurred_at"] = kwargs["timestamp"]
+
+        # Auto-fill correlation_id for traceability
+        if "correlation_id" not in kwargs:
+            kwargs["correlation_id"] = get_correlation_id()
 
         # Auto-fill trace_id if available in context (can be set later)
         if "trace_id" not in kwargs and hasattr(self, "_current_trace_id"):

@@ -1,0 +1,177 @@
+{
+  "name": "super-alita-guardian",
+  "displayName": "Super Alita Architectural Guardian",
+  "description": "AI-powered architectural guardian for Super Alita agent system with real-time telemetry",
+  "version": "2.0.0",
+  "publisher": "yaboyshades",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yaboyshades/super-alita.git"
+  },
+  "engines": {
+    "vscode": "^1.103.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "agent",
+    "architecture",
+    "guardian",
+    "telemetry",
+    "super-alita",
+    "copilot"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "super-alita.guardian",
+        "name": "alita",
+        "description": "Super Alita Architectural Guardian v2.0 - Expert guidance for agent architecture",
+        "isSticky": true
+      }
+    ],
+    "commands": [
+      {
+        "command": "super-alita.showTelemetry",
+        "title": "Show Telemetry Dashboard",
+        "category": "Super Alita"
+      },
+      {
+        "command": "super-alita.runCompliance",
+        "title": "Run Architectural Compliance Check",
+        "category": "Super Alita"
+      },
+      {
+        "command": "super-alita.auditWorkspace",
+        "title": "Audit Workspace Architecture",
+        "category": "Super Alita"
+      },
+      {
+        "command": "super-alita.toggleGuardianMode",
+        "title": "Toggle Guardian Mode",
+        "category": "Super Alita"
+      },
+      {
+        "command": "super-alita.showCopilotFeedback",
+        "title": "Show Copilot Performance Feedback",
+        "category": "Super Alita"
+      },
+      {
+        "command": "super-alita.rateCopilotResponse",
+        "title": "Rate Last Copilot Response",
+        "category": "Super Alita"
+      },
+      {
+        "command": "super-alita.exportTelemetryData",
+        "title": "Export Telemetry Data",
+        "category": "Super Alita"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "super-alita.showTelemetry",
+          "when": "true"
+        },
+        {
+          "command": "super-alita.runCompliance",
+          "when": "true"
+        },
+        {
+          "command": "super-alita.auditWorkspace",
+          "when": "true"
+        },
+        {
+          "command": "super-alita.toggleGuardianMode",
+          "when": "true"
+        },
+        {
+          "command": "super-alita.showCopilotFeedback",
+          "when": "true"
+        },
+        {
+          "command": "super-alita.rateCopilotResponse",
+          "when": "true"
+        },
+        {
+          "command": "super-alita.exportTelemetryData",
+          "when": "true"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "super-alita.auditWorkspace",
+          "group": "super-alita",
+          "when": "explorerResourceIsFolder"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "super-alita.telemetryView",
+          "name": "Super Alita Telemetry",
+          "when": "true"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "super-alita",
+          "title": "Super Alita",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Super Alita Guardian",
+      "properties": {
+        "super-alita.guardian.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Super Alita Architectural Guardian"
+        },
+        "super-alita.telemetry.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable telemetry tracking"
+        },
+        "super-alita.compliance.level": {
+          "type": "string",
+          "enum": [
+            "strict",
+            "moderate",
+            "advisory"
+          ],
+          "default": "moderate",
+          "description": "Architectural compliance enforcement level"
+        },
+        "super-alita.dashboard.refreshInterval": {
+          "type": "number",
+          "default": 30000,
+          "description": "Telemetry dashboard refresh interval in milliseconds"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.11",
+    "@types/vscode": "^1.103.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}

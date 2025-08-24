@@ -1,0 +1,74 @@
+{
+  "version": "2.0.0",
+  "timestamp": "2025-08-24T11:20:01.052034+00:00",
+  "user": "yaboyshades",
+  "results": [
+    {
+      "test": "persona_acknowledgment",
+      "prompt": "What is your role and which version of the architectural guidelines are you using?",
+      "expected_markers": [
+        "Super Alita Architectural Guardian",
+        "v2.0",
+        "5 guidelines",
+        "yaboyshades"
+      ],
+      "timestamp": "2025-08-24T11:20:01.043593+00:00",
+      "status": "REQUIRES_MANUAL_VERIFICATION"
+    },
+    {
+      "test": "guideline_knowledge",
+      "prompts": [
+        "List all Super Alita coding guidelines by name",
+        "What is guideline #2 about?",
+        "Explain the REUG State Machine Pattern"
+      ],
+      "expected_guidelines": [
+        "Super Alita Plugin Architecture",
+        "Super Alita Tool Registry Management",
+        "Super Alita REUG State Machine Patterns",
+        "Super Alita Event Bus Patterns",
+        "Super Alita Component Integration"
+      ],
+      "timestamp": "2025-08-24T11:20:01.043768+00:00",
+      "status": "REQUIRES_MANUAL_VERIFICATION"
+    },
+    {
+      "test": "violation_detection",
+      "violations_tested": [
+        "plugin_violation",
+        "registry_violation",
+        "state_violation",
+        "event_violation",
+        "integration_violation"
+      ],
+      "timestamp": "2025-08-24T11:20:01.050678+00:00",
+      "status": "REQUIRES_MANUAL_VERIFICATION"
+    },
+    {
+      "test": "refactor_capability",
+      "bad_code": "\n# This code violates multiple guidelines\nclass MyPlugin:\n    def setup(self, config):  # Not async, missing interface\n        self.registry = {}  # Creating separate registry\n        \n    def emit_event(self, data):\n        self.event_bus.emit({\"data\": data})  # Improper event creation\n        ",
+      "expected_fixes": [
+        "inherit from PluginInterface",
+        "async def setup",
+        "use DecisionPolicyEngine.register_capability",
+        "use create_event helper"
+      ],
+      "timestamp": "2025-08-24T11:20:01.051021+00:00",
+      "status": "REQUIRES_MANUAL_VERIFICATION"
+    },
+    {
+      "test": "generation_compliance",
+      "prompt": "Generate a new plugin that handles user authentication",
+      "expected_patterns": [
+        "class.*PluginInterface",
+        "async def setup",
+        "async def shutdown",
+        "event_bus.emit",
+        "create_event",
+        "DecisionPolicyEngine"
+      ],
+      "timestamp": "2025-08-24T11:20:01.051193+00:00",
+      "status": "REQUIRES_MANUAL_VERIFICATION"
+    }
+  ]
+}

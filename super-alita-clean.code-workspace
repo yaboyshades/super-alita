@@ -10,5 +10,7 @@
 			"path": "../ATLAI/super-alita/.github"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"powershell.cwd": "super-alita-clean"
+	}
 }
