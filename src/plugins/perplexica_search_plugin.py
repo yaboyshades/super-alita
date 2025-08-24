@@ -381,12 +381,16 @@ class PerplexicaSearchPlugin(PluginInterface):
             return []
 
     def _dedupe_results(self, results: List[SearchResult]) -> List[SearchResult]:
-        """Smart deduplication: same domain+similar title = duplicate"""
+        """Smart deduplication: same domain+similar title = duplicate."""
         seen: Dict[str, SearchResult] = {}
         deduped: List[SearchResult] = []
 
         for r in results:
-            domain = urlparse(r.url).netloc
+            # Normalize domain: lower-case and strip common "www." prefix
+            domain = urlparse(r.url).netloc.lower()
+            if domain.startswith("www."):
+                domain = domain[4:]
+
             title_sig = r.title[:30].lower()
             key = f"{domain}:{title_sig}"
 

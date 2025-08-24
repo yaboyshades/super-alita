@@ -196,11 +196,11 @@ class TestPerplexicaSearchPlugin:
 
     @pytest.mark.asyncio
     async def test_result_deduplication(self, plugin):
-        """Results with same domain and title are deduplicated."""
+        """Results with same domain (ignoring 'www') and title are deduplicated."""
         raw_results = [
             {
                 "title": "Duplicate Title",
-                "url": "https://example.com/1",
+                "url": "https://www.example.com/1",
                 "snippet": "One",
                 "source": "web",
                 "relevance_score": 0.4,
