@@ -1,255 +1,65 @@
 import * as grpc from '@grpc/grpc-js';
+import * as protoLoader from '@grpc/proto-loader';
+import path from 'path';
 
-// gRPC client configuration for Super Alita
-const GRPC_HOST = process.env.SUPER_ALITA_GRPC_HOST || 'localhost:50051';
+// gRPC connection details
+const GRPC_HOST = process.env.SUPER_ALITA_GRPC_HOST || 'localhost';
+const GRPC_PORT = process.env.SUPER_ALITA_GRPC_PORT || '50051';
+const GRPC_ADDRESS = `${GRPC_HOST}:${GRPC_PORT}`;
 
-// Type definitions for our gRPC methods
-interface HealthResponse {
-  status: number;
-  message: string;
-  timestamp: string;
-}
+// Optional TLS configuration
+const USE_TLS = process.env.SUPER_ALITA_GRPC_USE_TLS === '1';
+const credentials = USE_TLS
+  ? grpc.credentials.createSsl()
+  : grpc.credentials.createInsecure();
 
-interface StatusResponse {
-  cortex: {
-    active_sessions: number;
-    total_cycles: number;
-    uptime_seconds: number;
-  };
-  knowledge_graph: {
-    total_atoms: number;
-    total_bonds: number;
-  };
-  optimization: {
-    active_policies: number;
-    total_decisions: number;
-  };
-  system: {
-    components: Record<string, boolean>;
-    memory_usage: number;
-  };
-}
+// Load protobuf definitions
+const PROTO_PATH = path.resolve(
+  __dirname,
+  '../../../src/core/mangle/proto/super_alita.proto',
+);
 
-interface TaskRequest {
-  task_id: string;
-  content: string;
-  session_id: string;
-  user_id: string;
-  workspace: string;
-  metadata: Record<string, any>;
-}
+const packageDef = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
 
-interface TaskResponse {
-  task_id: string;
-  status: string;
-  result: any;
-  execution_time_ms: number;
-}
+const protoDescriptor = grpc.loadPackageDefinition(packageDef) as any;
+const client = new protoDescriptor.super_alita.SuperAlitaAgent(
+  GRPC_ADDRESS,
+  credentials,
+);
 
-interface KGQueryRequest {
-  query: string;
-  limit: number;
-}
-
-interface KGQueryResponse {
-  atoms: Array<{
-    id: string;
-    type: string;
-    data: Record<string, any>;
-  }>;
-  bonds: Array<{
-    id: string;
-    from_atom: string;
-    to_atom: string;
-    relation_type: string;
-  }>;
-  total_found: number;
-}
-
-interface BanditDecisionRequest {
-  policy_id: string;
-}
-
-interface BanditDecisionResponse {
-  decision_id: string;
-  algorithm: string;
-  action: string;
-  confidence: number;
-  expected_reward: number;
-}
-
-interface BanditFeedbackRequest {
-  decision_id: string;
-  reward: number;
-  source: string;
-}
-
-interface BanditFeedbackResponse {
-  success: boolean;
-  updated_policy: string;
-  new_confidence: number;
-}
-
-// Mock gRPC client implementations (replace with actual gRPC when protobuf is fixed)
-export async function getHealth(): Promise<HealthResponse> {
-  try {
-    // TODO: Replace with actual gRPC call when protobuf issues are resolved
-    // For now, return mock data that matches our system
-    return {
-      status: 0,
-      message: "Super Alita agent system operational",
-      timestamp: new Date().toISOString()
-    };
-  } catch (error) {
-    return {
-      status: 1,
-      message: `Health check failed: ${error}`,
-      timestamp: new Date().toISOString()
-    };
-  }
-}
-
-export async function getStatus(): Promise<StatusResponse> {
-  try {
-    // TODO: Replace with actual gRPC call when protobuf issues are resolved
-    return {
-      cortex: {
-        active_sessions: 3,
-        total_cycles: 1247,
-        uptime_seconds: 3600
-      },
-      knowledge_graph: {
-        total_atoms: 542,
-        total_bonds: 187
-      },
-      optimization: {
-        active_policies: 5,
-        total_decisions: 89
-      },
-      system: {
-        components: {
-          cortex: true,
-          knowledge_graph: true,
-          optimization: true,
-          telemetry: true,
-          mangle: true
-        },
-        memory_usage: 256.7
+function promisify<TReq, TRes>(method: any, request: TReq): Promise<TRes> {
+  return new Promise((resolve, reject) => {
+    method.call(client, request, (err: grpc.ServiceError, res: TRes) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(res);
       }
-    };
-  } catch (error) {
-    throw new Error(`Status check failed: ${error}`);
-  }
+    });
+  });
 }
 
-export async function processTask(request: TaskRequest): Promise<TaskResponse> {
-  try {
-    const startTime = Date.now();
-    
-    // TODO: Replace with actual gRPC call when protobuf issues are resolved
-    // Simulate processing based on task content
-    let result: any;
-    const content = request.content.toLowerCase();
-    
-    if (content.includes('analyze')) {
-      result = {
-        analysis: "Content analyzed using Cortex perception-reasoning-action cycle",
-        insights: ["Pattern detected", "Semantic relationship identified"],
-        confidence: 0.87
-      };
-    } else if (content.includes('optimize')) {
-      result = {
-        optimization: "Multi-armed bandit policy applied",
-        recommendation: "Explore action recommended based on Thompson Sampling",
-        expected_reward: 0.73
-      };
-    } else {
-      result = {
-        response: "Task processed by Super Alita cognitive architecture",
-        session_context: request.session_id,
-        processing_notes: "Full perception-reasoning-action cycle completed"
-      };
-    }
-    
-    const executionTime = Date.now() - startTime;
-    
-    return {
-      task_id: request.task_id,
-      status: "completed",
-      result,
-      execution_time_ms: executionTime
-    };
-  } catch (error) {
-    throw new Error(`Task processing failed: ${error}`);
-  }
-}
+export const getHealth = (): Promise<any> =>
+  promisify(client.GetHealth, {});
 
-export async function kgQuery(request: KGQueryRequest): Promise<KGQueryResponse> {
-  try {
-    // TODO: Replace with actual gRPC call when protobuf issues are resolved
-    // Simulate knowledge graph query
-    const mockAtoms = [
-      {
-        id: "atom_001",
-        type: "concept",
-        data: { name: "Machine Learning", domain: "AI" }
-      },
-      {
-        id: "atom_002", 
-        type: "process",
-        data: { name: "Neural Processing", stage: "reasoning" }
-      }
-    ];
-    
-    const mockBonds = [
-      {
-        id: "bond_001",
-        from_atom: "atom_001",
-        to_atom: "atom_002",
-        relation_type: "implements"
-      }
-    ];
-    
-    return {
-      atoms: mockAtoms.slice(0, request.limit),
-      bonds: mockBonds,
-      total_found: mockAtoms.length
-    };
-  } catch (error) {
-    throw new Error(`Knowledge graph query failed: ${error}`);
-  }
-}
+export const getStatus = (): Promise<any> =>
+  promisify(client.GetStatus, {});
 
-export async function banditDecide(request: BanditDecisionRequest): Promise<BanditDecisionResponse> {
-  try {
-    // TODO: Replace with actual gRPC call when protobuf issues are resolved
-    const algorithms = ['thompson_sampling', 'ucb1', 'epsilon_greedy'];
-    const actions = ['explore', 'exploit', 'random'];
-    
-    const algorithm = algorithms[Math.floor(Math.random() * algorithms.length)];
-    const action = actions[Math.floor(Math.random() * actions.length)];
-    
-    return {
-      decision_id: `decision_${Date.now()}`,
-      algorithm,
-      action,
-      confidence: Math.random() * 0.5 + 0.5, // 0.5-1.0
-      expected_reward: Math.random() * 0.4 + 0.6 // 0.6-1.0
-    };
-  } catch (error) {
-    throw new Error(`Bandit decision failed: ${error}`);
-  }
-}
+export const processTask = (req: any): Promise<any> =>
+  promisify(client.ProcessTask, req);
 
-export async function banditFeedback(request: BanditFeedbackRequest): Promise<BanditFeedbackResponse> {
-  try {
-    // TODO: Replace with actual gRPC call when protobuf issues are resolved
-    return {
-      success: true,
-      updated_policy: "thompson_sampling_v2",
-      new_confidence: Math.max(0.1, Math.min(1.0, request.reward))
-    };
-  } catch (error) {
-    throw new Error(`Bandit feedback failed: ${error}`);
-  }
-}
+export const kgQuery = (req: any): Promise<any> =>
+  promisify(client.QueryKnowledgeGraph, req);
+
+export const banditDecide = (req: any): Promise<any> =>
+  promisify(client.MakeDecision, req);
+
+export const banditFeedback = (req: any): Promise<any> =>
+  promisify(client.ProvideFeedback, req);
+
