@@ -35,6 +35,7 @@ PLUGIN_ORDER = [
     "tool_executor",  # Tool execution capability
     "creator_plugin",  # Tool creation capability
     "llm_planner",  # LLM-based planning and routing
+    "puter",  # Cloud environment integration
     "conversation",  # User interaction (legacy)
     "web_agent",  # Web search capability (legacy)
 ]
@@ -63,6 +64,8 @@ def _load_unified_plugins():
             "ToolExecutorPlugin",
             "tool_executor",
         ),
+        # Cloud integration plugins
+        ("src.plugins.puter_plugin", "PuterPlugin", "puter"),
         # Legacy plugins (fallback compatibility)
         ("src.plugins.conversation_plugin", "ConversationPlugin", "conversation"),
         ("src.atoms.web_agent_atom", "WebAgentAtom", "web_agent"),
@@ -179,6 +182,12 @@ class UnifiedSuperAlita:
                 "tool_executor": {"enabled": True},
                 "creator_plugin": {"enabled": True},
                 "llm_planner": {"enabled": True},
+                "puter": {
+                    "enabled": True,
+                    "puter_api_url": "https://api.puter.com",
+                    "puter_api_key": "",
+                    "puter_workspace_id": "default",
+                },
                 "conversation": {"enabled": True},
                 "web_agent": {"enabled": True},
             },
@@ -269,8 +278,22 @@ class UnifiedSuperAlita:
             plugin_class = AVAILABLE_PLUGINS[plugin_name]
             instance = plugin_class()
 
+            # Merge environment variables for plugin-specific configuration
+            final_config = plugin_config.copy()
+            
+            # Special handling for Puter plugin - load from environment variables
+            if plugin_name == "puter":
+                import os
+                env_config = {
+                    "puter_api_url": os.getenv("PUTER_API_URL", plugin_config.get("puter_api_url", "https://api.puter.com")),
+                    "puter_api_key": os.getenv("PUTER_API_KEY", plugin_config.get("puter_api_key", "")),
+                    "puter_workspace_id": os.getenv("PUTER_WORKSPACE_ID", plugin_config.get("puter_workspace_id", "default")),
+                }
+                final_config.update(env_config)
+                logger.info(f"Puter plugin configured with API URL: {env_config['puter_api_url']}")
+
             # Setup plugin with unified dependencies
-            await instance.setup(self.workspace, self.store, plugin_config)
+            await instance.setup(self.workspace, self.store, final_config)
 
             self.plugins[plugin_name] = instance
             logger.info(f"✅ Plugin '{plugin_name}' initialized")
