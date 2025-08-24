@@ -5,240 +5,193 @@ Telemetry data collection and aggregation for Cortex runtime
 import asyncio
 import json
 import time
-from datetime import datetime, UTC
 from typing import Dict, List, Any, Optional, Callable
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
-from ..cortex.markers import PerformanceMarker, CortexPhase, MarkerType
-from ..events import BaseEvent
+from src.cortex.markers import PerformanceMarker
+from src.events import BaseEvent
 
 
 @dataclass
-class TelemetryEvent:
-    """Individual telemetry event"""
-    event_id: str
+class TelemetrySnapshot:
+    """Snapshot of telemetry data at a point in time"""
     timestamp: float
-    event_type: str
-    source: str
-    phase: Optional[str] = None
-    duration_ms: Optional[float] = None
-    cycle_id: Optional[str] = None
-    markers: List[Dict[str, Any]] = None
-    metadata: Dict[str, Any] = None
-    
-    def __post_init__(self):
-        if self.markers is None:
-            self.markers = []
-        if self.metadata is None:
-            self.metadata = {}
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization"""
-        return asdict(self)
-
-
-@dataclass 
-class TelemetryMetrics:
-    """Aggregated telemetry metrics"""
-    total_cycles: int = 0
-    total_events: int = 0
-    avg_cycle_duration_ms: float = 0.0
-    avg_perception_duration_ms: float = 0.0
-    avg_reasoning_duration_ms: float = 0.0
-    avg_action_duration_ms: float = 0.0
-    success_rate: float = 0.0
-    error_count: int = 0
-    active_cycles: int = 0
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for API responses"""
-        return asdict(self)
+    cycle_id: str
+    phase: str
+    markers: List[Dict[str, Any]]
+    events: List[Dict[str, Any]]
+    system_metrics: Dict[str, Any]
 
 
 class TelemetryCollector:
-    """
-    Collects and aggregates telemetry data from Cortex runtime
-    """
+    """Collects and aggregates telemetry data from Cortex runtime"""
     
-    def __init__(self, output_file: Optional[Path] = None):
-        self.output_file = output_file or Path("telemetry.jsonl")
-        self.events: List[TelemetryEvent] = []
-        self.metrics = TelemetryMetrics()
-        self.active_cycles: Dict[str, float] = {}
-        self.phase_durations: Dict[str, List[float]] = {
-            "perception": [],
-            "reasoning": [], 
-            "action": []
-        }
-        self.subscribers: List[Callable[[TelemetryEvent], None]] = []
-        self._lock = asyncio.Lock()
+    def __init__(self, output_dir: Optional[Path] = None) -> None:
+        self.output_dir = output_dir or Path("telemetry")
+        self.output_dir.mkdir(exist_ok=True)
         
-    async def collect_event(self, event: BaseEvent) -> None:
-        """Collect a telemetry event from the event bus"""
-        async with self._lock:
-            telemetry_event = TelemetryEvent(
-                event_id=event.event_id,
-                timestamp=time.time(),
-                event_type=event.event_type,
-                source=event.source_plugin,
-                metadata=event.metadata
-            )
-            
-            # Extract Cortex-specific data
-            if hasattr(event, 'cycle_id'):
-                telemetry_event.cycle_id = event.cycle_id
-            
-            if hasattr(event, 'phase'):
-                telemetry_event.phase = event.phase.value if event.phase else None
-                
-            if hasattr(event, 'markers'):
-                telemetry_event.markers = [
-                    marker.to_dict() for marker in (event.markers or [])
-                ]
-                
-            self.events.append(telemetry_event)
-            await self._update_metrics(telemetry_event)
-            await self._persist_event(telemetry_event)
-            
-            # Notify subscribers
-            for subscriber in self.subscribers:
-                try:
-                    subscriber(telemetry_event)
-                except Exception as e:
-                    print(f"Error notifying telemetry subscriber: {e}")
+        self.snapshots: List[TelemetrySnapshot] = []
+        self.active_markers: Dict[str, PerformanceMarker] = {}
+        self.event_handlers: List[Callable[[BaseEvent], None]] = []
+        self.collection_enabled = True
+        self.buffer_size = 1000
+        self.auto_flush_interval = 60.0  # seconds
+        
+        # Start auto-flush task
+        self._flush_task: Optional[asyncio.Task] = None
+        self._start_auto_flush()
     
-    async def collect_marker(self, marker: PerformanceMarker) -> None:
-        """Collect a performance marker directly"""
-        async with self._lock:
-            telemetry_event = TelemetryEvent(
-                event_id=marker.id,
-                timestamp=marker.timestamp,
-                event_type="performance_marker",
-                source="cortex_performance_tracker",
-                phase=marker.phase.value if marker.phase else None,
-                duration_ms=marker.duration_ms,
-                markers=[marker.to_dict()],
-                metadata=marker.metadata or {}
-            )
-            
-            self.events.append(telemetry_event)
-            await self._update_metrics(telemetry_event)
-            await self._persist_event(telemetry_event)
-            
-            # Notify subscribers
-            for subscriber in self.subscribers:
-                try:
-                    subscriber(telemetry_event)
-                except Exception as e:
-                    print(f"Error notifying telemetry subscriber: {e}")
+    def _start_auto_flush(self) -> None:
+        """Start the auto-flush background task"""
+        if self._flush_task is None or self._flush_task.done():
+            self._flush_task = asyncio.create_task(self._auto_flush_loop())
     
-    async def _update_metrics(self, event: TelemetryEvent) -> None:
-        """Update aggregated metrics"""
-        self.metrics.total_events += 1
-        
-        # Track cycle lifecycle
-        if event.event_type == "cognitive_cycle":
-            if event.cycle_id:
-                if "start" in event.metadata.get("status", ""):
-                    self.active_cycles[event.cycle_id] = event.timestamp
-                    self.metrics.active_cycles = len(self.active_cycles)
-                elif "end" in event.metadata.get("status", ""):
-                    if event.cycle_id in self.active_cycles:
-                        start_time = self.active_cycles.pop(event.cycle_id)
-                        cycle_duration = (event.timestamp - start_time) * 1000
-                        self._update_cycle_metrics(cycle_duration)
-                        self.metrics.active_cycles = len(self.active_cycles)
-        
-        # Track phase durations from markers
-        if event.phase and event.duration_ms:
-            phase_key = event.phase.lower()
-            if phase_key in self.phase_durations:
-                self.phase_durations[phase_key].append(event.duration_ms)
-                self._recalculate_phase_averages()
-        
-        # Track errors
-        if "error" in event.event_type.lower() or event.metadata.get("success") is False:
-            self.metrics.error_count += 1
-        
-        # Calculate success rate
-        if self.metrics.total_cycles > 0:
-            self.metrics.success_rate = max(0, 1.0 - (self.metrics.error_count / self.metrics.total_cycles))
+    async def _auto_flush_loop(self) -> None:
+        """Background task to periodically flush telemetry data"""
+        while self.collection_enabled:
+            try:
+                await asyncio.sleep(self.auto_flush_interval)
+                if len(self.snapshots) > 0:
+                    await self.flush_to_disk()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"Error in telemetry auto-flush: {e}")
     
-    def _update_cycle_metrics(self, duration_ms: float) -> None:
-        """Update cycle-related metrics"""
-        self.metrics.total_cycles += 1
-        
-        # Calculate running average for cycle duration
-        if self.metrics.total_cycles == 1:
-            self.metrics.avg_cycle_duration_ms = duration_ms
-        else:
-            alpha = 2.0 / (self.metrics.total_cycles + 1)  # Exponential moving average
-            self.metrics.avg_cycle_duration_ms = (
-                alpha * duration_ms + 
-                (1 - alpha) * self.metrics.avg_cycle_duration_ms
-            )
+    def add_event_handler(self, handler: Callable[[BaseEvent], None]) -> None:
+        """Add an event handler for telemetry processing"""
+        self.event_handlers.append(handler)
     
-    def _recalculate_phase_averages(self) -> None:
-        """Recalculate phase duration averages"""
-        if self.phase_durations["perception"]:
-            self.metrics.avg_perception_duration_ms = sum(self.phase_durations["perception"]) / len(self.phase_durations["perception"])
+    def record_marker(self, marker: PerformanceMarker) -> None:
+        """Record a performance marker"""
+        if not self.collection_enabled:
+            return
         
-        if self.phase_durations["reasoning"]:
-            self.metrics.avg_reasoning_duration_ms = sum(self.phase_durations["reasoning"]) / len(self.phase_durations["reasoning"])
-        
-        if self.phase_durations["action"]:
-            self.metrics.avg_action_duration_ms = sum(self.phase_durations["action"]) / len(self.phase_durations["action"])
-    
-    async def _persist_event(self, event: TelemetryEvent) -> None:
-        """Persist event to JSONL file"""
         try:
-            with open(self.output_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(event.to_dict()) + "\n")
+            marker_id = f"{marker.cycle_id}_{marker.phase}_{marker.marker_type}"
+            self.active_markers[marker_id] = marker
         except Exception as e:
-            print(f"Error persisting telemetry event: {e}")
+            print(f"Error recording marker: {e}")
     
-    def subscribe(self, callback: Callable[[TelemetryEvent], None]) -> None:
-        """Subscribe to telemetry events"""
-        self.subscribers.append(callback)
-    
-    def unsubscribe(self, callback: Callable[[TelemetryEvent], None]) -> None:
-        """Unsubscribe from telemetry events"""
-        if callback in self.subscribers:
-            self.subscribers.remove(callback)
-    
-    def get_metrics(self) -> TelemetryMetrics:
-        """Get current aggregated metrics"""
-        return self.metrics
-    
-    def get_recent_events(self, limit: int = 100) -> List[TelemetryEvent]:
-        """Get recent telemetry events"""
-        return self.events[-limit:] if len(self.events) > limit else self.events
-    
-    def get_events_by_cycle(self, cycle_id: str) -> List[TelemetryEvent]:
-        """Get all events for a specific cycle"""
-        return [event for event in self.events if event.cycle_id == cycle_id]
-    
-    def get_phase_statistics(self, phase: str) -> Dict[str, float]:
-        """Get statistics for a specific phase"""
-        if phase.lower() not in self.phase_durations:
-            return {}
+    def record_event(self, event: BaseEvent) -> None:
+        """Record an event for telemetry"""
+        if not self.collection_enabled:
+            return
         
-        durations = self.phase_durations[phase.lower()]
-        if not durations:
-            return {}
+        try:
+            # Process with registered handlers
+            for handler in self.event_handlers:
+                handler(event)
+            
+            # Create snapshot if we have enough data
+            if hasattr(event, 'cycle_id') and hasattr(event, 'phase'):
+                self._create_snapshot_for_event(event)
+        except Exception as e:
+            print(f"Error recording event: {e}")
+    
+    def _create_snapshot_for_event(self, event: BaseEvent) -> None:
+        """Create a telemetry snapshot for an event"""
+        try:
+            # Extract markers for this cycle/phase
+            cycle_markers = []
+            if hasattr(event, 'markers') and event.markers:
+                for marker in event.markers:
+                    if hasattr(marker, 'to_dict'):
+                        cycle_markers.append(marker.to_dict())
+            
+            # Create snapshot
+            snapshot = TelemetrySnapshot(
+                timestamp=time.time(),
+                cycle_id=getattr(event, 'cycle_id', 'unknown'),
+                phase=getattr(event, 'phase', 'unknown'),
+                markers=cycle_markers,
+                events=[self._event_to_dict(event)],
+                system_metrics=self._collect_system_metrics()
+            )
+            
+            self.snapshots.append(snapshot)
+            
+            # Auto-flush if buffer is full
+            if len(self.snapshots) >= self.buffer_size:
+                asyncio.create_task(self.flush_to_disk())
+                
+        except Exception as e:
+            print(f"Error creating snapshot: {e}")
+    
+    def _event_to_dict(self, event: BaseEvent) -> Dict[str, Any]:
+        """Convert event to dictionary representation"""
+        event_dict = {
+            'type': type(event).__name__,
+            'timestamp': time.time(),
+        }
         
+        # Add event attributes safely
+        for attr in ['cycle_id', 'phase', 'data', 'metadata']:
+            if hasattr(event, attr):
+                value = getattr(event, attr)
+                if value is not None:
+                    event_dict[attr] = value
+        
+        return event_dict
+    
+    def _collect_system_metrics(self) -> Dict[str, Any]:
+        """Collect basic system metrics"""
         return {
-            "count": len(durations),
-            "average_ms": sum(durations) / len(durations),
-            "min_ms": min(durations),
-            "max_ms": max(durations),
-            "total_ms": sum(durations)
+            'timestamp': time.time(),
+            'active_markers_count': len(self.active_markers),
+            'snapshots_count': len(self.snapshots),
         }
     
-    async def clear_old_events(self, keep_last: int = 10000) -> None:
-        """Clear old events to prevent memory growth"""
-        async with self._lock:
-            if len(self.events) > keep_last:
-                self.events = self.events[-keep_last:]
-                print(f"Cleared old telemetry events, keeping {keep_last} most recent")
+    async def flush_to_disk(self) -> None:
+        """Flush collected telemetry data to disk"""
+        if not self.snapshots:
+            return
+        
+        try:
+            timestamp = int(time.time())
+            filename = f"telemetry_{timestamp}.json"
+            filepath = self.output_dir / filename
+            
+            # Convert snapshots to serializable format
+            data = {
+                'snapshots': [asdict(snapshot) for snapshot in self.snapshots],
+                'metadata': {
+                    'collection_time': time.time(),
+                    'total_snapshots': len(self.snapshots),
+                }
+            }
+            
+            # Write to file
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, default=str)
+            
+            # Clear snapshots after successful write
+            self.snapshots.clear()
+            
+        except Exception as e:
+            print(f"Error flushing telemetry to disk: {e}")
+    
+    def get_summary(self) -> Dict[str, Any]:
+        """Get a summary of collected telemetry data"""
+        return {
+            'snapshots_count': len(self.snapshots),
+            'active_markers_count': len(self.active_markers),
+            'collection_enabled': self.collection_enabled,
+            'output_directory': str(self.output_dir),
+        }
+    
+    async def shutdown(self) -> None:
+        """Shutdown the telemetry collector"""
+        self.collection_enabled = False
+        
+        # Cancel auto-flush task
+        if self._flush_task and not self._flush_task.done():
+            self._flush_task.cancel()
+            try:
+                await self._flush_task
+            except asyncio.CancelledError:
+                pass
+        
+        # Final flush
+        await self.flush_to_disk()

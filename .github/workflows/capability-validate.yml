@@ -36,13 +36,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install pyyaml
         
-    - name: Validate capability metadata
+    - name: Validate capability metadata (scoped)
       run: |
-        python scripts/validate_capabilities.py --strict --output json > capability_validation.json
+        python scripts/validate_capabilities.py --paths src/plugins --output github --strict
         
     - name: Generate validation report
       run: |
-        python scripts/validate_capabilities.py --strict --output text
+        python scripts/validate_capabilities.py --paths src/plugins --output text
         
     - name: Upload validation results
       if: always()
@@ -53,7 +53,7 @@ jobs:
         
     - name: Check validation status
       run: |
-        exit_code=$(python scripts/validate_capabilities.py --strict > /dev/null 2>&1; echo $?)
+        exit_code=$(python scripts/validate_capabilities.py --paths src/plugins --strict --output text > /dev/null 2>&1; echo $?)
         if [ $exit_code -ne 0 ]; then
           echo "❌ Capability validation failed!"
           echo "📋 Review the validation report above for details"

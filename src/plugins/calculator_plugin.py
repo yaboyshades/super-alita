@@ -59,13 +59,44 @@ class CalculatorPlugin(PluginInterface):
         logger.info("CalculatorPlugin setup complete")
 
     async def start(self) -> None:
-        """Start the calculator plugin."""
-        await super().start()
+        """Start the calculator plugin by subscribing to tool call events."""
+        logger.info("CalculatorPlugin started and ready for tool calls")
+        
+        # Subscribe to tool call events for our specific tool
+        await self.event_bus.subscribe("tool_call", self._handle_tool_call)
 
-        # Subscribe to tool_call events for calculator
-        await self.subscribe("tool_call", self._handle_tool_call)
-
-        logger.info("CalculatorPlugin started - ready for arithmetic calculations")
+    def get_tools(self):
+        """
+        Register MCP tool interface for VS Code or external tool registry.
+        """
+        return [{
+            "name": "calculate",
+            "description": "Perform safe arithmetic calculations using AST parsing to prevent code injection. Supports basic arithmetic operations (+, -, *, /, %, **), parentheses, and mathematical functions (abs, round, min, max, int, float).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string", 
+                        "description": "Mathematical expression to evaluate (e.g., '2 + 3 * 4', 'abs(-5)', 'round(3.14159, 2)')"
+                    }
+                },
+                "required": ["expression"],
+                "additionalProperties": False
+            },
+            # Metadata for validator
+            "cost_hint": "low",
+            "latency_hint": "low", 
+            "safety_level": "high",  # AST-based parsing prevents injection
+            "test_reference": "tests/plugins/test_calculator_plugin.py::test_basic_arithmetic",
+            "category": "utility",
+            "complexity": "low",
+            "version": "1.0.0",
+            "dependencies": ["ast", "operator"],
+            "integration_requirements": {
+                "event_bus": "required for tool call events",
+                "permissions": "none - read-only calculations"
+            }
+        }]
 
     async def _handle_tool_call(self, event: ToolCallEvent) -> None:
         """Handle calculator tool calls."""
