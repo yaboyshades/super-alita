@@ -13,6 +13,17 @@ from src.puter.tools_registry import ToolsRegistry
 async def main() -> None:
     logging.basicConfig(level=logging.INFO)
     registry = PluginRegistry()
+
+    # OPTIONAL: enable Worker/HMAC mode at runtime without touching code.
+    # (Alternatively, set REUG_PUTER_WORKER_ENABLED=1, REUG_PUTER_WORKER_BASE, REUG_PUTER_WORKER_SECRET)
+    if False:  # flip to True to test worker mode programmatically
+        PUTER_CONFIG["worker"]["enabled"] = True
+        PUTER_CONFIG["worker"]["base_url"] = "https://reug-bridge.puter.work"
+        PUTER_CONFIG["worker"]["shared_secret"] = "change_me_long_random"
+        # When enabled, the plugin will sign each request and target the worker.
+        # You can keep your code the same below.
+
+
     await registry.initialize_plugin("puter", PUTER_CONFIG)
     tools_registry = ToolsRegistry(registry)
     await tools_registry.initialize_tools()

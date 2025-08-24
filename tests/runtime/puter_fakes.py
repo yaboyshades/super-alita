@@ -20,6 +20,10 @@ class FakePuterServer:
             "/test": ["file.txt", "readme.md"],
         }
 
+        self.flaky_calls = 0
+
+
+
     def create_app(self) -> web.Application:
         app = web.Application()
         app.router.add_get("/api/health", self.health_check)
@@ -30,6 +34,8 @@ class FakePuterServer:
         app.router.add_post("/api/fs/mkdir", self.create_directory)
         app.router.add_get("/api/fs/stat", self.get_file_stat)
         app.router.add_post("/api/exec", self.execute_command)
+
+        app.router.add_get("/api/flaky", self.flaky_endpoint)
         return app
 
     async def health_check(self, request: web.Request) -> web.Response:
@@ -70,7 +76,11 @@ class FakePuterServer:
         path = request.query.get("path")
         if path in self.files:
             del self.files[path]
+
+        return web.Response(status=204)
+
         return web.json_response({"success": True})
+
 
     async def create_directory(self, request: web.Request) -> web.Response:
         data = await request.json()
@@ -78,6 +88,13 @@ class FakePuterServer:
         if path:
             self.directories[path] = []
         return web.json_response({"success": True})
+
+
+    async def flaky_endpoint(self, request: web.Request) -> web.Response:
+        self.flaky_calls += 1
+        if self.flaky_calls <= 2:
+            return web.json_response({"error": "temporary"}, status=503)
+        return web.json_response({"status": "ok"})
 
     async def get_file_stat(self, request: web.Request) -> web.Response:
         path = request.query.get("path")

@@ -1,8 +1,8 @@
 """Tests for Puter plugin integration."""
 
 from unittest.mock import AsyncMock, patch
-
 import aiohttp
+import json
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
@@ -16,6 +16,10 @@ from tests.runtime.puter_fakes import FakePuterServer
 
 class TestPuterPlugin(AioHTTPTestCase):
     async def get_application(self) -> web.Application:  # type: ignore[override]
+
+        self.fake_server = FakePuterServer()
+        return self.fake_server.create_app()
+
         return FakePuterServer().create_app()
 
     async def setUpAsync(self) -> None:
@@ -72,6 +76,17 @@ class TestPuterPlugin(AioHTTPTestCase):
         with pytest.raises(PuterAPIError):
             await self.plugin.read_file("/nonexistent/file.txt")
 
+
+    @unittest_run_loop
+    async def test_delete_file_no_content(self) -> None:
+        result = await self.plugin.delete_file("/test/file.txt")
+        assert result is True
+
+    @unittest_run_loop
+    async def test_retry_on_503(self) -> None:
+        result = await self.plugin._make_request("GET", "/api/flaky")
+        assert result["status"] == "ok"
+        assert self.fake_server.flaky_calls == 3
 
 class TestPuterTool(AioHTTPTestCase):
     async def get_application(self) -> web.Application:  # type: ignore[override]
@@ -165,3 +180,47 @@ async def test_error_handling_and_retries() -> None:
     with pytest.raises(PuterAPIError):
         await plugin._make_request("GET", "/api/test")
     assert session.request_call_count == 3
+
+
+
+@pytest.mark.asyncio
+async def test_worker_hmac_signing() -> None:
+    config = {
+        "base_url": "https://api.example",
+        "worker": {
+            "enabled": True,
+            "base_url": "https://worker.example",
+            "shared_secret": "secret",
+        },
+        "skip_healthcheck": True,
+    }
+    plugin = PuterPlugin(config)
+    await plugin.initialize()
+
+    def fake_request(method: str, url: str, data=None, params=None, headers=None):
+        expected_sig = plugin._hmac_sha256_hex("secret", json.dumps({"foo": "bar"}))
+        assert url == "https://worker.example/api/test"
+        assert headers["x-reug-sig"] == expected_sig
+
+        class Resp:
+            status = 200
+
+            async def json(self, content_type=None):
+                return {"ok": True}
+
+            async def text(self):
+                return ""
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        return Resp()
+
+    plugin.session.request = fake_request  # type: ignore[assignment]
+    result = await plugin._make_request("POST", "/api/test", data={"foo": "bar"})
+    assert result == {"ok": True}
+    await plugin.cleanup()
+
