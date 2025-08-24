@@ -194,11 +194,6 @@ class PerplexicaSearchPlugin(PluginInterface):
             )
             response.processing_time = time.time() - start_time
 
-            # Store in history
-            self.search_history.append(response)
-            if len(self.search_history) > 100:  # Keep last 100 searches
-                self.search_history.pop(0)
-
             # Emit result event
             await self.emit_event(
                 "perplexica_result",
@@ -293,7 +288,7 @@ class PerplexicaSearchPlugin(PluginInterface):
             citations = [f"[{i+1}] {r.title} - {r.url}" for i, r in enumerate(search_results[:5])]
             follow_ups = []
 
-        return PerplexicaResponse(
+        response = PerplexicaResponse(
             query=query,
             search_mode=search_mode,
             summary=summary,
@@ -302,8 +297,15 @@ class PerplexicaSearchPlugin(PluginInterface):
             citations=citations,
             follow_up_questions=follow_ups,
             confidence_score=self._calculate_confidence(search_results),
-            total_results=len(search_results)
+            total_results=len(search_results),
         )
+
+        # Maintain in-memory search history
+        self.search_history.append(response)
+        if len(self.search_history) > 100:
+            self.search_history.pop(0)
+
+        return response
 
     async def _search_web(self, query: str, max_results: int) -> List[Dict[str, Any]]:
         """Perform web search using existing WebAgentAtom if available."""
@@ -541,7 +543,9 @@ Please provide a detailed analysis that synthesizes the information and highligh
 
     async def get_search_history(self, limit: int = 10) -> List[PerplexicaResponse]:
         """Get recent search history."""
-        return self.search_history[-limit:] if self.search_history else []
+        if not self.search_history:
+            return []
+        return list(self.search_history[-limit:])
 
     def get_tools(self) -> List[Dict[str, Any]]:
         """Return available tools for this plugin."""
