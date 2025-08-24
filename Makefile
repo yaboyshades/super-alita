@@ -30,3 +30,6 @@ clean: ## Remove caches and logs
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	rm -rf .pytest_cache .mypy_cache .coverage coverage.xml htmlcov build dist *.egg-info
 	rm -rf logs/*
+
+deepcode-test:
+	pytest -q tests/plugins/test_deepcode_orchestrator.py tests/test_deepcode_integration.py
