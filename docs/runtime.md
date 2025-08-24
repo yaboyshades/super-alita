@@ -11,6 +11,8 @@
    - `REUG_EVENT_LOG_DIR` (default `./logs/events`)
    - `REUG_TOOL_REGISTRY_DIR`
    - `REUG_MAX_TOOL_CALLS`, `REUG_EXEC_TIMEOUT_S`, `REUG_EXEC_MAX_RETRIES`
+   - `MCP_BROADCAST_URL` (optional MCP telemetry endpoint)
+   - `MCP_BROADCAST_TOKEN` (bearer token for MCP_BROADCAST_URL)
 
    If `REUG_EVENTBUS` is unset or a Redis backend is unavailable, the runtime
    gracefully falls back to appending JSONL telemetry under

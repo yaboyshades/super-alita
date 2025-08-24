@@ -5,11 +5,13 @@ This module broadcasts agent events and telemetry data to the MCP server
 for real-time monitoring and debugging through Copilot Chat.
 """
 
-import json
 import logging
 import time
+import os
 from dataclasses import asdict, dataclass
 from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +40,24 @@ class MCPTelemetryBroadcaster:
     4. Maintains event history for analysis
     """
 
-    def __init__(self, max_events: int = 1000):
+    def __init__(
+        self,
+        max_events: int = 1000,
+        url: str | None = None,
+        token: str | None = None,
+        http_client: httpx.AsyncClient | None = None,
+    ):
         self.max_events = max_events
         self.events: list[TelemetryEvent] = []
         self.event_counts: dict[str, int] = {}
         self.start_time = time.time()
         self.is_active = False
+
+        self.mcp_url = url or os.getenv("MCP_BROADCAST_URL")
+        self.auth_token = token or os.getenv("MCP_BROADCAST_TOKEN")
+
+        self._client = http_client or httpx.AsyncClient()
+        self._owns_client = http_client is None
 
         # Event filtering - what to broadcast
         self.broadcast_event_types = {
@@ -82,6 +96,9 @@ class MCPTelemetryBroadcaster:
             source="mcp_telemetry_broadcaster",
             data={"status": "inactive", "runtime": time.time() - self.start_time},
         )
+
+        if self._owns_client:
+            await self._client.aclose()
 
     async def broadcast_event(
         self,
@@ -135,10 +152,13 @@ class MCPTelemetryBroadcaster:
         except Exception as e:
             logger.error(f"Failed to broadcast telemetry event: {e}")
 
-    async def _send_to_mcp(self, event: TelemetryEvent):
-        """Send event to MCP server (placeholder for actual implementation)."""
+    async def _send_to_mcp(self, event: TelemetryEvent) -> None:
+        """Send event to MCP server using an async HTTP client."""
+        if not self.mcp_url:
+            logger.debug("MCP_BROADCAST_URL not set; skipping event send")
+            return
+
         try:
-            # Format event for MCP transmission
             mcp_data = {
                 "type": "telemetry_event",
                 "timestamp": event.timestamp,
@@ -150,10 +170,11 @@ class MCPTelemetryBroadcaster:
                 "metadata": event.metadata,
             }
 
-            # TODO: Implement actual MCP transmission
-            # For now, log to stderr so MCP server can capture it
-            print(f"TELEMETRY: {json.dumps(mcp_data)}", flush=True)
+            headers = {"Content-Type": "application/json"}
+            if self.auth_token:
+                headers["Authorization"] = f"Bearer {self.auth_token}"
 
+            await self._client.post(self.mcp_url, json=mcp_data, headers=headers)
         except Exception as e:
             logger.error(f"Failed to send event to MCP: {e}")
 
