@@ -196,11 +196,11 @@ class TestPerplexicaSearchPlugin:
 
     @pytest.mark.asyncio
     async def test_result_deduplication(self, plugin):
-        """Results with same domain (ignoring 'www') and title are deduplicated."""
+        """Same domain (ignoring 'www' and ports) with similar titles keeps highest score."""
         raw_results = [
             {
                 "title": "Duplicate Title",
-                "url": "https://www.example.com/1",
+                "url": "https://www.example.com:443/1",
                 "snippet": "One",
                 "source": "web",
                 "relevance_score": 0.4,
@@ -228,7 +228,7 @@ class TestPerplexicaSearchPlugin:
         assert len(response.sources) == 2
         urls = [r.url for r in response.sources]
         assert "https://example.com/2" in urls  # higher score kept
-        assert "https://example.com/1" not in urls
+        assert "https://www.example.com:443/1" not in urls
         assert "https://other.com/3" in urls
 
     @pytest.mark.asyncio
