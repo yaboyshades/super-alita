@@ -23,6 +23,7 @@ async def main() -> None:
         # When enabled, the plugin will sign each request and target the worker.
         # You can keep your code the same below.
 
+
     await registry.initialize_plugin("puter", PUTER_CONFIG)
     tools_registry = ToolsRegistry(registry)
     await tools_registry.initialize_tools()

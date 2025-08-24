@@ -1,7 +1,6 @@
 """Tests for Puter plugin integration."""
 
 from unittest.mock import AsyncMock, patch
-
 import aiohttp
 import json
 import pytest
@@ -17,8 +16,11 @@ from tests.runtime.puter_fakes import FakePuterServer
 
 class TestPuterPlugin(AioHTTPTestCase):
     async def get_application(self) -> web.Application:  # type: ignore[override]
+
         self.fake_server = FakePuterServer()
         return self.fake_server.create_app()
+
+        return FakePuterServer().create_app()
 
     async def setUpAsync(self) -> None:
         await super().setUpAsync()
@@ -74,6 +76,7 @@ class TestPuterPlugin(AioHTTPTestCase):
         with pytest.raises(PuterAPIError):
             await self.plugin.read_file("/nonexistent/file.txt")
 
+
     @unittest_run_loop
     async def test_delete_file_no_content(self) -> None:
         result = await self.plugin.delete_file("/test/file.txt")
@@ -84,7 +87,6 @@ class TestPuterPlugin(AioHTTPTestCase):
         result = await self.plugin._make_request("GET", "/api/flaky")
         assert result["status"] == "ok"
         assert self.fake_server.flaky_calls == 3
-
 
 class TestPuterTool(AioHTTPTestCase):
     async def get_application(self) -> web.Application:  # type: ignore[override]
@@ -180,6 +182,7 @@ async def test_error_handling_and_retries() -> None:
     assert session.request_call_count == 3
 
 
+
 @pytest.mark.asyncio
 async def test_worker_hmac_signing() -> None:
     config = {
@@ -220,3 +223,4 @@ async def test_worker_hmac_signing() -> None:
     result = await plugin._make_request("POST", "/api/test", data={"foo": "bar"})
     assert result == {"ok": True}
     await plugin.cleanup()
+

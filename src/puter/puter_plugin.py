@@ -7,9 +7,13 @@ enabling file I/O operations and process execution through Puter's API.
 
 import asyncio
 import logging
+
 import json
 import random
 from pathlib import PurePosixPath
+
+from pathlib import Path
+
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
@@ -29,6 +33,7 @@ class PuterPlugin(PluginInterface):
 
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
+
         # Two base URLs: raw API vs Worker bridge (optional)
         self.base_url = config.get("base_url", "https://puter.com")
         worker_cfg = config.get("worker") or {}
@@ -42,6 +47,12 @@ class PuterPlugin(PluginInterface):
         self.max_retries = config.get("max_retries", 3)
         self.retriable_statuses = set(config.get("retriable_statuses", [502, 503, 504]))
         self.skip_healthcheck = bool(config.get("skip_healthcheck", False))
+
+        self.base_url = config.get("base_url", "https://puter.com")
+        self.api_key = config.get("api_key")
+        self.timeout = config.get("timeout", 30)
+        self.max_retries = config.get("max_retries", 3)
+
         self.session: Optional[aiohttp.ClientSession] = None
         self.current_directory = "/"
 
@@ -49,8 +60,12 @@ class PuterPlugin(PluginInterface):
         """Initialize the plugin and establish connection to Puter."""
         connector = aiohttp.TCPConnector(limit=100, limit_per_host=30)
         timeout = aiohttp.ClientTimeout(total=self.timeout)
+
         # NOTE: don't set JSON Content-Type globally; set it per request if needed
         headers = {"User-Agent": "PuterAgent/1.0"}
+
+        headers = {"User-Agent": "PuterAgent/1.0", "Content-Type": "application/json"}
+
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
 
@@ -71,6 +86,18 @@ class PuterPlugin(PluginInterface):
 
         self.is_initialized = True
 
+            connector=connector, timeout=timeout, headers=headers
+        )
+
+        try:
+            await self._make_request("GET", "/api/health")
+            logger.info("Successfully connected to Puter instance")
+            self.is_initialized = True
+        except Exception as exc:  # pragma: no cover - network failure
+            logger.error("Failed to connect to Puter: %s", exc)
+            raise PuterAPIError(f"Connection failed: {exc}")
+
+
     async def cleanup(self) -> None:
         if self.session:
             await self.session.close()
@@ -84,10 +111,13 @@ class PuterPlugin(PluginInterface):
         data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
         retry_count: int = 0,
+
         expect_json: bool = True,
+
     ) -> Dict[str, Any]:
         if not self.session:
             raise PuterAPIError("Plugin not initialized")
+
 
         # Decide which base to use
         base = self.worker_base_url if (self.worker_enabled and self.worker_base_url) else self.base_url
@@ -168,6 +198,23 @@ class PuterPlugin(PluginInterface):
                     params,
                     retry_count + 1,
                     expect_json=expect_json,
+
+        url = urljoin(self.base_url, endpoint)
+        try:
+            async with self.session.request(
+                method, url, json=data, params=params
+            ) as response:
+                response_data = await response.json()
+                if response.status >= 400:
+                    error_msg = response_data.get("error", f"HTTP {response.status}")
+                    raise PuterAPIError(f"API Error: {error_msg}")
+                return response_data
+        except aiohttp.ClientError as exc:
+            if retry_count < self.max_retries:
+                await asyncio.sleep(2 ** retry_count)
+                return await self._make_request(
+                    method, endpoint, data, params, retry_count + 1
+
                 )
             raise PuterAPIError(f"Network error: {exc}")
 
@@ -177,14 +224,23 @@ class PuterPlugin(PluginInterface):
         if path == ".":
             return self.current_directory
         if path == "..":
+
             return str(PurePosixPath(self.current_directory).parent) or "/"
         return str(PurePosixPath(self.current_directory) / path)
+
+            return str(Path(self.current_directory).parent)
+        return str(Path(self.current_directory) / path)
+
 
     # File I/O operations
     async def read_file(self, path: str) -> str:
         full_path = self._resolve_path(path)
         response = await self._make_request(
+
             "GET", "/api/fs/read", params={"path": full_path}, expect_json=True
+
+            "GET", "/api/fs/read", params={"path": full_path}
+
         )
         return response.get("content", "")
 
@@ -197,15 +253,23 @@ class PuterPlugin(PluginInterface):
     async def list_directory(self, path: str = ".") -> List[Dict[str, Any]]:
         full_path = self._resolve_path(path)
         response = await self._make_request(
+
             "GET", "/api/fs/list", params={"path": full_path}, expect_json=True
+
+            "GET", "/api/fs/list", params={"path": full_path}
+
         )
         return response.get("items", [])
 
     async def delete_file(self, path: str) -> bool:
         full_path = self._resolve_path(path)
+
         await self._make_request(
             "DELETE", "/api/fs/delete", params={"path": full_path}, expect_json=True
         )
+
+        await self._make_request("DELETE", "/api/fs/delete", params={"path": full_path})
+
         return True
 
     async def create_directory(self, path: str) -> bool:
@@ -252,7 +316,11 @@ class PuterPlugin(PluginInterface):
     async def get_file_info(self, path: str) -> Dict[str, Any]:
         full_path = self._resolve_path(path)
         return await self._make_request(
+
             "GET", "/api/fs/stat", params={"path": full_path}, expect_json=True
+
+            "GET", "/api/fs/stat", params={"path": full_path}
+
         )
 
     def get_plugin_info(self) -> Dict[str, Any]:
@@ -266,6 +334,7 @@ class PuterPlugin(PluginInterface):
                 "directory_management",
             ],
         }
+
 
     @staticmethod
     def _hmac_sha256_hex(secret: str, body: str) -> str:
