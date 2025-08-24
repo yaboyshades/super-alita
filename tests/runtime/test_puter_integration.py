@@ -67,8 +67,13 @@ def mock_neural_store():
 @pytest.fixture
 def puter_config():
     """Provide test configuration for Puter plugin."""
+    import os
+
+    for key in ["PUTER_BASE_URL", "PUTER_API_KEY", "PUTER_WORKSPACE_ID"]:
+        os.environ.pop(key, None)
+
     return {
-        "puter_api_url": "https://test.puter.com",
+        "puter_base_url": "https://test.puter.com",
         "puter_api_key": "test_key_123",
         "puter_workspace_id": "test_workspace",
     }

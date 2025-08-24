@@ -42,7 +42,7 @@ async def test_puter_plugin_initialization_with_env():
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
     
     # Set environment variables
-    os.environ["PUTER_API_URL"] = "https://test.puter.com"
+    os.environ["PUTER_BASE_URL"] = "https://test.puter.com"
     os.environ["PUTER_API_KEY"] = "test_key_123"
     os.environ["PUTER_WORKSPACE_ID"] = "test_workspace"
     
@@ -62,7 +62,7 @@ async def test_puter_plugin_initialization_with_env():
         # Test configuration loading from environment
         config = {
             "enabled": True,
-            "puter_api_url": "https://default.puter.com",  # Should be overridden
+            "puter_base_url": "https://default.puter.com",  # Should be overridden
             "puter_api_key": "default_key",  # Should be overridden
             "puter_workspace_id": "default",  # Should be overridden
         }
@@ -85,7 +85,7 @@ async def test_puter_plugin_initialization_with_env():
         
     finally:
         # Clean up environment
-        for key in ["PUTER_API_URL", "PUTER_API_KEY", "PUTER_WORKSPACE_ID"]:
+        for key in ["PUTER_BASE_URL", "PUTER_API_KEY", "PUTER_WORKSPACE_ID"]:
             os.environ.pop(key, None)
 
 
@@ -122,7 +122,7 @@ async def test_end_to_end_puter_workflow():
     mock_store = MagicMock()
     
     config = {
-        "puter_api_url": "https://test.puter.com",
+        "puter_base_url": "https://test.puter.com",
         "puter_api_key": "test_key",
         "puter_workspace_id": "test",
     }
