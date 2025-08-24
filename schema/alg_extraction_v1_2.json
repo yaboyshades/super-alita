@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Algorithm Extraction v1.2",
+  "type": "object",
+  "required": ["alg_extraction_v1", "validation_summary", "telemetry"],
+  "properties": {
+    "alg_extraction_v1": {
+      "type": "object",
+      "required": ["algorithms","components","hyperparameters","equations","implementation_plan","sources"],
+      "properties": {
+        "algorithms": {"type":"array","items":{"type":"object"}},
+        "components": {"type":"array","items":{"type":"object"}},
+        "hyperparameters": {"type":"array","items":{"type":"object"}},
+        "equations": {"type":"array","items":{"type":"object"}},
+        "implementation_plan": {"type":"array","items":{"type":"object"}},
+        "sources": {"type":"array","items":{"type":"object"}},
+        "duplicates_found": {"type":"array","items":{"type":"object"}},
+        "component_dependency_graph": {
+          "type":"object",
+          "properties": {
+            "nodes": {"type":"array","items":{"type":"string"}},
+            "edges": {"type":"array","items":{"type":"array","minItems":2,"maxItems":2}}
+          }
+        },
+        "ambiguous_statements": {"type":"array","items":{"type":"object"}}
+      }
+    },
+    "validation_summary": {
+      "type":"object",
+      "required":["missing_required_fields","unknown_fields"],
+      "properties": {
+        "missing_required_fields":{"type":"array","items":{"type":"string"}},
+        "unknown_fields":{"type":"array","items":{"type":"string"}}
+      }
+    },
+    "telemetry": {
+      "type":"object",
+      "required":["prompt_version","schema_version","retrieval_mode","retrieval_rounds","segments_used"],
+      "properties": {
+        "prompt_version":{"type":"string"},
+        "schema_version":{"type":"string"},
+        "retrieval_mode":{"type":"string"},
+        "retrieval_rounds":{"type":"integer"},
+        "segments_used":{"type":"integer"},
+        "total_extracted":{"type":"object"}
+      }
+    }
+  }
+}
