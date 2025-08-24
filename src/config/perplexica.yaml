@@ -1,0 +1,43 @@
+# Perplexica Search Configuration
+perplexica:
+  default_mode: web
+  max_parallel_requests: 4
+  max_results: 12
+  safe: true
+  time_range_default: all
+
+  provider_order:
+    web: [serpapi, bing, google_cse]
+    news: [gnews, serpapi]
+    images: [serpapi_images, bing_images]
+    video: [youtube, serpapi_video]
+    academic: [semantic_scholar, crossref]
+    reddit: [pushshift, reddit_api]
+    shopping: [serpapi_shopping]
+    wolfram: [wolfram_alpha]
+
+  cache:
+    enabled: true
+    ttl_seconds: 86400
+    key_fields: [query, mode, region, time_range]
+
+  rate_limits:
+    serpapi:
+      rpm: 120
+      burst: 20
+    bing:
+      rpm: 60
+      burst: 10
+
+  rerank:
+    enabled: true
+    model: bge-large
+    top_k: 20
+
+  summarizer:
+    model: gpt-4o-mini
+    max_tokens: 800
+
+  safety:
+    blocklist: [piracy, explicit gore]
+    nsfw: strict

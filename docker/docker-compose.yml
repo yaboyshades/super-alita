@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  acp-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.acp
+    ports:
+      - "8000:8000"
+    environment:
+      - ACP_HOST=0.0.0.0
+      - ACP_PORT=8000
+      - ACP_REQUIRE_AUTH=false
+      - LOG_LEVEL=INFO
+    volumes:
+      - ../src:/app/src
+    networks:
+      - acp-network
+
+  mcp-adapter:
+    image: ghcr.io/i-am-bee/acp-mcp:latest
+    depends_on:
+      - acp-server
+    environment:
+      - ACP_URL=http://acp-server:8000
+    entrypoint: ["acp-mcp", "http://acp-server:8000"]
+    networks:
+      - acp-network
+
+networks:
+  acp-network:
+    driver: bridge
