@@ -56,10 +56,18 @@ class PuterPlugin(PluginInterface):
         await super().setup(event_bus, store, config)
         
         # Initialize Puter client configuration
+        import os
+
         self.puter_config = {
-            "api_url": config.get("puter_api_url", "https://api.puter.com"),
-            "api_key": config.get("puter_api_key", ""),
-            "workspace_id": config.get("puter_workspace_id", "default"),
+            "api_url": os.getenv(
+                "PUTER_BASE_URL", config.get("puter_base_url", "https://puter.com")
+            ),
+            "api_key": os.getenv(
+                "PUTER_API_KEY", config.get("puter_api_key", "")
+            ),
+            "workspace_id": os.getenv(
+                "PUTER_WORKSPACE_ID", config.get("puter_workspace_id", "default")
+            ),
         }
         
         # Track operation history for neural atoms

@@ -41,9 +41,12 @@ Add these to your `.env` file:
 
 ```bash
 # Puter Cloud Environment
-PUTER_API_URL=https://api.puter.com
-PUTER_API_KEY=your_puter_api_key_here
-PUTER_WORKSPACE_ID=default
+# Default remote instance
+PUTER_BASE_URL=https://puter.com
+# PUTER_API_KEY=your_puter_api_key_here
+# PUTER_WORKSPACE_ID=default
+# For local hosting, override base URL:
+# PUTER_BASE_URL=http://localhost:4100
 ```
 
 ### Plugin Configuration
@@ -54,7 +57,7 @@ The plugin is automatically enabled in the unified system with configuration:
 plugins:
   puter:
     enabled: true
-    puter_api_url: "https://api.puter.com"
+    puter_base_url: "https://puter.com"
     puter_api_key: ""
     puter_workspace_id: "default"
 ```
