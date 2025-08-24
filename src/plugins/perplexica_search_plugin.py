@@ -16,8 +16,8 @@ from enum import Enum
 import aiohttp
 from pydantic import BaseModel, Field
 
-from src.core.plugin_interface import PluginInterface
-from src.core.events import BaseEvent, create_event
+from core.plugin_interface import PluginInterface
+from core.events import BaseEvent, create_event
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +208,7 @@ class PerplexicaSearchPlugin(PluginInterface):
             )
 
             # Also emit as tool result for compatibility
-            from src.core.events import ToolResultEvent
+            from core.events import ToolResultEvent
             
             tool_result = ToolResultEvent(
                 source_plugin=self.name,
