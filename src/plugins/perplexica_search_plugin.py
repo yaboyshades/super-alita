@@ -12,6 +12,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 from enum import Enum
+from urllib.parse import urlparse
 
 import aiohttp
 from pydantic import BaseModel, Field
@@ -277,6 +278,9 @@ class PerplexicaSearchPlugin(PluginInterface):
             )
             for result in raw_results
         ]
+
+        # Remove duplicates across providers
+        search_results = self._dedupe_results(search_results)
         
         # Generate AI reasoning and summary if requested
         if include_reasoning and self.llm_client:
@@ -375,6 +379,26 @@ class PerplexicaSearchPlugin(PluginInterface):
         except Exception as e:
             logger.error(f"Fallback search failed: {e}")
             return []
+
+    def _dedupe_results(self, results: List[SearchResult]) -> List[SearchResult]:
+        """Smart deduplication: same domain+similar title = duplicate"""
+        seen: Dict[str, SearchResult] = {}
+        deduped: List[SearchResult] = []
+
+        for r in results:
+            domain = urlparse(r.url).netloc
+            title_sig = r.title[:30].lower()
+            key = f"{domain}:{title_sig}"
+
+            if key not in seen:
+                seen[key] = r
+                deduped.append(r)
+            elif r.relevance_score > seen[key].relevance_score:
+                idx = deduped.index(seen[key])
+                deduped[idx] = r
+                seen[key] = r
+
+        return deduped
 
     async def _generate_ai_analysis(
         self, 

@@ -195,6 +195,43 @@ class TestPerplexicaSearchPlugin:
         assert result.relevance_score == 0.9
 
     @pytest.mark.asyncio
+    async def test_result_deduplication(self, plugin):
+        """Results with same domain and title are deduplicated."""
+        raw_results = [
+            {
+                "title": "Duplicate Title",
+                "url": "https://example.com/1",
+                "snippet": "One",
+                "source": "web",
+                "relevance_score": 0.4,
+            },
+            {
+                "title": "Duplicate Title",
+                "url": "https://example.com/2",
+                "snippet": "Two",
+                "source": "web",
+                "relevance_score": 0.9,
+            },
+            {
+                "title": "Unique Title",
+                "url": "https://other.com/3",
+                "snippet": "Three",
+                "source": "web",
+                "relevance_score": 0.8,
+            },
+        ]
+
+        plugin.mode_handlers[SearchMode.WEB] = AsyncMock(return_value=raw_results)
+
+        response = await plugin.search("dup test", SearchMode.WEB, include_reasoning=False)
+
+        assert len(response.sources) == 2
+        urls = [r.url for r in response.sources]
+        assert "https://example.com/2" in urls  # higher score kept
+        assert "https://example.com/1" not in urls
+        assert "https://other.com/3" in urls
+
+    @pytest.mark.asyncio
     async def test_confidence_calculation(self, plugin):
         """Test confidence score calculation."""
         # Test with no results
