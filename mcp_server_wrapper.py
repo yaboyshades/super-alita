@@ -106,3 +106,41 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+# --- Decision Policy Bridge ---
+from src.core.decision_policy_v1 import DecisionPolicyEngine  # noqa: E402
+from src.mcp_local.registry import ToolRegistry as LocalToolRegistry  # noqa: E402
+from typing import Dict  # noqa: E402
+
+
+class MCPBridge:
+    def __init__(self):
+        self.decision_policy = DecisionPolicyEngine()
+        self.mcp_registry = LocalToolRegistry()
+
+    async def register_mcp_tools_as_capabilities(self):
+        for tool_name in self.mcp_registry.list_tools():
+            cap = self._convert_mcp_to_capability(
+                {
+                    "name": tool_name,
+                    "description": f"MCP tool {tool_name}",
+                    "inputSchema": {},
+                }
+            )
+            if hasattr(self.decision_policy, "register_capability"):
+                self.decision_policy.register_capability(cap)  # type: ignore[attr-defined]
+
+    def _create_mcp_executor(self, name: str):
+        async def _exec(**kwargs):
+            return await self.mcp_registry.invoke(name, kwargs)
+
+        return _exec
+
+    def _convert_mcp_to_capability(self, tool_spec: Dict) -> Dict:
+        return {
+            "name": tool_spec["name"],
+            "description": tool_spec.get("description", ""),
+            "parameters": tool_spec.get("inputSchema", {}),
+            "type": "mcp_tool",
+            "executor": self._create_mcp_executor(tool_spec["name"]),
+        }

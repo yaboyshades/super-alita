@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from typing import Any, cast
 
 from src.computational_env.executor import ComputationalEnvironment
+from src.core.decision_policy_v1 import DecisionPolicyEngine
 from src.core.observability import ObservabilityLevel, get_observability_manager
 from src.core.plugin_interface import PluginInterface
 from src.core.session import Session
@@ -47,6 +48,9 @@ class REUGExecutionFlow:
         )
         self.logger = logging.getLogger(__name__)
 
+        # Decision Policy
+        self.decision_policy = DecisionPolicyEngine()
+
         # Observability
         self.observability = get_observability_manager()
         self.observability.level = ObservabilityLevel.DETAILED
@@ -68,6 +72,31 @@ class REUGExecutionFlow:
         self.turns_processed = 0
         self.errors_recovered = 0
         self.total_execution_time = 0.0
+
+    def _build_decision_context(self) -> dict[str, Any]:
+        return {
+            "session_id": self.current_session_id,
+            "history": self.session.history if hasattr(self.session, "history") else [],
+            "plugin_count": len(self.plugins),
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+
+    def _convert_plan_to_tools(self, plan) -> list[dict[str, Any]]:
+        tools: list[dict[str, Any]] = []
+        items = getattr(plan, "plan", []) or []
+        for step in items:
+            name = step.get("name") or step.get("tool") or "unknown_tool"
+            tools.append(
+                {
+                    "name": name,
+                    "description": step.get("description", ""),
+                    "type": step.get("type", "decision_policy"),
+                    "function": {"name": name, "parameters": step.get("args", {})},
+                    "plugin_name": step.get("plugin", ""),
+                    "sot_step_id": step.get("sot_step_id", ""),
+                }
+            )
+        return tools
 
     def _enhance_state_handlers(self) -> None:
         """Bind concrete handlers into the underlying state machine."""
@@ -291,10 +320,10 @@ class REUGExecutionFlow:
             memory_context = await self._load_memory_context(intent, user_input)
             self.state_machine.context.memory_context = memory_context
 
-            # Route to appropriate tools based on intent and SoT analysis
-            selected_tools = await self._route_tools_enhanced(
-                intent, user_input, memory_context, sot_parse_result
-            )
+            # Use Decision Policy instead of legacy router
+            ctx = self._build_decision_context()
+            plan = await self.decision_policy.decide_and_plan(user_input, ctx)
+            selected_tools = self._convert_plan_to_tools(plan)
             self.state_machine.context.tools_selected = selected_tools
 
             # **ADDED: Log the chosen tools at TOOLS_ROUTED stage**
