@@ -65,4 +65,10 @@ For demo scripts such as `complete_agent_demo.py`, run a local Redis server
 Set `REUG_EVENTBUS=redis` to route telemetry through Redis/Memurai; otherwise
 events are appended to JSONL files under `REUG_EVENT_LOG_DIR`.
 
+Additional knobs:
+- `REDIS_URL`, `REUG_REDIS_CHANNEL` when using the Redis event bus
+- `REUG_REGISTRY` for ability registry backend
+- `REUG_KG` for knowledge graph backend
+- `REUG_LLM_PROVIDER` to force a specific LLM provider (`auto` picks by key)
+
 The `tests/` folder covers core utilities, planner logic, plugins, and integration flows.

@@ -20,6 +20,8 @@ if str(SRC) not in sys.path:
 
 # REUG runtime routers (streaming agent + toolbox)
 try:
+    import reug_runtime.config as runtime_config
+    from reug_runtime.config import Settings, load_settings
     from reug_runtime.router import router as agent_router
     from reug_runtime.router_tools import tools as tools_router
 except Exception as e:  # pragma: no cover
@@ -47,9 +49,7 @@ class FileEventBus:
 
 
 class RedisEventBus:
-    def __init__(
-        self, url: str = "redis://localhost:6379/0", channel: str = "reug-events"
-    ):
+    def __init__(self, url: str, channel: str) -> None:
         import redis  # type: ignore
 
         self._r = redis.Redis.from_url(url)
@@ -68,18 +68,16 @@ class RedisEventBus:
         return event
 
 
-def make_event_bus() -> Any:
-    backend = os.getenv("REUG_EVENTBUS", "").strip().lower()
+def make_event_bus(settings: Settings) -> Any:
+    backend = settings.event_bus_backend
     if backend == "redis":
-        url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        channel = os.getenv("REUG_REDIS_CHANNEL", "reug-events")
+        url = settings.redis_url or "redis://localhost:6379/0"
+        channel = settings.redis_channel
         try:
             return RedisEventBus(url=url, channel=channel)
         except Exception as e:
-            print(
-                f"[WARN] Redis event bus unavailable ({e}); falling back to file log."
-            )
-    return FileEventBus(os.getenv("REUG_EVENT_LOG_DIR"))
+            print(f"[WARN] Redis event bus unavailable ({e}); falling back to file log.")
+    return FileEventBus(settings.event_log_dir)
 
 
 # --- Ability registry (minimal adapter; replace with your real one) ---
@@ -164,11 +162,29 @@ class SimpleKG:
         )
 
 
+def make_ability_registry(settings: Settings) -> Any:
+    if settings.ability_registry_backend == "simple":
+        return SimpleAbilityRegistry()
+    raise ValueError(
+        f"unknown registry backend: {settings.ability_registry_backend}"
+    )
+
+
+def make_kg(settings: Settings) -> Any:
+    if settings.kg_backend == "simple":
+        return SimpleKG()
+    raise ValueError(f"unknown KG backend: {settings.kg_backend}")
+
+
 # --- LLM client: choose provider by available key (Gemini > OpenAI > Claude) ---
 class LLMClient:
-    def __init__(self):
+    def __init__(self, provider: str = "auto"):
         self._provider = None
         self._model = None
+
+        if provider != "auto":
+            self._provider = provider
+            return
 
         gemini = os.getenv("GEMINI_API_KEY")
         openai_key = os.getenv("OPENAI_API_KEY")
@@ -176,15 +192,11 @@ class LLMClient:
 
         if gemini:
             self._provider = "gemini"
-            # lazy import; replace with your client if desired
             from collections.abc import AsyncGenerator as _T  # noqa: F401
-
         elif openai_key:
             self._provider = "openai"
-
         elif anthropic:
             self._provider = "anthropic"
-
         else:
             self._provider = "mock"  # dev fallback
 
@@ -212,6 +224,10 @@ class LLMClient:
             }
 
 
+def make_llm(settings: Settings) -> LLMClient:
+    return LLMClient(provider=settings.llm_provider)
+
+
 # --- FastAPI factory ---
 def create_app() -> FastAPI:
     app = FastAPI(title="REUG Runtime", version="0.2.0")
@@ -235,17 +251,35 @@ def create_app() -> FastAPI:
     async def health_check_alt():
         return {"status": "healthy", "service": "super-alita"}
 
-    # Inject dependencies for the REUG router
-    app.state.event_bus = make_event_bus()
-    app.state.ability_registry = SimpleAbilityRegistry()
-    app.state.kg = SimpleKG()
-    app.state.llm_model = LLMClient()
+    @app.on_event("startup")
+    async def _startup() -> None:
+        settings = load_settings()
+        runtime_config.SETTINGS = settings
+        app.state.settings = settings
+        app.state.event_bus = make_event_bus(settings)
+        app.state.ability_registry = make_ability_registry(settings)
+        app.state.kg = make_kg(settings)
+        app.state.llm_model = make_llm(settings)
+
+    @app.on_event("shutdown")
+    async def _shutdown() -> None:
+        for name in ("event_bus", "ability_registry", "kg", "llm_model"):
+            obj = getattr(app.state, name, None)
+            if obj is None:
+                continue
+            close = getattr(obj, "close", None)
+            aclose = getattr(obj, "aclose", None)
+            try:
+                if callable(aclose):
+                    await aclose()
+                elif callable(close):
+                    close()
+            except Exception:
+                pass
 
     # Mount routers
     app.include_router(agent_router)  # /v1/chat/stream
-    app.include_router(
-        tools_router
-    )  # /tools/* (toolbox – run tests, apply patches, etc.)
+    app.include_router(tools_router)  # /tools/* (toolbox – run tests, apply patches, etc.)
 
     return app
 
