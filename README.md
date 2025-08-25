@@ -1,60 +1,141 @@
 # Super Alita
 
+Advanced, event-driven AI agent system with modular plugins, MCP integration, knowledge graph, streaming orchestration, and adaptive LLM routing.
 
-A production-ready autonomous agent system with streaming orchestration and rich tooling.
+Production-ready architecture with:
+
+- Streaming orchestration
+- Rich telemetry + MCP broadcast
+- Fallback LLM routing (Gemini → local Super Alita → mock / local HF model)
+- Knowledge graph + cognitive fabric (Atoms / Bonds)
+- Modular plugin system
+- OpenAI-compatible local adapter option
+
+## Key Features
+
+- Event bus with Redis optional backend
+- MCP server + VS Code integration
+- Atoms/Bonds cognitive fabric
+- Modular plugin architecture
+- Streaming single-turn agent router
+- Tool execution + echo sample tool
+- Real-time telemetry broadcasting via MCP
+- Automatic LLM fallback (Gemini -> local Super Alita -> mock) with telemetry events
+- Direct local Hugging Face model loading (`LLM_MODEL=hf:<model_id>`)
 
 ## Quick Start
 
-1. Create an environment file:
-   ```bash
-   cp .env.example .env  # then add one provider API key
-   ```
-2. Install dependencies:
-   ```bash
-   make deps
-   ```
-3. Run the development server:
-   ```bash
-   make run
-   ```
-4. Run the runtime test suite:
-   ```bash
-   make test
-   ```
+Two equivalent setup paths are provided: Makefile workflow (recommended) or raw Python commands.
 
-See [docs/runtime.md](docs/runtime.md) for detailed configuration and Docker instructions.
+### 1. Environment file
 
+```bash
+cp .env.example .env  # then set at least one provider key or local model config
+```
 
-## Quick start
+### 2. Install dependencies
 
-1. **Create environment**
+Using Make (includes lint targets):
 
-   Copy the sample environment file and add at least one API key:
+```bash
+make deps
+make lint  # optional
+```
 
-   ```bash
-   cp .env.example .env
-   ```
+Or manually:
 
-2. **Install dependencies and lint**
+```bash
+python -m venv .venv
+./.venv/Scripts/Activate.ps1  # Windows PowerShell
+pip install -e .
+```
 
-   Use the provided Make targets to set up and validate the project:
+### 3. Run the development server
 
-   ```bash
-   make deps
-   make lint
-   ```
+```bash
+make run
+# or manually
+python -m uvicorn src.main:app --reload --port 8080
+```
 
-3. **Run the development server**
+### 4. Run tests
 
-   ```bash
-   make run
-   ```
+```bash
+make test
+# or manually
+pytest -q
+```
 
-For additional runtime details, see [docs/runtime.md](docs/runtime.md).
+Health check:
 
-Debug utilities (`debug_fixed.py`, `debug_matching.py`, and `utility_debug.py`) now live under `scripts/`.
+```bash
+curl http://127.0.0.1:8080/healthz
+```
 
-Use these scripts for exploring decision policy behavior and testing policy tweaks.
+Debug utilities (`debug_fixed.py`, `debug_matching.py`, `utility_debug.py`) are under `scripts/`.
 
+## LLM Fallback Configuration
 
+Set `LLM_MODEL=auto` to enable automatic provider selection.
+
+Order of preference:
+
+1. Gemini (if `GEMINI_API_KEY` or `GOOGLE_API_KEY` set)
+2. Local Super Alita OpenAI-compatible adapter (`SUPER_ALITA_BASE_URL`)
+3. Deterministic mock (development/test)
+
+Environment variables:
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `LLM_MODEL` | Target model name or `auto` | `mock` |
+| `SUPER_ALITA_BASE_URL` | Base URL for local adapter | `http://127.0.0.1:8080` |
+| `SUPER_ALITA_MODEL` | Model name passed to adapter | `gpt-oss-20b-4bit` |
+| `SUPER_ALITA_API_KEY` | Optional bearer token | (unset) |
+
+Telemetry events emitted:
+
+- `llm_fallback` when Super Alita fallback client is selected
+- `performance_metric` with `metric=llm_stream_duration_s` per streamed turn
+
+Example `.env`:
+
+```dotenv
+LLM_MODEL=auto
+GEMINI_API_KEY=your_key_here   # optional; if absent will fallback
+SUPER_ALITA_BASE_URL=http://127.0.0.1:8080
+SUPER_ALITA_MODEL=gpt-oss-20b-4bit
+```
+
+Force local adapter explicitly:
+
+```dotenv
+LLM_MODEL=super-alita
+```
+
+## Telemetry
+
+Telemetry events stream to MCP for real-time inspection. New events introduced:
+
+- `llm_fallback` (selection decision)
+- `performance_metric` (duration metrics)
+
+## Development
+
+Run tests:
+
+```bash
+pytest -q
+```
+
+Code style:
+
+```bash
+ruff check .
+black .
+```
+
+## License
+
+Apache 2.0 (placeholder – update as appropriate).
 

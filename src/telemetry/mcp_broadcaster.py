@@ -56,6 +56,7 @@ class MCPTelemetryBroadcaster:
             "plugin_error",
             "validation_result",
             "performance_metric",
+            "llm_fallback",
         }
 
     async def start(self):
@@ -237,3 +238,4 @@ class EventTypes:
     PLUGIN_ERROR = "plugin_error"
     VALIDATION_RESULT = "validation_result"
     PERFORMANCE_METRIC = "performance_metric"
+    LLM_FALLBACK = "llm_fallback"
