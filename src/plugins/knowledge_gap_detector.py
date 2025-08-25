@@ -1,13 +1,10 @@
-"""
-Detects when the agent encounters knowledge gaps and needs cortex assistance.
-"""
+"""Detects when the agent encounters knowledge gaps and needs cortex assistance."""
 from __future__ import annotations
 
 from typing import Any, Dict, List, Protocol
 import uuid
 
 from src.core.plugin_interface import PluginInterface
-from src.core.event_bus import EventBus
 from src.core.events import create_event
 from src.core.utils import CooldownLRU
 
@@ -20,12 +17,11 @@ class CortexPolicy(Protocol):
 class KnowledgeGapDetector(PluginInterface):
     """Detects when agent needs external assistance."""
 
-    def __init__(self, event_bus: EventBus, policy: CortexPolicy | None = None, *, cooldown_seconds: float = 300.0):
-        self.event_bus = event_bus
-        self.policy = policy
+    def __init__(self):
+        self.policy: CortexPolicy | None = None
         self.confidence_threshold = 0.3
         self.max_hops = 3
-        self.cooldown = CooldownLRU(ttl_seconds=cooldown_seconds)
+        self.cooldown = CooldownLRU(ttl_seconds=300.0)
         self.gap_patterns = [
             "i don't know",
             "i'm not sure",
@@ -33,18 +29,19 @@ class KnowledgeGapDetector(PluginInterface):
             "need more data",
             "unclear how to proceed",
         ]
-        self.event_bus.subscribe("reasoning_complete", self.check_reasoning_confidence)
-        self.event_bus.subscribe("navigation_complete", self.check_navigation_success)
-        self.event_bus.subscribe("conversation_turn", self.detect_uncertainty_patterns)
 
     @property
     def name(self) -> str:  # type: ignore[override]
         return "knowledge_gap_detector"
 
     async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:  # type: ignore[override]
-        self.event_bus = event_bus
-        self.store = store
-        self.config = config
+        await super().setup(event_bus, store, config)
+        self.policy = config.get("policy")
+        cooldown_seconds = float(config.get("cooldown_seconds", 300.0))
+        self.cooldown = CooldownLRU(ttl_seconds=cooldown_seconds)
+        await self.event_bus.subscribe("reasoning_complete", self.check_reasoning_confidence)
+        await self.event_bus.subscribe("navigation_complete", self.check_navigation_success)
+        await self.event_bus.subscribe("conversation_turn", self.detect_uncertainty_patterns)
 
     async def start(self) -> None:  # type: ignore[override]
         self.is_running = True

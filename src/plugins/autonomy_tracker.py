@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from src.core.plugin_interface import PluginInterface
-from src.core.event_bus import EventBus
 from src.core.events import create_event
 
 
@@ -22,8 +21,7 @@ class AutonomyMetrics:
 
 
 class AutonomyTracker(PluginInterface):
-    def __init__(self, event_bus: EventBus):
-        self.event_bus = event_bus
+    def __init__(self):
         self.metrics_history: List[AutonomyMetrics] = []
 
     @property
@@ -31,9 +29,7 @@ class AutonomyTracker(PluginInterface):
         return "autonomy_tracker"
 
     async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:  # type: ignore[override]
-        self.event_bus = event_bus
-        self.store = store
-        self.config = config
+        await super().setup(event_bus, store, config)
 
     async def start(self) -> None:  # type: ignore[override]
         self.is_running = True
