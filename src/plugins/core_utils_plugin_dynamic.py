@@ -5,6 +5,7 @@ all public methods from CoreUtils without hardcoding.
 """
 
 import inspect
+import logging
 import time
 from collections.abc import Callable
 from typing import Any
@@ -12,6 +13,9 @@ from typing import Any
 from src.core.events import BaseEvent, ToolCallEvent
 from src.core.plugin_interface import PluginInterface
 from src.tools.core_utils import CoreUtils
+
+
+logger = logging.getLogger(__name__)
 
 
 class CoreUtilsPlugin(PluginInterface):
@@ -75,10 +79,13 @@ class CoreUtilsPlugin(PluginInterface):
                 "discovered_dynamically": True,
             }
 
-        print(f"🔍 Dynamically discovered {len(self._capabilities)} capabilities:")
+        logger.info("🔍 Dynamically discovered %d capabilities:", len(self._capabilities))
         for tool_name, metadata in self._capability_metadata.items():
-            print(
-                f"  • {tool_name}{metadata['signature']} - {metadata['docstring'][:50]}..."
+            logger.debug(
+                "  • %s%s - %s...",
+                tool_name,
+                metadata["signature"],
+                metadata["docstring"][:50],
             )
 
     async def _register_discovered_capabilities(self):
@@ -111,7 +118,9 @@ class CoreUtilsPlugin(PluginInterface):
                 )
                 await self.event_bus.publish(discovery_event)
             except Exception as e:
-                print(f"⚠️ Warning: Could not publish capability discovery event: {e}")
+                logger.warning(
+                    "⚠️ Warning: Could not publish capability discovery event: %s", e
+                )
                 # Continue anyway - this is not critical for operation
 
     async def start(self):
@@ -119,8 +128,10 @@ class CoreUtilsPlugin(PluginInterface):
         await super().start()
         await self.subscribe("tool_call", self._handle_dynamic_tool_call)
 
-        print(
-            f"✅ {self.name} plugin started with {len(self._capabilities)} dynamic capabilities"
+        logger.info(
+            "✅ %s plugin started with %d dynamic capabilities",
+            self.name,
+            len(self._capabilities),
         )
 
     async def _handle_dynamic_tool_call(self, event: ToolCallEvent):
@@ -215,8 +226,10 @@ class CoreUtilsPlugin(PluginInterface):
 
     async def shutdown(self):
         """Clean shutdown of dynamic capabilities."""
-        print(
-            f"🔄 Shutting down {self.name} with {len(self._capabilities)} dynamic capabilities"
+        logger.info(
+            "🔄 Shutting down %s with %d dynamic capabilities",
+            self.name,
+            len(self._capabilities),
         )
         self._capabilities.clear()
         self._capability_metadata.clear()
