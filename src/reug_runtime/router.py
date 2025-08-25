@@ -496,7 +496,6 @@ Protocol:
                             }
                         )
                         used_spans.append({"span_id": span, "tool": tool_name})
-                        parser.reset()
                         tool_calls += 1
                         break  # tool execution done for this cycle
                     except TimeoutError:
