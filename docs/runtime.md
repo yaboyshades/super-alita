@@ -25,11 +25,17 @@
 2. **Install & run**
 
    ```bash
-   make deps               # pip install -r requirements.txt -r requirements-test.txt
+   make deps               # install runtime + test deps (CPU only)
+   # For GPU acceleration, install extras: pip install -r requirements-gpu.txt (optional)
    make lint               # run pre-commit hooks
-   make test-smoke         # quick runtime smoke test
+   pre-commit run --all-files
+   make test               # run runtime suite (target ≥70% coverage)
+   # Optional quick smoke test: make test-smoke
    make run                # uvicorn app:app --reload --port 8080
    ```
+
+Coverage for the runtime suite should stay above 70%.
+GPU-specific dependencies are optional; skip them unless your environment requires GPU acceleration.
 
 3. **Sanity check**
 
@@ -67,8 +73,8 @@ Steps:
 1) Environment
    - create .env from .env.example if missing; ensure PYTHONPATH=./src is set.
    - append GEMINI_API_KEY or OPENAI_API_KEY or ANTHROPIC_API_KEY if present.
-   - install deps: pip install -r requirements.txt -r requirements-test.txt
-   - run pre-commit on touched files.
+   - install deps: make deps  # skip GPU extras unless needed
+   - run pre-commit on touched files: make lint
 2) Sanity checks
    - python -m pip show fastapi uvicorn
    - python -c "import reug_runtime, sys; print('reug_runtime OK')" or ensure src on PYTHONPATH
