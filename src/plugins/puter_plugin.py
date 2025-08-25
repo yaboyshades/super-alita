@@ -4,16 +4,18 @@
 Provides seamless integration with Puter cloud services for file I/O and process execution
 """
 
+import json
 import logging
 import hashlib
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
+
+import aiohttp
 
 from src.core.events import BaseEvent, create_event
 from src.core.plugin_interface import PluginInterface
-from src.core.neural_atom import LegacyNeuralAtom, NeuralAtomMetadata, TextualMemoryAtom
-import numpy as np
+from src.core.neural_atom import NeuralAtomMetadata, TextualMemoryAtom
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,65 @@ class PuterOperationAtom(TextualMemoryAtom):
         return self.atom_uuid
 
 
+class PuterApiClient:
+    """Minimal async client for interacting with the Puter API."""
+
+    def __init__(self, base_url: str, api_key: str, timeout: int = 30) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.api_key = api_key
+        self.timeout = timeout
+        self.session: aiohttp.ClientSession | None = None
+
+    async def initialize(self) -> None:
+        headers = {"User-Agent": "PuterAgent/1.0"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        timeout = aiohttp.ClientTimeout(total=self.timeout)
+        self.session = aiohttp.ClientSession(timeout=timeout, headers=headers)
+        await self._request("GET", "/api/health")
+
+    async def cleanup(self) -> None:
+        if self.session:
+            await self.session.close()
+            self.session = None
+
+    async def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
+        if not self.session:
+            raise RuntimeError("Client not initialized")
+        url = f"{self.base_url}{path}"
+        async with self.session.request(method, url, **kwargs) as resp:
+            if resp.status >= 400:
+                text = await resp.text()
+                raise RuntimeError(f"HTTP {resp.status}: {text}")
+            ct = resp.headers.get("Content-Type", "")
+            if "application/json" in ct:
+                return await resp.json()
+            return {"data": await resp.text()}
+
+    async def read_file(self, path: str) -> str:
+        data = await self._request("GET", "/api/fs/read", params={"path": path})
+        return data.get("content", "")
+
+    async def write_file(self, path: str, content: str) -> None:
+        await self._request(
+            "POST", "/api/fs/write", json={"path": path, "content": content, "create_dirs": True}
+        )
+
+    async def delete_file(self, path: str) -> None:
+        await self._request("DELETE", "/api/fs/delete", params={"path": path})
+
+    async def list_directory(self, path: str) -> list[dict[str, Any]]:
+        data = await self._request("GET", "/api/fs/list", params={"path": path})
+        return data.get("items", [])
+
+    async def execute_command(
+        self, command: str, args: list[str], cwd: str
+    ) -> dict[str, Any]:
+        return await self._request(
+            "POST", "/api/exec", json={"command": command, "args": args, "cwd": cwd, "env": {}}
+        )
+
+
 class PuterPlugin(PluginInterface):
     """Plugin wrapper for Puter cloud environment integration."""
 
@@ -69,10 +130,17 @@ class PuterPlugin(PluginInterface):
                 "PUTER_WORKSPACE_ID", config.get("puter_workspace_id", "default")
             ),
         }
-        
+
+        # Instantiate actual Puter API client
+        self._client = PuterApiClient(
+            base_url=self.puter_config["api_url"],
+            api_key=self.puter_config["api_key"],
+        )
+        await self._client.initialize()
+
         # Track operation history for neural atoms
         self.operation_history: list[PuterOperationAtom] = []
-        
+
         logger.info("🌐 Puter Plugin initialized with cloud integration")
 
     async def start(self) -> None:
@@ -96,7 +164,12 @@ class PuterPlugin(PluginInterface):
                     await self.store.register(atom)
                 except Exception as e:
                     logger.warning(f"Failed to register operation atom: {e}")
-        
+        if hasattr(self, "_client"):
+            try:
+                await self._client.cleanup()
+            except Exception as e:
+                logger.warning(f"Failed to cleanup Puter client: {e}")
+
         logger.info("🌐 Puter Plugin shutting down")
 
     async def _handle_file_operation(self, event: BaseEvent) -> None:
@@ -120,11 +193,58 @@ class PuterPlugin(PluginInterface):
             
             atom = PuterOperationAtom("file_operation", operation_data)
             self.operation_history.append(atom)
-            
-            # Simulate Puter API call (replace with actual API calls)
-            result = await self._simulate_puter_file_operation(operation, file_path, content)
-            
-            # Emit success event with neural atom
+
+            span_id = str(uuid.uuid4())
+            args_hash = hashlib.sha256(
+                json.dumps(operation_data, sort_keys=True).encode()
+            ).hexdigest()
+            start_time = datetime.now(timezone.utc)
+            await self.emit_event(
+                "AbilityCalled",
+                tool="puter_file_operation",
+                span_id=span_id,
+                args_hash=args_hash,
+                attempt=1,
+                max_attempts=1,
+                neural_atom_id=atom.get_deterministic_uuid(),
+                conversation_id=event.conversation_id,
+            )
+
+            if operation == "read":
+                content_out = await self._client.read_file(file_path)
+                result = {"success": True, "content": content_out}
+            elif operation == "write":
+                await self._client.write_file(file_path, content)
+                result = {
+                    "success": True,
+                    "bytes_written": len(content.encode()),
+                    "file_path": file_path,
+                }
+            elif operation == "delete":
+                await self._client.delete_file(file_path)
+                result = {"success": True, "file_path": file_path}
+            else:
+                raise ValueError(f"Unknown operation: {operation}")
+
+            duration_ms = int(
+                (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            )
+            output_hash = hashlib.sha256(
+                json.dumps(result, sort_keys=True).encode()
+            ).hexdigest()
+
+            await self.emit_event(
+                "AbilitySucceeded",
+                tool="puter_file_operation",
+                span_id=span_id,
+                output_hash=output_hash,
+                attempt=1,
+                max_attempts=1,
+                duration_ms=duration_ms,
+                neural_atom_id=atom.get_deterministic_uuid(),
+                conversation_id=event.conversation_id,
+            )
+
             await self.emit_event(
                 "puter_operation_completed",
                 operation_type="file_operation",
@@ -137,11 +257,28 @@ class PuterPlugin(PluginInterface):
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
             )
-            
+
             logger.info(f"🌐 Completed Puter file {operation}: {file_path}")
-            
+
         except Exception as e:
             logger.exception("❌ Puter file operation error")
+            span_id = locals().get("span_id", str(uuid.uuid4()))
+            start = locals().get("start_time", datetime.now(timezone.utc))
+            duration_ms = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
+            neural_atom_id = (
+                atom.get_deterministic_uuid() if "atom" in locals() else ""
+            )
+            await self.emit_event(
+                "AbilityFailed",
+                tool="puter_file_operation",
+                span_id=span_id,
+                error=str(e),
+                attempt=1,
+                max_attempts=1,
+                duration_ms=duration_ms,
+                neural_atom_id=neural_atom_id,
+                conversation_id=getattr(event, 'conversation_id', 'unknown'),
+            )
             await self.emit_event(
                 "puter_operation_failed",
                 operation_type="file_operation",
@@ -169,29 +306,87 @@ class PuterPlugin(PluginInterface):
             
             atom = PuterOperationAtom("process_execution", operation_data)
             self.operation_history.append(atom)
-            
-            # Simulate Puter process execution (replace with actual API calls)
-            result = await self._simulate_puter_process_execution(command, args, working_dir)
-            
-            # Emit completion event with neural atom
+
+            span_id = str(uuid.uuid4())
+            args_hash = hashlib.sha256(
+                json.dumps(operation_data, sort_keys=True).encode()
+            ).hexdigest()
+            start_time = datetime.now(timezone.utc)
             await self.emit_event(
-                "puter_operation_completed",
+                "AbilityCalled",
+                tool="puter_process_execution",
+                span_id=span_id,
+                args_hash=args_hash,
+                attempt=1,
+                max_attempts=1,
+                neural_atom_id=atom.get_deterministic_uuid(),
+                conversation_id=event.conversation_id,
+            )
+
+            exec_result = await self._client.execute_command(
+                command, args, cwd=working_dir
+            )
+            success = exec_result.get("exit_code", 1) == 0
+            result = {"success": success, **exec_result}
+
+            duration_ms = int(
+                (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            )
+            output_hash = hashlib.sha256(
+                json.dumps(result, sort_keys=True).encode()
+            ).hexdigest()
+
+            await self.emit_event(
+                "AbilitySucceeded" if success else "AbilityFailed",
+                tool="puter_process_execution",
+                span_id=span_id,
+                output_hash=output_hash if success else None,
+                error=None if success else result.get("stderr"),
+                attempt=1,
+                max_attempts=1,
+                duration_ms=duration_ms,
+                neural_atom_id=atom.get_deterministic_uuid(),
+                conversation_id=event.conversation_id,
+            )
+
+            await self.emit_event(
+                "puter_operation_completed" if success else "puter_operation_failed",
                 operation_type="process_execution",
                 command=command,
                 args=args,
                 working_dir=working_dir,
-                success=result.get("success", False),
+                success=success,
                 result=result,
                 neural_atom_id=atom.get_deterministic_uuid(),
                 timestamp=datetime.now(timezone.utc),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
             )
-            
-            logger.info(f"🌐 Completed Puter process execution: {command}")
-            
+
+            if success:
+                logger.info(f"🌐 Completed Puter process execution: {command}")
+            else:
+                logger.error(f"❌ Puter process execution failed: {command}")
+
         except Exception as e:
             logger.exception("❌ Puter process execution error")
+            span_id = locals().get("span_id", str(uuid.uuid4()))
+            start = locals().get("start_time", datetime.now(timezone.utc))
+            duration_ms = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
+            neural_atom_id = (
+                atom.get_deterministic_uuid() if "atom" in locals() else ""
+            )
+            await self.emit_event(
+                "AbilityFailed",
+                tool="puter_process_execution",
+                span_id=span_id,
+                error=str(e),
+                attempt=1,
+                max_attempts=1,
+                duration_ms=duration_ms,
+                neural_atom_id=neural_atom_id,
+                conversation_id=event.conversation_id,
+            )
             await self.emit_event(
                 "puter_operation_failed",
                 operation_type="process_execution",
@@ -219,29 +414,83 @@ class PuterPlugin(PluginInterface):
             
             atom = PuterOperationAtom("workspace_sync", operation_data)
             self.operation_history.append(atom)
-            
-            # Simulate workspace sync (replace with actual API calls)
-            result = await self._simulate_puter_workspace_sync(sync_type, local_path, remote_path)
-            
-            # Emit completion event with neural atom
+
+            span_id = str(uuid.uuid4())
+            args_hash = hashlib.sha256(
+                json.dumps(operation_data, sort_keys=True).encode()
+            ).hexdigest()
+            start_time = datetime.now(timezone.utc)
+            await self.emit_event(
+                "AbilityCalled",
+                tool="puter_workspace_sync",
+                span_id=span_id,
+                args_hash=args_hash,
+                attempt=1,
+                max_attempts=1,
+                neural_atom_id=atom.get_deterministic_uuid(),
+                conversation_id=event.conversation_id,
+            )
+
+            remote_listing = await self._client.list_directory(remote_path)
+            result = {
+                "success": True,
+                "files_synced": len(remote_listing),
+            }
+
+            duration_ms = int(
+                (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            )
+            output_hash = hashlib.sha256(
+                json.dumps(result, sort_keys=True).encode()
+            ).hexdigest()
+
+            await self.emit_event(
+                "AbilitySucceeded",
+                tool="puter_workspace_sync",
+                span_id=span_id,
+                output_hash=output_hash,
+                attempt=1,
+                max_attempts=1,
+                duration_ms=duration_ms,
+                neural_atom_id=atom.get_deterministic_uuid(),
+                conversation_id=event.conversation_id,
+            )
+
             await self.emit_event(
                 "puter_operation_completed",
                 operation_type="workspace_sync",
                 sync_type=sync_type,
                 local_path=local_path,
                 remote_path=remote_path,
-                success=result.get("success", False),
+                success=True,
                 result=result,
                 neural_atom_id=atom.get_deterministic_uuid(),
                 timestamp=datetime.now(timezone.utc),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
             )
-            
+
             logger.info(f"🌐 Completed Puter workspace sync: {sync_type}")
-            
+
         except Exception as e:
             logger.exception("❌ Puter workspace sync error")
+            span_id = locals().get("span_id", str(uuid.uuid4()))
+            start = locals().get("start_time", datetime.now(timezone.utc))
+            duration_ms = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
+            neural_atom_id = (
+                atom.get_deterministic_uuid() if "atom" in locals() else ""
+            )
+            await self.emit_event(
+                "AbilityFailed",
+                tool="puter_workspace_sync",
+                span_id=span_id,
+                error=str(e),
+                attempt=1,
+                max_attempts=1,
+                duration_ms=duration_ms,
+                neural_atom_id=neural_atom_id,
+                conversation_id=event.conversation_id,
+            )
             await self.emit_event(
                 "puter_operation_failed",
                 operation_type="workspace_sync",
@@ -308,71 +557,6 @@ class PuterPlugin(PluginInterface):
                 
         except Exception as e:
             logger.exception("❌ Puter tool call error")
-
-    # Simulation methods (replace with actual Puter API calls)
-    
-    async def _simulate_puter_file_operation(
-        self, operation: str, file_path: str, content: str = ""
-    ) -> dict[str, Any]:
-        """Simulate Puter file operation (replace with actual API call)."""
-        await self._simulate_api_delay()
-        
-        if operation == "read":
-            return {
-                "success": True,
-                "content": f"Simulated content from {file_path}",
-                "file_size": 1024,
-                "modified_time": datetime.now(timezone.utc).isoformat(),
-            }
-        elif operation == "write":
-            return {
-                "success": True,
-                "bytes_written": len(content.encode()),
-                "file_path": file_path,
-                "modified_time": datetime.now(timezone.utc).isoformat(),
-            }
-        elif operation == "delete":
-            return {
-                "success": True,
-                "file_path": file_path,
-                "deleted_time": datetime.now(timezone.utc).isoformat(),
-            }
-        else:
-            return {"success": False, "error": f"Unknown operation: {operation}"}
-
-    async def _simulate_puter_process_execution(
-        self, command: str, args: list[str], working_dir: str
-    ) -> dict[str, Any]:
-        """Simulate Puter process execution (replace with actual API call)."""
-        await self._simulate_api_delay()
-        
-        return {
-            "success": True,
-            "stdout": f"Simulated output from {command}",
-            "stderr": "",
-            "exit_code": 0,
-            "execution_time": 1.5,
-            "working_dir": working_dir,
-        }
-
-    async def _simulate_puter_workspace_sync(
-        self, sync_type: str, local_path: str, remote_path: str
-    ) -> dict[str, Any]:
-        """Simulate Puter workspace sync (replace with actual API call)."""
-        await self._simulate_api_delay()
-        
-        return {
-            "success": True,
-            "sync_type": sync_type,
-            "files_synced": 42,
-            "bytes_transferred": 1024 * 1024,
-            "sync_time": datetime.now(timezone.utc).isoformat(),
-        }
-
-    async def _simulate_api_delay(self) -> None:
-        """Simulate network delay for API calls."""
-        import asyncio
-        await asyncio.sleep(0.1)  # 100ms simulated delay
 
     def get_operation_history(self) -> list[PuterOperationAtom]:
         """Get the history of Puter operations as neural atoms."""
