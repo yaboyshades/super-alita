@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Protocol
 import uuid
 
 from src.core.plugin_interface import PluginInterface
-from src.core.events import create_event
 from src.core.utils import CooldownLRU
 
 
@@ -94,13 +93,11 @@ class KnowledgeGapDetector(PluginInterface):
                 return
         correlation_id = context.get("correlation_id") or str(uuid.uuid4())
         trace_id = context.get("trace_id") or correlation_id
-        await self.event_bus.publish(
-            create_event(
-                "knowledge_gap",
-                event_version=1,
-                source_plugin=self.name,
-                gap_description=gap_description,
-                context={**context, "hop_count": hop_count + 1, "correlation_id": correlation_id, "trace_id": trace_id},
-                gap_type=gap_type,
-            )
+        await self.emit_event(
+            "oak.knowledge_gap",
+            event_version=1,
+            source_plugin=self.name,
+            gap_description=gap_description,
+            context={**context, "hop_count": hop_count + 1, "correlation_id": correlation_id, "trace_id": trace_id},
+            gap_type=gap_type,
         )
