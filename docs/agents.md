@@ -127,7 +127,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64]
+- **series-202534** · PRs: [62, 63, 64, 65]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -135,6 +135,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T01:42:27Z #64 Merge pull request #64 from yaboyshades/codex/modify-requirements-for-gpu-support (owner: @yaboyshades)
+- 2025-08-25T01:45:56Z #65 Merge pull request #65 from yaboyshades/codex/add-unit-tests-for-chat-stream-endpoint (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T01:17:52Z #63 Merge pull request #63 from yaboyshades/codex/update-requirements-for-silent-agent-run (owner: @yaboyshades)
+- 2025-08-25T01:42:27Z #64 Merge pull request #64 from yaboyshades/codex/modify-requirements-for-gpu-support (owner: @yaboyshades)
