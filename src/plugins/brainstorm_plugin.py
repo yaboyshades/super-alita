@@ -345,25 +345,17 @@ Make the code practical and executable. Focus on filling genuine capability gaps
                 )
             else:
                 # Fallback: create neural atom directly
-                from src.core.neural_atom import NeuralAtom
+                import json
+                from src.core.neural_atom import NeuralAtomMetadata, TextualMemoryAtom
 
-                # Generate embedding for searchability
-                if hasattr(self.store, "embed_text"):
-                    embedding_text = f"{atom.tool} {atom.description} {atom.code[:100]}"
-                    embeddings = await self.store.embed_text([embedding_text])
-                    vector = (
-                        embeddings[0]
-                        if embeddings
-                        else np.random.rand(EMBEDDING_DIM).astype(np.float32)
-                    )
-                else:
-                    vector = np.random.rand(1024).astype(np.float32)
-
-                neural_atom = NeuralAtom(
-                    key=memory_id, default_value=atom.model_dump(), vector=vector
+                metadata = NeuralAtomMetadata(
+                    name=memory_id,
+                    description=atom.description,
+                    capabilities=[atom.tool],
                 )
+                neural_atom = TextualMemoryAtom(metadata, json.dumps(atom.model_dump()))
 
-                self.store.add(neural_atom)
+                self.store.register(neural_atom)
                 logger.info(f"Stored atom {memory_id} directly in neural store")
 
         except Exception as e:
