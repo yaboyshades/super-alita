@@ -1,14 +1,11 @@
 import json
 import logging
 
-import json
-import logging
-
 import pytest
 
 from src.plugins.core_utils_plugin_dynamic import CoreUtilsPlugin
 from src.planning import sync_once
-import todo_sync
+import scripts.todo_sync as todo_sync
 
 
 class DummyEventBus:
@@ -67,12 +64,11 @@ async def test_sync_once_main_logs(monkeypatch, caplog):
     assert any("Sync completed successfully" in r.getMessage() for r in caplog.records)
 
 
-def test_todo_sync_logging(tmp_path, monkeypatch, caplog):
+def test_todo_sync_logging(tmp_path, caplog):
     todo_file = tmp_path / "todos.json"
     todo_file.write_text(json.dumps({"todoList": [], "lastModified": ""}))
-    monkeypatch.setattr(todo_sync, "TODO_FILE", todo_file)
     caplog.set_level(logging.INFO)
 
-    todo_sync.update_persistent_todos([{"title": "x"}])
+    todo_sync.update_persistent_todos(todo_file, [{"title": "x"}])
 
     assert any("Updated 1 todos" in r.getMessage() for r in caplog.records)
