@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-25T12:53:41Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-25T13:29:43Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -19,7 +19,7 @@
 <!-- AGENTS:START -->
 | Agent | Kind | Entrypoint | Abilities (count) | Plugins (count) | Owner(s) | Stability | Notes |
 |---:|----|----|----|----|----|----|----|
-| super-alita | runtime | src/main.py | 1 | 47 | @owners | beta |  |
+| super-alita | runtime | src/main.py | 1 | 53 | @owners | beta |  |
 <!-- AGENTS:END -->
 
 ### 1.1 Ownership & Contacts
@@ -94,6 +94,12 @@
 | atom_executor_plugin | src/plugins/atom_executor_plugin.py | (…) | ENV_* | function() => ok |  |
 | tool_executor_plugin_unified | src/plugins/tool_executor_plugin_unified.py | (…) | ENV_* | function() => ok |  |
 | core_utils_plugin_dynamic | src/plugins/core_utils_plugin_dynamic.py | ", len(self._capabilities)), # Tool not in our discovered capabilities, dict[str, Callable, {name}" | ENV_* | function() => ok |  |
+| subproblem_manager | src/plugins/oak_core/subproblem_manager.py | (…) | ENV_* | function() => ok |  |
+| planning_engine | src/plugins/oak_core/planning_engine.py | (…) | ENV_* | function() => ok |  |
+| feature_discovery | src/plugins/oak_core/feature_discovery.py | (…) | ENV_* | function() => ok |  |
+| prediction_engine | src/plugins/oak_core/prediction_engine.py | (…) | ENV_* | function() => ok |  |
+| curation_manager | src/plugins/oak_core/curation_manager.py | (…) | ENV_* | function() => ok |  |
+| option_trainer | src/plugins/oak_core/option_trainer.py | (…) | ENV_* | function() => ok |  |
 <!-- PLUGINS:END -->
 
 ---
@@ -128,7 +134,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 110]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -136,6 +142,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T12:53:41Z #108 Merge pull request #108 from yaboyshades/codex/extend-stubdeepcodeclient-to-emit-multiple-files (owner: @yaboyshades)
+- 2025-08-25T13:29:43Z #110 Merge pull request #110 from yaboyshades/codex/buffer-trajectories-and-compute-gae (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T12:51:08Z #107 Merge pull request #107 from yaboyshades/codex/add-tests-for-unifiedsuperalita-initialization (owner: @yaboyshades)
+- 2025-08-25T12:53:41Z #108 Merge pull request #108 from yaboyshades/codex/extend-stubdeepcodeclient-to-emit-multiple-files (owner: @yaboyshades)
