@@ -3,8 +3,13 @@
 Todo Integration Script - Syncs active todos with persistent storage
 """
 import json
+import logging
 import sys
+from datetime import datetime
 from pathlib import Path
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 TODO_FILE = Path(__file__).parent / '.vscode' / 'todos.json'
 
@@ -21,10 +26,10 @@ def update_persistent_todos(new_todos):
             
             with open(TODO_FILE, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-                
-            print(f"📋 Updated {len(new_todos)} todos in persistent storage")
+
+            logger.info("📋 Updated %d todos in persistent storage", len(new_todos))
         except Exception as e:
-            print(f"❌ Error updating todos: {e}")
+            logger.error("❌ Error updating todos: %s", e)
 
 if __name__ == "__main__":
     # Read todos from stdin (for integration with manage_todo_list tool)
@@ -34,6 +39,6 @@ if __name__ == "__main__":
             todos = json.loads(todo_json)
             update_persistent_todos(todos)
         except json.JSONDecodeError:
-            print("❌ Invalid JSON provided")
+            logger.error("❌ Invalid JSON provided")
     else:
-        print("💡 Todo integration script ready for use")
+        logger.info("💡 Todo integration script ready for use")
