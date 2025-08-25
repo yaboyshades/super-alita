@@ -11,6 +11,13 @@ The Puter integration provides seamless cloud file storage, process execution, a
 - **Neural Atoms**: Deterministic UUID generation for cognitive fabric integration
 - **Comprehensive Tests**: Full test suite with 18+ test cases
 
+## DeepCode Workflow
+
+DeepCode orchestrates multi-phase code generation and produces code, test, and documentation artifacts. The `DeepCodePuterBridgePlugin`
+listens for `deepcode_ready_for_apply` and forwards each artifact as a `puter_file_write` event. The `PuterPlugin` then persists
+these files to the cloud workspace and records each write in `operation_history`, ensuring artifacts are immediately available and
+auditable in Puter storage.
+
 ## Features
 
 ### Core Plugin Capabilities
