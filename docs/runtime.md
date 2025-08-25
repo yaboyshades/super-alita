@@ -87,3 +87,27 @@ Steps:
 ```
 
 This task will retry on failures and verify that streaming yields a `<final_answer>` block.
+
+## Event bus backends
+
+The runtime emits telemetry through a pluggable event bus. Set
+`REUG_EVENTBUS` to `file` (append NDJSON under `REUG_EVENT_LOG_DIR`) or
+`redis` (publish to `REUG_EVENTBUS_CHANNEL`). If the chosen backend is
+unavailable, events fall back to local JSONL logging.
+
+## Registry persistence
+
+Dynamic tools register with a file-backed registry so they survive
+process restarts. Point `REUG_TOOL_REGISTRY_DIR` at a writable directory to
+enable persistence.
+
+## Knowledge graph adapters
+
+Knowledge graph writes default to a JSONL store under `REUG_KG_DIR`. Swap
+adapters by setting `REUG_KG_ADAPTER` (for example, `memory` or `neo4j`) and
+providing any adapter-specific configuration.
+
+## LLM selection
+
+Choose the active language model by setting `REUG_LLM_PROVIDER` to `gemini`,
+`openai`, or `anthropic` and supplying the corresponding API key.
