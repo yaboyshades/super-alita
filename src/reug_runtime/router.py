@@ -16,6 +16,7 @@ from collections.abc import AsyncGenerator
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from reug_runtime.config import SETTINGS
+from reug_runtime.kg import BaseKG
 
 
 # ==== Injected dependencies via app.state ====
@@ -25,7 +26,7 @@ class EventBus: ...
 class AbilityRegistry: ...
 
 
-class KnowledgeGraph: ...
+class KnowledgeGraph(BaseKG): ...
 
 
 class LLMClient: ...  # wrapper around your provider
@@ -496,6 +497,8 @@ Protocol:
                             }
                         )
                         used_spans.append({"span_id": span, "tool": tool_name})
+                        with contextlib.suppress(Exception):
+                            await kg.create_bond("USED_TOOL", goal["id"], span)
                         tool_calls += 1
                         break  # tool execution done for this cycle
                     except TimeoutError:
@@ -520,6 +523,8 @@ Protocol:
                                     "content": f'<tool_error tool="{tool_name}">{{"error":"timeout"}}</tool_error>',
                                 }
                             )
+                            with contextlib.suppress(Exception):
+                                await kg.create_bond("FAILED_TOOL", goal["id"], span)
                             if breaker.record_failure(tool_name):
                                 await event_bus.emit({"type": "ToolCircuitOpen", "tool": tool_name})
                             parser.reset()
@@ -547,6 +552,8 @@ Protocol:
                                     "content": f'<tool_error tool="{tool_name}">{{"error":"exception","message":{json.dumps(str(e))}}}</tool_error>',
                                 }
                             )
+                            with contextlib.suppress(Exception):
+                                await kg.create_bond("FAILED_TOOL", goal["id"], span)
                             if breaker.record_failure(tool_name):
                                 await event_bus.emit({"type": "ToolCircuitOpen", "tool": tool_name})
                             parser.reset()
