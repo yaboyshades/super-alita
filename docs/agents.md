@@ -3,8 +3,8 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->pending<!-- AGENTS:LAST_UPDATED -->
-- Current Release: <!-- AGENTS:RELEASE -->unreleased<!-- AGENTS:RELEASE -->
+- Last Updated: 2025-08-25T00:56:04Zpending2025-08-25T00:56:04Z
+- Current Release: masterunreleasedmaster
 
 ---
 
@@ -17,19 +17,15 @@
 
 ## 1. Agents (Top‑Level)
 <!-- AGENTS:START -->
-<!-- The updater fills this table by scanning src/abilities, src/plugins, src/reug_runtime, mcp_* trees -->
-
 | Agent | Kind | Entrypoint | Abilities (count) | Plugins (count) | Owner(s) | Stability | Notes |
-|------:|------|------------|-------------------:|-----------------:|----------|-----------|-------|
-| (scanning…) | | | | | | | |
-
+|---:|----|----|----|----|----|----|----|
+| super-alita | runtime | src/main.py | 1 | 46 | @owners | beta |  |
 <!-- AGENTS:END -->
 
 ### 1.1 Ownership & Contacts
 <!-- AGENTS:OWNERS_START -->
 | Component | CODEOWNERS | Slack | Escalation |
-|-----------|------------|-------|------------|
-| (populated by updater) | | | |
+|---:|----|----|----|
 <!-- AGENTS:OWNERS_END -->
 
 ---
@@ -39,8 +35,8 @@
 
 <!-- ABILITIES:START -->
 | Ability | Module | Signature | Guardrails | Telemetry Events | Notes |
-|--------:|--------|-----------|------------|------------------|-------|
-| (scanning…) | | | | | |
+|---:|----|----|----|----|----|
+| _utcnow | /home/runner/work/super-alita/super-alita/src/abilities/gemini_codegen_ability.py | (…) | yes | Ability* events |  |
 <!-- ABILITIES:END -->
 
 ---
@@ -50,8 +46,53 @@
 
 <!-- PLUGINS:START -->
 | Plugin | Module | Capabilities | Config Keys | Health Check | Notes |
-|-------:|--------|--------------|-------------|--------------|-------|
-| (scanning…) | | | | | |
+|---:|----|----|----|----|----|
+| creator_plugin_unified | /home/runner/work/super-alita/super-alita/src/plugins/creator_plugin_unified.py | = "calculate":, Capability Needed: {request.capability_description}, [, capabilities = ["execute", "process", "respond", capabilities,, if capability == "search":, if capability.lower() in task_lower:, json.dumps(spec.capabilities),, {capabilities}, | ENV_* | function() => ok |  |
+| system_introspection_plugin | /home/runner/work/super-alita/super-alita/src/plugins/system_introspection_plugin.py | (…) | ENV_* | function() => ok |  |
+| llm_planner_plugin | /home/runner/work/super-alita/super-alita/src/plugins/llm_planner_plugin.py | (…) | ENV_* | function() => ok |  |
+| planner_plugin | /home/runner/work/super-alita/super-alita/src/plugins/planner_plugin.py | (…) | ENV_* | function() => ok |  |
+| openai_agent_plugin | /home/runner/work/super-alita/super-alita/src/plugins/openai_agent_plugin.py | (…) | ENV_* | function() => ok |  |
+| cortex_adapter_plugin | /home/runner/work/super-alita/super-alita/src/plugins/cortex_adapter_plugin.py | (…) | ENV_* | function() => ok |  |
+| flowise_adapter_plugin | /home/runner/work/super-alita/super-alita/src/plugins/flowise_adapter_plugin.py | (…) | ENV_* | function() => ok |  |
+| tool_executor_plugin | /home/runner/work/super-alita/super-alita/src/plugins/tool_executor_plugin.py | (…) | ENV_* | function() => ok |  |
+| atom_creator_plugin | /home/runner/work/super-alita/super-alita/src/plugins/atom_creator_plugin.py | (…) | ENV_* | function() => ok |  |
+| enhanced_pythonic_preprocessor_plugin | /home/runner/work/super-alita/super-alita/src/plugins/enhanced_pythonic_preprocessor_plugin.py | (…) | ENV_* | function() => ok |  |
+| semantic_memory_plugin | /home/runner/work/super-alita/super-alita/src/plugins/semantic_memory_plugin.py | "memory", "storage", "retrieval", "memory", "storage", "retrieval", "semantic_search" | ENV_* | function() => ok |  |
+| skill_discovery_plugin | /home/runner/work/super-alita/super-alita/src/plugins/skill_discovery_plugin.py | (…) | ENV_* | function() => ok |  |
+| memory_manager_plugin_unified | /home/runner/work/super-alita/super-alita/src/plugins/memory_manager_plugin_unified.py | (…) | ENV_* | function() => ok |  |
+| brainstorm_plugin | /home/runner/work/super-alita/super-alita/src/plugins/brainstorm_plugin.py | (…) | ENV_* | function() => ok |  |
+| semantic_fsm_plugin | /home/runner/work/super-alita/super-alita/src/plugins/semantic_fsm_plugin.py | (…) | ENV_* | function() => ok |  |
+| puter_plugin | /home/runner/work/super-alita/super-alita/src/plugins/puter_plugin.py | "cloud_storage", "process_execution", "file_io" | ENV_* | function() => ok |  |
+| autonomy_tracker | /home/runner/work/super-alita/super-alita/src/plugins/autonomy_tracker.py | (…) | ENV_* | function() => ok |  |
+| atom_tools_plugin | /home/runner/work/super-alita/super-alita/src/plugins/atom_tools_plugin.py | (…) | ENV_* | function() => ok |  |
+| core_utils_plugin | /home/runner/work/super-alita/super-alita/src/plugins/core_utils_plugin.py | (…) | ENV_* | function() => ok |  |
+| conversation_plugin | /home/runner/work/super-alita/super-alita/src/plugins/conversation_plugin.py | **, 🧠 **Cognitive Architecture**: I use a plugin-based system with neural atoms for reactive state management | ENV_* | function() => ok |  |
+| memory_manager_plugin | /home/runner/work/super-alita/super-alita/src/plugins/memory_manager_plugin.py | "storage", "recall", "memory" | ENV_* | function() => ok |  |
+| event_bus_plugin | /home/runner/work/super-alita/super-alita/src/plugins/event_bus_plugin.py | (…) | ENV_* | function() => ok |  |
+| dify_adapter_plugin | /home/runner/work/super-alita/super-alita/src/plugins/dify_adapter_plugin.py | (…) | ENV_* | function() => ok |  |
+| auto_tools_plugin | /home/runner/work/super-alita/super-alita/src/plugins/auto_tools_plugin.py | (…) | ENV_* | function() => ok |  |
+| enhanced_protocol_plugin | /home/runner/work/super-alita/super-alita/src/plugins/enhanced_protocol_plugin.py | (…) | ENV_* | function() => ok |  |
+| deepcode_orchestrator_plugin | /home/runner/work/super-alita/super-alita/src/plugins/deepcode_orchestrator_plugin.py | (…) | ENV_* | function() => ok |  |
+| adaptive_neural_atom_plugin | /home/runner/work/super-alita/super-alita/src/plugins/adaptive_neural_atom_plugin.py | (…) | ENV_* | function() => ok |  |
+| memory_manager_plugin_clean | /home/runner/work/super-alita/super-alita/src/plugins/memory_manager_plugin_clean.py | "storage", "recall", "memory" | ENV_* | function() => ok |  |
+| compose_plugin | /home/runner/work/super-alita/super-alita/src/plugins/compose_plugin.py | (…) | ENV_* | function() => ok |  |
+| self_heal_plugin | /home/runner/work/super-alita/super-alita/src/plugins/self_heal_plugin.py | (…) | ENV_* | function() => ok |  |
+| deepcode_generator_plugin | /home/runner/work/super-alita/super-alita/src/plugins/deepcode_generator_plugin.py | (…) | ENV_* | function() => ok |  |
+| meta_learning_creator_plugin | /home/runner/work/super-alita/super-alita/src/plugins/meta_learning_creator_plugin.py | (…) | ENV_* | function() => ok |  |
+| predictive_world_model_plugin | /home/runner/work/super-alita/super-alita/src/plugins/predictive_world_model_plugin.py | (…) | ENV_* | function() => ok |  |
+| creator_plugin | /home/runner/work/super-alita/super-alita/src/plugins/creator_plugin.py | (…) | ENV_* | function() => ok |  |
+| calculator_plugin | /home/runner/work/super-alita/super-alita/src/plugins/calculator_plugin.py | (…) | ENV_* | function() => ok |  |
+| ladder_aog_plugin | /home/runner/work/super-alita/super-alita/src/plugins/ladder_aog_plugin.py | (…) | ENV_* | function() => ok |  |
+| pythonic_preprocessor_plugin | /home/runner/work/super-alita/super-alita/src/plugins/pythonic_preprocessor_plugin.py | (…) | ENV_* | function() => ok |  |
+| perplexica_search_plugin | /home/runner/work/super-alita/super-alita/src/plugins/perplexica_search_plugin.py | (…) | ENV_* | function() => ok |  |
+| llm_planner_plugin_unified | /home/runner/work/super-alita/super-alita/src/plugins/llm_planner_plugin_unified.py | {', '.join(atom_info['capabilities' | ENV_* | function() => ok |  |
+| tool_lifecycle_plugin | /home/runner/work/super-alita/super-alita/src/plugins/tool_lifecycle_plugin.py | (…) | ENV_* | function() => ok |  |
+| plugin_interface | /home/runner/work/super-alita/super-alita/src/plugins/plugin_interface.py | (…) | ENV_* | function() => ok |  |
+| self_reflection_plugin | /home/runner/work/super-alita/super-alita/src/plugins/self_reflection_plugin.py | Enumerate all available tools and plugins, parameters.get("requested_capability", ""), {e}", exc_info=True) | ENV_* | function() => ok |  |
+| knowledge_gap_detector | /home/runner/work/super-alita/super-alita/src/plugins/knowledge_gap_detector.py | (…) | ENV_* | function() => ok |  |
+| atom_executor_plugin | /home/runner/work/super-alita/super-alita/src/plugins/atom_executor_plugin.py | (…) | ENV_* | function() => ok |  |
+| tool_executor_plugin_unified | /home/runner/work/super-alita/super-alita/src/plugins/tool_executor_plugin_unified.py | (…) | ENV_* | function() => ok |  |
+| core_utils_plugin_dynamic | /home/runner/work/super-alita/super-alita/src/plugins/core_utils_plugin_dynamic.py | "), # Tool not in our discovered capabilities, dict[str, Callable, {name}" | ENV_* | function() => ok |  |
 <!-- PLUGINS:END -->
 
 ---
@@ -85,15 +126,16 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 
 Index (recent):
 
-<!-- SESSIONS:START -->(populated by updater)
-
-
+<!-- SESSIONS:START -->
+- **series-202534** · PRs: [62]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
 
 6. Changelog (Auto‑appended per PR)
 
+<!-- CHANGELOG:START -->
+- 2025-08-25T00:56:04Z #62 Merge pull request #62 from yaboyshades/codex/run-targeted-testing-with-actual-agent-6dzygd (owner: @yaboyshades)
 <!-- CHANGELOG:START -->(auto‑generated entries appear here; newest first)
 
 

@@ -1,3 +1,12 @@
 {
-  "series": []
+  "series": [
+    {
+      "series_id": "series-202534",
+      "prs": [
+        62
+      ],
+      "branches": [],
+      "session_notes": []
+    }
+  ]
 }
