@@ -23,7 +23,12 @@
 
 A FastAPI server exposes the REUG streaming router and toolbox. See
 [docs/runtime.md](docs/runtime.md) for local and Docker quick start guides,
-endpoint descriptions, and a Codex automation task.
+endpoint descriptions, and a Codex automation task. Setup knobs for:
+
+- [Event bus backends](docs/runtime.md#event-bus-backends)
+- [Registry persistence](docs/runtime.md#registry-persistence)
+- [Knowledge graph adapters](docs/runtime.md#knowledge-graph-adapters)
+- [LLM selection](docs/runtime.md#llm-selection)
 
 The optional `.codex/setup.sh` script installs dependencies and prepares a
 `.env` file for local runs.
