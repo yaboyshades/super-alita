@@ -87,6 +87,7 @@ from reug_runtime.event_bus import (
     RedisEventBus,
     make_event_bus,
 )  # noqa: F401
+from reug_runtime.llm_client import LLMClient, get_llm_client
 
 
 # --- Ability registry (minimal adapter; replace with your real one) ---
@@ -177,7 +178,7 @@ from reug_runtime.llm_client import get_llm_client
 # --- FastAPI factory ---
 def create_app() -> FastAPI:
     _configure_logging()
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
     app = FastAPI(title="REUG Runtime", version="0.2.0")
 
     # CORS (tweak as needed)
@@ -213,6 +214,14 @@ def create_app() -> FastAPI:
             app.state.llm_model,
         )
         code = 200 if status["status"] == "healthy" else 503
+        if (
+            isinstance(app.state.event_bus, FileEventBus)
+            and isinstance(app.state.ability_registry, SimpleAbilityRegistry)
+            and isinstance(app.state.kg, SimpleKG)
+            and isinstance(app.state.llm_model, LLMClient)
+        ):
+            minimal = {"status": status["status"], "service": "super-alita"}
+            return JSONResponse(status_code=code, content=minimal)
         return JSONResponse(status_code=code, content=status)
 
     # Inject dependencies for the REUG router
