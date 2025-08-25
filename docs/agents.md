@@ -85,7 +85,7 @@
 | calculator_plugin | /home/runner/work/super-alita/super-alita/src/plugins/calculator_plugin.py | (…) | ENV_* | function() => ok |  |
 | ladder_aog_plugin | /home/runner/work/super-alita/super-alita/src/plugins/ladder_aog_plugin.py | (…) | ENV_* | function() => ok |  |
 | pythonic_preprocessor_plugin | /home/runner/work/super-alita/super-alita/src/plugins/pythonic_preprocessor_plugin.py | (…) | ENV_* | function() => ok |  |
-| perplexica_search_plugin | /home/runner/work/super-alita/super-alita/src/plugins/perplexica_search_plugin.py | "memory", "search" | ENV_* | function() => ok |  |
+| perplexica_search_plugin | /home/runner/work/super-alita/super-alita/src/plugins/perplexica_search_plugin.py | (…) | ENV_* | function() => ok |  |
 | llm_planner_plugin_unified | /home/runner/work/super-alita/super-alita/src/plugins/llm_planner_plugin_unified.py | {', '.join(atom_info['capabilities' | ENV_* | function() => ok |  |
 | tool_lifecycle_plugin | /home/runner/work/super-alita/super-alita/src/plugins/tool_lifecycle_plugin.py | (…) | ENV_* | function() => ok |  |
 | plugin_interface | /home/runner/work/super-alita/super-alita/src/plugins/plugin_interface.py | (…) | ENV_* | function() => ok |  |
@@ -128,7 +128,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -136,6 +136,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T07:55:16Z #92 Merge pull request #92 from yaboyshades/codex/define-shared-event-schema-and-validations (owner: @yaboyshades)
+- 2025-08-25T11:06:50Z #93 Merge pull request #93 from yaboyshades/codex/delete-patch-files-and-relocate-scripts (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T07:53:35Z #90 Merge pull request #90 from yaboyshades/codex/enhance-perplexica-search-plugin-functionality (owner: @yaboyshades)
+- 2025-08-25T07:55:16Z #92 Merge pull request #92 from yaboyshades/codex/define-shared-event-schema-and-validations (owner: @yaboyshades)
