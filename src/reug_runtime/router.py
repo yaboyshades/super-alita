@@ -13,16 +13,14 @@ import re
 import time
 from collections.abc import AsyncGenerator
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from reug_runtime.config import SETTINGS
+from .ability_registry import AbilityRegistry
 
 
 # ==== Injected dependencies via app.state ====
 class EventBus: ...
-
-
-class AbilityRegistry: ...
 
 
 class KnowledgeGraph: ...
@@ -33,6 +31,10 @@ class LLMClient: ...  # wrapper around your provider
 
 router = APIRouter(prefix="/v1", tags=["agent"])
 
+
+def get_ability_registry(request: Request) -> AbilityRegistry:
+    """FastAPI dependency to access the ability registry."""
+    return request.app.state.ability_registry
 
 # ---------- Helpers ----------
 def _now_ms() -> int:
@@ -596,7 +598,10 @@ Protocol:
 
 # ---------- FastAPI endpoint ----------
 @router.post("/chat/stream")
-async def chat_stream(request: Request):
+async def chat_stream(
+    request: Request,
+    registry: AbilityRegistry = Depends(get_ability_registry),
+):
     body = await request.json()
     user_msg = body["message"]
     session_id = body.get("session_id", "default")
@@ -605,7 +610,7 @@ async def chat_stream(request: Request):
         user_msg,
         session_id,
         app.state.event_bus,
-        app.state.ability_registry,
+        registry,
         app.state.kg,
         app.state.llm_model,
     )
