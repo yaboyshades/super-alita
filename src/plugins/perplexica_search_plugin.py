@@ -10,13 +10,15 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union
 from enum import Enum
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlparse
+from uuid import uuid4
 
 import aiohttp
 from pydantic import BaseModel, Field
 
+from src.core.neural_atom import NeuralAtomMetadata, TextualMemoryAtom
 from src.core.plugin_interface import PluginInterface
 from src.core.events import BaseEvent, create_event
 
@@ -95,6 +97,7 @@ class PerplexicaSearchPlugin(PluginInterface):
         self.web_agent: Optional[Any] = None
         self.llm_client: Optional[Any] = None
         self.search_history: List[PerplexicaResponse] = []
+        self._memory_keys: List[str] = []
         self.mode_handlers = {
             SearchMode.WEB: self._search_web,
             SearchMode.ACADEMIC: self._search_academic,
@@ -204,6 +207,43 @@ class PerplexicaSearchPlugin(PluginInterface):
                 conversation_id=session_id,
                 correlation_id=getattr(event, "correlation_id", None),
             )
+
+            # Persist search result to memory
+            if self.store:
+                try:
+                    metadata = NeuralAtomMetadata(
+                        name=f"perplexica_{uuid4().hex[:8]}",
+                        description=f"Perplexica search for '{query}'",
+                        capabilities=["memory", "search"],
+                        tags={"perplexica", "search", search_mode.value},
+                    )
+                    memory_atom = TextualMemoryAtom(
+                        metadata=metadata,
+                        content=json.dumps(response.model_dump()),
+                    )
+                    self.store.register(memory_atom)
+                    self._memory_keys.append(memory_atom.key)
+                except Exception as mem_exc:
+                    logger.warning(f"Failed to store search memory: {mem_exc}")
+
+            # Optionally archive response to Puter
+            if self.config.get("archive_to_puter"):
+                try:
+                    await self.emit_event(
+                        "tool_call",
+                        tool_name="puter_file_write",
+                        parameters={
+                            "file_path": f"/perplexica/{session_id}_{int(time.time())}.json",
+                            "content": json.dumps(response.model_dump()),
+                        },
+                        session_id=session_id,
+                        conversation_id=session_id,
+                        tool_call_id=f"puter_archive_{uuid4().hex[:8]}",
+                    )
+                except Exception as puter_exc:
+                    logger.warning(
+                        f"Failed to archive search result to Puter: {puter_exc}"
+                    )
 
             # Also emit as tool result for compatibility
             from src.core.events import ToolResultEvent
@@ -552,6 +592,17 @@ Please provide a detailed analysis that synthesizes the information and highligh
         if not self.search_history:
             return []
         return list(self.search_history[-limit:])
+
+    def get_recent_search(self, limit: int = 5) -> List[TextualMemoryAtom]:
+        """Return recently stored search memory atoms."""
+        if not self.store or not self._memory_keys:
+            return []
+        atoms: List[TextualMemoryAtom] = []
+        for key in self._memory_keys[-limit:]:
+            atom = self.store.get(key)
+            if atom:
+                atoms.append(atom)
+        return atoms
 
     def get_tools(self) -> List[Dict[str, Any]]:
         """Return available tools for this plugin."""
