@@ -89,58 +89,7 @@ from reug_runtime.event_bus import (
 )  # noqa: F401
 
 
-# --- Ability registry (minimal adapter; replace with your real one) ---
-class SimpleAbilityRegistry:
-    """
-    Minimal, schema-friendly registry:
-      - knows(): does this tool exist?
-      - validate_args(): shallow "type-ish" validation
-      - register(): dynamic tool creation (contract-first)
-      - execute(): your dispatch to MCP / SDK / code
-    """
-
-    def __init__(self):
-        # Seed with a friendly "echo" tool
-        self._known: set[str] = {"echo"}
-        self._contracts: dict[str, dict[str, Any]] = {
-            "echo": {
-                "tool_id": "echo",
-                "description": "Echo back the provided payload",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {"payload": {"type": "string"}},
-                },
-                "output_schema": {"type": "object"},
-            }
-        }
-
-    def get_available_tools_schema(self) -> list[dict[str, Any]]:
-        return list(self._contracts.values())
-
-    def knows(self, tool_name: str) -> bool:
-        return tool_name in self._known
-
-    def validate_args(self, tool_name: str, args: dict[str, Any]) -> bool:
-        # Simple: require "payload" string for echo; otherwise permissive (router can enforce)
-        if tool_name == "echo":
-            return isinstance(args.get("payload"), str)
-        return self.knows(tool_name)
-
-    async def health_check(self, contract: dict[str, Any]) -> bool:
-        # In real setups, ping MCP, SDK, HTTP endpoint, etc.
-        return True
-
-    async def register(self, contract: dict[str, Any]) -> None:
-        tid = contract["tool_id"]
-        self._contracts[tid] = contract
-        self._known.add(tid)
-
-    async def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
-        # Implement your actual bindings here (MCP, HTTP APIs, Python functions).
-        if tool_name == "echo":
-            return {"echo": args.get("payload", "")}
-        # Fallback generic
-        return {"ok": True, "tool": tool_name, "args": args}
+from reug_runtime.ability_registry import AbilityRegistry as SimpleAbilityRegistry
 
 
 # --- Knowledge graph (minimal; replace with your store/driver) ---
