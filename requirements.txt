@@ -1,8 +1,3 @@
-# GPU-related packages (commented out; NVIDIA CUDA not available)
-# torch
-# nvidia-cuda-runtime-cu12
-# nvidia-cudnn-cu12
-
 # Core dependencies
 pydantic>=2.11
 protobuf>=4.0

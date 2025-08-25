@@ -28,6 +28,7 @@
 
    ```bash
    make deps               # pip install -r requirements.txt -r requirements-test.txt
+   # add GPU support: pip install -r requirements-gpu.txt
    make lint               # run pre-commit hooks
    make test-smoke         # quick runtime smoke test
    make run                # uvicorn app:app --reload --port 8080
@@ -70,6 +71,7 @@ Steps:
    - create .env from .env.example if missing; ensure PYTHONPATH=./src is set.
    - append GEMINI_API_KEY or OPENAI_API_KEY or ANTHROPIC_API_KEY if present.
    - install deps: pip install -r requirements.txt -r requirements-test.txt
+     # add GPU support: pip install -r requirements-gpu.txt
    - run pre-commit on touched files.
 2) Sanity checks
    - python -m pip show fastapi uvicorn
