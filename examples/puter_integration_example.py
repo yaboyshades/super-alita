@@ -4,6 +4,11 @@ Example of using Puter integration with agent framework.
 
 import asyncio
 import logging
+import sys
+from pathlib import Path
+
+# Ensure repository root is on path when running directly
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from config.puter_config import PUTER_CONFIG
 from src.puter.plugin_registry import PluginRegistry

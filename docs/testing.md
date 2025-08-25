@@ -1,10 +1,15 @@
 # Testing
 
+> For environment setup, see the [project README](../README.md).
+
 ## With pytest (recommended)
 
 ```
-pip install -r requirements.txt
-pip install hypothesis   # optional
+make deps
+make test
+
+# Optional property-based tests
+pip install hypothesis
 PYTHONPATH=src pytest -q
 ```
 
