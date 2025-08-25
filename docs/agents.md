@@ -93,7 +93,7 @@
 | knowledge_gap_detector | /home/runner/work/super-alita/super-alita/src/plugins/knowledge_gap_detector.py | (…) | ENV_* | function() => ok |  |
 | atom_executor_plugin | /home/runner/work/super-alita/super-alita/src/plugins/atom_executor_plugin.py | (…) | ENV_* | function() => ok |  |
 | tool_executor_plugin_unified | /home/runner/work/super-alita/super-alita/src/plugins/tool_executor_plugin_unified.py | (…) | ENV_* | function() => ok |  |
-| core_utils_plugin_dynamic | /home/runner/work/super-alita/super-alita/src/plugins/core_utils_plugin_dynamic.py | "), # Tool not in our discovered capabilities, dict[str, Callable, {name}" | ENV_* | function() => ok |  |
+| core_utils_plugin_dynamic | /home/runner/work/super-alita/super-alita/src/plugins/core_utils_plugin_dynamic.py | ", len(self._capabilities)), # Tool not in our discovered capabilities, dict[str, Callable, {name}" | ENV_* | function() => ok |  |
 <!-- PLUGINS:END -->
 
 ---
@@ -128,7 +128,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -136,6 +136,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T11:21:34Z #94 Merge pull request #94 from yaboyshades/codex/organize-test-files-into-subfolders (owner: @yaboyshades)
+- 2025-08-25T11:22:09Z #95 Merge pull request #95 from yaboyshades/codex/replace-print-calls-with-logging (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T11:06:50Z #93 Merge pull request #93 from yaboyshades/codex/delete-patch-files-and-relocate-scripts (owner: @yaboyshades)
+- 2025-08-25T11:21:34Z #94 Merge pull request #94 from yaboyshades/codex/organize-test-files-into-subfolders (owner: @yaboyshades)
