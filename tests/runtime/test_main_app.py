@@ -2,7 +2,8 @@
 
 from fastapi.testclient import TestClient
 
-from src.main import FileEventBus, create_app
+from reug_runtime.event_bus import FileEventBus
+from src.main import create_app
 
 
 def test_create_app_smoke(tmp_path, monkeypatch) -> None:
