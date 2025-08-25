@@ -11,8 +11,6 @@
    - `REUG_EVENT_LOG_DIR` (default `./logs/events`)
    - `REUG_TOOL_REGISTRY_DIR`
    - `REUG_MAX_TOOL_CALLS`, `REUG_EXEC_TIMEOUT_S`, `REUG_EXEC_MAX_RETRIES`
-   - `MCP_BROADCAST_URL` (optional MCP telemetry endpoint)
-   - `MCP_BROADCAST_TOKEN` (bearer token for MCP_BROADCAST_URL)
 
    If `REUG_EVENTBUS` is unset or a Redis backend is unavailable, the runtime
    gracefully falls back to appending JSONL telemetry under
@@ -28,7 +26,6 @@
 
    ```bash
    make deps               # pip install -r requirements.txt -r requirements-test.txt
-   # add GPU support: pip install -r requirements-gpu.txt
    make lint               # run pre-commit hooks
    make test-smoke         # quick runtime smoke test
    make run                # uvicorn app:app --reload --port 8080
@@ -71,7 +68,6 @@ Steps:
    - create .env from .env.example if missing; ensure PYTHONPATH=./src is set.
    - append GEMINI_API_KEY or OPENAI_API_KEY or ANTHROPIC_API_KEY if present.
    - install deps: pip install -r requirements.txt -r requirements-test.txt
-     # add GPU support: pip install -r requirements-gpu.txt
    - run pre-commit on touched files.
 2) Sanity checks
    - python -m pip show fastapi uvicorn
@@ -87,27 +83,3 @@ Steps:
 ```
 
 This task will retry on failures and verify that streaming yields a `<final_answer>` block.
-
-## Event bus backends
-
-The runtime emits telemetry through a pluggable event bus. Set
-`REUG_EVENTBUS` to `file` (append NDJSON under `REUG_EVENT_LOG_DIR`) or
-`redis` (publish to `REUG_EVENTBUS_CHANNEL`). If the chosen backend is
-unavailable, events fall back to local JSONL logging.
-
-## Registry persistence
-
-Dynamic tools register with a file-backed registry so they survive
-process restarts. Point `REUG_TOOL_REGISTRY_DIR` at a writable directory to
-enable persistence.
-
-## Knowledge graph adapters
-
-Knowledge graph writes default to a JSONL store under `REUG_KG_DIR`. Swap
-adapters by setting `REUG_KG_ADAPTER` (for example, `memory` or `neo4j`) and
-providing any adapter-specific configuration.
-
-## LLM selection
-
-Choose the active language model by setting `REUG_LLM_PROVIDER` to `gemini`,
-`openai`, or `anthropic` and supplying the corresponding API key.

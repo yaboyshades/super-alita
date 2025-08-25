@@ -22,17 +22,3 @@ sequenceDiagram
 
 - **Deterministic Identity**: UUIDv5 seeded by normalized content + type + title.
 - **Provenance**: standardized in `meta.provenance` (source/activity/timestamp/context/parents).
-
-## Runtime dependency graph
-
-```mermaid
-graph TD
-    Router --> EventBus
-    Router --> Registry
-    Router --> LLM
-    Router --> KG
-    EventBus --> Redis[(Redis)]
-    EventBus --> File[(NDJSON)]
-    Registry --> FS[(Disk)]
-    KG --> Store[(Adapters)]
-```

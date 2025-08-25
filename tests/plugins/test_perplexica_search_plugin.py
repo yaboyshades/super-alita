@@ -1,14 +1,6 @@
 """Tests for Perplexica search plugin."""
-from unittest.mock import AsyncMock
-
 import pytest
 from src.tools.perplexica_tool import PerplexicaSearchTool, PerplexicaConfig
-from src.plugins.perplexica_search_plugin import (
-    PerplexicaResponse,
-    PerplexicaSearchPlugin,
-    SearchMode,
-)
-from src.core.neural_atom import TextualMemoryAtom
 
 
 @pytest.fixture
@@ -144,55 +136,3 @@ async def test_all_modes(search_tool, mode):
     assert result["mode"] == mode
     assert "summary" in result
     assert result["confidence"] >= 0
-
-
-class DummyEventBus:
-    def __init__(self):
-        self.events = []
-
-    async def publish(self, event):
-        self.events.append(event)
-
-    async def subscribe(self, event_type, handler):
-        pass
-
-
-class DummyStore:
-    def __init__(self):
-        self.atoms = {}
-
-    def register(self, atom):
-        self.atoms[atom.key] = atom
-
-    def get(self, key):
-        return self.atoms.get(key)
-
-
-@pytest.mark.asyncio
-async def test_memory_atom_storage():
-    bus = DummyEventBus()
-    store = DummyStore()
-    plugin = PerplexicaSearchPlugin()
-    await plugin.setup(bus, store, {"archive_to_puter": True})
-
-    fake_resp = PerplexicaResponse(
-        query="foo",
-        search_mode=SearchMode.WEB,
-        summary="s",
-        reasoning="r",
-        sources=[],
-        citations=[],
-    )
-
-    plugin.search = AsyncMock(return_value=fake_resp)
-
-    await plugin._handle_search_request(
-        {"query": "foo", "search_mode": "web", "session_id": "s1", "tool_call_id": "t1"}
-    )
-
-    atoms = plugin.get_recent_search()
-    assert len(atoms) == 1
-    assert isinstance(atoms[0], TextualMemoryAtom)
-
-    tool_events = [e for e in bus.events if getattr(e, "event_type", "") == "tool_call"]
-    assert tool_events and tool_events[0].tool_name == "puter_file_write"

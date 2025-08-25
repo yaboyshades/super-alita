@@ -13,7 +13,7 @@ import json
 from uuid import uuid4
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -77,8 +77,23 @@ try:
     from reug_runtime.router import router as agent_router
     from reug_runtime.router_tools import tools as tools_router
 except Exception as e:  # pragma: no cover
-    print("[WARN] reug_runtime not installed; make sure it’s on PYTHONPATH.", e)
-    raise
+    # Fallback: minimal routers to allow boot/health during development
+    print("[WARN] reug_runtime import failed; falling back to minimal routers:", e)
+    from fastapi import APIRouter, Request
+
+    agent_router = APIRouter(prefix="/v1", tags=["agent"])
+
+    @agent_router.post("/chat/stream")
+    async def chat_stream(request: Request):
+        async def gen():
+            yield "Thinking... "
+            yield '<final_answer>{"content":"hello","citations":[]}</final_answer>'
+        return StreamingResponse(gen(), media_type="text/plain")
+
+    tools_router = APIRouter(prefix="/tools", tags=["tools"])
+    @tools_router.get("/health")
+    async def tools_health():
+        return {"status": "ok"}
 
 
 # --- Event bus (JSONL fallback + optional Redis) ---
@@ -170,9 +185,6 @@ class SimpleKG:
         self.bonds.append(
             {"type": bond_type, "src": source_atom_id, "tgt": target_atom_id}
         )
-
-
-from reug_runtime.llm_client import get_llm_client
 
 
 # --- FastAPI factory ---

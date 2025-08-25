@@ -26,8 +26,7 @@ from .events import EventEmitter, hash_json, new_span_id
 
 ENFORCE_SCHEMA = os.getenv("REUG_SCHEMA_ENFORCE", "true").lower() == "true"
 
-# Include USER to allow tools that capture human input during execution.
-StepKind = Literal["SEARCH", "COMPUTE", "ANALYZE", "GENERATE", "VALIDATE", "USER"]
+StepKind = Literal["SEARCH","COMPUTE","ANALYZE","GENERATE","VALIDATE"]
 
 @dataclass
 class PlanStep:
@@ -73,10 +72,6 @@ class _FallbackExecutor:
     """Extremely simple safe-ish executor for COMPUTE/ANALYZE/GENERATE kinds (tests only)."""
     def run(self, tool_id: str, args: Dict[str, Any], timeout_s: float = 5.0) -> Dict[str, Any]:
         kind = args.get("_kind", "COMPUTE")
-        if tool_id == "tool.user_input":
-            prompt = args.get("prompt", "")
-            # Use built-in input to simulate a live user response.
-            return {"response": input(prompt)}
         if kind in ("COMPUTE","ANALYZE"):
             expr = args.get("expr") or args.get("code") or "None"
             # Very limited eval (no imports), only numeric/simple expressions
@@ -95,12 +90,11 @@ def default_tool_resolver(step: PlanStep, _ctx: Dict[str, Any]) -> Tuple[str, Di
     Real systems can consult a registry by capability + schema.
     """
     tool_map = {
-        "SEARCH": "tool.search.basic",
+        "SEARCH":  "tool.search.basic",
         "COMPUTE": "tool.compute.python",
         "ANALYZE": "tool.analyze.basic",
-        "GENERATE": "tool.generate.text",
-        "VALIDATE": "tool.validate.schema",
-        "USER": "tool.user_input",
+        "GENERATE":"tool.generate.text",
+        "VALIDATE":"tool.validate.schema",
     }
     return tool_map.get(step.kind, f"tool.{step.kind.lower()}.generic"), step.args
 

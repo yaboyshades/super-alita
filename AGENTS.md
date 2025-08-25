@@ -1,70 +1,36 @@
-# AGENTS.md
+# Repository Guidelines
 
-## Project Overview
-Super Alita is a cognitive agent runtime that wires together:
-- A **planner** (LADDER/AOG reasoning, neural atoms)
-- **Plugins** (tools and skills)
-- A **sandbox** for safe dynamic code execution
-- **Telemetry** (event bus, Prometheus)
-- Integrations with **MCP server** and **VS Code Agent Mode**
+## Project Structure & Module Organization
+- Source: `src/` (planner, sandbox, plugins, telemetry, orchestration). Entry: `src/main.py`.
+- API dev app: `app.py` (served by `uvicorn` via `make run`).
+- Tests: `tests/` (plus some top-level `test_*.py`). Mirror `src/` layout.
+- Config/docs/tools: `config/`, `docs/`, `extensions/`, `tools/`, `docker/`.
 
-This file gives coding agents *mechanical instructions*: build, test, style, and safety guardrails. See `README.md` for human quickstart.
+## Build, Test, and Development Commands
+- Install deps: `uv pip install -r requirements.txt -c constraints.txt` (or `make deps`).
+- Run runtime server: `python -m src.main`.
+- FastAPI dev server: `make run` (serves `app:app` on port 8080).
+- Tests: `pytest -q` (filter: `pytest -k "expr"`; marker: `-m integration_redis`).
+- Hooks/format: `pre-commit run --all-files`.
 
-## Setup Commands
-- Install deps:
-  ```bash
-  uv pip install -r requirements.txt -c constraints.txt
-  # add GPU support: uv pip install -r requirements-gpu.txt -c constraints.txt
-  ```
-- Start runtime server:
-  ```bash
-  python -m src.main
-  ```
-- Run tests:
-  ```bash
-  pytest -q --maxfail=1 --disable-warnings
-  ```
+## Coding Style & Naming Conventions
+- Python 3.11+. Format with `black` (88 cols) and lint with `ruff`.
+- Type-check with `mypy --strict` (especially `src/core`, `src/sandbox`).
+- Use double quotes; add type hints; keep functions small and pure.
+- No raw `eval/exec`; use `src/sandbox/exec_sandbox.py`.
+- Subprocess/YAML: `src/core/proc.py` (no `shell=True`) and `src/core/yaml_utils.py`.
 
-## Code Style
-- **Python 3.11+**
-- `ruff` + `black` (`88` cols). Quotes: double
-- `mypy --strict` on `src/core` and `src/sandbox`
-- No raw `eval`/`exec` → use `src/sandbox/exec_sandbox.py`
-- YAML via `src/core/yaml_utils.py`
-- Subprocess via `src/core/proc.py` (no `shell=True`)
+## Testing Guidelines
+- Framework: `pytest`; target ≥70% coverage. New code requires tests.
+- Naming: files `test_*.py`; organize to mirror `src/` packages.
+- Useful: `pytest -q`, `pytest -k name`, `pytest -m integration_redis`.
 
-## Testing Instructions
-- Run all:
-  ```bash
-  pytest
-  ```
-- Coverage floor: 70%
-- Slow tests marked `-m slow`
-- Focus a test:
-  ```bash
-  pytest -k "name"
-  ```
-- New code requires tests
-- Sandbox requires security tests under `tests/sandbox/`
+## Commit & Pull Request Guidelines
+- Commits: `[module] Short description` (e.g., `[sandbox] Harden exec policy`).
+- Before PR: run hooks, type-check, and tests; CI enforces lint/type/test/coverage.
+- PRs: include summary, rationale, linked issues, and updated docs/config.
+- Secrets: never commit keys; manage via env or `.env` (see `.env.example`).
 
-## PR / Commit
-- Title: `[module] Short description`
-- Run `pre-commit run --all-files` before commit
-- Secrets are blocked by pre-commit; never commit keys
-- CI enforces lint/type/test/coverage
-
-## Run Modes
-- `shadow`: Plan only
-- `act`: Plan + act under sandbox
-- `batch`: Replay traces
-
-Set via `SUPER_ALITA_MODE`.
-
-## Safety
-- All dynamic execution sandboxed
-- Secrets from env/.env only
-- Subprocess + YAML sanitized by core helpers
-
-## Large Monorepo Note
-Subprojects may include their own `AGENTS.md`. The closest file to the edited path wins.
-
+## Security & Run Modes
+- All dynamic execution must be sandboxed; do not bypass policy guards.
+- Configure via `SUPER_ALITA_MODE`: `shadow` (plan), `act` (sandboxed act), `batch` (replay).

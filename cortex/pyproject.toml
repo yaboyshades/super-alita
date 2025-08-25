@@ -29,9 +29,8 @@ dev = [
     "pre-commit"
 ]
 
-# gpu extras disabled for non-CUDA environments
-# gpu = [
-#     "torch",
-#     "transformers",
-#     "accelerate"
-# ]
+gpu = [
+    "torch",
+    "transformers",
+    "accelerate"
+]

@@ -3,8 +3,7 @@
 ## With pytest (recommended)
 
 ```
-pip install -r requirements.txt         # CPU-only
-# pip install -r requirements-gpu.txt    # add GPU support
+pip install -r requirements.txt
 pip install hypothesis   # optional
 PYTHONPATH=src pytest -q
 ```

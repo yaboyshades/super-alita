@@ -82,7 +82,6 @@ class PuterPlugin(PluginInterface):
         await self.subscribe("puter_file_operation", self._handle_file_operation)
         await self.subscribe("puter_process_execution", self._handle_process_execution)
         await self.subscribe("puter_workspace_sync", self._handle_workspace_sync)
-        await self.subscribe("puter_file_write", self._handle_direct_file_write)
         
         # Subscribe to general tool calls that might need Puter
         await self.subscribe("tool_call", self._handle_tool_call)
@@ -134,9 +133,9 @@ class PuterPlugin(PluginInterface):
                 success=result.get("success", False),
                 result=result,
                 neural_atom_id=atom.get_deterministic_uuid(),
+                timestamp=datetime.now(timezone.utc),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
-                correlation_id=event.correlation_id,
             )
             
             logger.info(f"🌐 Completed Puter file {operation}: {file_path}")
@@ -147,24 +146,10 @@ class PuterPlugin(PluginInterface):
                 "puter_operation_failed",
                 operation_type="file_operation",
                 error=str(e),
+                timestamp=datetime.now(timezone.utc),
                 source_plugin=self.name,
                 conversation_id=getattr(event, 'conversation_id', 'unknown'),
-                correlation_id=getattr(event, "correlation_id", None),
             )
-
-    async def _handle_direct_file_write(self, event: BaseEvent) -> None:
-        """Handle simple puter_file_write events by delegating to file_operation."""
-        file_event = create_event(
-            "puter_file_operation",
-            source_plugin=self.name,
-            conversation_id=getattr(event, "conversation_id", "unknown"),
-        )
-        file_event.metadata = {
-            "operation": "write",
-            "file_path": getattr(event, "file_path", ""),
-            "content": getattr(event, "content", ""),
-        }
-        await self._handle_file_operation(file_event)
 
     async def _handle_process_execution(self, event: BaseEvent) -> None:
         """Handle process execution in Puter cloud environment."""
@@ -198,9 +183,9 @@ class PuterPlugin(PluginInterface):
                 success=result.get("success", False),
                 result=result,
                 neural_atom_id=atom.get_deterministic_uuid(),
+                timestamp=datetime.now(timezone.utc),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
-                correlation_id=event.correlation_id,
             )
             
             logger.info(f"🌐 Completed Puter process execution: {command}")
@@ -211,9 +196,9 @@ class PuterPlugin(PluginInterface):
                 "puter_operation_failed",
                 operation_type="process_execution",
                 error=str(e),
+                timestamp=datetime.now(timezone.utc),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
-                correlation_id=getattr(event, "correlation_id", None),
             )
 
     async def _handle_workspace_sync(self, event: BaseEvent) -> None:
@@ -248,9 +233,9 @@ class PuterPlugin(PluginInterface):
                 success=result.get("success", False),
                 result=result,
                 neural_atom_id=atom.get_deterministic_uuid(),
+                timestamp=datetime.now(timezone.utc),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
-                correlation_id=event.correlation_id,
             )
             
             logger.info(f"🌐 Completed Puter workspace sync: {sync_type}")
@@ -261,9 +246,9 @@ class PuterPlugin(PluginInterface):
                 "puter_operation_failed",
                 operation_type="workspace_sync",
                 error=str(e),
+                timestamp=datetime.now(timezone.utc),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
-                correlation_id=getattr(event, "correlation_id", None),
             )
 
     async def _handle_tool_call(self, event: BaseEvent) -> None:
@@ -286,7 +271,6 @@ class PuterPlugin(PluginInterface):
                     "puter_file_operation",
                     source_plugin=self.name,
                     conversation_id=getattr(event, 'conversation_id', 'unknown'),
-                    correlation_id=getattr(event, 'correlation_id', None),
                 )
                 file_event.metadata = {
                     "operation": "read",
@@ -300,7 +284,6 @@ class PuterPlugin(PluginInterface):
                     "puter_file_operation",
                     source_plugin=self.name,
                     conversation_id=getattr(event, 'conversation_id', 'unknown'),
-                    correlation_id=getattr(event, 'correlation_id', None),
                 )
                 file_event.metadata = {
                     "operation": "write",
@@ -315,7 +298,6 @@ class PuterPlugin(PluginInterface):
                     "puter_process_execution",
                     source_plugin=self.name,
                     conversation_id=getattr(event, 'conversation_id', 'unknown'),
-                    correlation_id=getattr(event, 'correlation_id', None),
                 )
                 exec_event.metadata = {
                     "command": parameters.get("command", ""),
