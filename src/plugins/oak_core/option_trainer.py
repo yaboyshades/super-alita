@@ -54,6 +54,8 @@ class OptionTrainer(PluginInterface):
       - oak.subproblem_defined
       - oak.state_transition
       - deliberation_tick
+    Attributes:
+      ppo_epochs: Number of PPO optimization epochs per rollout (default 4).
     """
 
     @property
@@ -73,15 +75,18 @@ class OptionTrainer(PluginInterface):
             "value_coef": 0.5,
             "entropy_coef": 0.01,
             "max_replay_size": 2000,
+            "ppo_epochs": 4,
         }
         self.options: Dict[str, OptionNetwork] = {}
         self.optim: Dict[str, optim.Optimizer] = {}
         self.rollouts: Dict[str, List[List[Transition]]] = {}
         self.current: Dict[str, List[Transition]] = {}
+        self.ppo_epochs = int(self.cfg["ppo_epochs"])
 
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # type: ignore[override]
         await super().setup(event_bus, store, config)
         self.cfg.update(config or {})
+        self.ppo_epochs = int(self.cfg.get("ppo_epochs", 4))
         await self.subscribe("oak.subproblem_defined", self.handle_subproblem_defined)
         await self.subscribe("oak.state_transition", self.handle_state_transition)
         await self.subscribe("deliberation_tick", self.handle_training_tick)
@@ -166,31 +171,32 @@ class OptionTrainer(PluginInterface):
         policy_losses: List[float] = []
         value_losses: List[float] = []
         entropies: List[float] = []
-        for start in range(0, len(traj), mb):
-            mb_slice = traj[start : start + mb]
-            states = torch.tensor([t.state for t in mb_slice], dtype=torch.float32)
-            actions = torch.tensor([t.action for t in mb_slice], dtype=torch.long)
-            old_log_probs = torch.tensor([t.log_prob for t in mb_slice], dtype=torch.float32)
-            returns = torch.tensor([t.ret for t in mb_slice], dtype=torch.float32)
-            adv = torch.tensor([t.advantage for t in mb_slice], dtype=torch.float32)
+        for _ in range(self.ppo_epochs):
+            for start in range(0, len(traj), mb):
+                mb_slice = traj[start : start + mb]
+                states = torch.tensor([t.state for t in mb_slice], dtype=torch.float32)
+                actions = torch.tensor([t.action for t in mb_slice], dtype=torch.long)
+                old_log_probs = torch.tensor([t.log_prob for t in mb_slice], dtype=torch.float32)
+                returns = torch.tensor([t.ret for t in mb_slice], dtype=torch.float32)
+                adv = torch.tensor([t.advantage for t in mb_slice], dtype=torch.float32)
 
-            logits, values, _ = net(states)
-            dist = torch.distributions.Categorical(logits=logits)
-            new_log_probs = dist.log_prob(actions)
-            ratio = (new_log_probs - old_log_probs).exp()
-            eps = float(self.cfg["ppo_epsilon"])
-            clipped = torch.clamp(ratio, 1.0 - eps, 1.0 + eps)
-            policy_loss = -torch.min(ratio * adv, clipped * adv).mean()
-            value_loss = 0.5 * (values.squeeze() - returns).pow(2).mean()
-            entropy = dist.entropy().mean()
-            loss = policy_loss + float(self.cfg["value_coef"]) * value_loss - float(self.cfg["entropy_coef"]) * entropy
-            optim_.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
-            optim_.step()
-            policy_losses.append(float(policy_loss.item()))
-            value_losses.append(float(value_loss.item()))
-            entropies.append(float(entropy.item()))
+                logits, values, _ = net(states)
+                dist = torch.distributions.Categorical(logits=logits)
+                new_log_probs = dist.log_prob(actions)
+                ratio = (new_log_probs - old_log_probs).exp()
+                eps = float(self.cfg["ppo_epsilon"])
+                clipped = torch.clamp(ratio, 1.0 - eps, 1.0 + eps)
+                policy_loss = -torch.min(ratio * adv, clipped * adv).mean()
+                value_loss = 0.5 * (values.squeeze() - returns).pow(2).mean()
+                entropy = dist.entropy().mean()
+                loss = policy_loss + float(self.cfg["value_coef"]) * value_loss - float(self.cfg["entropy_coef"]) * entropy
+                optim_.zero_grad()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
+                optim_.step()
+                policy_losses.append(float(policy_loss.item()))
+                value_losses.append(float(value_loss.item()))
+                entropies.append(float(entropy.item()))
 
         await self.emit_event(
             "oak.option_training_update",
