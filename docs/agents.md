@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-25T12:49:16Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-25T12:51:08Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -128,7 +128,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -136,6 +136,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T12:49:16Z #105 Merge pull request #105 from yaboyshades/codex/expand-configuration-for-cache-defaults-and-endpoints (owner: @yaboyshades)
+- 2025-08-25T12:51:08Z #107 Merge pull request #107 from yaboyshades/codex/add-tests-for-unifiedsuperalita-initialization (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T12:48:34Z #106 Merge pull request #106 from yaboyshades/codex/verify-.env-configuration-and-server-startup (owner: @yaboyshades)
+- 2025-08-25T12:49:16Z #105 Merge pull request #105 from yaboyshades/codex/expand-configuration-for-cache-defaults-and-endpoints (owner: @yaboyshades)
