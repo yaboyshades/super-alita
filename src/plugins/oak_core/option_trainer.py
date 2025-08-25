@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import random
-from collections import deque
 from dataclasses import dataclass
-from typing import Any, Deque, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
@@ -42,6 +40,8 @@ class Transition:
     done: bool
     log_prob: float
     value: float
+    advantage: float = 0.0
+    ret: float = 0.0
 
 
 class OptionTrainer(PluginInterface):
@@ -76,7 +76,8 @@ class OptionTrainer(PluginInterface):
         }
         self.options: Dict[str, OptionNetwork] = {}
         self.optim: Dict[str, optim.Optimizer] = {}
-        self.replay: Dict[str, Deque[Transition]] = {}
+        self.rollouts: Dict[str, List[List[Transition]]] = {}
+        self.current: Dict[str, List[Transition]] = {}
 
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # type: ignore[override]
         await super().setup(event_bus, store, config)
@@ -95,7 +96,8 @@ class OptionTrainer(PluginInterface):
         net = OptionNetwork(int(self.cfg["state_dim"]), int(self.cfg["action_dim"]))
         self.options[opt_id] = net
         self.optim[opt_id] = optim.Adam(net.parameters(), lr=float(self.cfg["learning_rate"]))
-        self.replay[opt_id] = deque(maxlen=int(self.cfg["max_replay_size"]))
+        self.rollouts[opt_id] = []
+        self.current[opt_id] = []
         await self.emit_event(
             "oak.option_created",
             option_id=opt_id,
@@ -119,59 +121,82 @@ class OptionTrainer(PluginInterface):
             dist = torch.distributions.Categorical(logits=logits)
             log_prob = float(dist.log_prob(torch.tensor(a)))
             v = float(value.squeeze())
-        self.replay[opt_id].append(Transition(s, a, r, ns, done, log_prob, v))
+        traj = self.current.setdefault(opt_id, [])
+        traj.append(Transition(s, a, r, ns, done, log_prob, v))
+        if done:
+            rollouts = self.rollouts.setdefault(opt_id, [])
+            rollouts.append(traj.copy())
+            self.current[opt_id] = []
 
     async def handle_training_tick(self, event: Any) -> None:
         for opt_id in list(self.options.keys()):
-            buf = self.replay.get(opt_id)
-            if not buf or len(buf) < int(self.cfg["batch_size"]):
+            rollouts = self.rollouts.get(opt_id, [])
+            if not rollouts:
                 continue
-            await self._train_batch(opt_id, list(buf)[-int(self.cfg["batch_size"]):])
+            for traj in rollouts:
+                await self._train_rollout(opt_id, traj)
+            self.rollouts[opt_id] = []
 
-    async def _train_batch(self, opt_id: str, batch: List[Transition]) -> None:
+    async def _train_rollout(self, opt_id: str, traj: List[Transition]) -> None:
         net = self.options[opt_id]
         optim_ = self.optim[opt_id]
-        states = torch.tensor([t.state for t in batch], dtype=torch.float32)
-        actions = torch.tensor([t.action for t in batch], dtype=torch.long)
-        rewards = torch.tensor([t.reward for t in batch], dtype=torch.float32)
-        next_states = torch.tensor([t.next_state for t in batch], dtype=torch.float32)
-        dones = torch.tensor([t.done for t in batch], dtype=torch.float32)
-        old_log_probs = torch.tensor([t.log_prob for t in batch], dtype=torch.float32)
-        old_values = torch.tensor([t.value for t in batch], dtype=torch.float32)
+        gamma = float(self.cfg["gamma"])
+        lam = float(self.cfg["gae_lambda"])
 
         with torch.no_grad():
-            _, next_values, _ = net(next_states)
-            next_values = next_values.squeeze()
-            deltas = rewards + float(self.cfg["gamma"]) * next_values * (1.0 - dones) - old_values
-            adv = torch.zeros_like(deltas)
+            next_values: List[float] = []
+            for t in traj:
+                if t.done:
+                    next_values.append(0.0)
+                else:
+                    _, nv, _ = net(torch.tensor(t.next_state, dtype=torch.float32))
+                    next_values.append(float(nv.squeeze()))
             gae = 0.0
-            gamma = float(self.cfg["gamma"]) ; lam = float(self.cfg["gae_lambda"]) 
-            for t in reversed(range(len(deltas))):
-                gae = float(deltas[t]) + gamma * lam * gae
-                adv[t] = gae
+            for i in reversed(range(len(traj))):
+                delta = traj[i].reward + gamma * next_values[i] - traj[i].value
+                gae = delta + gamma * lam * gae
+                traj[i].advantage = gae
+                traj[i].ret = gae + traj[i].value
+            adv = torch.tensor([t.advantage for t in traj])
             adv = (adv - adv.mean()) / (adv.std() + 1e-8)
-            returns = adv + old_values
+            for i, t in enumerate(traj):
+                t.advantage = float(adv[i])
 
-        logits, values, _ = net(states)
-        dist = torch.distributions.Categorical(logits=logits)
-        new_log_probs = dist.log_prob(actions)
-        ratio = (new_log_probs - old_log_probs).exp()
-        eps = float(self.cfg["ppo_epsilon"]) 
-        clipped = torch.clamp(ratio, 1.0 - eps, 1.0 + eps)
-        policy_loss = -torch.min(ratio * adv, clipped * adv).mean()
-        value_loss = 0.5 * (values.squeeze() - returns).pow(2).mean()
-        entropy = dist.entropy().mean()
-        loss = policy_loss + float(self.cfg["value_coef"]) * value_loss - float(self.cfg["entropy_coef"]) * entropy
-        optim_.zero_grad()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
-        optim_.step()
+        mb = int(self.cfg["batch_size"])
+        policy_losses: List[float] = []
+        value_losses: List[float] = []
+        entropies: List[float] = []
+        for start in range(0, len(traj), mb):
+            mb_slice = traj[start : start + mb]
+            states = torch.tensor([t.state for t in mb_slice], dtype=torch.float32)
+            actions = torch.tensor([t.action for t in mb_slice], dtype=torch.long)
+            old_log_probs = torch.tensor([t.log_prob for t in mb_slice], dtype=torch.float32)
+            returns = torch.tensor([t.ret for t in mb_slice], dtype=torch.float32)
+            adv = torch.tensor([t.advantage for t in mb_slice], dtype=torch.float32)
+
+            logits, values, _ = net(states)
+            dist = torch.distributions.Categorical(logits=logits)
+            new_log_probs = dist.log_prob(actions)
+            ratio = (new_log_probs - old_log_probs).exp()
+            eps = float(self.cfg["ppo_epsilon"])
+            clipped = torch.clamp(ratio, 1.0 - eps, 1.0 + eps)
+            policy_loss = -torch.min(ratio * adv, clipped * adv).mean()
+            value_loss = 0.5 * (values.squeeze() - returns).pow(2).mean()
+            entropy = dist.entropy().mean()
+            loss = policy_loss + float(self.cfg["value_coef"]) * value_loss - float(self.cfg["entropy_coef"]) * entropy
+            optim_.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
+            optim_.step()
+            policy_losses.append(float(policy_loss.item()))
+            value_losses.append(float(value_loss.item()))
+            entropies.append(float(entropy.item()))
 
         await self.emit_event(
             "oak.option_training_update",
             option_id=opt_id,
-            policy_loss=float(policy_loss.item()),
-            value_loss=float(value_loss.item()),
-            entropy=float(entropy.item()),
-            avg_reward=float(rewards.mean().item()),
+            policy_loss=float(np.mean(policy_losses)),
+            value_loss=float(np.mean(value_losses)),
+            entropy=float(np.mean(entropies)),
+            avg_reward=float(np.mean([t.reward for t in traj])),
         )
