@@ -1,12 +1,14 @@
 # Super Alita - Full Integration Guide (Revised)
 
+Refer to [README](README.md) for initial environment setup.
+
 ## Quick Start
 
 1. **Setup Environment**
 ```bash
 git clone https://github.com/yaboyshades/super-alita.git
 cd super-alita
-make dev-setup
+make deps
 ```
 
 2. **Configure API Keys**
@@ -14,7 +16,7 @@ Edit `.env` with your actual API keys for search providers and LLMs.
 
 3. **Start ACP Server**
 ```bash
-make run-acp
+make run
 # Server runs on http://localhost:8000
 ```
 
@@ -48,7 +50,7 @@ Add to your Claude Desktop config:
 ```
 
 3. **Use in Claude**
-- Start your ACP server: `make run-acp`
+- Start your ACP server: `make run`
 - Restart Claude Desktop
 - Your agents (echo, classify, router, search) are now available as MCP tools
 
@@ -79,13 +81,13 @@ Chains multiple agents with streaming output.
 
 ```bash
 # Start all services
-make docker-up
+docker compose up
 
 # View logs
-make docker-logs
+docker compose logs
 
 # Stop services
-make docker-down
+docker compose down
 ```
 
 ## Testing

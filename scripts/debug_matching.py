@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 # Add src to Python path
-src_path = Path(__file__).parent / "src"
+src_path = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(src_path))
 
 from core.decision_policy_v1 import (
