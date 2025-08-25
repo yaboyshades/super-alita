@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-25T13:32:52Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-25T13:37:23Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -60,7 +60,7 @@
 | semantic_memory_plugin | src/plugins/semantic_memory_plugin.py | "memory", "storage", "retrieval", "memory", "storage", "retrieval", "semantic_search" | ENV_* | function() => ok |  |
 | skill_discovery_plugin | src/plugins/skill_discovery_plugin.py | (…) | ENV_* | function() => ok |  |
 | memory_manager_plugin_unified | src/plugins/memory_manager_plugin_unified.py | (…) | ENV_* | function() => ok |  |
-| brainstorm_plugin | src/plugins/brainstorm_plugin.py | (…) | ENV_* | function() => ok |  |
+| brainstorm_plugin | src/plugins/brainstorm_plugin.py | atom.tool | ENV_* | function() => ok |  |
 | deepcode_puter_bridge_plugin | src/plugins/deepcode_puter_bridge_plugin.py | (…) | ENV_* | function() => ok |  |
 | semantic_fsm_plugin | src/plugins/semantic_fsm_plugin.py | (…) | ENV_* | function() => ok |  |
 | puter_plugin | src/plugins/puter_plugin.py | "cloud_storage", "process_execution", "file_io" | ENV_* | function() => ok |  |
@@ -76,7 +76,7 @@
 | deepcode_orchestrator_plugin | src/plugins/deepcode_orchestrator_plugin.py | (…) | ENV_* | function() => ok |  |
 | adaptive_neural_atom_plugin | src/plugins/adaptive_neural_atom_plugin.py | (…) | ENV_* | function() => ok |  |
 | memory_manager_plugin_clean | src/plugins/memory_manager_plugin_clean.py | "storage", "recall", "memory" | ENV_* | function() => ok |  |
-| compose_plugin | src/plugins/compose_plugin.py | (…) | ENV_* | function() => ok |  |
+| compose_plugin | src/plugins/compose_plugin.py | atom.tool | ENV_* | function() => ok |  |
 | self_heal_plugin | src/plugins/self_heal_plugin.py | (…) | ENV_* | function() => ok |  |
 | deepcode_generator_plugin | src/plugins/deepcode_generator_plugin.py | (…) | ENV_* | function() => ok |  |
 | meta_learning_creator_plugin | src/plugins/meta_learning_creator_plugin.py | (…) | ENV_* | function() => ok |  |
@@ -134,7 +134,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 110, 111]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -142,6 +142,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T13:32:52Z #111 Merge pull request #111 from yaboyshades/codex/refactor-plugin-__init__-and-setup-methods (owner: @yaboyshades)
+- 2025-08-25T13:37:23Z #109 Merge pull request #109 from yaboyshades/codex/refactor-neural_store-import-and-method-calls (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T13:29:43Z #110 Merge pull request #110 from yaboyshades/codex/buffer-trajectories-and-compute-gae (owner: @yaboyshades)
+- 2025-08-25T13:32:52Z #111 Merge pull request #111 from yaboyshades/codex/refactor-plugin-__init__-and-setup-methods (owner: @yaboyshades)
