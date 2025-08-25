@@ -25,8 +25,10 @@
 2. **Install & run**
 
    ```bash
-   make deps               # install runtime + test deps (CPU only)
-   # For GPU acceleration, install extras: pip install -r requirements-gpu.txt (optional)
+   make deps               # install runtime + test deps (CPU torch build)
+   # For GPU acceleration:
+   # pip install --index-url https://download.pytorch.org/whl/cu121 torch
+   # pip install -r requirements-gpu.txt
    make lint               # run pre-commit hooks
    pre-commit run --all-files
    make test               # run runtime suite (target ≥70% coverage)
@@ -73,7 +75,7 @@ Steps:
 1) Environment
    - create .env from .env.example if missing; ensure PYTHONPATH=./src is set.
    - append GEMINI_API_KEY or OPENAI_API_KEY or ANTHROPIC_API_KEY if present.
-   - install deps: make deps  # skip GPU extras unless needed
+   - install deps: make deps  # CPU torch build; for GPU: pip install --index-url https://download.pytorch.org/whl/cu121 torch && pip install -r requirements-gpu.txt
    - run pre-commit on touched files: make lint
 2) Sanity checks
    - python -m pip show fastapi uvicorn
