@@ -128,7 +128,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -136,6 +136,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T07:53:35Z #90 Merge pull request #90 from yaboyshades/codex/enhance-perplexica-search-plugin-functionality (owner: @yaboyshades)
+- 2025-08-25T07:55:16Z #92 Merge pull request #92 from yaboyshades/codex/define-shared-event-schema-and-validations (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T07:53:18Z #89 Merge pull request #89 from yaboyshades/codex/implement-deepcode-integration-workflow (owner: @yaboyshades)
+- 2025-08-25T07:53:35Z #90 Merge pull request #90 from yaboyshades/codex/enhance-perplexica-search-plugin-functionality (owner: @yaboyshades)
