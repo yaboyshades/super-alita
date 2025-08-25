@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import os
 import sys
-from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
 import logging
@@ -172,52 +171,7 @@ class SimpleKG:
         )
 
 
-# --- LLM client: choose provider by available key (Gemini > OpenAI > Claude) ---
-class LLMClient:
-    def __init__(self):
-        self._provider = None
-        self._model = None
-
-        gemini = os.getenv("GEMINI_API_KEY")
-        openai_key = os.getenv("OPENAI_API_KEY")
-        anthropic = os.getenv("ANTHROPIC_API_KEY")
-
-        if gemini:
-            self._provider = "gemini"
-            # lazy import; replace with your client if desired
-            from collections.abc import AsyncGenerator as _T  # noqa: F401
-
-        elif openai_key:
-            self._provider = "openai"
-
-        elif anthropic:
-            self._provider = "anthropic"
-
-        else:
-            self._provider = "mock"  # dev fallback
-
-    async def stream_chat(
-        self, messages: list[dict[str, str]], timeout: float
-    ) -> AsyncGenerator[dict[str, str], None]:
-        """
-        IMPORTANT: This *must* yield {"content": "..."} chunks.
-        The REUG streaming router will parse <tool_call> / <tool_result> / <final_answer>.
-        """
-        # Minimal development behavior:
-        # If no tool_result yet, ask for an echo tool call; otherwise finalize.
-        has_result = any(
-            m["role"] == "assistant" and "<tool_result" in m["content"]
-            for m in messages
-        )
-        if not has_result:
-            yield {"content": "Thinking... "}
-            yield {
-                "content": '<tool_call>{"tool":"echo","args":{"payload":"hello"}}</tool_call>'
-            }
-        else:
-            yield {
-                "content": '<final_answer>{"content":"done: hello","citations":[]}</final_answer>'
-            }
+from reug_runtime.llm_client import get_llm_client
 
 
 # --- FastAPI factory ---
@@ -265,7 +219,7 @@ def create_app() -> FastAPI:
     app.state.event_bus = make_event_bus()
     app.state.ability_registry = SimpleAbilityRegistry()
     app.state.kg = SimpleKG()
-    app.state.llm_model = LLMClient()
+    app.state.llm_model = get_llm_client(os.getenv("LLM_MODEL"))
 
     # Mount routers
     app.include_router(agent_router)  # /v1/chat/stream
