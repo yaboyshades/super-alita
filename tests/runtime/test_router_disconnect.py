@@ -8,6 +8,7 @@ import uvicorn
 from fastapi import FastAPI
 from reug_runtime.router import router
 
+from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG, FakeLLM
 
 
@@ -36,9 +37,11 @@ async def test_client_disconnect():
         while not server.started:
             await asyncio.sleep(0.01)
         async with httpx.AsyncClient(base_url=f"http://{host}:{port}") as client:
-            async with client.stream(
-                "POST", "/v1/chat/stream", json={"message": "hi", "session_id": "s1"}
-            ) as resp:
+              async with client.stream(
+                  "POST",
+                  prefix_path("/v1/chat/stream"),
+                  json={"message": "hi", "session_id": "s1"},
+              ) as resp:
                 chunk_iter = resp.aiter_text()
                 first_chunk = await chunk_iter.__anext__()
                 assert first_chunk

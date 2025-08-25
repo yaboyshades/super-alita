@@ -9,7 +9,7 @@
 ---
 
 ## 0. Quick Links
-- Health: `/healthz` • Telemetry: `/metrics` • Streaming: `/v1/chat/stream`
+- Health: `/healthz` • Telemetry: `/metrics` • Streaming: `${API_PREFIX}/v1/chat/stream`
 - EventBus: `file://` (dev) or `redis://` (prod)
 - Session Ledger: `.alita/sessions/ledger.json` (auto‑maintained)
 
@@ -98,7 +98,7 @@
 ---
 
 ## 4. Runtime Surfaces
-- **HTTP**: FastAPI (`app.py` / `src/main.py`) — `/healthz`, `/v1/chat/stream`
+- **HTTP**: FastAPI (`app.py` / `src/main.py`) — `/healthz`, `${API_PREFIX}/v1/chat/stream`
 - **Eventing**: EventBus (file/Redis), MCP telemetry broadcaster
 - **Sandbox**: `src/sandbox/exec_sandbox.py`
 - **VS Code** (optional): extension client (gRPC when wired)
