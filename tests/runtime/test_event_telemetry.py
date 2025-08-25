@@ -98,3 +98,25 @@ async def test_plugin_events_include_telemetry_fields(monkeypatch) -> None:
     assert result_evt.source_plugin == "perplexica_search"
     assert result_evt.correlation_id
     assert isinstance(result_evt.timestamp, datetime)
+
+
+@pytest.mark.asyncio
+async def test_perplexica_offline_emits_error_event() -> None:
+    bus = CaptureBus()
+    perplex = PerplexicaSearchPlugin()
+    await perplex.setup(bus, None, {})
+    perplex.web_agent = None
+    perplex.web_agent_search_url = "http://localhost:9/search"
+
+    search_event = create_event(
+        "perplexica_search",
+        query="hi",
+        session_id="session_c",
+        conversation_id="session_c",
+        source_plugin="client",
+    )
+    await perplex._handle_search_request(search_event)
+    error_evt = next(e for e in bus.events if e.event_type == "tool_result")
+    assert not error_evt.success
+    assert error_evt.source_plugin == "perplexica_search"
+    assert "WebAgent unavailable" in error_evt.error
