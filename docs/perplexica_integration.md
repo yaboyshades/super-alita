@@ -82,6 +82,18 @@ await plugin.setup(event_bus, store, config)
 response = await plugin.search("Python tutorials", SearchMode.WEB)
 ```
 
+
+## Observability
+
+Events emitted by the Perplexica plugin include telemetry fields:
+
+- `source_plugin` – always `perplexica_search`
+- `conversation_id` – session identifier
+- `correlation_id` – shared ID across related events
+- `timestamp` – UTC event creation time
+
+These fields enable end‑to‑end tracing of search requests and results.
+
 ## Memory Persistence
 
 Each search response is persisted as a `TextualMemoryAtom` in the shared

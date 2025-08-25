@@ -125,6 +125,17 @@ await event_bus.emit("tool_call",
 )
 ```
 
+### Observability
+
+All Puter events include standardized telemetry fields:
+
+- `source_plugin` – always `puter`
+- `conversation_id` – session identifier
+- `correlation_id` – shared ID across related events
+- `timestamp` – UTC event creation time
+
+These fields make it easy to trace Puter operations across the system.
+
 ## Neural Atom Integration
 
 All Puter operations create neural atoms with deterministic UUIDs:

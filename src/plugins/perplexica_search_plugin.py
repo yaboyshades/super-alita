@@ -203,7 +203,9 @@ class PerplexicaSearchPlugin(PluginInterface):
                 query=query,
                 response=response.model_dump(),
                 session_id=session_id,
-                search_mode=search_mode.value
+                search_mode=search_mode.value,
+                conversation_id=session_id,
+                correlation_id=getattr(event, "correlation_id", None),
             )
 
             # Persist search result to memory
@@ -249,10 +251,11 @@ class PerplexicaSearchPlugin(PluginInterface):
             tool_result = ToolResultEvent(
                 source_plugin=self.name,
                 conversation_id=session_id,
+                correlation_id=getattr(event, "correlation_id", None),
                 tool_call_id=data.get("tool_call_id", f"perplexica_{session_id}"),
                 session_id=session_id,
                 success=True,
-                result=response.model_dump()
+                result=response.model_dump(),
             )
             
             await self.event_bus.publish(tool_result)
@@ -266,11 +269,14 @@ class PerplexicaSearchPlugin(PluginInterface):
             error_result = ToolResultEvent(
                 source_plugin=self.name,
                 conversation_id=data.get("session_id", "default"),
-                tool_call_id=data.get("tool_call_id", f"perplexica_error_{data.get('session_id', 'default')}"),
+                correlation_id=getattr(event, "correlation_id", None),
+                tool_call_id=data.get(
+                    "tool_call_id", f"perplexica_error_{data.get('session_id', 'default')}"
+                ),
                 session_id=data.get("session_id", "default"),
                 success=False,
                 result={"error": str(e)},
-                error=str(e)
+                error=str(e),
             )
             
             await self.event_bus.publish(error_result)
