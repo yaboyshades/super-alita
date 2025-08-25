@@ -67,6 +67,7 @@ def _load_unified_plugins():
         ),
         # Cloud integration plugins
         ("src.plugins.puter_plugin", "PuterPlugin", "puter"),
+        ("src.plugins.deepcode_puter_bridge_plugin", "DeepCodePuterBridgePlugin", "deepcode_puter_bridge"),
         # AI-powered search plugin
         ("src.plugins.perplexica_search_plugin", "PerplexicaSearchPlugin", "perplexica_search"),
         # Legacy plugins (fallback compatibility)

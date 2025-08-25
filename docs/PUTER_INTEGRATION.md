@@ -156,6 +156,15 @@ The atoms include:
 5. **History Tracked**: Operation stored in plugin history
 6. **Shutdown Storage**: Atoms registered with neural store on shutdown
 
+## DeepCode
+
+DeepCode proposals are mirrored to Puter so the cloud workspace reflects
+generated code. The `deepcode_puter_bridge` plugin listens for
+`deepcode_ready_for_apply` events and emits `puter_file_write` events for
+each proposed diff, test, and doc. The Puter plugin consumes these events,
+performs the writes, and records a `PuterOperationAtom` for every file to
+maintain lineage.
+
 ## Security Features
 
 ### Workspace Boundary Validation
