@@ -19,7 +19,7 @@
 <!-- AGENTS:START -->
 | Agent | Kind | Entrypoint | Abilities (count) | Plugins (count) | Owner(s) | Stability | Notes |
 |---:|----|----|----|----|----|----|----|
-| super-alita | runtime | src/main.py | 1 | 46 | @owners | beta |  |
+| super-alita | runtime | src/main.py | 1 | 47 | @owners | beta |  |
 <!-- AGENTS:END -->
 
 ### 1.1 Ownership & Contacts
@@ -61,6 +61,7 @@
 | skill_discovery_plugin | /home/runner/work/super-alita/super-alita/src/plugins/skill_discovery_plugin.py | (…) | ENV_* | function() => ok |  |
 | memory_manager_plugin_unified | /home/runner/work/super-alita/super-alita/src/plugins/memory_manager_plugin_unified.py | (…) | ENV_* | function() => ok |  |
 | brainstorm_plugin | /home/runner/work/super-alita/super-alita/src/plugins/brainstorm_plugin.py | (…) | ENV_* | function() => ok |  |
+| deepcode_puter_bridge_plugin | /home/runner/work/super-alita/super-alita/src/plugins/deepcode_puter_bridge_plugin.py | (…) | ENV_* | function() => ok |  |
 | semantic_fsm_plugin | /home/runner/work/super-alita/super-alita/src/plugins/semantic_fsm_plugin.py | (…) | ENV_* | function() => ok |  |
 | puter_plugin | /home/runner/work/super-alita/super-alita/src/plugins/puter_plugin.py | "cloud_storage", "process_execution", "file_io" | ENV_* | function() => ok |  |
 | autonomy_tracker | /home/runner/work/super-alita/super-alita/src/plugins/autonomy_tracker.py | (…) | ENV_* | function() => ok |  |
@@ -127,7 +128,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -135,6 +136,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T03:51:51Z #83 Merge pull request #83 from yaboyshades/codex/add-dynamic-terminal-animations (owner: @yaboyshades)
+- 2025-08-25T07:53:18Z #89 Merge pull request #89 from yaboyshades/codex/implement-deepcode-integration-workflow (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T02:54:10Z #69 Merge pull request #69 from yaboyshades/codex/refactor-llmclient-for-provider-subclasses (owner: @yaboyshades)
+- 2025-08-25T03:51:51Z #83 Merge pull request #83 from yaboyshades/codex/add-dynamic-terminal-animations (owner: @yaboyshades)
