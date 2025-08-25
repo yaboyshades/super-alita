@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from reug_runtime.router import router
 
+from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeEventBus, FakeKG, FakeLLM
 
 
@@ -60,7 +61,9 @@ def _mk_app():
 def test_dynamic_registration_flow():
     app = _mk_app()
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "hi", "session_id": "dyn"})
+    resp = client.post(
+        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "dyn"}
+    )
     text = resp.text
     assert "done dynamic" in text
     evts = app.state.event_bus.events

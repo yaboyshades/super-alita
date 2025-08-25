@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from reug_runtime import config
 from reug_runtime.router import breaker, router
 
+from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeEventBus, FakeKG
 
 
@@ -60,7 +61,9 @@ def test_circuit_breaker(monkeypatch):
     old_retries = config.SETTINGS.max_retries
     config.SETTINGS.max_retries = 0
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "hi", "session_id": "cb"})
+    resp = client.post(
+        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "cb"}
+    )
     text = resp.text
     config.SETTINGS.max_retries = old_retries
     assert "breaker done" in text

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from reug_runtime.router import router
 
+from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG, FakeLLM
 
 
@@ -18,7 +19,9 @@ def _make_app() -> FastAPI:
 def test_streaming_single_turn_smoke() -> None:
     app = _make_app()
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "hello", "session_id": "s1"})
+    resp = client.post(
+        prefix_path("/v1/chat/stream"), json={"message": "hello", "session_id": "s1"}
+    )
     assert resp.status_code == 200
     text = resp.text
     # sanity: router streamed tokens and produced final answer

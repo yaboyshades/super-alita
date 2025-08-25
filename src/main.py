@@ -22,6 +22,7 @@ if str(SRC) not in sys.path:
 try:
     from reug_runtime.router import router as agent_router
     from reug_runtime.router_tools import tools as tools_router
+    from reug_runtime.config import SETTINGS
 except Exception as e:  # pragma: no cover
     print("[WARN] reug_runtime not installed; make sure it’s on PYTHONPATH.", e)
     raise
@@ -242,10 +243,20 @@ def create_app() -> FastAPI:
     app.state.llm_model = LLMClient()
 
     # Mount routers
-    app.include_router(agent_router)  # /v1/chat/stream
-    app.include_router(
-        tools_router
-    )  # /tools/* (toolbox – run tests, apply patches, etc.)
+    prefix = SETTINGS.api_prefix
+    if prefix and prefix != "/":
+        if not prefix.startswith("/"):
+            prefix = f"/{prefix}"
+        prefix = prefix.rstrip("/")
+        app.include_router(agent_router, prefix=prefix)  # {prefix}/v1/chat/stream
+        app.include_router(
+            tools_router, prefix=prefix
+        )  # {prefix}/tools/* (toolbox – run tests, apply patches, etc.)
+    else:
+        app.include_router(agent_router)  # /v1/chat/stream
+        app.include_router(
+            tools_router
+        )  # /tools/* (toolbox – run tests, apply patches, etc.)
 
     return app
 

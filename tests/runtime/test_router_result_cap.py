@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from reug_runtime.router import router
 
+from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeEventBus, FakeKG
 
 
@@ -55,7 +56,9 @@ def _mk_app():
 def test_result_capping():
     app = _mk_app()
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "hi", "session_id": "big"})
+    resp = client.post(
+        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "big"}
+    )
     text = resp.text
     assert "_artifact" in text
     evts = app.state.event_bus.events

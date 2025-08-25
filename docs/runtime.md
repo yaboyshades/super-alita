@@ -8,9 +8,10 @@
    Optional knobs default safely:
 
    - `REUG_EVENTBUS` (`file` or `redis`)
-   - `REUG_EVENT_LOG_DIR` (default `./logs/events`)
-   - `REUG_TOOL_REGISTRY_DIR`
-   - `REUG_MAX_TOOL_CALLS`, `REUG_EXEC_TIMEOUT_S`, `REUG_EXEC_MAX_RETRIES`
+     - `REUG_EVENT_LOG_DIR` (default `./logs/events`)
+     - `REUG_TOOL_REGISTRY_DIR`
+     - `REUG_MAX_TOOL_CALLS`, `REUG_EXEC_TIMEOUT_S`, `REUG_EXEC_MAX_RETRIES`
+     - `API_PREFIX` (default `/`) – optional path prefix for all API routes
    - `MCP_BROADCAST_URL` (optional MCP telemetry endpoint)
    - `MCP_BROADCAST_TOKEN` (bearer token for MCP_BROADCAST_URL)
 
@@ -37,10 +38,10 @@
 3. **Sanity check**
 
    ```bash
-   curl -sf http://localhost:8080/healthz
-   curl -sN -X POST http://localhost:8080/v1/chat/stream \
-     -H 'content-type: application/json' \
-     -d '{"message":"hello world","session_id":"local"}'
+    curl -sf http://localhost:8080/healthz
+      curl -sN -X POST http://localhost:8080${API_PREFIX}/v1/chat/stream \
+      -H 'content-type: application/json' \
+      -d '{"message":"hello world","session_id":"local"}'
    ```
 
 ## Quick start (Docker)
@@ -55,8 +56,8 @@ curl -sf http://localhost:8080/healthz
 
 ## Endpoints
 
-- `POST /v1/chat/stream` – streamed agent turn
-- `POST /tools/*` – toolbox endpoints
+- `POST ${API_PREFIX}/v1/chat/stream` – streamed agent turn
+- `POST ${API_PREFIX}/tools/*` – toolbox endpoints
 - `GET /healthz` – health probe
 
 ## Codex automation
@@ -80,7 +81,7 @@ Steps:
    - uvicorn app:app --port 8080 --host 0.0.0.0 &
    - wait for http://localhost:8080/healthz
 4) Exercise endpoints
-   - POST /v1/chat/stream with {"message":"hello","session_id":"c1"}
+    - POST ${API_PREFIX}/v1/chat/stream with {"message":"hello","session_id":"c1"}
    - POST /tools/run-tests if available
 5) Artifact
    - commit and open a PR with test output if code changed

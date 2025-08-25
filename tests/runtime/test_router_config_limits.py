@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from reug_runtime import config
 from reug_runtime.router import breaker, router
 
+from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG
 
 
@@ -29,7 +30,9 @@ def _mk_app_max_calls(monkeypatch):
 def test_max_tool_calls_abort(monkeypatch):
     app = _mk_app_max_calls(monkeypatch)
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "go", "session_id": "cap"})
+    resp = client.post(
+        prefix_path("/v1/chat/stream"), json={"message": "go", "session_id": "cap"}
+    )
     text = resp.text
     assert "[ERROR: Agent unable to complete request]" in text
     evts = app.state.event_bus.events
@@ -84,7 +87,9 @@ def _mk_app_timeout(monkeypatch):
 def test_execution_timeout(monkeypatch):
     app = _mk_app_timeout(monkeypatch)
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "go", "session_id": "to"})
+    resp = client.post(
+        prefix_path("/v1/chat/stream"), json={"message": "go", "session_id": "to"}
+    )
     assert "gave up" in resp.text
     evts = app.state.event_bus.events
     fails = [e for e in evts if e["type"] == "AbilityFailed"]
@@ -142,7 +147,9 @@ def _mk_app_backoff(monkeypatch):
 def test_retry_backoff(monkeypatch):
     app, registry = _mk_app_backoff(monkeypatch)
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "hi", "session_id": "rb"})
+    resp = client.post(
+        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "rb"}
+    )
     assert "done" in resp.text
     assert len(registry.call_times) == 2
     delta = registry.call_times[1] - registry.call_times[0]

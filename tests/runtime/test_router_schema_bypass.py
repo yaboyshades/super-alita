@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from reug_runtime import config
 from reug_runtime.router import router
 
+from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG
 
 
@@ -31,7 +32,9 @@ def test_schema_bypass(monkeypatch):
     old_enforce = config.SETTINGS.schema_enforce
     config.SETTINGS.schema_enforce = False
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "hi", "session_id": "sb"})
+    resp = client.post(
+        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "sb"}
+    )
     text = resp.text
     config.SETTINGS.schema_enforce = old_enforce
     assert "ok bad arg" in text

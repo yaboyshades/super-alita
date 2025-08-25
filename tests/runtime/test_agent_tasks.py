@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from reug_runtime.router import router
 
+from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG
 
 
@@ -54,7 +55,8 @@ def test_agent_can_complete_simple_tasks() -> None:
 
     for task in tasks:
         resp = client.post(
-            "/v1/chat/stream", json={"message": task["prompt"], "session_id": "s1"}
+            prefix_path("/v1/chat/stream"),
+            json={"message": task["prompt"], "session_id": "s1"},
         )
         assert resp.status_code == 200
         answer = _extract_final_answer(resp.text)
