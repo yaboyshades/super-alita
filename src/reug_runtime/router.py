@@ -16,6 +16,7 @@ from collections.abc import AsyncGenerator
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from reug_runtime.config import SETTINGS
+from reug_runtime.llm_client import LLMClient
 
 
 # ==== Injected dependencies via app.state ====
@@ -26,9 +27,6 @@ class AbilityRegistry: ...
 
 
 class KnowledgeGraph: ...
-
-
-class LLMClient: ...  # wrapper around your provider
 
 
 router = APIRouter(prefix="/v1", tags=["agent"])

@@ -3,6 +3,8 @@ import json
 from collections.abc import AsyncGenerator
 from typing import Any
 
+from reug_runtime.llm_client import LLMClient
+
 
 class FakeEventBus:
     def __init__(self) -> None:
@@ -86,14 +88,14 @@ class FakeKG:
         self.bonds.append({"type": bond_type, "src": source_atom_id, "tgt": target_atom_id})
 
 
-class FakeLLM:
+class FakeLLM(LLMClient):
     """Two-phase stream for deterministic tests."""
 
     def __init__(self) -> None:
         self._phase = 1
 
     async def stream_chat(
-        self, messages: list[dict[str, str]], timeout: float
+        self, messages: list[dict[str, str]], timeout: float | None = None
     ) -> AsyncGenerator[dict[str, str], None]:
         # detect if a tool_result was injected
         if any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
@@ -110,3 +112,7 @@ class FakeLLM:
             await asyncio.sleep(0)
             final = json.dumps({"content": "done: hi", "citations": []})
             yield {"content": f"<final_answer>{final}</final_answer>"}
+
+
+# Alias for compatibility
+FakeLLMClient = FakeLLM
