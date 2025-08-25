@@ -9,7 +9,8 @@ from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 # --- Resolve reug_runtime from local src if not installed ---
@@ -226,14 +227,30 @@ def create_app() -> FastAPI:
     )
 
     # Health for Dockerfile/compose
+    from reug_runtime.health import check_health
+
     @app.get("/healthz")
     async def health_check():
-        return Response(status_code=200)
+        status = await check_health(
+            app.state.event_bus,
+            app.state.ability_registry,
+            app.state.kg,
+            app.state.llm_model,
+        )
+        code = 200 if status["status"] == "healthy" else 503
+        return JSONResponse(status_code=code, content=status)
 
     # Alternative health endpoint
     @app.get("/health")
     async def health_check_alt():
-        return {"status": "healthy", "service": "super-alita"}
+        status = await check_health(
+            app.state.event_bus,
+            app.state.ability_registry,
+            app.state.kg,
+            app.state.llm_model,
+        )
+        code = 200 if status["status"] == "healthy" else 503
+        return JSONResponse(status_code=code, content=status)
 
     # Inject dependencies for the REUG router
     app.state.event_bus = make_event_bus()
