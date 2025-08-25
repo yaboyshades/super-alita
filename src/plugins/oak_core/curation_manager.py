@@ -15,7 +15,7 @@ class CurationManager(PluginInterface):
 
     Emits:
       - oak.curation_feedback
-      - oak.feature_utility_update (for play/planning weights)
+      - oak.feature_utility_updated (for play/planning weights)
     Subscribes:
       - tool_result (existing event)
       - oak.prediction_error
@@ -123,21 +123,48 @@ class CurationManager(PluginInterface):
                 error=str(error_msg)[:256],
             )
             # Global planning utility nudge (no specific feature_id attached)
+
+            await self.emit_event(
+                "oak.feature_utility_updated",
+                feature_id="global_planning",
+                signal_type="planning",
+                value=signal,
+                components={"planning": signal},
+
             await self._emit_utility_update(
                 "global_planning", "planning", signal, {"planning": signal}
+
             )
         else:
             # Positive play signal on successful tool usage
             signal = float(self.cfg["play_weight"])
+
+            await self.emit_event(
+                "oak.feature_utility_updated",
+                feature_id="global_play",
+                signal_type="play",
+                value=signal,
+                components={"play": signal},
+
             await self._emit_utility_update(
                 "global_play", "play", signal, {"play": signal}
+
             )
 
     async def handle_prediction_error(self, event: Any) -> None:
         # Route prediction confidence as a positive signal for planning utility
         err = float(getattr(event, "error", 0.0))
         signal = 1.0 / (1.0 + err)
+
+        await self.emit_event(
+            "oak.feature_utility_updated",
+            feature_id="global_planning",
+            signal_type="planning",
+            value=signal,
+            components={"planning": signal},
+
         await self._emit_utility_update(
             "global_planning", "planning", signal, {"planning": signal}
+
         )
 

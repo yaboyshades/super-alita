@@ -100,7 +100,7 @@ class FeatureDiscoveryEngine(PluginInterface):
         # Register event handlers
         self.on('observation', self.handle_observation)
         self.on('deliberation_tick', self.handle_tick)
-        self.on('feature_utility_update', self.handle_utility_update)
+        self.on('oak.feature_utility_updated', self.handle_utility_update)
 
     def generate_feature_id(self, feature_type: str, base_ids: List[str]) -> str:
         """Deterministic UUIDv5 for features."""
@@ -275,7 +275,7 @@ class FeatureDiscoveryEngine(PluginInterface):
         
         # Update novelty utilities
         for feature, novelty in zip(new_features, novelty_scores):
-            await self.emit('feature_utility_update', {
+            await self.emit('oak.feature_utility_updated', {
                 'feature_id': feature.id,
                 'signal_type': 'novelty',
                 'value': novelty,
@@ -340,7 +340,7 @@ class FeatureDiscoveryEngine(PluginInterface):
             feature.usage_count += 1
             
             # Emit utility update
-            await self.emit('feature_utility_updated', {
+            await self.emit('oak.feature_utility_updated', {
                 'feature_id': feature_id,
                 'utility': feature.utility,
                 'components': self.feature_utility_emas[feature_id].copy()
@@ -1000,7 +1000,7 @@ class PredictionEngine(PluginInterface):
                     # Handle option-specific feature GVFs if they exist
                     feature_id = "some_feature_id" # Placeholder
                 
-                await self.emit('feature_utility_update', {
+                await self.emit('oak.feature_utility_updated', {
                     'feature_id': feature_id, # Should be actual feature ID
                     'signal_type': 'prediction',
                     'value': 1.0 / (1.0 + abs(delta)), # Inverse of error
@@ -1193,7 +1193,7 @@ class CurationManager(PluginInterface):
         self.on('subproblem_defined', self.handle_item_creation)
         self.on('option_created', self.handle_item_creation)
         self.on('gvf_created', self.handle_item_creation)
-        self.on('feature_utility_updated', self.handle_utility_update)
+        self.on('oak.feature_utility_updated', self.handle_utility_update)
         self.on('deliberation_tick', self.handle_curation_tick)
 
     async def handle_item_creation(self, event: Event):
