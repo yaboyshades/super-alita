@@ -5,12 +5,20 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    CollectorRegistry,
+    Counter,
+    Histogram,
+    generate_latest,
+)
 
 # --- Resolve reug_runtime from local src if not installed ---
 ROOT = Path(__file__).resolve().parent.parent
@@ -29,57 +37,106 @@ except Exception as e:  # pragma: no cover
 
 # --- Event bus (JSONL fallback + optional Redis) ---
 class FileEventBus:
-    def __init__(self, log_dir: str | None):
+    def __init__(
+        self,
+        log_dir: str | None,
+        counter: "Counter" | None = None,
+        histogram: "Histogram" | None = None,
+    ):
         self.log_dir = Path(log_dir or "./logs/events")
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.file = self.log_dir / "events.jsonl"
+        self._counter = counter
+        self._histogram = histogram
 
     async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
         # Keep minimal fields, append timestamp
         import json
         import time
 
+        start = time.perf_counter()
+        status = "success"
         event = {**event, "timestamp": time.time()}
-        self.file.parent.mkdir(parents=True, exist_ok=True)
-        with self.file.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+        try:
+            self.file.parent.mkdir(parents=True, exist_ok=True)
+            with self.file.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(event, ensure_ascii=False) + "\n")
+        except Exception:
+            status = "failure"
+            raise
+        finally:
+            if self._counter is not None:
+                event_type = event.get("type", "unknown")
+                source = event.get("source") or event.get("source_plugin", "unknown")
+                self._counter.labels(
+                    event_type=event_type, source=source, status=status
+                ).inc()
+            if self._histogram is not None:
+                self._histogram.labels(event_type=event.get("type", "unknown")).observe(
+                    time.perf_counter() - start
+                )
         return event
 
 
 class RedisEventBus:
     def __init__(
-        self, url: str = "redis://localhost:6379/0", channel: str = "reug-events"
+        self,
+        url: str = "redis://localhost:6379/0",
+        channel: str = "reug-events",
+        counter: "Counter" | None = None,
+        histogram: "Histogram" | None = None,
     ):
         import redis  # type: ignore
 
         self._r = redis.Redis.from_url(url)
         self._ch = channel
+        self._counter = counter
+        self._histogram = histogram
 
     async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
         import json
         import time
 
+        start = time.perf_counter()
+        status = "success"
         event = {**event, "timestamp": time.time()}
         try:
             self._r.publish(self._ch, json.dumps(event))
         except Exception:
-            # Soft-fail to file if Redis hiccups
-            pass
+            status = "failure"
+            raise
+        finally:
+            if self._counter is not None:
+                event_type = event.get("type", "unknown")
+                source = event.get("source") or event.get("source_plugin", "unknown")
+                self._counter.labels(
+                    event_type=event_type, source=source, status=status
+                ).inc()
+            if self._histogram is not None:
+                self._histogram.labels(event_type=event.get("type", "unknown")).observe(
+                    time.perf_counter() - start
+                )
         return event
 
 
-def make_event_bus() -> Any:
+def make_event_bus(
+    counter: "Counter" | None = None, histogram: "Histogram" | None = None
+) -> Any:
     backend = os.getenv("REUG_EVENTBUS", "").strip().lower()
     if backend == "redis":
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         channel = os.getenv("REUG_REDIS_CHANNEL", "reug-events")
         try:
-            return RedisEventBus(url=url, channel=channel)
+            return RedisEventBus(
+                url=url, channel=channel, counter=counter, histogram=histogram
+            )
         except Exception as e:
             print(
                 f"[WARN] Redis event bus unavailable ({e}); falling back to file log."
             )
-    return FileEventBus(os.getenv("REUG_EVENT_LOG_DIR"))
+    return FileEventBus(
+        os.getenv("REUG_EVENT_LOG_DIR"), counter=counter, histogram=histogram
+    )
 
 
 # --- Ability registry (minimal adapter; replace with your real one) ---
@@ -216,6 +273,54 @@ class LLMClient:
 def create_app() -> FastAPI:
     app = FastAPI(title="REUG Runtime", version="0.2.0")
 
+    # Prometheus metrics
+    registry = CollectorRegistry()
+    request_counter = Counter(
+        "request_total",
+        "Total number of requests",
+        ["endpoint", "method", "status"],
+        registry=registry,
+    )
+    request_latency = Histogram(
+        "request_duration_seconds",
+        "Request duration in seconds",
+        ["endpoint", "method"],
+        registry=registry,
+    )
+    event_counter = Counter(
+        "event_bus_messages_total",
+        "Total event bus messages",
+        ["event_type", "source", "status"],
+        registry=registry,
+    )
+    event_latency = Histogram(
+        "event_bus_processing_duration_seconds",
+        "Event bus processing duration",
+        ["event_type"],
+        registry=registry,
+    )
+
+    @app.middleware("http")
+    async def metrics_middleware(request: Request, call_next):
+        start = time.perf_counter()
+        response = await call_next(request)
+        path = request.url.path
+        # Only track agent and tool endpoints
+        if path.startswith("/v1/chat/stream") or path.startswith("/tools"):
+            request_counter.labels(
+                endpoint=path,
+                method=request.method,
+                status=str(response.status_code),
+            ).inc()
+            request_latency.labels(
+                endpoint=path, method=request.method
+            ).observe(time.perf_counter() - start)
+        return response
+
+    @app.get("/metrics")
+    async def metrics():
+        return Response(generate_latest(registry), media_type=CONTENT_TYPE_LATEST)
+
     # CORS (tweak as needed)
     app.add_middleware(
         CORSMiddleware,
@@ -236,7 +341,8 @@ def create_app() -> FastAPI:
         return {"status": "healthy", "service": "super-alita"}
 
     # Inject dependencies for the REUG router
-    app.state.event_bus = make_event_bus()
+    app.state.event_bus = make_event_bus(event_counter, event_latency)
+    app.state.prometheus_registry = registry
     app.state.ability_registry = SimpleAbilityRegistry()
     app.state.kg = SimpleKG()
     app.state.llm_model = LLMClient()

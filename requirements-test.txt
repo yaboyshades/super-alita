@@ -20,3 +20,6 @@ hypothesis>=6.0.0
 fakeredis>=2.0.0
 jsonschema>=4.0.0
 
+# Observability
+prometheus-client>=0.22.0
+
