@@ -12,7 +12,7 @@ class CurationManager(PluginInterface):
 
     Emits:
       - oak.curation_feedback
-      - oak.feature_utility_update (for play/planning weights)
+      - oak.feature_utility_updated (for play/planning weights)
     Subscribes:
       - tool_result (existing event)
       - oak.prediction_error
@@ -63,7 +63,7 @@ class CurationManager(PluginInterface):
             )
             # Global planning utility nudge (no specific feature_id attached)
             await self.emit_event(
-                "oak.feature_utility_update",
+                "oak.feature_utility_updated",
                 feature_id="global_planning",
                 signal_type="planning",
                 value=signal,
@@ -73,7 +73,7 @@ class CurationManager(PluginInterface):
             # Positive play signal on successful tool usage
             signal = float(self.cfg["play_weight"])
             await self.emit_event(
-                "oak.feature_utility_update",
+                "oak.feature_utility_updated",
                 feature_id="global_play",
                 signal_type="play",
                 value=signal,
@@ -85,7 +85,7 @@ class CurationManager(PluginInterface):
         err = float(getattr(event, "error", 0.0))
         signal = 1.0 / (1.0 + err)
         await self.emit_event(
-            "oak.feature_utility_update",
+            "oak.feature_utility_updated",
             feature_id="global_planning",
             signal_type="planning",
             value=signal,

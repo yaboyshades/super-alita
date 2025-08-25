@@ -32,7 +32,7 @@ class FeatureDiscoveryEngine(PluginInterface):
       - oak.feature_utility_updated
     Subscribes:
       - deliberation_tick
-      - oak.feature_utility_update
+      - oak.feature_utility_updated
     """
 
     @property
@@ -55,7 +55,7 @@ class FeatureDiscoveryEngine(PluginInterface):
         await super().setup(event_bus, store, config)
         self.cfg.update(config or {})
         await self.subscribe("deliberation_tick", self.handle_tick)
-        await self.subscribe("oak.feature_utility_update", self.handle_utility_update)
+        await self.subscribe("oak.feature_utility_updated", self.handle_utility_update)
 
     async def start(self) -> None:  # type: ignore[override]
         await super().start()
