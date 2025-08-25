@@ -191,16 +191,35 @@ def _is_subpath(base: Path, candidate: Path) -> bool:
         return False
 ```
 
+The plugin additionally normalizes targets to prevent path traversal:
+
+```python
+def _resolve_workspace_path(self, target: str) -> Path:
+    candidate = Path(target)
+    if not candidate.is_absolute():
+        candidate = (self.workspace_root / candidate).resolve()
+    else:
+        candidate = candidate.resolve()
+    if not candidate.is_relative_to(self.workspace_root):
+        raise ValueError("Path escapes workspace root")
+    return candidate
+```
+
+Escaping paths emits `puter_operation_failed` with an explicit error.
+
 ### Safe Command Execution
 
-Process execution is restricted to safe commands:
+Process execution is restricted to safe commands and sanitizes arguments:
 
 ```python
 safe_commands = {
-    "echo", "cat", "ls", "pwd", "whoami", "date", 
+    "echo", "cat", "ls", "pwd", "whoami", "date",
     "python", "node", "npm", "git"
 }
+sanitized_args = [shlex.quote(str(a)) for a in args]
 ```
+
+Commands outside the whitelist trigger `puter_operation_failed`.
 
 ### Timeout Protection
 

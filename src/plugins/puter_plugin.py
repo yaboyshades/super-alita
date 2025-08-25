@@ -4,16 +4,19 @@
 Provides seamless integration with Puter cloud services for file I/O and process execution
 """
 
-import logging
 import hashlib
+import logging
+import shlex
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any
+
+import numpy as np
 
 from src.core.events import BaseEvent, create_event
 from src.core.plugin_interface import PluginInterface
-from src.core.neural_atom import LegacyNeuralAtom, NeuralAtomMetadata, TextualMemoryAtom
-import numpy as np
+from src.core.neural_atom import NeuralAtomMetadata, TextualMemoryAtom
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +72,11 @@ class PuterPlugin(PluginInterface):
                 "PUTER_WORKSPACE_ID", config.get("puter_workspace_id", "default")
             ),
         }
+
+        # Determine workspace root for path validation
+        self.workspace_root = Path(
+            config.get("workspace_root", Path.cwd())
+        ).resolve()
         
         # Track operation history for neural atoms
         self.operation_history: list[PuterOperationAtom] = []
@@ -97,8 +105,21 @@ class PuterPlugin(PluginInterface):
                     await self.store.register(atom)
                 except Exception as e:
                     logger.warning(f"Failed to register operation atom: {e}")
-        
+
         logger.info("🌐 Puter Plugin shutting down")
+
+    def _resolve_workspace_path(self, target: str) -> Path:
+        """Normalize path and ensure it stays within workspace root."""
+        candidate = Path(target)
+        if not candidate.is_absolute():
+            candidate = (self.workspace_root / candidate).resolve()
+        else:
+            candidate = candidate.resolve()
+        try:
+            candidate.relative_to(self.workspace_root)
+        except ValueError as exc:
+            raise ValueError(f"Path {target} escapes workspace root") from exc
+        return candidate
 
     async def _handle_file_operation(self, event: BaseEvent) -> None:
         """Handle file I/O operations with Puter cloud."""
@@ -110,26 +131,30 @@ class PuterPlugin(PluginInterface):
             operation = event.metadata.get("operation", "read")
             file_path = event.metadata.get("file_path", "")
             content = event.metadata.get("content", "")
-            
+
+            resolved_path = self._resolve_workspace_path(file_path)
+
             # Create neural atom for this operation
             operation_data = {
                 "operation": operation,
-                "file_path": file_path,
+                "file_path": str(resolved_path),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "description": f"File {operation} operation on {file_path}",
+                "description": f"File {operation} operation on {resolved_path}",
             }
-            
+
             atom = PuterOperationAtom("file_operation", operation_data)
             self.operation_history.append(atom)
-            
+
             # Simulate Puter API call (replace with actual API calls)
-            result = await self._simulate_puter_file_operation(operation, file_path, content)
-            
+            result = await self._simulate_puter_file_operation(
+                operation, str(resolved_path), content
+            )
+
             # Emit success event with neural atom
             await self.emit_event(
                 "puter_operation_completed",
                 operation_type="file_operation",
-                file_path=file_path,
+                file_path=str(resolved_path),
                 operation=operation,
                 success=result.get("success", False),
                 result=result,
@@ -138,8 +163,8 @@ class PuterPlugin(PluginInterface):
                 conversation_id=event.conversation_id,
                 correlation_id=event.correlation_id,
             )
-            
-            logger.info(f"🌐 Completed Puter file {operation}: {file_path}")
+
+            logger.info(f"🌐 Completed Puter file {operation}: {resolved_path}")
             
         except Exception as e:
             logger.exception("❌ Puter file operation error")
@@ -172,29 +197,50 @@ class PuterPlugin(PluginInterface):
             command = event.metadata.get("command", "")
             args = event.metadata.get("args", [])
             working_dir = event.metadata.get("working_dir", "/")
-            
+
+            work_path = self._resolve_workspace_path(working_dir)
+
+            safe_commands = {
+                "echo",
+                "cat",
+                "ls",
+                "pwd",
+                "whoami",
+                "date",
+                "python",
+                "node",
+                "npm",
+                "git",
+            }
+            if command not in safe_commands:
+                raise ValueError(f"Command '{command}' is not allowed")
+
+            sanitized_args = [shlex.quote(str(a)) for a in args]
+
             # Create neural atom for this operation
             operation_data = {
                 "command": command,
-                "args": args,
-                "working_dir": working_dir,
+                "args": sanitized_args,
+                "working_dir": str(work_path),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "description": f"Process execution: {command} {' '.join(args)}",
+                "description": f"Process execution: {command} {' '.join(sanitized_args)}",
             }
-            
+
             atom = PuterOperationAtom("process_execution", operation_data)
             self.operation_history.append(atom)
-            
+
             # Simulate Puter process execution (replace with actual API calls)
-            result = await self._simulate_puter_process_execution(command, args, working_dir)
-            
+            result = await self._simulate_puter_process_execution(
+                command, sanitized_args, str(work_path)
+            )
+
             # Emit completion event with neural atom
             await self.emit_event(
                 "puter_operation_completed",
                 operation_type="process_execution",
                 command=command,
-                args=args,
-                working_dir=working_dir,
+                args=sanitized_args,
+                working_dir=str(work_path),
                 success=result.get("success", False),
                 result=result,
                 neural_atom_id=atom.get_deterministic_uuid(),
@@ -202,7 +248,7 @@ class PuterPlugin(PluginInterface):
                 conversation_id=event.conversation_id,
                 correlation_id=event.correlation_id,
             )
-            
+
             logger.info(f"🌐 Completed Puter process execution: {command}")
             
         except Exception as e:

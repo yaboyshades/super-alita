@@ -7,6 +7,7 @@ import asyncio
 import logging
 import os
 import tempfile
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -138,7 +139,7 @@ async def test_end_to_end_puter_workflow():
     )
     file_event.metadata = {
         "operation": "write",
-        "file_path": "/test/file.txt",
+        "file_path": "test/file.txt",
         "content": "Hello Puter World!",
     }
     
@@ -151,12 +152,13 @@ async def test_end_to_end_puter_workflow():
     completion_event = mock_bus.events[0]
     assert completion_event.event_type == "puter_operation_completed"
     assert completion_event.operation_type == "file_operation"
-    assert completion_event.file_path == "/test/file.txt"
+    expected_path = str(Path.cwd().resolve() / "test/file.txt")
+    assert completion_event.file_path == expected_path
     
     # Verify neural atom was created
     atom = plugin.operation_history[0]
     assert atom.operation_type == "file_operation"
-    assert atom.operation_data["file_path"] == "/test/file.txt"
+    assert atom.operation_data["file_path"] == expected_path
     assert atom.get_deterministic_uuid() is not None
     
     await plugin.shutdown()

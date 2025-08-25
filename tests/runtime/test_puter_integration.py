@@ -217,7 +217,7 @@ class TestPuterPlugin:
         )
         event.metadata = {
             "operation": "read",
-            "file_path": "/test/file.txt",
+            "file_path": "test/file.txt",
             "content": "",
         }
         
@@ -229,7 +229,8 @@ class TestPuterPlugin:
         atom = puter_plugin.operation_history[0]
         assert atom.operation_type == "file_operation"
         assert atom.operation_data["operation"] == "read"
-        assert atom.operation_data["file_path"] == "/test/file.txt"
+        expected_path = str(puter_plugin.workspace_root / "test/file.txt")
+        assert atom.operation_data["file_path"] == expected_path
         
         # Check that completion event was emitted
         completion_events = [
@@ -240,7 +241,7 @@ class TestPuterPlugin:
         
         completion_event = completion_events[0]
         assert completion_event.operation_type == "file_operation"
-        assert completion_event.file_path == "/test/file.txt"
+        assert completion_event.file_path == expected_path
         assert completion_event.neural_atom_id == atom.get_deterministic_uuid()
     
     @pytest.mark.asyncio
@@ -255,7 +256,7 @@ class TestPuterPlugin:
         event.metadata = {
             "command": "python",
             "args": ["--version"],
-            "working_dir": "/workspace",
+            "working_dir": str(puter_plugin.workspace_root),
         }
         
         # Handle the event
@@ -267,6 +268,7 @@ class TestPuterPlugin:
         assert atom.operation_type == "process_execution"
         assert atom.operation_data["command"] == "python"
         assert atom.operation_data["args"] == ["--version"]
+        assert atom.operation_data["working_dir"] == str(puter_plugin.workspace_root)
         
         # Check that completion event was emitted
         completion_events = [
@@ -328,7 +330,7 @@ class TestPuterPlugin:
             session_id="test_session_123",
             tool_name="puter_file_read",
             tool_call_id="call_123456",
-            parameters={"file_path": "/test/file.txt"},
+            parameters={"file_path": "test/file.txt"},
         )
         
         # Handle the event
@@ -455,7 +457,7 @@ class TestPuterEventIntegration:
         )
         event.metadata = {
             "operation": "read",
-            "file_path": "/test/file.txt",
+            "file_path": "test/file.txt",
         }
         
         await puter_plugin._handle_file_operation(event)
