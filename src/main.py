@@ -8,9 +8,63 @@ import sys
 from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
+import logging
+from logging.config import dictConfig
+import json
+from uuid import uuid4
 
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:  # pragma: no cover - simple
+        data = {
+            "time": self.formatTime(record, "%Y-%m-%dT%H:%M:%S"),
+            "level": record.levelname,
+            "name": record.name,
+            "message": record.getMessage(),
+        }
+        return json.dumps(data, ensure_ascii=False)
+
+
+def _configure_logging() -> Path:
+    log_dir = Path(os.getenv("REUG_LOG_DIR", "./logs"))
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "runtime.log"
+    dictConfig(
+        {
+            "version": 1,
+            "formatters": {"json": {"()": JsonFormatter}},
+            "handlers": {
+                "file": {
+                    "class": "logging.FileHandler",
+                    "filename": str(log_file),
+                    "formatter": "json",
+                    "encoding": "utf-8",
+                },
+                "console": {
+                    "class": "logging.StreamHandler",
+                    "formatter": "json",
+                },
+            },
+            "root": {
+                "level": os.getenv("REUG_LOG_LEVEL", "INFO"),
+                "handlers": ["file", "console"],
+            },
+        }
+    )
+    return log_file
+
+
+def _hash_json(obj: Any) -> str:
+    try:
+        import hashlib
+
+        h = hashlib.sha256(json.dumps(obj, sort_keys=True).encode("utf-8")).hexdigest()
+        return h[:16]
+    except Exception:
+        return "na"
 
 # --- Resolve reug_runtime from local src if not installed ---
 ROOT = Path(__file__).resolve().parent.parent
@@ -167,6 +221,8 @@ class LLMClient:
 
 # --- FastAPI factory ---
 def create_app() -> FastAPI:
+    _configure_logging()
+    logger = logging.getLogger(__name__)
     app = FastAPI(title="REUG Runtime", version="0.2.0")
 
     # CORS (tweak as needed)
@@ -199,6 +255,27 @@ def create_app() -> FastAPI:
     app.include_router(
         tools_router
     )  # /tools/* (toolbox – run tests, apply patches, etc.)
+
+    @app.on_event("startup")
+    async def _startup() -> None:
+        corr = str(uuid4())
+        logger.info("runtime startup")
+        await app.state.event_bus.emit(
+            {
+                "type": "STATE_TRANSITION",
+                "from": "BOOT",
+                "to": "READY",
+                "correlation_id": corr,
+            }
+        )
+        await app.state.event_bus.emit(
+            {
+                "type": "TaskStarted",
+                "correlation_id": corr,
+                "goal": "startup",
+                "user_msg_hash": _hash_json("startup"),
+            }
+        )
 
     return app
 
