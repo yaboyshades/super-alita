@@ -40,6 +40,12 @@ class CurationManager(PluginInterface):
         await self.subscribe("tool_result", self.handle_tool_result)
         await self.subscribe("oak.prediction_error", self.handle_prediction_error)
 
+    async def start(self) -> None:  # type: ignore[override]
+        await super().start()
+
+    async def shutdown(self) -> None:  # type: ignore[override]
+        await super().shutdown()
+
     async def handle_tool_result(self, event: Any) -> None:
         success = bool(getattr(event, "success", False))
         error_msg = getattr(event, "error", "") or ""

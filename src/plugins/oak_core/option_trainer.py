@@ -86,6 +86,12 @@ class OptionTrainer(PluginInterface):
         await self.subscribe("oak.state_transition", self.handle_state_transition)
         await self.subscribe("deliberation_tick", self.handle_training_tick)
 
+    async def start(self) -> None:  # type: ignore[override]
+        await super().start()
+
+    async def shutdown(self) -> None:  # type: ignore[override]
+        await super().shutdown()
+
     async def handle_subproblem_defined(self, event: Any) -> None:
         sub_id = getattr(event, "subproblem_id", None)
         if not sub_id:

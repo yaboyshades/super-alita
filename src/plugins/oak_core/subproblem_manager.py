@@ -53,6 +53,12 @@ class SubproblemManager(PluginInterface):
         await self.subscribe("oak.feature_utility_updated", self.handle_feature_utility)
         await self.subscribe("oak.option_completed", self.handle_option_completed)
 
+    async def start(self) -> None:  # type: ignore[override]
+        await super().start()
+
+    async def shutdown(self) -> None:  # type: ignore[override]
+        await super().shutdown()
+
     async def handle_feature_utility(self, event: Any) -> None:
         feature_id = getattr(event, "feature_id", None)
         utility = float(getattr(event, "utility", 0.0))

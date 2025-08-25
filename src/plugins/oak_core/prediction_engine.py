@@ -68,6 +68,12 @@ class PredictionEngine(PluginInterface):
         await self.subscribe("oak.option_created", self.handle_option_created)
         await self.subscribe("oak.state_transition", self.handle_state_transition)
 
+    async def start(self) -> None:  # type: ignore[override]
+        await super().start()
+
+    async def shutdown(self) -> None:  # type: ignore[override]
+        await super().shutdown()
+
     async def handle_option_created(self, event: Any) -> None:
         option_id = getattr(event, "option_id", None)
         if not option_id:
