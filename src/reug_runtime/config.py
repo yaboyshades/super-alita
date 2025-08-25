@@ -7,7 +7,7 @@ expected arguments and return types are explicit.
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 def _getenv(name: str, default: str | None = None) -> str | None:
@@ -89,21 +89,68 @@ class Settings:
         max_retries: Number of retry attempts after the initial try.
         retry_base_ms: Base delay in milliseconds used for exponential backoff.
         schema_enforce: Whether to enforce tool input schemas.
+        event_bus_backend: Implementation of the event bus (``file`` or ``redis``).
+        redis_url: Optional Redis URL when using the ``redis`` event bus.
+        redis_channel: Redis pubsub channel for telemetry events.
+        ability_registry_backend: Ability registry implementation to use.
+        kg_backend: Knowledge graph implementation to use.
+        llm_provider: Preferred LLM provider (``auto`` chooses by available key).
         event_log_dir: Optional directory for event log storage.
         tool_registry_dir: Optional directory for tool registration artifacts.
     """
 
     # Execution limits / guardrails
-    max_tool_calls: int = _getenv_int("REUG_MAX_TOOL_CALLS", 5)
-    tool_timeout_s: float = _getenv_float("REUG_EXEC_TIMEOUT_S", 20.0)
-    model_stream_timeout_s: float = _getenv_float("REUG_MODEL_STREAM_TIMEOUT_S", 60.0)
-    max_retries: int = _getenv_int("REUG_EXEC_MAX_RETRIES", 1)
-    retry_base_ms: int = _getenv_int("REUG_RETRY_BASE_MS", 250)
-    schema_enforce: bool = _getenv_bool("REUG_SCHEMA_ENFORCE", True)
+    max_tool_calls: int = field(
+        default_factory=lambda: _getenv_int("REUG_MAX_TOOL_CALLS", 5)
+    )
+    tool_timeout_s: float = field(
+        default_factory=lambda: _getenv_float("REUG_EXEC_TIMEOUT_S", 20.0)
+    )
+    model_stream_timeout_s: float = field(
+        default_factory=lambda: _getenv_float("REUG_MODEL_STREAM_TIMEOUT_S", 60.0)
+    )
+    max_retries: int = field(
+        default_factory=lambda: _getenv_int("REUG_EXEC_MAX_RETRIES", 1)
+    )
+    retry_base_ms: int = field(
+        default_factory=lambda: _getenv_int("REUG_RETRY_BASE_MS", 250)
+    )
+    schema_enforce: bool = field(
+        default_factory=lambda: _getenv_bool("REUG_SCHEMA_ENFORCE", True)
+    )
 
-    # Observability / storage (used indirectly by your EventBus/KG)
-    event_log_dir: str | None = _getenv("REUG_EVENT_LOG_DIR")
-    tool_registry_dir: str | None = _getenv("REUG_TOOL_REGISTRY_DIR")
+    # Component selection / observability
+    event_bus_backend: str = field(
+        default_factory=lambda: (_getenv("REUG_EVENTBUS", "file") or "file").lower()
+    )
+    redis_url: str | None = field(default_factory=lambda: _getenv("REDIS_URL"))
+    redis_channel: str = field(
+        default_factory=lambda: _getenv("REUG_REDIS_CHANNEL", "reug-events")
+        or "reug-events"
+    )
+    ability_registry_backend: str = field(
+        default_factory=lambda: (_getenv("REUG_REGISTRY", "simple") or "simple").lower()
+    )
+    kg_backend: str = field(
+        default_factory=lambda: (_getenv("REUG_KG", "simple") or "simple").lower()
+    )
+    llm_provider: str = field(
+        default_factory=lambda: (
+            _getenv("REUG_LLM_PROVIDER", "auto") or "auto"
+        ).lower()
+    )
+    event_log_dir: str | None = field(
+        default_factory=lambda: _getenv("REUG_EVENT_LOG_DIR")
+    )
+    tool_registry_dir: str | None = field(
+        default_factory=lambda: _getenv("REUG_TOOL_REGISTRY_DIR")
+    )
 
 
-SETTINGS = Settings()
+def load_settings() -> Settings:
+    """Load settings from environment variables."""
+
+    return Settings()
+
+
+SETTINGS = load_settings()

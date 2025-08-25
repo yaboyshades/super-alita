@@ -15,7 +15,7 @@ from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
-from reug_runtime.config import SETTINGS
+import reug_runtime.config as config
 
 
 # ==== Injected dependencies via app.state ====
@@ -318,10 +318,12 @@ Protocol:
         }
     )
 
-    while tool_calls < SETTINGS.max_tool_calls:
+    while tool_calls < config.SETTINGS.max_tool_calls:
         # Stream model output for this internal cycle
         try:
-            async for chunk in model.stream_chat(messages, timeout=SETTINGS.model_stream_timeout_s):
+            async for chunk in model.stream_chat(
+                messages, timeout=config.SETTINGS.model_stream_timeout_s
+            ):
                 text = chunk["content"]
                 # Stream through to client
                 yield text
@@ -336,7 +338,7 @@ Protocol:
                 tool_args = call.get("args", {})
                 span = _new_span(tool_calls)
                 attempt = 0
-                max_attempts = SETTINGS.max_retries + 1  # first try + retries
+                max_attempts = config.SETTINGS.max_retries + 1  # first try + retries
 
                 if breaker.is_open(tool_name):
                     await event_bus.emit({"type": "ToolCircuitOpen", "tool": tool_name})
@@ -421,7 +423,7 @@ Protocol:
                 except Exception:
                     valid = True
                 if not valid:
-                    if SETTINGS.schema_enforce:
+                    if config.SETTINGS.schema_enforce:
                         messages.append(
                             {
                                 "role": "assistant",
@@ -456,7 +458,7 @@ Protocol:
                     try:
                         result = await asyncio.wait_for(
                             registry.execute(tool_name, tool_args),
-                            timeout=SETTINGS.tool_timeout_s,
+                            timeout=config.SETTINGS.tool_timeout_s,
                         )
                         dur_ms = _now_ms() - start_ms
                         safe_result, handle = _shrink_result(result)
@@ -507,7 +509,7 @@ Protocol:
                                 "span_id": span,
                                 "tool": tool_name,
                                 "duration_ms": dur_ms,
-                                "error": f"timeout_{SETTINGS.tool_timeout_s}s",
+                                "error": f"timeout_{config.SETTINGS.tool_timeout_s}s",
                                 "attempt": attempt + 1,
                                 "max_attempts": max_attempts,
                             }
@@ -524,7 +526,9 @@ Protocol:
                                 await event_bus.emit({"type": "ToolCircuitOpen", "tool": tool_name})
                             parser.reset()
                             break
-                        await asyncio.sleep(_backoff_ms(SETTINGS.retry_base_ms, attempt - 1) / 1000)
+                        await asyncio.sleep(
+                            _backoff_ms(config.SETTINGS.retry_base_ms, attempt - 1) / 1000
+                        )
                     except Exception as e:
                         dur_ms = _now_ms() - start_ms
                         await event_bus.emit(
@@ -551,7 +555,9 @@ Protocol:
                                 await event_bus.emit({"type": "ToolCircuitOpen", "tool": tool_name})
                             parser.reset()
                             break
-                        await asyncio.sleep(_backoff_ms(SETTINGS.retry_base_ms, attempt - 1) / 1000)
+                        await asyncio.sleep(
+                            _backoff_ms(config.SETTINGS.retry_base_ms, attempt - 1) / 1000
+                        )
 
                 # after handling this tool (success or terminal error), break the inner model stream
                 break
