@@ -296,7 +296,49 @@ if __name__ == "__main__":
         action="store_true",
         help="Boot only; don’t open sockets beyond uvicorn",
     )
+    ap.add_argument(
+        "--reload",
+        action="store_true",
+        help="Reload server on code changes (dev mode)",
+    )
     args = ap.parse_args()
 
+    async def _dependency_health() -> dict[str, bool]:
+        results: dict[str, bool] = {}
+        try:
+            await app.state.event_bus.emit({"event": "health_check"})
+            results["event_bus"] = True
+        except Exception:
+            results["event_bus"] = False
+        try:
+            contract = app.state.ability_registry.get_available_tools_schema()[0]
+            results["ability_registry"] = await app.state.ability_registry.health_check(
+                contract
+            )
+        except Exception:
+            results["ability_registry"] = False
+        try:
+            await app.state.kg.get_goal_for_session("health")
+            results["kg"] = True
+        except Exception:
+            results["kg"] = False
+        try:
+            agen = app.state.llm_model.stream_chat([], timeout=1)
+            await agen.__anext__()
+            results["llm_model"] = True
+        except Exception:
+            results["llm_model"] = False
+        return results
+
+    if args.no_chat:
+        import asyncio
+        import json
+
+        checks = asyncio.run(_dependency_health())
+        print(json.dumps(checks))
+        raise SystemExit(0)
+
     # Just start the ASGI server; REUG handles single-turn streaming internally
-    uvicorn.run("main:app", host=args.host, port=args.port, reload=False)
+    uvicorn.run(
+        "main:app", host=args.host, port=args.port, reload=args.reload
+    )
