@@ -22,6 +22,7 @@ if str(SRC) not in sys.path:
 try:
     from reug_runtime.router import router as agent_router
     from reug_runtime.router_tools import tools as tools_router
+    from reug_runtime.kg import create_kg_from_env
 except Exception as e:  # pragma: no cover
     print("[WARN] reug_runtime not installed; make sure it’s on PYTHONPATH.", e)
     raise
@@ -136,34 +137,6 @@ class SimpleAbilityRegistry:
         return {"ok": True, "tool": tool_name, "args": args}
 
 
-# --- Knowledge graph (minimal; replace with your store/driver) ---
-class SimpleKG:
-    def __init__(self):
-        self.atoms: list[dict[str, Any]] = []
-        self.bonds: list[dict[str, Any]] = []
-
-    async def retrieve_relevant_context(self, user_message: str) -> str:
-        return f"(context for: {user_message[:48]}...)"
-
-    async def get_goal_for_session(self, session_id: str) -> dict[str, Any]:
-        return {
-            "id": f"goal_{session_id}",
-            "description": f"Assist session {session_id}",
-        }
-
-    async def create_atom(self, atom_type: str, content: Any) -> dict[str, Any]:
-        atom = {"id": f"atom_{len(self.atoms)}", "type": atom_type, "content": content}
-        self.atoms.append(atom)
-        return atom
-
-    async def create_bond(
-        self, bond_type: str, source_atom_id: str, target_atom_id: str
-    ) -> None:
-        self.bonds.append(
-            {"type": bond_type, "src": source_atom_id, "tgt": target_atom_id}
-        )
-
-
 # --- LLM client: choose provider by available key (Gemini > OpenAI > Claude) ---
 class LLMClient:
     def __init__(self):
@@ -238,7 +211,7 @@ def create_app() -> FastAPI:
     # Inject dependencies for the REUG router
     app.state.event_bus = make_event_bus()
     app.state.ability_registry = SimpleAbilityRegistry()
-    app.state.kg = SimpleKG()
+    app.state.kg = create_kg_from_env()
     app.state.llm_model = LLMClient()
 
     # Mount routers
