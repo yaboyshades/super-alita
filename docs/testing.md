@@ -1,12 +1,16 @@
 # Testing
 
-## With pytest (recommended)
+## Setup and Test Commands
 
+```bash
+make deps               # install runtime + test deps (CPU only)
+# For GPU acceleration, install extras: pip install -r requirements-gpu.txt (optional)
+make lint               # run pre-commit hooks
+pre-commit run --all-files
+make test               # run full test suite (target ≥70% coverage)
 ```
-pip install -r requirements.txt
-pip install hypothesis   # optional
-PYTHONPATH=src pytest -q
-```
+
+Coverage should remain at or above 70%; use `pytest --cov -q` to check locally.
 
 ### Property-based Tests
 
