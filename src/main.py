@@ -28,58 +28,11 @@ except Exception as e:  # pragma: no cover
 
 
 # --- Event bus (JSONL fallback + optional Redis) ---
-class FileEventBus:
-    def __init__(self, log_dir: str | None):
-        self.log_dir = Path(log_dir or "./logs/events")
-        self.log_dir.mkdir(parents=True, exist_ok=True)
-        self.file = self.log_dir / "events.jsonl"
-
-    async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
-        # Keep minimal fields, append timestamp
-        import json
-        import time
-
-        event = {**event, "timestamp": time.time()}
-        self.file.parent.mkdir(parents=True, exist_ok=True)
-        with self.file.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(event, ensure_ascii=False) + "\n")
-        return event
-
-
-class RedisEventBus:
-    def __init__(
-        self, url: str = "redis://localhost:6379/0", channel: str = "reug-events"
-    ):
-        import redis  # type: ignore
-
-        self._r = redis.Redis.from_url(url)
-        self._ch = channel
-
-    async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
-        import json
-        import time
-
-        event = {**event, "timestamp": time.time()}
-        try:
-            self._r.publish(self._ch, json.dumps(event))
-        except Exception:
-            # Soft-fail to file if Redis hiccups
-            pass
-        return event
-
-
-def make_event_bus() -> Any:
-    backend = os.getenv("REUG_EVENTBUS", "").strip().lower()
-    if backend == "redis":
-        url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        channel = os.getenv("REUG_REDIS_CHANNEL", "reug-events")
-        try:
-            return RedisEventBus(url=url, channel=channel)
-        except Exception as e:
-            print(
-                f"[WARN] Redis event bus unavailable ({e}); falling back to file log."
-            )
-    return FileEventBus(os.getenv("REUG_EVENT_LOG_DIR"))
+from reug_runtime.event_bus import (
+    FileEventBus,
+    RedisEventBus,
+    make_event_bus,
+)  # noqa: F401
 
 
 # --- Ability registry (minimal adapter; replace with your real one) ---
