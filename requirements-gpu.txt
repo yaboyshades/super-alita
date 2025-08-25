@@ -1,6 +1,5 @@
 -r requirements.txt
 
-# GPU dependencies
-torch
+# GPU dependencies (install GPU torch wheel separately if needed)
 nvidia-cuda-runtime-cu12
 nvidia-cudnn-cu12

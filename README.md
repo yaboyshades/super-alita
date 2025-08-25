@@ -38,7 +38,10 @@ cp .env.example .env  # then set at least one provider key or local model config
 Using Make (includes lint targets):
 
 ```bash
-make deps
+make deps               # CPU defaults, includes torch CPU build
+# For GPU acceleration:
+# pip install --index-url https://download.pytorch.org/whl/cu121 torch
+# pip install -r requirements-gpu.txt
 make lint  # optional
 ```
 
@@ -48,6 +51,10 @@ Or manually:
 python -m venv .venv
 ./.venv/Scripts/Activate.ps1  # Windows PowerShell
 pip install -e .
+# GPU extras (optional):
+# pip install --index-url https://download.pytorch.org/whl/cu121 torch
+# pip install -r requirements-gpu.txt
+# The above replaces the CPU build installed by default
 ```
 
 ### 3. Run the development server
