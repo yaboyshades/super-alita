@@ -201,6 +201,8 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                     correlation_id=correlation_id,
                     timestamp=_utcnow(),
                     diffs=diffs,
+                    tests=impl.get("tests", []),
+                    docs=impl.get("docs", []),
                     validation_summary={
                         "lint_errors": validation.get("lint_errors", 0),
                         "tests_passed": validation.get("tests_passed", True),
