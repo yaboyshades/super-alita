@@ -28,6 +28,12 @@ class PlanningEngine(PluginInterface):
         self.cfg.update(config or {})
         await self.subscribe("goal_received", self.handle_goal)
 
+    async def start(self) -> None:  # type: ignore[override]
+        await super().start()
+
+    async def shutdown(self) -> None:  # type: ignore[override]
+        await super().shutdown()
+
     async def handle_goal(self, event: Any) -> None:
         goal = getattr(event, "goal", "")
         candidates: List[str] = []

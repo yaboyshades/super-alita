@@ -101,6 +101,12 @@ class CurationManager(PluginInterface):
             components=components,
         )
 
+    async def start(self) -> None:  # type: ignore[override]
+        await super().start()
+
+    async def shutdown(self) -> None:  # type: ignore[override]
+        await super().shutdown()
+
     async def handle_tool_result(self, event: Any) -> None:
         success = bool(getattr(event, "success", False))
         error_msg = getattr(event, "error", "") or ""
