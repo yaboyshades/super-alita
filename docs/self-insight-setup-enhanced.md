@@ -29,9 +29,12 @@ Super Alita is a production-ready autonomous agent system with comprehensive sel
 git clone <repository>
 cd super-alita
 
-# Install dependencies
+# Install dependencies (CPU-only)
 pip install -r requirements.txt
 pip install -r requirements-test.txt
+
+# Add GPU acceleration
+# pip install -r requirements-gpu.txt
 
 # Verify environment
 python final_integration.py

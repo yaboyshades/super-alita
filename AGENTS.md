@@ -14,6 +14,7 @@ This file gives coding agents *mechanical instructions*: build, test, style, and
 - Install deps:
   ```bash
   uv pip install -r requirements.txt -c constraints.txt
+  # add GPU support: uv pip install -r requirements-gpu.txt -c constraints.txt
   ```
 - Start runtime server:
   ```bash
