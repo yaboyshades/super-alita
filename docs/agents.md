@@ -127,7 +127,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -135,6 +135,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T02:54:10Z #69 Merge pull request #69 from yaboyshades/codex/refactor-llmclient-for-provider-subclasses (owner: @yaboyshades)
+- 2025-08-25T03:51:51Z #83 Merge pull request #83 from yaboyshades/codex/add-dynamic-terminal-animations (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T02:50:51Z #70 Merge pull request #70 from yaboyshades/codex/add-shared-health-checker-with-status-routes (owner: @yaboyshades)
+- 2025-08-25T02:54:10Z #69 Merge pull request #69 from yaboyshades/codex/refactor-llmclient-for-provider-subclasses (owner: @yaboyshades)
