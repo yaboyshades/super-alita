@@ -127,7 +127,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 77]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -135,6 +135,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T02:36:10Z #66 Merge pull request #66 from yaboyshades/codex/refactor-event-bus-implementation (owner: @yaboyshades)
+- 2025-08-25T02:42:00Z #77 Merge pull request #77 from yaboyshades/codex/expand-documentation-and-add-diagrams (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T01:45:56Z #65 Merge pull request #65 from yaboyshades/codex/add-unit-tests-for-chat-stream-endpoint (owner: @yaboyshades)
+- 2025-08-25T02:36:10Z #66 Merge pull request #66 from yaboyshades/codex/refactor-event-bus-implementation (owner: @yaboyshades)
