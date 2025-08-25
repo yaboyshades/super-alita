@@ -128,7 +128,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -136,6 +136,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-25T11:33:07Z #99 Merge pull request #99 from yaboyshades/codex/replace-windows-commands-with-os-agnostic-instructions (owner: @yaboyshades)
+- 2025-08-25T11:33:40Z #100 Merge pull request #100 from yaboyshades/codex/update-commands-and-pre-commit-guidance (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T11:23:54Z #97 Merge pull request #97 from yaboyshades/codex/implement-or-remove-mynewtool.py (owner: @yaboyshades)
+- 2025-08-25T11:33:07Z #99 Merge pull request #99 from yaboyshades/codex/replace-windows-commands-with-os-agnostic-instructions (owner: @yaboyshades)
