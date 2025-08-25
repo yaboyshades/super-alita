@@ -127,7 +127,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62]
+- **series-202534** · PRs: [62, 63]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -135,37 +135,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
+- 2025-08-25T01:17:52Z #63 Merge pull request #63 from yaboyshades/codex/update-requirements-for-silent-agent-run (owner: @yaboyshades)
+<!-- CHANGELOG:START -->
 - 2025-08-25T00:56:04Z #62 Merge pull request #62 from yaboyshades/codex/run-targeted-testing-with-actual-agent-6dzygd (owner: @yaboyshades)
-<!-- CHANGELOG:START -->(auto‑generated entries appear here; newest first)
-
-
-<!-- CHANGELOG:END -->> Format (Conventional Commits style): - 2025-08-25 #134 feat(router): add client-disconnect handling (owner: @alice)
-
-
-
----
-
-7. Runbooks
-
-Cold start: make deps && make run
-
-Runtime Tests: pytest -q tests/runtime
-
-Telemetry parity: ensure MCPTelemetryBroadcaster set with MCP_URL and MCP_TOKEN.
-
----
-
-8. SLOs & Alerts (MVP)
-
-Uptime > 99.0% • P95 < 2s • Error rate < 0.5%
-
-Circuit‑breaker trips < 2/day • Stream disconnects auto‑recover < 1s
-
----
-
-9. To‑Watch (Open Items)
-
-MCP telemetry transport (live) • VS Code gRPC wiring • Disconnect e2e test • Capabilities live detection
-
-
----
