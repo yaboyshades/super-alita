@@ -60,3 +60,22 @@ async def test_event_flow():
 - `src/core/neural_atom.py` - Deterministic UUID generation for cognitive artifacts
 - `tests/conftest.py` - Comprehensive test fixtures for event-driven testing
 - `MCP_WORKFLOW_GUIDE.md` - Complete MCP development workflows
+
+## 📚 Comprehensive Documentation
+For detailed development guidance, refer to these comprehensive instruction sets:
+
+- **`DETAILED_AGENT_INSTRUCTIONS.md`** - Complete development guide covering architecture, patterns, security, testing
+- **`ADVANCED_DEVELOPMENT_PATTERNS.md`** - Advanced patterns for cognitive architecture, event streaming, plugin communication
+- **`AGENT_QUICK_REFERENCE.md`** - Quick reference checklist for common patterns and workflows
+- **`AGENTS.md`** - Repository guidelines and coding standards
+- **`src/reug_runtime/AGENTS.md`** - Runtime-specific agent instructions
+
+These documents provide comprehensive coverage of:
+- Event-driven neural architecture patterns
+- REUG Framework v3.7 and DTA 2.0 cognitive processing
+- MCP tool development and VS Code integration
+- Plugin development and inter-plugin communication
+- Testing strategies for event-driven systems
+- Security patterns and sandboxed execution
+- Performance optimization and production deployment
+- Debugging workflows and troubleshooting guides
