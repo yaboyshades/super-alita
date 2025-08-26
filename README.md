@@ -81,6 +81,12 @@ curl http://127.0.0.1:8080/healthz
 
 Debug utilities (`debug_fixed.py`, `debug_matching.py`, `utility_debug.py`) are under `scripts/`.
 
+## MCP Server Installation Links
+
+VS Code can install MCP server definitions directly via special links:
+
+- [Sample install](vscode:mcp/install?url=https://example.com/mcp.json)
+
 ## LLM Fallback Configuration
 
 Set `LLM_MODEL=auto` to enable automatic provider selection.
