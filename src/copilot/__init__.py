@@ -5,3 +5,4 @@ __all__ = ["prompt_composer"]
 
 """Copilot utilities."""
 
+
