@@ -36,12 +36,17 @@ class LLMClient:
     model_name: str
 
     async def stream_chat(
-        self, messages: list[dict[str, str]], timeout: float | None = None
-    ) -> AsyncGenerator[dict[str, str], None]:
+        self,
+        messages: list[dict[str, str]],
+        *,
+        tools: list[dict[str, Any]] | None = None,
+        timeout: float | None = None,
+    ) -> AsyncGenerator[dict[str, Any], None]:
         """Stream chat completion chunks.
 
         Args:
             messages: Conversation history.
+            tools: Optional list of tool schemas for the LLM to use.
             timeout: Optional override for the streaming timeout.
         """
         raise NotImplementedError
@@ -96,21 +101,29 @@ class OpenAIClient(LLMClient):
         self._client = AsyncOpenAI(api_key=api_key) if AsyncOpenAI and api_key else None
 
     async def stream_chat(
-        self, messages: list[dict[str, str]], timeout: float | None = None
-    ) -> AsyncGenerator[dict[str, str], None]:
+        self,
+        messages: list[dict[str, str]],
+        *,
+        tools: list[dict[str, Any]] | None = None,
+        timeout: float | None = None,
+    ) -> AsyncGenerator[dict[str, Any], None]:
         if self._client is None:  # pragma: no cover - requires SDK
             raise RuntimeError("OpenAI SDK not available")
         timeout = timeout or SETTINGS.model_stream_timeout_s
+
+        args = {"model": self.model_name, "messages": messages, "stream": True}
+        if tools:
+            args["tools"] = tools
+            args["tool_choice"] = "auto"
+
         async with asyncio.timeout(timeout):
-            stream = await self._client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
-                stream=True,
-            )
+            stream = await self._client.chat.completions.create(**args)
             async for chunk in stream:
-                text = chunk.choices[0].delta.get("content", "")
-                if text:
-                    yield {"content": text}
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    yield {"type": "content", "content": delta.content}
+                if delta.tool_calls:
+                    yield {"type": "tool_calls", "tool_calls": delta.tool_calls}
 
 
 class AnthropicClient(LLMClient):
@@ -150,34 +163,44 @@ class AnthropicClient(LLMClient):
 
 
 class MockLLMClient(LLMClient):
-    """Deterministic mock used for development and tests."""
+    """Deterministic mock for development and tests, supporting tool calls."""
 
     async def stream_chat(
-        self, messages: list[dict[str, str]], timeout: float | None = None
-    ) -> AsyncGenerator[dict[str, str], None]:
+        self,
+        messages: list[dict[str, str]],
+        *,
+        tools: list[dict[str, Any]] | None = None,
+        timeout: float | None = None,
+    ) -> AsyncGenerator[dict[str, Any], None]:
         timeout = timeout or SETTINGS.model_stream_timeout_s
         async with asyncio.timeout(timeout):
-            has_result = any(
-                m["role"] == "assistant" and "<tool_result" in m["content"]
-                for m in messages
-            )
-            if not has_result:
+            # Check if the last message is a tool result
+            is_tool_response = messages[-1]["role"] == "tool"
+
+            if tools and not is_tool_response:
+                # Simulate the LLM deciding to call a tool
                 await asyncio.sleep(0)
-                yield {"content": "Thinking... "}
+                yield {"type": "content", "content": "I should use a tool."}
                 await asyncio.sleep(0)
+                # Mimic OpenAI's tool_calls structure
                 yield {
-                    "content": (
-                        '<tool_call>{"tool":"echo","args":{"payload":"hi"}}</tool_call>'
-                    )
+                    "type": "tool_calls",
+                    "tool_calls": [
+                        {
+                            "index": 0,
+                            "id": "call_abc123",
+                            "function": {
+                                "name": "echo",
+                                "arguments": '{"payload": "hi"}',
+                            },
+                            "type": "function",
+                        }
+                    ],
                 }
             else:
+                # Simulate the LLM generating a final answer
                 await asyncio.sleep(0)
-                yield {
-                    "content": (
-                        '<final_answer>{"content":"done: hi","citations":[]}'
-                        "</final_answer>"
-                    )
-                }
+                yield {"type": "content", "content": "Okay, the result is: hi"}
 
 
 class SuperAlitaFallbackClient(LLMClient):

@@ -3,13 +3,13 @@ from __future__ import annotations
 """Minimal streaming router for the REUG runtime.
 
 This router implements a simple single-turn protocol compatible with
-`MockLLMClient` and similar providers that emit tagged blocks:
+MockLLMClient and similar providers that emit tagged blocks:
 
   - <tool_call>{"tool":"name","args":{...}}</tool_call>
   - <tool_result tool="name">{...}</tool_result>
   - <final_answer>{"content":"...","citations":[]}</final_answer>
 
-It executes tool calls via `app.state.ability_registry` and streams text
+It executes tool calls via pp.state.ability_registry and streams text
 chunks through to the client. This keeps the agent functional while
 conflicts are resolved or provider-specific logic evolves.
 """
@@ -33,75 +33,78 @@ from .message_mw import MessageContext, apply_all
 router = APIRouter(prefix="/v1", tags=["agent"])
 
 
-class _Parser:
-    pattern = re.compile(r"<(\w+)([^>]*)>(\{.*?\})</\1>", re.DOTALL)
+class Orchestrator:
+    def __init__(self, event_bus: Any, registry: Any, model: Any, correlation_id: str):
+        self.event_bus = event_bus
+        self.registry = registry
+        self.model = model
+        self.correlation_id = correlation_id
 
-    def __init__(self) -> None:
-        self.buffer = ""
+    async def _reasoning_step(
+        self, messages: list[dict[str, Any]], tool_schemas: list[dict[str, Any]]
+    ) -> AsyncGenerator[dict[str, Any], tuple[str, list[dict[str, Any]]]]:
+        llm_response_content = ""
+        tool_calls = []
+        async for chunk in self.model.stream_chat(messages, tools=tool_schemas):
+            if chunk.get("type") == "content":
+                text = chunk.get("content", "")
+                llm_response_content += text
+                yield {"type": "LLMChunk", "data": {"text": text}}
+            elif chunk.get("type") == "tool_calls":
+                tool_calls.extend(chunk.get("tool_calls", []))
+        return llm_response_content, tool_calls
 
-    def feed(self, chunk: str) -> None:
-        self.buffer += chunk
+    async def _acting_step(
+        self, tool_calls: list[dict[str, Any]]
+    ) -> AsyncGenerator[dict[str, Any], list[dict[str, Any]]]:
+        tool_messages = []
+        for tool_call in tool_calls:
+            tool_name = tool_call.function.name
+            tool_args = json.loads(tool_call.function.arguments)
+            tool_call_id = tool_call.id
+            span_id = str(uuid.uuid4())
 
-    def _extract(self, tag: str) -> tuple[dict[str, Any], str] | None:
-        for m in self.pattern.finditer(self.buffer):
-            name, attrs, payload = m.group(1), m.group(2), m.group(3)
-            if name != tag:
-                continue
-            raw = m.group(0)
+            ability_called_event = {
+                "type": "AbilityCalled", "tool": tool_name,
+                "correlation_id": self.correlation_id, "span_id": span_id
+            }
+            await self.event_bus.emit(ability_called_event)
+            yield ability_called_event
+
             try:
-                data = json.loads(payload)
-            except json.JSONDecodeError:
-                data = {"content": payload}
-            self.buffer = self.buffer.replace(raw, "", 1)
-            return data, attrs
-        return None
-
-    def take_tool_call(self) -> dict[str, Any] | None:
-        hit = self._extract("tool_call")
-        return hit[0] if hit else None
-
-    def take_final(self) -> dict[str, Any] | None:
-        hit = self._extract("final_answer")
-        return hit[0] if hit else None
-
-
-async def _stream_once(
-    model: Any, messages: list[dict[str, str]]
-) -> AsyncGenerator[str, None]:
-    async for chunk in model.stream_chat(messages, timeout=SETTINGS.model_stream_timeout_s):
-        text = chunk.get("content", "")
-        if text:
-            yield text
+                result = await asyncio.wait_for(
+                    self.registry.execute(tool_name, tool_args),
+                    timeout=SETTINGS.tool_timeout_s
+                )
+                ability_succeeded_event = {
+                    "type": "AbilitySucceeded", "tool": tool_name,
+                    "correlation_id": self.correlation_id, "span_id": span_id, "result": result
+                }
+                await self.event_bus.emit(ability_succeeded_event)
+                yield ability_succeeded_event
+                tool_messages.append({
+                    "role": "tool", "tool_call_id": tool_call_id,
+                    "name": tool_name, "content": json.dumps(result)
+                })
+            except Exception as e:
+                ability_failed_event = {
+                    "type": "AbilityFailed", "tool": tool_name,
+                    "correlation_id": self.correlation_id, "span_id": span_id, "error": str(e)
+                }
+                await self.event_bus.emit(ability_failed_event)
+                yield ability_failed_event
+                tool_messages.append({
+                    "role": "tool", "tool_call_id": tool_call_id, "name": tool_name,
+                    "content": f'{{"error": "Tool execution failed: {e}"}}'
+                })
+        return tool_messages
 
 
 async def execute_turn(
-    user_msg: str,
-    session_id: str,
-    event_bus: Any,
-    registry: Any,
-    kg: Any,
-    model: Any,
-) -> AsyncGenerator[str, None]:
-    """Run a single streaming turn and yield chunks to the client.
-
-    The function keeps a minimal contract compatible with the tests in
-    ``tests/runtime``.  It emits telemetry events around tool execution and
-    preserves the `<tool_call>`/`<tool_result>`/`<final_answer>` streaming
-    protocol.
-
-    Args:
-        user_msg: The raw user message for this turn.
-        session_id: Session identifier.
-        event_bus: Event bus used for telemetry emission.
-        registry: Ability registry capable of executing tools.
-        kg: Knowledge graph handle (unused, kept for future expansion).
-        model: LLM-like client implementing ``stream_chat``.
-
-    Yields:
-        Text chunks to be streamed to the client.
-    """
-
+    user_msg: str, session_id: str, event_bus: Any, registry: Any, kg: Any, model: Any
+) -> AsyncGenerator[dict[str, Any], None]:
     correlation_id = f"{session_id}-{int(time.time()*1000)}"
+    
     # Optional message optimization/amplification
     if SETTINGS.message_optimizer_enabled:
         try:
@@ -125,96 +128,55 @@ async def execute_turn(
         if len(optimized) > SETTINGS.message_optimizer_max_len:
             optimized = optimized[: SETTINGS.message_optimizer_max_len]
         user_msg = optimized
-    await event_bus.emit({"type": "TaskStarted", "correlation_id": correlation_id, "goal": user_msg})
+    
+    orchestrator = Orchestrator(event_bus, registry, model, correlation_id)
 
-    system_prompt = "Use tools when helpful. End with <final_answer>{...}</final_answer>."
-    if SETTINGS.copilot_context:
-        span_id = str(uuid.uuid4())
-        await event_bus.emit(
-            {
-                "type": "AbilityCalled",
-                "tool": "build_copilot_context",
-                "correlation_id": correlation_id,
-                "span_id": span_id,
-            }
-        )
-        ctx = build_copilot_context(user_message=user_msg, session_id=session_id)
-        await event_bus.emit(
-            {
-                "type": "AbilitySucceeded",
-                "tool": "build_copilot_context",
-                "correlation_id": correlation_id,
-                "span_id": span_id,
-            }
-        )
-        system_prompt = f"{ctx}\n{system_prompt}"
+    start_event = {"type": "TaskStarted", "correlation_id": correlation_id, "goal": user_msg}
+    await event_bus.emit(start_event)
+    yield start_event
 
-    parser = _Parser()
-    messages: list[dict[str, str]] = [
-        {"role": "system", "content": system_prompt},
+    messages: list[dict[str, Any]] = [
+        {"role": "system", "content": "You are a helpful assistant. Use tools when necessary."},
         {"role": "user", "content": user_msg},
     ]
-    cycles = 0
-    while cycles < SETTINGS.max_tool_calls:
-        cycles += 1
-        tool_called = False
-        async for text in _stream_once(model, messages):
-            yield text
-            parser.feed(text)
-            call = parser.take_tool_call()
-            if call:
-                tool = call.get("tool", "")
-                args = call.get("args", {})
-                span_id = str(uuid.uuid4())
-                await event_bus.emit(
-                    {
-                        "type": "AbilityCalled",
-                        "tool": tool,
-                        "correlation_id": correlation_id,
-                        "span_id": span_id,
-                    }
-                )
-                try:
-                    result = await asyncio.wait_for(
-                        registry.execute(tool, args), timeout=SETTINGS.tool_timeout_s
-                    )
-                except Exception as e:
-                    await event_bus.emit(
-                        {
-                            "type": "AbilityFailed",
-                            "tool": tool,
-                            "correlation_id": correlation_id,
-                            "span_id": span_id,
-                            "error": str(e),
-                        }
-                    )
-                    yield f'<tool_error tool="{tool}">{{"error":{json.dumps(str(e))}}}</tool_error>'
-                    break
-                await event_bus.emit(
-                    {
-                        "type": "AbilitySucceeded",
-                        "tool": tool,
-                        "correlation_id": correlation_id,
-                        "span_id": span_id,
-                    }
-                )
-                block = f'<tool_result tool="{tool}">{json.dumps(result)}</tool_result>'
-                messages.append({"role": "assistant", "content": block})
-                yield block
-                tool_called = True
-        final = parser.take_final()
-        if final:
-            await event_bus.emit({"type": "TaskSucceeded", "correlation_id": correlation_id})
-            yield f"<final_answer>{json.dumps(final)}</final_answer>"
-            return
-        if not tool_called:
+
+    llm_response_content = ""
+    for _ in range(SETTINGS.max_tool_calls):
+        tool_schemas = registry.get_available_tools_schema()
+
+        reasoning_gen = orchestrator._reasoning_step(messages, tool_schemas)
+        try:
+            # Yield all LLM chunks from the generator
+            async for event in reasoning_gen:
+                yield event
+        except StopAsyncIteration as e:
+            llm_response_content, tool_calls = e.value
+
+        assistant_message = {"role": "assistant", "content": llm_response_content}
+        if tool_calls:
+            assistant_message["tool_calls"] = tool_calls
+        messages.append(assistant_message)
+
+        if not tool_calls:
             break
-    if not parser.take_final():
-        payload = {"content": "done", "citations": []}
-        await event_bus.emit(
-            {"type": "TaskFailed", "correlation_id": correlation_id, "reason": "no_final_answer"}
-        )
-        yield f"<final_answer>{json.dumps(payload)}</final_answer>"
+
+        acting_gen = orchestrator._acting_step(tool_calls)
+        try:
+            async for event in acting_gen:
+                yield event
+        except StopAsyncIteration as e:
+            tool_messages = e.value
+        messages.extend(tool_messages)
+
+    final_answer = {"content": llm_response_content or "Task complete.", "citations": []}
+    task_succeeded_event = {"type": "TaskSucceeded", "correlation_id": correlation_id, "data": final_answer}
+    await event_bus.emit(task_succeeded_event)
+    yield task_succeeded_event
+
+
+async def sse_transformer(event_generator: AsyncGenerator[dict[str, Any], None]) -> AsyncGenerator[str, None]:
+    async for event in event_generator:
+        yield f"data: {json.dumps(event)}\n\n"
 
 
 @router.post("/chat/stream")
@@ -222,7 +184,8 @@ async def chat_stream(request: Request):
     body = await request.json()
     user_msg = body.get("message", "")
     session_id = body.get("session_id", "default")
-    gen = execute_turn(
+
+    event_gen = execute_turn(
         user_msg,
         session_id,
         request.app.state.event_bus,
@@ -230,4 +193,7 @@ async def chat_stream(request: Request):
         request.app.state.kg,
         request.app.state.llm_model,
     )
-    return StreamingResponse(gen, media_type="text/plain")
+
+    sse_gen = sse_transformer(event_gen)
+
+    return StreamingResponse(sse_gen, media_type="text/event-stream")
