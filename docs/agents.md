@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-26T01:33:23Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-26T01:34:04Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -135,7 +135,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 121, 124, 125, 126, 127, 128, 129, 130, 131]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -143,6 +143,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-26T01:33:23Z #131 Merge pull request #131 from yaboyshades/codex/add-context-builder-with-dataclasses-and-helpers (owner: @yaboyshades)
+- 2025-08-26T01:34:04Z #132 Merge pull request #132 from yaboyshades/codex/add-context-builder-with-dataclasses-and-helpers-i0opbe (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-26T01:33:03Z #130 Merge pull request #130 from yaboyshades/codex/extend-setup-mcp.ps1-for-mcp.json (owner: @yaboyshades)
+- 2025-08-26T01:33:23Z #131 Merge pull request #131 from yaboyshades/codex/add-context-builder-with-dataclasses-and-helpers (owner: @yaboyshades)
