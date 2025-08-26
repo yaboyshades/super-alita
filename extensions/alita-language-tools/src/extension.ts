@@ -7,6 +7,7 @@ import { createLspClient } from './lspClient';
 import { registerMcpSearch } from './features/mcpSearch';
 import { PredictiveManager } from './predictiveManager';
 import { FeedbackManager } from './feedbackManager';
+import { WasmPredictiveAnalyzer } from './predictive/wasmAnalyzer';
 
 interface OllamaChatMessage { content?: string }
 interface OllamaChatChunk { message?: OllamaChatMessage; done?: boolean }
@@ -137,7 +138,14 @@ export async function activate(ctx: vscode.ExtensionContext) {
   // Predictive + feedback managers (clairvoyant scaffolding)
   const predictive = new PredictiveManager(telemetry ?? undefined);
   const feedback = new FeedbackManager();
-  disposables.push(predictive, feedback);
+  
+  // Initialize WASM analyzer
+  const wasmAnalyzer = new WasmPredictiveAnalyzer(ctx);
+  wasmAnalyzer.initialize().catch((err: unknown) => {
+    console.warn('Failed to initialize WASM analyzer:', err);
+  });
+  
+  disposables.push(predictive, feedback, wasmAnalyzer);
 
   // Bridge worker host-call telemetry: listen for posted messages tagged __alitaHost
   try {
@@ -253,6 +261,50 @@ export async function activate(ctx: vscode.ExtensionContext) {
       vscode.window.showInformationMessage(`WIT bindings: ${meta.mode}. Exports: ${exports}, Lines: ${lines}${smoke}`);
     } catch (err) {
       vscode.window.showWarningMessage('Codegen status unavailable: ' + (err as Error).message);
+    }
+  }));
+
+  // DeepCode: Analyze workspace (via runtime)
+  disposables.push(vscode.commands.registerCommand('alita.deepcode.analyze', async () => {
+    const cfg = vscode.workspace.getConfiguration('alita');
+    const base = (cfg.get<string>('runtime.host') || 'http://127.0.0.1:8080').replace(/\/$/, '');
+    const url = `${base}/deepcode/request`;
+    const folders = vscode.workspace.workspaceFolders;
+    const repo_path = folders && folders.length ? folders[0].uri.fsPath : '.';
+    try {
+      const resp = await (globalThis as any).fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_kind: 'analyze', repo_path })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      vscode.window.showInformationMessage('DeepCode analyze request sent.');
+      telemetry?.send('alita/deepcode/analyze', { ok: 'true' });
+    } catch (err) {
+      vscode.window.showErrorMessage('DeepCode analyze failed: ' + (err as Error).message);
+      telemetry?.send('alita/deepcode/analyze', { ok: 'false' });
+    }
+  }));
+
+  // DeepCode: Generate from prompt (via runtime)
+  disposables.push(vscode.commands.registerCommand('alita.deepcode.generate', async () => {
+    const prompt = await vscode.window.showInputBox({ prompt: 'DeepCode requirements (e.g., implement feature X)' });
+    if (!prompt) return;
+    const cfg = vscode.workspace.getConfiguration('alita');
+    const base = (cfg.get<string>('runtime.host') || 'http://127.0.0.1:8080').replace(/\/$/, '');
+    const url = `${base}/deepcode/request`;
+    const folders = vscode.workspace.workspaceFolders;
+    const repo_path = folders && folders.length ? folders[0].uri.fsPath : '.';
+    try {
+      const resp = await (globalThis as any).fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_kind: 'text2backend', requirements: prompt, repo_path })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      vscode.window.showInformationMessage('DeepCode generate request sent.');
+      telemetry?.send('alita/deepcode/generate', { ok: 'true' });
+    } catch (err) {
+      vscode.window.showErrorMessage('DeepCode generate failed: ' + (err as Error).message);
+      telemetry?.send('alita/deepcode/generate', { ok: 'false' });
     }
   }));
 

@@ -11,5 +11,5 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "exclude": ["server"]
+  "exclude": ["server", "vitest.config.mts", "*.mts"]
 }

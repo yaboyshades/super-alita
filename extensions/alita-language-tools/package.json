@@ -102,36 +102,46 @@
       {
         "command": "alita.skillset",
         "title": "Alita: Show Skillset"
-        },
-        {
-          "command": "alita.invokeAgent",
-          "title": "Alita: Invoke Agent (Ollama)"
-        },
-        {
-          "command": "alita.calc",
-          "title": "Alita: Run WASM Calculator"
-        },
-        {
-          "command": "alita.agent.refactorSelection",
-          "title": "Alita: Refactor Selection (Predictive Cache)",
-          "category": "Alita"
-        },
-        {
+      },
+      {
+        "command": "alita.invokeAgent",
+        "title": "Alita: Invoke Agent (Ollama)"
+      },
+      {
+        "command": "alita.calc",
+        "title": "Alita: Run WASM Calculator"
+      },
+      {
+        "command": "alita.agent.refactorSelection",
+        "title": "Alita: Refactor Selection (Predictive Cache)",
+        "category": "Alita"
+      },
+      {
           "command": "alita.context.indexWorkspace",
           "title": "Alita: Index Workspace for Context",
           "category": "Alita"
-        },
-        {
+      },
+      {
+        "command": "alita.deepcode.analyze",
+        "title": "Alita: DeepCode — Analyze Workspace",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.deepcode.generate",
+        "title": "Alita: DeepCode — Generate From Prompt",
+        "category": "Alita"
+      },
+      {
           "command": "alita.codegen.status",
           "title": "Alita: Show WIT Binding Status",
           "category": "Alita"
-        },
-        {
-          "command": "alita.chatRuntime",
-          "title": "Alita: Chat via Runtime (Stream)",
-          "category": "Alita"
-        }
-      ],
+      },
+      {
+        "command": "alita.chatRuntime",
+        "title": "Alita: Chat via Runtime (Stream)",
+        "category": "Alita"
+      }
+    ],
     "menus": {
       "commandPalette": [
         {
@@ -145,6 +155,14 @@
         {
           "command": "alita.skillset",
           "when": "!virtualWorkspace && editorLangId == alita"
+        },
+        {
+          "command": "alita.deepcode.analyze",
+          "when": "!virtualWorkspace"
+        },
+        {
+          "command": "alita.deepcode.generate",
+          "when": "!virtualWorkspace"
         },
         {
           "command": "alita.codegen.status",
@@ -220,7 +238,7 @@
         "alita.ollama.model": {
           "type": "string",
           "default": "gpt-oss:20b",
-            "markdownDescription": "Model tag to use for Ollama (e.g., `llama3.1:8b`). If empty you'll be prompted on first use.",
+          "markdownDescription": "Model tag to use for Ollama (e.g., `llama3.1:8b`). If empty you'll be prompted on first use.",
           "description": "Model tag for Ollama."
         },
         "alita.runtime.host": {
@@ -231,7 +249,7 @@
         "alita.context.serverEndpoint": {
           "type": "string",
           "default": "http://127.0.0.1:5001",
-          "description": "Endpoint for local context (vector) server." 
+          "description": "Endpoint for local context (vector) server."
         },
         "alita.predictive.enabled": {
           "type": "boolean",
@@ -263,10 +281,23 @@
     "compile": "npm run codegen:wit && tsc -p ./",
     "watch": "tsc -watch -p ./",
     "watch:dev": "npm run codegen:wit && tsc -w -p ./",
-    "lint": "eslint src --ext ts",
+    "lint": "eslint src --ext ts --max-warnings 0",
+    "lint:fix": "eslint src --ext ts --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
+    "type-check": "tsc --noEmit --strict",
     "test": "node ./out/test/runTest.js",
     "test:codegen": "node scripts/test-codegen.cjs",
-    "test:component": "node scripts/test-component.cjs"
+    "test:component": "node scripts/test-component.cjs",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run --config vitest.config.ts --dir src --coverage=false",
+    "test:integration": "npm run compile && npm run test:codegen && npm run test:component",
+    "benchmark": "vitest run --config vitest.config.ts --reporter=json --outputFile=benchmark-results.json src/**/*.bench.ts",
+    "bundle-analysis": "npx bundlesize",
+    "security-audit": "npm audit --audit-level moderate",
+    "quality-check": "npm run type-check && npm run lint && npm run format:check && npm run test:unit",
+    "ci:full": "npm run quality-check && npm run test:integration && npm run security-audit"
   },
   "eslintConfig": {
     "root": true,
@@ -295,21 +326,38 @@
   },
   "dependencies": {
     "@vscode/extension-telemetry": "^0.9.7",
-    "vscode-languageclient": "^9.0.1",
-    "@vscode/wasm-component-model": "^1.0.0"
+    "@vscode/wasm-component-model": "^1.0.0",
+    "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
+    "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
-    "@types/glob": "^8.1.0",
-    "glob": "^8.1.0",
-    "@typescript-eslint/eslint-plugin": "^7.11.0",
-    "@typescript-eslint/parser": "^7.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vscode/test-electron": "^2.4.0",
+    "bundlesize": "^0.18.2",
     "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-import": "^2.32.0",
+    "glob": "^8.1.0",
+    "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
-    "@vscode/test-electron": "^2.4.0"
+    "unimported": "^1.31.1",
+    "vitest": "^2.0.0"
   },
+  "bundlesize": [
+    {
+      "path": "./out/src/extension.js",
+      "maxSize": "2MB"
+    },
+    {
+      "path": "./out/src/worker.js",
+      "maxSize": "500KB"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/yaboyshades/super-alita"

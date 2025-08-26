@@ -1,6 +1,49 @@
 package vscode:example;
 
+interface telemetry {
+    record performance-metric {
+        operation: string,
+        duration-ms: u32,
+        memory-used: u32,
+        timestamp: u64
+    }
+    emit-metric: func(metric: performance-metric);
+}
+
+interface host-api {
+    record file-info {
+        path: string,
+        size: u32,
+        modified: u64
+    }
+    
+    get-file-info: func(path: string) -> result<file-info, string>;
+    read-file-snippet: func(path: string, start-line: u32, end-line: u32) -> result<string, string>;
+    emit-diagnostic: func(path: string, line: u32, message: string);
+}
+
 world code-radar {
-    record diagnostic { line: u32, col: u32, severity: u8, code: string, message: string }
+    import telemetry;
+    import host-api;
+    
+    record diagnostic { 
+        line: u32, 
+        col: u32, 
+        severity: u8, 
+        code: string, 
+        message: string,
+        suggestion: option<string>
+    }
+    
+    record smell-analysis {
+        complexity-score: u32,
+        maintainability-index: u32,
+        debt-minutes: u32,
+        smell-types: list<string>
+    }
+    
     export analyze: func(source: string) -> list<diagnostic>;
+    export analyze-file: func(path: string) -> result<list<diagnostic>, string>;
+    export detect-smells: func(source: string) -> smell-analysis;
+    export predict-issues: func(source: string, history: list<string>) -> list<diagnostic>;
 }

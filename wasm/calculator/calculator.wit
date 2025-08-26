@@ -1,5 +1,19 @@
 package vscode:example;
 
+interface telemetry {
+    record performance-metric {
+        operation: string,
+        duration-ms: u32,
+        memory-used: u32,
+        timestamp: u64
+    }
+    emit-metric: func(metric: performance-metric);
+}
+
 world calculator {
+    import telemetry;
     export add: func(a: u32, b: u32) -> u32;
+    export multiply: func(a: u32, b: u32) -> u32;
+    export divide: func(a: u32, b: u32) -> result<u32, string>;
+    export get-performance-stats: func() -> list<performance-metric>;
 }

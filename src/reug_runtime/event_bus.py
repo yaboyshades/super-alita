@@ -21,6 +21,14 @@ class BaseEventBus(ABC):
     async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
         """Emit an event and return the enriched payload."""
 
+    # Optional pub/sub API used by plugin system. Default implementations are no-ops.
+    async def subscribe(self, event_type: str, handler) -> None:  # pragma: no cover - optional
+        return None
+
+    async def publish(self, event: dict[str, Any]) -> dict[str, Any]:  # pragma: no cover - optional
+        # Fallback to emit-only buses
+        return await self.emit(event)
+
 
 class FileEventBus(BaseEventBus):
     """Append events to a JSONL file asynchronously."""
@@ -43,6 +51,38 @@ class FileEventBus(BaseEventBus):
         except Exception:
             logger.exception("failed to write event", extra={"event": event})
         return event
+
+
+class InMemoryPubSubEventBus(FileEventBus):
+    """In-memory pub/sub with JSONL logging via FileEventBus.
+
+    - subscribe(event_type, handler): register an async handler
+    - publish(event): dispatch to handlers and log via FileEventBus
+    - emit(event): alias to publish for compatibility
+    """
+
+    def __init__(self, log_dir: str | None):
+        super().__init__(log_dir)
+        self._subs: dict[str, list] = {}
+
+    async def subscribe(self, event_type: str, handler) -> None:
+        self._subs.setdefault(event_type, []).append(handler)
+
+    async def publish(self, event: dict[str, Any]) -> dict[str, Any]:
+        # Log to file first
+        await super().emit(event)
+        # Dispatch to any subscribers (best-effort, non-blocking)
+        handlers = list(self._subs.get(event.get("event_type", ""), []))
+        for h in handlers:
+            try:
+                # Schedule without awaiting to avoid blocking
+                asyncio.create_task(h(event))
+            except Exception:
+                logger.exception("failed to dispatch event", extra={"event": event})
+        return event
+
+    async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
+        return await self.publish(event)
 
 
 class RedisEventBus(BaseEventBus):
@@ -77,4 +117,5 @@ def make_event_bus() -> BaseEventBus:
                 "Redis event bus unavailable (%s); falling back to file", e,
                 extra={"error": str(e)},
             )
-    return FileEventBus(os.getenv("REUG_EVENT_LOG_DIR"))
+    # Default to in-memory pub/sub with file logging to support plugins
+    return InMemoryPubSubEventBus(os.getenv("REUG_EVENT_LOG_DIR"))
