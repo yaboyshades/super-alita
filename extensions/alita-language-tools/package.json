@@ -1,0 +1,214 @@
+{
+  "name": "alita-language-tools",
+  "displayName": "Alita Language Tools",
+  "description": "Unified language support for Alita: syntax, snippets, semantic tokens, diagnostics, tasks, debug, telemetry, search, and LSP.",
+  "version": "0.1.0",
+  "publisher": "super-alita",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "icon": "media/icon.png",
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters",
+    "Debuggers",
+    "Testing"
+  ],
+  "keywords": [
+    "alita",
+    "reug",
+    "agents",
+    "language-server",
+    "telemetry"
+  ],
+  "main": "./out/src/extension.js",
+  "browser": "./out/src/extension.js",
+  "extensionKind": [
+    "workspace",
+    "ui"
+  ],
+  "activationEvents": [
+    "onLanguage:alita",
+    "onCommand:alita.restart",
+    "onCommand:alita.search",
+    "onCommand:alita.skillset",
+    "onDebug",
+    "workspaceContains:*.alita"
+  ],
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": "limited",
+      "description": "Single-file features (syntax, snippets, semantic tokens) are supported. Cross-file analysis via LSP is disabled in virtual workspaces."
+    },
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "alita",
+        "aliases": [
+          "Alita",
+          "alita"
+        ],
+        "extensions": [
+          ".alita"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "alita",
+        "scopeName": "source.alita",
+        "path": "./syntaxes/alita.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "alita",
+        "path": "./snippets/alita.json"
+      }
+    ],
+    "semanticTokenTypes": [
+      {
+        "id": "ability",
+        "superType": "function",
+        "description": "A REUG ability declaration."
+      },
+      {
+        "id": "atom",
+        "superType": "class",
+        "description": "A Neural Atom type."
+      }
+    ],
+    "semanticTokenModifiers": [
+      {
+        "id": "telemetry",
+        "description": "A token linked to a REUG telemetry event."
+      }
+    ],
+    "commands": [
+      {
+        "command": "alita.restart",
+        "title": "Alita: Restart Language Server"
+      },
+      {
+        "command": "alita.search",
+        "title": "Alita: MCP Search"
+      },
+      {
+        "command": "alita.skillset",
+        "title": "Alita: Show Skillset"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "alita.restart",
+          "when": "!virtualWorkspace && editorLangId == alita"
+        },
+        {
+          "command": "alita.search",
+          "when": "!virtualWorkspace && editorLangId == alita"
+        },
+        {
+          "command": "alita.skillset",
+          "when": "!virtualWorkspace && editorLangId == alita"
+        }
+      ]
+    },
+    "breakpoints": [
+      {
+        "language": "alita"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "alita-debug",
+        "label": "Alita Debug",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Absolute path to an Alita script to debug."
+              }
+            }
+          }
+        }
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "alita",
+        "required": [
+          "target"
+        ],
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "The build target, e.g., 'validate' or 'build'."
+          }
+        }
+      }
+    ],
+    "configuration": {
+      "title": "Alita Language Extension",
+      "properties": {
+        "alita.telemetry.enable": {
+          "type": "boolean",
+          "default": true,
+          "tags": [
+            "telemetry",
+            "usesOnlineServices"
+          ],
+          "description": "Enable safe, opt-in telemetry for REUG runtime events."
+        },
+        "alita.lsp.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace communication between VS Code and the Alita language server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "dependencies": {
+    "@vscode/extension-telemetry": "^0.9.7",
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@types/glob": "^8.1.0",
+    "glob": "^8.1.0",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser": "^7.11.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5",
+    "@vscode/test-electron": "^2.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yaboyshades/super-alita"
+  }
+}

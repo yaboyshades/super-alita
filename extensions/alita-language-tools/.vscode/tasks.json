@@ -1,0 +1,8 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "compile", "type": "npm", "script": "compile", "problemMatcher": "$tsc" },
+    { "label": "watch", "type": "npm", "script": "watch" },
+    { "label": "test", "type": "npm", "script": "test" }
+  ]
+}

@@ -81,6 +81,20 @@ curl http://127.0.0.1:8080/healthz
 
 Debug utilities (`debug_fixed.py`, `debug_matching.py`, `utility_debug.py`) are under `scripts/`.
 
+### VS Code Extensions
+
+This repository bundles several VS Code extensions under `extensions/`.
+To build and test the new **Alita Language Tools** extension:
+
+```bash
+cd extensions/alita-language-tools
+npm install
+npm run compile
+npm test
+```
+
+The extension exposes `alita.search` and `alita.skillset` commands. The existing extensions can be built and tested in a similar manner.
+
 ## MCP Server Installation Links
 
 VS Code can install MCP server definitions directly via special links:
