@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-26T01:29:50Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-26T01:31:50Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -135,7 +135,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 121, 124, 125, 126, 127]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 121, 124, 125, 126, 127, 128]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -143,6 +143,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-26T01:29:50Z #127 Merge pull request #127 from yaboyshades/codex/implement-oauth-flow-in-authorization.py (owner: @yaboyshades)
+- 2025-08-26T01:31:50Z #128 Merge pull request #128 from yaboyshades/codex/add-optional-resource-descriptors-and-prompts (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-26T01:28:50Z #126 Merge pull request #126 from yaboyshades/codex/add-tool-template-and-documentation (owner: @yaboyshades)
+- 2025-08-26T01:29:50Z #127 Merge pull request #127 from yaboyshades/codex/implement-oauth-flow-in-authorization.py (owner: @yaboyshades)
