@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-26T01:28:23Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-26T01:28:50Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -135,7 +135,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 121, 124, 125]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 121, 124, 125, 126]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -143,6 +143,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-26T01:28:23Z #125 Merge pull request #125 from yaboyshades/codex/add-toolforge-module-and-cli-support (owner: @yaboyshades)
+- 2025-08-26T01:28:50Z #126 Merge pull request #126 from yaboyshades/codex/add-tool-template-and-documentation (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-26T01:26:54Z #124 Merge pull request #124 from yaboyshades/copilot/fix-ad31ac80-d4b9-4fa8-99e4-7de9a9e93046 (owner: @yaboyshades)
+- 2025-08-26T01:28:23Z #125 Merge pull request #125 from yaboyshades/codex/add-toolforge-module-and-cli-support (owner: @yaboyshades)
