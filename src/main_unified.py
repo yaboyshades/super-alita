@@ -32,9 +32,11 @@ logger = logging.getLogger("super_alita_unified")
 # This list defines the order of plugin initialization and startup.
 PLUGIN_ORDER = [
     "memory_manager",  # Initialize memory first for other plugins
-    "tool_executor",  # Tool execution capability
     "creator_plugin",  # Tool creation capability
-    "llm_planner",  # LLM-based planning and routing
+    "planner_v2",  # OaK-integrated strategic planner
+    "oak_coordinator", # OaK Tactical Layer
+    "option_executor", # OaK option execution
+    "tool_executor",  # Tool execution capability
     "puter",  # Cloud environment integration
     "conversation",  # User interaction (legacy)
     "web_agent",  # Web search capability (legacy)
@@ -53,7 +55,9 @@ def _load_unified_plugins():
 
     plugin_specs = [
         # Unified cognitive plugins
-        ("src.plugins.llm_planner_plugin_unified", "LLMPlannerPlugin", "llm_planner"),
+        ("src.plugins.planner_plugin_v2", "PlannerPluginV2", "planner_v2"),
+        ("src.plugins.option_executor_plugin", "OptionExecutorPlugin", "option_executor"),
+        ("src.plugins.oak_core.coordinator", "OakCoordinator", "oak_coordinator"),
         ("src.plugins.creator_plugin_unified", "CreatorPlugin", "creator_plugin"),
         (
             "src.plugins.memory_manager_plugin_unified",
@@ -184,7 +188,10 @@ class UnifiedSuperAlita:
                 "memory_manager": {"enabled": True},
                 "tool_executor": {"enabled": True},
                 "creator_plugin": {"enabled": True},
-                "llm_planner": {"enabled": True},
+                "planner_v2": {"enabled": True},
+                "oak_coordinator": {"enabled": True},
+                "option_executor": {"enabled": True},
+                "llm_planner": {"enabled": False},
                 "puter": {
                     "enabled": True,
                     "puter_base_url": "https://puter.com",

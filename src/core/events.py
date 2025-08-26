@@ -161,6 +161,20 @@ class GoalReceivedEvent(BaseEvent):
             self.goal_description = self.goal
 
 
+class Subgoal(BaseModel):
+    """A sub-goal, which is a part of a larger goal."""
+    description: str
+    parent_goal_id: str
+    subgoal_id: str
+
+class SubgoalDefinedEvent(BaseEvent):
+    """Event triggered when a planner decomposes a goal into a subgoal."""
+
+    event_type: str = "subgoal_defined"
+    subgoal: Subgoal
+    session_id: str
+
+
 class PlanningDecisionEvent(BaseEvent):
     """Event for LADDER-AOG planning decisions."""
 
@@ -665,6 +679,7 @@ EVENT_TYPES = {
     "memory_upsert": MemoryUpsertEvent,
     "planning": PlanningEvent,
     "goal_received": GoalReceivedEvent,
+    "subgoal_defined": SubgoalDefinedEvent,
     "planning_decision": PlanningDecisionEvent,
     "state_transition": StateTransitionEvent,
     "fsm_state_change": FSMStateEvent,
