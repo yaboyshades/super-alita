@@ -1,76 +1,85 @@
-import importlib.util
-from pathlib import Path
-import sys
-
 import pytest
 import torch
+from src.plugins.oak_core.option_trainer import OptionTrainer
+from typing import Any
+from src.core.events import BaseEvent, create_event
 
-class Bus:
-    def __init__(self) -> None:
-        self.events: list[dict] = []
+class MockBus:
+    def __init__(self):
+        self.emitted_events = []
+        self.handlers = {}
 
-    async def emit(self, event_type: str, **kwargs) -> None:
-        self.events.append({"event_type": event_type, **kwargs})
+    async def publish(self, event: BaseEvent):
+        self.emitted_events.append(event)
+        event_type = event.event_type
+        if event_type in self.handlers:
+            # The real event bus passes the event object itself
+            for handler in self.handlers[event_type]:
+                await handler(event)
 
-    async def subscribe(self, event_type, handler) -> None:  # pragma: no cover
-        pass
+    async def subscribe(self, event_type: str, handler: Any):
+        if event_type not in self.handlers:
+            self.handlers[event_type] = []
+        self.handlers[event_type].append(handler)
 
-
-spec = importlib.util.spec_from_file_location(
-    "option_trainer", Path("src/plugins/oak_core/option_trainer.py")
-)
-option_trainer = importlib.util.module_from_spec(spec)
-sys.modules["option_trainer"] = option_trainer
-assert spec.loader is not None
-spec.loader.exec_module(option_trainer)
-OptionTrainer = option_trainer.OptionTrainer
-
-
-class _TestOptionTrainer(OptionTrainer):
-    async def start(self) -> None:  # pragma: no cover
-        pass
-
+class MockMessageStore:
+    def __init__(self):
+        self.persisted = []
+    async def persist(self, event_type, payload):
+        self.persisted.append((event_type, payload))
 
 @pytest.mark.asyncio
-async def test_option_trainer_rollout_minibatch() -> None:
-    bus = Bus()
-    trainer = _TestOptionTrainer()
-    await trainer.setup(bus, None, {"state_dim": 2, "action_dim": 2, "batch_size": 2})
+async def test_option_trainer_learns() -> None:
+    store = MockMessageStore()
 
-    class SubEvent:
-        subproblem_id = "1"
+    config = {
+        "device": "cpu",
+        "batch_size": 2,
+        "update_frequency": 4,
+        "ppo_epochs": 1
+    }
 
-    await trainer.handle_subproblem_defined(SubEvent())
-    opt_id = "option_1"
+    trainer = OptionTrainer()
+    bus = MockBus()
+    await trainer.setup(bus, store, config)
+    await trainer.start()
 
-    net = trainer.options[opt_id]
-    for p in net.parameters():
-        torch.nn.init.constant_(p, 0.0)
+    # Create an option by publishing an event that the trainer subscribes to
+    subproblem_event_data = {"subproblem_id": "sp_1", "feature_id": "f_1", "kappa": 1.0}
 
+    # The plugin's emit_event calls create_event, so the test should do the same
+    # to simulate how the event bus would receive the event.
+    # However, for this test, we are calling the handler directly, so we pass the data.
+    # The handler expects a dictionary.
+    await trainer.create_option(subproblem_event_data)
+
+    # Get the option_id from the event emitted by the trainer
+    option_created_event = next((e for e in bus.emitted_events if e.event_type == "option_created"), None)
+    assert option_created_event is not None
+    opt_id = option_created_event.option_id
+
+    # Start the option
+    await trainer.handle_option_start({"option_id": opt_id, "state": {}})
+
+    net = trainer.networks[opt_id]
+    orig_params = [p.clone().detach() for p in net.parameters()]
+
+    # Simulate transitions
     for i in range(4):
-        class StepEvent:
-            pass
-        e = StepEvent()
-        e.option_id = opt_id
-        e.state = [0.0, 0.0]
-        e.action = 0
-        e.reward = 1.0
-        e.next_state = [0.0, 0.0]
-        e.done = i == 3
-        await trainer.handle_state_transition(e)
+        await trainer.handle_transition({"state": {}, "action": 0, "reward": 1.0, "next_state": {}, "done": False, "features": []})
 
-    steps = 0
-    orig_step = trainer.optim[opt_id].step
+    # Check if training happened
+    assert trainer.step_count == 4
 
-    def step_hook(*args, **kwargs):
-        nonlocal steps
-        steps += 1
-        return orig_step(*args, **kwargs)
+    new_params = [p.clone().detach() for p in net.parameters()]
+    params_changed = False
+    for p_orig, p_new in zip(orig_params, new_params):
+        if not torch.equal(p_orig, p_new):
+            params_changed = True
+            break
+    assert params_changed
 
-    trainer.optim[opt_id].step = step_hook  # type: ignore[assignment]
-
-    await trainer.handle_training_tick(object())
-
-    assert steps == 2
-    assert trainer.rollouts[opt_id] == []
-    assert any(evt.get("event_type") == "oak.option_training_update" for evt in bus.events)
+    # Check for training event
+    training_update_event = next((e for e in bus.emitted_events if e.event_type == "option_training_update"), None)
+    assert training_update_event is not None
+    assert training_update_event.option_id == opt_id
