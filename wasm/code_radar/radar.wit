@@ -1,0 +1,6 @@
+package vscode:example;
+
+world code-radar {
+    record diagnostic { line: u32, col: u32, severity: u8, code: string, message: string }
+    export analyze: func(source: string) -> list<diagnostic>;
+}

@@ -212,6 +212,7 @@ An integrated blueprint for AI-native development combining:
 - VS Code language tools extension with telemetry + LSP & Ollama integration (`extensions/alita-language-tools`)
 - Experimental WASM component scaffold (`wasm/calculator`) now simplified to `add(a,b)`
 - Developer guides: architectural overview, refactoring, testing, secrets (`docs/01_architectural_overview.md`, `docs/02_refactoring_guide.md`, `docs/03_testing_guide.md`, `docs/02_developer_secrets.md`)
+- S-Tier evolution roadmap (`docs/08_s_tier_evolution_roadmap.md`) outlining predictive execution, multi-agent swarm, PEFT adapters, and WASM code radar.
 
 ### Quick Start (DX Kit Extras)
 
@@ -233,6 +234,7 @@ Place `calculator.wasm` under `extensions/alita-language-tools/out/src/` to enab
 ```
 
 Extension adds commands:
+
 - `Alita: Invoke Agent (Ollama)` – single prompt invocation against local model
 - `Alita: Run WASM Calculator` – calls simplified `add(a,b)` in WASM module
 

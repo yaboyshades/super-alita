@@ -6,6 +6,8 @@ import { createTelemetry } from './telemetry';
 import { createLspClient } from './lspClient';
 import { registerMcpSearch } from './features/mcpSearch';
 import { registerSkillsetCommand } from './features/skillset';
+import { PredictiveManager } from './predictiveManager';
+import { FeedbackManager } from './feedbackManager';
 
 interface OllamaChatChunk { message?: { content?: string }; done?: boolean }
 
@@ -91,6 +93,11 @@ export async function activate(ctx: vscode.ExtensionContext) {
   disposables.push(registerMcpSearch(telemetry ?? undefined));
   disposables.push(registerSkillsetCommand(telemetry ?? undefined));
 
+  // Predictive + feedback managers (clairvoyant scaffolding)
+  const predictive = new PredictiveManager(telemetry ?? undefined);
+  const feedback = new FeedbackManager();
+  disposables.push(predictive, feedback);
+
   // Agent invoke command (Ollama)
   disposables.push(vscode.commands.registerCommand('alita.invokeAgent', async () => {
     const prompt = await vscode.window.showInputBox({ prompt: 'Agent prompt' });
@@ -116,6 +123,59 @@ export async function activate(ctx: vscode.ExtensionContext) {
     if (!aStr || !bStr) { return; }
     const result = await runWasmCalculator(parseInt(aStr, 10), parseInt(bStr, 10));
     vscode.window.showInformationMessage(`WASM Result: ${result}`);
+  }));
+
+  // Refactor selection with predictive cache
+  disposables.push(vscode.commands.registerCommand('alita.agent.refactorSelection', async () => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.selection.isEmpty) { return; }
+    const sel = editor.selection;
+    const original = editor.document.getText(sel);
+    const cached = predictive.getCachedRefactor(editor.document.uri, sel, original);
+    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Alita Refactor' }, async () => {
+      let replacement: string | null = null;
+      if (cached) {
+        replacement = cached.patch;
+      } else {
+        // Build simple prompt (future: add context server snippets)
+        const prompt = `Refactor the following code for clarity, keep semantics identical.\n\n\n\n\n\n\n\n\nCode:\n\n\n\n\n\n\n\n\n\n\n${original}`;
+        try {
+          replacement = await invokeOllama(prompt);
+        } catch (err) {
+          vscode.window.showErrorMessage('Refactor failed: ' + (err as Error).message);
+          return;
+        }
+      }
+      if (!replacement) { return; }
+      const cleaned = replacement.replace(/```[a-zA-Z]*\n([\s\S]+?)```/, '$1').trim();
+  await editor.edit((b: vscode.TextEditorEdit) => b.replace(sel, cleaned));
+      feedback.logFeedback('refactor-selection', original, cleaned, 'accepted');
+    });
+  }));
+
+  // Index workspace (stub)
+  disposables.push(vscode.commands.registerCommand('alita.context.indexWorkspace', async () => {
+    const folders = vscode.workspace.workspaceFolders;
+    if (!folders) { return; }
+    const alitaFiles: { uri: vscode.Uri; content: string }[] = [];
+    for (const f of folders) {
+      const files = await vscode.workspace.findFiles(new vscode.RelativePattern(f, '**/*.{py,ts,rs,alita}'), '**/node_modules/**', 300);
+      for (const file of files) {
+        try {
+          const buf = await vscode.workspace.fs.readFile(file);
+          const decoder = new TextDecoder('utf-8');
+          alitaFiles.push({ uri: file, content: decoder.decode(buf) });
+        } catch { /* ignore */ }
+      }
+    }
+    const endpoint = vscode.workspace.getConfiguration('alita').get<string>('context.serverEndpoint');
+    const body = { files: Object.fromEntries(alitaFiles.map(f => [f.uri.toString(), f.content])) };
+    try {
+      await (globalThis as any).fetch(endpoint + '/index', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      vscode.window.showInformationMessage(`Indexed ${alitaFiles.length} files for context.`);
+    } catch (err) {
+      vscode.window.showWarningMessage('Indexing failed: ' + (err as Error).message);
+    }
   }));
 
   ctx.subscriptions.push(...disposables);
