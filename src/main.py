@@ -76,6 +76,7 @@ if str(SRC) not in sys.path:
 try:
     from reug_runtime.router import router as agent_router
     from reug_runtime.router_tools import tools as tools_router
+    from reug_runtime.config import SETTINGS
 except Exception as e:  # pragma: no cover
     # Fallback: minimal routers to allow boot/health during development
     print("[WARN] reug_runtime import failed; falling back to minimal routers:", e)
@@ -98,6 +99,7 @@ except Exception as e:  # pragma: no cover
 
 # --- Event bus (JSONL fallback + optional Redis) ---
 from reug_runtime.event_bus import (
+    BaseEventBus,
     FileEventBus,
     RedisEventBus,
     make_event_bus,
@@ -188,7 +190,7 @@ class SimpleKG:
 
 
 # --- FastAPI factory ---
-def create_app() -> FastAPI:
+def create_app(*, event_bus: BaseEventBus | None = None) -> FastAPI:
     _configure_logging()
     logger = logging.getLogger()
     app = FastAPI(title="REUG Runtime", version="0.2.0")
@@ -237,16 +239,26 @@ def create_app() -> FastAPI:
         return JSONResponse(status_code=code, content=status)
 
     # Inject dependencies for the REUG router
-    app.state.event_bus = make_event_bus()
+    app.state.event_bus = event_bus if event_bus is not None else make_event_bus()
     app.state.ability_registry = SimpleAbilityRegistry()
     app.state.kg = SimpleKG()
     app.state.llm_model = get_llm_client(os.getenv("LLM_MODEL"))
 
     # Mount routers
-    app.include_router(agent_router)  # /v1/chat/stream
-    app.include_router(
-        tools_router
-    )  # /tools/* (toolbox – run tests, apply patches, etc.)
+    prefix = SETTINGS.api_prefix
+    if prefix and prefix != "/":
+        if not prefix.startswith("/"):
+            prefix = f"/{prefix}"
+        prefix = prefix.rstrip("/")
+        app.include_router(agent_router, prefix=prefix)  # {prefix}/v1/chat/stream
+        app.include_router(
+            tools_router, prefix=prefix
+        )  # {prefix}/tools/* (toolbox – run tests, apply patches, etc.)
+    else:
+        app.include_router(agent_router)  # /v1/chat/stream
+        app.include_router(
+            tools_router
+        )  # /tools/* (toolbox – run tests, apply patches, etc.)
 
     @app.on_event("startup")
     async def _startup() -> None:

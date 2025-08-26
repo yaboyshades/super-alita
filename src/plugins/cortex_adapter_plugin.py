@@ -4,14 +4,13 @@ Cortex Adapter Plugin - Interface to external AI systems for bootstrapping.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Protocol
 import json
 from datetime import datetime, timezone
 import time
 import uuid
 
 from src.core.plugin_interface import PluginInterface
-from src.core.event_bus import EventBus
 from src.core.events import create_event
 from src.core.temporal_graph import TemporalGraph, NeuralAtom
 from src.core.navigation import NeuralNavigator, NavigationStrategy
@@ -84,10 +83,9 @@ class GitHubCopilotCortex:
 class CortexAdapterPlugin(PluginInterface):
     """Plugin that adapts external AI systems as cognitive scaffolding."""
 
-    def __init__(self, event_bus: EventBus, graph: TemporalGraph, navigator: NeuralNavigator) -> None:
-        self.event_bus = event_bus
-        self.graph = graph
-        self.navigator = navigator
+    def __init__(self) -> None:
+        self.graph: TemporalGraph | None = None
+        self.navigator: NeuralNavigator | None = None
         self.cortex_providers: Dict[str, ExternalCortex] = {}
         self.learning_history: List[Dict[str, Any]] = []
         # Hardening
@@ -98,17 +96,16 @@ class CortexAdapterPlugin(PluginInterface):
         self._budget_calls = 0
         self._budget_max_per_min = 60
 
-        self.event_bus.subscribe("reasoning_request", self.handle_reasoning_request)
-        self.event_bus.subscribe("knowledge_gap", self.handle_knowledge_gap)
-
     @property
     def name(self) -> str:  # type: ignore[override]
         return "cortex_adapter"
 
     async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:  # type: ignore[override]
-        self.event_bus = event_bus
-        self.store = store
-        self.config = config
+        await super().setup(event_bus, store, config)
+        self.graph = config.get("graph", self.graph)
+        self.navigator = config.get("navigator", self.navigator)
+        await self.event_bus.subscribe("reasoning_request", self.handle_reasoning_request)
+        await self.event_bus.subscribe("knowledge_gap", self.handle_knowledge_gap)
 
     async def start(self) -> None:  # type: ignore[override]
         self.is_running = True

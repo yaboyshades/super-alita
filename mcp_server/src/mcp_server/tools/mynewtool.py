@@ -1,3 +1,5 @@
+"""Simple MCP tool providing basic string statistics."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -6,16 +8,22 @@ from mcp_server.server import app
 
 
 @app.tool(
-    name="MyNewTool",
-    description="Describe what MyNewTool does, required args, and return shape.",
+    name="string_info",
+    description="Return uppercase variant and length for a non-empty string.",
 )
-async def MyNewTool(example_arg: str) -> dict[str, Any]:
-    """Short doc for humans & LLM.
+async def MyNewTool(text: str) -> dict[str, Any]:
+    """Compute basic information about ``text``.
+
     Args:
-        example_arg: what it is.
+        text: Non-empty string to analyze.
 
     Returns:
-        dict with structured result for the client.
+        A mapping with the original string, an uppercase version, and its length.
+        If validation fails, the mapping contains an ``error`` message instead.
     """
-    # TODO: implement. Keep scope narrow. Validate inputs.
-    return {"ok": True, "arg": example_arg}
+    if not isinstance(text, str):
+        return {"error": "text must be a string"}
+    if not text.strip():
+        return {"error": "text must be a non-empty string"}
+    return {"original": text, "upper": text.upper(), "length": len(text)}
+

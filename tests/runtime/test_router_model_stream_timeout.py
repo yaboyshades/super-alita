@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from reug_runtime.router import router
 
+from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG
 
 
@@ -29,7 +30,9 @@ def _mk_app() -> FastAPI:
 def test_model_stream_timeout() -> None:
     app = _mk_app()
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "hi", "session_id": "mst"})
+    resp = client.post(
+        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "mst"}
+    )
     assert resp.status_code == 200
     assert "[ERROR: model_stream_timeout]" in resp.text
     events = app.state.event_bus.events

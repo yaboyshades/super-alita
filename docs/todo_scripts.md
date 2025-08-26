@@ -18,4 +18,9 @@ Updates the persistent todo file with a JSON array of todos.
 python scripts/todo_sync.py '[{"id": 1, "title": "Example", "status": "not-started"}]' --todo-file path/to/todos.json
 ```
 
+
 Both scripts log their actions and accept `--todo-file` to point to a custom location. By default the file is stored in `.vscode/todos.json` at the repository root.
+
+Both scripts log their actions and accept `--todo-file` to point to a custom location. By default, the file is stored as `.vscode/todos.json` in the repository root.
+
+

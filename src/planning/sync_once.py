@@ -208,22 +208,22 @@ async def main():
         demo_anti_thrash_protection()
         return
 
-    print("🚀 Super Alita: Metrics → Todos Synchronization")
-    print("=" * 60)
+    logger.info("🚀 Super Alita: Metrics → Todos Synchronization")
+    logger.info("=" * 60)
 
     result = await sync_metrics_to_todos()
 
     if result["success"]:
-        print("✅ Sync completed successfully!")
-        print(f"  📊 Processed {result['metrics_processed']} metrics")
-        print(f"  📝 Took {result['actions_taken']} todo actions")
-        print(f"  📋 {result['active_todos']} active todos")
-        print(f"  ⚠️  Risk score: {result['risk_score']:.3f}")
-        print(f"  🎯 System priority: {result['system_priority']}")
-        print(f"  ⏱️  Completed in {result['elapsed_s']:.2f}s")
+        logger.info("✅ Sync completed successfully!")
+        logger.info(f"  📊 Processed {result['metrics_processed']} metrics")
+        logger.info(f"  📝 Took {result['actions_taken']} todo actions")
+        logger.info(f"  📋 {result['active_todos']} active todos")
+        logger.info(f"  ⚠️  Risk score: {result['risk_score']:.3f}")
+        logger.info(f"  🎯 System priority: {result['system_priority']}")
+        logger.info(f"  ⏱️  Completed in {result['elapsed_s']:.2f}s")
         sys.exit(0)
     else:
-        print(f"❌ Sync failed: {result['error']}")
+        logger.error(f"❌ Sync failed: {result['error']}")
         sys.exit(1)
 
 

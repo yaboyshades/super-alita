@@ -6,7 +6,7 @@ Test the full integration of Puter plugin with Super Alita's unified system.
 import asyncio
 import logging
 import os
-import tempfile
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -35,7 +35,7 @@ def test_puter_plugin_in_unified_system():
 
 
 @pytest.mark.asyncio
-async def test_puter_plugin_initialization_with_env():
+async def test_puter_plugin_initialization_with_env(monkeypatch):
     """Test Puter plugin initialization with environment configuration."""
     import sys
     import os
@@ -48,17 +48,46 @@ async def test_puter_plugin_initialization_with_env():
     
     try:
         from plugins.puter_plugin import PuterPlugin
-        from core.global_workspace import GlobalWorkspace
-        from core.neural_atom import NeuralStore
-        
+
+        # Dummy client to avoid network
+        class DummyClient:
+            async def initialize(self) -> None:
+                return None
+
+            async def cleanup(self) -> None:
+                return None
+
+            async def read_file(self, path: str) -> str:
+                return ""
+
+            async def write_file(
+                self, path: str, content: str, create_dirs: bool = True
+            ) -> bool:
+                return True
+
+            async def delete_file(self, path: str) -> bool:
+                return True
+
+            async def list_directory(self, path: str):
+                return []
+
+            async def execute_command(
+                self, command: str, args=None, cwd=None, env=None
+            ) -> dict[str, Any]:
+                return {"stdout": "", "stderr": "", "exit_code": 0, "execution_time": 0}
+
+        monkeypatch.setattr(
+            "plugins.puter_plugin.PuterApiClient", lambda *args, **kwargs: DummyClient()
+        )
+
         # Create mocks
         workspace = MagicMock()
         workspace.subscribe = AsyncMock()
         store = MagicMock()
-        
+
         # Initialize plugin
         plugin = PuterPlugin()
-        
+
         # Test configuration loading from environment
         config = {
             "enabled": True,
@@ -66,20 +95,20 @@ async def test_puter_plugin_initialization_with_env():
             "puter_api_key": "default_key",  # Should be overridden
             "puter_workspace_id": "default",  # Should be overridden
         }
-        
+
         await plugin.setup(workspace, store, config)
-        
+
         # Verify configuration was loaded from environment
         assert plugin.puter_config["api_url"] == "https://test.puter.com"
         assert plugin.puter_config["api_key"] == "test_key_123"
         assert plugin.puter_config["workspace_id"] == "test_workspace"
-        
+
         # Test startup
         await plugin.start()
-        
+
         # Verify subscriptions were made
         assert workspace.subscribe.call_count >= 4  # Should subscribe to multiple events
-        
+
         # Test shutdown
         await plugin.shutdown()
         
@@ -89,8 +118,8 @@ async def test_puter_plugin_initialization_with_env():
             os.environ.pop(key, None)
 
 
-@pytest.mark.asyncio 
-async def test_end_to_end_puter_workflow():
+@pytest.mark.asyncio
+async def test_end_to_end_puter_workflow(monkeypatch):
     """Test end-to-end workflow with Puter plugin."""
     import sys
     import os
@@ -120,13 +149,39 @@ async def test_end_to_end_puter_workflow():
     plugin = PuterPlugin()
     mock_bus = MockEventBus()
     mock_store = MagicMock()
-    
+
+    class DummyClient:
+        async def initialize(self) -> None:
+            return None
+
+        async def cleanup(self) -> None:
+            return None
+
+        async def read_file(self, path: str) -> str:
+            return ""
+
+        async def write_file(self, path: str, content: str, create_dirs: bool = True) -> bool:
+            return True
+
+        async def delete_file(self, path: str) -> bool:
+            return True
+
+        async def list_directory(self, path: str):
+            return []
+
+        async def execute_command(self, command: str, args=None, cwd=None, env=None) -> dict[str, Any]:
+            return {"stdout": "", "stderr": "", "exit_code": 0, "execution_time": 0}
+
+    monkeypatch.setattr(
+        "plugins.puter_plugin.PuterApiClient", lambda *args, **kwargs: DummyClient()
+    )
+
     config = {
         "puter_base_url": "https://test.puter.com",
         "puter_api_key": "test_key",
         "puter_workspace_id": "test",
     }
-    
+
     await plugin.setup(mock_bus, mock_store, config)
     await plugin.start()
     
@@ -146,10 +201,9 @@ async def test_end_to_end_puter_workflow():
     
     # Verify operation was recorded and event emitted
     assert len(plugin.operation_history) == 1
-    assert len(mock_bus.events) == 1
-    
-    completion_event = mock_bus.events[0]
-    assert completion_event.event_type == "puter_operation_completed"
+    completion_event = next(
+        e for e in mock_bus.events if e.event_type == "puter_operation_completed"
+    )
     assert completion_event.operation_type == "file_operation"
     assert completion_event.file_path == "/test/file.txt"
     

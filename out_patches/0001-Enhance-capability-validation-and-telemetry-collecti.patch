@@ -1,0 +1,1055 @@
+From b0fae3e46fa5c19438ac813716873d1d92c1576e Mon Sep 17 00:00:00 2001
+From: Anthony Leaman <aleaman@wgu.edu>
+Date: Sun, 24 Aug 2025 12:57:53 -0400
+Subject: [PATCH 1/2] Enhance capability validation and telemetry collection
+
+- Updated capability validation workflow to include scoped paths and improved output formats.
+- Refactored telemetry collector to support snapshots and auto-flushing of telemetry data.
+- Added CLI for discovering and listing available tools with filtering options.
+- Enhanced calculator plugin to provide detailed tool metadata and improved event handling.
+---
+ .github/workflows/capability-validate.yml |   8 +-
+ scripts/validate_capabilities.py          | 339 ++++++++++----------
+ src/core/telemetry/collector.py           | 367 ++++++++++------------
+ src/plugins/calculator_plugin.py          |  43 ++-
+ tools/__init__.py                         |   7 +
+ tools/__main__.py                         | 161 ++++++++++
+ 6 files changed, 542 insertions(+), 383 deletions(-)
+ create mode 100644 tools/__init__.py
+ create mode 100644 tools/__main__.py
+
+diff --git a/.github/workflows/capability-validate.yml b/.github/workflows/capability-validate.yml
+index 83cfc42..8767975 100644
+--- a/.github/workflows/capability-validate.yml
++++ b/.github/workflows/capability-validate.yml
+@@ -36,13 +36,13 @@ jobs:
+         python -m pip install --upgrade pip
+         pip install pyyaml
+         
+-    - name: Validate capability metadata
++    - name: Validate capability metadata (scoped)
+       run: |
+-        python scripts/validate_capabilities.py --strict --output json > capability_validation.json
++        python scripts/validate_capabilities.py --paths src/plugins --output github --strict
+         
+     - name: Generate validation report
+       run: |
+-        python scripts/validate_capabilities.py --strict --output text
++        python scripts/validate_capabilities.py --paths src/plugins --output text
+         
+     - name: Upload validation results
+       if: always()
+@@ -53,7 +53,7 @@ jobs:
+         
+     - name: Check validation status
+       run: |
+-        exit_code=$(python scripts/validate_capabilities.py --strict > /dev/null 2>&1; echo $?)
++        exit_code=$(python scripts/validate_capabilities.py --paths src/plugins --strict --output text > /dev/null 2>&1; echo $?)
+         if [ $exit_code -ne 0 ]; then
+           echo "❌ Capability validation failed!"
+           echo "📋 Review the validation report above for details"
+diff --git a/scripts/validate_capabilities.py b/scripts/validate_capabilities.py
+index 9b1c7e7..7fd0e42 100644
+--- a/scripts/validate_capabilities.py
++++ b/scripts/validate_capabilities.py
+@@ -46,178 +46,185 @@ REQUIRED_FIELDS = [
+ DEFAULT_PATHS = ["src/plugins"]
+ DEFAULT_EXCLUDES = [".venv", ".mypy_cache", ".git", "node_modules", "dist", "build", "__pycache__"]
+ 
+-@dataclass 
+-class ValidationResult:
+-    file_path: str
+-    capability_name: str
+-    status: str  # "pass", "warn", "fail"
+-    issues: List[str]
+-    metadata: Dict[str, Any]
+-
+-class CapabilityValidator:
+-    """Validates capability metadata files against schema requirements"""
++def parse_args() -> argparse.Namespace:
++    p = argparse.ArgumentParser()
++    p.add_argument("--paths", nargs="*", default=DEFAULT_PATHS, help="Roots to scan (packages or folders)")
++    p.add_argument("--exclude", nargs="*", default=DEFAULT_EXCLUDES, help="Folder name patterns to ignore")
++    p.add_argument("--output", choices=["text", "json", "github"], default="text", help="Output format")
++    p.add_argument("--strict", action="store_true", help="Treat warnings as failures (CI mode)")
++    return p.parse_args()
++
++def should_ignore(path: Path, excludes: List[str]) -> bool:
++    parts = set(path.parts)
++    return any(e in parts for e in excludes)
++
++def iter_plugin_modules(root: Path, excludes: List[str]) -> Iterable[str]:
++    """Yield dotted module names under src/plugins/** that end with _plugin.py"""
++    if should_ignore(root, excludes):
++        return []
++    
++    # Find the workspace root (where src folder is located)
++    workspace_root = Path.cwd()
++    src_root = workspace_root / "src"
++    
++    # Add the workspace root to sys.path so we can import src.plugins
++    if str(workspace_root) not in sys.path:
++        sys.path.insert(0, str(workspace_root))
+     
+-    def __init__(self, strict_mode: bool = False):
+-        self.strict_mode = strict_mode
+-        self.results: List[ValidationResult] = []
++    plugins_pkg = src_root / "plugins"
++    if not plugins_pkg.exists():
++        return []
+         
+-    def validate_capability_file(self, file_path: Path) -> ValidationResult:
+-        """Validate a single capability metadata file"""
++    try:
++        pkg = importlib.import_module("src.plugins")
++        for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
++            if m.ispkg:
++                continue
++            if m.name.endswith("_plugin"):
++                yield m.name
++    except ImportError:
++        return []
++
++def collect_tools_from_module(mod_name: str) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
++    """Return (tools, errors) for a module"""
++    errors: List[Dict[str, Any]] = []
++    tools: List[Dict[str, Any]] = []
++    try:
++        mod = importlib.import_module(mod_name)
++    except Exception as e:
++        errors.append({"module": mod_name, "issue": f"IMPORT_ERROR: {e}"})
++        return tools, errors
++    create = getattr(mod, "create_plugin", None)
++    if callable(create):
+         try:
+-            with open(file_path, 'r', encoding='utf-8') as f:
+-                if file_path.suffix.lower() in ['.yaml', '.yml']:
+-                    metadata = yaml.safe_load(f)
+-                else:
+-                    metadata = json.load(f)
++            plugin = create()
++            if hasattr(plugin, "get_tools"):
++                for spec in plugin.get_tools():
++                    if isinstance(spec, dict):
++                        tools.append(spec)
+         except Exception as e:
+-            return ValidationResult(
+-                file_path=str(file_path),
+-                capability_name="unknown",
+-                status="fail",
+-                issues=[f"Failed to parse file: {e}"],
+-                metadata={}
+-            )
+-            
+-        capability_name = metadata.get("name", file_path.stem)
+-        issues = []
+-        
+-        # Check required fields
+-        for field in REQUIRED_FIELDS:
+-            if field not in metadata:
+-                issues.append(f"Missing required field: {field}")
+-            elif not metadata[field]:
+-                issues.append(f"Empty required field: {field}")
+-                
+-        # Validate category
+-        category = metadata.get("category")
+-        if category and category not in VALID_CATEGORIES:
+-            issues.append(f"Invalid category '{category}'. Must be one of: {VALID_CATEGORIES}")
+-            
+-        # Validate complexity
+-        complexity = metadata.get("complexity") 
+-        if complexity and complexity not in VALID_COMPLEXITY_LEVELS:
+-            issues.append(f"Invalid complexity '{complexity}'. Must be one of: {VALID_COMPLEXITY_LEVELS}")
+-            
+-        # Validate version format (semantic versioning)
+-        version = metadata.get("version")
+-        if version and not self._is_valid_semver(version):
+-            issues.append(f"Invalid version format '{version}'. Must follow semantic versioning (x.y.z)")
+-            
+-        # Check dependencies format
+-        deps = metadata.get("dependencies")
+-        if deps and not isinstance(deps, list):
+-            issues.append("Dependencies must be a list")
+-        elif deps:
+-            for dep in deps:
+-                if not isinstance(dep, str):
+-                    issues.append(f"Invalid dependency format: {dep}")
+-                    
+-        # Check integration requirements
+-        integration_reqs = metadata.get("integration_requirements") 
+-        if integration_reqs and not isinstance(integration_reqs, dict):
+-            issues.append("Integration requirements must be an object/dict")
+-            
+-        # Determine status
+-        if issues:
+-            status = "fail" if self.strict_mode else "warn"
++            errors.append({"module": mod_name, "issue": f"CREATE_ERROR: {e}"})
++    # Optional module-level TOOLS list
++    if hasattr(mod, "TOOLS") and isinstance(mod.TOOLS, list):
++        for spec in mod.TOOLS:
++            if isinstance(spec, dict):
++                tools.append(spec)
++    return tools, errors
++
++def validate_tool(mod_name: str, tool: Dict[str, Any]) -> List[Dict[str, Any]]:
++    missing = []
++    for field in REQUIRED_FIELDS:
++        v = tool.get(field)
++        if v in (None, "", {}, []):
++            missing.append({"module": mod_name, "tool": tool.get("name"), "missing": field})
++    return missing
++
++def format_text_report(passed: int, warnings: List[Dict[str, Any]], failed: List[Dict[str, Any]]) -> str:
++    lines = []
++    lines.append("🔍 Super Alita Capability Validation Report")
++    lines.append("=" * 50)
++    lines.append(f"📊 Summary: {passed} passed, {len(warnings)} warnings, {len(failed)} failed\n")
++    for w in warnings:
++        head = w.get("head", f"{w.get('tool') or w.get('module')} ({w.get('where','')})").strip()
++        lines.append(f"⚠️ {head}")
++        for msg in w.get("messages", []):
++            lines.append(f"   • {msg}")
++        lines.append("")
++    for f in failed:
++        head = f.get("head", f"{f.get('tool') or f.get('module')} ({f.get('where','')})").strip()
++        lines.append(f"❌ {head}")
++        for msg in f.get("messages", []):
++            lines.append(f"   • {msg}")
++        lines.append("")
++    return "\n".join(lines)
++
++def main() -> int:
++    args = parse_args()
++
++    # Scan only plugin modules (Python). Manifests (JSON/YAML) can be added later if needed.
++    modules: List[str] = []
++    for root_str in args.paths:
++        root = Path(root_str).resolve()
++        if not root.exists():
++            continue
++        if "plugins" in root.parts:
++            modules.extend(list(iter_plugin_modules(root, args.exclude)))
++        elif root.name == "src":  # if given src, still just scan plugins
++            modules.extend(list(iter_plugin_modules(root / "plugins", args.exclude)))
+         else:
+-            status = "pass"
+-            
+-        return ValidationResult(
+-            file_path=str(file_path),
+-            capability_name=capability_name,
+-            status=status,
+-            issues=issues,
+-            metadata=metadata
+-        )
+-        
+-    def _is_valid_semver(self, version: str) -> bool:
+-        """Check if version follows semantic versioning pattern"""
+-        try:
+-            parts = version.split('.')
+-            if len(parts) != 3:
+-                return False
+-            for part in parts:
+-                int(part)  # Will raise ValueError if not a number
+-            return True
+-        except (ValueError, AttributeError):
+-            return False
+-            
+-    def validate_directory(self, directory: Path) -> None:
+-        """Validate all capability files in a directory"""
+-        capability_files = []
+-        
+-        # Look for capability metadata files
+-        for pattern in ["*.json", "*.yaml", "*.yml"]:
+-            capability_files.extend(directory.glob(f"**/{pattern}"))
+-            
+-        # Filter for files that look like capability metadata
+-        capability_files = [
+-            f for f in capability_files 
+-            if any(keyword in f.name.lower() for keyword in 
+-                  ["capability", "capabilities", "metadata", "spec"])
+-        ]
+-        
+-        if not capability_files:
+-            print(f"Warning: No capability metadata files found in {directory}")
+-            return
+-            
+-        for file_path in capability_files:
+-            result = self.validate_capability_file(file_path)
+-            self.results.append(result)
+-            
+-    def generate_report(self, output_format: str = "text") -> str:
+-        """Generate validation report in specified format"""
+-        if output_format == "json":
+-            return json.dumps([asdict(result) for result in self.results], indent=2)
+-            
+-        # Text format
+-        report_lines = []
+-        report_lines.append("🔍 Super Alita Capability Validation Report")
+-        report_lines.append("=" * 50)
+-        
+-        passed = sum(1 for r in self.results if r.status == "pass")
+-        warned = sum(1 for r in self.results if r.status == "warn") 
+-        failed = sum(1 for r in self.results if r.status == "fail")
+-        
+-        report_lines.append(f"📊 Summary: {passed} passed, {warned} warnings, {failed} failed")
+-        report_lines.append("")
+-        
+-        for result in self.results:
+-            status_icon = {"pass": "✅", "warn": "⚠️", "fail": "❌"}[result.status]
+-            report_lines.append(f"{status_icon} {result.capability_name} ({result.file_path})")
+-            
+-            if result.issues:
+-                for issue in result.issues:
+-                    report_lines.append(f"   • {issue}")
+-                report_lines.append("")
+-                
+-        return "\n".join(report_lines)
+-        
+-    def exit_code(self) -> int:
+-        """Return appropriate exit code based on validation results"""
+-        if any(r.status == "fail" for r in self.results):
+-            return 1
++            # Non-plugin path provided: ignore by default to avoid noise (venv, mypy cache, workflows)
++            continue
++
++    seen = set()
++    modules = [m for m in modules if not (m in seen or seen.add(m))]
++
++    warnings: List[Dict[str, Any]] = []
++    failures: List[Dict[str, Any]] = []
++    passed = 0
++
++    if not modules:
++        # No modules found — not an error; just report 0 and exit clean
++        out = {"status": "ok", "passed": 0, "warnings": 0, "failed": 0, "note": "No plugin modules discovered."}
++        if args.output == "json":
++            print(json.dumps(out))
++        else:
++            print("🔍 Super Alita Capability Validation Report\n(no plugin modules discovered)\n")
+         return 0
+ 
+-def main():
+-    parser = argparse.ArgumentParser(description="Validate Super Alita capability metadata")
+-    parser.add_argument("--strict", action="store_true", 
+-                       help="Treat warnings as failures")
+-    parser.add_argument("--output", choices=["text", "json"], default="text",
+-                       help="Output format")
+-    parser.add_argument("--directory", type=Path, default=Path("."),
+-                       help="Directory to scan for capability files")
+-    
+-    args = parser.parse_args()
+-    
+-    validator = CapabilityValidator(strict_mode=args.strict)
+-    validator.validate_directory(args.directory)
+-    
+-    report = validator.generate_report(args.output)
+-    print(report)
+-    
+-    sys.exit(validator.exit_code())
++    for mod_name in modules:
++        tools, errs = collect_tools_from_module(mod_name)
++        for e in errs:
++            failures.append({
++                "head": f"{e['module']}",
++                "where": "import/create",
++                "messages": [e["issue"]],
++                "module": e["module"],
++            })
++        if not tools and not errs:
++            # Module loaded but exposed no tools: treat as warning (not failure)
++            warnings.append({
++                "head": f"{mod_name}",
++                "where": "discovery",
++                "messages": ["No tools exposed (get_tools() returned none)"],
++                "module": mod_name,
++            })
++            continue
++
++        for t in tools:
++            missing = validate_tool(mod_name, t)
++            if missing:
++                warnings.append({
++                    "head": f"{t.get('name') or 'unknown'}",
++                    "where": mod_name,
++                    "module": mod_name,
++                    "tool": t.get("name"),
++                    "messages": [f"Missing required field: {m['missing']}" for m in missing],
++                })
++            else:
++                passed += 1
++
++    strict_fail = args.strict and (len(warnings) > 0 or len(failures) > 0)
++
++    if args.output == "json":
++        print(json.dumps({
++            "status": "fail" if failures or strict_fail else "ok",
++            "passed": passed,
++            "warnings": warnings,
++            "failed": failures,
++        }, indent=2))
++    elif args.output == "github":
++        # GitHub Actions-friendly summary
++        print(f"::notice title=Capabilities::passed={passed} warnings={len(warnings)} failed={len(failures)}")
++        for f in failures:
++            for msg in f["messages"]:
++                print(f"::error file={f.get('module','')},title=Capability import/create::{msg}")
++        for w in warnings:
++            for msg in w["messages"]:
++                print(f"::warning file={w.get('module','')},title=Capability metadata::{msg}")
++    else:
++        print(format_text_report(passed, warnings, failures))
++
++    return 2 if failures or strict_fail else 0
+ 
+ if __name__ == "__main__":
+-    main()
+\ No newline at end of file
++    sys.exit(main())
+\ No newline at end of file
+diff --git a/src/core/telemetry/collector.py b/src/core/telemetry/collector.py
+index d29d395..3815302 100644
+--- a/src/core/telemetry/collector.py
++++ b/src/core/telemetry/collector.py
+@@ -5,240 +5,193 @@ Telemetry data collection and aggregation for Cortex runtime
+ import asyncio
+ import json
+ import time
+-from datetime import datetime, UTC
+ from typing import Dict, List, Any, Optional, Callable
+ from dataclasses import dataclass, asdict
+ from pathlib import Path
+ 
+-from ..cortex.markers import PerformanceMarker, CortexPhase, MarkerType
+-from ..events import BaseEvent
++from src.cortex.markers import PerformanceMarker
++from src.events import BaseEvent
+ 
+ 
+ @dataclass
+-class TelemetryEvent:
+-    """Individual telemetry event"""
+-    event_id: str
++class TelemetrySnapshot:
++    """Snapshot of telemetry data at a point in time"""
+     timestamp: float
+-    event_type: str
+-    source: str
+-    phase: Optional[str] = None
+-    duration_ms: Optional[float] = None
+-    cycle_id: Optional[str] = None
+-    markers: List[Dict[str, Any]] = None
+-    metadata: Dict[str, Any] = None
+-    
+-    def __post_init__(self):
+-        if self.markers is None:
+-            self.markers = []
+-        if self.metadata is None:
+-            self.metadata = {}
+-    
+-    def to_dict(self) -> Dict[str, Any]:
+-        """Convert to dictionary for serialization"""
+-        return asdict(self)
+-
+-
+-@dataclass 
+-class TelemetryMetrics:
+-    """Aggregated telemetry metrics"""
+-    total_cycles: int = 0
+-    total_events: int = 0
+-    avg_cycle_duration_ms: float = 0.0
+-    avg_perception_duration_ms: float = 0.0
+-    avg_reasoning_duration_ms: float = 0.0
+-    avg_action_duration_ms: float = 0.0
+-    success_rate: float = 0.0
+-    error_count: int = 0
+-    active_cycles: int = 0
+-    
+-    def to_dict(self) -> Dict[str, Any]:
+-        """Convert to dictionary for API responses"""
+-        return asdict(self)
++    cycle_id: str
++    phase: str
++    markers: List[Dict[str, Any]]
++    events: List[Dict[str, Any]]
++    system_metrics: Dict[str, Any]
+ 
+ 
+ class TelemetryCollector:
+-    """
+-    Collects and aggregates telemetry data from Cortex runtime
+-    """
++    """Collects and aggregates telemetry data from Cortex runtime"""
+     
+-    def __init__(self, output_file: Optional[Path] = None):
+-        self.output_file = output_file or Path("telemetry.jsonl")
+-        self.events: List[TelemetryEvent] = []
+-        self.metrics = TelemetryMetrics()
+-        self.active_cycles: Dict[str, float] = {}
+-        self.phase_durations: Dict[str, List[float]] = {
+-            "perception": [],
+-            "reasoning": [], 
+-            "action": []
+-        }
+-        self.subscribers: List[Callable[[TelemetryEvent], None]] = []
+-        self._lock = asyncio.Lock()
++    def __init__(self, output_dir: Optional[Path] = None) -> None:
++        self.output_dir = output_dir or Path("telemetry")
++        self.output_dir.mkdir(exist_ok=True)
+         
+-    async def collect_event(self, event: BaseEvent) -> None:
+-        """Collect a telemetry event from the event bus"""
+-        async with self._lock:
+-            telemetry_event = TelemetryEvent(
+-                event_id=event.event_id,
+-                timestamp=time.time(),
+-                event_type=event.event_type,
+-                source=event.source_plugin,
+-                metadata=event.metadata
+-            )
+-            
+-            # Extract Cortex-specific data
+-            if hasattr(event, 'cycle_id'):
+-                telemetry_event.cycle_id = event.cycle_id
+-            
+-            if hasattr(event, 'phase'):
+-                telemetry_event.phase = event.phase.value if event.phase else None
+-                
+-            if hasattr(event, 'markers'):
+-                telemetry_event.markers = [
+-                    marker.to_dict() for marker in (event.markers or [])
+-                ]
+-                
+-            self.events.append(telemetry_event)
+-            await self._update_metrics(telemetry_event)
+-            await self._persist_event(telemetry_event)
++        self.snapshots: List[TelemetrySnapshot] = []
++        self.active_markers: Dict[str, PerformanceMarker] = {}
++        self.event_handlers: List[Callable[[BaseEvent], None]] = []
++        self.collection_enabled = True
++        self.buffer_size = 1000
++        self.auto_flush_interval = 60.0  # seconds
++        
++        # Start auto-flush task
++        self._flush_task: Optional[asyncio.Task] = None
++        self._start_auto_flush()
++    
++    def _start_auto_flush(self) -> None:
++        """Start the auto-flush background task"""
++        if self._flush_task is None or self._flush_task.done():
++            self._flush_task = asyncio.create_task(self._auto_flush_loop())
++    
++    async def _auto_flush_loop(self) -> None:
++        """Background task to periodically flush telemetry data"""
++        while self.collection_enabled:
++            try:
++                await asyncio.sleep(self.auto_flush_interval)
++                if len(self.snapshots) > 0:
++                    await self.flush_to_disk()
++            except asyncio.CancelledError:
++                break
++            except Exception as e:
++                print(f"Error in telemetry auto-flush: {e}")
++    
++    def add_event_handler(self, handler: Callable[[BaseEvent], None]) -> None:
++        """Add an event handler for telemetry processing"""
++        self.event_handlers.append(handler)
++    
++    def record_marker(self, marker: PerformanceMarker) -> None:
++        """Record a performance marker"""
++        if not self.collection_enabled:
++            return
++        
++        try:
++            marker_id = f"{marker.cycle_id}_{marker.phase}_{marker.marker_type}"
++            self.active_markers[marker_id] = marker
++        except Exception as e:
++            print(f"Error recording marker: {e}")
++    
++    def record_event(self, event: BaseEvent) -> None:
++        """Record an event for telemetry"""
++        if not self.collection_enabled:
++            return
++        
++        try:
++            # Process with registered handlers
++            for handler in self.event_handlers:
++                handler(event)
+             
+-            # Notify subscribers
+-            for subscriber in self.subscribers:
+-                try:
+-                    subscriber(telemetry_event)
+-                except Exception as e:
+-                    print(f"Error notifying telemetry subscriber: {e}")
++            # Create snapshot if we have enough data
++            if hasattr(event, 'cycle_id') and hasattr(event, 'phase'):
++                self._create_snapshot_for_event(event)
++        except Exception as e:
++            print(f"Error recording event: {e}")
+     
+-    async def collect_marker(self, marker: PerformanceMarker) -> None:
+-        """Collect a performance marker directly"""
+-        async with self._lock:
+-            telemetry_event = TelemetryEvent(
+-                event_id=marker.id,
+-                timestamp=marker.timestamp,
+-                event_type="performance_marker",
+-                source="cortex_performance_tracker",
+-                phase=marker.phase.value if marker.phase else None,
+-                duration_ms=marker.duration_ms,
+-                markers=[marker.to_dict()],
+-                metadata=marker.metadata or {}
++    def _create_snapshot_for_event(self, event: BaseEvent) -> None:
++        """Create a telemetry snapshot for an event"""
++        try:
++            # Extract markers for this cycle/phase
++            cycle_markers = []
++            if hasattr(event, 'markers') and event.markers:
++                for marker in event.markers:
++                    if hasattr(marker, 'to_dict'):
++                        cycle_markers.append(marker.to_dict())
++            
++            # Create snapshot
++            snapshot = TelemetrySnapshot(
++                timestamp=time.time(),
++                cycle_id=getattr(event, 'cycle_id', 'unknown'),
++                phase=getattr(event, 'phase', 'unknown'),
++                markers=cycle_markers,
++                events=[self._event_to_dict(event)],
++                system_metrics=self._collect_system_metrics()
+             )
+             
+-            self.events.append(telemetry_event)
+-            await self._update_metrics(telemetry_event)
+-            await self._persist_event(telemetry_event)
++            self.snapshots.append(snapshot)
+             
+-            # Notify subscribers
+-            for subscriber in self.subscribers:
+-                try:
+-                    subscriber(telemetry_event)
+-                except Exception as e:
+-                    print(f"Error notifying telemetry subscriber: {e}")
++            # Auto-flush if buffer is full
++            if len(self.snapshots) >= self.buffer_size:
++                asyncio.create_task(self.flush_to_disk())
++                
++        except Exception as e:
++            print(f"Error creating snapshot: {e}")
+     
+-    async def _update_metrics(self, event: TelemetryEvent) -> None:
+-        """Update aggregated metrics"""
+-        self.metrics.total_events += 1
+-        
+-        # Track cycle lifecycle
+-        if event.event_type == "cognitive_cycle":
+-            if event.cycle_id:
+-                if "start" in event.metadata.get("status", ""):
+-                    self.active_cycles[event.cycle_id] = event.timestamp
+-                    self.metrics.active_cycles = len(self.active_cycles)
+-                elif "end" in event.metadata.get("status", ""):
+-                    if event.cycle_id in self.active_cycles:
+-                        start_time = self.active_cycles.pop(event.cycle_id)
+-                        cycle_duration = (event.timestamp - start_time) * 1000
+-                        self._update_cycle_metrics(cycle_duration)
+-                        self.metrics.active_cycles = len(self.active_cycles)
+-        
+-        # Track phase durations from markers
+-        if event.phase and event.duration_ms:
+-            phase_key = event.phase.lower()
+-            if phase_key in self.phase_durations:
+-                self.phase_durations[phase_key].append(event.duration_ms)
+-                self._recalculate_phase_averages()
++    def _event_to_dict(self, event: BaseEvent) -> Dict[str, Any]:
++        """Convert event to dictionary representation"""
++        event_dict = {
++            'type': type(event).__name__,
++            'timestamp': time.time(),
++        }
+         
+-        # Track errors
+-        if "error" in event.event_type.lower() or event.metadata.get("success") is False:
+-            self.metrics.error_count += 1
++        # Add event attributes safely
++        for attr in ['cycle_id', 'phase', 'data', 'metadata']:
++            if hasattr(event, attr):
++                value = getattr(event, attr)
++                if value is not None:
++                    event_dict[attr] = value
+         
+-        # Calculate success rate
+-        if self.metrics.total_cycles > 0:
+-            self.metrics.success_rate = max(0, 1.0 - (self.metrics.error_count / self.metrics.total_cycles))
++        return event_dict
+     
+-    def _update_cycle_metrics(self, duration_ms: float) -> None:
+-        """Update cycle-related metrics"""
+-        self.metrics.total_cycles += 1
+-        
+-        # Calculate running average for cycle duration
+-        if self.metrics.total_cycles == 1:
+-            self.metrics.avg_cycle_duration_ms = duration_ms
+-        else:
+-            alpha = 2.0 / (self.metrics.total_cycles + 1)  # Exponential moving average
+-            self.metrics.avg_cycle_duration_ms = (
+-                alpha * duration_ms + 
+-                (1 - alpha) * self.metrics.avg_cycle_duration_ms
+-            )
++    def _collect_system_metrics(self) -> Dict[str, Any]:
++        """Collect basic system metrics"""
++        return {
++            'timestamp': time.time(),
++            'active_markers_count': len(self.active_markers),
++            'snapshots_count': len(self.snapshots),
++        }
+     
+-    def _recalculate_phase_averages(self) -> None:
+-        """Recalculate phase duration averages"""
+-        if self.phase_durations["perception"]:
+-            self.metrics.avg_perception_duration_ms = sum(self.phase_durations["perception"]) / len(self.phase_durations["perception"])
+-        
+-        if self.phase_durations["reasoning"]:
+-            self.metrics.avg_reasoning_duration_ms = sum(self.phase_durations["reasoning"]) / len(self.phase_durations["reasoning"])
++    async def flush_to_disk(self) -> None:
++        """Flush collected telemetry data to disk"""
++        if not self.snapshots:
++            return
+         
+-        if self.phase_durations["action"]:
+-            self.metrics.avg_action_duration_ms = sum(self.phase_durations["action"]) / len(self.phase_durations["action"])
+-    
+-    async def _persist_event(self, event: TelemetryEvent) -> None:
+-        """Persist event to JSONL file"""
+         try:
+-            with open(self.output_file, "a", encoding="utf-8") as f:
+-                f.write(json.dumps(event.to_dict()) + "\n")
++            timestamp = int(time.time())
++            filename = f"telemetry_{timestamp}.json"
++            filepath = self.output_dir / filename
++            
++            # Convert snapshots to serializable format
++            data = {
++                'snapshots': [asdict(snapshot) for snapshot in self.snapshots],
++                'metadata': {
++                    'collection_time': time.time(),
++                    'total_snapshots': len(self.snapshots),
++                }
++            }
++            
++            # Write to file
++            with open(filepath, 'w', encoding='utf-8') as f:
++                json.dump(data, f, indent=2, default=str)
++            
++            # Clear snapshots after successful write
++            self.snapshots.clear()
++            
+         except Exception as e:
+-            print(f"Error persisting telemetry event: {e}")
+-    
+-    def subscribe(self, callback: Callable[[TelemetryEvent], None]) -> None:
+-        """Subscribe to telemetry events"""
+-        self.subscribers.append(callback)
+-    
+-    def unsubscribe(self, callback: Callable[[TelemetryEvent], None]) -> None:
+-        """Unsubscribe from telemetry events"""
+-        if callback in self.subscribers:
+-            self.subscribers.remove(callback)
+-    
+-    def get_metrics(self) -> TelemetryMetrics:
+-        """Get current aggregated metrics"""
+-        return self.metrics
+-    
+-    def get_recent_events(self, limit: int = 100) -> List[TelemetryEvent]:
+-        """Get recent telemetry events"""
+-        return self.events[-limit:] if len(self.events) > limit else self.events
++            print(f"Error flushing telemetry to disk: {e}")
+     
+-    def get_events_by_cycle(self, cycle_id: str) -> List[TelemetryEvent]:
+-        """Get all events for a specific cycle"""
+-        return [event for event in self.events if event.cycle_id == cycle_id]
+-    
+-    def get_phase_statistics(self, phase: str) -> Dict[str, float]:
+-        """Get statistics for a specific phase"""
+-        if phase.lower() not in self.phase_durations:
+-            return {}
+-        
+-        durations = self.phase_durations[phase.lower()]
+-        if not durations:
+-            return {}
+-        
++    def get_summary(self) -> Dict[str, Any]:
++        """Get a summary of collected telemetry data"""
+         return {
+-            "count": len(durations),
+-            "average_ms": sum(durations) / len(durations),
+-            "min_ms": min(durations),
+-            "max_ms": max(durations),
+-            "total_ms": sum(durations)
++            'snapshots_count': len(self.snapshots),
++            'active_markers_count': len(self.active_markers),
++            'collection_enabled': self.collection_enabled,
++            'output_directory': str(self.output_dir),
+         }
+     
+-    async def clear_old_events(self, keep_last: int = 10000) -> None:
+-        """Clear old events to prevent memory growth"""
+-        async with self._lock:
+-            if len(self.events) > keep_last:
+-                self.events = self.events[-keep_last:]
+-                print(f"Cleared old telemetry events, keeping {keep_last} most recent")
+\ No newline at end of file
++    async def shutdown(self) -> None:
++        """Shutdown the telemetry collector"""
++        self.collection_enabled = False
++        
++        # Cancel auto-flush task
++        if self._flush_task and not self._flush_task.done():
++            self._flush_task.cancel()
++            try:
++                await self._flush_task
++            except asyncio.CancelledError:
++                pass
++        
++        # Final flush
++        await self.flush_to_disk()
+\ No newline at end of file
+diff --git a/src/plugins/calculator_plugin.py b/src/plugins/calculator_plugin.py
+index a5c8c91..5a08c9a 100644
+--- a/src/plugins/calculator_plugin.py
++++ b/src/plugins/calculator_plugin.py
+@@ -59,13 +59,44 @@ class CalculatorPlugin(PluginInterface):
+         logger.info("CalculatorPlugin setup complete")
+ 
+     async def start(self) -> None:
+-        """Start the calculator plugin."""
+-        await super().start()
++        """Start the calculator plugin by subscribing to tool call events."""
++        logger.info("CalculatorPlugin started and ready for tool calls")
++        
++        # Subscribe to tool call events for our specific tool
++        await self.event_bus.subscribe("tool_call", self._handle_tool_call)
+ 
+-        # Subscribe to tool_call events for calculator
+-        await self.subscribe("tool_call", self._handle_tool_call)
+-
+-        logger.info("CalculatorPlugin started - ready for arithmetic calculations")
++    def get_tools(self):
++        """
++        Register MCP tool interface for VS Code or external tool registry.
++        """
++        return [{
++            "name": "calculate",
++            "description": "Perform safe arithmetic calculations using AST parsing to prevent code injection. Supports basic arithmetic operations (+, -, *, /, %, **), parentheses, and mathematical functions (abs, round, min, max, int, float).",
++            "parameters": {
++                "type": "object",
++                "properties": {
++                    "expression": {
++                        "type": "string", 
++                        "description": "Mathematical expression to evaluate (e.g., '2 + 3 * 4', 'abs(-5)', 'round(3.14159, 2)')"
++                    }
++                },
++                "required": ["expression"],
++                "additionalProperties": False
++            },
++            # Metadata for validator
++            "cost_hint": "low",
++            "latency_hint": "low", 
++            "safety_level": "high",  # AST-based parsing prevents injection
++            "test_reference": "tests/plugins/test_calculator_plugin.py::test_basic_arithmetic",
++            "category": "utility",
++            "complexity": "low",
++            "version": "1.0.0",
++            "dependencies": ["ast", "operator"],
++            "integration_requirements": {
++                "event_bus": "required for tool call events",
++                "permissions": "none - read-only calculations"
++            }
++        }]
+ 
+     async def _handle_tool_call(self, event: ToolCallEvent) -> None:
+         """Handle calculator tool calls."""
+diff --git a/tools/__init__.py b/tools/__init__.py
+new file mode 100644
+index 0000000..74e4add
+--- /dev/null
++++ b/tools/__init__.py
+@@ -0,0 +1,7 @@
++"""
++Super Alita Tools Discovery Module
++
++Provides CLI for discovering and listing available agent tools.
++"""
++
++__version__ = "1.0.0"
+\ No newline at end of file
+diff --git a/tools/__main__.py b/tools/__main__.py
+new file mode 100644
+index 0000000..0037fb4
+--- /dev/null
++++ b/tools/__main__.py
+@@ -0,0 +1,161 @@
++#!/usr/bin/env python3
++"""
++Super Alita Tools Discovery CLI
++
++Usage:
++    python -m tools.list [--format text|json] [--category <category>] [--complexity <level>]
++
++Examples:
++    python -m tools.list                               # List all tools
++    python -m tools.list --format json                 # JSON output  
++    python -m tools.list --category utility            # Filter by category
++    python -m tools.list --complexity low              # Filter by complexity
++"""
++
++import argparse
++import importlib
++import json
++import pkgutil
++import sys
++from pathlib import Path
++from typing import Any, Dict, List, Optional
++
++def discover_tools() -> List[Dict[str, Any]]:
++    """Discover all available tools from plugins"""
++    tools = []
++    
++    # Ensure src is in path
++    workspace_root = Path.cwd()
++    if str(workspace_root) not in sys.path:
++        sys.path.insert(0, str(workspace_root))
++    
++    src_root = workspace_root / "src"
++    plugins_pkg = src_root / "plugins"
++    if not plugins_pkg.exists():
++        return tools
++    
++    try:
++        pkg = importlib.import_module("src.plugins")
++        for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
++            if m.ispkg:
++                continue
++            if m.name.endswith("_plugin"):
++                try:
++                    mod = importlib.import_module(m.name)
++                    create_fn = getattr(mod, "create_plugin", None)
++                    if callable(create_fn):
++                        plugin = create_fn()
++                        if hasattr(plugin, "get_tools"):
++                            plugin_tools = plugin.get_tools()
++                            if plugin_tools:
++                                for tool in plugin_tools:
++                                    if isinstance(tool, dict):
++                                        # Add source plugin info
++                                        tool["source_plugin"] = m.name.split(".")[-1]
++                                        tools.append(tool)
++                except Exception as e:
++                    # Skip plugins that can't be loaded
++                    continue
++    except ImportError:
++        return tools
++    
++    return tools
++
++def filter_tools(tools: List[Dict[str, Any]], category: Optional[str] = None, 
++                complexity: Optional[str] = None) -> List[Dict[str, Any]]:
++    """Filter tools by category and/or complexity"""
++    filtered = tools
++    
++    if category:
++        filtered = [t for t in filtered if t.get("category") == category]
++    
++    if complexity:
++        filtered = [t for t in filtered if t.get("complexity") == complexity]
++    
++    return filtered
++
++def format_text_output(tools: List[Dict[str, Any]]) -> str:
++    """Format tools as human-readable text"""
++    if not tools:
++        return "No tools found matching criteria.\n"
++    
++    lines = []
++    lines.append("🔧 Super Alita Available Tools")
++    lines.append("=" * 40)
++    lines.append(f"📊 Found {len(tools)} tools\n")
++    
++    # Group by category
++    by_category = {}
++    for tool in tools:
++        cat = tool.get("category", "uncategorized")
++        if cat not in by_category:
++            by_category[cat] = []
++        by_category[cat].append(tool)
++    
++    for category, cat_tools in sorted(by_category.items()):
++        lines.append(f"📂 {category.title()} ({len(cat_tools)} tools)")
++        lines.append("-" * 30)
++        
++        for tool in sorted(cat_tools, key=lambda x: x.get("name", "")):
++            name = tool.get("name", "unknown")
++            desc = tool.get("description", "No description")
++            complexity = tool.get("complexity", "unknown")
++            version = tool.get("version", "unknown")
++            source = tool.get("source_plugin", "unknown")
++            
++            lines.append(f"🛠️  {name} (v{version})")
++            lines.append(f"   📝 {desc}")
++            lines.append(f"   🔧 Complexity: {complexity} | Source: {source}")
++            
++            # Show parameters if available
++            params = tool.get("parameters", {})
++            if isinstance(params, dict) and "properties" in params:
++                props = params["properties"]
++                if props:
++                    param_names = list(props.keys())
++                    required = params.get("required", [])
++                    param_summary = []
++                    for p in param_names:
++                        if p in required:
++                            param_summary.append(f"{p}*")
++                        else:
++                            param_summary.append(p)
++                    lines.append(f"   📋 Parameters: {', '.join(param_summary)}")
++            
++            lines.append("")
++        
++        lines.append("")
++    
++    return "\n".join(lines)
++
++def format_json_output(tools: List[Dict[str, Any]]) -> str:
++    """Format tools as JSON"""
++    return json.dumps({
++        "tools_count": len(tools),
++        "tools": tools
++    }, indent=2)
++
++def main():
++    parser = argparse.ArgumentParser(description="Discover and list Super Alita tools")
++    parser.add_argument("--format", choices=["text", "json"], default="text",
++                       help="Output format")
++    parser.add_argument("--category", help="Filter by category")
++    parser.add_argument("--complexity", choices=["low", "medium", "high", "critical"],
++                       help="Filter by complexity level")
++    
++    args = parser.parse_args()
++    
++    # Discover all available tools
++    tools = discover_tools()
++    
++    # Apply filters
++    filtered_tools = filter_tools(tools, args.category, args.complexity)
++    
++    # Output in requested format
++    if args.format == "json":
++        print(format_json_output(filtered_tools))
++    else:
++        print(format_text_output(filtered_tools))
++
++if __name__ == "__main__":
++    main()
+\ No newline at end of file
+-- 
+2.43.0
+

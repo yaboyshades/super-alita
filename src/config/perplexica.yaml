@@ -6,6 +6,14 @@ perplexica:
   safe: true
   time_range_default: all
 
+  defaults:
+    cache_enabled: true
+    rerank_enabled: true
+
+  web_agent:
+    search_url: "http://localhost:3333/search"
+    health_url: "http://localhost:3333/health"
+
   provider_order:
     web: [serpapi, bing, google_cse]
     news: [gnews, serpapi]

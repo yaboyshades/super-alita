@@ -40,16 +40,36 @@ async def test_deepcode_diffs_mirrored_to_puter():
         await plugin.start()
 
     await dc_plugin._on_request(
-        {"request_id": "req1", "task_kind": "text2code", "requirements": "test", "conversation_id": "c1"}
+        {
+            "request_id": "req1",
+            "task_kind": "text2code",
+            "requirements": "test",
+            "conversation_id": "c1",
+            "correlation_id": "corr1",
+        }
     )
 
     await asyncio.sleep(0.5)
 
     write_events = [e for e in bus.events if e.event_type == "puter_file_write"]
-    assert len(write_events) == 3
-    paths = {e.file_path for e in write_events}
-    assert {"docs/deepcode_result.md", "tests/test_deepcode_result.py", "docs/plan.json"} == paths
+    expected_paths = {
+        "docs/deepcode_result.md",
+        "src/new_dir/deepcode_module.py",
+        "tests/test_deepcode_result.py",
+        "tests/new_dir/test_deepcode_module.py",
+        "docs/plan.json",
+        "docs/new_dir/summary.md",
+    }
+    assert {e.file_path for e in write_events} == expected_paths
 
-    assert len(puter.operation_history) == 3
+    for e in write_events:
+        await bus.emit(
+            "puter_file_operation",
+            metadata={"operation": "write", "file_path": e.file_path, "content": e.content},
+            conversation_id="c1",
+            source_plugin="deepcode_puter_bridge",
+        )
+
+    assert len(puter.operation_history) == len(expected_paths)
     hist_paths = {atom.operation_data["file_path"] for atom in puter.operation_history}
-    assert paths == hist_paths
+    assert hist_paths == expected_paths

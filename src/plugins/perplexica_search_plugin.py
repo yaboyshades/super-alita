@@ -10,15 +10,17 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 import aiohttp
 from pydantic import BaseModel, Field
 
+from src.core.events import BaseEvent, ToolResultEvent, create_event
 from src.core.plugin_interface import PluginInterface
-from src.core.events import BaseEvent, create_event
+from src.core.yaml_utils import safe_load
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +97,10 @@ class PerplexicaSearchPlugin(PluginInterface):
         self.web_agent: Optional[Any] = None
         self.llm_client: Optional[Any] = None
         self.search_history: List[PerplexicaResponse] = []
+        self.cache_enabled: bool = True
+        self.rerank_enabled: bool = True
+        self.web_agent_search_url: Optional[str] = None
+        self.web_agent_health_url: Optional[str] = None
         self.mode_handlers = {
             SearchMode.WEB: self._search_web,
             SearchMode.ACADEMIC: self._search_academic,
@@ -117,11 +123,40 @@ class PerplexicaSearchPlugin(PluginInterface):
     async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:
         """Initialize the Perplexica search plugin."""
         await super().setup(event_bus, store, config)
-        
+
         # Try to get reference to WebAgentAtom if available
         # This allows us to leverage existing search infrastructure
         self.web_agent = config.get("web_agent")
-        
+
+        # Load configuration from YAML
+        cfg_path = Path(__file__).resolve().parents[1] / "config" / "perplexica.yaml"
+        try:
+            cfg = safe_load(cfg_path.read_text()).get("perplexica", {})
+        except Exception:
+            cfg = {}
+        defaults = cfg.get("defaults", {})
+        self.cache_enabled = bool(defaults.get("cache_enabled", True))
+        self.rerank_enabled = bool(defaults.get("rerank_enabled", True))
+        web_cfg = cfg.get("web_agent", {})
+        self.web_agent_search_url = web_cfg.get("search_url")
+        self.web_agent_health_url = web_cfg.get("health_url")
+
+        logger.info(
+            "Perplexica config loaded: cache_enabled=%s rerank_enabled=%s",
+            self.cache_enabled,
+            self.rerank_enabled,
+        )
+
+        if not self.web_agent and self.web_agent_health_url:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(self.web_agent_health_url, timeout=5) as resp:
+                        resp.raise_for_status()
+            except Exception as exc:
+                logger.warning(
+                    f"WebAgent not available for Perplexica integration: {exc}"
+                )
+
         # Initialize LLM client for reasoning (will use Gemini if available)
         await self._initialize_llm_client()
 
@@ -200,12 +235,11 @@ class PerplexicaSearchPlugin(PluginInterface):
                 query=query,
                 response=response.model_dump(),
                 session_id=session_id,
-                search_mode=search_mode.value
+                conversation_id=session_id,
+                search_mode=search_mode.value,
             )
 
             # Also emit as tool result for compatibility
-            from src.core.events import ToolResultEvent
-            
             tool_result = ToolResultEvent(
                 source_plugin=self.name,
                 conversation_id=session_id,
@@ -230,9 +264,9 @@ class PerplexicaSearchPlugin(PluginInterface):
                 session_id=data.get("session_id", "default"),
                 success=False,
                 result={"error": str(e)},
-                error=str(e)
+                error=str(e),
             )
-            
+
             await self.event_bus.publish(error_result)
 
     async def search(
@@ -311,13 +345,36 @@ class PerplexicaSearchPlugin(PluginInterface):
         """Perform web search using existing WebAgentAtom if available."""
         if self.web_agent and hasattr(self.web_agent, "call"):
             try:
-                # Use existing WebAgentAtom
-                result = await self.web_agent.call(query, web_k=max_results, github_k=0)
+                result = await self.web_agent.call(
+                    query,
+                    web_k=max_results,
+                    github_k=0,
+                    cache=self.cache_enabled,
+                    rerank=self.rerank_enabled,
+                )
                 return result.get("web", [])
             except Exception as e:
                 logger.warning(f"WebAgentAtom search failed: {e}")
-        
-        # Fallback to basic search implementation
+                raise RuntimeError("WebAgent unavailable") from e
+        if self.web_agent_search_url:
+            try:
+                params = {
+                    "q": query,
+                    "max_results": max_results,
+                    "cache": str(self.cache_enabled).lower(),
+                    "rerank": str(self.rerank_enabled).lower(),
+                }
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(
+                        self.web_agent_search_url, params=params, timeout=10
+                    ) as resp:
+                        resp.raise_for_status()
+                        data = await resp.json()
+                        return data.get("web", [])
+            except Exception as e:
+                logger.warning(f"WebAgent endpoint unavailable: {e}")
+                raise RuntimeError("WebAgent unavailable") from e
+
         return await self._fallback_search(query, max_results, "web")
 
     async def _search_academic(self, query: str, max_results: int) -> List[Dict[str, Any]]:

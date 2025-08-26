@@ -37,16 +37,42 @@ class _StubDeepCodeClient(DeepCodeClientInterface):
     async def generate_code(self, plan: Dict[str, Any], references: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "proposal_id": None,
-            "diffs": [{
-                "path": "docs/deepcode_result.md",
-                "change_type": "add",
-                "unified_diff": "--- /dev/null\n+++ b/docs/deepcode_result.md\n@@\n+# Result\n+Hello DeepCode\n",
-                "new_content": "# Result\n\nHello DeepCode\n",
-                "confidence": 0.84
-            }],
-            "tests": [{"path": "tests/test_deepcode_result.py", "content": "def test_ok(): assert True"}],
-            "docs": [{"path": "docs/plan.json", "content": json.dumps(plan)}],
-            "confidence": 0.84
+            "diffs": [
+                {
+                    "path": "docs/deepcode_result.md",
+                    "change_type": "add",
+                    "unified_diff": "--- /dev/null\n+++ b/docs/deepcode_result.md\n@@\n+# Result\n+Hello DeepCode\n",
+                    "new_content": "# Result\n\nHello DeepCode\n",
+                    "confidence": 0.84,
+                },
+                {
+                    "path": "src/new_dir/deepcode_module.py",
+                    "change_type": "add",
+                    "unified_diff": (
+                        "--- /dev/null\n+++ b/src/new_dir/deepcode_module.py\n@@\n+def greet():\n+    return 'deepcode'\n"
+                    ),
+                    "new_content": "def greet():\n    return \"deepcode\"\n",
+                    "confidence": 0.83,
+                },
+            ],
+            "tests": [
+                {"path": "tests/test_deepcode_result.py", "content": "def test_ok(): assert True"},
+                {
+                    "path": "tests/new_dir/test_deepcode_module.py",
+                    "content": (
+                        "from src.new_dir.deepcode_module import greet\n\n"
+                        "def test_greet():\n    assert greet() == \"deepcode\""
+                    ),
+                },
+            ],
+            "docs": [
+                {"path": "docs/plan.json", "content": json.dumps(plan)},
+                {
+                    "path": "docs/new_dir/summary.md",
+                    "content": "# Summary\nGenerated module\n",
+                },
+            ],
+            "confidence": 0.84,
         }
     async def validate(self, implementation: Dict[str, Any]) -> Dict[str, Any]:
         return {"status": "pass", "lint_errors": 0, "tests_passed": True, "confidence": 0.91}

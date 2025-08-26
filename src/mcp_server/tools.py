@@ -26,17 +26,21 @@ async def refactor_to_result(
         return {"applied": False, "diff": "", "error": "Invalid Python file path."}
 
     original = p.read_text(encoding="utf-8")
-    rewritten, diff = rewrite_function_to_result(original, function_name=function_name)
-    if not rewritten:
-        return {
-            "applied": False,
-            "diff": diff or "",
-            "error": "Function not found or transform failed.",
-        }
+    try:
+        rewritten, diff_or_error = rewrite_function_to_result(
+            original, function_name=function_name
+        )
+    except Exception as exc:  # pragma: no cover - defensive
+        return {"applied": False, "diff": "", "error": str(exc)}
+
+    if rewritten is None:
+        return {"applied": False, "diff": "", "error": diff_or_error or "Transform failed."}
+
+    diff = diff_or_error or ""
 
     if not dry_run:
         p.write_text(rewritten, encoding="utf-8")
-    return {"applied": not dry_run, "diff": diff or ""}
+    return {"applied": not dry_run, "diff": diff}
 
 
 async def format_and_lint(target_path: str) -> dict[str, str]:
