@@ -7,12 +7,10 @@ Demonstrates the new AI-powered search capabilities integrated into the agent sy
 
 import asyncio
 import logging
-import os
-from typing import Any, Dict
 
-from src.plugins.perplexica_search_plugin import PerplexicaSearchPlugin, SearchMode
 from src.atoms.web_agent_atom import WebAgentAtom
 from src.core.events import create_event
+from src.plugins.perplexica_search_plugin import PerplexicaSearchPlugin, SearchMode
 
 # Set up logging
 logging.basicConfig(
@@ -126,7 +124,7 @@ async def demo_perplexica_with_web_agent():
         include_reasoning=True
     )
     
-    print(f"✅ Enhanced Search Results:")
+    print("✅ Enhanced Search Results:")
     print(f"   Summary: {response.summary}")
     print(f"   Sources: {len(response.sources)}")
     print(f"   AI Reasoning Available: {bool(response.reasoning)}")
@@ -161,7 +159,7 @@ async def demo_perplexica_event_integration():
         "session_id": "demo_session"
     }
     
-    print(f"📨 Simulating search request event...")
+    print("📨 Simulating search request event...")
     print(f"   Query: {search_event['query']}")
     print(f"   Mode: {search_event['search_mode']}")
     
@@ -199,7 +197,7 @@ async def demo_perplexica_tools_integration():
     await plugin.setup(event_bus, store, {})
     
     health = await plugin.health_check()
-    print(f"\n🏥 Health Status:")
+    print("\n🏥 Health Status:")
     print(f"   Plugin: {health['plugin']}")
     print(f"   Status: {health['status']}")
     print(f"   LLM Available: {health['llm_available']}")

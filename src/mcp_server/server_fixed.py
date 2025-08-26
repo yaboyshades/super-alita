@@ -11,6 +11,7 @@ sys.path.insert(0, str(src_path))
 
 # Use environment variable override to avoid import conflicts
 import os
+
 original_pythonpath = os.environ.get('PYTHONPATH', '')
 os.environ['PYTHONPATH'] = ''
 # Remove any ATLAI paths that might cause conflicts
@@ -21,7 +22,11 @@ from mcp.server.fastmcp import FastMCP
 # Restore environment after import
 os.environ['PYTHONPATH'] = original_pythonpath
 
-from mcp_server.tools import find_missing_docstrings, format_and_lint, refactor_to_result
+from mcp_server.tools import (
+    find_missing_docstrings,
+    format_and_lint,
+    refactor_to_result,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mcp_server")

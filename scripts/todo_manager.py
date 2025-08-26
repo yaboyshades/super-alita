@@ -10,7 +10,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +20,11 @@ DEFAULT_TODO_FILE = (
 )
 
 
-def load_todos(todo_file: Path) -> List[Dict[str, Any]]:
+def load_todos(todo_file: Path) -> list[dict[str, Any]]:
     """Load todos from persistent storage."""
     if todo_file.exists():
         try:
-            with open(todo_file, "r", encoding="utf-8") as f:
+            with open(todo_file, encoding="utf-8") as f:
                 data = json.load(f)
                 return data.get("todoList", [])
         except (json.JSONDecodeError, KeyError):
@@ -32,7 +32,7 @@ def load_todos(todo_file: Path) -> List[Dict[str, Any]]:
     return []
 
 
-def save_todos(todo_file: Path, todos: List[Dict[str, Any]]) -> None:
+def save_todos(todo_file: Path, todos: list[dict[str, Any]]) -> None:
     """Save todos to persistent storage."""
     todo_file.parent.mkdir(exist_ok=True)
     data = {
@@ -43,7 +43,7 @@ def save_todos(todo_file: Path, todos: List[Dict[str, Any]]) -> None:
     with open(todo_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-def initialize_default_todos() -> List[Dict[str, Any]]:
+def initialize_default_todos() -> list[dict[str, Any]]:
     """Initialize with default todos for the Super Alita project."""
     return [
         {

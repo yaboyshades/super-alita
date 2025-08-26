@@ -1,9 +1,10 @@
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
 from unittest.mock import patch
 
-from reug_runtime.router import router
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
 import reug_runtime.config as config
+from reug_runtime.router import router
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG, FakeLLM
 
 

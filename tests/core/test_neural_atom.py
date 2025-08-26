@@ -1,6 +1,7 @@
 """Trimmed NeuralAtom tests (post-merge cleanup)."""
 
 import pytest
+
 from src.core.neural_atom import NeuralAtom, NeuralAtomMetadata, TextualMemoryAtom
 
 

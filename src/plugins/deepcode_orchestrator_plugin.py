@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hashlib import sha256
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.core.plugin_interface import PluginInterface
+
 try:
     from src.core.observability import ObservabilityManager  # type: ignore
 except Exception:  # pragma: no cover
@@ -19,22 +21,22 @@ logger = logging.getLogger(__name__)
 
 
 def _utcnow() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 class DeepCodeClientInterface:
-    async def plan(self, request: Dict[str, Any]) -> Dict[str, Any]: ...
-    async def collect_references(self, plan: Dict[str, Any]) -> Dict[str, Any]: ...
-    async def generate_code(self, plan: Dict[str, Any], references: Dict[str, Any]) -> Dict[str, Any]: ...
-    async def validate(self, implementation: Dict[str, Any]) -> Dict[str, Any]: ...
+    async def plan(self, request: dict[str, Any]) -> dict[str, Any]: ...
+    async def collect_references(self, plan: dict[str, Any]) -> dict[str, Any]: ...
+    async def generate_code(self, plan: dict[str, Any], references: dict[str, Any]) -> dict[str, Any]: ...
+    async def validate(self, implementation: dict[str, Any]) -> dict[str, Any]: ...
 
 
 class _StubDeepCodeClient(DeepCodeClientInterface):
-    async def plan(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    async def plan(self, request: dict[str, Any]) -> dict[str, Any]:
         return {"steps": ["draft plan", "produce impl"], "confidence": 0.73, "request": request}
-    async def collect_references(self, plan: Dict[str, Any]) -> Dict[str, Any]:
+    async def collect_references(self, plan: dict[str, Any]) -> dict[str, Any]:
         return {"snippets": [], "confidence": 0.78}
-    async def generate_code(self, plan: Dict[str, Any], references: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_code(self, plan: dict[str, Any], references: dict[str, Any]) -> dict[str, Any]:
         return {
             "proposal_id": None,
             "diffs": [
@@ -74,7 +76,7 @@ class _StubDeepCodeClient(DeepCodeClientInterface):
             ],
             "confidence": 0.84,
         }
-    async def validate(self, implementation: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate(self, implementation: dict[str, Any]) -> dict[str, Any]:
         return {"status": "pass", "lint_errors": 0, "tests_passed": True, "confidence": 0.91}
 
 
@@ -93,15 +95,15 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
     def __init__(self, client: DeepCodeClientInterface | None = None):
         super().__init__()
         self._client = client or _StubDeepCodeClient()
-        self._active: Dict[str, Dict[str, Any]] = {}
+        self._active: dict[str, dict[str, Any]] = {}
         self._tasks: set[asyncio.Task] = set()
-        self._obs: Optional[ObservabilityManager] = None  # type: ignore[name-defined]
+        self._obs: ObservabilityManager | None = None  # type: ignore[name-defined]
 
     @property
     def name(self) -> str:
         return "deepcode_orchestrator"
 
-    async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
         self._obs = config.get("observability_manager") if isinstance(config, dict) else None
         logger.info("DeepCode Orchestrator setup complete")
@@ -122,10 +124,10 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
     async def stop(self) -> None:
         await self.shutdown()
 
-    async def _on_request(self, event: Dict[str, Any]) -> None:
+    async def _on_request(self, event: dict[str, Any]) -> None:
         if not self.is_running:
             return
-        request_id = event.get("request_id") or f"dc_req_{int(datetime.now(timezone.utc).timestamp()*1000)}"
+        request_id = event.get("request_id") or f"dc_req_{int(datetime.now(UTC).timestamp()*1000)}"
         conversation_id = event.get("conversation_id")
         task_kind = event.get("task_kind", "generic")
         requirements = event.get("requirements", "")
@@ -257,7 +259,7 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                 error=str(e),
             )
 
-    async def _phase(self, name: str, func, *args, **kwargs) -> Dict[str, Any]:
+    async def _phase(self, name: str, func, *args, **kwargs) -> dict[str, Any]:
         if self._obs:
             try:
                 async with self._obs.trace_operation(f"deepcode_{name}"):

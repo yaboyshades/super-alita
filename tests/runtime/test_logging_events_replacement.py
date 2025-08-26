@@ -3,9 +3,9 @@ import logging
 
 import pytest
 
-from src.plugins.core_utils_plugin_dynamic import CoreUtilsPlugin
-from src.planning import sync_once
 import scripts.todo_sync as todo_sync
+from src.planning import sync_once
+from src.plugins.core_utils_plugin_dynamic import CoreUtilsPlugin
 
 
 class DummyEventBus:

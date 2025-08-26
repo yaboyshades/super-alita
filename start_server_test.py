@@ -2,6 +2,7 @@
 """Start the Super Alita server on port 8081 for testing."""
 
 import uvicorn
+
 from src.main import create_app
 
 if __name__ == "__main__":

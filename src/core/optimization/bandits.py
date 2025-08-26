@@ -11,10 +11,9 @@ import math
 import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from uuid import uuid4
 
-import numpy as np
 from scipy.stats import beta
 
 
@@ -24,11 +23,11 @@ class BanditArm:
     
     arm_id: str
     name: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     successes: int = 0
     failures: int = 0
     total_pulls: int = 0
-    last_reward: Optional[float] = None
+    last_reward: float | None = None
     
     @property
     def success_rate(self) -> float:
@@ -57,7 +56,7 @@ class BanditDecision:
     arm_name: str
     algorithm: str
     confidence: float
-    context: Dict[str, Any]
+    context: dict[str, Any]
     timestamp: float
     
     @classmethod
@@ -66,7 +65,7 @@ class BanditDecision:
         arm: BanditArm,
         algorithm: str,
         confidence: float,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None
     ) -> "BanditDecision":
         """Create a new bandit decision."""
         import time
@@ -87,10 +86,10 @@ class BanditAlgorithm(ABC):
     
     def __init__(self, name: str):
         self.name = name
-        self.arms: Dict[str, BanditArm] = {}
-        self.decision_history: List[BanditDecision] = []
+        self.arms: dict[str, BanditArm] = {}
+        self.decision_history: list[BanditDecision] = []
     
-    def add_arm(self, arm_id: str, name: str, metadata: Optional[Dict[str, Any]] = None) -> BanditArm:
+    def add_arm(self, arm_id: str, name: str, metadata: dict[str, Any] | None = None) -> BanditArm:
         """Add a new arm to the bandit."""
         arm = BanditArm(
             arm_id=arm_id,
@@ -121,11 +120,11 @@ class BanditAlgorithm(ABC):
         return True
     
     @abstractmethod
-    def select_arm(self, context: Optional[Dict[str, Any]] = None) -> BanditDecision:
+    def select_arm(self, context: dict[str, Any] | None = None) -> BanditDecision:
         """Select an arm based on the algorithm's strategy."""
         pass
     
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get statistics about the bandit's performance."""
         total_pulls = sum(arm.total_pulls for arm in self.arms.values())
         
@@ -159,7 +158,7 @@ class ThompsonSamplingBandit(BanditAlgorithm):
     def __init__(self):
         super().__init__("Thompson Sampling")
     
-    def select_arm(self, context: Optional[Dict[str, Any]] = None) -> BanditDecision:
+    def select_arm(self, context: dict[str, Any] | None = None) -> BanditDecision:
         """Select arm using Thompson Sampling."""
         if not self.arms:
             raise ValueError("No arms available for selection")
@@ -216,7 +215,7 @@ class UCB1Bandit(BanditAlgorithm):
     def __init__(self):
         super().__init__("UCB1")
     
-    def select_arm(self, context: Optional[Dict[str, Any]] = None) -> BanditDecision:
+    def select_arm(self, context: dict[str, Any] | None = None) -> BanditDecision:
         """Select arm using UCB1 algorithm."""
         if not self.arms:
             raise ValueError("No arms available for selection")
@@ -287,7 +286,7 @@ class EpsilonGreedyBandit(BanditAlgorithm):
         super().__init__("Epsilon-Greedy")
         self.epsilon = epsilon
     
-    def select_arm(self, context: Optional[Dict[str, Any]] = None) -> BanditDecision:
+    def select_arm(self, context: dict[str, Any] | None = None) -> BanditDecision:
         """Select arm using Epsilon-Greedy strategy."""
         if not self.arms:
             raise ValueError("No arms available for selection")

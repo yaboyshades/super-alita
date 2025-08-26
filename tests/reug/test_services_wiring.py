@@ -1,8 +1,11 @@
 from __future__ import annotations
-import asyncio, os
+
+import asyncio
+
 from reug.events import EventEmitter
-from reug.services import create_services
 from reug.fsm import ExecutionFlow, FSMContext  # type: ignore
+from reug.services import create_services
+
 
 def test_services_end_to_end_fallback(tmp_path, monkeypatch):
     # Force fallback mode (no repo-local SoT/executor needed)

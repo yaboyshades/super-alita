@@ -5,7 +5,7 @@ import os
 import time
 import uuid
 from functools import lru_cache
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ def hash_json(obj: Any) -> str:
     return hashlib.sha256(json.dumps(obj, sort_keys=True).encode("utf8")).hexdigest()
 
 
-def emit_jsonl(event: Dict[str, Any], path: str | None = None) -> None:
+def emit_jsonl(event: dict[str, Any], path: str | None = None) -> None:
     """Persist event to local JSONL file."""
     if path is None:
         base = os.getenv("REUG_EVENT_LOG_DIR", "logs")
@@ -44,7 +44,7 @@ def _get_redis_client(url: str):
     except Exception:  # pragma: no cover - best effort
         logger.exception("Failed to create Redis client from URL; falling back to JSONL")
         return None
-def emit_redis(event: Dict[str, Any]) -> None:
+def emit_redis(event: dict[str, Any]) -> None:
     """Publish event to Redis channel with fallback."""
     client = _get_redis_client(os.getenv("REUG_REDIS_URL", "redis://localhost:6379/0"))
     if client is None:
@@ -77,7 +77,7 @@ class EventEmitter:
         else:
             self.sink = sink
 
-    def emit(self, event: Dict[str, Any] | None = None, **kwargs) -> Dict[str, Any]:
+    def emit(self, event: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
         if event is None:
             event = kwargs
         else:

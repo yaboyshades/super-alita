@@ -8,17 +8,16 @@ Includes endpoints for Cortex operations, telemetry, knowledge graph, and optimi
 import asyncio
 import time
 from concurrent import futures
-from typing import Any, Dict, List, Optional
 
 import grpc
 from google.protobuf import empty_pb2, timestamp_pb2
 
-from . import super_alita_pb2 as pb2
-from . import super_alita_pb2_grpc as pb2_grpc
 from ..cortex.runtime import CortexRuntime
-from ..telemetry.collector import TelemetryCollector
 from ..knowledge.plugin import KnowledgeGraphPlugin
 from ..optimization.plugin import OptimizationPlugin
+from ..telemetry.collector import TelemetryCollector
+from . import super_alita_pb2 as pb2
+from . import super_alita_pb2_grpc as pb2_grpc
 from .metrics import PrometheusMetricsCollector
 
 
@@ -35,11 +34,11 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
     
     def __init__(
         self,
-        cortex_runtime: Optional[CortexRuntime] = None,
-        telemetry_collector: Optional[TelemetryCollector] = None,
-        knowledge_plugin: Optional[KnowledgeGraphPlugin] = None,
-        optimization_plugin: Optional[OptimizationPlugin] = None,
-        metrics_collector: Optional[PrometheusMetricsCollector] = None
+        cortex_runtime: CortexRuntime | None = None,
+        telemetry_collector: TelemetryCollector | None = None,
+        knowledge_plugin: KnowledgeGraphPlugin | None = None,
+        optimization_plugin: OptimizationPlugin | None = None,
+        metrics_collector: PrometheusMetricsCollector | None = None
     ):
         self.cortex_runtime = cortex_runtime
         self.telemetry_collector = telemetry_collector
@@ -482,16 +481,16 @@ class SuperAlitaGrpcServer:
         self.host = host
         self.port = port
         self.max_workers = max_workers
-        self.server: Optional[grpc.Server] = None
-        self.servicer: Optional[SuperAlitaAgentServicer] = None
+        self.server: grpc.Server | None = None
+        self.servicer: SuperAlitaAgentServicer | None = None
     
     def setup(
         self,
-        cortex_runtime: Optional[CortexRuntime] = None,
-        telemetry_collector: Optional[TelemetryCollector] = None,
-        knowledge_plugin: Optional[KnowledgeGraphPlugin] = None,
-        optimization_plugin: Optional[OptimizationPlugin] = None,
-        metrics_collector: Optional[PrometheusMetricsCollector] = None
+        cortex_runtime: CortexRuntime | None = None,
+        telemetry_collector: TelemetryCollector | None = None,
+        knowledge_plugin: KnowledgeGraphPlugin | None = None,
+        optimization_plugin: OptimizationPlugin | None = None,
+        metrics_collector: PrometheusMetricsCollector | None = None
     ) -> None:
         """Setup the gRPC server with agent components."""
         self.servicer = SuperAlitaAgentServicer(

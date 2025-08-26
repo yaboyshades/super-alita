@@ -1,7 +1,7 @@
 from .cortex_weaning import (
-    TrainingPhase,
-    PhaseConfig,
     CortexWeaningOrchestrator,
+    PhaseConfig,
+    TrainingPhase,
 )
 
 __all__ = ["TrainingPhase", "PhaseConfig", "CortexWeaningOrchestrator"]

@@ -27,13 +27,14 @@ The agent operates in a continuous cycle:
 
 import asyncio
 import logging
-import time
-from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 # Add src to path
 import sys
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
@@ -41,8 +42,8 @@ try:
     from core.events import create_event
     from cortex.config.planner_config import PlannerConfig
     from cortex.planner.ladder_enhanced import EnhancedLadderPlanner
-    from vscode_integration.simple_task_provider import SimpleTodoManager
     from vscode_integration.agent_integration import SuperAlitaAgent
+    from vscode_integration.simple_task_provider import SimpleTodoManager
 except ImportError as e:
     print(f"⚠️ Import warning: {e}")
 
@@ -52,7 +53,7 @@ logger = logging.getLogger(__name__)
 class EnhancedAgentCycle:
     """Enhanced agent that operates in a continuous development cycle."""
     
-    def __init__(self, workspace_folder: Optional[Path] = None):
+    def __init__(self, workspace_folder: Path | None = None):
         self.workspace_folder = workspace_folder or Path.cwd()
         self.base_agent = SuperAlitaAgent(self.workspace_folder)
         self.event_bus = None
@@ -332,7 +333,7 @@ class EnhancedAgentCycle:
             await self.code_analyzer.analyze_file(Path(file_path))
             
     # Helper methods
-    async def _detect_file_changes(self) -> List[Path]:
+    async def _detect_file_changes(self) -> list[Path]:
         """Detect recent file changes in the workspace."""
         # Simplified implementation - in practice would use file watchers
         return []
@@ -341,7 +342,7 @@ class EnhancedAgentCycle:
         """Check overall system health."""
         return "excellent"
         
-    async def _analyze_task_complexity(self, task: Dict[str, Any]) -> str:
+    async def _analyze_task_complexity(self, task: dict[str, Any]) -> str:
         """Analyze task complexity."""
         description = task.get("description", "").lower()
         
@@ -352,7 +353,7 @@ class EnhancedAgentCycle:
         else:
             return "low"
             
-    async def _calculate_task_urgency(self, task: Dict[str, Any]) -> str:
+    async def _calculate_task_urgency(self, task: dict[str, Any]) -> str:
         """Calculate task urgency."""
         priority = task.get("priority", "medium")
         
@@ -363,12 +364,12 @@ class EnhancedAgentCycle:
         else:
             return "low"
             
-    async def _check_task_auto_completion(self, task: Dict[str, Any]) -> bool:
+    async def _check_task_auto_completion(self, task: dict[str, Any]) -> bool:
         """Check if a task can be auto-completed."""
         # For demo purposes - in practice would check actual completion criteria
         return False
         
-    async def _generate_cycle_recommendations(self) -> List[str]:
+    async def _generate_cycle_recommendations(self) -> list[str]:
         """Generate cycle-specific recommendations."""
         recommendations = []
         
@@ -395,7 +396,7 @@ class EnhancedAgentCycle:
         await self.base_agent.shutdown()
         
         print("✅ Enhanced Agent Cycle shutdown complete")
-        print(f"📊 Session Summary:")
+        print("📊 Session Summary:")
         print(f"  🔄 Cycles completed: {self.cycle_count}")
         print(f"  ✅ Tasks completed: {self.tasks_completed_this_session}")
         print(f"  💡 Recommendations: {self.recommendations_generated}")
@@ -412,7 +413,7 @@ class CodeQualityAnalyzer:
         """Initialize the code quality analyzer."""
         print("🔍 Code Quality Analyzer initialized")
         
-    async def analyze_workspace(self) -> Dict[str, Any]:
+    async def analyze_workspace(self) -> dict[str, Any]:
         """Analyze the entire workspace for code quality issues."""
         # Simplified implementation
         return {
@@ -421,11 +422,11 @@ class CodeQualityAnalyzer:
             "suggestions": []
         }
         
-    async def analyze_file(self, file_path: Path) -> Dict[str, Any]:
+    async def analyze_file(self, file_path: Path) -> dict[str, Any]:
         """Analyze a specific file for code quality."""
         return {"issues": [], "suggestions": []}
         
-    async def auto_fix_issues(self) -> List[str]:
+    async def auto_fix_issues(self) -> list[str]:
         """Auto-fix simple code quality issues."""
         return []
 
@@ -460,7 +461,7 @@ class AutoDocumentationGenerator:
         """Initialize documentation generator."""
         print("📚 Auto Documentation Generator initialized")
         
-    async def update_documentation(self) -> List[str]:
+    async def update_documentation(self) -> list[str]:
         """Update project documentation."""
         return []
 

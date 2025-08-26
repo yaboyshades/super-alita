@@ -3,16 +3,12 @@ Cortex Modules: Pluggable components for perception, reasoning, and action
 Implements the modular architecture for cognitive processing
 """
 
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Protocol, TypeVar, Generic
-from dataclasses import dataclass
-from enum import Enum
-import asyncio
 import time
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any, Generic, TypeVar
 
-from ..plugin_interface import PluginInterface
-from .markers import PerformanceTracker, CortexPhase
-
+from .markers import CortexPhase, PerformanceTracker
 
 T = TypeVar('T')
 
@@ -24,8 +20,8 @@ class ModuleResult(Generic[T]):
         self, 
         data: T, 
         success: bool = True, 
-        error: Optional[str] = None,
-        metrics: Optional[Dict[str, Any]] = None
+        error: str | None = None,
+        metrics: dict[str, Any] | None = None
     ):
         self.data = data
         self.success = success
@@ -38,8 +34,8 @@ class ModuleResult(Generic[T]):
 class CortexInput:
     """Input data for Cortex processing cycle"""
     raw_data: Any
-    context: Dict[str, Any]
-    metadata: Dict[str, Any]
+    context: dict[str, Any]
+    metadata: dict[str, Any]
     cycle_id: str
 
 
@@ -47,39 +43,39 @@ class CortexInput:
 class PerceptionResult:
     """Result from perception phase"""
     processed_data: Any
-    features: Dict[str, Any]
+    features: dict[str, Any]
     confidence: float
-    attention_weights: Optional[Dict[str, float]] = None
+    attention_weights: dict[str, float] | None = None
 
 
 @dataclass
 class ReasoningResult:
     """Result from reasoning phase"""
-    analysis: Dict[str, Any]
-    conclusions: List[str]
+    analysis: dict[str, Any]
+    conclusions: list[str]
     confidence: float
-    reasoning_chain: Optional[List[Dict[str, Any]]] = None
+    reasoning_chain: list[dict[str, Any]] | None = None
 
 
 @dataclass
 class ActionResult:
     """Result from action phase"""
-    actions: List[Dict[str, Any]]
-    priority_scores: Dict[str, float]
-    execution_plan: Optional[Dict[str, Any]] = None
+    actions: list[dict[str, Any]]
+    priority_scores: dict[str, float]
+    execution_plan: dict[str, Any] | None = None
 
 
 class CortexModule(ABC):
     """Base class for all Cortex modules"""
     
-    def __init__(self, name: str, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, name: str, config: dict[str, Any] | None = None):
         self.name = name
         self.config = config or {}
         self.enabled = True
-        self.performance_tracker: Optional[PerformanceTracker] = None
+        self.performance_tracker: PerformanceTracker | None = None
     
     @abstractmethod
-    async def process(self, input_data: Any, context: Dict[str, Any]) -> ModuleResult:
+    async def process(self, input_data: Any, context: dict[str, Any]) -> ModuleResult:
         """Process input and return result"""
         pass
     
@@ -95,7 +91,7 @@ class CortexModule(ABC):
     async def execute_with_tracking(
         self, 
         input_data: Any, 
-        context: Dict[str, Any]
+        context: dict[str, Any]
     ) -> ModuleResult:
         """Execute module with performance tracking"""
         start_time = time.time()
@@ -150,7 +146,7 @@ class PerceptionModule(CortexModule):
         return CortexPhase.PERCEPTION
     
     @abstractmethod
-    async def process(self, input_data: CortexInput, context: Dict[str, Any]) -> ModuleResult[PerceptionResult]:
+    async def process(self, input_data: CortexInput, context: dict[str, Any]) -> ModuleResult[PerceptionResult]:
         """Process raw input into structured perception data"""
         pass
 
@@ -162,7 +158,7 @@ class ReasoningModule(CortexModule):
         return CortexPhase.REASONING
     
     @abstractmethod
-    async def process(self, input_data: PerceptionResult, context: Dict[str, Any]) -> ModuleResult[ReasoningResult]:
+    async def process(self, input_data: PerceptionResult, context: dict[str, Any]) -> ModuleResult[ReasoningResult]:
         """Process perception data into reasoning conclusions"""
         pass
 
@@ -174,7 +170,7 @@ class ActionModule(CortexModule):
         return CortexPhase.ACTION
     
     @abstractmethod
-    async def process(self, input_data: ReasoningResult, context: Dict[str, Any]) -> ModuleResult[ActionResult]:
+    async def process(self, input_data: ReasoningResult, context: dict[str, Any]) -> ModuleResult[ActionResult]:
         """Process reasoning into actionable plans"""
         pass
 
@@ -184,7 +180,7 @@ class ActionModule(CortexModule):
 class TextPerceptionModule(PerceptionModule):
     """Example perception module for text processing"""
     
-    async def process(self, input_data: CortexInput, context: Dict[str, Any]) -> ModuleResult[PerceptionResult]:
+    async def process(self, input_data: CortexInput, context: dict[str, Any]) -> ModuleResult[PerceptionResult]:
         """Process text input"""
         if not isinstance(input_data.raw_data, str):
             return ModuleResult(
@@ -222,7 +218,7 @@ class TextPerceptionModule(PerceptionModule):
 class LogicalReasoningModule(ReasoningModule):
     """Example reasoning module for logical analysis"""
     
-    async def process(self, input_data: PerceptionResult, context: Dict[str, Any]) -> ModuleResult[ReasoningResult]:
+    async def process(self, input_data: PerceptionResult, context: dict[str, Any]) -> ModuleResult[ReasoningResult]:
         """Perform logical reasoning on perception data"""
         features = input_data.features
         
@@ -269,7 +265,7 @@ class LogicalReasoningModule(ReasoningModule):
 class PlanningActionModule(ActionModule):
     """Example action module for planning"""
     
-    async def process(self, input_data: ReasoningResult, context: Dict[str, Any]) -> ModuleResult[ActionResult]:
+    async def process(self, input_data: ReasoningResult, context: dict[str, Any]) -> ModuleResult[ActionResult]:
         """Generate action plan from reasoning"""
         analysis = input_data.analysis
         conclusions = input_data.conclusions

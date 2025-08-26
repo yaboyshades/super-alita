@@ -17,13 +17,11 @@ MCP server:
 """
 from __future__ import annotations
 
-from typing import Dict, List
-
 from mcp.server.fastmcp import FastMCP
 
 # In-memory catalogue used by the search/fetch tools.  Keeping the data
 # local avoids network access during tests.
-_DATA: Dict[str, dict] = {
+_DATA: dict[str, dict] = {
     "1": {"title": "Fix login bug"},
     "2": {"title": "Add dark mode"},
     "3": {"title": "Improve documentation"},
@@ -33,14 +31,14 @@ app = FastMCP("backend-mcp")
 
 
 @app.tool()
-async def search(query: str) -> List[str]:
+async def search(query: str) -> list[str]:
     """Return IDs of entries whose title contains ``query``."""
     q = query.lower()
     return [key for key, meta in _DATA.items() if q in meta["title"].lower()]
 
 
 @app.tool()
-async def fetch(item_id: str) -> Dict[str, str]:
+async def fetch(item_id: str) -> dict[str, str]:
     """Return metadata for ``item_id``.
 
     Raises ``KeyError`` if the ID is unknown.

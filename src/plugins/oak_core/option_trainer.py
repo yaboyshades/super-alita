@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import uuid
-from typing import Dict, List, Optional, Tuple, Any
-from datetime import datetime, timezone
 from collections import deque
+from datetime import UTC, datetime
+from typing import Any
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import Categorical
 from pydantic import BaseModel, Field
+from torch.distributions import Categorical
 
 from src.core.plugin_interface import PluginInterface
+
 
 class OptionNetwork(nn.Module):
     def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 128):
@@ -26,7 +28,7 @@ class OptionNetwork(nn.Module):
         self.critic = nn.Linear(hidden_dim, 1)
         self.termination = nn.Sequential(nn.Linear(hidden_dim, 1), nn.Sigmoid())
 
-    def forward(self, state: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(self, state: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         if state.dim() == 1:
             state = state.unsqueeze(0)
         h = self.trunk(state)
@@ -34,21 +36,21 @@ class OptionNetwork(nn.Module):
 
 
 class Transition(BaseModel):
-    state: List[float]
+    state: list[float]
     action: int
     reward: float
-    next_state: List[float]
+    next_state: list[float]
     done: bool
     log_prob: float
     value: float
-    features_achieved: List[str] = Field(default_factory=list)
+    features_achieved: list[str] = Field(default_factory=list)
 
 
 class Option(BaseModel):
     id: str
     name: str
     subproblem_id: str
-    target_features: List[str]
+    target_features: list[str]
     state_dim: int = 100
     action_dim: int = 10
     hidden_dim: int = 128
@@ -66,8 +68,8 @@ class Option(BaseModel):
     avg_episode_length: float = 0.0
     avg_reward: float = 0.0
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_updated: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime | None = None
 
 
 class OptionTrainer(PluginInterface):
@@ -92,16 +94,16 @@ class OptionTrainer(PluginInterface):
     def __init__(self):
         super().__init__()
         self.device = torch.device("cpu")
-        self.options: Dict[str, Option] = {}
-        self.networks: Dict[str, OptionNetwork] = {}
-        self.optimizers: Dict[str, torch.optim.Adam] = {}
-        self.replay_buffers: Dict[str, deque] = {}
+        self.options: dict[str, Option] = {}
+        self.networks: dict[str, OptionNetwork] = {}
+        self.optimizers: dict[str, torch.optim.Adam] = {}
+        self.replay_buffers: dict[str, deque] = {}
         self.batch_size = 64
         self.buffer_size = 10000
         self.update_frequency = 100
         self.ppo_epochs = 4
         self.step_count = 0
-        self.active_executions: Dict[str, Dict[str, Any]] = {}
+        self.active_executions: dict[str, dict[str, Any]] = {}
 
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
@@ -122,7 +124,7 @@ class OptionTrainer(PluginInterface):
         ns = uuid.UUID('6ba7b812-9dad-11d1-80b4-00c04fd430c8')
         return str(uuid.uuid5(ns, f"option_{subproblem_id}"))
 
-    async def create_option(self, event: Dict[str, Any]):
+    async def create_option(self, event: dict[str, Any]):
         sp_id = event.get("subproblem_id")
         if not sp_id:
             return
@@ -153,20 +155,20 @@ class OptionTrainer(PluginInterface):
             option_id=opt_id,
             subproblem_id=sp_id,
             target_features=option.target_features,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
-    async def handle_option_start(self, event: Dict[str, Any]):
+    async def handle_option_start(self, event: dict[str, Any]):
         opt_id = event.get("option_id")
         state = event.get("state", {})
         if opt_id in self.options:
             self.active_executions[opt_id] = {
                 "start_state": state,
                 "trajectory": [],
-                "start_time": datetime.now(timezone.utc),
+                "start_time": datetime.now(UTC),
             }
 
-    def _state_to_vector(self, state: Dict[str, Any]) -> np.ndarray:
+    def _state_to_vector(self, state: dict[str, Any]) -> np.ndarray:
         vec = np.zeros(100, dtype=np.float32)
         i = 0
         for k, v in state.items():
@@ -179,13 +181,13 @@ class OptionTrainer(PluginInterface):
                 i += 10
         return vec
 
-    def _intrinsic_reward(self, option: Option, features_achieved: List[str], next_state: Dict[str, Any]) -> float:
+    def _intrinsic_reward(self, option: Option, features_achieved: list[str], next_state: dict[str, Any]) -> float:
         for t in option.target_features:
             if t in features_achieved or t in (next_state.get("features") or []):
                 return 1.0
         return 0.0
 
-    async def handle_transition(self, event: Dict[str, Any]):
+    async def handle_transition(self, event: dict[str, Any]):
         self.step_count += 1
         state = event.get("state", {}) or {}
         action = int(event.get("action", 0))
@@ -288,16 +290,16 @@ class OptionTrainer(PluginInterface):
             optimizer.step()
 
         opt.episodes_trained += 1
-        opt.last_updated = datetime.now(timezone.utc)
+        opt.last_updated = datetime.now(UTC)
         await self.emit_event(
             "option_training_update",
             option_id=opt_id,
             episodes_trained=opt.episodes_trained,
             avg_reward=float(rewards.mean().item()),
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
-    async def handle_option_end(self, event: Dict[str, Any]):
+    async def handle_option_end(self, event: dict[str, Any]):
         opt_id = event.get("option_id")
         success = bool(event.get("success", False))
         exec_ = self.active_executions.pop(opt_id, None)
@@ -318,5 +320,5 @@ class OptionTrainer(PluginInterface):
             cost=len(traj),
             reward=tot_r,
             features=opt.target_features,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )

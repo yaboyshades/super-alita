@@ -4,18 +4,25 @@ Multi-Armed Bandit Optimization Tests
 Comprehensive tests for the bandit algorithms, policy engine, reward tracker, and optimization plugin.
 """
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
-import tempfile
-import time
-from typing import Dict, Any
 
-from core.optimization.bandits import ThompsonSamplingBandit, UCB1Bandit, EpsilonGreedyBandit, BanditArm
-from core.optimization.policy_engine import DecisionPolicyEngine, DecisionContext
-from core.optimization.reward_tracker import RewardTracker, create_success_rate_rule, create_performance_rule
+from core.optimization.bandits import (
+    EpsilonGreedyBandit,
+    ThompsonSamplingBandit,
+    UCB1Bandit,
+)
 from core.optimization.plugin import OptimizationPlugin
+from core.optimization.policy_engine import DecisionContext, DecisionPolicyEngine
+from core.optimization.reward_tracker import (
+    RewardTracker,
+    create_performance_rule,
+    create_success_rate_rule,
+)
 from core.telemetry.simple_event_bus import SimpleEventBus
+
 
 class TestBanditAlgorithms:
     """Test multi-armed bandit algorithms."""

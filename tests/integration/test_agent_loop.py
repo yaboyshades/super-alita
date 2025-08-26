@@ -13,14 +13,13 @@ import importlib
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import List
 
 import pytest
 import yaml
+
 from src.core.event_bus import EventBus
 from src.core.events import AgentResponseEvent, ConversationEvent, SystemEvent
 from src.main import SuperAlita
-
 
 pytestmark = pytest.mark.integration_redis
 
@@ -93,7 +92,7 @@ class TestAgentCognitiveLoop:
         # Wait for clean shutdown
         try:
             await asyncio.wait_for(agent_task, timeout=5.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             agent_task.cancel()
             pytest.fail("Agent failed to shutdown within timeout")
 
@@ -114,7 +113,7 @@ class TestAgentCognitiveLoop:
             await test_bus.start()
 
             # Collect agent responses
-            agent_responses: List[AgentResponseEvent] = []
+            agent_responses: list[AgentResponseEvent] = []
 
             async def response_handler(event):
                 if hasattr(event, "response"):
@@ -156,7 +155,7 @@ class TestAgentCognitiveLoop:
             await alita.shutdown()
             try:
                 await asyncio.wait_for(agent_task, timeout=5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 agent_task.cancel()
 
     @pytest.mark.asyncio
@@ -212,7 +211,7 @@ class TestAgentCognitiveLoop:
             await alita.shutdown()
             try:
                 await asyncio.wait_for(agent_task, timeout=5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 agent_task.cancel()
 
     @pytest.mark.asyncio
@@ -255,7 +254,7 @@ class TestAgentCognitiveLoop:
             await alita.shutdown()
             try:
                 await asyncio.wait_for(agent_task, timeout=5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 agent_task.cancel()
 
 

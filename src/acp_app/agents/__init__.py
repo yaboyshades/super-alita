@@ -1,6 +1,6 @@
 """ACP Agents"""
-from .echo_agent import EchoAgent
 from .classify_agent import ClassifyAgent
+from .echo_agent import EchoAgent
 from .router_agent import RouterAgent
 from .search_agent import SearchAgent
 

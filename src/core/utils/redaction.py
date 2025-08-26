@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Tuple
+from typing import Any
 
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 HEX32PLUS = re.compile(r"\b[0-9a-fA-F]{32,}\b")
@@ -14,7 +14,7 @@ def _mask(s: str) -> str:
     return s[:3] + "…" + s[-3:]
 
 
-def _redact_str(s: str) -> Tuple[str, Dict[str, int]]:
+def _redact_str(s: str) -> tuple[str, dict[str, int]]:
     hits = {"email": 0, "hex": 0, "keyword": 0}
 
     def _repl_email(m):
@@ -46,7 +46,7 @@ def _walk(obj):
     return obj
 
 
-def redact_prompt_and_context(prompt: str, context: Dict[str, Any]) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
+def redact_prompt_and_context(prompt: str, context: dict[str, Any]) -> tuple[str, dict[str, Any], dict[str, Any]]:
     """Redact sensitive patterns. Returns (prompt_redacted, context_redacted, report)."""
     red_prompt, hits_p = _redact_str(prompt or "")
     red_ctx = _walk(context or {})

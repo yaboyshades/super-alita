@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 import os
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
 
 # ---- Version stamps & required fields ---------------------------------------
 PROMPT_VERSION = os.getenv("PROMPT_VERSION", "2.1.0")
@@ -22,7 +22,7 @@ ORDERING_POLICY = {
 }
 
 # Keyword profiles are centralized to cut duplication/ drift (DRY) .
-KEYWORD_PROFILES: Dict[str, List[str]] = {
+KEYWORD_PROFILES: dict[str, list[str]] = {
     "algorithm_extraction": ["method", "model", "architecture", "training", "evaluation", "ablation", "discussion", "analysis", "result"],
     "concept_analysis": ["definition", "intuition", "limitation", "future work"],
 }
@@ -33,7 +33,7 @@ MAX_HPARAMS_FULL_LIST = int(os.getenv("MAX_HPARAMS_FULL_LIST", "100"))
 @dataclass
 class RetrievalFallbackPolicy:
     condition: str = 'segments_returned < requested OR total_chars < 4000'
-    broaden_keywords: List[str] = field(default_factory=lambda: ["training","evaluation","ablation","result","discussion","analysis"])
+    broaden_keywords: list[str] = field(default_factory=lambda: ["training","evaluation","ablation","result","discussion","analysis"])
     max_rounds: int = 2
     per_round_segment_cap: int = int(os.getenv("RETRIEVAL_SEGMENT_CAP", "8"))
 

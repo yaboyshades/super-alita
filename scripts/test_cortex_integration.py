@@ -7,7 +7,8 @@ Simulates VS Code extension events and validates the flow
 import json
 import pathlib
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 
 # Simulate the VS Code extension emitting events
 def emit_test_events():
@@ -136,7 +137,7 @@ def emit_test_events():
             print(f"  ✅ Event {i+1}: {event['kind']} from {event['actor']}")
             time.sleep(0.5)  # Small delay to simulate real usage
     
-    print(f"\n🎯 All test events emitted! Bridge should process them.")
+    print("\n🎯 All test events emitted! Bridge should process them.")
     return telemetry_path
 
 def analyze_telemetry_file(telemetry_path):
@@ -148,7 +149,7 @@ def analyze_telemetry_file(telemetry_path):
     print(f"\n📊 Analyzing telemetry file: {telemetry_path}")
     
     events = []
-    with open(telemetry_path, 'r', encoding='utf-8') as f:
+    with open(telemetry_path, encoding='utf-8') as f:
         for line_num, line in enumerate(f, 1):
             try:
                 event = json.loads(line.strip())
@@ -178,10 +179,10 @@ def analyze_telemetry_file(telemetry_path):
         print(f"  {actor}: {count}")
     
     # Show recent events
-    print(f"\n🕒 Most recent events:")
+    print("\n🕒 Most recent events:")
     recent_events = sorted(events, key=lambda x: x.get('ts', 0))[-3:]
     for event in recent_events:
-        ts = datetime.fromtimestamp(event.get('ts', 0), tz=timezone.utc)
+        ts = datetime.fromtimestamp(event.get('ts', 0), tz=UTC)
         print(f"  {ts.strftime('%H:%M:%S')} - {event.get('kind', 'UNKNOWN')} from {event.get('actor', 'unknown')}")
 
 def main():

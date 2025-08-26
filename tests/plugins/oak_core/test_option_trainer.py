@@ -1,8 +1,11 @@
+from typing import Any
+
 import pytest
 import torch
+
+from src.core.events import BaseEvent
 from src.plugins.oak_core.option_trainer import OptionTrainer
-from typing import Any
-from src.core.events import BaseEvent, create_event
+
 
 class MockBus:
     def __init__(self):
@@ -73,7 +76,7 @@ async def test_option_trainer_learns() -> None:
 
     new_params = [p.clone().detach() for p in net.parameters()]
     params_changed = False
-    for p_orig, p_new in zip(orig_params, new_params):
+    for p_orig, p_new in zip(orig_params, new_params, strict=False):
         if not torch.equal(p_orig, p_new):
             params_changed = True
             break

@@ -7,8 +7,8 @@ import httpx
 import pytest
 import uvicorn
 from fastapi import FastAPI
-from reug_runtime.router import router
 
+from reug_runtime.router import router
 from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG, FakeLLM
 
@@ -56,10 +56,6 @@ async def test_client_disconnect():
     assert not any(e["type"] == "TaskSucceeded" for e in events)
 
 import pytest
-from fastapi import FastAPI
-from reug_runtime.router import router
-
-from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG, FakeLLM
 
 
 def _mk_app():

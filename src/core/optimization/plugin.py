@@ -7,12 +7,16 @@ Integrates decision policies, reward tracking, and learning with the event syste
 
 import asyncio
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ..plugin_interface import PluginInterface
 from ..events import create_event
-from .policy_engine import DecisionPolicyEngine, DecisionContext, PolicyDecision
-from .reward_tracker import RewardTracker, create_success_rate_rule, create_performance_rule
+from ..plugin_interface import PluginInterface
+from .policy_engine import DecisionContext, DecisionPolicyEngine, PolicyDecision
+from .reward_tracker import (
+    RewardTracker,
+    create_performance_rule,
+    create_success_rate_rule,
+)
 
 
 class OptimizationPlugin(PluginInterface):
@@ -32,7 +36,7 @@ class OptimizationPlugin(PluginInterface):
         self.policy_engine = DecisionPolicyEngine()
         self.reward_tracker = RewardTracker()
         self.event_bus = None
-        self._optimization_task: Optional[asyncio.Task] = None
+        self._optimization_task: asyncio.Task | None = None
         self._metrics = {
             "decisions_made": 0,
             "rewards_collected": 0,
@@ -235,7 +239,7 @@ class OptimizationPlugin(PluginInterface):
         name: str,
         description: str,
         algorithm_type: str,
-        arms: List[Dict[str, Any]],
+        arms: list[dict[str, Any]],
         **kwargs
     ) -> str:
         """Create a new decision policy."""
@@ -267,9 +271,9 @@ class OptimizationPlugin(PluginInterface):
         self,
         policy_id: str,
         session_id: str,
-        user_id: Optional[str] = None,
-        workspace: Optional[str] = None,
-        task_type: Optional[str] = None,
+        user_id: str | None = None,
+        workspace: str | None = None,
+        task_type: str | None = None,
         **metadata
     ) -> PolicyDecision:
         """Make a decision using a specific policy."""
@@ -305,15 +309,15 @@ class OptimizationPlugin(PluginInterface):
         # Provide to policy engine
         return await self.policy_engine.provide_feedback(decision_id, reward, metadata)
     
-    def get_policies(self) -> List[Dict[str, Any]]:
+    def get_policies(self) -> list[dict[str, Any]]:
         """Get all policies."""
         return self.policy_engine.list_policies()
     
-    def get_policy_statistics(self, policy_id: str) -> Optional[Dict[str, Any]]:
+    def get_policy_statistics(self, policy_id: str) -> dict[str, Any] | None:
         """Get statistics for a specific policy."""
         return self.policy_engine.get_policy_statistics(policy_id)
     
-    def get_global_statistics(self) -> Dict[str, Any]:
+    def get_global_statistics(self) -> dict[str, Any]:
         """Get global optimization statistics."""
         policy_stats = self.policy_engine.get_all_statistics()
         reward_stats = self.reward_tracker.get_global_statistics()
@@ -327,7 +331,7 @@ class OptimizationPlugin(PluginInterface):
             "timestamp": time.time()
         }
     
-    async def export_data(self) -> Dict[str, Any]:
+    async def export_data(self) -> dict[str, Any]:
         """Export all optimization data for analysis."""
         return {
             "policies": {

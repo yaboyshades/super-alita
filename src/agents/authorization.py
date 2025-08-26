@@ -8,8 +8,8 @@ scopes returned in the access token.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, MutableSet
 from dataclasses import dataclass
-from typing import Iterable, Mapping, MutableSet
 
 import httpx
 

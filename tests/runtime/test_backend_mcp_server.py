@@ -1,6 +1,7 @@
-from backend.mcp_server import fetch, search
+
 import pytest
-import asyncio
+
+from backend.mcp_server import fetch, search
 
 
 @pytest.mark.asyncio

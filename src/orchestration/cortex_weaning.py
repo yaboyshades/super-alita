@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from enum import Enum
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from enum import Enum
+from typing import Any
 
 
 class TrainingPhase(Enum):
@@ -25,11 +25,11 @@ class CortexWeaningOrchestrator:
 
     def __init__(self) -> None:
         self.current_phase = TrainingPhase.BOOTSTRAP
-        self.window_scores: List[float] = []
+        self.window_scores: list[float] = []
         self.window_size = 20
         self.hysteresis = 0.05
         self.min_sustain = 3
-        self.phase_configs: Dict[TrainingPhase, PhaseConfig] = {
+        self.phase_configs: dict[TrainingPhase, PhaseConfig] = {
             TrainingPhase.BOOTSTRAP: PhaseConfig(
                 cortex_intervention_threshold=0.8,
                 self_attempt_first=False,
@@ -56,7 +56,7 @@ class CortexWeaningOrchestrator:
             ),
         }
 
-    async def should_use_cortex(self, confidence: float, context: Dict[str, Any]) -> bool:
+    async def should_use_cortex(self, confidence: float, context: dict[str, Any]) -> bool:
         cfg = self.phase_configs[self.current_phase]
         return confidence < cfg.cortex_intervention_threshold
 

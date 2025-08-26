@@ -1,9 +1,9 @@
 """Prompt composition helpers for Copilot integration."""
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import Iterable, Mapping, Sequence
 
 
 def _truncate_text(text: str, token_budget: int) -> str:

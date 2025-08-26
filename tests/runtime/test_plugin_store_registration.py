@@ -1,8 +1,10 @@
 import numpy as np
 import pytest
 
-from src.plugins.brainstorm_plugin import BrainstormPlugin, DynamicAtom as BrainstormAtom
-from src.plugins.compose_plugin import ComposePlugin, DynamicAtom as ComposeAtom
+from src.plugins.brainstorm_plugin import BrainstormPlugin
+from src.plugins.brainstorm_plugin import DynamicAtom as BrainstormAtom
+from src.plugins.compose_plugin import ComposePlugin
+from src.plugins.compose_plugin import DynamicAtom as ComposeAtom
 
 
 class MockStore:

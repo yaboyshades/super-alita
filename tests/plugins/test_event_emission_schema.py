@@ -1,7 +1,7 @@
 """Test for event emission schema validation in ladder_aog_plugin."""
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 from src.plugins.ladder_aog_plugin import LADDERAOGPlugin as LadderAOGPlugin
@@ -51,7 +51,7 @@ async def test_planning_decision_event_schema():
             "decision": f"Generated plan with {len(plan_steps)} steps.",
             "confidence_score": 0.9,
             "causal_factors": list(path_taken),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "plugin_name": plugin.name,
         }
         await plugin.emit_event("planning_decision", **decision_event)

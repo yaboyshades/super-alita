@@ -1,11 +1,14 @@
-import pytest
 import asyncio
-from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
+import pytest
 
 from src.core.context_builder import ContextAssembler
+from src.core.correlation import (
+    get_correlation_id,
+    set_correlation_id,
+)
 from src.core.trace import TurnTracer, get_tracer, trace_component_call
-from src.core.correlation import get_correlation_id, get_session_id, set_correlation_id, set_session_id
 
 
 class TestContextAssembler:

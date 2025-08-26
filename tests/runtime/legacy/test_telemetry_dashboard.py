@@ -2,15 +2,16 @@
 Test script for telemetry dashboard
 """
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
-import time
 from pathlib import Path
 
+from core.cortex import create_cortex_runtime
 from core.telemetry import TelemetryCollector, TelemetryDashboard
 from core.telemetry.simple_event_bus import SimpleEventBus
-from core.cortex import create_cortex_runtime
+
 
 async def test_telemetry_dashboard():
     """Test the telemetry dashboard with Cortex runtime"""

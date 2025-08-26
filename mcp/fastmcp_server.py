@@ -7,11 +7,11 @@
 #
 
 from __future__ import annotations
-import os
+
 import logging
-import uuid
+import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastmcp import FastMCP
 from openai import OpenAI
@@ -31,7 +31,7 @@ TRANSPORT = os.environ.get("MCP_TRANSPORT", "sse")  # SSE is recommended for rem
 SERVER_NAME = os.environ.get("MCP_SERVER_NAME", "Sample MCP Server")
 
 # --- OpenAI Client Initialization ----------------------------------------------
-_openai_client: Optional[OpenAI] = None
+_openai_client: OpenAI | None = None
 def get_openai_client() -> OpenAI:
     """Initializes and returns a singleton OpenAI client."""
     global _openai_client
@@ -42,7 +42,7 @@ def get_openai_client() -> OpenAI:
     return _openai_client
 
 # --- Authentication Hook -------------------------------------------------------
-def _check_auth(headers: Dict[str, str]) -> None:
+def _check_auth(headers: dict[str, str]) -> None:
     """
     Checks for a valid Bearer token in the request headers if authentication is enabled.
     Raises PermissionError if authentication fails.
@@ -66,7 +66,7 @@ def create_server() -> FastMCP:
     mcp = FastMCP(name=SERVER_NAME, instructions=server_instructions)
 
     @mcp.tool()
-    async def search(query: str, __headers: Optional[Dict[str, str]] = None) -> Dict[str, List[Dict[str, Any]]]:
+    async def search(query: str, __headers: dict[str, str] | None = None) -> dict[str, list[dict[str, Any]]]:
         """
         Search for documents using OpenAI Vector Store search.
         
@@ -88,7 +88,7 @@ def create_server() -> FastMCP:
         client = get_openai_client()
         response = client.vector_stores.search(vector_store_id=VECTOR_STORE_ID, query=query)
 
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         if hasattr(response, "data"):
             for i, item in enumerate(response.data):
                 file_id = getattr(item, "file_id", f"unknown_{i}")
@@ -117,7 +117,7 @@ def create_server() -> FastMCP:
         return {"results": results}
 
     @mcp.tool()
-    async def fetch(id: str, __headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    async def fetch(id: str, __headers: dict[str, str] | None = None) -> dict[str, Any]:
         """
         Retrieve complete document content by its unique ID.
 
@@ -140,7 +140,7 @@ def create_server() -> FastMCP:
         content_response = client.vector_stores.files.content(vector_store_id=VECTOR_STORE_ID, file_id=id)
         file_info = client.vector_stores.files.retrieve(vector_store_id=VECTOR_STORE_ID, file_id=id)
         
-        content_parts: List[str] = []
+        content_parts: list[str] = []
         if hasattr(content_response, "data"):
             for chunk in content_response.data:
                 if hasattr(chunk, "text") and chunk.text:
@@ -149,7 +149,7 @@ def create_server() -> FastMCP:
         full_text = "\n".join(content_parts) if content_parts else "No content available"
         title = getattr(file_info, "filename", f"Document {id}")
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "id": id,
             "title": title,
             "text": full_text,

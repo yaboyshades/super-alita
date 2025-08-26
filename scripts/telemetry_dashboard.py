@@ -2,11 +2,8 @@
 Real-time telemetry dashboard for monitoring Copilot integration
 """
 
-import json
-import time
-from pathlib import Path
-from datetime import datetime, timezone
-from typing import Dict, List
+from datetime import UTC, datetime
+
 
 class TelemetryDashboard:
     """Monitor Copilot's adherence to architectural guidelines"""
@@ -30,7 +27,7 @@ class TelemetryDashboard:
             "compliance_score": 0.0
         }
         
-    def track_interaction(self, response_text: str) -> Dict:
+    def track_interaction(self, response_text: str) -> dict:
         """Analyze Copilot response for telemetry markers"""
         
         markers = {
@@ -96,7 +93,7 @@ class TelemetryDashboard:
         
         return markers
         
-    def _calculate_compliance_score(self, markers: Dict) -> None:
+    def _calculate_compliance_score(self, markers: dict) -> None:
         """Calculate overall compliance score"""
         score = 0
         max_score = 5
@@ -118,7 +115,7 @@ class TelemetryDashboard:
         """Generate telemetry report"""
         return f"""
 # 📈 Copilot Telemetry Dashboard
-**Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+**Generated:** {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}
 **User:** yaboyshades
 
 ## Metrics Summary

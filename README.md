@@ -81,6 +81,58 @@ curl http://127.0.0.1:8080/healthz
 
 Debug utilities (`debug_fixed.py`, `debug_matching.py`, `utility_debug.py`) are under `scripts/`.
 
+## VS Code Insiders + GPT-OSS Quick Start
+
+To use VS Code Insiders with GPT-OSS hosted by Ollama (streamlined setup):
+
+### Prerequisites
+
+1. Install [VS Code Insiders](https://code.visualstudio.com/insiders/)
+2. Install [Ollama](https://ollama.com/download)
+3. Pull GPT-OSS model: `ollama pull gpt-oss:20b`
+4. Start Ollama: `ollama serve`
+
+### Setup
+
+1. **Extension**: Install/enable the `alita-language-tools` extension
+2. **Runtime** (PowerShell):
+   ```powershell
+   $env:LLM_MODEL="ollama:gpt-oss:20b"
+   $env:OLLAMA_HOST="http://127.0.0.1:11434"
+   python -m src.main
+   ```
+   Or Linux/macOS:
+   ```bash
+   export LLM_MODEL="ollama:gpt-oss:20b"
+   export OLLAMA_HOST="http://127.0.0.1:11434"
+   python -m src.main
+   ```
+
+### Usage in VS Code Insiders
+
+- **Direct Ollama**: Command palette → `Alita: Invoke Agent (Ollama)` 
+  - Uses your local Ollama directly with model `gpt-oss:20b` (configured as default)
+  - Streams response to a new Markdown document
+
+- **Via Runtime**: Command palette → `Alita: Chat via Runtime (Stream)`
+  - Posts to your runtime at `alita.runtime.host` (default: `http://127.0.0.1:8080`)
+  - Streams response to Output channel "Alita Runtime Chat"
+
+### Configuration
+
+Extension defaults (can be customized in VS Code settings):
+
+- `alita.ollama.host`: `http://127.0.0.1:11434`
+- `alita.ollama.model`: `gpt-oss:20b`
+- `alita.runtime.host`: `http://127.0.0.1:8080`
+
+### Troubleshooting
+
+If you get no response:
+- **Runtime**: Check `curl http://127.0.0.1:8080/health` and runtime logs
+- **Ollama**: Test directly with `curl -X POST http://127.0.0.1:11434/api/chat -H "Content-Type: application/json" -d '{"model": "gpt-oss:20b", "messages": [{"role": "user", "content": "Hello"}], "stream": false}'`
+- **Model**: Verify with `ollama list` or `ollama pull gpt-oss:20b`
+
 ### VS Code Extensions
 
 This repository bundles several VS Code extensions under `extensions/`.

@@ -5,20 +5,17 @@ Provides AI-powered search with reasoning, summarization, and multi-modal search
 Integrates with the existing WebAgentAtom to extend search functionality.
 """
 
-import asyncio
-import json
 import logging
 import time
-from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 import aiohttp
 from pydantic import BaseModel, Field
 
-from src.core.events import BaseEvent, ToolResultEvent, create_event
+from src.core.events import BaseEvent, ToolResultEvent
 from src.core.plugin_interface import PluginInterface
 from src.core.yaml_utils import safe_load
 
@@ -44,8 +41,8 @@ class SearchResult(BaseModel):
     snippet: str
     source: str
     relevance_score: float = 0.0
-    timestamp: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    timestamp: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class PerplexicaResponse(BaseModel):
@@ -54,9 +51,9 @@ class PerplexicaResponse(BaseModel):
     search_mode: SearchMode
     summary: str
     reasoning: str
-    sources: List[SearchResult]
-    citations: List[str]
-    follow_up_questions: List[str] = Field(default_factory=list)
+    sources: list[SearchResult]
+    citations: list[str]
+    follow_up_questions: list[str] = Field(default_factory=list)
     confidence_score: float = 0.8
     processing_time: float = 0.0
     total_results: int = 0
@@ -94,13 +91,13 @@ class PerplexicaSearchPlugin(PluginInterface):
 
     def __init__(self):
         super().__init__()
-        self.web_agent: Optional[Any] = None
-        self.llm_client: Optional[Any] = None
-        self.search_history: List[PerplexicaResponse] = []
+        self.web_agent: Any | None = None
+        self.llm_client: Any | None = None
+        self.search_history: list[PerplexicaResponse] = []
         self.cache_enabled: bool = True
         self.rerank_enabled: bool = True
-        self.web_agent_search_url: Optional[str] = None
-        self.web_agent_health_url: Optional[str] = None
+        self.web_agent_search_url: str | None = None
+        self.web_agent_health_url: str | None = None
         self.mode_handlers = {
             SearchMode.WEB: self._search_web,
             SearchMode.ACADEMIC: self._search_academic,
@@ -120,7 +117,7 @@ class PerplexicaSearchPlugin(PluginInterface):
     def description(self) -> str:
         return "AI-powered search with reasoning, summarization, and multi-modal capabilities"
 
-    async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         """Initialize the Perplexica search plugin."""
         await super().setup(event_bus, store, config)
 
@@ -182,8 +179,9 @@ class PerplexicaSearchPlugin(PluginInterface):
         """Initialize LLM client for reasoning and summarization."""
         try:
             # Try to use the existing Gemini integration
-            import google.generativeai as genai
             import os
+
+            import google.generativeai as genai
             
             api_key = os.getenv("GEMINI_API_KEY")
             if api_key and api_key != "your-key-here":
@@ -341,7 +339,7 @@ class PerplexicaSearchPlugin(PluginInterface):
 
         return response
 
-    async def _search_web(self, query: str, max_results: int) -> List[Dict[str, Any]]:
+    async def _search_web(self, query: str, max_results: int) -> list[dict[str, Any]]:
         """Perform web search using existing WebAgentAtom if available."""
         if self.web_agent and hasattr(self.web_agent, "call"):
             try:
@@ -377,44 +375,44 @@ class PerplexicaSearchPlugin(PluginInterface):
 
         return await self._fallback_search(query, max_results, "web")
 
-    async def _search_academic(self, query: str, max_results: int) -> List[Dict[str, Any]]:
+    async def _search_academic(self, query: str, max_results: int) -> list[dict[str, Any]]:
         """Search academic sources."""
         # For academic search, we can add "academic" or "scholarly" terms
         academic_query = f"{query} academic research papers scholarly"
         return await self._fallback_search(academic_query, max_results, "academic")
 
-    async def _search_video(self, query: str, max_results: int) -> List[Dict[str, Any]]:
+    async def _search_video(self, query: str, max_results: int) -> list[dict[str, Any]]:
         """Search for videos."""
         # Could integrate with YouTube API or use video-specific search engines
         video_query = f"{query} video tutorial"
         return await self._fallback_search(video_query, max_results, "video")
 
-    async def _search_news(self, query: str, max_results: int) -> List[Dict[str, Any]]:
+    async def _search_news(self, query: str, max_results: int) -> list[dict[str, Any]]:
         """Search news sources."""
         news_query = f"{query} news recent"
         return await self._fallback_search(news_query, max_results, "news")
 
-    async def _search_images(self, query: str, max_results: int) -> List[Dict[str, Any]]:
+    async def _search_images(self, query: str, max_results: int) -> list[dict[str, Any]]:
         """Search for images."""
         return await self._fallback_search(query, max_results, "images")
 
-    async def _search_reddit(self, query: str, max_results: int) -> List[Dict[str, Any]]:
+    async def _search_reddit(self, query: str, max_results: int) -> list[dict[str, Any]]:
         """Search Reddit."""
         reddit_query = f"{query} site:reddit.com"
         return await self._fallback_search(reddit_query, max_results, "reddit")
 
-    async def _search_shopping(self, query: str, max_results: int) -> List[Dict[str, Any]]:
+    async def _search_shopping(self, query: str, max_results: int) -> list[dict[str, Any]]:
         """Search shopping sites."""
         shopping_query = f"{query} buy purchase price"
         return await self._fallback_search(shopping_query, max_results, "shopping")
 
-    async def _search_wolfram(self, query: str, max_results: int) -> List[Dict[str, Any]]:
+    async def _search_wolfram(self, query: str, max_results: int) -> list[dict[str, Any]]:
         """Search using Wolfram Alpha style computational queries."""
         # This would ideally integrate with Wolfram Alpha API
         computational_query = f"{query} calculate compute math"
         return await self._fallback_search(computational_query, max_results, "wolfram")
 
-    async def _fallback_search(self, query: str, max_results: int, source: str) -> List[Dict[str, Any]]:
+    async def _fallback_search(self, query: str, max_results: int, source: str) -> list[dict[str, Any]]:
         """Fallback search implementation when specialized handlers aren't available."""
         try:
             # Try to use the basic web search from WebAgentAtom
@@ -439,10 +437,10 @@ class PerplexicaSearchPlugin(PluginInterface):
             logger.error(f"Fallback search failed: {e}")
             return []
 
-    def _dedupe_results(self, results: List[SearchResult]) -> List[SearchResult]:
+    def _dedupe_results(self, results: list[SearchResult]) -> list[SearchResult]:
         """Smart deduplication: normalize domains (drop 'www.', ignore ports) and titles."""
-        seen: Dict[str, SearchResult] = {}
-        deduped: List[SearchResult] = []
+        seen: dict[str, SearchResult] = {}
+        deduped: list[SearchResult] = []
 
         for r in results:
             # Normalize domain: strip common "www." prefix and ignore ports
@@ -466,9 +464,9 @@ class PerplexicaSearchPlugin(PluginInterface):
     async def _generate_ai_analysis(
         self, 
         query: str, 
-        results: List[SearchResult], 
+        results: list[SearchResult], 
         search_mode: SearchMode
-    ) -> tuple[str, str, List[str], List[str]]:
+    ) -> tuple[str, str, list[str], list[str]]:
         """Generate AI-powered analysis of search results."""
         if not self.llm_client:
             return self._generate_simple_analysis(query, results, search_mode)
@@ -551,9 +549,9 @@ Please provide a detailed analysis that synthesizes the information and highligh
     def _generate_simple_analysis(
         self, 
         query: str, 
-        results: List[SearchResult], 
+        results: list[SearchResult], 
         search_mode: SearchMode
-    ) -> tuple[str, str, List[str], List[str]]:
+    ) -> tuple[str, str, list[str], list[str]]:
         """Generate simple analysis when AI is not available."""
         summary = f"Found {len(results)} {search_mode} results for '{query}'. "
         if results:
@@ -572,7 +570,7 @@ Please provide a detailed analysis that synthesizes the information and highligh
         
         return summary, reasoning, citations, follow_ups
 
-    def _prepare_llm_context(self, query: str, results: List[SearchResult], search_mode: SearchMode) -> str:
+    def _prepare_llm_context(self, query: str, results: list[SearchResult], search_mode: SearchMode) -> str:
         """Prepare context for LLM analysis."""
         context_parts = []
         for i, result in enumerate(results[:5]):  # Limit to top 5 for context window
@@ -580,14 +578,14 @@ Please provide a detailed analysis that synthesizes the information and highligh
         
         return "\n".join(context_parts)
 
-    def _generate_simple_summary(self, query: str, results: List[SearchResult]) -> str:
+    def _generate_simple_summary(self, query: str, results: list[SearchResult]) -> str:
         """Generate a simple summary without AI."""
         if not results:
             return f"No results found for '{query}'"
         
         return f"Found {len(results)} results for '{query}'. Top result: {results[0].title}"
 
-    def _calculate_confidence(self, results: List[SearchResult]) -> float:
+    def _calculate_confidence(self, results: list[SearchResult]) -> float:
         """Calculate confidence score based on search results."""
         if not results:
             return 0.0
@@ -598,13 +596,13 @@ Please provide a detailed analysis that synthesizes the information and highligh
         
         return min((base_confidence + avg_relevance) / 2.0, 1.0)
 
-    async def get_search_history(self, limit: int = 10) -> List[PerplexicaResponse]:
+    async def get_search_history(self, limit: int = 10) -> list[PerplexicaResponse]:
         """Get recent search history."""
         if not self.search_history:
             return []
         return list(self.search_history[-limit:])
 
-    def get_tools(self) -> List[Dict[str, Any]]:
+    def get_tools(self) -> list[dict[str, Any]]:
         """Return available tools for this plugin."""
         return [
             {
@@ -624,7 +622,7 @@ Please provide a detailed analysis that synthesizes the information and highligh
             }
         ]
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Return health status for this plugin."""
         base_health = await super().health_check()
         base_health.update({

@@ -1,10 +1,11 @@
 """Plugin Interface tests (conflict markers cleaned)."""
 
 import asyncio
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+
 from src.core.plugin_interface import PluginInterface
 
 
@@ -22,7 +23,7 @@ class MockPlugin(PluginInterface):
     def name(self) -> str:  # type: ignore[override]
         return "test_plugin"
 
-    async def setup(self, event_bus, store, config: Dict[str, Any]):
+    async def setup(self, event_bus, store, config: dict[str, Any]):
         await super().setup(event_bus, store, config)
         self.setup_called = True
 

@@ -1,9 +1,11 @@
 from __future__ import annotations
-from typing import List, Optional, Dict, Literal, Set
-from enum import Enum
-from pydantic import BaseModel, Field
-from datetime import datetime
+
 import uuid
+from datetime import datetime
+from enum import Enum
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 
 class LadderStage(str, Enum):
@@ -25,25 +27,25 @@ class TodoStatus(str, Enum):
 
 class Evidence(BaseModel):
     kind: Literal["log", "trace", "metric", "artifact", "note"] = "note"
-    ref: Optional[str] = None
-    summary: Optional[str] = None
-    score: Optional[float] = None  # confidence or relevance
+    ref: str | None = None
+    summary: str | None = None
+    score: float | None = None  # confidence or relevance
 
 
 class ExitCriteria(BaseModel):
     description: str
-    validator: Optional[str] = None  # name of a check/tool
+    validator: str | None = None  # name of a check/tool
     must_pass: bool = True
 
 
 class Todo(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
-    description: Optional[str] = None
+    description: str | None = None
 
-    parent_id: Optional[str] = None
-    children_ids: List[str] = Field(default_factory=list)
-    depends_on: Set[str] = Field(default_factory=set)  # DAG edges
+    parent_id: str | None = None
+    children_ids: list[str] = Field(default_factory=list)
+    depends_on: set[str] = Field(default_factory=set)  # DAG edges
 
     stage: LadderStage = LadderStage.LOCALIZE
     status: TodoStatus = TodoStatus.PENDING
@@ -51,10 +53,10 @@ class Todo(BaseModel):
     priority: float = 0.0
     confidence: float = 0.0
 
-    owner: Optional[str] = None
-    tool_hint: Optional[str] = None
-    exit_criteria: List[ExitCriteria] = Field(default_factory=list)
-    evidence: List[Evidence] = Field(default_factory=list)
+    owner: str | None = None
+    tool_hint: str | None = None
+    exit_criteria: list[ExitCriteria] = Field(default_factory=list)
+    evidence: list[Evidence] = Field(default_factory=list)
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -65,6 +67,6 @@ class Todo(BaseModel):
 
 class TodoEvent(BaseModel):
     kind: str  # e.g., "todo.created", "plan.decomposed"
-    todo_id: Optional[str] = None
-    payload: Dict = Field(default_factory=dict)
+    todo_id: str | None = None
+    payload: dict = Field(default_factory=dict)
     ts: datetime = Field(default_factory=datetime.utcnow)

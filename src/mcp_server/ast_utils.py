@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from difflib import unified_diff
+
 import libcst as cst
 
 

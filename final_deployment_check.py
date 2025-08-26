@@ -2,7 +2,9 @@
 """Final Super Alita deployment verification."""
 
 from fastapi.testclient import TestClient
+
 from src.main import create_app
+
 
 def main():
     print("🔍 Final Super Alita Deployment Verification")

@@ -32,9 +32,7 @@ def test_generated_tool(tmp_path, monkeypatch) -> None:
     try:
 
         sys.path.insert(0, str(Path("mcp_server/src").resolve()))
-        import mcp_server_wrapper  # patch FastMCP.tool for telemetry
         importlib.invalidate_caches()
-        import mcp_server.server  # ensure server imports
         module = importlib.import_module("mcp_server.tools.generated_tool")
         asyncio.run(module.generated_tool())
 

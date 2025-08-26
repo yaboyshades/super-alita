@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
+
 from src.core.plugin_loader import (
     PluginLoadError,
     PluginManifestError,

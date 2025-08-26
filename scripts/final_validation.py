@@ -6,9 +6,8 @@ Demonstrates the full working system with telemetry and feedback loops
 
 import json
 import pathlib
-import time
-from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Any
+
 
 def validate_extension_installation() -> bool:
     """Verify VS Code extension is properly installed"""
@@ -23,7 +22,7 @@ def validate_extension_installation() -> bool:
         print(f"  ❌ Extension VSIX not found: {vsix_path}")
         return False
 
-def validate_telemetry_file() -> Dict[str, Any]:
+def validate_telemetry_file() -> dict[str, Any]:
     """Validate telemetry file exists and has correct structure"""
     print("📊 Validating Telemetry System...")
     
@@ -37,7 +36,7 @@ def validate_telemetry_file() -> Dict[str, Any]:
     
     # Parse events
     events = []
-    with open(telemetry_path, 'r', encoding='utf-8') as f:
+    with open(telemetry_path, encoding='utf-8') as f:
         for line_num, line in enumerate(f, 1):
             try:
                 event = json.loads(line.strip())
@@ -90,7 +89,7 @@ def validate_cortex_bridge() -> bool:
     
     return True
 
-def validate_event_types(events: list) -> Dict[str, int]:
+def validate_event_types(events: list) -> dict[str, int]:
     """Validate that all expected event types are present"""
     print("📋 Validating Event Types...")
     
@@ -116,7 +115,7 @@ def validate_event_types(events: list) -> Dict[str, int]:
     
     return event_counts
 
-def validate_telemetry_markers(events: list) -> Dict[str, Any]:
+def validate_telemetry_markers(events: list) -> dict[str, Any]:
     """Validate telemetry markers for Cortex bandit learning"""
     print("🎯 Validating Telemetry Markers...")
     
@@ -196,16 +195,16 @@ def main():
         markers = validate_telemetry_markers(telemetry_result["events"])
     
     # Overall status
-    print(f"\n📊 VALIDATION RESULTS:")
+    print("\n📊 VALIDATION RESULTS:")
     print(f"  Extension: {'✅ PASS' if extension_ok else '❌ FAIL'}")
     print(f"  Telemetry: {'✅ PASS' if telemetry_result['valid'] else '❌ FAIL'}")
     print(f"  Bridge: {'✅ PASS' if bridge_ok else '❌ FAIL'}")
     
     if extension_ok and telemetry_result["valid"] and bridge_ok:
-        print(f"\n🎉 INTEGRATION STATUS: ✅ FULLY OPERATIONAL")
-        print(f"   Ready for continuous agent improvement via telemetry!")
+        print("\n🎉 INTEGRATION STATUS: ✅ FULLY OPERATIONAL")
+        print("   Ready for continuous agent improvement via telemetry!")
     else:
-        print(f"\n⚠️ INTEGRATION STATUS: Partial - some components need attention")
+        print("\n⚠️ INTEGRATION STATUS: Partial - some components need attention")
     
     display_integration_summary()
 

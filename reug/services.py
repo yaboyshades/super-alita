@@ -4,15 +4,17 @@ States remain thin: all compute/IO happens here; FSM only orchestrates + emits e
 """
 from __future__ import annotations
 
-import asyncio, os, time, random
+import asyncio
+import os
+import random
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Literal, Callable, Tuple
+from typing import Any, Literal
 
 try:
     # Real SoT + executor (preferred if present in repo)
-    from super_alita.script_of_thought.parser import ScriptParser  # type: ignore
-    from super_alita.script_of_thought.interpreter import StepType as SoTStepType  # type: ignore
     from super_alita.computational_env.executor import Executor  # type: ignore
+    from super_alita.script_of_thought.parser import ScriptParser  # type: ignore
     HAVE_REAL_IMPL = True
 except Exception:
     HAVE_REAL_IMPL = False
@@ -32,16 +34,16 @@ StepKind = Literal["SEARCH","COMPUTE","ANALYZE","GENERATE","VALIDATE"]
 class PlanStep:
     step_id: str
     kind: StepKind
-    args: Dict[str, Any]
+    args: dict[str, Any]
 
 @dataclass
 class Plan:
-    steps: List[PlanStep]
+    steps: list[PlanStep]
 
 # ---------- Fallbacks (keeps tests green without repo-local deps) ----------
 class _FallbackParser:
     """Very small SoT parser fallback: expects user_input['sot'] as a list[dict]."""
-    def parse(self, user_input: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def parse(self, user_input: dict[str, Any]) -> list[dict[str, Any]]:
         sot = user_input.get("sot")
         if isinstance(sot, str):
             # very simple "type: arg" lines format
@@ -70,7 +72,7 @@ class _FallbackParser:
 
 class _FallbackExecutor:
     """Extremely simple safe-ish executor for COMPUTE/ANALYZE/GENERATE kinds (tests only)."""
-    def run(self, tool_id: str, args: Dict[str, Any], timeout_s: float = 5.0) -> Dict[str, Any]:
+    def run(self, tool_id: str, args: dict[str, Any], timeout_s: float = 5.0) -> dict[str, Any]:
         kind = args.get("_kind", "COMPUTE")
         if kind in ("COMPUTE","ANALYZE"):
             expr = args.get("expr") or args.get("code") or "None"
@@ -82,9 +84,9 @@ class _FallbackExecutor:
         return {"ok": True}
 
 # ---------- Tool registry hook (optional) ----------
-ToolResolver = Callable[[PlanStep, Dict[str, Any]], Tuple[str, Dict[str, Any]]]
+ToolResolver = Callable[[PlanStep, dict[str, Any]], tuple[str, dict[str, Any]]]
 
-def default_tool_resolver(step: PlanStep, _ctx: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+def default_tool_resolver(step: PlanStep, _ctx: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     """
     Minimal resolver: map step.kind to pseudo-tool IDs and pass through args.
     Real systems can consult a registry by capability + schema.
@@ -99,7 +101,7 @@ def default_tool_resolver(step: PlanStep, _ctx: Dict[str, Any]) -> Tuple[str, Di
     return tool_map.get(step.kind, f"tool.{step.kind.lower()}.generic"), step.args
 
 # ---------- Validation helpers ----------
-def _validate(schema: Optional[Dict[str, Any]], data: Any) -> Optional[str]:
+def _validate(schema: dict[str, Any] | None, data: Any) -> str | None:
     if not ENFORCE_SCHEMA or not schema or not jsonschema:
         return None
     try:
@@ -116,7 +118,7 @@ def create_services(
     per_tool_timeout_s: float | None = None,
     max_retries: int | None = None,
     retry_base_ms: int | None = None,
-) -> Dict[str, Callable]:
+) -> dict[str, Callable]:
     """
     Returns the four service callables expected by the FSM:
       - decompose(user_input) -> Plan
@@ -131,13 +133,13 @@ def create_services(
     parser = ScriptParser() if HAVE_REAL_IMPL else _FallbackParser()
     executor = Executor() if HAVE_REAL_IMPL else _FallbackExecutor()
 
-    async def decompose(user_input: Dict[str, Any]) -> Plan:
+    async def decompose(user_input: dict[str, Any]) -> Plan:
         # Accepts either pre-parsed plan or a raw SoT input to parse.
         if "plan" in user_input and isinstance(user_input["plan"], list):
             steps_raw = user_input["plan"]
         else:
             steps_raw = parser.parse(user_input)
-        steps: List[PlanStep] = []
+        steps: list[PlanStep] = []
         for s in steps_raw:
             step_id = s.get("id") or s.get("step_id") or f"step{len(steps)+1}"
             kind = str(s.get("kind", "COMPUTE")).upper()
@@ -147,7 +149,7 @@ def create_services(
             steps.append(PlanStep(step_id=step_id, kind=kind, args=args))
         return Plan(steps=steps)
 
-    async def select_tool(step: PlanStep, ctx: Dict[str, Any]) -> Dict[str, Any]:
+    async def select_tool(step: PlanStep, ctx: dict[str, Any]) -> dict[str, Any]:
         tool_id, tool_args = tool_resolver(step, ctx)
         if not tool_id:
             return {"status": "NOT_FOUND", "reason": "UNKNOWN_TOOL"}
@@ -158,7 +160,7 @@ def create_services(
             return {"status": "NOT_FOUND", "reason": f"INPUT_SCHEMA_VIOLATION: {err}"}
         return {"status": "FOUND", "tool": tool, "args": tool_args}
 
-    async def execute(tool: Dict[str, Any], args: Dict[str, Any], ctx: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(tool: dict[str, Any], args: dict[str, Any], ctx: dict[str, Any]) -> dict[str, Any]:
         correlation_id = ctx.get("correlation_id")
         tool_id = tool["tool_id"]
         span_id = new_span_id()
@@ -170,7 +172,7 @@ def create_services(
         )
         # Retry with jitter
         attempt = 0
-        last_err: Optional[str] = None
+        last_err: str | None = None
         backoff = 0
         while attempt <= max_retries:
             try:
@@ -205,7 +207,7 @@ def create_services(
                 except Exception:
                     pass
                 return {"status": "SUCCESS", "result": res}
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 last_err = f"TIMEOUT after {per_tool_timeout_s}s"
             except Exception as e:
                 last_err = str(e)
@@ -229,7 +231,7 @@ def create_services(
         )
         return {"status": "ERROR", "error": last_err}
 
-    async def process_result(ctx_dict: Dict[str, Any]) -> Dict[str, bool]:
+    async def process_result(ctx_dict: dict[str, Any]) -> dict[str, bool]:
         # Simple default: if FSM increased step_index >= len(steps) → complete.
         plan: Plan = ctx_dict.get("plan")  # type: ignore
         step_index: int = ctx_dict.get("step_index", 0)

@@ -14,7 +14,6 @@ from src.core.events import BaseEvent, ToolCallEvent
 from src.core.plugin_interface import PluginInterface
 from src.tools.core_utils import CoreUtils
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -10,19 +10,18 @@ Tests:
 """
 
 import asyncio
-import pytest
-import time
-from unittest.mock import AsyncMock, MagicMock, patch
-from dataclasses import dataclass
-from typing import List, Dict, Any
 
 # Import the modules under test
 import sys
+from unittest.mock import patch
+
+import pytest
+
 sys.path.append('src')
 
-from core.states import StateMachine, State, TransitionTrigger, Context, ToolSpec
-from core.session import Session, get_session
 from core.metrics_registry import get_metrics_registry
+from core.session import get_session
+from core.states import Context, StateMachine, ToolSpec, TransitionTrigger
 
 
 class TestFallbackBehavior:

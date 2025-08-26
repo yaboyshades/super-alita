@@ -13,6 +13,7 @@ import asyncio
 import contextlib
 import importlib
 import inspect
+import os
 import sys
 import time
 import uuid
@@ -21,7 +22,6 @@ from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-import os
 
 # Ensure project src is importable when running tests standalone
 repo_root = Path(__file__).resolve().parents[1]
@@ -86,11 +86,7 @@ def _generic_reset(self):
                     pass
         else:
             # Fallbacks for common types
-            if isinstance(val, dict):
-                val.clear()
-            elif isinstance(val, list):
-                val.clear()
-            elif isinstance(val, set):
+            if isinstance(val, dict) or isinstance(val, list) or isinstance(val, set):
                 val.clear()
     # If the registry maintains counters/histograms as attributes like:
     # self.counters / self.histograms / self.gauges (dicts), they've been cleared above.
@@ -98,7 +94,7 @@ def _generic_reset(self):
 
 if _MR_CLASS is not None and not hasattr(_MR_CLASS, "reset"):
     try:
-        setattr(_MR_CLASS, "reset", _generic_reset)
+        _MR_CLASS.reset = _generic_reset
     except Exception:
         pass
 
@@ -146,7 +142,7 @@ def _attach_execution_flow_shims():
     # Try to wire REUG services (fallbacks keep tests green even if SoT/executor missing)
     try:
         from reug.events import EventEmitter
-        from reug.services import create_services, PlanStep
+        from reug.services import PlanStep, create_services
         emitter = EventEmitter(os.environ.get("REUG_EVENT_LOG_DIR") or "logs/events.jsonl")
         services = create_services(emitter)
     except Exception:
@@ -180,7 +176,7 @@ def _attach_execution_flow_shims():
                 "VALIDATE":"tool.validate.schema",
             }.get(kind or "COMPUTE", "tool.generic")
             return [{"tool_id": tool_id}]
-        setattr(cef, "find_applicable_tools", find_applicable_tools)
+        cef.find_applicable_tools = find_applicable_tools
 
     # ---- Shim: select_tool(step) -> dict with status/tool
     if not hasattr(cef, "select_tool"):
@@ -189,7 +185,7 @@ def _attach_execution_flow_shims():
             if tools:
                 return {"status": "FOUND", "tool": tools[0]}
             return {"status": "NOT_FOUND"}
-        setattr(cef, "select_tool", select_tool)
+        cef.select_tool = select_tool
 
     # ---- Shim: execute_step(tool, step) -> result dict
     if not hasattr(cef, "execute_step"):
@@ -216,15 +212,15 @@ def _attach_execution_flow_shims():
             if kind == "GENERATE":
                 return {"text": args.get("text", "ok")}
             return {"ok": True}
-        setattr(cef, "execute_step", execute_step)
+        cef.execute_step = execute_step
 
     # ---- Shim: _execute_tools_with_comp_env(tools, ctx)
     if not hasattr(cef, "_execute_tools_with_comp_env"):
         async def _execute_tools_with_comp_env(*args, **kwargs):
             return []
-        setattr(cef, "_execute_tools_with_comp_env", _execute_tools_with_comp_env)
+        cef._execute_tools_with_comp_env = _execute_tools_with_comp_env
 
-    setattr(cef, "_REUG_TEST_SHIMS_ATTACHED", True)
+    cef._REUG_TEST_SHIMS_ATTACHED = True
 
 _attach_execution_flow_shims()
 
@@ -247,8 +243,8 @@ except Exception:
 # attach metrics to the instance.
 # --------------------------------------------------------------------
 try:
-    from core.states import StateMachine as _SM
     from core.session import Session as _Session
+    from core.states import StateMachine as _SM
     _orig_sm_init = _SM.__init__
 
     def _sm_init_compat(self, *args, **kwargs):

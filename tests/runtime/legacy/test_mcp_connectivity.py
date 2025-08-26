@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test MCP server connectivity and basic functionality."""
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
@@ -8,6 +9,7 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
+
 
 async def test_mcp_server() -> dict[str, Any]:
     """Test MCP server by sending a simple request."""

@@ -1,9 +1,9 @@
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
 from reug_runtime import config
 from reug_runtime.router import router
-
 from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG
 
@@ -49,12 +49,7 @@ def test_schema_bypass(monkeypatch):
     fail = {e["span_id"] for e in evts if e["type"] == "AbilityFailed"}
     assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls)
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from reug_runtime import config
-from reug_runtime.router import router
 
-from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG
 
 
 class BadArgLLM:

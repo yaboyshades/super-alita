@@ -5,7 +5,8 @@ import asyncio
 import logging
 
 from acp_sdk import Server
-from .agents import EchoAgent, ClassifyAgent, RouterAgent, SearchAgent
+
+from .agents import ClassifyAgent, EchoAgent, RouterAgent, SearchAgent
 from .middleware import auth_middleware, logging_middleware
 from .settings import settings
 

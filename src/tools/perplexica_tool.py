@@ -5,11 +5,10 @@ import asyncio
 import hashlib
 import json
 import time
-from typing import Any, Dict, List, Literal, Optional, TypedDict
-from urllib.parse import urlparse
-from dataclasses import dataclass
-from tenacity import retry, stop_after_attempt, wait_exponential
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from typing import Any, Literal, TypedDict
+from urllib.parse import urlparse
 
 Mode = Literal[
     "web",
@@ -48,8 +47,8 @@ class SearchResponse(TypedDict, total=False):
     summary: str
     reasoning: str
     confidence: float
-    citations: List[Evidence]
-    followup_questions: List[str]
+    citations: list[Evidence]
+    followup_questions: list[str]
     mode: Mode
     _cache_hit: bool
 
@@ -93,19 +92,19 @@ class PerplexicaSearchTool:
 
     def __init__(
         self,
-        config: Optional[PerplexicaConfig] = None,
+        config: PerplexicaConfig | None = None,
         events=None,
         metrics=None,
     ):
         self.config = config or PerplexicaConfig()
         self.events = events
         self.metrics = metrics
-        self.cache: Dict[str, Dict[str, Any]] = {}
+        self.cache: dict[str, dict[str, Any]] = {}
         self.rate_limiters = {
             "serpapi": RateLimiter(rpm=120, burst=20),
             "bing": RateLimiter(rpm=60, burst=10),
         }
-        self.provider_chains: Dict[str, List[str]] = {
+        self.provider_chains: dict[str, list[str]] = {
             "web": ["serpapi", "bing"],
             "news": ["gnews", "serpapi"],
             "academic": ["semantic_scholar", "crossref"],
@@ -129,10 +128,10 @@ class PerplexicaSearchTool:
             json.dumps(normalized, sort_keys=True).encode()
         ).hexdigest()[:16]
 
-    def _dedupe_results(self, results: List[Evidence]) -> List[Evidence]:
+    def _dedupe_results(self, results: list[Evidence]) -> list[Evidence]:
         """Smart deduplication based on domain and title similarity."""
-        seen: Dict[str, Evidence] = {}
-        deduped: List[Evidence] = []
+        seen: dict[str, Evidence] = {}
+        deduped: list[Evidence] = []
 
         for r in results:
             domain = urlparse(r["url"]).netloc
@@ -150,8 +149,8 @@ class PerplexicaSearchTool:
         return deduped
 
     async def _search_with_fallback(
-        self, query: str, mode: Mode, providers: List[str]
-    ) -> List[Evidence]:
+        self, query: str, mode: Mode, providers: list[str]
+    ) -> list[Evidence]:
         """Execute search with provider fallback chain."""
         for provider in providers:
             try:
@@ -175,7 +174,7 @@ class PerplexicaSearchTool:
 
     async def _provider_search(
         self, provider: str, query: str, mode: Mode
-    ) -> List[Evidence]:
+    ) -> list[Evidence]:
         """Mock provider search - replace with actual API calls."""
         await asyncio.sleep(0.1)
         if not query.strip():
@@ -191,8 +190,8 @@ class PerplexicaSearchTool:
         ]
 
     async def _rerank_results(
-        self, results: List[Evidence], query: str
-    ) -> List[Evidence]:
+        self, results: list[Evidence], query: str
+    ) -> list[Evidence]:
         """Rerank results using semantic similarity."""
         if not self.config.rerank_enabled or not results:
             return results
@@ -201,8 +200,8 @@ class PerplexicaSearchTool:
         return sorted(results, key=lambda x: x.get("score", 0), reverse=True)
 
     async def _summarize_with_reasoning(
-        self, query: str, results: List[Evidence]
-    ) -> Dict[str, Any]:
+        self, query: str, results: list[Evidence]
+    ) -> dict[str, Any]:
         """Generate AI summary with reasoning and citations."""
         if not results:
             return {

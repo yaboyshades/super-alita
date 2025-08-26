@@ -2,7 +2,6 @@
 Fake servers for testing plugin integrations.
 """
 
-from typing import Any, Dict
 
 from aiohttp import web
 
@@ -11,11 +10,11 @@ class FakePuterServer:
     """Fake Puter server for testing."""
 
     def __init__(self) -> None:
-        self.files: Dict[str, str] = {
+        self.files: dict[str, str] = {
             "/test/file.txt": "test file content",
             "/test/readme.md": "# Test README\nThis is a test file.",
         }
-        self.directories: Dict[str, list[str]] = {
+        self.directories: dict[str, list[str]] = {
             "/": ["test"],
             "/test": ["file.txt", "readme.md"],
         }

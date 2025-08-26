@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
+
 from src.core.event_bus import EventBus
 from src.plugins.knowledge_gap_detector import KnowledgeGapDetector
 

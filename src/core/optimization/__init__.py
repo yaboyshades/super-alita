@@ -5,10 +5,10 @@ This module provides intelligent decision optimization using various bandit algo
 including Thompson Sampling, UCB1, and Epsilon-Greedy approaches.
 """
 
-from .bandits import ThompsonSamplingBandit, UCB1Bandit, EpsilonGreedyBandit
+from .bandits import EpsilonGreedyBandit, ThompsonSamplingBandit, UCB1Bandit
+from .plugin import OptimizationPlugin
 from .policy_engine import DecisionPolicyEngine
 from .reward_tracker import RewardTracker
-from .plugin import OptimizationPlugin
 
 __all__ = [
     "ThompsonSamplingBandit",

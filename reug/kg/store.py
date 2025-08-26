@@ -1,5 +1,7 @@
-import json, os, time, uuid
-from typing import Dict, List
+import json
+import os
+import time
+import uuid
 
 TRIPLE_PATH = os.path.join(os.getenv("REUG_KG_DIR", "kg"), "triples.jsonl")
 
@@ -18,7 +20,7 @@ def add_triple(s: str, p: str, o: str, conf=1.0, src=None):
         f.write(json.dumps(triple) + "\n")
     return triple
 
-def query(s=None,p=None)->List[Dict]:
+def query(s=None,p=None)->list[dict]:
     if not os.path.exists(TRIPLE_PATH): return []
     res=[]
     with open(TRIPLE_PATH) as f:

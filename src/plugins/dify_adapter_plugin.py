@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import aiohttp
+
 from src.core.plugin_interface import PluginInterface
 
 logger = logging.getLogger(__name__)
 
 
 def _utcnow() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 @dataclass
 class DifyConfig:
     api_url: str
-    api_key: Optional[str] = None
-    workflow_id: Optional[str] = None
+    api_key: str | None = None
+    workflow_id: str | None = None
     enable_streaming: bool = True
     use_codegen_for_code: bool = True
     enabled: bool = False
@@ -47,7 +49,7 @@ class DifyAdapterPlugin(PluginInterface):
         return "dify_adapter"
 
     async def setup(
-        self, event_bus: Any, store: Any, config: Dict[str, Any]
+        self, event_bus: Any, store: Any, config: dict[str, Any]
     ) -> None:
         await super().setup(event_bus, store, config)
         logger.info("DifyAdapter setup (enabled=%s)", self._cfg.enabled)
@@ -69,7 +71,7 @@ class DifyAdapterPlugin(PluginInterface):
             await self._session.close()
         await super().shutdown()
 
-    async def _on_dify_request(self, event: Dict[str, Any]) -> None:
+    async def _on_dify_request(self, event: dict[str, Any]) -> None:
         if not self.is_running or not self._cfg.enabled:
             return
         action = (event.get("action") or "generate_code").lower()
@@ -93,7 +95,7 @@ class DifyAdapterPlugin(PluginInterface):
                 timestamp=_utcnow(),
             )
 
-    async def _on_codegen_result(self, event: Dict[str, Any]) -> None:
+    async def _on_codegen_result(self, event: dict[str, Any]) -> None:
         if not self._session:
             return
         callback_id = event.get("dify_callback_id") or event.get("data", {}).get(
@@ -110,8 +112,8 @@ class DifyAdapterPlugin(PluginInterface):
                 "tests": event.get("tests", []),
                 "docs": event.get("docs", []),
                 "validation": event.get("validation"),
-                "success": event.get("success", None),
-                "confidence": event.get("confidence", None),
+                "success": event.get("success"),
+                "confidence": event.get("confidence"),
                 "timestamp": _utcnow(),
             },
         }

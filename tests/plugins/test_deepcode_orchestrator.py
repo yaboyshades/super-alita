@@ -1,8 +1,12 @@
 import asyncio
-import pytest
-from typing import Any, Dict
+from typing import Any
 
-from src.plugins.deepcode_orchestrator_plugin import DeepCodeOrchestratorPlugin, DeepCodeClientInterface
+import pytest
+
+from src.plugins.deepcode_orchestrator_plugin import (
+    DeepCodeClientInterface,
+    DeepCodeOrchestratorPlugin,
+)
 
 
 class FakeBus:
@@ -11,13 +15,13 @@ class FakeBus:
 
 
 class FakeDC(DeepCodeClientInterface):
-    async def plan(self, req: Dict[str, Any]) -> Dict[str, Any]:
+    async def plan(self, req: dict[str, Any]) -> dict[str, Any]:
         return {"steps": ["A", "B"], "confidence": 0.72}
 
-    async def collect_references(self, plan: Dict[str, Any]) -> Dict[str, Any]:
+    async def collect_references(self, plan: dict[str, Any]) -> dict[str, Any]:
         return {"snippets": [{"path": "x.py", "code": "print(1)"}], "confidence": 0.79}
 
-    async def generate_code(self, plan: Dict[str, Any], refs: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_code(self, plan: dict[str, Any], refs: dict[str, Any]) -> dict[str, Any]:
         return {
             "proposal_id": "prop123",
             "diffs": [
@@ -33,7 +37,7 @@ class FakeDC(DeepCodeClientInterface):
             "confidence": 0.85,
         }
 
-    async def validate(self, impl: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate(self, impl: dict[str, Any]) -> dict[str, Any]:
         return {"status": "pass", "lint_errors": 0, "tests_passed": True, "confidence": 0.9}
 
 

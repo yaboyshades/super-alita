@@ -1,7 +1,7 @@
 import pytest
 
 try:
-    from reug_runtime.router import BlockParser, MAX_BUFFER_BYTES
+    from reug_runtime.router import MAX_BUFFER_BYTES, BlockParser
 except ImportError:  # pragma: no cover - skip if implementation missing
     pytest.skip("BlockParser not available", allow_module_level=True)
 

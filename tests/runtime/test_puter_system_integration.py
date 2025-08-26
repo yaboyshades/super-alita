@@ -4,21 +4,20 @@ Test the full integration of Puter plugin with Super Alita's unified system.
 """
 
 import asyncio
-import logging
 import os
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+
 # Test integration with main unified system
 def test_puter_plugin_in_unified_system():
     """Test that Puter plugin can be loaded in the unified system."""
     import sys
-    import os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
     
-    from main_unified import _load_unified_plugins, AVAILABLE_PLUGINS
+    from main_unified import AVAILABLE_PLUGINS, _load_unified_plugins
     
     # Load plugins
     _load_unified_plugins()
@@ -38,7 +37,6 @@ def test_puter_plugin_in_unified_system():
 async def test_puter_plugin_initialization_with_env(monkeypatch):
     """Test Puter plugin initialization with environment configuration."""
     import sys
-    import os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
     
     # Set environment variables
@@ -122,11 +120,10 @@ async def test_puter_plugin_initialization_with_env(monkeypatch):
 async def test_end_to_end_puter_workflow(monkeypatch):
     """Test end-to-end workflow with Puter plugin."""
     import sys
-    import os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
     
-    from plugins.puter_plugin import PuterPlugin
     from core.events import create_event
+    from plugins.puter_plugin import PuterPlugin
     
     # Mock event bus that captures events
     class MockEventBus:

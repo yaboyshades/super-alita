@@ -482,6 +482,7 @@ class TestEnhancedLadderPlanner:
         """Ensure energy is adjusted when active inference is enabled."""
         monkeypatch.setenv("CORTEX_LADDER_ACTIVE_INFERENCE", "1")
         import importlib
+
         import cortex.config.flags as flag_module
         importlib.reload(flag_module)
         import cortex.planner.ladder_enhanced as le

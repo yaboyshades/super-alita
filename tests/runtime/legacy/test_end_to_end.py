@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """End-to-end test for Super Alita agent functionality."""
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
-import json
 import sys
-from pathlib import Path
+from datetime import UTC
 
 # Add src to path
 
@@ -16,10 +16,11 @@ async def test_agent_request_handling():
     
     try:
         # Import main components
-        from main import create_app
-        from core.decision_policy_v1 import DecisionPolicyEngine, IntentType
+        from datetime import datetime
+
+        from core.decision_policy_v1 import DecisionPolicyEngine
         from core.events import create_event
-        from datetime import datetime, timezone
+        from main import create_app
         
         # Create the app
         app = create_app()
@@ -37,7 +38,7 @@ async def test_agent_request_handling():
             "user_request",
             source_plugin="test_client",
             message=user_request,
-            timestamp=datetime.now(timezone.utc)
+            timestamp=datetime.now(UTC)
         )
         print(f"  ✅ Request event created: {request_event.event_type}")
         
@@ -87,7 +88,6 @@ async def test_streaming_response():
     
     try:
         # Check that the router module can be imported
-        import reug_runtime.router
         print("  ✅ REUG router module imported")
         
         # Check that the main app has streaming routes
@@ -110,10 +110,11 @@ async def test_complete_workflow():
     
     try:
         # Import all necessary components
-        from main import create_app, SimpleAbilityRegistry
+        from datetime import datetime
+
         from core.decision_policy_v1 import DecisionPolicyEngine
         from core.events import create_event
-        from datetime import datetime, timezone
+        from main import SimpleAbilityRegistry, create_app
         
         # 1. Initialize agent
         app = create_app()
@@ -130,7 +131,7 @@ async def test_complete_workflow():
             "user_request",
             source_plugin="user_interface",
             message=user_request,
-            timestamp=datetime.now(timezone.utc)
+            timestamp=datetime.now(UTC)
         )
         print("  ✅ Request event created")
         
@@ -154,7 +155,7 @@ async def test_complete_workflow():
             response_text=f"I'll help you create a todo list application. Based on your request, I've classified this as a {intent} task.",
             response_id="response_123",
             reasoning="Classified user intent and generated appropriate response",
-            timestamp=datetime.now(timezone.utc)
+            timestamp=datetime.now(UTC)
         )
         print("  ✅ Response event created")
         

@@ -8,9 +8,9 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "mcp_server" / "src"))
 
-from mcp_server.server import app
 import mcp_server.tools as tools_pkg
 import toolforge
+from mcp_server.server import app
 from toolforge import PromptDefinition, ResourceDescriptor
 
 

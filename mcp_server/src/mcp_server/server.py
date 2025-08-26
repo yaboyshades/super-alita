@@ -8,7 +8,6 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-
 # Dynamic tool loader: import all modules in mcp_server.tools
 
 def load_tools() -> list[str]:

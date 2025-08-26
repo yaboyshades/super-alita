@@ -6,8 +6,9 @@ import asyncio
 import contextlib
 import io
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,6 @@ class PythonSandbox:
                 finally:
                     os.chdir(cwd)
             return await asyncio.wait_for(asyncio.to_thread(_execute), self.timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Sandbox execution timed out")
             return SandboxResult("", "", "timeout", {})

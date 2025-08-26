@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
 import uuid
+from typing import Any
 
-from src.core.plugin_interface import PluginInterface
 from src.core.events import ToolCallEvent
+from src.core.plugin_interface import PluginInterface
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class OptionExecutorPlugin(PluginInterface):
     def name(self) -> str:
         return "option_executor"
 
-    async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
         self.option_mapping = self.get_config("option_mapping", OPTION_TO_ACTION_MAPPING)
 

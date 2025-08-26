@@ -5,13 +5,12 @@ Captures feedback about both @alita participant and Copilot IDE performance
 """
 
 import json
-import os
-import time
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, List, Any
-import subprocess
 import sys
+import time
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
 
 class BidirectionalTelemetryMonitor:
     """Monitor and analyze bidirectional telemetry data"""
@@ -23,21 +22,21 @@ class BidirectionalTelemetryMonitor:
         self.export_dir = self.telemetry_dir / "telemetry-exports"
         self.export_dir.mkdir(exist_ok=True)
         
-    def read_telemetry_data(self) -> Dict[str, Any]:
+    def read_telemetry_data(self) -> dict[str, Any]:
         """Read current telemetry data"""
         if self.telemetry_file.exists():
             try:
-                with open(self.telemetry_file, 'r') as f:
+                with open(self.telemetry_file) as f:
                     return json.load(f)
             except (json.JSONDecodeError, FileNotFoundError):
                 pass
         
         return self.get_default_metrics()
     
-    def get_default_metrics(self) -> Dict[str, Any]:
+    def get_default_metrics(self) -> dict[str, Any]:
         """Get default telemetry structure"""
         return {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "metrics": {
                 "totalInteractions": 0,
                 "complianceScore": 0,
@@ -70,7 +69,7 @@ class BidirectionalTelemetryMonitor:
             "version": "2.0.0"
         }
     
-    def analyze_copilot_performance(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_copilot_performance(self, data: dict[str, Any]) -> dict[str, Any]:
         """Analyze Copilot performance metrics"""
         metrics = data.get("metrics", {})
         copilot = metrics.get("copilotPerformance", {})
@@ -162,14 +161,14 @@ class BidirectionalTelemetryMonitor:
         if session_start:
             try:
                 start_time = datetime.fromisoformat(session_start.replace('Z', '+00:00'))
-                duration = datetime.now(timezone.utc) - start_time
+                duration = datetime.now(UTC) - start_time
                 session_duration = f"{duration.total_seconds() / 3600:.1f} hours"
             except:
                 pass
         
         report = f"""
 # 🤖 Bidirectional Telemetry Report
-**Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+**Generated:** {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}
 **Session Duration:** {session_duration}
 **Overall Performance Score:** {analysis['overall_score']:.1f}/100
 
@@ -216,7 +215,7 @@ class BidirectionalTelemetryMonitor:
         else:
             report += "- No ratings provided yet\n"
         
-        report += f"""
+        report += """
 
 ## 🐛 Error Pattern Analysis
 
@@ -232,7 +231,7 @@ class BidirectionalTelemetryMonitor:
         else:
             report += "- No error patterns detected\n"
         
-        report += f"""
+        report += """
 
 ## 🔄 Feedback Loop Insights
 
@@ -258,7 +257,7 @@ This telemetry provides bidirectional feedback:
         """Export detailed analysis to file"""
         report = self.generate_performance_report()
         
-        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.now(UTC).strftime('%Y%m%d_%H%M%S')
         export_file = self.export_dir / f"performance_analysis_{timestamp}.md"
         
         with open(export_file, 'w', encoding='utf-8') as f:

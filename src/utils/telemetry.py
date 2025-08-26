@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 import time
-from typing import Dict, Any
+from typing import Any
+
 from src.prompt.policy_constants import PROMPT_VERSION, SCHEMA_VERSION
+
 
 class ReadLedger:
     def __init__(self):
@@ -20,7 +23,7 @@ def start_timer() -> float:
 def end_timer(t0: float) -> int:
     return int((time.time() - t0) * 1000)
 
-def telemetry_footer(retrieval_rounds: int, segments_used: int, totals: Dict[str,int]) -> Dict[str, Any]:
+def telemetry_footer(retrieval_rounds: int, segments_used: int, totals: dict[str,int]) -> dict[str, Any]:
     return {
         "telemetry": {
             "prompt_version": PROMPT_VERSION,

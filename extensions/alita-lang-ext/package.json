@@ -179,7 +179,7 @@
         },
         "alita.ollama.model": {
           "type": "string",
-          "default": "",
+          "default": "gpt-oss:20b",
           "markdownDescription": "Model tag to use for Ollama (e.g., `llama3.1:8b`). If empty you'll be prompted on first use.",
           "description": "Model tag for Ollama."
         }

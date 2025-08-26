@@ -3,24 +3,22 @@ FastAPI telemetry dashboard server
 """
 
 import asyncio
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 
-from fastapi import FastAPI, WebSocket, HTTPException, BackgroundTasks
-from fastapi.staticfiles import StaticFiles
+from fastapi import BackgroundTasks, FastAPI, HTTPException, WebSocket
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from .collector import TelemetryCollector, TelemetryMetrics, TelemetryEvent
+from .collector import TelemetryCollector
 from .streaming import WebSocketStreamer
 
 
 class TelemetryQuery(BaseModel):
     """Query parameters for telemetry data"""
-    cycle_id: Optional[str] = None
-    phase: Optional[str] = None
+    cycle_id: str | None = None
+    phase: str | None = None
     limit: int = 100
-    event_type: Optional[str] = None
+    event_type: str | None = None
 
 
 class TelemetryDashboard:
@@ -53,17 +51,17 @@ class TelemetryDashboard:
             return self._get_dashboard_html()
         
         @self.app.get("/api/metrics", response_model=dict)
-        async def get_metrics() -> Dict[str, Any]:
+        async def get_metrics() -> dict[str, Any]:
             """Get current telemetry metrics"""
             return self.collector.get_metrics().to_dict()
         
-        @self.app.get("/api/events", response_model=List[dict])
+        @self.app.get("/api/events", response_model=list[dict])
         async def get_events(
             limit: int = 100,
-            cycle_id: Optional[str] = None,
-            phase: Optional[str] = None,
-            event_type: Optional[str] = None
-        ) -> List[Dict[str, Any]]:
+            cycle_id: str | None = None,
+            phase: str | None = None,
+            event_type: str | None = None
+        ) -> list[dict[str, Any]]:
             """Get telemetry events with optional filtering"""
             events = self.collector.get_recent_events(limit)
             
@@ -77,14 +75,14 @@ class TelemetryDashboard:
                 
             return [event.to_dict() for event in events]
         
-        @self.app.get("/api/cycles/{cycle_id}/events", response_model=List[dict])
-        async def get_cycle_events(cycle_id: str) -> List[Dict[str, Any]]:
+        @self.app.get("/api/cycles/{cycle_id}/events", response_model=list[dict])
+        async def get_cycle_events(cycle_id: str) -> list[dict[str, Any]]:
             """Get all events for a specific cycle"""
             events = self.collector.get_events_by_cycle(cycle_id)
             return [event.to_dict() for event in events]
         
         @self.app.get("/api/phases/{phase}/stats", response_model=dict)
-        async def get_phase_stats(phase: str) -> Dict[str, Any]:
+        async def get_phase_stats(phase: str) -> dict[str, Any]:
             """Get statistics for a specific phase"""
             stats = self.collector.get_phase_statistics(phase)
             if not stats:
@@ -92,7 +90,7 @@ class TelemetryDashboard:
             return stats
         
         @self.app.get("/api/health")
-        async def health_check() -> Dict[str, Any]:
+        async def health_check() -> dict[str, Any]:
             """Health check endpoint"""
             return {
                 "status": "healthy",

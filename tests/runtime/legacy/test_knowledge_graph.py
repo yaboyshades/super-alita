@@ -2,17 +2,19 @@
 Test the Knowledge Graph implementation
 """
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
 import tempfile
 from pathlib import Path
 
-from core.knowledge import KnowledgeStore, AtomType, BondType, KnowledgeGraphPlugin
-from core.knowledge.handlers import KnowledgeGraphEventHandlers
-from core.telemetry.simple_event_bus import SimpleEventBus
 from core.cortex import create_cortex_runtime
 from core.events import create_event
+from core.knowledge import AtomType, BondType, KnowledgeGraphPlugin, KnowledgeStore
+from core.knowledge.handlers import KnowledgeGraphEventHandlers
+from core.telemetry.simple_event_bus import SimpleEventBus
+
 
 async def test_knowledge_store():
     """Test basic knowledge store functionality"""

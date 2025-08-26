@@ -1,10 +1,10 @@
+import os
+
 import pytest
 from aiohttp import web
 
-import os
-
 from src.core.events import create_event
-from src.plugins.puter_plugin import PuterPlugin, PuterOperationAtom
+from src.plugins.puter_plugin import PuterOperationAtom, PuterPlugin
 from tests.runtime.puter_fakes import FakePuterServer
 
 

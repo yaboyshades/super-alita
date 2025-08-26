@@ -10,7 +10,7 @@ import hashlib
 import hmac
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 
@@ -25,7 +25,7 @@ def verify_signature(body: bytes, signature: str, secret: str = _SECRET) -> bool
 
 
 @app.post("/search/issues")
-async def search_issues_skill(request: Request) -> Dict[str, List[Dict[str, Any]]]:
+async def search_issues_skill(request: Request) -> dict[str, list[dict[str, Any]]]:
     """Search a static set of issues.
 
     The request body must contain ``{"query": "..."}`` and include an

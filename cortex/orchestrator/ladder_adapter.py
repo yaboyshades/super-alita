@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import Any, Dict
+
+from typing import Any
+
 from cortex.planner import LadderPlanner
 from cortex.todo import InMemoryTodoStore
 
@@ -25,7 +27,7 @@ class _DefaultOrchestrator:
         return f"Simulated run of {tool} on {todo.title}"
 
 
-async def handle_user_event(kg, bandit, user_event, orchestrator=None) -> Dict[str, Any]:
+async def handle_user_event(kg, bandit, user_event, orchestrator=None) -> dict[str, Any]:
     """
     Drop-in function to route a user event into the LADDER planner.
     Returns minimal planning result (root id and child ids).

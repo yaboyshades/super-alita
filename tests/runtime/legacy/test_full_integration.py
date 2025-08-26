@@ -4,14 +4,15 @@ Full Agent System Integration Test
 Tests the complete Super Alita agent system with all components working together
 """
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
 from pathlib import Path
 
 # Add src to path for imports
-
 from vscode_integration.agent_integration import SuperAlitaAgent
+
 
 async def test_full_agent_system():
     """Test the complete agent system integration"""

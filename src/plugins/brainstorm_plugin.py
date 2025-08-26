@@ -17,7 +17,6 @@ from uuid import uuid4
 
 import numpy as np
 
-from src.core.config import EMBEDDING_DIM
 from src.core.events import BaseEvent
 from src.core.plugin_interface import PluginInterface
 
@@ -346,6 +345,7 @@ Make the code practical and executable. Focus on filling genuine capability gaps
             else:
                 # Fallback: create neural atom directly
                 import json
+
                 from src.core.neural_atom import NeuralAtomMetadata, TextualMemoryAtom
 
                 metadata = NeuralAtomMetadata(

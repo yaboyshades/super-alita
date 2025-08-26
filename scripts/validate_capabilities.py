@@ -18,14 +18,15 @@ Exit codes:
 """
 
 from __future__ import annotations
+
 import argparse
 import importlib
 import json
-import os
 import pkgutil
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any
 
 # Required fields aligned with your report
 REQUIRED_FIELDS = [
@@ -54,11 +55,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--strict", action="store_true", help="Treat warnings as failures (CI mode)")
     return p.parse_args()
 
-def should_ignore(path: Path, excludes: List[str]) -> bool:
+def should_ignore(path: Path, excludes: list[str]) -> bool:
     parts = set(path.parts)
     return any(e in parts for e in excludes)
 
-def iter_plugin_modules(root: Path, excludes: List[str]) -> Iterable[str]:
+def iter_plugin_modules(root: Path, excludes: list[str]) -> Iterable[str]:
     """Yield dotted module names under src/plugins/** that end with _plugin.py"""
     if should_ignore(root, excludes):
         return []
@@ -85,10 +86,10 @@ def iter_plugin_modules(root: Path, excludes: List[str]) -> Iterable[str]:
     except ImportError:
         return []
 
-def collect_tools_from_module(mod_name: str) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+def collect_tools_from_module(mod_name: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Return (tools, errors) for a module"""
-    errors: List[Dict[str, Any]] = []
-    tools: List[Dict[str, Any]] = []
+    errors: list[dict[str, Any]] = []
+    tools: list[dict[str, Any]] = []
     try:
         mod = importlib.import_module(mod_name)
     except Exception as e:
@@ -111,7 +112,7 @@ def collect_tools_from_module(mod_name: str) -> Tuple[List[Dict[str, Any]], List
                 tools.append(spec)
     return tools, errors
 
-def validate_tool(mod_name: str, tool: Dict[str, Any]) -> List[Dict[str, Any]]:
+def validate_tool(mod_name: str, tool: dict[str, Any]) -> list[dict[str, Any]]:
     missing = []
     for field in REQUIRED_FIELDS:
         v = tool.get(field)
@@ -119,7 +120,7 @@ def validate_tool(mod_name: str, tool: Dict[str, Any]) -> List[Dict[str, Any]]:
             missing.append({"module": mod_name, "tool": tool.get("name"), "missing": field})
     return missing
 
-def format_text_report(passed: int, warnings: List[Dict[str, Any]], failed: List[Dict[str, Any]]) -> str:
+def format_text_report(passed: int, warnings: list[dict[str, Any]], failed: list[dict[str, Any]]) -> str:
     lines = []
     lines.append("🔍 Super Alita Capability Validation Report")
     lines.append("=" * 50)
@@ -142,7 +143,7 @@ def main() -> int:
     args = parse_args()
 
     # Scan only plugin modules (Python). Manifests (JSON/YAML) can be added later if needed.
-    modules: List[str] = []
+    modules: list[str] = []
     for root_str in args.paths:
         root = Path(root_str).resolve()
         if not root.exists():
@@ -158,8 +159,8 @@ def main() -> int:
     seen = set()
     modules = [m for m in modules if not (m in seen or seen.add(m))]
 
-    warnings: List[Dict[str, Any]] = []
-    failures: List[Dict[str, Any]] = []
+    warnings: list[dict[str, Any]] = []
+    failures: list[dict[str, Any]] = []
     passed = 0
 
     if not modules:

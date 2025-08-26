@@ -1,9 +1,9 @@
 import asyncio
 
 from reug.events import EventEmitter
-from reug.services import create_services
 from reug.fsm import ExecutionFlow
 from reug.kg import store as kg_store
+from reug.services import create_services
 from reug.tools import registry as tool_registry
 
 

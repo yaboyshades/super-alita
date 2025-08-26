@@ -8,14 +8,15 @@ import asyncio
 import importlib
 import tempfile
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
 
 import pytest
 import yaml
+
 from src.core.event_bus import EventBus
-from src.core.events import GoalReceivedEvent, SubgoalDefinedEvent, ToolCallEvent
-from src.main_unified import UnifiedSuperAlita
+from src.core.events import GoalReceivedEvent, ToolCallEvent
 from src.core.plugin_interface import PluginInterface
+from src.main_unified import UnifiedSuperAlita
 
 pytestmark = pytest.mark.integration_redis
 
@@ -44,7 +45,7 @@ class EchoTool(PluginInterface):
     def name(self) -> str:
         return "echo_tool"
 
-    async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
 
     async def start(self) -> None:
@@ -168,6 +169,6 @@ class TestOakReasoningFlow:
             await alita.shutdown()
             try:
                 await asyncio.wait_for(agent_task, timeout=5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 agent_task.cancel()
                 pytest.fail("Agent failed to shutdown within timeout")

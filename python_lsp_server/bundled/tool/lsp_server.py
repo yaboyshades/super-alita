@@ -5,19 +5,18 @@
 # This provides an alternative to the Node.js server for integrating Python-based tools.
 #
 
-from pygls.server import LanguageServer
 from pygls.lsp import (
-    types as lsp,
-    CompletionOptions,
-    CompletionParams,
-    CompletionList,
     CompletionItem,
     CompletionItemKind,
-    TextDocumentSyncKind,
+    CompletionList,
+    CompletionOptions,
+    CompletionParams,
     DidChangeTextDocumentParams,
-    DidOpenTextDocumentParams
+    DidOpenTextDocumentParams,
 )
-from pygls.workspace import Document
+from pygls.lsp import types as lsp
+from pygls.server import LanguageServer
+
 
 class AlitaPythonLspServer(LanguageServer):
     """

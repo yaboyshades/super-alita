@@ -9,8 +9,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 
-from src.main import create_app
 from src.core.event_bus import EventBus
+from src.main import create_app
 
 try:
     from mcp.server import StdIOServer

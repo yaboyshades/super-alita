@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 import json
 from pathlib import Path
-from typing import Tuple, Dict, Any
+from typing import Any
 
 try:
     import jsonschema
@@ -11,7 +12,7 @@ except Exception:
 
 SCHEMA_PATH = Path("schema/alg_extraction_v1_2.json")
 
-def validate_alg_extraction(payload: Dict[str, Any]) -> Tuple[bool, str]:
+def validate_alg_extraction(payload: dict[str, Any]) -> tuple[bool, str]:
     if not jsonschema:
         return True, "jsonschema not installed; skipped"
     schema = json.loads(SCHEMA_PATH.read_text())

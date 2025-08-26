@@ -4,27 +4,30 @@ Validates distributed cognition capabilities, pattern recognition, and metacogni
 with comprehensive coverage, property-based testing, and edge case validation
 """
 
-import pytest
 import asyncio
-import uuid
 import sys
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone
-from typing import List, Dict, Any
+
+import pytest
 
 # Add hypothesis for property-based testing
-from hypothesis import given, strategies as st, assume, settings
-from hypothesis.strategies import text, integers, floats, dictionaries, lists
+from hypothesis import assume, given, settings
+from hypothesis import strategies as st
 
 # Fix import paths - add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 try:
     from plugins.creator_plugin import (
-        CognitiveAtom, CognitiveBond, CognitiveEventStore,
-        WorkflowPatternAnalyzer, ToolAbstractionEngine, 
-        MetacognitiveObserver, CreatorPlugin
+        CognitiveAtom,
+        CognitiveBond,
+        CognitiveEventStore,
+        CreatorPlugin,
+        MetacognitiveObserver,
+        ToolAbstractionEngine,
+        WorkflowPatternAnalyzer,
     )
 except ImportError as e:
     # Fallback import strategy
@@ -32,9 +35,13 @@ except ImportError as e:
     sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
     try:
         from plugins.creator_plugin import (
-            CognitiveAtom, CognitiveBond, CognitiveEventStore,
-            WorkflowPatternAnalyzer, ToolAbstractionEngine, 
-            MetacognitiveObserver, CreatorPlugin
+            CognitiveAtom,
+            CognitiveBond,
+            CognitiveEventStore,
+            CreatorPlugin,
+            MetacognitiveObserver,
+            ToolAbstractionEngine,
+            WorkflowPatternAnalyzer,
         )
     except ImportError:
         pytest.skip(f"Cannot import cognitive architecture components: {e}", allow_module_level=True)

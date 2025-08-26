@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 try:

@@ -6,18 +6,18 @@ Tails JSONL telemetry and feeds events to Cortex orchestrator
 
 import asyncio
 import json
-import time
-import pathlib
-from typing import Dict, Any, Optional
 import logging
+import pathlib
+import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
 # Import Cortex components (adjust paths as needed)
 try:
+    from src.core.event_bus import EventBus
     from src.core.events import Event, create_event
     from src.core.orchestrator import Orchestrator
-    from src.core.event_bus import EventBus
 except ImportError:
     # Fallback for development
     print("Warning: Cortex components not found, running in mock mode")
@@ -28,7 +28,7 @@ except ImportError:
         kind: str
         ts: float
         actor: str
-        payload: Dict[str, Any]
+        payload: dict[str, Any]
         schema_version: str = "v1"
     
     class Orchestrator:
@@ -41,9 +41,9 @@ logger = logging.getLogger(__name__)
 class CortexBridge:
     """Bridge between VS Code telemetry and Cortex orchestrator"""
     
-    def __init__(self, telemetry_path: Optional[pathlib.Path] = None):
+    def __init__(self, telemetry_path: pathlib.Path | None = None):
         self.telemetry_path = telemetry_path or pathlib.Path.home() / ".super-alita" / "telemetry.jsonl"
-        self.orchestrator: Optional[Orchestrator] = None
+        self.orchestrator: Orchestrator | None = None
         self.running = False
         
         # Ensure telemetry directory exists
@@ -64,7 +64,7 @@ class CortexBridge:
             logger.error(f"Failed to initialize Cortex: {e}")
             self.orchestrator = Orchestrator()  # Fallback mock
     
-    def transform_vscode_event(self, vscode_event: Dict[str, Any]) -> Event:
+    def transform_vscode_event(self, vscode_event: dict[str, Any]) -> Event:
         """Transform VS Code event to Cortex Event format"""
         try:
             return Event(
@@ -83,7 +83,7 @@ class CortexBridge:
         """Tail the JSONL file and feed events to Cortex"""
         logger.info(f"Starting to tail {self.telemetry_path}")
         
-        with open(self.telemetry_path, 'r', encoding='utf-8') as fp:
+        with open(self.telemetry_path, encoding='utf-8') as fp:
             # Seek to end of file
             fp.seek(0, 2)
             
@@ -103,7 +103,7 @@ class CortexBridge:
                         self.orchestrator.add_event(cortex_event)
                         logger.info(f"Processed event: {cortex_event.kind} from {cortex_event.actor}")
                     
-                except json.JSONDecodeError as e:
+                except json.JSONDecodeError:
                     logger.warning(f"Invalid JSON in telemetry: {line.strip()}")
                 except Exception as e:
                     logger.error(f"Error processing event: {e}")
@@ -142,7 +142,7 @@ class CortexAtomEmitter:
                 "metadata": {
                     "file_path": file_path,
                     "severity": finding.get('severity', 'info'),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "source": "super_alita_guardian"
                 }
             }

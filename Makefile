@@ -1,4 +1,4 @@
-.PHONY: run test test-smoke lint deps env clean help
+.PHONY: run test test-smoke lint deps env clean help ollama-smoke ollama-run
 
 ifneq (,$(wildcard ./.env))
 include .env
@@ -22,6 +22,20 @@ test-smoke: ## Quick smoke test
 
 lint: ## Run pre-commit hooks
         pre-commit run --all-files
+
+# --- Ollama helpers ---
+OLLAMA_MODEL ?= llama3.1:8b
+
+ollama-smoke: ## Run a direct Ollama smoke test against OLLAMA_HOST
+	python scripts/ollama_smoke.py --model $(OLLAMA_MODEL)
+
+ollama-run: ## Pull model and run Ollama smoke test (requires `ollama` CLI)
+	@echo "[ollama-run] pulling $(OLLAMA_MODEL)" && ollama pull $(OLLAMA_MODEL)
+	$(MAKE) ollama-smoke
+
+run-ollama: ## Start server with GPT-OSS via Ollama (one-shot setup)
+	@echo "[run-ollama] Starting server with LLM_MODEL=ollama:gpt-oss:20b and OLLAMA_HOST=http://127.0.0.1:11434"
+	LLM_MODEL=ollama:gpt-oss:20b OLLAMA_HOST=http://127.0.0.1:11434 python -m src.main
 
 run-mcp-backend: ## Start the backend MCP server
         python backend/mcp_server.py

@@ -5,18 +5,19 @@ Provides comprehensive metrics collection and exposure for monitoring
 the agent system using Prometheus/OpenMetrics format.
 """
 
-import time
-from typing import Dict, List, Optional, Any
 import threading
+import time
+from typing import Any
+
 from prometheus_client import (
-    Counter, 
-    Histogram, 
-    Gauge, 
-    Info,
-    CollectorRegistry,
-    generate_latest,
     CONTENT_TYPE_LATEST,
-    REGISTRY
+    REGISTRY,
+    CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    Info,
+    generate_latest,
 )
 
 
@@ -31,14 +32,14 @@ class PrometheusMetricsCollector:
     - System health and performance
     """
     
-    def __init__(self, registry: Optional[CollectorRegistry] = None):
+    def __init__(self, registry: CollectorRegistry | None = None):
         """Initialize metrics collector with optional custom registry."""
         self.registry = registry or REGISTRY
         self._lock = threading.Lock()
         self._initialized = False
         
         # Metrics will be initialized on first use
-        self._metrics: Dict[str, Any] = {}
+        self._metrics: dict[str, Any] = {}
         
     def _ensure_initialized(self) -> None:
         """Ensure metrics are initialized (thread-safe)."""
@@ -370,12 +371,12 @@ class PrometheusMetricsCollector:
         uptime = time.time() - start_time
         self.set_system_uptime(uptime)
     
-    def collect_plugin_metrics(self, plugins: Dict[str, Any]) -> None:
+    def collect_plugin_metrics(self, plugins: dict[str, Any]) -> None:
         """Collect metrics from plugin registry."""
         self._ensure_initialized()
         
         # Count plugins by type
-        plugin_counts: Dict[str, int] = {}
+        plugin_counts: dict[str, int] = {}
         for plugin in plugins.values():
             plugin_type = plugin.__class__.__module__.split('.')[-1]
             plugin_counts[plugin_type] = plugin_counts.get(plugin_type, 0) + 1
@@ -383,7 +384,7 @@ class PrometheusMetricsCollector:
         for plugin_type, count in plugin_counts.items():
             self.set_plugins_loaded(plugin_type, count)
     
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check and return status."""
         self._ensure_initialized()
         

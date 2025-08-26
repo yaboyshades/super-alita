@@ -1,15 +1,15 @@
 """Detects when the agent encounters knowledge gaps and needs cortex assistance."""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Protocol
 import uuid
+from typing import Any, Protocol
 
 from src.core.plugin_interface import PluginInterface
 from src.core.utils import CooldownLRU
 
 
 class CortexPolicy(Protocol):
-    async def should_use_cortex(self, confidence: float, context: Dict[str, Any]) -> bool:
+    async def should_use_cortex(self, confidence: float, context: dict[str, Any]) -> bool:
         ...
 
 
@@ -33,7 +33,7 @@ class KnowledgeGapDetector(PluginInterface):
     def name(self) -> str:  # type: ignore[override]
         return "knowledge_gap_detector"
 
-    async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:  # type: ignore[override]
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # type: ignore[override]
         await super().setup(event_bus, store, config)
         self.policy = config.get("policy")
         cooldown_seconds = float(config.get("cooldown_seconds", 300.0))
@@ -45,7 +45,7 @@ class KnowledgeGapDetector(PluginInterface):
     async def start(self) -> None:  # type: ignore[override]
         self.is_running = True
 
-    async def check_reasoning_confidence(self, event: Dict[str, Any]) -> None:
+    async def check_reasoning_confidence(self, event: dict[str, Any]) -> None:
         data = event.get("data", {}) if isinstance(event, dict) else {}
         confidence = float(data.get("confidence", 1.0))
         if confidence < self.confidence_threshold:
@@ -55,7 +55,7 @@ class KnowledgeGapDetector(PluginInterface):
                 gap_type="low_confidence",
             )
 
-    async def check_navigation_success(self, event: Dict[str, Any]) -> None:
+    async def check_navigation_success(self, event: dict[str, Any]) -> None:
         data = event.get("data", {}) if isinstance(event, dict) else {}
         path_length = int(data.get("path_length", 0))
         if path_length <= 1:
@@ -65,7 +65,7 @@ class KnowledgeGapDetector(PluginInterface):
                 gap_type="isolated_knowledge",
             )
 
-    async def detect_uncertainty_patterns(self, event: Dict[str, Any]) -> None:
+    async def detect_uncertainty_patterns(self, event: dict[str, Any]) -> None:
         data = event.get("data", {}) if isinstance(event, dict) else {}
         content = str(data.get("content", "")).lower()
         for pattern in self.gap_patterns:
@@ -77,7 +77,7 @@ class KnowledgeGapDetector(PluginInterface):
                 )
                 break
 
-    async def _maybe_publish_gap(self, *, gap_description: str, context: Dict[str, Any], gap_type: str) -> None:
+    async def _maybe_publish_gap(self, *, gap_description: str, context: dict[str, Any], gap_type: str) -> None:
         topic = context.get("topic_id") or context.get("prompt_hash") or context.get("goal") or gap_type
         if self.cooldown.hit(str(topic)):
             return

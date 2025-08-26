@@ -2,9 +2,9 @@
 Deterministic Knowledge Graph Storage for Super Alita
 """
 
-from .store import KnowledgeStore, Atom, Bond, AtomType, BondType
 from .handlers import KnowledgeGraphEventHandlers
 from .plugin import KnowledgeGraphPlugin
+from .store import Atom, AtomType, Bond, BondType, KnowledgeStore
 
 __all__ = [
     "KnowledgeStore",

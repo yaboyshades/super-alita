@@ -8,9 +8,10 @@ Date: 2025-08-24
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Dict, List, Any
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
+
 
 class CopilotTelemetryVerifier:
     """Verify that Copilot is correctly using the architectural prompt"""
@@ -37,7 +38,7 @@ class CopilotTelemetryVerifier:
         logger.setLevel(logging.INFO)
         return logger
         
-    async def test_persona_acknowledgment(self) -> Dict[str, Any]:
+    async def test_persona_acknowledgment(self) -> dict[str, Any]:
         """Test 1: Verify AI acknowledges the persona"""
         test_prompt = "What is your role and which version of the architectural guidelines are you using?"
         
@@ -54,14 +55,14 @@ class CopilotTelemetryVerifier:
             "test": "persona_acknowledgment",
             "prompt": test_prompt,
             "expected_markers": expected_markers,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "status": "REQUIRES_MANUAL_VERIFICATION"
         }
         
         self.logger.info(f"Test 1 executed: {result}")
         return result
         
-    async def test_guideline_knowledge(self) -> Dict[str, Any]:
+    async def test_guideline_knowledge(self) -> dict[str, Any]:
         """Test 2: Verify AI knows all 5 guidelines"""
         test_prompts = [
             "List all Super Alita coding guidelines by name",
@@ -81,14 +82,14 @@ class CopilotTelemetryVerifier:
             "test": "guideline_knowledge",
             "prompts": test_prompts,
             "expected_guidelines": expected_guidelines,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "status": "REQUIRES_MANUAL_VERIFICATION"
         }
         
         self.logger.info(f"Test 2 executed: {result}")
         return result
         
-    async def test_violation_detection(self) -> Dict[str, Any]:
+    async def test_violation_detection(self) -> dict[str, Any]:
         """Test 3: Verify AI detects guideline violations"""
         
         # Create test violations
@@ -121,14 +122,14 @@ class CompetingRouter:  # Not using DecisionPolicyEngine
         result = {
             "test": "violation_detection",
             "violations_tested": list(test_violations.keys()),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "status": "REQUIRES_MANUAL_VERIFICATION"
         }
         
         self.logger.info(f"Test 3 executed: {result}")
         return result
         
-    async def test_refactor_capability(self) -> Dict[str, Any]:
+    async def test_refactor_capability(self) -> dict[str, Any]:
         """Test 4: Verify AI can refactor code to comply"""
         
         bad_code = '''
@@ -152,14 +153,14 @@ class MyPlugin:
             "test": "refactor_capability",
             "bad_code": bad_code,
             "expected_fixes": expected_fixes,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "status": "REQUIRES_MANUAL_VERIFICATION"
         }
         
         self.logger.info(f"Test 4 executed: {result}")
         return result
         
-    async def test_generation_compliance(self) -> Dict[str, Any]:
+    async def test_generation_compliance(self) -> dict[str, Any]:
         """Test 5: Verify AI generates compliant code"""
         
         generation_prompt = "Generate a new plugin that handles user authentication"
@@ -177,7 +178,7 @@ class MyPlugin:
             "test": "generation_compliance",
             "prompt": generation_prompt,
             "expected_patterns": expected_patterns,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "status": "REQUIRES_MANUAL_VERIFICATION"
         }
         
@@ -186,7 +187,7 @@ class MyPlugin:
         
     async def run_all_tests(self) -> None:
         """Execute all telemetry tests"""
-        self.logger.info(f"Starting telemetry verification - {datetime.now(timezone.utc)}")
+        self.logger.info(f"Starting telemetry verification - {datetime.now(UTC)}")
         
         tests = [
             self.test_persona_acknowledgment(),
@@ -210,7 +211,7 @@ class MyPlugin:
         with open(output_path, 'w') as f:
             json.dump({
                 "version": self.prompt_version,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "user": "yaboyshades",
                 "results": self.test_results
             }, f, indent=2)
@@ -221,7 +222,7 @@ class MyPlugin:
         """Generate human-readable verification report"""
         report = f"""
 # 📊 Copilot Integration Telemetry Report
-**Date:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+**Date:** {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}
 **User:** yaboyshades
 **Prompt Version:** {self.prompt_version}
 

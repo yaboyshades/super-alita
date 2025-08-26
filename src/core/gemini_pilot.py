@@ -16,7 +16,7 @@ from typing import Any
 import httpx
 import yaml
 
-from src.copilot.scrub import scrub_prompt, clamp_tokens
+from src.copilot.scrub import clamp_tokens, scrub_prompt
 
 logger = logging.getLogger(__name__)
 

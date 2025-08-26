@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Protocol, Any, Dict, Optional
+
+from typing import Any, Protocol
 
 
 class KG(Protocol):
@@ -10,7 +11,7 @@ class KG(Protocol):
 
 
 class Bandit(Protocol):
-    def select_tool(self, context: Optional[Dict[str, Any]] = None) -> str: ...
+    def select_tool(self, context: dict[str, Any] | None = None) -> str: ...
     def update(self, tool: str, reward: float) -> None: ...
 
 

@@ -3,6 +3,7 @@
 Test the Decision Policy v1 implementation with various scenarios.
 """
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
@@ -13,6 +14,7 @@ from core.decision_policy_v1 import (
     IntentType,
     create_bootstrap_capabilities,
 )
+
 
 async def test_bootstrap_scenario():
     """Test the bootstrap scenario with enhanced text matching"""

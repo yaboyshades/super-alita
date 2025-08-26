@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 import json
 import logging
 import os
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from typing import Any
 
 import aiohttp
+
 from src.core.plugin_interface import PluginInterface
-from src.prompt.policy_constants import build_header, REQUIRED_FIELDS_ALG
-from src.utils.telemetry import ReadLedger, start_timer, end_timer, telemetry_footer
-from src.utils.guardrails import repo_download_integrity, hash_top_files
+from src.prompt.policy_constants import REQUIRED_FIELDS_ALG, build_header
+from src.utils.guardrails import hash_top_files, repo_download_integrity
+from src.utils.telemetry import ReadLedger, end_timer, start_timer, telemetry_footer
 
 logger = logging.getLogger(__name__)
 
 
 def _utcnow() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _norm(s: str) -> str:
@@ -30,7 +32,7 @@ NAMESPACE_PROPOSAL = uuid.UUID("d6e2a8b1-4c7f-4e0a-8b9c-1d2e3f4a5b6c")
 
 @dataclass
 class GeminiConfig:
-    api_key: Optional[str]
+    api_key: str | None
     model: str
     enabled: bool
 
@@ -46,7 +48,7 @@ class GeminiCodegenAbility(PluginInterface):
             enabled=os.getenv("CODEGEN_ENABLED", "true").lower() == "true",
         )
 
-    async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
 
     @property
@@ -65,7 +67,7 @@ class GeminiCodegenAbility(PluginInterface):
             bool(self._cfg.api_key),
         )
 
-    async def _on_request(self, event: Dict[str, Any]) -> None:
+    async def _on_request(self, event: dict[str, Any]) -> None:
         requirements = _norm(event.get("requirements") or "")
         repo_path = event.get("repo_path") or "."
         context_files = event.get("context_files") or []
@@ -168,9 +170,9 @@ class GeminiCodegenAbility(PluginInterface):
         self,
         requirements: str,
         repo_path: str,
-        context_files: List[str],
+        context_files: list[str],
         sys_header: str,
-    ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], float, Dict[str, Any]]:
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], float, dict[str, Any]]:
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
             f"{self._cfg.model}:generateContent?key={self._cfg.api_key}"
@@ -220,7 +222,7 @@ class GeminiCodegenAbility(PluginInterface):
         confidence = float(obj.get("confidence") or obj.get("alg_extraction_v1", {}).get("confidence", 0.5))
         return diffs, tests, docs, confidence, obj
 
-    def _fake_diff(self, requirements: str) -> Dict[str, Any]:
+    def _fake_diff(self, requirements: str) -> dict[str, Any]:
         return {
             "path": "README.md",
             "patch": (
@@ -228,7 +230,7 @@ class GeminiCodegenAbility(PluginInterface):
             ),
         }
 
-    def _fake_test(self, requirements: str) -> Dict[str, Any]:
+    def _fake_test(self, requirements: str) -> dict[str, Any]:
         return {
             "path": "tests/test_codegen_placeholder.py",
             "content": (

@@ -2,8 +2,8 @@ import asyncio
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from reug_runtime.router import router
 
+from reug_runtime.router import router
 from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG
 

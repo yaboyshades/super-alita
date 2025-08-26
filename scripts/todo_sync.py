@@ -7,7 +7,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +16,11 @@ DEFAULT_TODO_FILE = (
 )
 
 
-def update_persistent_todos(todo_file: Path, new_todos: List[Any]) -> None:
+def update_persistent_todos(todo_file: Path, new_todos: list[Any]) -> None:
     """Update the persistent todo file with new todos."""
     if todo_file.exists():
         try:
-            with open(todo_file, "r", encoding="utf-8") as f:
+            with open(todo_file, encoding="utf-8") as f:
                 data = json.load(f)
 
             data["todoList"] = new_todos

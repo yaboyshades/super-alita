@@ -1,10 +1,11 @@
-import pytest
 import time
 from unittest.mock import AsyncMock
 
+import pytest
+
 from src.core.event_bus import EventBus
+from src.core.navigation import NavigationConfig, NeuralNavigator
 from src.core.temporal_graph import TemporalGraph
-from src.core.navigation import NeuralNavigator, NavigationConfig
 from src.plugins.cortex_adapter_plugin import CortexAdapterPlugin, GitHubCopilotCortex
 
 

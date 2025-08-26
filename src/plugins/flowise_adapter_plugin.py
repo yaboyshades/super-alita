@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
+import asyncio
+import contextlib
 import json
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
-import asyncio
-import contextlib
 import websockets
+
 from src.core.plugin_interface import PluginInterface
 
 logger = logging.getLogger(__name__)
 
 
 def _utcnow() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 @dataclass
 class FlowiseConfig:
     ws_url: str
-    api_key: Optional[str] = None
+    api_key: str | None = None
     enabled: bool = False
 
 
@@ -112,7 +114,7 @@ class FlowiseAdapterPlugin(PluginInterface):
         }
         await ws.send(json.dumps(node_def))
 
-    async def _handle_inbound(self, msg: Dict[str, Any]) -> None:
+    async def _handle_inbound(self, msg: dict[str, Any]) -> None:
         mtype = msg.get("type")
         if mtype == "execute_node" and msg.get("node") == "CodegenNode":
             inputs = msg.get("inputs") or {}
@@ -142,7 +144,7 @@ class FlowiseAdapterPlugin(PluginInterface):
                     timestamp=_utcnow(),
                 )
 
-    async def _on_codegen_event(self, event: Dict[str, Any]) -> None:
+    async def _on_codegen_event(self, event: dict[str, Any]) -> None:
         sess = event.get("flowise_session_id")
         if not sess or not self._ws:
             return

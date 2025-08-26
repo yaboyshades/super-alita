@@ -1,5 +1,6 @@
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from codeact.actions import AgentFinish
 from codeact.bus_handlers import CodeActStartRequest, handle_start

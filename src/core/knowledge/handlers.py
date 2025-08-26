@@ -2,12 +2,11 @@
 Event handlers for knowledge graph integration
 """
 
-import asyncio
-from typing import Any, Dict, Optional
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+from typing import Any
 
 from ..events import BaseEvent
-from .store import KnowledgeStore, AtomType, BondType
+from .store import AtomType, BondType, KnowledgeStore
 
 
 class KnowledgeGraphEventHandlers:
@@ -195,7 +194,7 @@ class KnowledgeGraphEventHandlers:
         self, 
         concept_name: str, 
         description: str,
-        properties: Optional[Dict[str, Any]] = None
+        properties: dict[str, Any] | None = None
     ) -> str:
         """Create a concept atom and return its ID"""
         if properties is None:
@@ -220,7 +219,7 @@ class KnowledgeGraphEventHandlers:
         self,
         entity_name: str,
         entity_type: str,
-        attributes: Optional[Dict[str, Any]] = None
+        attributes: dict[str, Any] | None = None
     ) -> str:
         """Create an entity atom and return its ID"""
         if attributes is None:
@@ -247,7 +246,7 @@ class KnowledgeGraphEventHandlers:
         to_atom_id: str,
         relationship_type: str,
         strength: float = 1.0,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> str:
         """Create a bond between atoms and return bond ID"""
         if metadata is None:

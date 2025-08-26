@@ -28,7 +28,7 @@ from fastapi.responses import StreamingResponse
 from src.telemetry import build_copilot_context
 
 from .config import SETTINGS
-
+from .message_mw import MessageContext, apply_all
 
 router = APIRouter(prefix="/v1", tags=["agent"])
 
@@ -102,6 +102,29 @@ async def execute_turn(
     """
 
     correlation_id = f"{session_id}-{int(time.time()*1000)}"
+    # Optional message optimization/amplification
+    if SETTINGS.message_optimizer_enabled:
+        try:
+            # Lazy import to avoid side effects when disabled
+            import src.plugins.message_amplifier_plugin  # noqa: F401
+        except Exception:
+            # If plugin import fails, continue with raw message
+            pass
+        optimized, steps = apply_all(user_msg, MessageContext(session_id=session_id))
+        if SETTINGS.message_optimizer_emit_telemetry:
+            await event_bus.emit(
+                {
+                    "type": "MessageOptimized",
+                    "correlation_id": correlation_id,
+                    "len_in": len(user_msg),
+                    "len_out": len(optimized),
+                    "steps": steps,
+                }
+            )
+        # Enforce a soft cap if configured to prevent runaway messages
+        if len(optimized) > SETTINGS.message_optimizer_max_len:
+            optimized = optimized[: SETTINGS.message_optimizer_max_len]
+        user_msg = optimized
     await event_bus.emit({"type": "TaskStarted", "correlation_id": correlation_id, "goal": user_msg})
 
     system_prompt = "Use tools when helpful. End with <final_answer>{...}</final_answer>."

@@ -1,6 +1,8 @@
 import asyncio
+
 import pytest
 
+from reug_runtime.config import SETTINGS
 from reug_runtime.llm_client import (
     AnthropicClient,
     GeminiClient,
@@ -8,7 +10,6 @@ from reug_runtime.llm_client import (
     OpenAIClient,
     get_llm_client,
 )
-from reug_runtime.config import SETTINGS
 
 
 def test_provider_selection() -> None:

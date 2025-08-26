@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict
+from datetime import UTC, datetime
+from typing import Any
 
 from src.core.plugin_interface import PluginInterface
 
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def _utcnow() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 class DeepCodeGeneratorBridgePlugin(PluginInterface):
@@ -30,7 +31,7 @@ class DeepCodeGeneratorBridgePlugin(PluginInterface):
     def name(self) -> str:
         return "deepcode_generator"
 
-    async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
         logger.info("DeepCodeGeneratorBridge setup complete")
 
@@ -44,7 +45,7 @@ class DeepCodeGeneratorBridgePlugin(PluginInterface):
         logger.info("DeepCodeGeneratorBridge shutting down")
         await super().shutdown()
 
-    async def _handle_generation(self, event: Dict[str, Any]) -> None:
+    async def _handle_generation(self, event: dict[str, Any]) -> None:
         if not self.is_running:
             return
         prompt = event.get("prompt") or event.get("data", {}).get("prompt") or ""
@@ -69,7 +70,7 @@ class DeepCodeGeneratorBridgePlugin(PluginInterface):
             timestamp=_utcnow(),
         )
 
-    async def _handle_analysis(self, event: Dict[str, Any]) -> None:
+    async def _handle_analysis(self, event: dict[str, Any]) -> None:
         if not self.is_running:
             return
         repo_path = event.get("repo_path") or "."

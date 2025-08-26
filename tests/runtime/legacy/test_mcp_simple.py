@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Simple MCP server test to verify API usage"""
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
 
 from mcp.server import Server
 from mcp.types import Tool
+
 
 async def main():
     # Test basic server creation

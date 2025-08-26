@@ -3,10 +3,10 @@ from collections import defaultdict
 
 import pytest
 
+from src.core.events import create_event
 from src.plugins.deepcode_orchestrator_plugin import DeepCodeOrchestratorPlugin
 from src.plugins.deepcode_puter_bridge_plugin import DeepCodePuterBridgePlugin
 from src.plugins.puter_plugin import PuterPlugin
-from src.core.events import create_event
 
 
 class FakeBus:

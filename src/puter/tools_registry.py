@@ -3,10 +3,10 @@ Tools registry with Puter integration.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .plugin_registry import PluginRegistry
-from .puter_plugin import PuterPlugin, PuterAPIError
+from .puter_plugin import PuterAPIError, PuterPlugin
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class PuterTool:
 
     def __init__(self, plugin_registry: PluginRegistry):
         self.plugin_registry = plugin_registry
-        self.puter_plugin: Optional[PuterPlugin] = None
+        self.puter_plugin: PuterPlugin | None = None
 
     async def initialize(self) -> None:
         self.puter_plugin = self.plugin_registry.get_plugin("puter")
@@ -26,10 +26,10 @@ class PuterTool:
     async def execute_command(
         self,
         command: str,
-        args: Optional[List[str]] = None,
-        cwd: Optional[str] = None,
-        env: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        args: list[str] | None = None,
+        cwd: str | None = None,
+        env: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         if not self.puter_plugin:
             raise RuntimeError("PuterTool not initialized")
         try:
@@ -91,7 +91,7 @@ class PuterTool:
             )
             raise
 
-    async def list_directory(self, path: str = ".") -> List[Dict[str, Any]]:
+    async def list_directory(self, path: str = ".") -> list[dict[str, Any]]:
         if not self.puter_plugin:
             raise RuntimeError("PuterTool not initialized")
         try:
@@ -131,7 +131,7 @@ class PuterTool:
             raise RuntimeError("PuterTool not initialized")
         return self.puter_plugin.get_current_directory()
 
-    async def _emit_event(self, event_type: str, data: Dict[str, Any]) -> None:
+    async def _emit_event(self, event_type: str, data: dict[str, Any]) -> None:
         logger.info("Event: %s - %s", event_type, data)
 
 
@@ -140,7 +140,7 @@ class ToolsRegistry:
 
     def __init__(self, plugin_registry: PluginRegistry):
         self.plugin_registry = plugin_registry
-        self.tools: Dict[str, Any] = {}
+        self.tools: dict[str, Any] = {}
 
     async def initialize_tools(self) -> None:
         if self.plugin_registry.get_plugin("puter"):
@@ -149,8 +149,8 @@ class ToolsRegistry:
             self.tools["puter"] = puter_tool
             logger.info("Initialized Puter tool")
 
-    def get_tool(self, tool_name: str) -> Optional[Any]:
+    def get_tool(self, tool_name: str) -> Any | None:
         return self.tools.get(tool_name)
 
-    def list_available_tools(self) -> List[str]:
+    def list_available_tools(self) -> list[str]:
         return list(self.tools.keys())

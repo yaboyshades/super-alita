@@ -3,6 +3,7 @@
 
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Any
 
@@ -17,14 +18,20 @@ from src.core.schemas import (
     TaskType,
     ToolCallEvent,
 )
+from src.core.telemetry_broker import (
+    build_context_envelope,
+)
+from src.core.telemetry_broker import (
+    ingest_event as broker_ingest,
+)
 
 # Try to import Google Generative AI, but don't fail if not available
-try:
-    import google.generativeai as genai
+try:  # pragma: no cover - optional dependency
+    import google.generativeai as genai  # type: ignore
 
-    HAS_GEMINI = True
-except ImportError:
-    HAS_GEMINI = False
+    HAS_GEMINI = True  # noqa: N816 (external constant style)
+except ImportError:  # pragma: no cover
+    HAS_GEMINI = False  # noqa: N816
 
 logger = logging.getLogger(__name__)
 
@@ -84,20 +91,17 @@ class LLMPlannerPlugin(PluginInterface):
 
     async def _initialize_llm_client(self, config: dict[str, Any]):
         """Initialize the Google Gemini client."""
-        try:
-            import os
-
+        try:  # pragma: no cover - initialization side effects
             api_key = os.getenv("GEMINI_API_KEY")
-            if api_key:
-                genai.configure(api_key=api_key)
-
+            if api_key and HAS_GEMINI:
+                genai.configure(api_key=api_key)  # type: ignore[attr-defined]
                 model_name = config.get("model", "gemini-2.0-flash-exp")
-                self.llm_client = genai.GenerativeModel(model_name)
-
+                # GenerativeModel attr not typed locally
+                self.llm_client = genai.GenerativeModel(model_name)  # type: ignore[attr-defined]
                 logger.info(f"LLM client initialized with model: {model_name}")
             else:
-                logger.warning("GEMINI_API_KEY not found in environment")
-        except Exception as e:
+                logger.warning("GEMINI_API_KEY not found or gemini lib missing")
+        except Exception as e:  # pragma: no cover
             logger.error(f"Failed to initialize LLM client: {e}")
 
     async def _load_available_neural_atoms(self):
@@ -167,6 +171,13 @@ class LLMPlannerPlugin(PluginInterface):
 
         try:
             logger.info(f"🧠 Planning stage: Processing task {task.task_id}")
+            # Ingest planner start event (feature-flag aware inside broker_ingest)
+            broker_ingest(
+                "planner",
+                f"Planning task {task.task_id}",
+                importance=min(2.0, 1.0 + (task.priority or 0) * 0.1),
+                meta={"task_type": task.task_type.value},
+            )
 
             # Analyze task and determine approach
             plan = await self._analyze_and_plan(task)
@@ -191,6 +202,16 @@ class LLMPlannerPlugin(PluginInterface):
             planning_time = (datetime.now() - start_time).total_seconds()
             self._update_planning_stats(planning_time)
 
+            # Record outcome telemetry
+            broker_ingest(
+                "planner",
+                f"Plan decided for task {task.task_id}: {plan['action']}",
+                importance=1.2 if plan["action"] == "CAPABILITY_GAP" else 1.0,
+                meta={
+                    k: v for k, v in plan.items() if k not in {"parameters", "response"}
+                },
+            )
+
         except Exception as e:
             logger.error(f"Error in planning stage for task {task.task_id}: {e}")
             await self._handle_planning_error(task, str(e))
@@ -202,10 +223,29 @@ class LLMPlannerPlugin(PluginInterface):
         return await self._fallback_planning(task)
 
     async def _llm_based_planning(self, task: TaskRequest) -> dict[str, Any]:
-        """Use LLM for intelligent planning and Neural Atom selection."""
+        """Use LLM for intelligent planning and Neural Atom selection.
+
+        Integrates TelemetryBroker context envelope (if enabled) to reduce
+        prompt bloat and supply the most relevant recent system telemetry.
+        """
         try:
+            envelope: dict[str, Any] | None = None
+            # Only attempt build if feature flag enabled (checked inside helper)
+            envelope = build_context_envelope()
+            if envelope:
+                broker_ingest(
+                    "planner",
+                    "Context envelope attached",
+                    importance=0.8,
+                    meta={
+                        "hash": envelope.get("hash"),
+                        "total_tokens": envelope.get("total_tokens"),
+                        "categories": list(envelope.get("categories", {}).keys()),
+                    },
+                )
+
             # Create comprehensive prompt for planning
-            prompt = self._create_planning_prompt(task)
+            prompt = self._create_planning_prompt(task, envelope=envelope)
 
             # Generate plan using LLM
             response = await self.llm_client.generate_content_async(prompt)
@@ -220,46 +260,61 @@ class LLMPlannerPlugin(PluginInterface):
             logger.error(f"LLM planning failed: {e}")
             return await self._fallback_planning(task)
 
-    def _create_planning_prompt(self, task: TaskRequest) -> str:
-        """Create a comprehensive prompt for LLM-based planning."""
+    def _create_planning_prompt(
+        self, task: TaskRequest, *, envelope: dict[str, Any] | None = None
+    ) -> str:
+        """Create a comprehensive prompt for LLM-based planning.
+
+        If a TelemetryBroker envelope is supplied, it is summarized and
+        appended so the model receives only curated recent telemetry instead of
+        raw unbounded logs.
+        """
         atoms_description = self._format_neural_atoms_for_prompt()
 
-        prompt = f"""You are the central planner for an advanced AI agent with Neural Atom capabilities.
+        envelope_section = ""
+        if envelope and envelope.get("categories"):
+            # Summarize each category by listing scored messages newest-first as provided
+            cat_parts: list[str] = []
+            for cat, payload in envelope["categories"].items():
+                events = payload.get("events", [])
+                # Concise list: score|message
+                lines = [
+                    f"  - ({e['score']}) {e['message']}"[:220]
+                    for e in events  # trunc to guard prompt size
+                ]
+                cat_parts.append(f"* {cat}:\n" + "\n".join(lines))
+            envelope_section = (
+                "\nCurated Recent Telemetry (scored):\n" + "\n".join(cat_parts) + "\n"
+            )
 
-Task Analysis:
-- Task ID: {task.task_id}
-- Type: {task.task_type.value}
-- Description: {task.description}
-- Priority: {task.priority}
-- Context: {task.context}
-
-Available Neural Atoms:
-{atoms_description}
-
-Planning Instructions:
-1. Analyze the task requirements carefully
-2. Determine if an existing Neural Atom can handle this task
-3. If no suitable atom exists, identify what capability is needed
-4. Choose the most appropriate action
-
-Response Format (choose one):
-
-NEURAL_ATOM: <atom_name>
-PARAMETERS: {{"param": "value"}}
-REASONING: <why this atom was selected>
-
-OR
-
-CAPABILITY_GAP: <description of missing capability>
-REASONING: <why no existing atom can handle this>
-
-OR
-
-DIRECT_RESPONSE: <direct answer to user>
-REASONING: <why no Neural Atom is needed>
-
-Your Response:"""
-
+        prompt = (
+            "You are the central planner for an advanced AI agent with Neural Atom capabilities.\n\n"
+            "Task Analysis:\n"
+            f"- Task ID: {task.task_id}\n"
+            f"- Type: {task.task_type.value}\n"
+            f"- Description: {task.description}\n"
+            f"- Priority: {task.priority}\n"
+            f"- Context: {task.context}\n\n"
+            "Available Neural Atoms:\n"
+            f"{atoms_description}\n"
+            f"{envelope_section}"
+            "Planning Instructions:\n"
+            "1. Analyze the task requirements carefully\n"
+            "2. Determine if an existing Neural Atom can handle this task\n"
+            "3. If no suitable atom exists, identify what capability is needed\n"
+            "4. Choose the most appropriate action\n\n"
+            "Response Format (choose one):\n\n"
+            "NEURAL_ATOM: <atom_name>\n"
+            'PARAMETERS: {"param": "value"}\n'
+            "REASONING: <why this atom was selected>\n\n"
+            "OR\n\n"
+            "CAPABILITY_GAP: <description of missing capability>\n"
+            "REASONING: <why no existing atom can handle this>\n\n"
+            "OR\n\n"
+            "DIRECT_RESPONSE: <direct answer to user>\n"
+            "REASONING: <why no Neural Atom is needed>\n\n"
+            "Your Response:"
+        )
         return prompt
 
     def _format_neural_atoms_for_prompt(self) -> str:

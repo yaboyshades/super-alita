@@ -1,14 +1,16 @@
 """Tests for Puter plugin integration."""
 
 import pytest
+
 pytest.skip("legacy Puter plugin tests", allow_module_level=True)
 
-from unittest.mock import AsyncMock, patch
-import aiohttp
 import json
+from typing import Any
+from unittest.mock import AsyncMock, patch
+
+import aiohttp
 from aiohttp import web
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
-from typing import Any
 
 from src.puter.plugin_registry import PluginRegistry
 from src.puter.puter_plugin import PuterAPIError, PuterPlugin

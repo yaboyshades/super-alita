@@ -5,13 +5,10 @@ This plugin acts as the Strategic Layer in the OaK architecture.
 It decomposes high-level goals into sub-goals for the Tactical Layer.
 """
 
-import json
 import logging
-import time
-import uuid
 from typing import Any
 
-from src.core.events import Subgoal, SubgoalDefinedEvent, ToolCallEvent
+from src.core.events import Subgoal, SubgoalDefinedEvent
 from src.core.plan_executor import PlanExecutor
 from src.core.plugin_interface import PluginInterface
 from src.core.prompt_manager import get_prompt_manager

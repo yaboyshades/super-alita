@@ -5,16 +5,18 @@
 # `search` and `fetch` tool logic without making real API calls.
 #
 
-import types
-import pytest
-from unittest.mock import MagicMock
 # Ensure the module under test is imported after patching environment variables if needed
 import os
+import types
+
+import pytest
+
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["VECTOR_STORE_ID"] = "fake-vs-id"
 os.environ["MCP_ALLOW_NO_AUTH"] = "true" # Disable auth for tests
 
 from mcp import fastmcp_server
+
 
 # --- Fake OpenAI SDK Objects ---
 class FakeChunk:

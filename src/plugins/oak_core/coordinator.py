@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.core.plugin_interface import PluginInterface
-from .feature_discovery import FeatureDiscoveryEngine
-from .subproblem_manager import SubproblemManager
-from .option_trainer import OptionTrainer
-from .prediction_engine import PredictionEngine
-from .planning_engine import PlanningEngine
+
 from .curation_manager import CurationManager
+from .feature_discovery import FeatureDiscoveryEngine
+from .option_trainer import OptionTrainer
+from .planning_engine import PlanningEngine
+from .prediction_engine import PredictionEngine
+from .subproblem_manager import SubproblemManager
 
 
 class OakCoordinator(PluginInterface):
@@ -28,9 +29,9 @@ class OakCoordinator(PluginInterface):
         self.prediction_engine = PredictionEngine()
         self.planning_engine = PlanningEngine(option_source=self.option_trainer)
         self.curation_manager = CurationManager()
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
 
-    async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
         cfg = config or {}
         await self.feature_engine.setup(event_bus, store, cfg.get("feature_discovery", {}))

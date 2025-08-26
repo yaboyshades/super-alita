@@ -1,7 +1,6 @@
 
 """Smoke tests for the FastAPI app factory."""
 
-import importlib
 
 from fastapi.testclient import TestClient
 
@@ -46,7 +45,6 @@ def test_create_app_with_api_prefix(tmp_path, monkeypatch) -> None:
 
 """Smoke tests for the FastAPI app factory."""
 
-from fastapi.testclient import TestClient
 
 from src.main import FileEventBus, create_app
 

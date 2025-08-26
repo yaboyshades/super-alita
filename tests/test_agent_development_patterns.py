@@ -5,7 +5,7 @@ Validates event-driven architecture, neural atoms, and CREATOR framework.
 
 import logging
 import uuid
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -76,7 +76,7 @@ class TestEventPatterns:
         @dataclass
         class BatchAtomsCreated:
             event_type: Literal["batch_atoms_created"] = "batch_atoms_created"
-            atoms: List[Dict[str, Any]] = None
+            atoms: list[dict[str, Any]] = None
 
             def __post_init__(self):
                 if self.atoms is None:
@@ -85,7 +85,7 @@ class TestEventPatterns:
         @dataclass
         class BatchBondsAdded:
             event_type: Literal["batch_bonds_added"] = "batch_bonds_added"
-            bonds: List[Dict[str, Any]] = None
+            bonds: list[dict[str, Any]] = None
 
             def __post_init__(self):
                 if self.bonds is None:
@@ -138,7 +138,7 @@ class TestNeuralAtomPatterns:
         class NeuralAtomMetadata:
             name: str
             description: str
-            capabilities: List[str]
+            capabilities: list[str]
             version: str = "1.0.0"
 
         class NeuralAtom(ABC):
@@ -150,7 +150,7 @@ class TestNeuralAtomPatterns:
                 pass
 
             @abstractmethod
-            def get_embedding(self) -> List[float]:
+            def get_embedding(self) -> list[float]:
                 pass
 
             @abstractmethod
@@ -166,7 +166,7 @@ class TestNeuralAtomPatterns:
             async def execute(self, input_data: Any = None) -> Any:
                 return {"content": self.content}
 
-            def get_embedding(self) -> List[float]:
+            def get_embedding(self) -> list[float]:
                 return [0.1] * 384  # Mock embedding
 
             def can_handle(self, task_description: str) -> float:
@@ -265,7 +265,7 @@ class TestCREATORFrameworkPatterns:
     def test_capability_gap_detection(self):
         """Test capability gap detection and specification"""
 
-        def analyze_capability_gap(description: str) -> Dict[str, Any]:
+        def analyze_capability_gap(description: str) -> dict[str, Any]:
             """Mock capability gap analysis"""
             return {
                 "gap_id": str(uuid.uuid4()),
@@ -287,7 +287,7 @@ class TestCREATORFrameworkPatterns:
     def test_tool_specification_generation(self):
         """Test tool specification generation from gap analysis"""
 
-        def generate_tool_specification(gap_analysis: Dict[str, Any]) -> Dict[str, Any]:
+        def generate_tool_specification(gap_analysis: dict[str, Any]) -> dict[str, Any]:
             """Mock tool specification generation"""
             return {
                 "tool_name": "fibonacci_calculator",

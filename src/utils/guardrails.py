@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import hashlib, os
+
+import hashlib
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 
 SAFE_ROOT = Path("./deepcode_lab").resolve()
 
@@ -13,7 +14,7 @@ def ensure_safe_path(path: str) -> Path:
     p.parent.mkdir(parents=True, exist_ok=True)
     return p
 
-def repo_download_integrity(repo_dir: str) -> Dict[str, Any]:
+def repo_download_integrity(repo_dir: str) -> dict[str, Any]:
     d = Path(repo_dir)
     status = "ok"
     missing = []
@@ -27,7 +28,7 @@ def repo_download_integrity(repo_dir: str) -> Dict[str, Any]:
         status = "partial"; missing.append("license")
     return {"status": status, "missing": missing}
 
-def hash_top_files(repo_dir: str, top_n: int = 10) -> List[Dict[str, Any]]:
+def hash_top_files(repo_dir: str, top_n: int = 10) -> list[dict[str, Any]]:
     d = Path(repo_dir)
     files = sorted([p for p in d.rglob("*") if p.is_file()])[:top_n]
     out = []

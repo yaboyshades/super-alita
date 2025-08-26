@@ -9,8 +9,8 @@ and shadow/active execution modes.
 import asyncio
 import logging
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Ensure repository root is on path when running directly
 sys.path.append(str(Path(__file__).resolve().parents[1]))

@@ -3,36 +3,35 @@ Cortex Adapter Plugin - Interface to external AI systems for bootstrapping.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Protocol
-import json
-from datetime import datetime, timezone
 import time
 import uuid
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any, Protocol
 
-from src.core.plugin_interface import PluginInterface
 from src.core.events import create_event
-from src.core.temporal_graph import TemporalGraph, NeuralAtom
-from src.core.navigation import NeuralNavigator, NavigationStrategy
+from src.core.navigation import NavigationStrategy, NeuralNavigator
+from src.core.plugin_interface import PluginInterface
+from src.core.temporal_graph import NeuralAtom, TemporalGraph
 from src.core.utils import (
-    normalize_text,
-    blake2b_hexdigest,
-    sha256_json,
-    redact_prompt_and_context,
     CircuitBreaker,
+    blake2b_hexdigest,
+    normalize_text,
+    redact_prompt_and_context,
+    sha256_json,
 )
 
 
 class ExternalCortex(Protocol):
     """Protocol for external AI systems."""
 
-    async def reason(self, prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def reason(self, prompt: str, context: dict[str, Any]) -> dict[str, Any]:
         ...
 
-    async def analyze_problem(self, problem: str) -> List[Dict[str, Any]]:
+    async def analyze_problem(self, problem: str) -> list[dict[str, Any]]:
         ...
 
-    async def suggest_tools(self, intent: str) -> List[str]:
+    async def suggest_tools(self, intent: str) -> list[str]:
         ...
 
 
@@ -40,17 +39,17 @@ class ExternalCortex(Protocol):
 class CortexResponse:
     """Structured response from external cortex."""
 
-    reasoning_steps: List[str]
-    suggested_atoms: List[Dict[str, Any]]
-    bonds_to_create: List[Dict[str, Any]]
+    reasoning_steps: list[str]
+    suggested_atoms: list[dict[str, Any]]
+    bonds_to_create: list[dict[str, Any]]
     confidence: float
-    metadata: Dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class GitHubCopilotCortex:
     """Deterministic stub; replace with a real provider later."""
 
-    async def reason(self, prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def reason(self, prompt: str, context: dict[str, Any]) -> dict[str, Any]:
         return {
             "reasoning_steps": [
                 "Analyze the problem context",
@@ -63,7 +62,7 @@ class GitHubCopilotCortex:
                     "atom_type": "reasoning",
                     "metadata": {
                         "source": "github_copilot",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     },
                 }
             ],
@@ -86,10 +85,10 @@ class CortexAdapterPlugin(PluginInterface):
     def __init__(self) -> None:
         self.graph: TemporalGraph | None = None
         self.navigator: NeuralNavigator | None = None
-        self.cortex_providers: Dict[str, ExternalCortex] = {}
-        self.learning_history: List[Dict[str, Any]] = []
+        self.cortex_providers: dict[str, ExternalCortex] = {}
+        self.learning_history: list[dict[str, Any]] = []
         # Hardening
-        self._dedup_index: Dict[str, str] = {}
+        self._dedup_index: dict[str, str] = {}
         self._quarantine_ttl_seconds = 7 * 24 * 3600
         self._circuit = CircuitBreaker(failure_threshold=5, recovery_timeout=30.0)
         self._budget_window_start = time.time()
@@ -100,7 +99,7 @@ class CortexAdapterPlugin(PluginInterface):
     def name(self) -> str:  # type: ignore[override]
         return "cortex_adapter"
 
-    async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:  # type: ignore[override]
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # type: ignore[override]
         await super().setup(event_bus, store, config)
         self.graph = config.get("graph", self.graph)
         self.navigator = config.get("navigator", self.navigator)
@@ -113,7 +112,7 @@ class CortexAdapterPlugin(PluginInterface):
     def register_cortex(self, name: str, cortex: ExternalCortex) -> None:
         self.cortex_providers[name] = cortex
 
-    async def handle_reasoning_request(self, event: Dict[str, Any]):
+    async def handle_reasoning_request(self, event: dict[str, Any]):
         """Handle requests for external reasoning assistance."""
         data = event.get("data", {}) if isinstance(event, dict) else {}
         prompt = data.get("prompt", "")
@@ -201,7 +200,7 @@ class CortexAdapterPlugin(PluginInterface):
                     )
                 )
 
-    async def handle_knowledge_gap(self, event: Dict[str, Any]):
+    async def handle_knowledge_gap(self, event: dict[str, Any]):
         """Handle detected knowledge gaps by querying cortex."""
         data = event.get("data", {}) if isinstance(event, dict) else {}
         gap_description = data.get("gap_description", "unspecified gap")
@@ -218,7 +217,7 @@ class CortexAdapterPlugin(PluginInterface):
             )
         )
 
-    async def _build_context_from_graph(self, prompt: str) -> Dict[str, Any]:
+    async def _build_context_from_graph(self, prompt: str) -> dict[str, Any]:
         """Build context from current graph via semantic navigation."""
         relevant_atoms = await self.navigator.navigate(
             prompt,
@@ -248,7 +247,7 @@ class CortexAdapterPlugin(PluginInterface):
         prompt_hash: str,
         context_hash: str,
     ) -> None:
-        created_atoms: List[NeuralAtom] = []
+        created_atoms: list[NeuralAtom] = []
         for atom_data in response.suggested_atoms:
             meta = {
                 **atom_data.get("metadata", {}),
@@ -295,7 +294,7 @@ class CortexAdapterPlugin(PluginInterface):
                 )
         self.learning_history.append(
             {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "prompt": prompt,
                 "cortex_source": source,
                 "atoms_created": len(created_atoms),
@@ -304,7 +303,7 @@ class CortexAdapterPlugin(PluginInterface):
             }
         )
 
-    async def _create_or_get_atom(self, content: str, atom_type: str, metadata: Dict[str, Any]) -> NeuralAtom:
+    async def _create_or_get_atom(self, content: str, atom_type: str, metadata: dict[str, Any]) -> NeuralAtom:
         key_norm = normalize_text(content or "")
         key = blake2b_hexdigest(f"{atom_type}|{key_norm}")
         existing_uuid = self._dedup_index.get(key)

@@ -5,10 +5,11 @@ WebSocket streaming for real-time telemetry data
 import asyncio
 import json
 import logging
-from typing import Set, Dict, Any, Optional
+from typing import Any
+
 from fastapi import WebSocket, WebSocketDisconnect
 
-from .collector import TelemetryEvent, TelemetryCollector
+from .collector import TelemetryCollector, TelemetryEvent
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +18,10 @@ class ConnectionManager:
     """Manages WebSocket connections for telemetry streaming"""
     
     def __init__(self):
-        self.active_connections: Set[WebSocket] = set()
-        self.connection_metadata: Dict[WebSocket, Dict[str, Any]] = {}
+        self.active_connections: set[WebSocket] = set()
+        self.connection_metadata: dict[WebSocket, dict[str, Any]] = {}
         
-    async def connect(self, websocket: WebSocket, client_info: Optional[Dict[str, Any]] = None):
+    async def connect(self, websocket: WebSocket, client_info: dict[str, Any] | None = None):
         """Accept a new WebSocket connection"""
         await websocket.accept()
         self.active_connections.add(websocket)
@@ -34,7 +35,7 @@ class ConnectionManager:
             self.connection_metadata.pop(websocket, None)
             logger.info(f"Telemetry client disconnected. Total: {len(self.active_connections)}")
     
-    async def send_to_all(self, data: Dict[str, Any]):
+    async def send_to_all(self, data: dict[str, Any]):
         """Send data to all connected clients"""
         if not self.active_connections:
             return
@@ -53,7 +54,7 @@ class ConnectionManager:
         for connection in disconnected:
             self.disconnect(connection)
     
-    async def send_to_client(self, websocket: WebSocket, data: Dict[str, Any]):
+    async def send_to_client(self, websocket: WebSocket, data: dict[str, Any]):
         """Send data to a specific client"""
         try:
             await websocket.send_text(json.dumps(data))
@@ -93,7 +94,7 @@ class WebSocketStreamer:
         except Exception as e:
             logger.error(f"Error broadcasting telemetry event: {e}")
     
-    async def handle_websocket(self, websocket: WebSocket, client_id: Optional[str] = None):
+    async def handle_websocket(self, websocket: WebSocket, client_id: str | None = None):
         """Handle a WebSocket connection for telemetry streaming"""
         client_info = {"client_id": client_id} if client_id else {}
         await self.connection_manager.connect(websocket, client_info)
@@ -138,7 +139,7 @@ class WebSocketStreamer:
         except Exception as e:
             logger.error(f"Error sending initial state: {e}")
     
-    async def _handle_client_message(self, websocket: WebSocket, message: Dict[str, Any]):
+    async def _handle_client_message(self, websocket: WebSocket, message: dict[str, Any]):
         """Handle incoming message from client"""
         try:
             msg_type = message.get("type")
@@ -220,7 +221,7 @@ class WebSocketStreamer:
         """Get number of active connections"""
         return len(self.connection_manager.active_connections)
     
-    def get_connection_info(self) -> Dict[str, Any]:
+    def get_connection_info(self) -> dict[str, Any]:
         """Get information about active connections"""
         return {
             "active_connections": self.get_connection_count(),

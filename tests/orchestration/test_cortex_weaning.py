@@ -1,7 +1,5 @@
 import pytest
-from src.orchestration.cortex_weaning import CortexWeaningOrchestrator, TrainingPhase
 
-import pytest
 from src.orchestration.cortex_weaning import CortexWeaningOrchestrator, TrainingPhase
 
 

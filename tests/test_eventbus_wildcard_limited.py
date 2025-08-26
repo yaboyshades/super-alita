@@ -8,6 +8,7 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
+
 from src.core.event_bus import EventBus
 from src.core.events import BaseEvent
 

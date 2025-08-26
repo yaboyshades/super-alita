@@ -5,10 +5,10 @@
 # This script ensures that bundled dependencies are on the path and runs the server module.
 #
 
+import pathlib
 import runpy
 import sys
-import os
-import pathlib
+
 
 def main():
     """Configures the path and runs the LSP server module."""

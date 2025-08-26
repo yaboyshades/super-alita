@@ -395,6 +395,13 @@ def get_llm_client(model_name: str | None) -> LLMClient:  # type: ignore[overrid
     if model_name and model_name.lower().startswith("hf:"):
         target = model_name.split(":", 1)[1] or None
         return LocalHFClient(target)
+    if model_name and model_name.lower().startswith("gpt-oss"):
+        # Route GPT-OSS models to the OpenAI-compatible fallback gateway.
+        # IMPORTANT: Set SUPER_ALITA_BASE_URL to your GPT-OSS gateway, not this server.
+        return SuperAlitaFallbackClient(model_name)
+    if model_name and model_name.lower().startswith("ollama:"):
+        # Lazy import of OllamaClient defined below
+        return OllamaClient(model_name.split(":", 1)[1])  # type: ignore[name-defined]
     return old_get_llm_client(model_name)
 
 
@@ -408,3 +415,37 @@ __all__ = [
     "LocalHFClient",
     "get_llm_client",
 ]
+
+
+class OllamaClient(LLMClient):
+    """Client for local Ollama server (NDJSON streaming via /api/chat)."""
+
+    def __init__(self, model_name: str, host: str | None = None) -> None:
+        self.model_name = model_name
+        self.host = (host or os.getenv("OLLAMA_HOST") or "http://127.0.0.1:11434").rstrip("/")
+        self._client = httpx.AsyncClient(timeout=None) if httpx else None
+
+    async def stream_chat(
+        self, messages: list[dict[str, str]], timeout: float | None = None
+    ) -> AsyncGenerator[dict[str, str], None]:
+        if self._client is None:  # pragma: no cover
+            raise RuntimeError("httpx not available for OllamaClient")
+        timeout = timeout or SETTINGS.model_stream_timeout_s
+        payload = {"model": self.model_name, "messages": messages, "stream": True}
+        url = f"{self.host}/api/chat"
+        async with asyncio.timeout(timeout):
+            async with self._client.stream("POST", url, json=payload) as resp:
+                if resp.status_code >= 400:
+                    data = await resp.aread()
+                    raise RuntimeError(f"Ollama {resp.status_code}: {data[:200]!r}")
+                async for line in resp.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        obj = json.loads(line)
+                    except Exception:
+                        continue
+                    msg = obj.get("message", {}) if isinstance(obj, dict) else {}
+                    content = msg.get("content")
+                    if content:
+                        yield {"content": content}

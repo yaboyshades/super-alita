@@ -3,10 +3,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 import textwrap
 from pathlib import Path
 from typing import Any
-import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "mcp_server" / "src"))

@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 """Track agent autonomy and emit progress events."""
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 from src.core.plugin_interface import PluginInterface
 
@@ -20,13 +21,13 @@ class AutonomyMetrics:
 
 class AutonomyTracker(PluginInterface):
     def __init__(self):
-        self.metrics_history: List[AutonomyMetrics] = []
+        self.metrics_history: list[AutonomyMetrics] = []
 
     @property
     def name(self) -> str:  # type: ignore[override]
         return "autonomy_tracker"
 
-    async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:  # type: ignore[override]
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # type: ignore[override]
         await super().setup(event_bus, store, config)
 
     async def start(self) -> None:  # type: ignore[override]
@@ -45,7 +46,7 @@ class AutonomyTracker(PluginInterface):
             milestone_reached=False,
         )
 
-    async def get_graduation_readiness(self) -> Dict[str, Any]:
+    async def get_graduation_readiness(self) -> dict[str, Any]:
         score = self.metrics_history[-1].autonomy_score() if self.metrics_history else 0.0
         ready = score > 0.8
         return {

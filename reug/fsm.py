@@ -1,6 +1,7 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict
+from typing import Any
 
 from .events import new_id
 from .tools.registry import register_tool
@@ -28,7 +29,7 @@ class FSMContext:
 
 
 class ExecutionFlow:
-    def __init__(self, services: Dict[str, Callable], emitter):
+    def __init__(self, services: dict[str, Callable], emitter):
         self.services = services
         self.emitter = emitter
 
@@ -64,7 +65,7 @@ class ExecutionFlow:
             pass
         return tool
 
-    async def run(self, user_input: Dict[str, Any]) -> FSMContext:
+    async def run(self, user_input: dict[str, Any]) -> FSMContext:
         ctx = FSMContext(raw_input=user_input, results=[], correlation_id=new_id())
         ctx_dict = ctx.__dict__
         self._emit_transition(State.AWAITING_INPUT, State.DECOMPOSE_TASK, ctx.correlation_id)

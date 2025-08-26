@@ -1,6 +1,8 @@
 """Router agent that chains other agents."""
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+
 from acp_sdk import Message, MessagePart
+
 from .classify_agent import ClassifyAgent
 
 

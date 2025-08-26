@@ -1,17 +1,18 @@
 from __future__ import annotations
-from dataclasses import dataclass, asdict
-from typing import Dict, Any, List, Optional
-import hashlib
 
-DiffDict = Dict[str, Any]
+import hashlib
+from dataclasses import asdict, dataclass
+from typing import Any
+
+DiffDict = dict[str, Any]
 
 @dataclass
 class DiffEntry:
     path: str
     change_type: str = "modify"   # modify|add|delete
     unified_diff: str = ""
-    new_content: Optional[str] = None
-    old_sha: Optional[str] = None
+    new_content: str | None = None
+    old_sha: str | None = None
     proposed_by: str = "unknown"
     confidence: float = 0.0
 
@@ -21,8 +22,8 @@ class DiffEntry:
             d["new_sha"] = hashlib.sha1(self.new_content.encode("utf-8")).hexdigest()
         return d
 
-def normalize_diffs(diffs: List[Dict[str, Any]], *, proposed_by: str) -> List[DiffDict]:
-    out: List[DiffDict] = []
+def normalize_diffs(diffs: list[dict[str, Any]], *, proposed_by: str) -> list[DiffDict]:
+    out: list[DiffDict] = []
     for d in diffs or []:
         entry = DiffEntry(
             path=d.get("path"),

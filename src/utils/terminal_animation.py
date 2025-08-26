@@ -4,18 +4,18 @@ from __future__ import annotations
 
 import sys
 import time
-from typing import List, TextIO
+from typing import TextIO
 
 SPINNER_FRAMES = ["-", "\\", "|", "/"]
 
-def build_spinner_frames(prompt: str) -> List[str]:
+def build_spinner_frames(prompt: str) -> list[str]:
     """Build frames for a loading animation with dynamic prompt text.
 
     Each frame shows a spinner character followed by the growing prefix
     of the provided prompt. This allows callers to preview what is being
     "made" as the animation progresses.
     """
-    frames: List[str] = []
+    frames: list[str] = []
     for i in range(1, len(prompt) + 1):
         spinner = SPINNER_FRAMES[(i - 1) % len(SPINNER_FRAMES)]
         frames.append(f"{spinner} {prompt[:i]}")

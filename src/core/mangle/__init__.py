@@ -26,10 +26,9 @@ except ImportError as e:
     grpc_available = False
 
 from ..cortex.runtime import CortexRuntime
-from ..telemetry.collector import TelemetryCollector
 from ..knowledge.plugin import KnowledgeGraphPlugin
 from ..optimization.plugin import OptimizationPlugin
-
+from ..telemetry.collector import TelemetryCollector
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +46,8 @@ class MangleIntegration:
     
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
-        workspace_root: Optional[Path] = None
+        config: dict[str, Any] | None = None,
+        workspace_root: Path | None = None
     ):
         """
         Initialize Mangle integration.
@@ -62,18 +61,18 @@ class MangleIntegration:
         
         # Component instances
         self.grpc_server = None
-        self.metrics_collector: Optional[PrometheusMetricsCollector] = None
-        self.redis_event_bus: Optional[RedisEventBus] = None
+        self.metrics_collector: PrometheusMetricsCollector | None = None
+        self.redis_event_bus: RedisEventBus | None = None
         
         # Agent components
-        self.cortex_runtime: Optional[CortexRuntime] = None
-        self.telemetry_collector: Optional[TelemetryCollector] = None
-        self.knowledge_plugin: Optional[KnowledgeGraphPlugin] = None
-        self.optimization_plugin: Optional[OptimizationPlugin] = None
+        self.cortex_runtime: CortexRuntime | None = None
+        self.telemetry_collector: TelemetryCollector | None = None
+        self.knowledge_plugin: KnowledgeGraphPlugin | None = None
+        self.optimization_plugin: OptimizationPlugin | None = None
         
         # State tracking
         self.is_running = False
-        self.start_time: Optional[float] = None
+        self.start_time: float | None = None
         self.shutdown_handlers = []
         
         # Statistics
@@ -121,10 +120,10 @@ class MangleIntegration:
     
     def setup_agent_components(
         self,
-        cortex_runtime: Optional[CortexRuntime] = None,
-        telemetry_collector: Optional[TelemetryCollector] = None,
-        knowledge_plugin: Optional[KnowledgeGraphPlugin] = None,
-        optimization_plugin: Optional[OptimizationPlugin] = None
+        cortex_runtime: CortexRuntime | None = None,
+        telemetry_collector: TelemetryCollector | None = None,
+        knowledge_plugin: KnowledgeGraphPlugin | None = None,
+        optimization_plugin: OptimizationPlugin | None = None
     ) -> None:
         """
         Setup agent components for integration.
@@ -306,7 +305,7 @@ class MangleIntegration:
         """Add a shutdown handler."""
         self.shutdown_handlers.append(handler)
     
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get comprehensive status information."""
         uptime = time.time() - self.start_time if self.start_time else 0
         
@@ -342,7 +341,7 @@ class MangleIntegration:
         
         return status
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform comprehensive health check."""
         health = {
             "status": "healthy",
@@ -414,8 +413,8 @@ class MangleIntegration:
 # Convenience functions for easy deployment
 
 async def create_and_run_mangle_integration(
-    config: Optional[Dict[str, Any]] = None,
-    workspace_root: Optional[Path] = None,
+    config: dict[str, Any] | None = None,
+    workspace_root: Path | None = None,
     **kwargs
 ) -> MangleIntegration:
     """

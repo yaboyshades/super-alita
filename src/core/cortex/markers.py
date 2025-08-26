@@ -3,12 +3,11 @@ Performance markers and events for Cortex runtime
 Tracks execution metrics and provides telemetry data
 """
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Union
-from enum import Enum
 import time
 import uuid
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 from ..events import BaseEvent as Event
 
@@ -37,13 +36,13 @@ class PerformanceMarker:
     """Performance marker for tracking Cortex execution metrics"""
     id: str
     marker_type: MarkerType
-    phase: Optional[CortexPhase]
+    phase: CortexPhase | None
     timestamp: float
-    duration_ms: Optional[float] = None
-    module_name: Optional[str] = None
-    metrics: Dict[str, Any] = None
-    metadata: Dict[str, Any] = None
-    error: Optional[str] = None
+    duration_ms: float | None = None
+    module_name: str | None = None
+    metrics: dict[str, Any] = None
+    metadata: dict[str, Any] = None
+    error: str | None = None
     
     def __post_init__(self):
         if self.metrics is None:
@@ -56,9 +55,9 @@ class PerformanceMarker:
 class CortexEvent:
     """Cortex-specific event that extends the base Event system"""
     cycle_id: str
-    phase: Optional[CortexPhase]
+    phase: CortexPhase | None
     markers: list[PerformanceMarker]
-    context: Dict[str, Any]
+    context: dict[str, Any]
     base_event: Event
     
     @property
@@ -78,7 +77,7 @@ class CortexEvent:
         return 0.0
     
     @property
-    def phase_durations(self) -> Dict[str, float]:
+    def phase_durations(self) -> dict[str, float]:
         """Calculate duration for each phase"""
         durations = {}
         
@@ -96,8 +95,8 @@ class PerformanceTracker:
     
     def __init__(self):
         self.markers: list[PerformanceMarker] = []
-        self.current_cycle_id: Optional[str] = None
-        self.phase_start_times: Dict[CortexPhase, float] = {}
+        self.current_cycle_id: str | None = None
+        self.phase_start_times: dict[CortexPhase, float] = {}
     
     def start_cycle(self, cycle_id: str) -> str:
         """Start tracking a new Cortex cycle"""
@@ -114,7 +113,7 @@ class PerformanceTracker:
         self.markers.append(marker)
         return marker.id
     
-    def end_cycle(self) -> Optional[str]:
+    def end_cycle(self) -> str | None:
         """End the current cycle tracking"""
         if not self.current_cycle_id:
             return None
@@ -145,7 +144,7 @@ class PerformanceTracker:
         self.markers.append(marker)
         return marker.id
     
-    def end_phase(self, phase: CortexPhase) -> Optional[str]:
+    def end_phase(self, phase: CortexPhase) -> str | None:
         """End tracking a Cortex phase"""
         end_time = time.time()
         start_time = self.phase_start_times.get(phase)
@@ -172,7 +171,7 @@ class PerformanceTracker:
         module_name: str, 
         phase: CortexPhase,
         duration_ms: float,
-        metrics: Optional[Dict[str, Any]] = None
+        metrics: dict[str, Any] | None = None
     ) -> str:
         """Track module execution metrics"""
         marker = PerformanceMarker(
@@ -190,8 +189,8 @@ class PerformanceTracker:
     def track_error(
         self, 
         error: str, 
-        phase: Optional[CortexPhase] = None,
-        module_name: Optional[str] = None
+        phase: CortexPhase | None = None,
+        module_name: str | None = None
     ) -> str:
         """Track an error during execution"""
         marker = PerformanceMarker(
@@ -208,8 +207,8 @@ class PerformanceTracker:
     def add_metric(
         self, 
         metric_name: str, 
-        value: Union[int, float, str],
-        phase: Optional[CortexPhase] = None
+        value: int | float | str,
+        phase: CortexPhase | None = None
     ) -> str:
         """Add a custom metric"""
         marker = PerformanceMarker(
@@ -236,9 +235,9 @@ class PerformanceTracker:
 def create_cortex_event(
     event_type: str,
     cycle_id: str,
-    phase: Optional[CortexPhase] = None,
-    markers: Optional[list[PerformanceMarker]] = None,
-    context: Optional[Dict[str, Any]] = None,
+    phase: CortexPhase | None = None,
+    markers: list[PerformanceMarker] | None = None,
+    context: dict[str, Any] | None = None,
     **kwargs
 ) -> CortexEvent:
     """Create a Cortex event with performance tracking"""

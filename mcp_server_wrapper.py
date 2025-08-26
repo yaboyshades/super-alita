@@ -8,8 +8,9 @@ import os
 import sys
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 # Remove the workspace from the Python path to avoid conflicts
 sys.path = [p for p in sys.path if "super-alita-clean" not in p and "ATLAI" not in p]
@@ -198,9 +199,9 @@ if __name__ == "__main__":
     main()
 
 # --- Decision Policy Bridge ---
+
 from src.core.decision_policy_v1 import DecisionPolicyEngine  # noqa: E402
 from src.mcp_local.registry import ToolRegistry as LocalToolRegistry  # noqa: E402
-from typing import Dict  # noqa: E402
 
 
 class MCPBridge:
@@ -226,7 +227,7 @@ class MCPBridge:
 
         return _exec
 
-    def _convert_mcp_to_capability(self, tool_spec: Dict) -> Dict:
+    def _convert_mcp_to_capability(self, tool_spec: dict) -> dict:
         return {
             "name": tool_spec["name"],
             "description": tool_spec.get("description", ""),

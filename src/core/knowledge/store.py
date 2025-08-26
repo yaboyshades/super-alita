@@ -2,15 +2,15 @@
 SQLite-backed Knowledge Graph Store with deterministic atom/bond management
 """
 
-import sqlite3
 import hashlib
 import json
+import sqlite3
 import uuid
-from datetime import datetime, UTC
-from typing import Dict, List, Optional, Any, Union
-from dataclasses import dataclass, asdict
-from pathlib import Path
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
 
 class AtomType(Enum):
@@ -41,13 +41,13 @@ class Atom:
     """An atom in the knowledge graph"""
     atom_id: str  # Deterministic UUID based on content
     atom_type: AtomType
-    content: Dict[str, Any]
-    metadata: Dict[str, Any]
+    content: dict[str, Any]
+    metadata: dict[str, Any]
     created_at: datetime
     updated_at: datetime
     hash_signature: str  # Content hash for idempotency
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert atom to dictionary"""
         return {
             "atom_id": self.atom_id,
@@ -60,7 +60,7 @@ class Atom:
         }
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Atom":
+    def from_dict(cls, data: dict[str, Any]) -> "Atom":
         """Create atom from dictionary"""
         return cls(
             atom_id=data["atom_id"],
@@ -81,11 +81,11 @@ class Bond:
     to_atom_id: str
     bond_type: BondType
     strength: float  # 0.0 to 1.0
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     created_at: datetime
     updated_at: datetime
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert bond to dictionary"""
         return {
             "bond_id": self.bond_id,
@@ -99,7 +99,7 @@ class Bond:
         }
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Bond":
+    def from_dict(cls, data: dict[str, Any]) -> "Bond":
         """Create bond from dictionary"""
         return cls(
             bond_id=data["bond_id"],
@@ -118,9 +118,9 @@ class KnowledgeStore:
     SQLite-backed knowledge graph store with deterministic atom/bond management
     """
     
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         self.db_path = db_path or Path("knowledge_graph.db")
-        self.connection: Optional[sqlite3.Connection] = None
+        self.connection: sqlite3.Connection | None = None
         self._setup_database()
     
     def _setup_database(self):
@@ -166,13 +166,13 @@ class KnowledgeStore:
         
         self.connection.commit()
     
-    def _generate_content_hash(self, content: Dict[str, Any]) -> str:
+    def _generate_content_hash(self, content: dict[str, Any]) -> str:
         """Generate deterministic hash from content"""
         # Sort keys for consistent hashing
         content_str = json.dumps(content, sort_keys=True)
         return hashlib.sha256(content_str.encode()).hexdigest()
     
-    def _generate_atom_id(self, atom_type: AtomType, content: Dict[str, Any]) -> str:
+    def _generate_atom_id(self, atom_type: AtomType, content: dict[str, Any]) -> str:
         """Generate deterministic atom ID"""
         # Create a deterministic hash from atom type and content
         content_str = json.dumps(content, sort_keys=True)
@@ -191,8 +191,8 @@ class KnowledgeStore:
     def create_atom(
         self, 
         atom_type: AtomType, 
-        content: Dict[str, Any], 
-        metadata: Optional[Dict[str, Any]] = None
+        content: dict[str, Any], 
+        metadata: dict[str, Any] | None = None
     ) -> Atom:
         """Create or retrieve existing atom (idempotent)"""
         if metadata is None:
@@ -258,7 +258,7 @@ class KnowledgeStore:
         to_atom_id: str,
         bond_type: BondType,
         strength: float = 1.0,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> Bond:
         """Create or update bond between atoms"""
         if metadata is None:
@@ -336,7 +336,7 @@ class KnowledgeStore:
         self.connection.commit()
         return bond
     
-    def get_atom(self, atom_id: str) -> Optional[Atom]:
+    def get_atom(self, atom_id: str) -> Atom | None:
         """Retrieve atom by ID"""
         cursor = self.connection.execute(
             "SELECT * FROM atoms WHERE atom_id = ?",
@@ -357,7 +357,7 @@ class KnowledgeStore:
             "hash_signature": row["hash_signature"]
         })
     
-    def get_atoms_by_type(self, atom_type: AtomType, limit: int = 100) -> List[Atom]:
+    def get_atoms_by_type(self, atom_type: AtomType, limit: int = 100) -> list[Atom]:
         """Retrieve atoms by type"""
         cursor = self.connection.execute(
             "SELECT * FROM atoms WHERE atom_type = ? ORDER BY created_at DESC LIMIT ?",
@@ -378,7 +378,7 @@ class KnowledgeStore:
         
         return atoms
     
-    def get_bonds_from_atom(self, atom_id: str) -> List[Bond]:
+    def get_bonds_from_atom(self, atom_id: str) -> list[Bond]:
         """Get all bonds originating from an atom"""
         cursor = self.connection.execute(
             "SELECT * FROM bonds WHERE from_atom_id = ?",
@@ -400,7 +400,7 @@ class KnowledgeStore:
         
         return bonds
     
-    def get_bonds_to_atom(self, atom_id: str) -> List[Bond]:
+    def get_bonds_to_atom(self, atom_id: str) -> list[Bond]:
         """Get all bonds pointing to an atom"""
         cursor = self.connection.execute(
             "SELECT * FROM bonds WHERE to_atom_id = ?",
@@ -422,7 +422,7 @@ class KnowledgeStore:
         
         return bonds
     
-    def search_atoms_by_content(self, search_term: str, limit: int = 50) -> List[Atom]:
+    def search_atoms_by_content(self, search_term: str, limit: int = 50) -> list[Atom]:
         """Search atoms by content (simple text search)"""
         cursor = self.connection.execute("""
             SELECT * FROM atoms 
@@ -445,7 +445,7 @@ class KnowledgeStore:
         
         return atoms
     
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get knowledge graph statistics"""
         # Count atoms by type
         atom_counts = {}

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from mcp_server.server import app
 
@@ -34,7 +33,7 @@ async def puter_file_read(file_path: str, dry_run: bool = True) -> dict[str, Any
     try:
         workspace_root = _get_workspace_root()
         target_path = Path(file_path).resolve()
-        
+
         # Validate workspace boundary
         if not _is_subpath(workspace_root, target_path):
             return {
@@ -42,7 +41,7 @@ async def puter_file_read(file_path: str, dry_run: bool = True) -> dict[str, Any
                 "result": "",
                 "error": f"Path {file_path} is outside workspace boundary",
             }
-        
+
         if dry_run:
             # Return preview/diff of what would be read
             if target_path.exists():
@@ -65,7 +64,7 @@ async def puter_file_read(file_path: str, dry_run: bool = True) -> dict[str, Any
                     "error": f"File {file_path} does not exist",
                     "dry_run": True,
                 }
-        
+
         # Actual file read operation
         if not target_path.exists():
             return {
@@ -73,10 +72,10 @@ async def puter_file_read(file_path: str, dry_run: bool = True) -> dict[str, Any
                 "result": "",
                 "error": f"File {file_path} does not exist",
             }
-        
-        with open(target_path, 'r', encoding='utf-8') as f:
+
+        with open(target_path, encoding='utf-8') as f:
             content = f.read()
-        
+
         return {
             "success": True,
             "result": content,
@@ -87,7 +86,7 @@ async def puter_file_read(file_path: str, dry_run: bool = True) -> dict[str, Any
                 "lines": len(content.splitlines()),
             },
         }
-        
+
     except Exception as e:
         logger.exception(f"Error reading file {file_path}")
         return {
@@ -106,7 +105,7 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
     try:
         workspace_root = _get_workspace_root()
         target_path = Path(file_path).resolve()
-        
+
         # Validate workspace boundary
         if not _is_subpath(workspace_root, target_path):
             return {
@@ -114,17 +113,17 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
                 "result": "",
                 "error": f"Path {file_path} is outside workspace boundary",
             }
-        
+
         if dry_run:
             # Generate unified diff preview
             existing_content = ""
             if target_path.exists():
                 try:
-                    with open(target_path, 'r', encoding='utf-8') as f:
+                    with open(target_path, encoding='utf-8') as f:
                         existing_content = f.read()
                 except Exception:
                     existing_content = "<binary or unreadable file>"
-            
+
             # Simple diff representation
             if existing_content != content:
                 diff_lines = []
@@ -135,12 +134,12 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
                     old_lines = existing_content.splitlines()
                     new_lines = content.splitlines()
                     max_lines = 10
-                    
-                    for i, (old, new) in enumerate(zip(old_lines[:max_lines], new_lines[:max_lines])):
+
+                    for i, (old, new) in enumerate(zip(old_lines[:max_lines], new_lines[:max_lines], strict=False)):
                         if old != new:
                             diff_lines.append(f"-{old}")
                             diff_lines.append(f"+{new}")
-                    
+
                     if len(old_lines) > max_lines or len(new_lines) > max_lines:
                         diff_lines.append("... (diff truncated)")
                 else:
@@ -149,11 +148,11 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
                         diff_lines.append(f"+{line}")
                     if len(content.splitlines()) > 10:
                         diff_lines.append("... (content truncated)")
-                
+
                 diff_preview = "\n".join(diff_lines)
             else:
                 diff_preview = "No changes detected"
-            
+
             return {
                 "success": True,
                 "result": f"Would write {len(content.encode())} bytes to {file_path}",
@@ -166,13 +165,13 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
                     "characters": len(content),
                 },
             }
-        
+
         # Actual file write operation
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(target_path, 'w', encoding='utf-8') as f:
             f.write(content)
-        
+
         return {
             "success": True,
             "result": f"Successfully wrote {len(content.encode())} bytes to {file_path}",
@@ -183,7 +182,7 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
                 "lines_written": len(content.splitlines()),
             },
         }
-        
+
     except Exception as e:
         logger.exception(f"Error writing file {file_path}")
         return {
@@ -198,19 +197,19 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
     description="Execute a command in Puter cloud environment. Args: command (str), args (list), working_dir (str), dry_run (bool, default=True). Returns execution result or preview.",
 )
 async def puter_execute(
-    command: str, 
-    args: List[str] = None, 
-    working_dir: str = None, 
+    command: str,
+    args: list[str] = None,
+    working_dir: str = None,
     dry_run: bool = True
 ) -> dict[str, Any]:
     """Execute a command in Puter cloud environment with security validation."""
     try:
         args = args or []
         working_dir = working_dir or str(_get_workspace_root())
-        
+
         workspace_root = _get_workspace_root()
         work_path = Path(working_dir).resolve()
-        
+
         # Validate workspace boundary for working directory
         if not _is_subpath(workspace_root, work_path):
             return {
@@ -218,21 +217,21 @@ async def puter_execute(
                 "result": "",
                 "error": f"Working directory {working_dir} is outside workspace boundary",
             }
-        
+
         # Security: Only allow safe commands in dry_run=False mode
         safe_commands = {
             "echo", "cat", "ls", "pwd", "whoami", "date", "python", "node", "npm", "git"
         }
-        
+
         if not dry_run and command not in safe_commands:
             return {
                 "success": False,
                 "result": "",
                 "error": f"Command '{command}' is not in the safe commands list for execution",
             }
-        
+
         full_command = [command] + args
-        
+
         if dry_run:
             return {
                 "success": True,
@@ -246,7 +245,7 @@ async def puter_execute(
                     "full_command": ' '.join(full_command),
                 },
             }
-        
+
         # Actual command execution with timeout
         proc = await asyncio.create_subprocess_exec(
             *full_command,
@@ -254,7 +253,7 @@ async def puter_execute(
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        
+
         try:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30.0)
         except asyncio.TimeoutError:
@@ -265,7 +264,7 @@ async def puter_execute(
                 "result": "",
                 "error": "Command execution timed out after 30 seconds",
             }
-        
+
         return {
             "success": proc.returncode == 0,
             "result": stdout.decode('utf-8', errors='replace'),
@@ -279,7 +278,7 @@ async def puter_execute(
                 "stderr_lines": len(stderr.decode('utf-8', errors='replace').splitlines()),
             },
         }
-        
+
     except Exception as e:
         logger.exception(f"Error executing command {command}")
         return {
@@ -303,7 +302,7 @@ async def puter_workspace_sync(
     try:
         workspace_root = _get_workspace_root()
         local_target = Path(local_path).resolve()
-        
+
         # Validate workspace boundary
         if not _is_subpath(workspace_root, local_target):
             return {
@@ -311,7 +310,7 @@ async def puter_workspace_sync(
                 "result": "",
                 "error": f"Local path {local_path} is outside workspace boundary",
             }
-        
+
         valid_sync_types = ["upload", "download", "bidirectional"]
         if sync_type not in valid_sync_types:
             return {
@@ -319,11 +318,11 @@ async def puter_workspace_sync(
                 "result": "",
                 "error": f"Invalid sync_type '{sync_type}'. Must be one of: {valid_sync_types}",
             }
-        
+
         if dry_run:
             # Simulate file discovery and sync preview
             files_to_sync = []
-            
+
             if local_target.is_dir():
                 for file_path in local_target.rglob("*"):
                     if file_path.is_file():
@@ -341,9 +340,9 @@ async def puter_workspace_sync(
                     "size": local_target.stat().st_size,
                     "action": sync_type,
                 })
-            
+
             total_size = sum(f["size"] for f in files_to_sync)
-            
+
             return {
                 "success": True,
                 "result": f"Would sync {len(files_to_sync)} files ({total_size} bytes) - {sync_type}",
@@ -359,16 +358,16 @@ async def puter_workspace_sync(
                     "truncated": len(files_to_sync) > 10,
                 },
             }
-        
+
         # Actual sync operation (simulated for now)
         # In a real implementation, this would call Puter's sync API
-        
+
         # Simulate sync process
         await asyncio.sleep(0.1)  # Simulate network delay
-        
+
         files_synced = 0
         bytes_transferred = 0
-        
+
         if local_target.is_dir():
             for file_path in local_target.rglob("*"):
                 if file_path.is_file():
@@ -377,7 +376,7 @@ async def puter_workspace_sync(
         elif local_target.is_file():
             files_synced = 1
             bytes_transferred = local_target.stat().st_size
-        
+
         return {
             "success": True,
             "result": f"Successfully synced {files_synced} files ({bytes_transferred} bytes)",
@@ -391,7 +390,7 @@ async def puter_workspace_sync(
                 "simulated": True,  # Mark as simulated until real API is integrated
             },
         }
-        
+
     except Exception as e:
         logger.exception(f"Error syncing workspace {local_path}")
         return {
@@ -414,7 +413,7 @@ async def puter_list_files(
     try:
         workspace_root = _get_workspace_root()
         target_dir = Path(directory_path).resolve()
-        
+
         # Validate workspace boundary
         if not _is_subpath(workspace_root, target_dir):
             return {
@@ -422,25 +421,25 @@ async def puter_list_files(
                 "result": "",
                 "error": f"Directory {directory_path} is outside workspace boundary",
             }
-        
+
         if not target_dir.exists():
             return {
                 "success": False,
                 "result": "",
                 "error": f"Directory {directory_path} does not exist",
             }
-        
+
         if not target_dir.is_dir():
             return {
                 "success": False,
                 "result": "",
                 "error": f"Path {directory_path} is not a directory",
             }
-        
+
         # List files matching pattern
         files = []
         directories = []
-        
+
         for item in target_dir.glob(pattern):
             item_info = {
                 "name": item.name,
@@ -449,18 +448,18 @@ async def puter_list_files(
                 "modified": item.stat().st_mtime,
                 "is_dir": item.is_dir(),
             }
-            
+
             if item.is_dir():
                 directories.append(item_info)
             else:
                 files.append(item_info)
-        
+
         # Sort results
         files.sort(key=lambda x: x["name"])
         directories.sort(key=lambda x: x["name"])
-        
+
         result_summary = f"Found {len(directories)} directories and {len(files)} files"
-        
+
         return {
             "success": True,
             "result": result_summary,
@@ -475,7 +474,7 @@ async def puter_list_files(
                 "total_size": sum(f["size"] for f in files),
             },
         }
-        
+
     except Exception as e:
         logger.exception(f"Error listing files in {directory_path}")
         return {

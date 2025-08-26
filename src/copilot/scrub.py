@@ -8,7 +8,8 @@ pure to simplify unit testing.
 from __future__ import annotations
 
 import re
-from typing import Iterable, Pattern
+from collections.abc import Iterable
+from re import Pattern
 
 # Common patterns that may reveal secrets.  These expressions intentionally keep
 # the implementation simple – they are not a substitute for full secret

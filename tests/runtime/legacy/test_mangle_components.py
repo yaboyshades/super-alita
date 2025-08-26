@@ -5,16 +5,15 @@ Tests individual Mangle components directly without importing
 the full module that has gRPC dependencies.
 """
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
-import asyncio
 import time
 
 # Import components directly to avoid gRPC issues
-
 from core.mangle.metrics import PrometheusMetricsCollector
 from core.mangle.redis_event_bus import RedisEventBus
-from core.events import create_event
+
 
 class TestPrometheusMetrics:
     """Test Prometheus metrics collection."""

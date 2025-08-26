@@ -3,13 +3,13 @@ Base interface for agent plugins.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 
 class PluginInterface(ABC):
     """Base interface that all plugins must implement."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """Initialize plugin with configuration."""
         self.config = config
         self.is_initialized = False
@@ -23,5 +23,5 @@ class PluginInterface(ABC):
         """Clean up plugin resources."""
 
     @abstractmethod
-    def get_plugin_info(self) -> Dict[str, Any]:
+    def get_plugin_info(self) -> dict[str, Any]:
         """Get plugin information."""

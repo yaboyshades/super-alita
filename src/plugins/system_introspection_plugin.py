@@ -14,7 +14,7 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 from src.core.events import SystemStatusResponseEvent
 from src.core.plugin_interface import PluginInterface
@@ -44,7 +44,7 @@ class SystemIntrospectionPlugin(PluginInterface):
     def name(self) -> str:
         return "system_introspection"
 
-    async def setup(self, event_bus, store, config: Dict[str, Any]) -> None:
+    async def setup(self, event_bus, store, config: dict[str, Any]) -> None:
         """Initialize the system introspection plugin."""
         await super().setup(event_bus, store, config)
 
@@ -149,7 +149,7 @@ class SystemIntrospectionPlugin(PluginInterface):
         except Exception as e:
             logger.error(f"Error handling introspection query: {e}")
 
-    async def _comprehensive_health_check(self) -> Dict[str, Any]:
+    async def _comprehensive_health_check(self) -> dict[str, Any]:
         """Perform comprehensive health check of all subsystems."""
         health_status = {
             "timestamp": datetime.now().isoformat(),
@@ -217,7 +217,7 @@ class SystemIntrospectionPlugin(PluginInterface):
             health_status["issues"].append(f"Health check failed: {e}")
             return health_status
 
-    async def _check_eventbus_health(self) -> Dict[str, Any]:
+    async def _check_eventbus_health(self) -> dict[str, Any]:
         """Check EventBus health and connectivity."""
         status = {
             "status": "unknown",
@@ -246,7 +246,7 @@ class SystemIntrospectionPlugin(PluginInterface):
 
         return status
 
-    async def _check_redis_health(self) -> Dict[str, Any]:
+    async def _check_redis_health(self) -> dict[str, Any]:
         """Check Redis connectivity and performance."""
         status = {
             "status": "unknown",
@@ -281,7 +281,7 @@ class SystemIntrospectionPlugin(PluginInterface):
 
         return status
 
-    async def _check_neural_store_health(self) -> Dict[str, Any]:
+    async def _check_neural_store_health(self) -> dict[str, Any]:
         """Check NeuralStore health and statistics."""
         status = {
             "status": "unknown",
@@ -321,7 +321,7 @@ class SystemIntrospectionPlugin(PluginInterface):
 
         return status
 
-    async def _check_memory_system_health(self) -> Dict[str, Any]:
+    async def _check_memory_system_health(self) -> dict[str, Any]:
         """Check semantic memory system health."""
         status = {
             "status": "unknown",
@@ -354,7 +354,7 @@ class SystemIntrospectionPlugin(PluginInterface):
 
         return status
 
-    async def _check_llm_health(self) -> Dict[str, Any]:
+    async def _check_llm_health(self) -> dict[str, Any]:
         """Check LLM integration health."""
         status = {
             "status": "unknown",
@@ -408,7 +408,7 @@ class SystemIntrospectionPlugin(PluginInterface):
 
         return status
 
-    async def _check_plugin_health(self) -> Dict[str, Any]:
+    async def _check_plugin_health(self) -> dict[str, Any]:
         """Check plugin system health."""
         status = {
             "status": "healthy",
@@ -428,7 +428,7 @@ class SystemIntrospectionPlugin(PluginInterface):
 
         return status
 
-    async def _comprehensive_system_diagnosis(self) -> Dict[str, Any]:
+    async def _comprehensive_system_diagnosis(self) -> dict[str, Any]:
         """Perform comprehensive system diagnosis."""
         diagnosis = {
             "timestamp": datetime.now().isoformat(),
@@ -472,7 +472,7 @@ class SystemIntrospectionPlugin(PluginInterface):
             diagnosis["summary"]["critical_issues"].append(f"Diagnosis failed: {e}")
             return diagnosis
 
-    async def _analyze_configuration(self) -> Dict[str, Any]:
+    async def _analyze_configuration(self) -> dict[str, Any]:
         """Analyze system configuration for issues."""
         config_analysis = {
             "agent_yaml_status": "unknown",
@@ -530,8 +530,8 @@ class SystemIntrospectionPlugin(PluginInterface):
         return config_analysis
 
     def _generate_diagnostic_summary(
-        self, health_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, health_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate a human-readable diagnostic summary."""
         summary = {
             "overall_health": health_results.get("overall_status", "unknown"),
@@ -564,7 +564,7 @@ class SystemIntrospectionPlugin(PluginInterface):
         return summary
 
     def _format_user_friendly_diagnosis(
-        self, diagnosis: Dict[str, Any], user_query: str
+        self, diagnosis: dict[str, Any], user_query: str
     ) -> str:
         """Format diagnosis results for user consumption."""
         summary = diagnosis.get("summary", {})

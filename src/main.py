@@ -3,18 +3,18 @@
 
 from __future__ import annotations
 
+import json
+import logging
 import os
 import sys
+from logging.config import dictConfig
 from pathlib import Path
 from typing import Any
-import logging
-from logging.config import dictConfig
-import json
 from uuid import uuid4
 
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
 
 
 class JsonFormatter(logging.Formatter):
@@ -66,6 +66,7 @@ def _hash_json(obj: Any) -> str:
     except Exception:
         return "na"
 
+
 # --- Resolve reug_runtime from local src if not installed ---
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
@@ -74,9 +75,9 @@ if str(SRC) not in sys.path:
 
 # REUG runtime routers (streaming agent + toolbox)
 try:
+    from reug_runtime.config import SETTINGS
     from reug_runtime.router import router as agent_router
     from reug_runtime.router_tools import tools as tools_router
-    from reug_runtime.config import SETTINGS
 except Exception as e:  # pragma: no cover
     # Fallback: minimal routers to allow boot/health during development
     print("[WARN] reug_runtime import failed; falling back to minimal routers:", e)
@@ -89,9 +90,11 @@ except Exception as e:  # pragma: no cover
         async def gen():
             yield "Thinking... "
             yield '<final_answer>{"content":"hello","citations":[]}</final_answer>'
+
         return StreamingResponse(gen(), media_type="text/plain")
 
     tools_router = APIRouter(prefix="/tools", tags=["tools"])
+
     @tools_router.get("/health")
     async def tools_health():
         return {"status": "ok"}
@@ -101,7 +104,6 @@ except Exception as e:  # pragma: no cover
 from reug_runtime.event_bus import (
     BaseEventBus,
     FileEventBus,
-    RedisEventBus,
     make_event_bus,
 )  # noqa: F401
 from reug_runtime.llm_client import LLMClient, get_llm_client
@@ -254,6 +256,92 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> FastAPI:
         app.include_router(
             tools_router, prefix=prefix
         )  # {prefix}/tools/* (toolbox – run tests, apply patches, etc.)
+
+        # Automatic message optimization middleware (HTTP level)
+        @app.middleware("http")
+        async def _optimize_incoming(request: Request, call_next):  # type: ignore[no-redef]
+            try:
+                # Only process JSON chat route
+                if (
+                    request.headers.get("content-type", "").startswith(
+                        "application/json"
+                    )
+                    and "/chat/stream" in request.url.path
+                ):
+                    try:
+                        from reug_runtime.config import (
+                            SETTINGS as RT_SETTINGS,  # type: ignore
+                        )
+                        from reug_runtime.message_mw import (  # type: ignore
+                            MessageContext,
+                            apply_all,
+                        )
+
+                        # Ensure amplifier is registered when enabled
+                        if RT_SETTINGS.message_optimizer_enabled:
+                            try:
+                                import src.plugins.message_amplifier_plugin  # noqa: F401
+                            except Exception:
+                                pass
+                    except Exception:
+                        RT_SETTINGS = None  # type: ignore
+                        apply_all = None  # type: ignore
+                        MessageContext = None  # type: ignore
+
+                    # If optimizer is enabled, attempt to rewrite body
+                    if (
+                        RT_SETTINGS is not None
+                        and getattr(RT_SETTINGS, "message_optimizer_enabled", False)
+                        and apply_all is not None
+                    ):
+                        raw = await request.body()
+                        try:
+                            payload = json.loads(raw.decode("utf-8") or "{}")
+                        except Exception:
+                            payload = {}
+                        msg = payload.get("message")
+                        if isinstance(msg, str) and msg:
+                            session_id = payload.get("session_id") or "default"
+                            optimized, steps = apply_all(
+                                msg, MessageContext(session_id=session_id)
+                            )  # type: ignore
+                            if getattr(
+                                RT_SETTINGS, "message_optimizer_emit_telemetry", True
+                            ):
+                                try:
+                                    await app.state.event_bus.emit(
+                                        {
+                                            "type": "MessageOptimized",
+                                            "correlation_id": f"http-{session_id}",
+                                            "len_in": len(msg),
+                                            "len_out": len(optimized),
+                                            "steps": steps,
+                                            "source": "http_mw",
+                                        }
+                                    )
+                                except Exception:
+                                    pass
+                            max_len = getattr(
+                                RT_SETTINGS, "message_optimizer_max_len", 6000
+                            )
+                            if len(optimized) > max_len:
+                                optimized = optimized[:max_len]
+                            payload["message"] = optimized
+                            new_body = json.dumps(payload).encode("utf-8")
+
+                            # Rebuild request with new body
+                            async def _receive():
+                                return {
+                                    "type": "http.request",
+                                    "body": new_body,
+                                    "more_body": False,
+                                }
+
+                            request = Request(request.scope, _receive)
+            except Exception:
+                # Best-effort: never block the request
+                pass
+            return await call_next(request)
     else:
         app.include_router(agent_router)  # /v1/chat/stream
         app.include_router(
@@ -343,6 +431,4 @@ if __name__ == "__main__":
         raise SystemExit(0)
 
     # Just start the ASGI server; REUG handles single-turn streaming internally
-    uvicorn.run(
-        "main:app", host=args.host, port=args.port, reload=args.reload
-    )
+    uvicorn.run("main:app", host=args.host, port=args.port, reload=args.reload)

@@ -18,9 +18,10 @@ import json
 import pkgutil
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-def discover_tools() -> List[Dict[str, Any]]:
+
+def discover_tools() -> list[dict[str, Any]]:
     """Discover all available tools from plugins"""
     tools = []
     
@@ -53,7 +54,7 @@ def discover_tools() -> List[Dict[str, Any]]:
                                         # Add source plugin info
                                         tool["source_plugin"] = m.name.split(".")[-1]
                                         tools.append(tool)
-                except Exception as e:
+                except Exception:
                     # Skip plugins that can't be loaded
                     continue
     except ImportError:
@@ -61,8 +62,8 @@ def discover_tools() -> List[Dict[str, Any]]:
     
     return tools
 
-def filter_tools(tools: List[Dict[str, Any]], category: Optional[str] = None, 
-                complexity: Optional[str] = None) -> List[Dict[str, Any]]:
+def filter_tools(tools: list[dict[str, Any]], category: str | None = None, 
+                complexity: str | None = None) -> list[dict[str, Any]]:
     """Filter tools by category and/or complexity"""
     filtered = tools
     
@@ -74,7 +75,7 @@ def filter_tools(tools: List[Dict[str, Any]], category: Optional[str] = None,
     
     return filtered
 
-def format_text_output(tools: List[Dict[str, Any]]) -> str:
+def format_text_output(tools: list[dict[str, Any]]) -> str:
     """Format tools as human-readable text"""
     if not tools:
         return "No tools found matching criteria.\n"
@@ -128,7 +129,7 @@ def format_text_output(tools: List[Dict[str, Any]]) -> str:
     
     return "\n".join(lines)
 
-def format_json_output(tools: List[Dict[str, Any]]) -> str:
+def format_json_output(tools: list[dict[str, Any]]) -> str:
     """Format tools as JSON"""
     return json.dumps({
         "tools_count": len(tools),

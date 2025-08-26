@@ -13,7 +13,8 @@ def __getattr__(name: str):  # pragma: no cover - small helper
 
         return _router
     if name in {"tools", "TOOL_CATALOG"}:
-        from .router_tools import tools as _tools, TOOL_CATALOG as _CAT
+        from .router_tools import TOOL_CATALOG as _CAT
+        from .router_tools import tools as _tools
 
         return _tools if name == "tools" else _CAT
     raise AttributeError(name)

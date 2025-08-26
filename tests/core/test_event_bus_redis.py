@@ -10,9 +10,9 @@ import importlib
 import logging
 import socket
 from datetime import datetime
-from typing import List
 
 import pytest
+
 from src.core.event_bus import EventBus
 from src.core.events import BaseEvent, ConversationEvent, SystemEvent
 from src.core.serialization import JsonSerializer, ProtobufSerializer
@@ -87,7 +87,7 @@ class TestSerializationFormats:
             )
 
             # Storage for received events
-            received_events: List[BaseEvent] = []
+            received_events: list[BaseEvent] = []
 
             async def test_handler(event):
                 received_events.append(event)

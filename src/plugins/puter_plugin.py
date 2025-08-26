@@ -4,18 +4,18 @@
 Provides seamless integration with Puter cloud services for file I/O and process execution
 """
 
+import hashlib
 import json
 import logging
-import hashlib
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import aiohttp
 
 from src.core.events import BaseEvent, create_event
-from src.core.plugin_interface import PluginInterface
 from src.core.neural_atom import NeuralAtomMetadata, TextualMemoryAtom
+from src.core.plugin_interface import PluginInterface
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +187,7 @@ class PuterPlugin(PluginInterface):
             operation_data = {
                 "operation": operation,
                 "file_path": file_path,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "description": f"File {operation} operation on {file_path}",
             }
             
@@ -198,7 +198,7 @@ class PuterPlugin(PluginInterface):
             args_hash = hashlib.sha256(
                 json.dumps(operation_data, sort_keys=True).encode()
             ).hexdigest()
-            start_time = datetime.now(timezone.utc)
+            start_time = datetime.now(UTC)
             await self.emit_event(
                 "AbilityCalled",
                 tool="puter_file_operation",
@@ -227,7 +227,7 @@ class PuterPlugin(PluginInterface):
                 raise ValueError(f"Unknown operation: {operation}")
 
             duration_ms = int(
-                (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+                (datetime.now(UTC) - start_time).total_seconds() * 1000
             )
             output_hash = hashlib.sha256(
                 json.dumps(result, sort_keys=True).encode()
@@ -253,7 +253,7 @@ class PuterPlugin(PluginInterface):
                 success=result.get("success", False),
                 result=result,
                 neural_atom_id=atom.get_deterministic_uuid(),
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
             )
@@ -263,8 +263,8 @@ class PuterPlugin(PluginInterface):
         except Exception as e:
             logger.exception("❌ Puter file operation error")
             span_id = locals().get("span_id", str(uuid.uuid4()))
-            start = locals().get("start_time", datetime.now(timezone.utc))
-            duration_ms = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
+            start = locals().get("start_time", datetime.now(UTC))
+            duration_ms = int((datetime.now(UTC) - start).total_seconds() * 1000)
             neural_atom_id = (
                 atom.get_deterministic_uuid() if "atom" in locals() else ""
             )
@@ -283,7 +283,7 @@ class PuterPlugin(PluginInterface):
                 "puter_operation_failed",
                 operation_type="file_operation",
                 error=str(e),
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 source_plugin=self.name,
                 conversation_id=getattr(event, 'conversation_id', 'unknown'),
             )
@@ -300,7 +300,7 @@ class PuterPlugin(PluginInterface):
                 "command": command,
                 "args": args,
                 "working_dir": working_dir,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "description": f"Process execution: {command} {' '.join(args)}",
             }
             
@@ -311,7 +311,7 @@ class PuterPlugin(PluginInterface):
             args_hash = hashlib.sha256(
                 json.dumps(operation_data, sort_keys=True).encode()
             ).hexdigest()
-            start_time = datetime.now(timezone.utc)
+            start_time = datetime.now(UTC)
             await self.emit_event(
                 "AbilityCalled",
                 tool="puter_process_execution",
@@ -330,7 +330,7 @@ class PuterPlugin(PluginInterface):
             result = {"success": success, **exec_result}
 
             duration_ms = int(
-                (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+                (datetime.now(UTC) - start_time).total_seconds() * 1000
             )
             output_hash = hashlib.sha256(
                 json.dumps(result, sort_keys=True).encode()
@@ -358,7 +358,7 @@ class PuterPlugin(PluginInterface):
                 success=success,
                 result=result,
                 neural_atom_id=atom.get_deterministic_uuid(),
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
             )
@@ -371,8 +371,8 @@ class PuterPlugin(PluginInterface):
         except Exception as e:
             logger.exception("❌ Puter process execution error")
             span_id = locals().get("span_id", str(uuid.uuid4()))
-            start = locals().get("start_time", datetime.now(timezone.utc))
-            duration_ms = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
+            start = locals().get("start_time", datetime.now(UTC))
+            duration_ms = int((datetime.now(UTC) - start).total_seconds() * 1000)
             neural_atom_id = (
                 atom.get_deterministic_uuid() if "atom" in locals() else ""
             )
@@ -391,7 +391,7 @@ class PuterPlugin(PluginInterface):
                 "puter_operation_failed",
                 operation_type="process_execution",
                 error=str(e),
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
             )
@@ -408,7 +408,7 @@ class PuterPlugin(PluginInterface):
                 "sync_type": sync_type,
                 "local_path": local_path,
                 "remote_path": remote_path,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "description": f"Workspace sync: {sync_type} between {local_path} and {remote_path}",
             }
             
@@ -419,7 +419,7 @@ class PuterPlugin(PluginInterface):
             args_hash = hashlib.sha256(
                 json.dumps(operation_data, sort_keys=True).encode()
             ).hexdigest()
-            start_time = datetime.now(timezone.utc)
+            start_time = datetime.now(UTC)
             await self.emit_event(
                 "AbilityCalled",
                 tool="puter_workspace_sync",
@@ -438,7 +438,7 @@ class PuterPlugin(PluginInterface):
             }
 
             duration_ms = int(
-                (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+                (datetime.now(UTC) - start_time).total_seconds() * 1000
             )
             output_hash = hashlib.sha256(
                 json.dumps(result, sort_keys=True).encode()
@@ -465,7 +465,7 @@ class PuterPlugin(PluginInterface):
                 success=True,
                 result=result,
                 neural_atom_id=atom.get_deterministic_uuid(),
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
             )
@@ -475,8 +475,8 @@ class PuterPlugin(PluginInterface):
         except Exception as e:
             logger.exception("❌ Puter workspace sync error")
             span_id = locals().get("span_id", str(uuid.uuid4()))
-            start = locals().get("start_time", datetime.now(timezone.utc))
-            duration_ms = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
+            start = locals().get("start_time", datetime.now(UTC))
+            duration_ms = int((datetime.now(UTC) - start).total_seconds() * 1000)
             neural_atom_id = (
                 atom.get_deterministic_uuid() if "atom" in locals() else ""
             )
@@ -495,7 +495,7 @@ class PuterPlugin(PluginInterface):
                 "puter_operation_failed",
                 operation_type="workspace_sync",
                 error=str(e),
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 source_plugin=self.name,
                 conversation_id=event.conversation_id,
             )
@@ -555,7 +555,7 @@ class PuterPlugin(PluginInterface):
                 }
                 await self._handle_process_execution(exec_event)
                 
-        except Exception as e:
+        except Exception:
             logger.exception("❌ Puter tool call error")
 
     def get_operation_history(self) -> list[PuterOperationAtom]:

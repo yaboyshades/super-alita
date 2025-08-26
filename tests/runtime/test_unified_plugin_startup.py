@@ -1,5 +1,6 @@
 import asyncio
-from typing import Any, Callable, Dict, List
+from collections.abc import Callable
+from typing import Any
 
 import pytest
 
@@ -21,8 +22,8 @@ class InMemoryEventBus:
     """Minimal async event bus used for plugin integration tests."""
 
     def __init__(self) -> None:
-        self.events: List[Dict[str, Any]] = []
-        self.handlers: Dict[str, List[Callable[[Any], Any]]] = {}
+        self.events: list[dict[str, Any]] = []
+        self.handlers: dict[str, list[Callable[[Any], Any]]] = {}
 
     async def subscribe(self, event_type: str, handler: Callable[[Any], Any]) -> None:
         self.handlers.setdefault(event_type, []).append(handler)
@@ -64,7 +65,7 @@ async def test_unified_plugins_start_and_pipeline() -> None:
     _load_unified_plugins()
 
     # Initialize and start core plugins in defined order
-    loaded: List[str] = []
+    loaded: list[str] = []
     ws_shim = WorkspaceShim(bus)
     for name in PLUGIN_ORDER:
         plugin_cls = AVAILABLE_PLUGINS.get(name)

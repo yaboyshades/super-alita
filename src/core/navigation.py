@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import List
 
-from .temporal_graph import TemporalGraph, NeuralAtom
+from .temporal_graph import NeuralAtom, TemporalGraph
 
 
 class NavigationStrategy(Enum):
@@ -29,5 +28,5 @@ class NeuralNavigator:
         strategy: NavigationStrategy,
         depth: int = 5,
         semantic_query: str | None = None,
-    ) -> List[NeuralAtom]:
+    ) -> list[NeuralAtom]:
         return list(self.graph.atoms.values())

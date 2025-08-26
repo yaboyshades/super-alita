@@ -7,17 +7,16 @@ and trigger specific agent operations.
 """
 
 import asyncio
-import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
-    from vscode_integration.enhanced_agent_cycle import EnhancedAgentCycle
     from vscode_integration.agent_integration import SuperAlitaAgent
+    from vscode_integration.enhanced_agent_cycle import EnhancedAgentCycle
 except ImportError as e:
     print(f"Warning: {e}")
     EnhancedAgentCycle = None
@@ -28,12 +27,12 @@ class AgentCycleMCPTool:
     """MCP tool for enhanced agent cycle integration."""
     
     def __init__(self):
-        self.enhanced_agent: Optional[EnhancedAgentCycle] = None
-        self.base_agent: Optional[SuperAlitaAgent] = None
-        self.cycle_task: Optional[asyncio.Task] = None
+        self.enhanced_agent: EnhancedAgentCycle | None = None
+        self.base_agent: SuperAlitaAgent | None = None
+        self.cycle_task: asyncio.Task | None = None
         self.workspace_folder = Path.cwd()
         
-    async def initialize_agent(self) -> Dict[str, Any]:
+    async def initialize_agent(self) -> dict[str, Any]:
         """Initialize the enhanced agent cycle."""
         try:
             if EnhancedAgentCycle is None or SuperAlitaAgent is None:
@@ -73,7 +72,7 @@ class AgentCycleMCPTool:
                 "result": ""
             }
     
-    async def start_continuous_cycle(self, interval_seconds: int = 30) -> Dict[str, Any]:
+    async def start_continuous_cycle(self, interval_seconds: int = 30) -> dict[str, Any]:
         """Start the continuous agent cycle."""
         try:
             if not self.enhanced_agent:
@@ -109,7 +108,7 @@ class AgentCycleMCPTool:
                 "result": ""
             }
     
-    async def stop_continuous_cycle(self) -> Dict[str, Any]:
+    async def stop_continuous_cycle(self) -> dict[str, Any]:
         """Stop the continuous agent cycle."""
         try:
             if not self.enhanced_agent:
@@ -149,7 +148,7 @@ class AgentCycleMCPTool:
                 "result": ""
             }
     
-    async def execute_single_cycle(self) -> Dict[str, Any]:
+    async def execute_single_cycle(self) -> dict[str, Any]:
         """Execute a single agent cycle."""
         try:
             if not self.enhanced_agent:
@@ -183,7 +182,7 @@ class AgentCycleMCPTool:
                 "result": ""
             }
     
-    async def get_agent_status(self) -> Dict[str, Any]:
+    async def get_agent_status(self) -> dict[str, Any]:
         """Get comprehensive agent status."""
         try:
             if not self.base_agent:
@@ -234,7 +233,7 @@ class AgentCycleMCPTool:
         title: str, 
         description: str, 
         priority: str = "medium"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new development task via the agent."""
         try:
             if not self.base_agent:
@@ -266,7 +265,7 @@ class AgentCycleMCPTool:
         self, 
         task_id: str, 
         notes: str = ""
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Complete a development task via the agent."""
         try:
             if not self.base_agent:
@@ -302,7 +301,7 @@ class AgentCycleMCPTool:
                 "result": ""
             }
     
-    async def get_agent_recommendations(self) -> Dict[str, Any]:
+    async def get_agent_recommendations(self) -> dict[str, Any]:
         """Get intelligent recommendations from the agent."""
         try:
             if not self.base_agent:
@@ -328,7 +327,7 @@ class AgentCycleMCPTool:
                 "result": ""
             }
     
-    async def trigger_code_analysis(self) -> Dict[str, Any]:
+    async def trigger_code_analysis(self) -> dict[str, Any]:
         """Trigger code analysis via the enhanced agent."""
         try:
             if not self.enhanced_agent:
@@ -355,7 +354,7 @@ class AgentCycleMCPTool:
                 "result": ""
             }
     
-    async def generate_documentation(self) -> Dict[str, Any]:
+    async def generate_documentation(self) -> dict[str, Any]:
         """Trigger documentation generation via the enhanced agent."""
         try:
             if not self.enhanced_agent:
@@ -381,7 +380,7 @@ class AgentCycleMCPTool:
                 "result": ""
             }
     
-    async def shutdown_agent(self) -> Dict[str, Any]:
+    async def shutdown_agent(self) -> dict[str, Any]:
         """Shutdown the agent cycle."""
         try:
             # Stop continuous cycle if running
@@ -413,27 +412,27 @@ class AgentCycleMCPTool:
 agent_cycle_tool = AgentCycleMCPTool()
 
 
-async def mcp_agent_initialize() -> Dict[str, Any]:
+async def mcp_agent_initialize() -> dict[str, Any]:
     """MCP command: Initialize the enhanced agent cycle."""
     return await agent_cycle_tool.initialize_agent()
 
 
-async def mcp_agent_start_cycle(interval_seconds: int = 30) -> Dict[str, Any]:
+async def mcp_agent_start_cycle(interval_seconds: int = 30) -> dict[str, Any]:
     """MCP command: Start continuous agent cycle."""
     return await agent_cycle_tool.start_continuous_cycle(interval_seconds)
 
 
-async def mcp_agent_stop_cycle() -> Dict[str, Any]:
+async def mcp_agent_stop_cycle() -> dict[str, Any]:
     """MCP command: Stop continuous agent cycle."""
     return await agent_cycle_tool.stop_continuous_cycle()
 
 
-async def mcp_agent_execute_cycle() -> Dict[str, Any]:
+async def mcp_agent_execute_cycle() -> dict[str, Any]:
     """MCP command: Execute single agent cycle."""
     return await agent_cycle_tool.execute_single_cycle()
 
 
-async def mcp_agent_status() -> Dict[str, Any]:
+async def mcp_agent_status() -> dict[str, Any]:
     """MCP command: Get agent status."""
     return await agent_cycle_tool.get_agent_status()
 
@@ -442,32 +441,32 @@ async def mcp_agent_create_task(
     title: str, 
     description: str, 
     priority: str = "medium"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """MCP command: Create development task."""
     return await agent_cycle_tool.create_development_task(title, description, priority)
 
 
-async def mcp_agent_complete_task(task_id: str, notes: str = "") -> Dict[str, Any]:
+async def mcp_agent_complete_task(task_id: str, notes: str = "") -> dict[str, Any]:
     """MCP command: Complete development task."""
     return await agent_cycle_tool.complete_development_task(task_id, notes)
 
 
-async def mcp_agent_recommendations() -> Dict[str, Any]:
+async def mcp_agent_recommendations() -> dict[str, Any]:
     """MCP command: Get agent recommendations."""
     return await agent_cycle_tool.get_agent_recommendations()
 
 
-async def mcp_agent_analyze_code() -> Dict[str, Any]:
+async def mcp_agent_analyze_code() -> dict[str, Any]:
     """MCP command: Trigger code analysis."""
     return await agent_cycle_tool.trigger_code_analysis()
 
 
-async def mcp_agent_generate_docs() -> Dict[str, Any]:
+async def mcp_agent_generate_docs() -> dict[str, Any]:
     """MCP command: Generate documentation."""
     return await agent_cycle_tool.generate_documentation()
 
 
-async def mcp_agent_shutdown() -> Dict[str, Any]:
+async def mcp_agent_shutdown() -> dict[str, Any]:
     """MCP command: Shutdown agent."""
     return await agent_cycle_tool.shutdown_agent()
 

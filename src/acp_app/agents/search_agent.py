@@ -1,6 +1,6 @@
 """Search agent integrating with Perplexica tool."""
-import json
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+
 from acp_sdk import Message, MessagePart
 
 from src.tools.perplexica_tool import PerplexicaSearchTool

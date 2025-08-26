@@ -17,6 +17,7 @@ Usage:
     python test_complete_agent_system.py
 """
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio

@@ -2,16 +2,17 @@
 Simple test for telemetry dashboard API endpoints
 """
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
-import json
 from pathlib import Path
 
+from core.cortex import create_cortex_runtime
 from core.telemetry.collector import TelemetryCollector
 from core.telemetry.dashboard import TelemetryDashboard
 from core.telemetry.simple_event_bus import SimpleEventBus
-from core.cortex import create_cortex_runtime
+
 
 async def test_dashboard_api():
     """Test the telemetry dashboard API endpoints"""

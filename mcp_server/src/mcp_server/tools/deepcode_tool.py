@@ -1,9 +1,10 @@
 """MCP tool for DeepCode repository-level operations (safe, dry-run by default)."""
 from __future__ import annotations
-from pathlib import Path
-from typing import Dict, Any
+
 import os
 import subprocess
+from pathlib import Path
+from typing import Any
 
 
 def _within_workspace(repo_path: Path, workspace_root: Path) -> bool:
@@ -15,7 +16,7 @@ def _within_workspace(repo_path: Path, workspace_root: Path) -> bool:
         return False
 
 
-async def execute(params: Dict[str, Any]) -> Dict[str, Any]:
+async def execute(params: dict[str, Any]) -> dict[str, Any]:
     """
     Args:
       action: "generate" | "analyze"

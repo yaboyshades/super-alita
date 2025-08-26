@@ -3,7 +3,7 @@ Plugin registry for managing agent plugins.
 """
 
 import logging
-from typing import Any, Dict, Optional, Type
+from typing import Any
 
 from .plugin_interface import PluginInterface
 from .puter_plugin import PuterPlugin
@@ -15,12 +15,12 @@ class PluginRegistry:
     """Registry for managing and initializing plugins."""
 
     def __init__(self) -> None:
-        self.plugins: Dict[str, PluginInterface] = {}
-        self.plugin_classes: Dict[str, Type[PluginInterface]] = {
+        self.plugins: dict[str, PluginInterface] = {}
+        self.plugin_classes: dict[str, type[PluginInterface]] = {
             "puter": PuterPlugin,
         }
 
-    async def initialize_plugin(self, plugin_name: str, config: Dict[str, Any]) -> None:
+    async def initialize_plugin(self, plugin_name: str, config: dict[str, Any]) -> None:
         if plugin_name in self.plugins:
             logger.warning("Plugin %s already initialized", plugin_name)
             return
@@ -32,7 +32,7 @@ class PluginRegistry:
         self.plugins[plugin_name] = plugin
         logger.info("Successfully initialized plugin: %s", plugin_name)
 
-    def get_plugin(self, plugin_name: str) -> Optional[PluginInterface]:
+    def get_plugin(self, plugin_name: str) -> PluginInterface | None:
         return self.plugins.get(plugin_name)
 
     async def cleanup_all(self) -> None:

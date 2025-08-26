@@ -317,8 +317,8 @@ class EventBus:
         import uuid
         from datetime import UTC, datetime
 
-        from .events import EVENT_TYPE_TO_MODEL, BaseEvent
         from .correlation import get_correlation_id
+        from .events import EVENT_TYPE_TO_MODEL, BaseEvent
 
         # Auto-fill mandatory fields if missing
         if "source_plugin" not in kwargs:

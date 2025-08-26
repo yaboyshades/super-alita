@@ -6,19 +6,21 @@ including gRPC server, Prometheus metrics, Redis event bus, and all
 agent component integrations.
 """
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
 import time
 from pathlib import Path
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
 
+from core.events import create_event
 from core.mangle import MangleIntegration
 from core.mangle.grpc_server import SuperAlitaGrpcServer
 from core.mangle.metrics import PrometheusMetricsCollector
 from core.mangle.redis_event_bus import RedisEventBus
-from core.events import create_event
 from core.telemetry.simple_event_bus import SimpleEventBus
+
 
 @pytest.fixture
 def workspace_root():

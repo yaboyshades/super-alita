@@ -2,12 +2,12 @@
 Knowledge Graph Plugin for Super Alita
 """
 
-from typing import Optional, Dict, Any
 from pathlib import Path
+from typing import Any
 
 from ..plugin_interface import PluginInterface
-from .store import KnowledgeStore
 from .handlers import KnowledgeGraphEventHandlers
+from .store import KnowledgeStore
 
 
 class KnowledgeGraphPlugin(PluginInterface):
@@ -15,10 +15,10 @@ class KnowledgeGraphPlugin(PluginInterface):
     Plugin that maintains a deterministic knowledge graph
     """
     
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         self.db_path = db_path or Path("knowledge_graph.db")
-        self.knowledge_store: Optional[KnowledgeStore] = None
-        self.handlers: Optional[KnowledgeGraphEventHandlers] = None
+        self.knowledge_store: KnowledgeStore | None = None
+        self.handlers: KnowledgeGraphEventHandlers | None = None
         self.event_bus = None
         
     @property
@@ -56,7 +56,7 @@ class KnowledgeGraphPlugin(PluginInterface):
         self.handlers = None
         print("📊 Knowledge Graph Plugin shutdown complete")
     
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get knowledge graph statistics"""
         if not self.knowledge_store:
             return {"error": "Knowledge store not initialized"}
@@ -102,14 +102,14 @@ class KnowledgeGraphPlugin(PluginInterface):
         
         return related_atoms
     
-    def create_manual_concept(self, name: str, description: str, properties: Optional[Dict[str, Any]] = None) -> str:
+    def create_manual_concept(self, name: str, description: str, properties: dict[str, Any] | None = None) -> str:
         """Create a concept atom manually"""
         if not self.handlers:
             raise RuntimeError("Knowledge graph not initialized")
         
         return self.handlers.create_concept_atom(name, description, properties)
     
-    def create_manual_entity(self, name: str, entity_type: str, attributes: Optional[Dict[str, Any]] = None) -> str:
+    def create_manual_entity(self, name: str, entity_type: str, attributes: dict[str, Any] | None = None) -> str:
         """Create an entity atom manually"""
         if not self.handlers:
             raise RuntimeError("Knowledge graph not initialized")
@@ -122,7 +122,7 @@ class KnowledgeGraphPlugin(PluginInterface):
         to_atom_id: str, 
         relationship: str, 
         strength: float = 1.0,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> str:
         """Create a relationship between atoms"""
         if not self.handlers:
@@ -130,13 +130,13 @@ class KnowledgeGraphPlugin(PluginInterface):
         
         return self.handlers.link_atoms(from_atom_id, to_atom_id, relationship, strength, metadata)
     
-    def export_graph_data(self) -> Dict[str, Any]:
+    def export_graph_data(self) -> dict[str, Any]:
         """Export the entire knowledge graph for analysis"""
         if not self.knowledge_store:
             return {"error": "Knowledge store not initialized"}
         
         # Get all atoms by type
-        from .store import AtomType, BondType
+        from .store import AtomType
         
         all_atoms = {}
         for atom_type in AtomType:

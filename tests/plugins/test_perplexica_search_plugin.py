@@ -1,6 +1,7 @@
 """Tests for Perplexica search plugin."""
 import pytest
-from src.tools.perplexica_tool import PerplexicaSearchTool, PerplexicaConfig
+
+from src.tools.perplexica_tool import PerplexicaConfig, PerplexicaSearchTool
 
 
 @pytest.fixture

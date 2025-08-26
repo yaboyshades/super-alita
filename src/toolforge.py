@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-import httpx
 import uuid
-from typing import Iterable, Mapping, Any
+from collections.abc import Iterable, Mapping
+from typing import Any
+
+import httpx
 
 
 async def sample_vscode(

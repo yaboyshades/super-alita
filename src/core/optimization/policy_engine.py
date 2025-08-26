@@ -5,13 +5,18 @@ Manages decision-making policies using multi-armed bandit algorithms.
 Provides a high-level interface for intelligent decision optimization.
 """
 
-import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any
 from uuid import uuid4
 
-from .bandits import BanditAlgorithm, BanditDecision, ThompsonSamplingBandit, UCB1Bandit, EpsilonGreedyBandit
+from .bandits import (
+    BanditAlgorithm,
+    BanditDecision,
+    EpsilonGreedyBandit,
+    ThompsonSamplingBandit,
+    UCB1Bandit,
+)
 
 
 @dataclass
@@ -19,10 +24,10 @@ class DecisionContext:
     """Context information for making decisions."""
     
     session_id: str
-    user_id: Optional[str] = None
-    workspace: Optional[str] = None
-    task_type: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    user_id: str | None = None
+    workspace: str | None = None
+    task_type: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
 
 
@@ -34,8 +39,8 @@ class PolicyDefinition:
     name: str
     description: str
     algorithm_type: str  # "thompson", "ucb1", "epsilon_greedy"
-    arms: List[Dict[str, Any]]  # List of arm definitions
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    arms: list[dict[str, Any]]  # List of arm definitions
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
 
@@ -48,7 +53,7 @@ class PolicyDecision:
     policy_id: str
     bandit_decision: BanditDecision
     context: DecisionContext
-    reward: Optional[float] = None
+    reward: float | None = None
     feedback_received: bool = False
     created_at: float = field(default_factory=time.time)
 
@@ -62,18 +67,18 @@ class DecisionPolicyEngine:
     """
     
     def __init__(self):
-        self.policies: Dict[str, PolicyDefinition] = {}
-        self.bandits: Dict[str, BanditAlgorithm] = {}
-        self.decisions: Dict[str, PolicyDecision] = {}
-        self.active_sessions: Set[str] = set()
+        self.policies: dict[str, PolicyDefinition] = {}
+        self.bandits: dict[str, BanditAlgorithm] = {}
+        self.decisions: dict[str, PolicyDecision] = {}
+        self.active_sessions: set[str] = set()
     
     def create_policy(
         self,
         name: str,
         description: str,
         algorithm_type: str,
-        arms: List[Dict[str, Any]],
-        policy_id: Optional[str] = None,
+        arms: list[dict[str, Any]],
+        policy_id: str | None = None,
         **kwargs
     ) -> str:
         """
@@ -186,7 +191,7 @@ class DecisionPolicyEngine:
         self,
         decision_id: str,
         reward: float,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> bool:
         """
         Provide reward feedback for a previous decision.
@@ -223,7 +228,7 @@ class DecisionPolicyEngine:
         
         return success
     
-    def get_policy_statistics(self, policy_id: str) -> Optional[Dict[str, Any]]:
+    def get_policy_statistics(self, policy_id: str) -> dict[str, Any] | None:
         """Get statistics for a specific policy."""
         if policy_id not in self.policies or policy_id not in self.bandits:
             return None
@@ -254,7 +259,7 @@ class DecisionPolicyEngine:
             }
         }
     
-    def get_all_statistics(self) -> Dict[str, Any]:
+    def get_all_statistics(self) -> dict[str, Any]:
         """Get statistics for all policies."""
         return {
             "engine": {
@@ -268,7 +273,7 @@ class DecisionPolicyEngine:
             }
         }
     
-    def list_policies(self) -> List[Dict[str, Any]]:
+    def list_policies(self) -> list[dict[str, Any]]:
         """List all policies with basic information."""
         return [
             {
@@ -282,7 +287,7 @@ class DecisionPolicyEngine:
             for policy in self.policies.values()
         ]
     
-    def get_policy(self, policy_id: str) -> Optional[PolicyDefinition]:
+    def get_policy(self, policy_id: str) -> PolicyDefinition | None:
         """Get a policy definition by ID."""
         return self.policies.get(policy_id)
     
@@ -306,7 +311,7 @@ class DecisionPolicyEngine:
         
         return True
     
-    async def optimize_all(self) -> Dict[str, Any]:
+    async def optimize_all(self) -> dict[str, Any]:
         """
         Run optimization across all policies.
         

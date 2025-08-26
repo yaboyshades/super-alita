@@ -14,8 +14,14 @@ ENV:
   RELEASE_TAG       (optional)
 """
 from __future__ import annotations
-import os, re, sys, json, time, pathlib, subprocess
-from datetime import datetime, timezone
+
+import json
+import os
+import pathlib
+import re
+import subprocess
+import sys
+from datetime import UTC, datetime
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DOC = ROOT / "docs" / "agents.md"
@@ -129,7 +135,7 @@ def _load_json(path: pathlib.Path, default):
 def _update_ledger(pr_number: str | None):
     data = _load_json(LEDGER, {"series": []})
     if pr_number:
-        series_id = f"series-{datetime.now(timezone.utc).strftime('%Y%W')}"
+        series_id = f"series-{datetime.now(UTC).strftime('%Y%W')}"
         series = next((s for s in data["series"] if s["series_id"] == series_id), None)
         if not series:
             series = {"series_id": series_id, "prs": [], "branches": [], "session_notes": []}
@@ -181,7 +187,7 @@ def main():
     session_idx = _update_ledger(pr)
     md = _replace_block(md, "SESSIONS", session_idx)
 
-    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now_iso = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     md = _replace_block(md, "LAST_UPDATED", now_iso)
     md = _replace_block(md, "RELEASE", os.getenv("RELEASE_TAG", "unreleased"))
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from .actions import AgentFinish, IPythonRunCell
 from .observation import Observation

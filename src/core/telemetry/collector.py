@@ -5,9 +5,10 @@ Telemetry data collection and aggregation for Cortex runtime
 import asyncio
 import json
 import time
-from typing import Dict, List, Any, Optional, Callable
-from dataclasses import dataclass, asdict
+from collections.abc import Callable
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 from src.cortex.markers import PerformanceMarker
 from src.events import BaseEvent
@@ -19,27 +20,27 @@ class TelemetrySnapshot:
     timestamp: float
     cycle_id: str
     phase: str
-    markers: List[Dict[str, Any]]
-    events: List[Dict[str, Any]]
-    system_metrics: Dict[str, Any]
+    markers: list[dict[str, Any]]
+    events: list[dict[str, Any]]
+    system_metrics: dict[str, Any]
 
 
 class TelemetryCollector:
     """Collects and aggregates telemetry data from Cortex runtime"""
     
-    def __init__(self, output_dir: Optional[Path] = None) -> None:
+    def __init__(self, output_dir: Path | None = None) -> None:
         self.output_dir = output_dir or Path("telemetry")
         self.output_dir.mkdir(exist_ok=True)
         
-        self.snapshots: List[TelemetrySnapshot] = []
-        self.active_markers: Dict[str, PerformanceMarker] = {}
-        self.event_handlers: List[Callable[[BaseEvent], None]] = []
+        self.snapshots: list[TelemetrySnapshot] = []
+        self.active_markers: dict[str, PerformanceMarker] = {}
+        self.event_handlers: list[Callable[[BaseEvent], None]] = []
         self.collection_enabled = True
         self.buffer_size = 1000
         self.auto_flush_interval = 60.0  # seconds
         
         # Start auto-flush task
-        self._flush_task: Optional[asyncio.Task] = None
+        self._flush_task: asyncio.Task | None = None
         self._start_auto_flush()
     
     def _start_auto_flush(self) -> None:
@@ -119,7 +120,7 @@ class TelemetryCollector:
         except Exception as e:
             print(f"Error creating snapshot: {e}")
     
-    def _event_to_dict(self, event: BaseEvent) -> Dict[str, Any]:
+    def _event_to_dict(self, event: BaseEvent) -> dict[str, Any]:
         """Convert event to dictionary representation"""
         event_dict = {
             'type': type(event).__name__,
@@ -135,7 +136,7 @@ class TelemetryCollector:
         
         return event_dict
     
-    def _collect_system_metrics(self) -> Dict[str, Any]:
+    def _collect_system_metrics(self) -> dict[str, Any]:
         """Collect basic system metrics"""
         return {
             'timestamp': time.time(),
@@ -172,7 +173,7 @@ class TelemetryCollector:
         except Exception as e:
             print(f"Error flushing telemetry to disk: {e}")
     
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get a summary of collected telemetry data"""
         return {
             'snapshots_count': len(self.snapshots),

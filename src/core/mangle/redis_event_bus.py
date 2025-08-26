@@ -9,14 +9,13 @@ import asyncio
 import json
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional, Set
-from dataclasses import asdict
+from collections.abc import Callable
+from typing import Any
 
 import redis.asyncio as redis
-from redis.asyncio import Redis, ConnectionPool
+from redis.asyncio import ConnectionPool, Redis
 
 from ..events import BaseEvent
-
 
 logger = logging.getLogger(__name__)
 
@@ -57,14 +56,14 @@ class RedisEventBus:
         self.max_retry_attempts = max_retry_attempts
         self.retry_delay = retry_delay
         
-        self._redis: Optional[Redis] = None
-        self._pubsub: Optional[redis.PubSub] = None
-        self._connection_pool: Optional[ConnectionPool] = None
+        self._redis: Redis | None = None
+        self._pubsub: redis.PubSub | None = None
+        self._connection_pool: ConnectionPool | None = None
         
-        self._subscribers: Dict[str, List[Callable]] = {}
-        self._pattern_subscribers: Dict[str, List[Callable]] = {}
+        self._subscribers: dict[str, list[Callable]] = {}
+        self._pattern_subscribers: dict[str, list[Callable]] = {}
         self._running = False
-        self._subscription_task: Optional[asyncio.Task] = None
+        self._subscription_task: asyncio.Task | None = None
         
         # Event statistics
         self._events_published = 0
@@ -254,8 +253,8 @@ class RedisEventBus:
         self, 
         event_type: str, 
         limit: int = 100, 
-        start_time: Optional[str] = None
-    ) -> List[BaseEvent]:
+        start_time: str | None = None
+    ) -> list[BaseEvent]:
         """
         Get event history from Redis streams.
         
@@ -326,7 +325,7 @@ class RedisEventBus:
                     elif message and message["type"] == "pmessage":
                         await self._handle_pattern_message(message)
                     
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
                 except Exception as e:
                     logger.error(f"Error in subscription loop: {e}")
@@ -338,7 +337,7 @@ class RedisEventBus:
         except Exception as e:
             logger.error(f"Subscription loop failed: {e}")
     
-    async def _handle_message(self, message: Dict[str, Any]) -> None:
+    async def _handle_message(self, message: dict[str, Any]) -> None:
         """Handle regular subscription message."""
         try:
             # Deserialize event
@@ -366,7 +365,7 @@ class RedisEventBus:
         except Exception as e:
             logger.error(f"Failed to handle message: {e}")
     
-    async def _handle_pattern_message(self, message: Dict[str, Any]) -> None:
+    async def _handle_pattern_message(self, message: dict[str, Any]) -> None:
         """Handle pattern subscription message."""
         try:
             # Similar to regular message but with pattern matching
@@ -413,7 +412,7 @@ class RedisEventBus:
         
         logger.error("Failed to reconnect to Redis after maximum attempts")
     
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get event bus statistics."""
         return {
             "events_published": self._events_published,
@@ -425,7 +424,7 @@ class RedisEventBus:
             "is_running": self._running
         }
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check."""
         try:
             if not self._redis:

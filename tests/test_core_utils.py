@@ -3,6 +3,7 @@ Tests for Core Utils functionality.
 """
 
 import pytest
+
 from src.tools.core_utils import CoreUtils
 
 

@@ -3,31 +3,22 @@ Cortex Runtime: Main orchestrator for cognitive processing cycles
 Implements the perception → reasoning → action flow with pluggable modules
 """
 
-from typing import Any, Dict, List, Optional, Type
-from dataclasses import dataclass, field
-import asyncio
-import uuid
 import time
-from datetime import datetime, timezone
+import uuid
+from dataclasses import dataclass, field
+from typing import Any
 
 from ..plugin_interface import PluginInterface
-from ..events import create_event
-from .markers import (
-    PerformanceTracker, 
-    CortexPhase, 
-    CortexEvent, 
-    create_cortex_event
-)
+from .markers import CortexPhase, PerformanceTracker, create_cortex_event
 from .modules import (
-    CortexModule, 
-    PerceptionModule, 
-    ReasoningModule, 
     ActionModule,
-    CortexInput,
-    PerceptionResult,
-    ReasoningResult, 
     ActionResult,
-    ModuleResult
+    CortexInput,
+    ModuleResult,
+    PerceptionModule,
+    PerceptionResult,
+    ReasoningModule,
+    ReasoningResult,
 )
 
 
@@ -36,10 +27,10 @@ class CortexContext:
     """Context for Cortex processing cycle"""
     cycle_id: str
     session_id: str
-    user_id: Optional[str]
-    workspace: Optional[str]
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    variables: Dict[str, Any] = field(default_factory=dict)
+    user_id: str | None
+    workspace: str | None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    variables: dict[str, Any] = field(default_factory=dict)
     
     def update(self, **kwargs):
         """Update context variables"""
@@ -49,7 +40,7 @@ class CortexContext:
         """Get context variable"""
         return self.variables.get(key, default)
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
             "cycle_id": self.cycle_id,
@@ -66,26 +57,26 @@ class CortexResult:
     """Complete result from Cortex processing cycle"""
     cycle_id: str
     success: bool
-    perception_result: Optional[PerceptionResult]
-    reasoning_result: Optional[ReasoningResult]
-    action_result: Optional[ActionResult]
-    performance_markers: List[Any]  # PerformanceMarker
+    perception_result: PerceptionResult | None
+    reasoning_result: ReasoningResult | None
+    action_result: ActionResult | None
+    performance_markers: list[Any]  # PerformanceMarker
     total_duration_ms: float
-    error: Optional[str] = None
-    context: Optional[CortexContext] = None
+    error: str | None = None
+    context: CortexContext | None = None
 
 
 class CortexRuntime(PluginInterface):
     """Main Cortex runtime orchestrator"""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.perception_modules: List[PerceptionModule] = []
-        self.reasoning_modules: List[ReasoningModule] = []
-        self.action_modules: List[ActionModule] = []
+        self.perception_modules: list[PerceptionModule] = []
+        self.reasoning_modules: list[ReasoningModule] = []
+        self.action_modules: list[ActionModule] = []
         self.performance_tracker = PerformanceTracker()
-        self.active_cycles: Dict[str, CortexContext] = {}
-        self.event_handlers: List[Any] = []  # Event handlers
+        self.active_cycles: dict[str, CortexContext] = {}
+        self.event_handlers: list[Any] = []  # Event handlers
         self.running = False
     
     @property
@@ -138,8 +129,8 @@ class CortexRuntime(PluginInterface):
     def create_context(
         self, 
         session_id: str,
-        user_id: Optional[str] = None,
-        workspace: Optional[str] = None,
+        user_id: str | None = None,
+        workspace: str | None = None,
         **metadata
     ) -> CortexContext:
         """Create a new processing context"""
@@ -239,7 +230,7 @@ class CortexRuntime(PluginInterface):
         self, 
         cortex_input: CortexInput, 
         context: CortexContext
-    ) -> Optional[ModuleResult[PerceptionResult]]:
+    ) -> ModuleResult[PerceptionResult] | None:
         """Run perception phase with all registered modules"""
         self.performance_tracker.start_phase(CortexPhase.PERCEPTION)
         
@@ -271,7 +262,7 @@ class CortexRuntime(PluginInterface):
         self, 
         perception_result: PerceptionResult, 
         context: CortexContext
-    ) -> Optional[ModuleResult[ReasoningResult]]:
+    ) -> ModuleResult[ReasoningResult] | None:
         """Run reasoning phase with all registered modules"""
         self.performance_tracker.start_phase(CortexPhase.REASONING)
         
@@ -301,7 +292,7 @@ class CortexRuntime(PluginInterface):
         self, 
         reasoning_result: ReasoningResult, 
         context: CortexContext
-    ) -> Optional[ModuleResult[ActionResult]]:
+    ) -> ModuleResult[ActionResult] | None:
         """Run action phase with all registered modules"""
         self.performance_tracker.start_phase(CortexPhase.ACTION)
         
@@ -350,7 +341,7 @@ class CortexRuntime(PluginInterface):
         except Exception as e:
             print(f"⚠️ Failed to emit Cortex event: {e}")
     
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get runtime statistics"""
         return {
             "perception_modules": len(self.perception_modules),
@@ -362,9 +353,13 @@ class CortexRuntime(PluginInterface):
 
 
 # Factory function for easy setup
-def create_cortex_runtime(config: Optional[Dict[str, Any]] = None) -> CortexRuntime:
+def create_cortex_runtime(config: dict[str, Any] | None = None) -> CortexRuntime:
     """Create and configure a Cortex runtime with default modules"""
-    from .modules import TextPerceptionModule, LogicalReasoningModule, PlanningActionModule
+    from .modules import (
+        LogicalReasoningModule,
+        PlanningActionModule,
+        TextPerceptionModule,
+    )
     
     runtime = CortexRuntime(config)
     

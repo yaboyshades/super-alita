@@ -1,6 +1,7 @@
 """Classification agent returning structured response."""
 import json
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+
 from acp_sdk import Message, MessagePart
 
 

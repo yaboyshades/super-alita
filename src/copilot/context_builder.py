@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import ast
 import json
+from collections.abc import Iterable
+from dataclasses import dataclass, field
 from hashlib import sha256
-from typing import Any, Iterable
 
 
 @dataclass(slots=True)

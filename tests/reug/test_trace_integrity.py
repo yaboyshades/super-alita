@@ -1,8 +1,8 @@
 import asyncio
 
 from reug.events import EventEmitter
-from reug.services import create_services
 from reug.fsm import ExecutionFlow
+from reug.services import create_services
 
 
 def test_trace_integrity(tmp_path, monkeypatch):

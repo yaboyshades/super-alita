@@ -5,17 +5,19 @@ Tests the core Mangle integration components without requiring
 the full gRPC protobuf code generation.
 """
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import asyncio
 import time
 from pathlib import Path
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
 
+from core.events import create_event
 from core.mangle.metrics import PrometheusMetricsCollector
 from core.mangle.redis_event_bus import RedisEventBus
-from core.events import create_event, BaseEvent
 from core.telemetry.simple_event_bus import SimpleEventBus
+
 
 @pytest.fixture
 def workspace_root():

@@ -2,8 +2,9 @@
 Simple in-memory event bus for testing telemetry
 """
 
-import asyncio
-from typing import Callable, Dict, List, Union, Any
+from collections.abc import Callable
+from typing import Any, Union
+
 from ..events import BaseEvent
 
 
@@ -11,7 +12,7 @@ class SimpleEventBus:
     """Simple in-memory event bus for testing"""
     
     def __init__(self):
-        self.handlers: Dict[str, List[Callable]] = {}
+        self.handlers: dict[str, list[Callable]] = {}
     
     async def subscribe(self, event_type: str, callback: Callable):
         """Subscribe to events of a specific type"""
@@ -46,7 +47,7 @@ class SimpleEventBus:
     
     async def emit(self, event_or_type: Union[str, "BaseEvent"], **kwargs: Any):
         """Legacy emit method for compatibility"""
-        from ..events import create_event, BaseEvent
+        from ..events import BaseEvent, create_event
         
         # If event_or_type is already a BaseEvent, emit it directly
         if isinstance(event_or_type, BaseEvent):

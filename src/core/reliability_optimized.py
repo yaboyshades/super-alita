@@ -17,11 +17,13 @@ Performance Target: <0.002s latency overhead, >1,300 events/second throughput
 import hashlib
 import logging
 import time
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Coroutine, Dict, Optional, Set
+from typing import Any
 
 import redis.asyncio as redis
+
 from src.core.events import BaseEvent
 from src.core.reliability import CircuitBreakerOpenException
 
@@ -77,7 +79,7 @@ class OptimizedIdempotentProcessor:
     def __init__(self, redis_client: redis.Redis, ttl: int = 3600):
         self.redis = redis_client
         self.ttl = ttl
-        self._bloom_filter: Set[str] = set()  # Simple in-memory bloom filter
+        self._bloom_filter: set[str] = set()  # Simple in-memory bloom filter
         self._metrics = OptimizedReliabilityMetrics()
         logger.info(f"Optimized idempotent processor initialized with {ttl}s TTL")
 
@@ -175,7 +177,7 @@ class OptimizedCircuitBreaker:
 
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[float] = None
+        self.last_failure_time: float | None = None
         self.state = CircuitBreakerState.CLOSED
         self._metrics = OptimizedReliabilityMetrics()
 
@@ -279,8 +281,8 @@ class OptimizedReliabilityManager:
     async def process_event_fast(
         self,
         event: BaseEvent,
-        processor: Callable[[BaseEvent], Coroutine[Any, Any, Dict[str, Any]]],
-    ) -> Dict[str, Any]:
+        processor: Callable[[BaseEvent], Coroutine[Any, Any, dict[str, Any]]],
+    ) -> dict[str, Any]:
         """Fast event processing with minimal reliability overhead."""
         start_time = time.time()
 
@@ -327,8 +329,8 @@ class OptimizedReliabilityManager:
     async def process_event_reliable(
         self,
         event: BaseEvent,
-        processor: Callable[[BaseEvent], Coroutine[Any, Any, Dict[str, Any]]],
-    ) -> Dict[str, Any]:
+        processor: Callable[[BaseEvent], Coroutine[Any, Any, dict[str, Any]]],
+    ) -> dict[str, Any]:
         """Full reliability processing with all patterns enabled."""
         if self.reliability_level == ReliabilityLevel.FAST:
             return await self.process_event_fast(event, processor)
@@ -390,7 +392,7 @@ class OptimizedReliabilityManager:
                 alpha * processing_time_ms + (1 - alpha) * self._metrics.avg_latency_ms
             )
 
-    def get_comprehensive_metrics(self) -> Dict[str, Any]:
+    def get_comprehensive_metrics(self) -> dict[str, Any]:
         """Get comprehensive metrics across all reliability components."""
         base_metrics = self._metrics
 

@@ -5,7 +5,6 @@ import { registerDebugScaffold } from './features/debug';
 import { createTelemetry } from './telemetry';
 import { createLspClient } from './lspClient';
 import { registerMcpSearch } from './features/mcpSearch';
-import { registerSkillsetCommand } from './features/skillset';
 import { PredictiveManager } from './predictiveManager';
 import { FeedbackManager } from './feedbackManager';
 
@@ -134,7 +133,6 @@ export async function activate(ctx: vscode.ExtensionContext) {
     await client.start();
   }));
   disposables.push(registerMcpSearch(telemetry ?? undefined));
-  disposables.push(registerSkillsetCommand(telemetry ?? undefined));
 
   // Predictive + feedback managers (clairvoyant scaffolding)
   const predictive = new PredictiveManager(telemetry ?? undefined);
@@ -192,6 +190,39 @@ export async function activate(ctx: vscode.ExtensionContext) {
     if (!aStr || !bStr) { return; }
     const result = await runWasmCalculator(parseInt(aStr, 10), parseInt(bStr, 10));
     vscode.window.showInformationMessage(`WASM Result: ${result}`);
+  }));
+
+  // Chat via local runtime (stream)
+  disposables.push(vscode.commands.registerCommand('alita.chatRuntime', async () => {
+    const prompt = await vscode.window.showInputBox({ prompt: 'Message to runtime (streamed)' });
+    if (!prompt) { return; }
+    const cfg = vscode.workspace.getConfiguration('alita');
+    const base = (cfg.get<string>('runtime.host') || 'http://127.0.0.1:8080').replace(/\/$/, '');
+    const url = `${base}/v1/chat/stream`;
+    const out = vscode.window.createOutputChannel('Alita Runtime Chat');
+    out.clear(); out.show(true);
+    out.appendLine(`[POST] ${url}`);
+    try {
+      const resp = await (globalThis as any).fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: 'vscode', message: prompt })
+      });
+      if (!resp.ok || !resp.body) {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      const reader = (resp.body as ReadableStream<Uint8Array>).getReader();
+      const decoder = new TextDecoder();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        out.append(decoder.decode(value));
+      }
+      telemetry?.send('alita/runtime/chat', { ok: 'true' });
+    } catch (err) {
+      vscode.window.showErrorMessage('Runtime chat failed: ' + (err as Error).message);
+      telemetry?.send('alita/runtime/chat', { ok: 'false' });
+    }
   }));
 
   // Codegen status command (smoke/status)

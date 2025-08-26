@@ -1,7 +1,9 @@
+import importlib.util
 import sys
 from pathlib import Path
-import importlib.util
+
 import pytest
+
 
 class Bus:
     def __init__(self) -> None:

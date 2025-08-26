@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.resources import TextResource

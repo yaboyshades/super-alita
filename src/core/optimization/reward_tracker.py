@@ -5,10 +5,10 @@ Manages reward collection and feedback for multi-armed bandit optimization.
 Provides mechanisms for tracking decision outcomes and learning from them.
 """
 
-import asyncio
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 from uuid import uuid4
 
 from ..events import create_event
@@ -23,7 +23,7 @@ class RewardEvent:
     reward_value: float
     reward_type: str  # "immediate", "delayed", "cumulative"
     source: str  # Where the reward came from
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
 
 
@@ -34,8 +34,8 @@ class RewardRule:
     rule_id: str
     name: str
     description: str
-    condition: Callable[[Dict[str, Any]], bool]  # Function to check if rule applies
-    calculator: Callable[[Dict[str, Any]], float]  # Function to calculate reward
+    condition: Callable[[dict[str, Any]], bool]  # Function to check if rule applies
+    calculator: Callable[[dict[str, Any]], float]  # Function to calculate reward
     priority: int = 0  # Higher priority rules are evaluated first
     active: bool = True
 
@@ -50,19 +50,19 @@ class RewardTracker:
     
     def __init__(self, event_bus=None):
         self.event_bus = event_bus
-        self.rewards: Dict[str, List[RewardEvent]] = {}  # decision_id -> rewards
-        self.rules: Dict[str, RewardRule] = {}
-        self.pending_rewards: Dict[str, List[RewardEvent]] = {}  # For delayed rewards
-        self.callbacks: List[Callable[[RewardEvent], None]] = []
+        self.rewards: dict[str, list[RewardEvent]] = {}  # decision_id -> rewards
+        self.rules: dict[str, RewardRule] = {}
+        self.pending_rewards: dict[str, list[RewardEvent]] = {}  # For delayed rewards
+        self.callbacks: list[Callable[[RewardEvent], None]] = []
     
     def add_reward_rule(
         self,
         name: str,
         description: str,
-        condition: Callable[[Dict[str, Any]], bool],
-        calculator: Callable[[Dict[str, Any]], float],
+        condition: Callable[[dict[str, Any]], bool],
+        calculator: Callable[[dict[str, Any]], float],
         priority: int = 0,
-        rule_id: Optional[str] = None
+        rule_id: str | None = None
     ) -> str:
         """
         Add a rule for automatic reward calculation.
@@ -99,7 +99,7 @@ class RewardTracker:
         reward_value: float,
         reward_type: str = "immediate",
         source: str = "manual",
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> str:
         """
         Record a reward for a decision.
@@ -157,8 +157,8 @@ class RewardTracker:
     async def calculate_automatic_rewards(
         self,
         decision_id: str,
-        context: Dict[str, Any]
-    ) -> List[str]:
+        context: dict[str, Any]
+    ) -> list[str]:
         """
         Calculate rewards automatically using registered rules.
         
@@ -212,7 +212,7 @@ class RewardTracker:
         
         return reward_ids
     
-    def get_decision_rewards(self, decision_id: str) -> List[RewardEvent]:
+    def get_decision_rewards(self, decision_id: str) -> list[RewardEvent]:
         """Get all rewards for a specific decision."""
         return self.rewards.get(decision_id, [])
     
@@ -221,7 +221,7 @@ class RewardTracker:
         rewards = self.get_decision_rewards(decision_id)
         return sum(r.reward_value for r in rewards)
     
-    def get_latest_reward(self, decision_id: str) -> Optional[RewardEvent]:
+    def get_latest_reward(self, decision_id: str) -> RewardEvent | None:
         """Get the most recent reward for a decision."""
         rewards = self.get_decision_rewards(decision_id)
         if not rewards:
@@ -240,7 +240,7 @@ class RewardTracker:
         except ValueError:
             return False
     
-    def get_rule_statistics(self) -> Dict[str, Any]:
+    def get_rule_statistics(self) -> dict[str, Any]:
         """Get statistics about reward rules."""
         active_rules = [r for r in self.rules.values() if r.active]
         inactive_rules = [r for r in self.rules.values() if not r.active]
@@ -271,7 +271,7 @@ class RewardTracker:
             ]
         }
     
-    def get_global_statistics(self) -> Dict[str, Any]:
+    def get_global_statistics(self) -> dict[str, Any]:
         """Get global reward statistics."""
         total_decisions = len(self.rewards)
         total_rewards = sum(len(rewards) for rewards in self.rewards.values())
@@ -307,10 +307,10 @@ class RewardTracker:
 def create_success_rate_rule() -> RewardRule:
     """Create a rule that rewards based on success indicators in context."""
     
-    def condition(context: Dict[str, Any]) -> bool:
+    def condition(context: dict[str, Any]) -> bool:
         return "success" in context or "error" in context
     
-    def calculator(context: Dict[str, Any]) -> float:
+    def calculator(context: dict[str, Any]) -> float:
         if context.get("success", False):
             return 1.0
         elif context.get("error", False):
@@ -331,10 +331,10 @@ def create_success_rate_rule() -> RewardRule:
 def create_performance_rule() -> RewardRule:
     """Create a rule that rewards based on performance metrics."""
     
-    def condition(context: Dict[str, Any]) -> bool:
+    def condition(context: dict[str, Any]) -> bool:
         return "execution_time" in context or "performance_score" in context
     
-    def calculator(context: Dict[str, Any]) -> float:
+    def calculator(context: dict[str, Any]) -> float:
         # Reward faster execution times
         execution_time = context.get("execution_time", 1.0)
         if execution_time < 0.1:

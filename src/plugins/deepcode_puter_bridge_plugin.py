@@ -2,7 +2,7 @@
 """Bridge DeepCode outputs to Puter file writes."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from src.core.plugin_interface import PluginInterface
@@ -44,5 +44,5 @@ class DeepCodePuterBridgePlugin(PluginInterface):
                 correlation_id=getattr(event, "correlation_id", None),
                 request_id=getattr(event, "request_id", None),
                 proposal_id=getattr(event, "proposal_id", None),
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )

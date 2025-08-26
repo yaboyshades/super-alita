@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from src.plugins.autonomy_tracker import AutonomyTracker
-from src.plugins.knowledge_gap_detector import KnowledgeGapDetector
 from src.plugins.cortex_adapter_plugin import CortexAdapterPlugin
+from src.plugins.knowledge_gap_detector import KnowledgeGapDetector
 
 
 class DummyEventBus:

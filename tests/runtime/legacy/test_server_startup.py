@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test server startup with debugging."""
 import pytest
+
 pytest.skip("legacy test", allow_module_level=True)
 
 import traceback

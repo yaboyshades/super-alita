@@ -4,12 +4,12 @@ from typing import Any
 import pytest
 
 from src.core.events import create_event
-from src.plugins.puter_plugin import PuterPlugin
 from src.plugins.perplexica_search_plugin import (
     PerplexicaResponse,
     PerplexicaSearchPlugin,
     SearchMode,
 )
+from src.plugins.puter_plugin import PuterPlugin
 
 
 class CaptureBus:

@@ -1,5 +1,7 @@
 from __future__ import annotations
-import uuid, contextvars
+
+import contextvars
+import uuid
 
 correlation_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("correlation_id", default=None)
 session_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("session_id", default=None)

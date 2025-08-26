@@ -2,24 +2,20 @@
 Tests for Cortex runtime and modules
 """
 
-import pytest
 import asyncio
-from typing import Dict, Any
+
+import pytest
 
 from src.core.cortex import (
-    CortexRuntime, 
-    CortexContext,
-    PerformanceMarker,
     CortexPhase,
     MarkerType,
-    create_cortex_runtime
+    create_cortex_runtime,
 )
 from src.core.cortex.modules import (
-    TextPerceptionModule,
-    LogicalReasoningModule, 
-    PlanningActionModule,
     CortexInput,
-    ModuleResult
+    LogicalReasoningModule,
+    PlanningActionModule,
+    TextPerceptionModule,
 )
 
 
@@ -270,7 +266,7 @@ class TestPerformanceTracking:
     
     async def test_cortex_event_creation(self):
         """Test Cortex event creation with markers"""
-        from src.core.cortex.markers import create_cortex_event, PerformanceMarker
+        from src.core.cortex.markers import PerformanceMarker, create_cortex_event
         
         markers = [
             PerformanceMarker(
