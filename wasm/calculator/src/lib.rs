@@ -1,19 +1,9 @@
-wit_bindgen::generate!({
-    world: "calculator",
-});
+wit_bindgen::generate!({ world: "calculator" });
 
-struct Calculator;
+struct Impl;
 
-impl Guest for Calculator {
-    fn calc(op: Operation) -> u32 {
-        log(&format!("Calculating: {:?}", op));
-        match op {
-            Operation::Add(ops) => ops.left + ops.right,
-            Operation::Sub(ops) => ops.left - ops.right,
-            Operation::Mul(ops) => ops.left * ops.right,
-            Operation::Div(ops) => ops.left / ops.right,
-        }
-    }
+impl Guest for Impl {
+    fn add(a: u32, b: u32) -> u32 { a + b }
 }
 
-export!(Calculator);
+export!(Impl);

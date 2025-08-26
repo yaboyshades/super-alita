@@ -102,6 +102,14 @@
       {
         "command": "alita.skillset",
         "title": "Alita: Show Skillset"
+        },
+        {
+          "command": "alita.invokeAgent",
+          "title": "Alita: Invoke Agent (Ollama)"
+        },
+        {
+          "command": "alita.calc",
+          "title": "Alita: Run WASM Calculator"
       }
     ],
     "menus": {
@@ -179,6 +187,17 @@
           ],
           "default": "off",
           "description": "Trace communication between VS Code and the Alita language server."
+        },
+        "alita.ollama.host": {
+          "type": "string",
+          "default": "http://127.0.0.1:11434",
+          "description": "Base URL for local Ollama server (chat API)."
+        },
+        "alita.ollama.model": {
+          "type": "string",
+          "default": "",
+            "markdownDescription": "Model tag to use for Ollama (e.g., `llama3.1:8b`). If empty you'll be prompted on first use.",
+          "description": "Model tag for Ollama."
         }
       }
     }
