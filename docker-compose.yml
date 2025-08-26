@@ -29,3 +29,30 @@ services:
   #   image: redis:7-alpine
   #   ports: ["6379:6379"]
   #   profiles: ["redis"]
+  context-server:
+    build: .
+    command: python backend/context_server.py
+    profiles: ["context"]
+    ports:
+      - "5001:5001"
+
+  swarm:
+    build: .
+    command: python backend/agent_orchestrator.py
+    profiles: ["swarm"]
+    environment:
+      - SWARM_MODEL=oss-20b
+    ports:
+      - "5002:5002"
+
+  finetune:
+    build: .
+    command: python backend/fine_tuning/train_adapter.py --feedback-file training_data/feedback.json --epochs 1
+    profiles: ["finetune"]
+
+  # Example ollama service (optional; user may run host-level instead)
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports: ["11434:11434"]
+  #   volumes: ["./ollama:/root/.ollama"]
+  #   profiles: ["ollama"]

@@ -131,7 +131,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
     if (!editor || editor.selection.isEmpty) { return; }
     const sel = editor.selection;
     const original = editor.document.getText(sel);
-    const cached = predictive.getCachedRefactor(editor.document.uri, sel, original);
+  const cached = predictive.getCachedRefactor(editor.document.uri);
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Alita Refactor' }, async () => {
       let replacement: string | null = null;
       if (cached) {

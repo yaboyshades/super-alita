@@ -32,6 +32,7 @@
   "activationEvents": [
     "onLanguage:alita",
     "onCommand:alita.restart",
+    "onCommand:alita.invokeAgent",
     "onDebug",
     "workspaceContains:*.alita"
   ],
@@ -93,6 +94,10 @@
       {
         "command": "alita.restart",
         "title": "Alita: Restart Language Server"
+      },
+      {
+        "command": "alita.invokeAgent",
+        "title": "Alita: Invoke Agent (Ollama)"
       }
     ],
     "menus": {
@@ -100,6 +105,10 @@
         {
           "command": "alita.restart",
           "when": "!virtualWorkspace && editorLangId == alita"
+        },
+        {
+          "command": "alita.invokeAgent",
+          "when": "!virtualWorkspace"
         }
       ]
     },
@@ -162,6 +171,17 @@
           ],
           "default": "off",
           "description": "Trace communication between VS Code and the Alita language server."
+        },
+        "alita.ollama.host": {
+          "type": "string",
+          "default": "http://127.0.0.1:11434",
+          "description": "Base URL for local Ollama server (chat API)."
+        },
+        "alita.ollama.model": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Model tag to use for Ollama (e.g., `llama3.1:8b`). If empty you'll be prompted on first use.",
+          "description": "Model tag for Ollama."
         }
       }
     }
