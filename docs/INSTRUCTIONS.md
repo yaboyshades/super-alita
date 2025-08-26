@@ -7,6 +7,10 @@ This directory contains comprehensive project documentation for Super Alita.
 The docs directory provides detailed information about various aspects of the system:
 
 - **Architecture** (`architecture.md`): System design and component overview
+- **Architectural Overview** (`01_architectural_overview.md`): High-level system design and principles
+- **Refactoring Guide** (`02_refactoring_guide.md`): Safe update practices for the streaming runtime
+- **Agentic Workflows** (`03_agentic_workflows.md`): Continuous operational cycle
+- **Advanced Development Patterns** (`04_advanced_patterns.md`): Patterns for building reliable agents
 - **MCP Integration** (`mcp.md`, `mcp_integration_summary.md`): Model Context Protocol documentation
 - **Runtime** (`runtime.md`): Runtime environment and execution details
 - **Memory & Knowledge** (`memory.md`, `atoms-bonds.md`): Knowledge graph and memory systems
