@@ -11,37 +11,42 @@ logger = logging.getLogger(__name__)
 
 
 class CurationManager(PluginInterface):
-    """Curates growth/retire signals using play/prove and error diagnostics.
-
+    """
+    Curates growth/retire signals using play/prove and error diagnostics.
     Emits:
       - oak.curation_feedback
+
+      - oak.feature_utility_update (play/planning weights)
+
       - oak.feature_utility_updated (for play/planning weights)
+
     Subscribes:
-      - tool_result (existing event)
-      - oak.prediction_error
-    Alignment: incorporates LiveMCP-style diagnostics (syntactic vs semantic errors)
-    and process-focused signals highlighted in helpful_oak_info.md.
+      - tool_result (LiveMCP-style result)
+      - prediction_error (for planning credit)
     """
 
+    def __init__(self):
+        super().__init__()
+
     @property
-    def name(self) -> str:  # type: ignore[override]
+    def name(self) -> str:
         return "oak_curation_manager"
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.cfg: dict[str, Any] = {
-            "play_weight": 0.1,
-            "planning_weight": 0.2,
-            "semantic_error_penalty": -0.2,
-            "syntactic_error_penalty": -0.1,
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+        await super().setup(event_bus, store, config)
+        self.cfg: Dict[str, float] = {
+            "play_weight": self.get_config("play_weight", 0.1),
+            "planning_weight": self.get_config("planning_weight", 0.2),
+            "semantic_error_penalty": self.get_config("semantic_error_penalty", -0.2),
+            "syntactic_error_penalty": self.get_config("syntactic_error_penalty", -0.1),
         }
         self.error_counts: Dict[str, int] = defaultdict(int)
         self._required_features = {"global_play", "global_planning"}
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # type: ignore[override]
-        await super().setup(event_bus, store, config)
-        self.cfg.update(config or {})
+    async def start(self) -> None:
+        await super().start()
         await self.subscribe("tool_result", self.handle_tool_result)
+        await self.subscribe("prediction_error", self.handle_prediction_error)
         await self.subscribe("oak.prediction_error", self.handle_prediction_error)
         await self._ensure_global_features()
 
@@ -107,17 +112,19 @@ class CurationManager(PluginInterface):
     async def shutdown(self) -> None:  # type: ignore[override]
         await super().shutdown()
 
+
     async def handle_tool_result(self, event: Any) -> None:
-        success = bool(getattr(event, "success", False))
-        error_msg = getattr(event, "error", "") or ""
-        conv_id = getattr(event, "conversation_id", None)
-        # Heuristic classification per helpful_oak_info.md categories
-        category = None
+        success = bool(event.get("success", False))
+        error_msg = event.get("error", "") or ""
         if not success:
-            if re.search(r"schema|validation|type|required", error_msg, re.I):
-                category = "syntactic"
-                signal = self.cfg["syntactic_error_penalty"]
+            if re.search(r"(schema|validation|type|required)", error_msg, re.I):
+                category = "syntactic"; signal = self.cfg["syntactic_error_penalty"]
             else:
+
+                category = "semantic"; signal = self.cfg["semantic_error_penalty"]
+            self.error_counts[category] += 1
+            await self.emit_event("oak.curation_feedback", category=category, success=False, error=error_msg[:256])
+
                 category = "semantic"
                 signal = self.cfg["semantic_error_penalty"]
             self.error_counts[category] += 1  # type: ignore[index]
@@ -129,6 +136,7 @@ class CurationManager(PluginInterface):
                 error=str(error_msg)[:256],
             )
             # Global planning utility nudge (no specific feature_id attached)
+
 
             await self.emit_event(
                 "oak.feature_utility_updated",
@@ -142,7 +150,6 @@ class CurationManager(PluginInterface):
 
             )
         else:
-            # Positive play signal on successful tool usage
             signal = float(self.cfg["play_weight"])
 
             await self.emit_event(
@@ -158,9 +165,14 @@ class CurationManager(PluginInterface):
             )
 
     async def handle_prediction_error(self, event: Any) -> None:
+
+        err = float(event.get("error", 0.0))
+        signal = max(0.0, 1.0 - err) * float(self.cfg["planning_weight"])
+
         # Route prediction confidence as a positive signal for planning utility
         err = float(getattr(event, "error", 0.0))
         signal = 1.0 / (1.0 + err)
+
 
         await self.emit_event(
             "oak.feature_utility_updated",
@@ -173,4 +185,3 @@ class CurationManager(PluginInterface):
             "global_planning", "planning", signal, {"planning": signal}
 
         )
-
