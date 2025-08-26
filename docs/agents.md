@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-26T00:11:02Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-26T00:28:12Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -135,7 +135,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 121]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -143,6 +143,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-26T00:11:02Z #118 Merge pull request #118 from yaboyshades/codex/add-mcp-server-entrypoint-for-codex (owner: @yaboyshades)
+- 2025-08-26T00:28:12Z #121 Merge pull request #121 from yaboyshades/copilot/fix-120 (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-25T15:44:23Z #117 Merge pull request #117 from yaboyshades/codex/refactor-classes-to-remove-event_bus-arguments (owner: @yaboyshades)
+- 2025-08-26T00:11:02Z #118 Merge pull request #118 from yaboyshades/codex/add-mcp-server-entrypoint-for-codex (owner: @yaboyshades)
