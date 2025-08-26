@@ -12,16 +12,22 @@ deps: ## Install runtime + test deps
 	pip install -r requirements.txt -r requirements-test.txt
 
 run: ## Start FastAPI dev server on :8080
-	uvicorn app:app --reload --port 8080
+        uvicorn app:app --reload --port 8080
 
 test: ## Run full tests (runtime suite)
-	PYTHONPATH=./src pytest -v tests/runtime/
+        PYTHONPATH=./src pytest -v tests/runtime/
 
 test-smoke: ## Quick smoke test
 	PYTHONPATH=./src pytest -q tests/runtime/test_router_smoke.py
 
 lint: ## Run pre-commit hooks
-	pre-commit run --all-files
+        pre-commit run --all-files
+
+run-mcp-backend: ## Start the backend MCP server
+        python backend/mcp_server.py
+
+run-skillset-backend: ## Start the backend skillset server
+        uvicorn backend.skillset_server:app --reload --port 8001
 
 env: ## Create .env from template
 	@if [ ! -f .env ]; then cp .env.example .env && echo "Created .env"; else echo ".env already exists"; fi
