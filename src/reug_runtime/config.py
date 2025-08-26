@@ -112,20 +112,6 @@ class Settings:
 
 
 SETTINGS = Settings()
-=======
-"""Configuration utilities for the REUG runtime.
-
-This module centralizes environment driven settings and exposes a small
-``Settings`` dataclass that other modules can rely on.  All helpers use a
-predictable ``_getenv`` pattern and include Google style docstrings so the
-expected arguments and return types are explicit.
-"""
-
-import os
-from dataclasses import dataclass
-
-
-def _getenv(name: str, default: str | None = None) -> str | None:
     """Return the value of an environment variable.
 
     Args:
