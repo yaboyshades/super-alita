@@ -1,533 +1,148 @@
-# Documentation Standards - Agent Instructions
+# Super Alita – Agents Registry (Living Document)
 
-## Overview
-The `docs/` directory contains comprehensive documentation for Super Alita:
-- **Architecture** - System design and component relationships
-- **User Guides** - Setup, configuration, and usage instructions
-- **API Documentation** - Interface specifications and examples
-- **Integration Guides** - External service and tool integrations
+> Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
+> Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-## Documentation Structure
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-26T04:06:01Z
+- Current Release: <!-- AGENTS:RELEASE -->master
 
-### Key Documentation Files
-- `architecture.md` - Core system architecture and patterns
-- `runtime.md` - Runtime environment and deployment
-- `mcp.md` - Model Context Protocol integration
-- `memory.md` - Memory and knowledge graph systems
-- `testing.md` - Testing guidelines and frameworks
-- `security/` - Security documentation and guidelines
+---
 
-## Writing Standards
+## 0. Quick Links
+- Health: `/healthz` • Telemetry: `/metrics` • Streaming: `${API_PREFIX}/v1/chat/stream`
+- EventBus: `file://` (dev) or `redis://` (prod)
+- Session Ledger: `.alita/sessions/ledger.json` (auto‑maintained)
 
-### Markdown Guidelines
-```markdown
-# Document Title
+---
 
-## Overview
-Brief 2-3 sentence overview of the document's purpose.
+## 1. Agents (Top‑Level)
+<!-- AGENTS:START -->
+| Agent | Kind | Entrypoint | Abilities (count) | Plugins (count) | Owner(s) | Stability | Notes |
+|---:|----|----|----|----|----|----|----|
+| super-alita | runtime | src/main.py | 1 | 54 | @owners | beta |  |
+<!-- AGENTS:END -->
 
-## Section Headers
-Use ## for main sections, ### for subsections.
+### 1.1 Ownership & Contacts
+<!-- AGENTS:OWNERS_START -->
+| Component | CODEOWNERS | Slack | Escalation |
+|---:|----|----|----|
+<!-- AGENTS:OWNERS_END -->
 
-### Code Examples
-All code blocks must specify the language:
+---
 
-```python
-# Example Python code
-def example_function():
-    return "Hello, World!"
-```
+## 2. Abilities
+> Contract‑first tools that the runtime can call (dynamic registry supported).
 
-### Links and References
-- Use relative links for internal docs: [Architecture](./architecture.md)
-- Use absolute URLs for external links: [MCP Protocol](https://modelcontextprotocol.io/)
-```
+<!-- ABILITIES:START -->
+| Ability | Module | Signature | Guardrails | Telemetry Events | Notes |
+|---:|----|----|----|----|----|
+| _utcnow | src/abilities/gemini_codegen_ability.py | (…) | yes | Ability* events |  |
+<!-- ABILITIES:END -->
 
-### Code Documentation Standards
-```python
-def example_function(param1: str, param2: int = 10) -> Dict[str, Any]:
-    """
-    Brief one-line description of the function.
-    
-    Longer description if needed, explaining the purpose,
-    behavior, and any important considerations.
-    
-    Args:
-        param1: Description of the first parameter
-        param2: Description of the second parameter with default
-        
-    Returns:
-        Dictionary containing result data with keys:
-        - success: Boolean indicating operation success
-        - data: The actual result data
-        - error: Error message if operation failed
-        
-    Raises:
-        ValueError: When param1 is empty or invalid
-        RuntimeError: When operation cannot be completed
-        
-    Example:
-        >>> result = example_function("test", 20)
-        >>> print(result["success"])
-        True
-    """
-    pass
-```
+---
 
-## Architecture Documentation
+## 3. Plugins
+> Pluggable modules (planner, memory, search, MCP, etc.)
 
-### System Diagrams
-```markdown
-## Architecture Overview
+<!-- PLUGINS:START -->
+| Plugin | Module | Capabilities | Config Keys | Health Check | Notes |
+|---:|----|----|----|----|----|
+| creator_plugin_unified | src/plugins/creator_plugin_unified.py | = "calculate":, Capability Needed: {request.capability_description}, [, capabilities = ["execute", "process", "respond", capabilities,, if capability == "search":, if capability.lower() in task_lower:, json.dumps(spec.capabilities),, {capabilities}, | ENV_* | function() => ok |  |
+| system_introspection_plugin | src/plugins/system_introspection_plugin.py | (…) | ENV_* | function() => ok |  |
+| llm_planner_plugin | src/plugins/llm_planner_plugin.py | (…) | ENV_* | function() => ok |  |
+| planner_plugin | src/plugins/planner_plugin.py | (…) | ENV_* | function() => ok |  |
+| openai_agent_plugin | src/plugins/openai_agent_plugin.py | (…) | ENV_* | function() => ok |  |
+| cortex_adapter_plugin | src/plugins/cortex_adapter_plugin.py | (…) | ENV_* | function() => ok |  |
+| flowise_adapter_plugin | src/plugins/flowise_adapter_plugin.py | (…) | ENV_* | function() => ok |  |
+| tool_executor_plugin | src/plugins/tool_executor_plugin.py | (…) | ENV_* | function() => ok |  |
+| atom_creator_plugin | src/plugins/atom_creator_plugin.py | (…) | ENV_* | function() => ok |  |
+| enhanced_pythonic_preprocessor_plugin | src/plugins/enhanced_pythonic_preprocessor_plugin.py | (…) | ENV_* | function() => ok |  |
+| semantic_memory_plugin | src/plugins/semantic_memory_plugin.py | "memory", "storage", "retrieval", "memory", "storage", "retrieval", "semantic_search" | ENV_* | function() => ok |  |
+| skill_discovery_plugin | src/plugins/skill_discovery_plugin.py | (…) | ENV_* | function() => ok |  |
+| memory_manager_plugin_unified | src/plugins/memory_manager_plugin_unified.py | (…) | ENV_* | function() => ok |  |
+| brainstorm_plugin | src/plugins/brainstorm_plugin.py | atom.tool | ENV_* | function() => ok |  |
+| deepcode_puter_bridge_plugin | src/plugins/deepcode_puter_bridge_plugin.py | (…) | ENV_* | function() => ok |  |
+| semantic_fsm_plugin | src/plugins/semantic_fsm_plugin.py | (…) | ENV_* | function() => ok |  |
+| puter_plugin | src/plugins/puter_plugin.py | "cloud_storage", "process_execution", "file_io" | ENV_* | function() => ok |  |
+| autonomy_tracker | src/plugins/autonomy_tracker.py | (…) | ENV_* | function() => ok |  |
+| atom_tools_plugin | src/plugins/atom_tools_plugin.py | (…) | ENV_* | function() => ok |  |
+| core_utils_plugin | src/plugins/core_utils_plugin.py | (…) | ENV_* | function() => ok |  |
+| conversation_plugin | src/plugins/conversation_plugin.py | **, 🧠 **Cognitive Architecture**: I use a plugin-based system with neural atoms for reactive state management | ENV_* | function() => ok |  |
+| memory_manager_plugin | src/plugins/memory_manager_plugin.py | "storage", "recall", "memory" | ENV_* | function() => ok |  |
+| event_bus_plugin | src/plugins/event_bus_plugin.py | (…) | ENV_* | function() => ok |  |
+| dify_adapter_plugin | src/plugins/dify_adapter_plugin.py | (…) | ENV_* | function() => ok |  |
+| auto_tools_plugin | src/plugins/auto_tools_plugin.py | (…) | ENV_* | function() => ok |  |
+| enhanced_protocol_plugin | src/plugins/enhanced_protocol_plugin.py | (…) | ENV_* | function() => ok |  |
+| deepcode_orchestrator_plugin | src/plugins/deepcode_orchestrator_plugin.py | (…) | ENV_* | function() => ok |  |
+| adaptive_neural_atom_plugin | src/plugins/adaptive_neural_atom_plugin.py | (…) | ENV_* | function() => ok |  |
+| memory_manager_plugin_clean | src/plugins/memory_manager_plugin_clean.py | "storage", "recall", "memory" | ENV_* | function() => ok |  |
+| compose_plugin | src/plugins/compose_plugin.py | atom.tool | ENV_* | function() => ok |  |
+| self_heal_plugin | src/plugins/self_heal_plugin.py | (…) | ENV_* | function() => ok |  |
+| deepcode_generator_plugin | src/plugins/deepcode_generator_plugin.py | (…) | ENV_* | function() => ok |  |
+| meta_learning_creator_plugin | src/plugins/meta_learning_creator_plugin.py | (…) | ENV_* | function() => ok |  |
+| predictive_world_model_plugin | src/plugins/predictive_world_model_plugin.py | (…) | ENV_* | function() => ok |  |
+| creator_plugin | src/plugins/creator_plugin.py | (…) | ENV_* | function() => ok |  |
+| calculator_plugin | src/plugins/calculator_plugin.py | (…) | ENV_* | function() => ok |  |
+| ladder_aog_plugin | src/plugins/ladder_aog_plugin.py | (…) | ENV_* | function() => ok |  |
+| pythonic_preprocessor_plugin | src/plugins/pythonic_preprocessor_plugin.py | (…) | ENV_* | function() => ok |  |
+| perplexica_search_plugin | src/plugins/perplexica_search_plugin.py | (…) | ENV_* | function() => ok |  |
+| llm_planner_plugin_unified | src/plugins/llm_planner_plugin_unified.py | {', '.join(atom_info['capabilities' | ENV_* | function() => ok |  |
+| tool_lifecycle_plugin | src/plugins/tool_lifecycle_plugin.py | (…) | ENV_* | function() => ok |  |
+| plugin_interface | src/plugins/plugin_interface.py | (…) | ENV_* | function() => ok |  |
+| self_reflection_plugin | src/plugins/self_reflection_plugin.py | Enumerate all available tools and plugins, parameters.get("requested_capability", ""), {e}", exc_info=True) | ENV_* | function() => ok |  |
+| knowledge_gap_detector | src/plugins/knowledge_gap_detector.py | (…) | ENV_* | function() => ok |  |
+| atom_executor_plugin | src/plugins/atom_executor_plugin.py | (…) | ENV_* | function() => ok |  |
+| tool_executor_plugin_unified | src/plugins/tool_executor_plugin_unified.py | (…) | ENV_* | function() => ok |  |
+| core_utils_plugin_dynamic | src/plugins/core_utils_plugin_dynamic.py | ", len(self._capabilities)), # Tool not in our discovered capabilities, dict[str, Callable, {name}" | ENV_* | function() => ok |  |
+| subproblem_manager | src/plugins/oak_core/subproblem_manager.py | (…) | ENV_* | function() => ok |  |
+| planning_engine | src/plugins/oak_core/planning_engine.py | (…) | ENV_* | function() => ok |  |
+| feature_discovery | src/plugins/oak_core/feature_discovery.py | (…) | ENV_* | function() => ok |  |
+| prediction_engine | src/plugins/oak_core/prediction_engine.py | (…) | ENV_* | function() => ok |  |
+| coordinator | src/plugins/oak_core/coordinator.py | (…) | ENV_* | function() => ok |  |
+| curation_manager | src/plugins/oak_core/curation_manager.py | (…) | ENV_* | function() => ok |  |
+| option_trainer | src/plugins/oak_core/option_trainer.py | (…) | ENV_* | function() => ok |  |
+<!-- PLUGINS:END -->
 
-```mermaid
-graph TD
-    A[User Input] --> B[LLM Planner]
-    B --> C[Event Bus]
-    C --> D[Plugin System]
-    D --> E[Tool Execution]
-    E --> F[Neural Memory]
-    F --> G[Response]
-```
+---
 
-### Component Descriptions
-Each architectural component should be documented with:
+## 4. Runtime Surfaces
+- **HTTP**: FastAPI (`app.py` / `src/main.py`) — `/healthz`, `${API_PREFIX}/v1/chat/stream`
+- **Eventing**: EventBus (file/Redis), MCP telemetry broadcaster
+- **Sandbox**: `src/sandbox/exec_sandbox.py`
+- **VS Code** (optional): extension client (gRPC when wired)
 
-```markdown
-### Component Name
+---
 
-**Purpose**: Brief description of component's role
-**Location**: `src/path/to/component.py`
-**Dependencies**: List of key dependencies
-**Interfaces**: APIs and event contracts
+## 5. Session Stitching (Cross‑Session Context)
+The updater maintains a session ledger for continuity across “AI sessions” and human sessions.
 
-#### Key Responsibilities
-- Specific responsibility 1
-- Specific responsibility 2
-- Specific responsibility 3
-
-#### Configuration
-```python
-# Example configuration
-COMPONENT_CONFIG = {
-    "setting1": "value1",
-    "setting2": 42
-}
-```
-
-#### Events
-- **Emits**: `event_type_1`, `event_type_2`
-- **Handles**: `input_event_1`, `input_event_2`
-```
-
-## API Documentation
-
-### Endpoint Documentation
-```markdown
-### POST /api/v1/endpoint
-
-Execute specific operation on the system.
-
-#### Request
+**Ledger:** `.alita/sessions/ledger.json`
 ```json
 {
-  "parameter1": "string",
-  "parameter2": 123,
-  "optional_param": "optional_value"
-}
-```
-
-#### Response
-```json
-{
-  "success": true,
-  "result": {
-    "data": "result_data",
-    "metadata": {
-      "timestamp": "2024-01-01T00:00:00Z",
-      "processing_time": 1.23
+  "series": [
+    {
+      "series_id": "2025W34-streaming-router-hardening",
+      "prs": [123, 129, 131],
+      "branches": ["feat/streaming-hardening", "hotfix/disconnect"],
+      "session_notes": [
+        {"ts": "2025-08-24T18:27Z", "summary": "Tool synthesis path stabilized"},
+        {"ts": "2025-08-25T03:04Z", "summary": "Disconnect test added"}
+      ]
     }
-  }
+  ]
 }
-```
 
-#### Error Response
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Parameter validation failed",
-    "details": {
-      "field": "parameter1",
-      "reason": "Required field missing"
-    }
-  }
-}
-```
+Index (recent):
 
-#### Examples
-```bash
-# cURL example
-curl -X POST http://localhost:8080/api/v1/endpoint \
-  -H "Content-Type: application/json" \
-  -d '{"parameter1": "test", "parameter2": 123}'
-```
+<!-- SESSIONS:START -->
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 76, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146]
+<!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
-```python
-# Python example
-import aiohttp
+---
 
-async def call_endpoint():
-    async with aiohttp.ClientSession() as session:
-        data = {"parameter1": "test", "parameter2": 123}
-        async with session.post("/api/v1/endpoint", json=data) as response:
-            return await response.json()
-```
-```
+6. Changelog (Auto‑appended per PR)
 
-## Integration Documentation
-
-### External Service Integration
-```markdown
-### Service Name Integration
-
-#### Overview
-Brief description of the integration purpose and benefits.
-
-#### Prerequisites
-- Service account setup
-- API key configuration
-- Network access requirements
-
-#### Configuration
-```python
-# Environment variables
-SERVICE_API_KEY=your_api_key_here
-SERVICE_BASE_URL=https://api.service.com
-SERVICE_TIMEOUT=30
-```
-
-#### Setup Steps
-1. Create service account at [Service Portal](https://service.com)
-2. Generate API key
-3. Add configuration to `.env`
-4. Test connection: `python test_service_integration.py`
-
-#### Usage Examples
-```python
-from src.integrations.service_integration import ServiceClient
-
-client = ServiceClient()
-result = await client.perform_operation(data)
-```
-
-#### Troubleshooting
-- **Connection timeouts**: Check network and increase timeout
-- **Authentication errors**: Verify API key configuration
-- **Rate limiting**: Implement exponential backoff
-```
-
-## User Guide Standards
-
-### Step-by-Step Instructions
-```markdown
-### Getting Started Guide
-
-#### Prerequisites
-- Python 3.11 or higher
-- Git installed
-- 8GB RAM minimum
-
-#### Installation
-1. **Clone repository**
-   ```bash
-   git clone https://github.com/yaboyshades/super-alita.git
-   cd super-alita
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Run system**
-   ```bash
-   python -m src.main
-   ```
-
-#### Verification
-Test that everything works correctly:
-
-```bash
-# Test core functionality
-curl http://localhost:8080/health
-
-# Expected response
-{"status": "healthy", "timestamp": "2024-01-01T00:00:00Z"}
-```
-```
-
-## Documentation Maintenance
-
-### Review Process
-1. **Technical Accuracy** - Verify all code examples work
-2. **Completeness** - Ensure all features are documented
-3. **Clarity** - Check for clear, unambiguous language
-4. **Currency** - Update for recent changes
-
-### Documentation Testing
-```python
-# test_documentation.py
-import subprocess
-import pytest
-from pathlib import Path
-
-def test_code_examples_in_docs():
-    """Test that code examples in documentation actually work"""
-    
-    docs_dir = Path("docs")
-    
-    for doc_file in docs_dir.glob("**/*.md"):
-        # Extract code blocks and test them
-        content = doc_file.read_text()
-        code_blocks = extract_python_code_blocks(content)
-        
-        for code_block in code_blocks:
-            # Test if code is syntactically valid
-            try:
-                compile(code_block, f"{doc_file}:code_block", "exec")
-            except SyntaxError as e:
-                pytest.fail(f"Syntax error in {doc_file}: {e}")
-
-def test_links_are_valid():
-    """Test that all internal links in docs are valid"""
-    
-    docs_dir = Path("docs")
-    
-    for doc_file in docs_dir.glob("**/*.md"):
-        content = doc_file.read_text()
-        internal_links = extract_internal_links(content)
-        
-        for link in internal_links:
-            target_file = (doc_file.parent / link).resolve()
-            if not target_file.exists():
-                pytest.fail(f"Broken link in {doc_file}: {link}")
-```
-
-### Automated Documentation
-```python
-# scripts/generate_api_docs.py
-"""Generate API documentation from code"""
-
-import ast
-import inspect
-from pathlib import Path
-from typing import List, Dict
-
-def generate_api_docs():
-    """Generate API documentation from source code"""
-    
-    src_dir = Path("src")
-    api_modules = []
-    
-    # Find all API modules
-    for py_file in src_dir.glob("**/*api*.py"):
-        module_info = extract_api_info(py_file)
-        if module_info:
-            api_modules.append(module_info)
-    
-    # Generate markdown documentation
-    doc_content = generate_markdown_docs(api_modules)
-    
-    # Write to docs directory
-    output_file = Path("docs/api_reference.md")
-    output_file.write_text(doc_content)
-
-def extract_api_info(file_path: Path) -> Dict:
-    """Extract API information from Python file"""
-    
-    with open(file_path) as f:
-        tree = ast.parse(f.read())
-    
-    functions = []
-    classes = []
-    
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
-            if node.name.startswith("api_"):
-                functions.append(extract_function_info(node))
-        elif isinstance(node, ast.ClassDef):
-            if "API" in node.name:
-                classes.append(extract_class_info(node))
-    
-    return {
-        "file": file_path,
-        "functions": functions,
-        "classes": classes
-    }
-```
-
-## Documentation Templates
-
-### New Feature Documentation Template
-```markdown
-# Feature Name
-
-## Overview
-Brief description of the feature and its purpose.
-
-## Use Cases
-- Primary use case 1
-- Primary use case 2
-- Edge case or advanced usage
-
-## API Reference
-
-### Functions/Classes
-```python
-def feature_function(param1: str, param2: int = 10) -> FeatureResult:
-    """Function description"""
-    pass
-```
-
-### Configuration
-```python
-FEATURE_CONFIG = {
-    "enabled": True,
-    "setting1": "value1"
-}
-```
-
-## Examples
-
-### Basic Usage
-```python
-from src.features.feature_name import FeatureClass
-
-feature = FeatureClass()
-result = feature.perform_operation("input")
-```
-
-### Advanced Usage
-```python
-# Advanced configuration example
-feature = FeatureClass(config={
-    "advanced_setting": True,
-    "custom_value": 42
-})
-```
-
-## Integration
-How this feature integrates with other system components.
-
-## Testing
-How to test this feature.
-
-## Troubleshooting
-Common issues and solutions.
-```
-
-### Integration Guide Template
-```markdown
-# Service Integration Guide
-
-## Overview
-What the integration provides and why it's useful.
-
-## Prerequisites
-- Account requirements
-- Technical requirements
-- Dependencies
-
-## Setup
-Step-by-step setup instructions.
-
-## Configuration
-Configuration options and examples.
-
-## Usage
-How to use the integration in practice.
-
-## Examples
-Real-world usage examples.
-
-## Troubleshooting
-Common problems and solutions.
-
-## Reference
-Links to external documentation and resources.
-```
-
-## Quality Guidelines
-
-### Writing Best Practices
-- **Clarity**: Use simple, direct language
-- **Accuracy**: Test all code examples
-- **Completeness**: Cover all important aspects
-- **Consistency**: Follow established patterns
-- **Maintainability**: Keep docs up-to-date with code
-
-### Review Checklist
-- [ ] All code examples are tested and working
-- [ ] Links are valid and up-to-date
-- [ ] Screenshots are current and helpful
-- [ ] Grammar and spelling are correct
-- [ ] Technical accuracy is verified
-- [ ] Examples cover common use cases
-- [ ] Troubleshooting section is comprehensive
-
-### Documentation Metrics
-```python
-def calculate_documentation_metrics():
-    """Calculate documentation coverage and quality metrics"""
-    
-    metrics = {
-        "coverage": {
-            "functions_documented": 0,
-            "classes_documented": 0,
-            "modules_documented": 0
-        },
-        "quality": {
-            "broken_links": 0,
-            "outdated_examples": 0,
-            "missing_examples": 0
-        }
-    }
-    
-    # Implementation would analyze source code and docs
-    return metrics
-```
-
-## Documentation Tools
-
-### Recommended Tools
-- **Mermaid** - For diagrams and flowcharts
-- **PlantUML** - For UML diagrams
-- **Markdown linters** - For consistency checking
-- **Link checkers** - For validating links
-- **Code formatters** - For consistent code style
-
-### Automation Scripts
-```bash
-# scripts/check_docs.sh
-#!/bin/bash
-
-# Check for broken links
-markdown-link-check docs/**/*.md
-
-# Lint markdown files
-markdownlint docs/
-
-# Test code examples
-python tests/test_documentation.py
-
-# Generate API docs
-python scripts/generate_api_docs.py
-```
+<!-- CHANGELOG:START -->
+- 2025-08-26T04:06:01Z #146 Merge pull request #146 from yaboyshades/oak-core-integration (owner: @yaboyshades)
+<!-- CHANGELOG:START -->
+- 2025-08-26T03:44:18Z #144 Merge pull request #144 from yaboyshades/codex/create-alita-language-tools-extension (owner: @yaboyshades)
