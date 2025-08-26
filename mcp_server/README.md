@@ -21,6 +21,18 @@ async def your_tool(...):
     ...
 ```
 
+## Naming conventions
+
+Per the [MCP guide](../docs/mcp.md), tool modules and decorator names should use
+`snake_case`, while parameter names follow `camelCase`. Adhering to these
+conventions ensures MCP clients can discover and invoke tools reliably.
+
+To bootstrap a new tool from the provided template, run:
+```bash
+python src/mcp_server/server.py --add-tool my_tool
+```
+This copies `tools/_template.py` into the tools package.
+
 ## Configuration
 Example MCP server configuration:
 ```json
