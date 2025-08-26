@@ -30,4 +30,3 @@ def test_todo_manager_and_sync(tmp_path: Path) -> None:
     ])
     data = json.loads(todo_file.read_text())
     assert data["todoList"][0]["id"] == 99
-
