@@ -51,3 +51,18 @@ Example MCP server configuration:
     }
 }
 ```
+
+### modelPreferences
+Specify preferred models and OAuth scopes the server is allowed to use. The
+`allowedScopes` list restricts model access to tokens containing at least one of
+the listed scopes.
+
+```json
+{
+    "modelPreferences": {
+        "gpt-4": {
+            "allowedScopes": ["model.read"]
+        }
+    }
+}
+```
