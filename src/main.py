@@ -98,6 +98,7 @@ except Exception as e:  # pragma: no cover
 
 # --- Event bus (JSONL fallback + optional Redis) ---
 from reug_runtime.event_bus import (
+    BaseEventBus,
     FileEventBus,
     RedisEventBus,
     make_event_bus,
@@ -188,7 +189,7 @@ class SimpleKG:
 
 
 # --- FastAPI factory ---
-def create_app() -> FastAPI:
+def create_app(*, event_bus: BaseEventBus | None = None) -> FastAPI:
     _configure_logging()
     logger = logging.getLogger()
     app = FastAPI(title="REUG Runtime", version="0.2.0")
@@ -237,7 +238,7 @@ def create_app() -> FastAPI:
         return JSONResponse(status_code=code, content=status)
 
     # Inject dependencies for the REUG router
-    app.state.event_bus = make_event_bus()
+    app.state.event_bus = event_bus if event_bus is not None else make_event_bus()
     app.state.ability_registry = SimpleAbilityRegistry()
     app.state.kg = SimpleKG()
     app.state.llm_model = get_llm_client(os.getenv("LLM_MODEL"))
