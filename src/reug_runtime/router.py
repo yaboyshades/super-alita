@@ -42,7 +42,7 @@ class Orchestrator:
 
     async def _reasoning_step(
         self, messages: list[dict[str, Any]], tool_schemas: list[dict[str, Any]]
-    ) -> AsyncGenerator[dict[str, Any], tuple[str, list[dict[str, Any]]]]:
+    ) -> AsyncGenerator[dict[str, Any], None]:
         llm_response_content = ""
         tool_calls = []
         async for chunk in self.model.stream_chat(messages, tools=tool_schemas):
@@ -52,11 +52,12 @@ class Orchestrator:
                 yield {"type": "LLMChunk", "data": {"text": text}}
             elif chunk.get("type") == "tool_calls":
                 tool_calls.extend(chunk.get("tool_calls", []))
-        return llm_response_content, tool_calls
+        # Store the return values for later retrieval
+        self._last_reasoning_result = (llm_response_content, tool_calls)
 
     async def _acting_step(
         self, tool_calls: list[dict[str, Any]]
-    ) -> AsyncGenerator[dict[str, Any], list[dict[str, Any]]]:
+    ) -> AsyncGenerator[dict[str, Any], None]:
         tool_messages = []
         for tool_call in tool_calls:
             tool_name = tool_call.function.name
@@ -97,7 +98,8 @@ class Orchestrator:
                     "role": "tool", "tool_call_id": tool_call_id, "name": tool_name,
                     "content": f'{{"error": "Tool execution failed: {e}"}}'
                 })
-        return tool_messages
+        # Store the return values for later retrieval
+        self._last_acting_result = tool_messages
 
 
 async def execute_turn(
@@ -144,13 +146,10 @@ async def execute_turn(
     for _ in range(SETTINGS.max_tool_calls):
         tool_schemas = registry.get_available_tools_schema()
 
-        reasoning_gen = orchestrator._reasoning_step(messages, tool_schemas)
-        try:
-            # Yield all LLM chunks from the generator
-            async for event in reasoning_gen:
-                yield event
-        except StopAsyncIteration as e:
-            llm_response_content, tool_calls = e.value
+        # Run reasoning step and get results
+        async for event in orchestrator._reasoning_step(messages, tool_schemas):
+            yield event
+        llm_response_content, tool_calls = orchestrator._last_reasoning_result
 
         assistant_message = {"role": "assistant", "content": llm_response_content}
         if tool_calls:
@@ -160,12 +159,10 @@ async def execute_turn(
         if not tool_calls:
             break
 
-        acting_gen = orchestrator._acting_step(tool_calls)
-        try:
-            async for event in acting_gen:
-                yield event
-        except StopAsyncIteration as e:
-            tool_messages = e.value
+        # Run acting step and get results
+        async for event in orchestrator._acting_step(tool_calls):
+            yield event
+        tool_messages = orchestrator._last_acting_result
         messages.extend(tool_messages)
 
     final_answer = {"content": llm_response_content or "Task complete.", "citations": []}
