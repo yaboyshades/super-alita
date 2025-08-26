@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
+import functools
+import hashlib
+import inspect
+import json
 import logging
 import os
 import sys
-from typing import Any
+import time
+import uuid
+from pathlib import Path
+from typing import Any, Awaitable, Callable
 
 # Remove the workspace from the Python path to avoid conflicts
 sys.path = [p for p in sys.path if "super-alita-clean" not in p and "ATLAI" not in p]
@@ -55,6 +62,89 @@ except ImportError as e:
 
 
 app = FastMCP("myCustomPythonAgent")
+
+
+TELEMETRY_FILE = Path(os.environ.get("SUPER_ALITA_TELEMETRY_FILE", "telemetry.jsonl"))
+
+
+def _emit_event(event_type: str, **data: Any) -> None:
+    TELEMETRY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with TELEMETRY_FILE.open("a", encoding="utf-8") as fp:
+        json.dump({"type": event_type, **data}, fp)
+        fp.write("\n")
+
+
+def _telemetry_wrapper(name: str) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
+    def decorator(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
+        @functools.wraps(func)
+        async def wrapped(*args: Any, **kwargs: Any) -> Any:
+            span_id = uuid.uuid4().hex
+            args_hash = hashlib.sha256(
+                json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True).encode()
+            ).hexdigest()
+            _emit_event("AbilityCalled", tool=name, span_id=span_id, args_hash=args_hash)
+            start = time.perf_counter()
+            try:
+                result = await func(*args, **kwargs)
+                duration_ms = int((time.perf_counter() - start) * 1000)
+                output_json = json.dumps(result, sort_keys=True)
+                output_bytes = output_json.encode()
+                output_hash = hashlib.sha256(output_bytes).hexdigest()
+                if len(output_bytes) > 200_000:
+                    sha = hashlib.sha256(output_bytes).hexdigest()
+                    artifact_id = sha[:8]
+                    artifact_path = TELEMETRY_FILE.with_name(f"artifact_{artifact_id}.json")
+                    artifact_path.write_bytes(output_bytes)
+                    _emit_event(
+                        "ArtifactCreated",
+                        tool=name,
+                        artifact_bytes=len(output_bytes),
+                        sha256=sha,
+                    )
+                    result = {
+                        "_artifact": {
+                            "artifact_id": artifact_id,
+                            "sha256": sha,
+                            "bytes": len(output_bytes),
+                        }
+                    }
+                _emit_event(
+                    "AbilitySucceeded",
+                    tool=name,
+                    span_id=span_id,
+                    duration_ms=duration_ms,
+                    output_hash=output_hash,
+                )
+                return result
+            except Exception as e:  # pragma: no cover - error path
+                duration_ms = int((time.perf_counter() - start) * 1000)
+                _emit_event(
+                    "AbilityFailed",
+                    tool=name,
+                    span_id=span_id,
+                    duration_ms=duration_ms,
+                    error=str(e),
+                )
+                raise
+
+        wrapped.__signature__ = inspect.signature(func, eval_str=False)
+        return wrapped
+
+    return decorator
+
+
+_original_tool = FastMCP.tool
+
+
+def _instrumented_tool(self: FastMCP, *t_args: Any, **t_kwargs: Any):
+    def decorator(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
+        name = t_kwargs.get("name", func.__name__)
+        return _original_tool(self, *t_args, **t_kwargs)(_telemetry_wrapper(name)(func))
+
+    return decorator
+
+
+FastMCP.tool = _instrumented_tool  # type: ignore[assignment]
 
 
 @app.tool(
