@@ -21,20 +21,23 @@ class PlanningEngine(PluginInterface):
 
     async def start(self) -> None:
         await super().start()
-        await self.subscribe("goal_received", self.handle_goal)
 
-    async def start(self) -> None:  # type: ignore[override]
-        await super().start()
-
-    async def shutdown(self) -> None:  # type: ignore[override]
+    async def shutdown(self) -> None:
         await super().shutdown()
 
     async def handle_goal(self, event: Any) -> None:
         goal = event.get("goal", "")
+        session_id = event.get("session_id")
         candidates: List[str] = []
         if self.option_source and hasattr(self.option_source, "options"):
             candidates = list(getattr(self.option_source, "options").keys())
 
         beam_width = self.get_config("beam_width", 3)
         plan = [{"option_id": oid, "step": 0} for oid in candidates[:beam_width]]
-        await self.emit_event("oak.plan_proposed", goal=goal, plan=plan, options_considered=len(candidates))
+        await self.emit_event(
+            "oak.plan_proposed",
+            goal=goal,
+            plan=plan,
+            options_considered=len(candidates),
+            session_id=session_id,
+        )
