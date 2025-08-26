@@ -76,6 +76,7 @@ if str(SRC) not in sys.path:
 try:
     from reug_runtime.router import router as agent_router
     from reug_runtime.router_tools import tools as tools_router
+    from reug_runtime.config import SETTINGS
 except Exception as e:  # pragma: no cover
     # Fallback: minimal routers to allow boot/health during development
     print("[WARN] reug_runtime import failed; falling back to minimal routers:", e)
@@ -244,10 +245,20 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> FastAPI:
     app.state.llm_model = get_llm_client(os.getenv("LLM_MODEL"))
 
     # Mount routers
-    app.include_router(agent_router)  # /v1/chat/stream
-    app.include_router(
-        tools_router
-    )  # /tools/* (toolbox – run tests, apply patches, etc.)
+    prefix = SETTINGS.api_prefix
+    if prefix and prefix != "/":
+        if not prefix.startswith("/"):
+            prefix = f"/{prefix}"
+        prefix = prefix.rstrip("/")
+        app.include_router(agent_router, prefix=prefix)  # {prefix}/v1/chat/stream
+        app.include_router(
+            tools_router, prefix=prefix
+        )  # {prefix}/tools/* (toolbox – run tests, apply patches, etc.)
+    else:
+        app.include_router(agent_router)  # /v1/chat/stream
+        app.include_router(
+            tools_router
+        )  # /tools/* (toolbox – run tests, apply patches, etc.)
 
     @app.on_event("startup")
     async def _startup() -> None:
