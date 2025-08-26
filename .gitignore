@@ -120,7 +120,7 @@ metrics_*.json
 
 # VS Code extension development
 *.vsix
-out/
+**/out/
 node_modules/
 .vscode-test/
 
