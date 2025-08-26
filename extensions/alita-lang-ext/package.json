@@ -1,23 +1,49 @@
 {
   "name": "alita-lang-ext",
-  "displayName": "Alita Language Support",
-  "description": "Syntax highlighting, snippets, tasks, and debugging for the Alita language.",
-  "version": "0.0.1",
+  "displayName": "Alita Language Tools",
+  "version": "0.1.0",
   "publisher": "super-alita",
-  "engines": { "vscode": "^1.88.0" },
-  "categories": ["Programming Languages"],
+  "description": "Unified language support for Alita: syntax, snippets, semantic tokens, diagnostics, tasks, debug, telemetry, and LSP server.",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#0A192F",
+    "theme": "dark"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters",
+    "Testing"
+  ],
+  "keywords": [
+    "alita",
+    "reug",
+    "agents",
+    "language-server",
+    "telemetry"
+  ],
+  "engines": {
+    "vscode": "^1.84.0"
+  },
   "main": "./out/extension.js",
+  "browser": "./dist/webExtension.js",
   "activationEvents": [
     "onLanguage:alita",
-    "onCommand:alita.runTask",
-    "onDebug:alita"
+    "onCommand:alita.restart",
+    "workspaceContains:*.alita"
   ],
   "contributes": {
     "languages": [
       {
         "id": "alita",
-        "aliases": ["Alita", "alita"],
-        "extensions": [".alita"],
+        "aliases": [
+          "AlitaLang",
+          "alita"
+        ],
+        "extensions": [
+          ".alita"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -34,40 +60,96 @@
         "path": "./snippets/alita.json"
       }
     ],
-    "debuggers": [
+    "semanticTokenTypes": [
       {
-        "type": "alita",
-        "label": "Alita Debug",
-        "program": "./out/extension.js"
+        "id": "ability",
+        "superType": "function",
+        "description": "REUG ability declaration"
+      },
+      {
+        "id": "atom",
+        "superType": "class",
+        "description": "Neural Atom types"
       }
     ],
-    "taskDefinitions": [
+    "semanticTokenModifiers": [
       {
-        "type": "alita",
-        "required": ["task"],
-        "properties": {
-          "task": {
-            "type": "string",
-            "description": "Alita task name"
-          }
+        "id": "telemetry",
+        "description": "Token linked to REUG telemetry event"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "alita.restart",
+          "when": "!virtualWorkspace && editorLangId == alita"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Alita Extension",
+      "properties": {
+        "alita.telemetry.enable": {
+          "type": "boolean",
+          "default": true,
+          "tags": [
+            "telemetry",
+            "usesOnlineServices"
+          ],
+          "description": "Enable safe, opt-in telemetry for REUG runtime events."
+        },
+        "alita.lsp.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace LSP server communication."
         }
       }
-    ]
+    }
+  },
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": "limited",
+      "description": "Single-file features in virtual workspaces: grammar, snippets, semantic tokens; cross-file analysis is disabled."
+    },
+    "untrustedWorkspaces": {
+      "supported": true
+    }
   },
   "scripts": {
     "compile": "tsc -p . && tsc -p server",
-    "test": "mocha -r ts-node/register test/**/*.test.ts"
-  },
-  "devDependencies": {
-    "@types/mocha": "^10.0.0",
-    "@types/node": "^20.0.0",
-    "@types/vscode": "^1.88.0",
-    "mocha": "^10.2.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "watch": "concurrently \"tsc -w -p .\" \"tsc -w -p server\"",
+    "lint": "eslint . --ext .ts,.js",
+    "test": "npm run compile && node ./out/test/runTest.js",
+    "vscode:prepublish": "npm run compile",
+    "vscode:uninstall": "node ./out/src/cleanup"
   },
   "dependencies": {
-    "vscode-languageclient": "^9.0.1",
-    "vscode-languageserver": "^9.0.1"
+    "vscode-extension-telemetry": "^0.4.5",
+    "vscode-languageclient": "^9.0.0",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.3.0",
+    "@types/vscode": "^1.84.0",
+    "@vscode/test-electron": "^2.4.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "typescript": "^5.4.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yaboyshades/super-alita"
+  },
+  "homepage": "https://github.com/yaboyshades/super-alita/blob/main/docs/alita-extension.md",
+  "bugs": {
+    "url": "https://github.com/yaboyshades/super-alita/issues"
   }
 }

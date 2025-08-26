@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
-    "module": "commonjs",
-    "lib": ["es2019"],
-    "outDir": "out",
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "module": "CommonJS",
     "rootDir": "src",
+    "outDir": "out",
+    "sourceMap": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true

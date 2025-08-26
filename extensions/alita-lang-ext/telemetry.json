@@ -1,9 +1,8 @@
 {
   "events": [
-    {
-      "name": "extensionActivated",
-      "description": "Fired when the Alita extension activates"
-    }
-  ],
-  "dataCollection": "Only anonymous activation events are collected."
+    { "eventName": "alita/activated", "description": "Extension activated", "properties": [] },
+    { "eventName": "alita/lsp/start", "description": "LSP client started", "properties": ["mode"] },
+    { "eventName": "alita/task/run", "description": "Custom task executed", "properties": ["label"] },
+    { "eventName": "alita/ability/used", "description": "Ability token encountered", "properties": ["name"] }
+  ]
 }
