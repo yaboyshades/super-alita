@@ -1,0 +1,7 @@
+{
+  "scopeName": "source.alita",
+  "patterns": [
+    { "name": "comment.line.number-sign.alita", "match": "#.*$" },
+    { "name": "keyword.control.alita", "match": "\\b(if|else|for|while)\\b" }
+  ]
+}

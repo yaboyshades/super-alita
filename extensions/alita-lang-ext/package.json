@@ -1,0 +1,73 @@
+{
+  "name": "alita-lang-ext",
+  "displayName": "Alita Language Support",
+  "description": "Syntax highlighting, snippets, tasks, and debugging for the Alita language.",
+  "version": "0.0.1",
+  "publisher": "super-alita",
+  "engines": { "vscode": "^1.88.0" },
+  "categories": ["Programming Languages"],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:alita",
+    "onCommand:alita.runTask",
+    "onDebug:alita"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "alita",
+        "aliases": ["Alita", "alita"],
+        "extensions": [".alita"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "alita",
+        "scopeName": "source.alita",
+        "path": "./syntaxes/alita.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "alita",
+        "path": "./snippets/alita.json"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "alita",
+        "label": "Alita Debug",
+        "program": "./out/extension.js"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "alita",
+        "required": ["task"],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Alita task name"
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p . && tsc -p server",
+    "test": "mocha -r ts-node/register test/**/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.88.0",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1"
+  }
+}

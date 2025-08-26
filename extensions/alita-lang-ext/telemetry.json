@@ -1,0 +1,9 @@
+{
+  "events": [
+    {
+      "name": "extensionActivated",
+      "description": "Fired when the Alita extension activates"
+    }
+  ],
+  "dataCollection": "Only anonymous activation events are collected."
+}
