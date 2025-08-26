@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from reug_runtime.router import router
 
+from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeEventBus, FakeKG, FakeLLM
 
 
@@ -76,7 +77,9 @@ def _mk_app():
 def test_contract_cached_and_reused():
     app = _mk_app()
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "hi", "session_id": "cache"})
+    resp = client.post(
+        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "cache"}
+    )
     text = resp.text
     assert "done" in text
 

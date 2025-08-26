@@ -75,6 +75,25 @@ class SubproblemManager(PluginInterface):
     async def handle_feature_created(self, event: Dict[str, Any]):
         fid = event.get("feature_id")
         if not fid:
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # type: ignore[override]
+        await super().setup(event_bus, store, config)
+        self.cfg.update(config or {})
+        await self.subscribe("oak.feature_utility_updated", self.handle_feature_utility)
+        await self.subscribe("oak.option_completed", self.handle_option_completed)
+
+    async def start(self) -> None:  # type: ignore[override]
+        await super().start()
+
+    async def shutdown(self) -> None:  # type: ignore[override]
+        await super().shutdown()
+
+    async def handle_feature_utility(self, event: Any) -> None:
+        feature_id = getattr(event, "feature_id", None)
+        utility = float(getattr(event, "utility", 0.0))
+        if not feature_id:
+            return
+        existing = self.feature_to_sub.get(feature_id, [])
+        if utility < float(self.cfg["min_utility_threshold"]) or len(existing) >= int(self.cfg["max_per_feature"]):
             return
         for k in self.kappa_values:
             sp = await self._create_subproblem(fid, k)

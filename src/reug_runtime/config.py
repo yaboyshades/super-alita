@@ -91,6 +91,7 @@ class Settings:
         schema_enforce: Whether to enforce tool input schemas.
         event_log_dir: Optional directory for event log storage.
         tool_registry_dir: Optional directory for tool registration artifacts.
+        api_prefix: Optional path prefix for all API routes.
     """
 
     # Execution limits / guardrails
@@ -100,10 +101,14 @@ class Settings:
     max_retries: int = _getenv_int("REUG_EXEC_MAX_RETRIES", 1)
     retry_base_ms: int = _getenv_int("REUG_RETRY_BASE_MS", 250)
     schema_enforce: bool = _getenv_bool("REUG_SCHEMA_ENFORCE", True)
+    copilot_context: bool = _getenv_bool("REUG_COPILOT_CONTEXT", True)
 
     # Observability / storage (used indirectly by your EventBus/KG)
     event_log_dir: str | None = _getenv("REUG_EVENT_LOG_DIR")
     tool_registry_dir: str | None = _getenv("REUG_TOOL_REGISTRY_DIR")
+
+    # HTTP server
+    api_prefix: str = _getenv("API_PREFIX", "/")
 
 
 SETTINGS = Settings()

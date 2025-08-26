@@ -17,11 +17,15 @@ conflicts are resolved or provider-specific logic evolves.
 import asyncio
 import json
 import re
+import time
+import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
+
+from src.telemetry import build_copilot_context
 
 from .config import SETTINGS
 
@@ -78,12 +82,53 @@ async def execute_turn(
     kg: Any,
     model: Any,
 ) -> AsyncGenerator[str, None]:
+    """Run a single streaming turn and yield chunks to the client.
+
+    The function keeps a minimal contract compatible with the tests in
+    ``tests/runtime``.  It emits telemetry events around tool execution and
+    preserves the `<tool_call>`/`<tool_result>`/`<final_answer>` streaming
+    protocol.
+
+    Args:
+        user_msg: The raw user message for this turn.
+        session_id: Session identifier.
+        event_bus: Event bus used for telemetry emission.
+        registry: Ability registry capable of executing tools.
+        kg: Knowledge graph handle (unused, kept for future expansion).
+        model: LLM-like client implementing ``stream_chat``.
+
+    Yields:
+        Text chunks to be streamed to the client.
+    """
+
+    correlation_id = f"{session_id}-{int(time.time()*1000)}"
+    await event_bus.emit({"type": "TaskStarted", "correlation_id": correlation_id, "goal": user_msg})
+
+    system_prompt = "Use tools when helpful. End with <final_answer>{...}</final_answer>."
+    if SETTINGS.copilot_context:
+        span_id = str(uuid.uuid4())
+        await event_bus.emit(
+            {
+                "type": "AbilityCalled",
+                "tool": "build_copilot_context",
+                "correlation_id": correlation_id,
+                "span_id": span_id,
+            }
+        )
+        ctx = build_copilot_context(user_message=user_msg, session_id=session_id)
+        await event_bus.emit(
+            {
+                "type": "AbilitySucceeded",
+                "tool": "build_copilot_context",
+                "correlation_id": correlation_id,
+                "span_id": span_id,
+            }
+        )
+        system_prompt = f"{ctx}\n{system_prompt}"
+
     parser = _Parser()
     messages: list[dict[str, str]] = [
-        {
-            "role": "system",
-            "content": "Use tools when helpful. End with <final_answer>{...}</final_answer>.",
-        },
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_msg},
     ]
     cycles = 0
@@ -97,23 +142,55 @@ async def execute_turn(
             if call:
                 tool = call.get("tool", "")
                 args = call.get("args", {})
+                span_id = str(uuid.uuid4())
+                await event_bus.emit(
+                    {
+                        "type": "AbilityCalled",
+                        "tool": tool,
+                        "correlation_id": correlation_id,
+                        "span_id": span_id,
+                    }
+                )
                 try:
                     result = await asyncio.wait_for(
                         registry.execute(tool, args), timeout=SETTINGS.tool_timeout_s
                     )
                 except Exception as e:
+                    await event_bus.emit(
+                        {
+                            "type": "AbilityFailed",
+                            "tool": tool,
+                            "correlation_id": correlation_id,
+                            "span_id": span_id,
+                            "error": str(e),
+                        }
+                    )
                     yield f'<tool_error tool="{tool}">{{"error":{json.dumps(str(e))}}}</tool_error>'
                     break
+                await event_bus.emit(
+                    {
+                        "type": "AbilitySucceeded",
+                        "tool": tool,
+                        "correlation_id": correlation_id,
+                        "span_id": span_id,
+                    }
+                )
                 block = f'<tool_result tool="{tool}">{json.dumps(result)}</tool_result>'
                 messages.append({"role": "assistant", "content": block})
                 yield block
                 tool_called = True
-        if parser.take_final():
+        final = parser.take_final()
+        if final:
+            await event_bus.emit({"type": "TaskSucceeded", "correlation_id": correlation_id})
+            yield f"<final_answer>{json.dumps(final)}</final_answer>"
             return
         if not tool_called:
             break
     if not parser.take_final():
         payload = {"content": "done", "citations": []}
+        await event_bus.emit(
+            {"type": "TaskFailed", "correlation_id": correlation_id, "reason": "no_final_answer"}
+        )
         yield f"<final_answer>{json.dumps(payload)}</final_answer>"
 
 

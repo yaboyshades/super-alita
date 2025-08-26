@@ -75,12 +75,26 @@ class Option(BaseModel):
 class OptionTrainer(PluginInterface):
     """Trains options using PPO and emits training telemetry."""
 
+ 
     def __init__(self):
         super().__init__()
+   
+    Emits:
+      - oak.option_created
+      - oak.option_training_update
+    Subscribes:
+      - oak.subproblem_defined
+      - oak.state_transition
+      - deliberation_tick
+    Attributes:
+      ppo_epochs: Number of PPO optimization epochs per rollout (default 4).
+    """
+    
 
     @property
     def name(self) -> str:
         return "oak_option_trainer"
+
 
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
@@ -114,6 +128,46 @@ class OptionTrainer(PluginInterface):
         feature_id = event.get("feature_id")
         kappa = event.get("kappa", 1.0)
         if not sp_id:
+        
+    def __init__(self) -> None:
+        super().__init__()
+        self.cfg: dict[str, Any] = {
+            "state_dim": 8,
+            "action_dim": 4,
+            "learning_rate": 3e-4,
+            "batch_size": 32,
+            "gamma": 0.99,
+            "gae_lambda": 0.95,
+            "ppo_epsilon": 0.2,
+            "value_coef": 0.5,
+            "entropy_coef": 0.01,
+            "max_replay_size": 2000,
+            "ppo_epochs": 4,
+        }
+        self.options: Dict[str, OptionNetwork] = {}
+        self.optim: Dict[str, optim.Optimizer] = {}
+        self.rollouts: Dict[str, List[List[Transition]]] = {}
+        self.current: Dict[str, List[Transition]] = {}
+        self.ppo_epochs = int(self.cfg["ppo_epochs"])
+
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # type: ignore[override]
+        await super().setup(event_bus, store, config)
+        self.cfg.update(config or {})
+        self.ppo_epochs = int(self.cfg.get("ppo_epochs", 4))
+        await self.subscribe("oak.subproblem_defined", self.handle_subproblem_defined)
+        await self.subscribe("oak.state_transition", self.handle_state_transition)
+        await self.subscribe("deliberation_tick", self.handle_training_tick)
+
+    async def start(self) -> None:  # type: ignore[override]
+        await super().start()
+
+    async def shutdown(self) -> None:  # type: ignore[override]
+        await super().shutdown()
+
+    async def handle_subproblem_defined(self, event: Any) -> None:
+        sub_id = getattr(event, "subproblem_id", None)
+        if not sub_id:
+        
             return
         opt_id = self.generate_option_id(sp_id)
         if opt_id in self.options:
@@ -243,6 +297,7 @@ class OptionTrainer(PluginInterface):
                 gae = delta + opt.gamma * opt.gae_lambda * gae
                 adv[t] = gae
             adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+            
             ret = adv + old_vals
 
         for _ in range(self.ppo_epochs):
@@ -270,6 +325,41 @@ class OptionTrainer(PluginInterface):
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), opt.max_grad_norm)
             optimizer.step()
+            
+            for i, t in enumerate(traj):
+                t.advantage = float(adv[i])
+
+        mb = int(self.cfg["batch_size"])
+        policy_losses: List[float] = []
+        value_losses: List[float] = []
+        entropies: List[float] = []
+        for _ in range(self.ppo_epochs):
+            for start in range(0, len(traj), mb):
+                mb_slice = traj[start : start + mb]
+                states = torch.tensor([t.state for t in mb_slice], dtype=torch.float32)
+                actions = torch.tensor([t.action for t in mb_slice], dtype=torch.long)
+                old_log_probs = torch.tensor([t.log_prob for t in mb_slice], dtype=torch.float32)
+                returns = torch.tensor([t.ret for t in mb_slice], dtype=torch.float32)
+                adv = torch.tensor([t.advantage for t in mb_slice], dtype=torch.float32)
+
+                logits, values, _ = net(states)
+                dist = torch.distributions.Categorical(logits=logits)
+                new_log_probs = dist.log_prob(actions)
+                ratio = (new_log_probs - old_log_probs).exp()
+                eps = float(self.cfg["ppo_epsilon"])
+                clipped = torch.clamp(ratio, 1.0 - eps, 1.0 + eps)
+                policy_loss = -torch.min(ratio * adv, clipped * adv).mean()
+                value_loss = 0.5 * (values.squeeze() - returns).pow(2).mean()
+                entropy = dist.entropy().mean()
+                loss = policy_loss + float(self.cfg["value_coef"]) * value_loss - float(self.cfg["entropy_coef"]) * entropy
+                optim_.zero_grad()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
+                optim_.step()
+                policy_losses.append(float(policy_loss.item()))
+                value_losses.append(float(value_loss.item()))
+                entropies.append(float(entropy.item()))
+                
 
         opt.episodes_trained += 1
         opt.last_updated = datetime.now(timezone.utc)

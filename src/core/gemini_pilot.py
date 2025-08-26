@@ -16,6 +16,8 @@ from typing import Any
 import httpx
 import yaml
 
+from src.copilot.scrub import scrub_prompt, clamp_tokens
+
 logger = logging.getLogger(__name__)
 
 # JSON Schema for Gemini responses
@@ -219,6 +221,10 @@ compression: gzip
 
         # Load and process contract
         contract = await self.load_contract("pilot_decision", variables)
+
+        # Scrub potential secrets before any token budgeting or compression
+        contract = scrub_prompt(contract)
+        contract = clamp_tokens(contract, 20_000)
 
         # Parse contract to get meta information
         contract_data = yaml.safe_load(contract)

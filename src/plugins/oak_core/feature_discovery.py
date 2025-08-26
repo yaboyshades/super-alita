@@ -69,6 +69,15 @@ class FeatureExtractor(nn.Module):
 
 
 class FeatureDiscoveryEngine(PluginInterface):
+    """Online discovery and utility-tracking of features/abstractions.
+
+    Emits:
+      - oak.feature_created
+      - oak.features_discovered
+      - oak.feature_utility_updated
+    Subscribes:
+      - deliberation_tick
+      - oak.feature_utility_updated
     """
     Continual feature discovery with IDBD adaptive meta-learning.
     Generates features via primitives, conjunctions, sequences, contrasts, and NN functions.
@@ -93,6 +102,9 @@ class FeatureDiscoveryEngine(PluginInterface):
 
         self.feature_extractor = FeatureExtractor(self.state_dim, 64, 32)
         self.extractor_optimizer = torch.optim.Adam(self.feature_extractor.parameters(), lr=1e-3)
+        self.cfg.update(config or {})
+        await self.subscribe("deliberation_tick", self.handle_tick)
+        await self.subscribe("oak.feature_utility_updated", self.handle_utility_update)
 
         self.temporal_patterns = deque(maxlen=100)
 

@@ -1,0 +1,12 @@
+{
+  "Ability": {
+    "prefix": "ability",
+    "body": ["ability ${1:Name}(${2:args}) {", "  ${0:// ...}", "}"],
+    "description": "Declare an Alita ability"
+  },
+  "Region": {
+    "prefix": "region",
+    "body": ["// #region ${1:name}", "$0", "// #endregion"],
+    "description": "Foldable region markers"
+  }
+}

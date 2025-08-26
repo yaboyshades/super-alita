@@ -38,7 +38,10 @@ cp .env.example .env  # then set at least one provider key or local model config
 Using Make (includes lint targets):
 
 ```bash
-make deps
+make deps               # CPU defaults, includes torch CPU build
+# For GPU acceleration:
+# pip install --index-url https://download.pytorch.org/whl/cu121 torch
+# pip install -r requirements-gpu.txt
 make lint  # optional
 ```
 
@@ -48,6 +51,10 @@ Or manually:
 python -m venv .venv
 ./.venv/Scripts/Activate.ps1  # Windows PowerShell
 pip install -e .
+# GPU extras (optional):
+# pip install --index-url https://download.pytorch.org/whl/cu121 torch
+# pip install -r requirements-gpu.txt
+# The above replaces the CPU build installed by default
 ```
 
 ### 3. Run the development server
@@ -73,6 +80,26 @@ curl http://127.0.0.1:8080/healthz
 ```
 
 Debug utilities (`debug_fixed.py`, `debug_matching.py`, `utility_debug.py`) are under `scripts/`.
+
+### VS Code Extensions
+
+This repository bundles several VS Code extensions under `extensions/`.
+To build and test the new **Alita Language Tools** extension:
+
+```bash
+cd extensions/alita-language-tools
+npm install
+npm run compile
+npm test
+```
+
+The extension exposes `alita.search` and `alita.skillset` commands. The existing extensions can be built and tested in a similar manner.
+
+## MCP Server Installation Links
+
+VS Code can install MCP server definitions directly via special links:
+
+- [Sample install](vscode:mcp/install?url=https://example.com/mcp.json)
 
 ## LLM Fallback Configuration
 

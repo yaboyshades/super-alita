@@ -38,7 +38,7 @@ All components operate via the event bus. New OaK events use simple string `even
   - `deliberation_tick` (periodic drive for OaK updates)
   - `tool_result`, `agent_response` (for external feedback)
 - Emit (OaK-specific):
-  - `oak.feature_created`, `oak.features_discovered`, `oak.feature_utility_update`
+  - `oak.feature_created`, `oak.features_discovered`, `oak.feature_utility_updated`
   - `oak.subproblem_defined`, `oak.subproblem_updated`
   - `oak.option_created`, `oak.option_initiated`, `oak.option_completed`, `oak.option_training_update`
   - `oak.prediction_update`, `oak.plan_proposed`, `oak.plan_selected`
@@ -169,7 +169,7 @@ class FeatureDiscoveryEngine(PluginInterface):
         # Register event handlers
         self.register_handler('observation', self.handle_observation)
         self.register_handler('deliberation_tick', self.handle_tick)
-        self.register_handler('feature_utility_update', self.handle_utility_update)
+        self.register_handler('oak.feature_utility_updated', self.handle_utility_update)
 
     def generate_feature_id(self, feature_type: str, base_ids: List[str]) -> str:
         """Deterministic UUIDv5 for features."""
@@ -354,7 +354,7 @@ class SubproblemManager(PluginInterface):
         self.subproblems: Dict[str, Subproblem] = {}
         self.feature_subproblems: Dict[str, List[str]] = {}
         
-        self.register_handler('feature_utility_update', self.handle_feature_utility_update)
+        self.register_handler('oak.feature_utility_updated', self.handle_feature_utility_updated)
         self.register_handler('option_completed', self.handle_option_completion)
 
     def generate_subproblem_id(self, feature_id: str, kappa: float) -> str:
@@ -363,7 +363,7 @@ class SubproblemManager(PluginInterface):
         name = f"subproblem:{feature_id}:{kappa:.3f}"
         return str(uuid.uuid5(namespace, name))
 
-    async def handle_feature_utility_update(self, event):
+    async def handle_feature_utility_updated(self, event):
         """Create subproblems for high-utility features."""
         feature_id = event.data['feature_id']
         utility = event.data.get('utility', 0.0)
@@ -869,7 +869,7 @@ class PredictionEngine(PluginInterface):
             
             # Feed back to feature utility
             if gvf.prediction_type == 'feature_attainment':
-                await self.emit_event('feature_utility_update', {
+                await self.emit_event('oak.feature_utility_updated', {
                     'feature_id': 'some_feature_id',  # Should be actual feature ID
                     'signal_type': 'prediction',
                     'value': 1.0 / (1.0 + abs(delta))  # Inverse of error
@@ -1024,7 +1024,7 @@ class PlanningEngine(PluginInterface):
             
             # Update feature utility based on value improvement
             improvement = best_new_value - current_value
-            await self.emit_event('feature_utility_update', {
+            await self.emit_event('oak.feature_utility_updated', {
                 'feature_id': 'value_improvement',  # Should map to actual features
                 'signal_type': 'planning',
                 'value': improvement
@@ -1100,7 +1100,7 @@ class CurationManager(PluginInterface):
         self.register_handler('subproblem_defined', self.handle_item_creation)
         self.register_handler('option_created', self.handle_item_creation)
         self.register_handler('gvf_created', self.handle_item_creation)
-        self.register_handler('feature_utility_update', self.handle_utility_update)
+        self.register_handler('oak.feature_utility_updated', self.handle_utility_update)
         self.register_handler('deliberation_tick', self.handle_curation_tick)
 
     async def handle_item_creation(self, event):
@@ -1574,7 +1574,7 @@ if __name__ == '__main__':
 
 1. **Event Bus Integration**: All components use the shared EventBus for communication. Ensure the following events are properly registered:
    - `observation`, `state_transition`, `reward_signal`, `deliberation_tick`, `cognitive_turn`
-   - OaK-specific events: `feature_created`, `features_discovered`, `feature_utility_update`, etc.
+   - OaK-specific events: `feature_created`, `features_discovered`, `oak.feature_utility_updated`, etc.
 
 2. **CortexRuntime Hook**: The `OakCoordinator.on_cycle()` method should be registered with the CortexRuntime to receive regular cognitive turns.
 
@@ -1674,7 +1674,7 @@ class FeatureDiscoveryEngine(PluginInterface):
         # Register event handlers
         self.register_handler('observation', self.handle_observation)
         self.register_handler('deliberation_tick', self.handle_tick)
-        self.register_handler('feature_utility_update', self.handle_utility_update)
+        self.register_handler('oak.feature_utility_updated', self.handle_utility_update)
 
     def generate_feature_id(self, feature_type: str, base_ids: List[str]) -> str:
         """Deterministic UUIDv5 for features."""
@@ -1859,7 +1859,7 @@ class SubproblemManager(PluginInterface):
         self.subproblems: Dict[str, Subproblem] = {}
         self.feature_subproblems: Dict[str, List[str]] = {}
         
-        self.register_handler('feature_utility_update', self.handle_feature_utility_update)
+        self.register_handler('oak.feature_utility_updated', self.handle_feature_utility_updated)
         self.register_handler('option_completed', self.handle_option_completion)
 
     def generate_subproblem_id(self, feature_id: str, kappa: float) -> str:
@@ -1868,7 +1868,7 @@ class SubproblemManager(PluginInterface):
         name = f"subproblem:{feature_id}:{kappa:.3f}"
         return str(uuid.uuid5(namespace, name))
 
-    async def handle_feature_utility_update(self, event):
+    async def handle_feature_utility_updated(self, event):
         """Create subproblems for high-utility features."""
         feature_id = event.data['feature_id']
         utility = event.data.get('utility', 0.0)
@@ -2374,7 +2374,7 @@ class PredictionEngine(PluginInterface):
             
             # Feed back to feature utility
             if gvf.prediction_type == 'feature_attainment':
-                await self.emit_event('feature_utility_update', {
+                await self.emit_event('oak.feature_utility_updated', {
                     'feature_id': 'some_feature_id',  # Should be actual feature ID
                     'signal_type': 'prediction',
                     'value': 1.0 / (1.0 + abs(delta))  # Inverse of error
@@ -2529,7 +2529,7 @@ class PlanningEngine(PluginInterface):
             
             # Update feature utility based on value improvement
             improvement = best_new_value - current_value
-            await self.emit_event('feature_utility_update', {
+            await self.emit_event('oak.feature_utility_updated', {
                 'feature_id': 'value_improvement',  # Should map to actual features
                 'signal_type': 'planning',
                 'value': improvement
@@ -2605,7 +2605,7 @@ class CurationManager(PluginInterface):
         self.register_handler('subproblem_defined', self.handle_item_creation)
         self.register_handler('option_created', self.handle_item_creation)
         self.register_handler('gvf_created', self.handle_item_creation)
-        self.register_handler('feature_utility_update', self.handle_utility_update)
+        self.register_handler('oak.feature_utility_updated', self.handle_utility_update)
         self.register_handler('deliberation_tick', self.handle_curation_tick)
 
     async def handle_item_creation(self, event):
@@ -3079,7 +3079,7 @@ if __name__ == '__main__':
 
 1. **Event Bus Integration**: All components use the shared EventBus for communication. Ensure the following events are properly registered:
    - `observation`, `state_transition`, `reward_signal`, `deliberation_tick`, `cognitive_turn`
-   - OaK-specific events: `feature_created`, `features_discovered`, `feature_utility_update`, etc.
+   - OaK-specific events: `feature_created`, `features_discovered`, `oak.feature_utility_updated`, etc.
 
 2. **CortexRuntime Hook**: The `OakCoordinator.on_cycle()` method should be registered with the CortexRuntime to receive regular cognitive turns.
 

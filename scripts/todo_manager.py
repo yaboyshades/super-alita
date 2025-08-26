@@ -43,7 +43,6 @@ def save_todos(todo_file: Path, todos: List[Dict[str, Any]]) -> None:
     with open(todo_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-
 def initialize_default_todos() -> List[Dict[str, Any]]:
     """Initialize with default todos for the Super Alita project."""
     return [
