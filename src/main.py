@@ -20,7 +20,7 @@ from uuid import uuid4
 # Add conditional imports for FastAPI dependencies
 try:
     import uvicorn
-    from fastapi import APIRouter, FastAPI, Request
+    from fastapi import APIRouter, Body, FastAPI, Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -30,6 +30,7 @@ except ImportError:
     FastAPI = None  # type: ignore
     Request = None  # type: ignore
     APIRouter = None  # type: ignore
+    Body = None  # type: ignore
     CORSMiddleware = None  # type: ignore
     JSONResponse = None  # type: ignore
     StreamingResponse = None  # type: ignore
@@ -126,6 +127,7 @@ except Exception as e:  # pragma: no cover
 
 
 # --- Event bus (JSONL fallback + optional Redis) ---
+
 from reug_runtime.event_bus import (
     BaseEventBus,
     FileEventBus,
@@ -421,12 +423,14 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             }
         )
 
-    # DeepCode trigger endpoint (fire-and-forget)
+    # DeepCode trigger endpoint (fire-and-forget). Accept generic JSON to
+    # reduce tight coupling / avoid Pydantic forward issues across versions.
     @app.post("/deepcode/request")  # type: ignore
     async def deepcode_request(req: Request) -> dict[str, Any]:  # type: ignore
-        body = await req.json()  # type: ignore
+        body = {}  # type: ignore[var-annotated]
+        with contextlib.suppress(Exception):
+            body = await req.json()  # type: ignore
         payload: dict[str, Any] = {
-            "event_type": "deepcode_request",
             "source_plugin": "http_gateway",
             "task_kind": body.get("task_kind", "generic"),
             "requirements": body.get("requirements", ""),
@@ -440,6 +444,43 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         else:
             await app.state.event_bus.emit(evt.model_dump())  # type: ignore
         return {"status": "accepted", "request": payload}
+
+    # DeepCode latest retrieval
+    @app.get("/deepcode/latest")  # type: ignore
+    async def deepcode_latest() -> JSONResponse:  # type: ignore
+        plugin = None
+        for p in getattr(app.state, "plugins", []):  # type: ignore
+            if getattr(p, "name", None) == "deepcode_orchestrator":
+                plugin = p
+                break
+        if not plugin or not hasattr(plugin, "get_latest"):
+            return JSONResponse(
+                status_code=404, content={"error": "orchestrator_not_ready"}
+            )  # type: ignore
+        latest = plugin.get_latest()  # type: ignore
+        if not latest:
+            return JSONResponse(status_code=404, content={"error": "no_latest"})  # type: ignore
+        return JSONResponse(status_code=200, content=latest)  # type: ignore
+
+    # DeepCode apply endpoint (delegates to orchestrator; guardian applies elsewhere)
+    @app.post("/deepcode/apply")  # type: ignore
+    async def deepcode_apply(req: Request) -> JSONResponse:  # type: ignore
+        raw = await req.json()  # type: ignore
+        body = raw if isinstance(raw, dict) else {}
+        filter_paths = (
+            body.get("paths") if isinstance(body.get("paths"), list) else None
+        )
+        plugin = None
+        for p in getattr(app.state, "plugins", []):  # type: ignore
+            if getattr(p, "name", None) == "deepcode_orchestrator":
+                plugin = p
+                break
+        if not plugin or not hasattr(plugin, "apply_latest"):
+            return JSONResponse(
+                status_code=404, content={"error": "orchestrator_not_ready"}
+            )  # type: ignore
+        result = await plugin.apply_latest(filter_paths)  # type: ignore
+        return JSONResponse(status_code=200, content=result)  # type: ignore
 
     return app
 

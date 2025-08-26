@@ -118,6 +118,40 @@ To use VS Code Insiders with GPT-OSS hosted by Ollama (streamlined setup):
   - Posts to your runtime at `alita.runtime.host` (default: `http://127.0.0.1:8080`)
   - Streams response to Output channel "Alita Runtime Chat"
 
+## DeepCode Integration
+
+DeepCode orchestration is wired into the runtime with an in‑memory pub/sub event bus. A stub client is bundled; set environment to enable a real HTTP client.
+
+### Environment
+
+```bash
+export DEEPCODE_API_URL=https://deepcode.mycompany.com
+export DEEPCODE_API_KEY=your_key
+export DEEPCODE_TIMEOUT_S=60
+# Where to persist the latest proposal for retrieval:
+export DEEPCODE_LATEST_PATH=./logs/deepcode_latest.json
+```
+
+### Endpoints
+
+- `POST /deepcode/request`
+  - Body: `{ "task_kind": "analyze" | "text2backend" | ..., "requirements"?: string, "repo_path"?: string }`
+  - Returns: `{ status: "accepted", request: {...} }`
+
+- `GET /deepcode/latest`
+  - Returns the last successful proposal (plan, references, diffs, tests, docs, validation)
+
+- `POST /deepcode/apply`
+  - Body: `{ "paths"?: string[] }`
+  - Delegates to orchestrator apply (if enabled)
+
+### VS Code Commands
+
+- `Alita: DeepCode — Analyze Workspace`
+- `Alita: DeepCode — Generate From Prompt`
+
+Both post to `/deepcode/request` on `alita.runtime.host`.
+
 ### Configuration
 
 Extension defaults (can be customized in VS Code settings):
@@ -299,4 +333,3 @@ Extension adds commands:
 Worker scaffold still includes `src/worker.ts` for future advanced component bindings.
 
 See docs for deeper patterns and roadmap enhancements.
-

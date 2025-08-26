@@ -8,6 +8,7 @@ import logging
 import os
 import time
 from abc import ABC, abstractmethod
+from typing import Any, Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +23,9 @@ class BaseEventBus(ABC):
         """Emit an event and return the enriched payload."""
 
     # Optional pub/sub API used by plugin system. Default implementations are no-ops.
-    async def subscribe(self, event_type: str, handler) -> None:  # pragma: no cover - optional
+    async def subscribe(
+        self, event_type: str, handler: Callable[[dict[str, Any]], Awaitable[None]]
+    ) -> None:  # pragma: no cover - optional
         return None
 
     async def publish(self, event: dict[str, Any]) -> dict[str, Any]:  # pragma: no cover - optional
@@ -63,9 +66,11 @@ class InMemoryPubSubEventBus(FileEventBus):
 
     def __init__(self, log_dir: str | None):
         super().__init__(log_dir)
-        self._subs: dict[str, list] = {}
+        self._subs: dict[str, list[Callable[[dict[str, Any]], Awaitable[None]]]] = {}
 
-    async def subscribe(self, event_type: str, handler) -> None:
+    async def subscribe(
+        self, event_type: str, handler: Callable[[dict[str, Any]], Awaitable[None]]
+    ) -> None:
         self._subs.setdefault(event_type, []).append(handler)
 
     async def publish(self, event: dict[str, Any]) -> dict[str, Any]:
