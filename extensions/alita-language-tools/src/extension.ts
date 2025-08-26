@@ -9,13 +9,14 @@ import { registerSkillsetCommand } from './features/skillset';
 import { PredictiveManager } from './predictiveManager';
 import { FeedbackManager } from './feedbackManager';
 
-interface OllamaChatChunk { message?: { content?: string }; done?: boolean }
+interface OllamaChatMessage { content?: string }
+interface OllamaChatChunk { message?: OllamaChatMessage; done?: boolean }
 
 async function invokeOllama(prompt: string): Promise<string> {
   const cfg = vscode.workspace.getConfiguration('alita');
   let host = cfg.get<string>('ollama.host') || 'http://127.0.0.1:11434';
   host = host.replace(/\/$/, '');
-  let model = cfg.get<string>('ollama.model');
+  let model: string | undefined = cfg.get<string>('ollama.model');
   if (!model) {
     model = await vscode.window.showInputBox({
       prompt: 'Enter Ollama model tag (e.g. llama3.1:8b)',
@@ -24,7 +25,7 @@ async function invokeOllama(prompt: string): Promise<string> {
     if (!model) { throw new Error('No model specified'); }
     await cfg.update('ollama.model', model, vscode.ConfigurationTarget.Workspace);
   }
-  const resp = await (globalThis as any).fetch(host + '/api/chat', {
+    const resp = await (globalThis as unknown as { fetch: typeof fetch }).fetch(host + '/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false })
@@ -51,8 +52,13 @@ async function runWasmCalculator(a: number, b: number): Promise<number> {
       vscode.window.showWarningMessage('Calculator WASM not found. Build the WASM module.');
       return 0;
     }
-    const mod = await (globalThis as any).WebAssembly.instantiate(bytes, {});
-    const addExport = (mod.instance as any).exports?.add;
+    const g = globalThis as unknown as { WebAssembly?: { instantiate: (b: Uint8Array, i: unknown) => Promise<{ instance: { exports: Record<string, unknown> } }> } };
+    if (!g.WebAssembly) {
+      vscode.window.showWarningMessage('WebAssembly API unavailable in this environment.');
+      return 0;
+    }
+    const mod = await g.WebAssembly.instantiate(bytes, {});
+    const addExport = mod.instance.exports.add as ((x: number, y: number) => number | undefined) | undefined;
     if (typeof addExport !== 'function') {
       vscode.window.showWarningMessage('add export not found in WASM module.');
       return 0;
@@ -64,11 +70,48 @@ async function runWasmCalculator(a: number, b: number): Promise<number> {
   }
 }
 
-let disposables: vscode.Disposable[] = [];
+const disposables: vscode.Disposable[] = [];
 
 export async function activate(ctx: vscode.ExtensionContext) {
   const telemetry = createTelemetry(ctx);
   telemetry?.send('alita/activated', {});
+
+  // Report codegen metadata (if present)
+  try {
+    const ext = vscode.extensions.getExtension('super-alita.alita-language-tools');
+    if (ext) {
+      const metaUri = vscode.Uri.joinPath(ext.extensionUri, 'out', 'src', 'generated', '.codegen.meta.json');
+      let exists = false;
+      try { await vscode.workspace.fs.stat(metaUri); exists = true; } catch { /* no file */ }
+      if (exists) {
+        const raw = await vscode.workspace.fs.readFile(metaUri);
+        const txt = Buffer.from(raw).toString('utf8');
+        const meta = JSON.parse(txt);
+        telemetry?.send('alita/codegen/meta', {
+          mode: String(meta.mode || ''),
+          jco: String(meta.toolchain?.jco || false),
+          wasmTools: String(meta.toolchain?.wasmTools || false)
+        });
+        const lines = Number(meta.metrics?.lines || 0);
+        const exports = Array.isArray(meta.metrics?.exports) ? meta.metrics.exports.length : 0;
+        telemetry?.send('alita/codegen/metrics', { lines: String(lines), exports: String(exports) });
+        const servicesUsed = Array.isArray(meta.servicesUsed) ? meta.servicesUsed.length : 0;
+        telemetry?.send('alita/codegen/host', { count: String(servicesUsed) });
+
+        // Optional status bar indicator
+        if (vscode.workspace.getConfiguration('alita').get('codegen.showBindingStatus')) {
+          const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+          item.text = `WIT: ${meta.mode === 'generated' ? 'generated' : 'stub'}`;
+          item.tooltip = `Alita WIT bindings (${meta.mode}). Exports: ${exports}, Lines: ${lines}`;
+          item.command = 'alita.codegen.status';
+          item.show();
+          ctx.subscriptions.push(item);
+        }
+      }
+    }
+  } catch {
+    // ignore meta read errors
+  }
 
   // Semantic tokens
   disposables.push(registerSemanticTokens());
@@ -98,6 +141,32 @@ export async function activate(ctx: vscode.ExtensionContext) {
   const feedback = new FeedbackManager();
   disposables.push(predictive, feedback);
 
+  // Bridge worker host-call telemetry: listen for posted messages tagged __alitaHost
+  try {
+  (globalThis as unknown as { addEventListener?: (t: string, h: (e: MessageEvent) => void) => void }).addEventListener?.('message', (ev: MessageEvent) => {
+      const data = ev.data;
+      if (data && data.__alitaHost && vscode.workspace.getConfiguration('alita').get('codegen.hostTelemetry')) {
+        const evt = data.__alitaHost;
+        telemetry?.send('alita/hostCall', {
+          name: String(evt.name || ''),
+          ok: String(evt.ok),
+          dur: String(evt.dur || 0)
+        });
+      }
+    });
+  } catch { /* ignore addEventListener absence */ }
+
+  // Kick off a lightweight WASM-prefetch integration if bindings exist
+  try {
+    const ext = vscode.extensions.getExtension('super-alita.alita-language-tools');
+    if (ext) {
+      const metaUri = vscode.Uri.joinPath(ext.extensionUri, 'out', 'src', 'generated', '.codegen.meta.json');
+      const raw = await vscode.workspace.fs.readFile(metaUri);
+      const meta = JSON.parse(Buffer.from(raw).toString('utf8'));
+      await predictive.prefetchUsingWasmAnalysis(meta);
+    }
+  } catch { /* optional */ }
+
   // Agent invoke command (Ollama)
   disposables.push(vscode.commands.registerCommand('alita.invokeAgent', async () => {
     const prompt = await vscode.window.showInputBox({ prompt: 'Agent prompt' });
@@ -125,13 +194,44 @@ export async function activate(ctx: vscode.ExtensionContext) {
     vscode.window.showInformationMessage(`WASM Result: ${result}`);
   }));
 
+  // Codegen status command (smoke/status)
+  disposables.push(vscode.commands.registerCommand('alita.codegen.status', async () => {
+    try {
+      const ext = vscode.extensions.getExtension('super-alita.alita-language-tools');
+      if (!ext) return;
+      const metaUri = vscode.Uri.joinPath(ext.extensionUri, 'out', 'src', 'generated', '.codegen.meta.json');
+      const buf = await vscode.workspace.fs.readFile(metaUri);
+      const meta = JSON.parse(Buffer.from(buf).toString('utf8'));
+      const lines = Number(meta.metrics?.lines || 0);
+      const exports = Array.isArray(meta.metrics?.exports) ? meta.metrics.exports.length : 0;
+      let smoke = '';
+      if (meta.mode === 'generated') {
+        try {
+          const worldJs = vscode.Uri.joinPath(ext.extensionUri, 'out', 'src', 'generated', 'alita-world.generated.js');
+          const pathStr = worldJs.fsPath;
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const mod: Record<string, unknown> = require(pathStr);
+          const candidate = Object.entries(mod).find(([, val]) => typeof val === 'function' && ((val as (...a: unknown[]) => unknown).length <= 1));
+          if (candidate) {
+            const [name, fn] = candidate as [string, (...args: []) => unknown];
+            // Attempt a benign call with no args
+            try { void fn(); smoke = `; called ${name}()`; } catch { /* ignore */ }
+          }
+        } catch { /* ignore dynamic import errors */ }
+      }
+      vscode.window.showInformationMessage(`WIT bindings: ${meta.mode}. Exports: ${exports}, Lines: ${lines}${smoke}`);
+    } catch (err) {
+      vscode.window.showWarningMessage('Codegen status unavailable: ' + (err as Error).message);
+    }
+  }));
+
   // Refactor selection with predictive cache
   disposables.push(vscode.commands.registerCommand('alita.agent.refactorSelection', async () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor || editor.selection.isEmpty) { return; }
     const sel = editor.selection;
     const original = editor.document.getText(sel);
-  const cached = predictive.getCachedRefactor(editor.document.uri);
+    const cached = predictive.getCachedRefactor(editor.document.uri);
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Alita Refactor' }, async () => {
       let replacement: string | null = null;
       if (cached) {
@@ -171,7 +271,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
     const endpoint = vscode.workspace.getConfiguration('alita').get<string>('context.serverEndpoint');
     const body = { files: Object.fromEntries(alitaFiles.map(f => [f.uri.toString(), f.content])) };
     try {
-      await (globalThis as any).fetch(endpoint + '/index', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      await (globalThis as unknown as { fetch: typeof fetch }).fetch(endpoint + '/index', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       vscode.window.showInformationMessage(`Indexed ${alitaFiles.length} files for context.`);
     } catch (err) {
       vscode.window.showWarningMessage('Indexing failed: ' + (err as Error).message);
@@ -182,7 +282,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-  while (disposables.length) {
-    try { disposables.pop()?.dispose(); } catch { /* noop */ }
+  for (const d of [...disposables]) {
+    try { d.dispose(); } catch { /* noop */ }
   }
 }

@@ -1,0 +1,18 @@
+{
+  "mode": "stub",
+  "toolchain": {
+    "jco": false,
+    "wasmTools": false
+  },
+  "inputs": [
+    "D:\\Coding_Projects\\super-alita-clean\\wasm\\code_radar\\radar.wit",
+    "D:\\Coding_Projects\\super-alita-clean\\wasm\\calculator\\calculator.wit"
+  ],
+  "metrics": {
+    "lines": 5,
+    "exports": [
+      "world"
+    ]
+  },
+  "ts": "2025-08-26T16:24:11.691Z"
+}

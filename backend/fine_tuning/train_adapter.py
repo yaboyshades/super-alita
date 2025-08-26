@@ -7,6 +7,7 @@ Usage (example):
 Expects feedback JSON list with objects containing at minimum:
   {"prompt": "...", "final_code": "..."}
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,14 +23,19 @@ log = logging.getLogger("alita.finetune")
 try:  # pragma: no cover - heavy deps optional
     import torch  # type: ignore
     from datasets import Dataset  # type: ignore
+    from peft import (  # type: ignore
+        LoraConfig,
+        get_peft_model,
+        prepare_model_for_kbit_training,
+    )
     from transformers import (  # type: ignore
         AutoModelForCausalLM,
         AutoTokenizer,
         BitsAndBytesConfig,
-        TrainingArguments,
         Trainer,
+        TrainingArguments,
     )
-    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training  # type: ignore
+
     AVAILABLE = True
 except Exception as e:  # noqa: BLE001
     log.warning("Fine-tune stack unavailable: %s", e)
@@ -110,11 +116,15 @@ def train(args):  # type: ignore[no-untyped-def]
     model.save_pretrained(out_dir)
     tok.save_pretrained(out_dir)
     with open(os.path.join(out_dir, "metadata.json"), "w", encoding="utf8") as fh:
-        json.dump({
-            "base_model": args.base_model,
-            "samples": len(samples),
-            "epochs": args.epochs,
-        }, fh, indent=2)
+        json.dump(
+            {
+                "base_model": args.base_model,
+                "samples": len(samples),
+                "epochs": args.epochs,
+            },
+            fh,
+            indent=2,
+        )
     log.info("Adapter saved to %s", out_dir)
 
 

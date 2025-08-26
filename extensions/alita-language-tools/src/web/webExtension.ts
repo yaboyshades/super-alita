@@ -1,3 +1,6 @@
 import * as vscode from 'vscode';
-export function activate(_ctx: vscode.ExtensionContext) {/* web-only features can go here */}
-export function deactivate() {}
+export function activate(_ctx: vscode.ExtensionContext): void {
+  // web-only features placeholder (retain block to satisfy no-empty)
+  void _ctx;
+}
+export function deactivate(): void { /* noop */ }

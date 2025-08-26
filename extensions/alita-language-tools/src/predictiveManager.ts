@@ -7,11 +7,11 @@ interface CachedResult { key: string; patch: string; prompt: string; createdAt: 
 export class PredictiveManager implements vscode.Disposable {
   private cache = new Map<string, CachedResult>();
   private disposables: vscode.Disposable[] = [];
-  private queue: any[] = [];
+  private queue: Array<Record<string, unknown>> = [];
   private busy = false;
   private maxEntries = 5;
 
-  constructor(private telemetry?: { send: (e: string, p?: Record<string, any>) => void }) {
+  constructor(private telemetry?: { send: (e: string, p?: Record<string, string>) => void }) {
     this.disposables.push(
   vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
         if (!vscode.workspace.getConfiguration('alita').get('predictive.enabled')) return;
@@ -32,14 +32,16 @@ export class PredictiveManager implements vscode.Disposable {
     if (!this.queue.length) return;
     this.busy = true;
     const batch = this.queue.splice(0, this.queue.length);
-    const docEvents = batch.filter(b => b.doc).slice(-1); // latest doc event only
+    type EditEvt = { type: 'edit'; doc: vscode.TextDocument };
+    type ErrEvt = { type: 'error'; uri: vscode.Uri; diags: vscode.Diagnostic[] };
+  const docEvents = batch.filter((b): b is EditEvt => (b as Record<string, unknown>).type === 'edit' && (b as Record<string, unknown>).doc instanceof Object).slice(-1);
     for (const evt of docEvents) {
       const pred = this.predict(evt.doc);
       if (pred && pred.confidence >= 0.55) await this.generate(pred, evt.doc);
     }
-    const errEvt = batch.find(b => b.type === 'error');
+    const errEvt = batch.find((b): b is ErrEvt => (b as Record<string, unknown>).type === 'error' && Array.isArray((b as Record<string, unknown>).diags));
     if (errEvt) {
-  const open = vscode.workspace.textDocuments.find((d: vscode.TextDocument) => d.uri.toString() === errEvt.uri.toString());
+      const open = vscode.workspace.textDocuments.find((d: vscode.TextDocument) => d.uri.toString() === errEvt.uri.toString());
       if (open) await this.generate({ action: 'fix-error', confidence: 0.7 }, open, errEvt.diags);
     }
     this.busy = false;
@@ -91,4 +93,41 @@ export class PredictiveManager implements vscode.Disposable {
   }
 
   dispose() { this.disposables.forEach(d => d.dispose()); }
+
+  // Optional hook: prefetch/refactor using WASM analysis results.
+  // Wire your analysis pipeline to compute suggested edits and insert them into the cache.
+  async prefetchUsingWasmAnalysis(meta: { mode: string; metrics?: { lines?: number; exports?: string[] } } | null) {
+    if (!meta || meta.mode !== 'generated') return;
+    if (!vscode.workspace.getConfiguration('alita').get('predictive.wasmAnalysisEnabled')) return;
+    this.telemetry?.send('predictive/wasm/prefetch', {
+      exports: String(meta.metrics?.exports?.length || 0),
+      lines: String(meta.metrics?.lines || 0)
+    });
+    // Attempt dynamic require of generated world to locate an analyze export.
+    try {
+      const ext = vscode.extensions.getExtension('super-alita.alita-language-tools');
+      if (!ext) return;
+      const worldJs = vscode.Uri.joinPath(ext.extensionUri, 'out', 'src', 'generated', 'alita-world.generated.js');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod: Record<string, unknown> = require(worldJs.fsPath);
+  const worldObj = (mod.world ?? mod) as Record<string, unknown>;
+  const analyze = worldObj.analyze as ((src: string) => unknown) | undefined;
+      if (typeof analyze === 'function') {
+        const sample = 'fn foo() { return 1; }';
+        const start = Date.now();
+        try {
+          const diagnostics = await Promise.resolve(analyze(sample));
+          const dur = Date.now() - start;
+          this.telemetry?.send('predictive/wasm/analyze', { dur: String(dur), count: String(Array.isArray(diagnostics) ? diagnostics.length : 0) });
+          if (Array.isArray(diagnostics) && diagnostics.length) {
+            const patch = sample; // future: produce real patch using diagnostics
+            const key = createHash('sha256').update('wasm-analyze|' + diagnostics.length).digest('hex');
+            this.insert({ key, patch, prompt: 'wasm-analyze', createdAt: Date.now(), action: 'refactor-selection', confidence: 0.6 });
+          }
+        } catch (err) {
+          this.telemetry?.send('predictive/wasm/analyze', { err: String((err && (err as Error).message) || err) });
+        }
+      }
+    } catch { /* ignore dynamic import errors */ }
+  }
 }

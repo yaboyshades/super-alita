@@ -66,6 +66,48 @@ jobs:
         run: |
           pytest -q tests/runtime
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Codegen + codegen test (alita-language-tools)
+        working-directory: extensions/alita-language-tools
+        env:
+          REQUIRE_REAL_WIT: ${{ env.REQUIRE_REAL_WIT }}
+        run: |
+          npm ci
+          npm run codegen:wit
+          npm run test:codegen
+
+      - name: Sample componentization (if wasm-tools present)
+        working-directory: extensions/alita-language-tools
+        run: |
+          if command -v wasm-tools >/dev/null 2>&1; then \
+            npm run codegen:componentize:sample && npm run test:component; \
+          else \
+            echo "wasm-tools not available; skipping componentization"; \
+          fi
+
+  codegen-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Codegen strict (REQUIRE_REAL_WIT=1)
+        working-directory: extensions/alita-language-tools
+        env:
+          REQUIRE_REAL_WIT: '1'
+        run: |
+          npm ci
+          npm run codegen:wit
+          npm run test:codegen
+
   # Optional: open an automated PR when requirements drift is detected on master
   regen-reqs:
     if: github.ref == 'refs/heads/master'

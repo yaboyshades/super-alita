@@ -120,8 +120,13 @@
           "command": "alita.context.indexWorkspace",
           "title": "Alita: Index Workspace for Context",
           "category": "Alita"
-      }
-    ],
+        },
+        {
+          "command": "alita.codegen.status",
+          "title": "Alita: Show WIT Binding Status",
+          "category": "Alita"
+        }
+      ],
     "menus": {
       "commandPalette": [
         {
@@ -135,6 +140,10 @@
         {
           "command": "alita.skillset",
           "when": "!virtualWorkspace && editorLangId == alita"
+        },
+        {
+          "command": "alita.codegen.status",
+          "when": "!virtualWorkspace"
         }
       ]
     },
@@ -218,16 +227,61 @@
           "type": "boolean",
           "default": true,
           "description": "Enable predictive speculative execution (background refactors)."
+        },
+        "alita.codegen.showBindingStatus": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a status bar item indicating WIT binding mode (stub vs generated)."
+        },
+        "alita.codegen.hostTelemetry": {
+          "type": "boolean",
+          "default": true,
+          "description": "Capture per host-call telemetry emitted by the WASM worker (name, duration, ok flag)."
+        },
+        "alita.predictive.wasmAnalysisEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable experimental WASM-based code analysis prefetch (invokes analyze export)."
         }
       }
     }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
+    "codegen:wit": "node scripts/generate-wit-stubs.cjs",
+    "codegen:componentize:sample": "node scripts/build-sample-wasm.cjs && COMPONENTIZE=1 COMPONENT_INPUT_WASM=./sample-wasm/add.wasm node scripts/generate-wit-stubs.cjs",
+    "compile": "npm run codegen:wit && tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "watch:dev": "npm run codegen:wit && tsc -w -p ./",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "test:codegen": "node scripts/test-codegen.cjs",
+    "test:component": "node scripts/test-component.cjs"
+  },
+  "eslintConfig": {
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended"
+    ],
+    "env": {
+      "es2022": true,
+      "worker": true
+    },
+    "overrides": [
+      {
+        "files": [
+          "src/worker.ts"
+        ],
+        "rules": {
+          "@typescript-eslint/no-explicit-any": "error"
+        }
+      }
+    ]
   },
   "dependencies": {
     "@vscode/extension-telemetry": "^0.9.7",

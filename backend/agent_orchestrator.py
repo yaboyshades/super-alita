@@ -5,6 +5,7 @@ OpenAI-compatible endpoint (e.g., local OSS 20B served via an adapter or
 Ollama) with lightweight role prompts. If the endpoint is unavailable the
 service still responds with graceful degraded output.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -13,11 +14,13 @@ import os
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
 
 MODEL = os.getenv("SWARM_MODEL", os.getenv("OLLAMA_MODEL", "oss-20b"))
-ENDPOINT = os.getenv("SWARM_ENDPOINT", os.getenv("OPENAI_BASE_URL", "http://127.0.0.1:11434/api/chat"))
+ENDPOINT = os.getenv(
+    "SWARM_ENDPOINT", os.getenv("OPENAI_BASE_URL", "http://127.0.0.1:11434/api/chat")
+)
 
 ROLES: dict[str, str] = {
     "architect": "You are the Architect Agent. Provide high-level structural guidance, identify risks, and propose module boundaries.",
@@ -47,15 +50,29 @@ async def _call_model(role: str, user_prompt: str, ctx: dict[str, Any]) -> str:
     system_msg = ROLES[role]
     payload: dict[str, Any]
     if ENDPOINT.endswith("/api/chat") and "ollama" in ENDPOINT.lower():  # Ollama style
-        payload = {"model": MODEL, "messages": [
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": f"Context: {json.dumps(ctx)[:4000]}\nUser: {user_prompt}"}
-        ], "stream": False}
+        payload = {
+            "model": MODEL,
+            "messages": [
+                {"role": "system", "content": system_msg},
+                {
+                    "role": "user",
+                    "content": f"Context: {json.dumps(ctx)[:4000]}\nUser: {user_prompt}",
+                },
+            ],
+            "stream": False,
+        }
     else:  # Assume OpenAI style /v1/chat/completions or adapter
-        payload = {"model": MODEL, "messages": [
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": f"Context: {json.dumps(ctx)[:4000]}\nUser: {user_prompt}"}
-        ], "stream": False}
+        payload = {
+            "model": MODEL,
+            "messages": [
+                {"role": "system", "content": system_msg},
+                {
+                    "role": "user",
+                    "content": f"Context: {json.dumps(ctx)[:4000]}\nUser: {user_prompt}",
+                },
+            ],
+            "stream": False,
+        }
     timeout = httpx.Timeout(60.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         try:
@@ -92,13 +109,13 @@ async def execute(req: SwarmRequest):  # pragma: no cover - integration
     task_type = await _classify(req.prompt)
     chain = GRAPHS.get(task_type, ["refactor"])
     results: list[dict[str, Any]] = []
+
     async def run(role: str):
         content = await _call_model(role, req.prompt, req.context)
         results.append({"agent": role, "content": content})
+
     await asyncio.gather(*(run(r) for r in chain))
-    synthesis = "\n---\n".join(
-        f"[{r['agent']}]\n{r['content']}" for r in results
-    )
+    synthesis = "\n---\n".join(f"[{r['agent']}]\n{r['content']}" for r in results)
     return {
         "task_type": task_type,
         "agents": chain,
