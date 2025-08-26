@@ -42,8 +42,8 @@ describe('SSE Helper Functions', () => {
       .get('/test-event')
       .expect(200)
       .expect((res) => {
-        expect(res.text).toContain('event: copilot_confirmation');
-        expect(res.text).toContain('data: {"id":"test","title":"Test Dialog"}');
+        expect(res.text).toContain('event: copilot_confirmation\\n');
+        expect(res.text).toContain('data: {"id":"test","title":"Test Dialog"}\\n\\n');
       })
       .end(done);
   });
@@ -59,9 +59,94 @@ describe('SSE Helper Functions', () => {
       .get('/test-default')
       .expect(200)
       .expect((res) => {
-        expect(res.text).toContain('data: "Hello from Super Alita"');
+        expect(res.text).toContain('data: "Hello from Super Alita"\\n\\n');
         expect(res.text).not.toContain('event:');
       })
       .end(done);
+  });
+});
+
+describe('gRPC Client Mock Functions', () => {
+  test('getHealth returns valid health response', async () => {
+    const { getHealth } = require('../src/grpcClient');
+    const health = await getHealth();
+    
+    expect(health).toHaveProperty('status');
+    expect(health).toHaveProperty('message');
+    expect(health).toHaveProperty('timestamp');
+    expect(typeof health.status).toBe('number');
+    expect(typeof health.message).toBe('string');
+  });
+
+  test('getStatus returns system status', async () => {
+    const { getStatus } = require('../src/grpcClient');
+    const status = await getStatus();
+    
+    expect(status).toHaveProperty('cortex');
+    expect(status).toHaveProperty('knowledge_graph');
+    expect(status).toHaveProperty('optimization');
+    expect(status).toHaveProperty('system');
+    
+    expect(status.cortex).toHaveProperty('active_sessions');
+    expect(status.knowledge_graph).toHaveProperty('total_atoms');
+    expect(status.optimization).toHaveProperty('active_policies');
+    expect(status.system).toHaveProperty('components');
+  });
+
+  test('processTask handles task processing', async () => {
+    const { processTask } = require('../src/grpcClient');
+    const result = await processTask({
+      task_id: 'test_123',
+      content: 'analyze this data',
+      session_id: 'session_456',
+      user_id: 'user_789',
+      workspace: 'workspace_abc',
+      metadata: { source: 'test' }
+    });
+    
+    expect(result).toHaveProperty('task_id', 'test_123');
+    expect(result).toHaveProperty('status', 'completed');
+    expect(result).toHaveProperty('result');
+    expect(result).toHaveProperty('execution_time_ms');
+    expect(typeof result.execution_time_ms).toBe('number');
+  });
+
+  test('kgQuery returns knowledge graph results', async () => {
+    const { kgQuery } = require('../src/grpcClient');
+    const result = await kgQuery({ query: 'machine learning', limit: 10 });
+    
+    expect(result).toHaveProperty('atoms');
+    expect(result).toHaveProperty('bonds');
+    expect(result).toHaveProperty('total_found');
+    expect(Array.isArray(result.atoms)).toBe(true);
+    expect(Array.isArray(result.bonds)).toBe(true);
+  });
+
+  test('banditDecide returns decision', async () => {
+    const { banditDecide } = require('../src/grpcClient');
+    const result = await banditDecide({ policy_id: 'exploration' });
+    
+    expect(result).toHaveProperty('decision_id');
+    expect(result).toHaveProperty('algorithm');
+    expect(result).toHaveProperty('action');
+    expect(result).toHaveProperty('confidence');
+    expect(result).toHaveProperty('expected_reward');
+    expect(typeof result.confidence).toBe('number');
+    expect(result.confidence).toBeGreaterThanOrEqual(0);
+    expect(result.confidence).toBeLessThanOrEqual(1);
+  });
+
+  test('banditFeedback processes reward', async () => {
+    const { banditFeedback } = require('../src/grpcClient');
+    const result = await banditFeedback({
+      decision_id: 'decision_123',
+      reward: 0.8,
+      source: 'test'
+    });
+    
+    expect(result).toHaveProperty('success', true);
+    expect(result).toHaveProperty('updated_policy');
+    expect(result).toHaveProperty('new_confidence');
+    expect(typeof result.new_confidence).toBe('number');
   });
 });

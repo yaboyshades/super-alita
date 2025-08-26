@@ -1,13 +1,10 @@
 from __future__ import annotations
-
 """Track agent autonomy and emit progress events."""
 
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from src.core.plugin_interface import PluginInterface
-from src.core.event_bus import EventBus
-from src.core.events import create_event
 
 
 @dataclass
@@ -22,8 +19,7 @@ class AutonomyMetrics:
 
 
 class AutonomyTracker(PluginInterface):
-    def __init__(self, event_bus: EventBus):
-        self.event_bus = event_bus
+    def __init__(self):
         self.metrics_history: List[AutonomyMetrics] = []
 
     @property
@@ -31,9 +27,7 @@ class AutonomyTracker(PluginInterface):
         return "autonomy_tracker"
 
     async def setup(self, event_bus: Any, store: Any, config: Dict[str, Any]) -> None:  # type: ignore[override]
-        self.event_bus = event_bus
-        self.store = store
-        self.config = config
+        await super().setup(event_bus, store, config)
 
     async def start(self) -> None:  # type: ignore[override]
         self.is_running = True
@@ -41,16 +35,14 @@ class AutonomyTracker(PluginInterface):
     async def record_metrics(self, tasks_completed: int, assistance_requests: int) -> None:
         metrics = AutonomyMetrics(tasks_completed, assistance_requests)
         self.metrics_history.append(metrics)
-        await self.event_bus.publish(
-            create_event(
-                "autonomy_update",
-                event_version=1,
-                source_plugin=self.name,
-                current_score=metrics.autonomy_score(),
-                cortex_dependency=assistance_requests,
-                trend="flat",
-                milestone_reached=False,
-            )
+        await self.emit_event(
+            "oak.autonomy_update",
+            event_version=1,
+            source_plugin=self.name,
+            current_score=metrics.autonomy_score(),
+            cortex_dependency=assistance_requests,
+            trend="flat",
+            milestone_reached=False,
         )
 
     async def get_graduation_readiness(self) -> Dict[str, Any]:

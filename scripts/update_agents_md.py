@@ -29,6 +29,7 @@ MARKERS = {
     "PLUGINS": ("<!-- PLUGINS:START -->", "<!-- PLUGINS:END -->"),
     "SESSIONS": ("<!-- SESSIONS:START -->", "<!-- SESSIONS:END -->"),
     "CHANGELOG": ("<!-- CHANGELOG:START -->", "<!-- CHANGELOG:END -->"),
+    # inline markers (start == end) retain the marker so future runs can update
     "LAST_UPDATED": ("<!-- AGENTS:LAST_UPDATED -->", "<!-- AGENTS:LAST_UPDATED -->"),
     "RELEASE": ("<!-- AGENTS:RELEASE -->", "<!-- AGENTS:RELEASE -->"),
 }
@@ -44,7 +45,7 @@ def _scan_abilities():
             sig = re.search(r"def\s+([a-zA-Z_][\w]*)\(", text)
             name = sig.group(1) if sig else p.stem
             guard = "yes" if ("try:" in text or "Timeout" in text or "guard" in text) else "unknown"
-            rows.append((name, str(p), "(…)", guard, "Ability* events", ""))
+            rows.append((name, str(p.relative_to(ROOT)), "(…)", guard, "Ability* events", ""))
     return rows
 
 def _scan_plugins():
@@ -63,7 +64,7 @@ def _scan_plugins():
                     )
                 )
             )
-            rows.append((p.stem, str(p), caps or "(…)", "ENV_*", "function() => ok", ""))
+            rows.append((p.stem, str(p.relative_to(ROOT)), caps or "(…)", "ENV_*", "function() => ok", ""))
     return rows
 
 def _scan_agents_top():
@@ -106,13 +107,15 @@ def _render_table(headers, rows):
         "|" + "|".join(["---:" if i == 0 else "----" for i in range(cols)]) + "|",
     ]
     for r in rows:
-        lines.append("| " + " | ".join(str(x) for x in r) + " |")
+        cells = [str(x).replace("\n", " ") for x in r]
+        lines.append("| " + " | ".join(cells) + " |")
     return "\n".join(lines)
 
 def _replace_block(text, key, body):
     start, end = MARKERS[key]
     if start == end:
-        return text.replace(start, body)
+        pattern = re.compile(re.escape(start) + r".*?(?=\n|$)")
+        return pattern.sub(start + body, text)
     pattern = re.compile(re.escape(start) + r".*?" + re.escape(end), re.S)
     return pattern.sub(start + "\n" + body + "\n" + end, text)
 

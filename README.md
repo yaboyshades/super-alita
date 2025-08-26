@@ -1,68 +1,154 @@
-﻿# MCP + Copilot Agent Mode (VS Code Insiders)
+# Super Alita
 
-## Quickstart
-1. Create venv and install deps:
-```
-.\.venv\Scripts\python -m pip install -U pip
-.\.venv\Scripts\pip install -e .
-.\.venv\Scripts\pre-commit install
-```
-2. Open in VS Code **Insiders**. Trust the workspace.
-3. Ensure Python interpreter = `.venv\Scripts\python.exe`.
-4. Run command: **MCP: Show Installed Servers** (should list `myCustomPythonAgent`).
-5. In Copilot Chat, switch **Mode: Agent**. Try prompts:
-   - `find_missing_docstrings root=src include_tests=false`
-   - `format_and_lint_selection target_path=src`
-   - `apply_result_pattern_refactor file_path=path\to\file.py function_name=foo dry_run=true`
+Advanced, event-driven AI agent system with modular plugins, MCP integration, knowledge graph, streaming orchestration, and adaptive LLM routing.
 
-## Notes
-- Tools favor `dry_run` to show diffs first.
-- Ruff runs before Black for stable formatting.
+Production-ready architecture with:
 
-## REUG Runtime
+- Streaming orchestration
+- Rich telemetry + MCP broadcast
+- Fallback LLM routing (Gemini → local Super Alita → mock / local HF model)
+- Knowledge graph + cognitive fabric (Atoms / Bonds)
+- Modular plugin system
+- OpenAI-compatible local adapter option
 
-A FastAPI server exposes the REUG streaming router and toolbox. See
-[docs/runtime.md](docs/runtime.md) for local and Docker quick start guides,
-endpoint descriptions, and a Codex automation task.
+## Key Features
 
-The optional `.codex/setup.sh` script installs dependencies and prepares a
-`.env` file for local runs.
+- Event bus with Redis optional backend
+- MCP server + VS Code integration
+- Atoms/Bonds cognitive fabric
+- Modular plugin architecture
+- Streaming single-turn agent router
+- Tool execution + echo sample tool
+- Real-time telemetry broadcasting via MCP
+- Automatic LLM fallback (Gemini -> local Super Alita -> mock) with telemetry events
+- Direct local Hugging Face model loading (`LLM_MODEL=hf:<model_id>`)
 
-## Gemini API Key
-Super Alita relies on Google's Gemini models for many LLM features. Set your
-API key in the environment (or a `.env` file) before running the agent:
+## Quick Start
+
+Two equivalent setup paths are provided: Makefile workflow (recommended) or raw Python commands.
+
+### 1. Environment file
 
 ```bash
-export GEMINI_API_KEY="your-key-here"
+cp .env.example .env  # then set at least one provider key or local model config
 ```
 
-If you prefer a `.env` file, create one in the project root containing:
+### 2. Install dependencies
 
-```
-GEMINI_API_KEY=your-key-here
-```
-
-**Never** commit your API key or `.env` file to version control.
-
-## Documentation
-Additional design and reference guides live in the `docs/` directory:
-
-- `docs/architecture.md` outlines the "minimal predefinition, maximal self-evolution" architecture.
-- `docs/testing.md` explains how to run the test suite and property-based checks.
-
-## Running Tests
-Install dependencies and execute the runtime suite:
+Using Make (includes lint targets):
 
 ```bash
-make deps
+make deps               # CPU defaults, includes torch CPU build
+# For GPU acceleration:
+# pip install --index-url https://download.pytorch.org/whl/cu121 torch
+# pip install -r requirements-gpu.txt
+make lint  # optional
+```
+
+Or manually:
+
+```bash
+python -m venv .venv
+./.venv/Scripts/Activate.ps1  # Windows PowerShell
+pip install -e .
+# GPU extras (optional):
+# pip install --index-url https://download.pytorch.org/whl/cu121 torch
+# pip install -r requirements-gpu.txt
+# The above replaces the CPU build installed by default
+```
+
+### 3. Run the development server
+
+```bash
+make run
+# or manually
+python -m uvicorn src.main:app --reload --port 8080
+```
+
+### 4. Run tests
+
+```bash
 make test
+# or manually
+pytest -q
 ```
 
-The runtime tests use in-memory fakes and do not require Redis.
-For demo scripts such as `complete_agent_demo.py`, run a local Redis server
-(`docker run -p 6379:6379 redis`) to enable the event bus. On Windows,
-[Memurai](https://www.memurai.com/) is a drop-in replacement.
-Set `REUG_EVENTBUS=redis` to route telemetry through Redis/Memurai; otherwise
-events are appended to JSONL files under `REUG_EVENT_LOG_DIR`.
+Health check:
 
-The `tests/` folder covers core utilities, planner logic, plugins, and integration flows.
+```bash
+curl http://127.0.0.1:8080/healthz
+```
+
+Debug utilities (`debug_fixed.py`, `debug_matching.py`, `utility_debug.py`) are under `scripts/`.
+
+## MCP Server Installation Links
+
+VS Code can install MCP server definitions directly via special links:
+
+- [Sample install](vscode:mcp/install?url=https://example.com/mcp.json)
+
+## LLM Fallback Configuration
+
+Set `LLM_MODEL=auto` to enable automatic provider selection.
+
+Order of preference:
+
+1. Gemini (if `GEMINI_API_KEY` or `GOOGLE_API_KEY` set)
+2. Local Super Alita OpenAI-compatible adapter (`SUPER_ALITA_BASE_URL`)
+3. Deterministic mock (development/test)
+
+Environment variables:
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `LLM_MODEL` | Target model name or `auto` | `mock` |
+| `SUPER_ALITA_BASE_URL` | Base URL for local adapter | `http://127.0.0.1:8080` |
+| `SUPER_ALITA_MODEL` | Model name passed to adapter | `gpt-oss-20b-4bit` |
+| `SUPER_ALITA_API_KEY` | Optional bearer token | (unset) |
+
+Telemetry events emitted:
+
+- `llm_fallback` when Super Alita fallback client is selected
+- `performance_metric` with `metric=llm_stream_duration_s` per streamed turn
+
+Example `.env`:
+
+```dotenv
+LLM_MODEL=auto
+GEMINI_API_KEY=your_key_here   # optional; if absent will fallback
+SUPER_ALITA_BASE_URL=http://127.0.0.1:8080
+SUPER_ALITA_MODEL=gpt-oss-20b-4bit
+```
+
+Force local adapter explicitly:
+
+```dotenv
+LLM_MODEL=super-alita
+```
+
+## Telemetry
+
+Telemetry events stream to MCP for real-time inspection. New events introduced:
+
+- `llm_fallback` (selection decision)
+- `performance_metric` (duration metrics)
+
+## Development
+
+Run tests:
+
+```bash
+pytest -q
+```
+
+Code style:
+
+```bash
+ruff check .
+black .
+```
+
+## License
+
+Apache 2.0 (placeholder – update as appropriate).
+

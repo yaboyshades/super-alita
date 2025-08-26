@@ -19,17 +19,29 @@ except ImportError:
     COGNITIVE_TURN_AVAILABLE = False
 
 
-class BaseEvent(BaseModel):
+class TelemetryInfo(BaseModel):
+    """Shared telemetry fields present on all events."""
+
+    source_plugin: str
+    conversation_id: str | None = Field(
+        default=None, description="Conversation/session identifier"
+    )
+    correlation_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        description="Correlation identifier across events",
+    )
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        description="Event creation timestamp",
+    )
+
+
+class BaseEvent(TelemetryInfo):
     """Base event class with common fields for all events."""
 
     event_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     event_type: str
     version: str = "1.0"
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    source_plugin: str
-    conversation_id: str | None = Field(
-        default=None, description="Conversation/session identifier"
-    )
     trace_id: str | None = Field(
         default=None, description="Trace identifier for debugging"
     )

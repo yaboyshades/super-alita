@@ -22,6 +22,8 @@ Super Alita is a production-ready autonomous agent system with comprehensive sel
 
 ## 🚀 Quick Start
 
+> See the [project README](../README.md) for base environment setup.
+
 ### 1. Environment Setup
 
 ```powershell
@@ -29,9 +31,8 @@ Super Alita is a production-ready autonomous agent system with comprehensive sel
 git clone <repository>
 cd super-alita
 
-# Install dependencies (CPU-only)
-pip install -r requirements.txt
-pip install -r requirements-test.txt
+# Install dependencies
+make deps
 
 # Add GPU acceleration
 # pip install -r requirements-gpu.txt

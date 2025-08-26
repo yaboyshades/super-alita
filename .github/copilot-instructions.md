@@ -60,3 +60,94 @@ async def test_event_flow():
 - `src/core/neural_atom.py` - Deterministic UUID generation for cognitive artifacts
 - `tests/conftest.py` - Comprehensive test fixtures for event-driven testing
 - `MCP_WORKFLOW_GUIDE.md` - Complete MCP development workflows
+
+
+## 📚 Comprehensive Documentation
+For detailed development guidance, refer to these comprehensive instruction sets:
+
+- **`DETAILED_AGENT_INSTRUCTIONS.md`** - Complete development guide covering architecture, patterns, security, testing
+- **`ADVANCED_DEVELOPMENT_PATTERNS.md`** - Advanced patterns for cognitive architecture, event streaming, plugin communication
+- **`AGENT_QUICK_REFERENCE.md`** - Quick reference checklist for common patterns and workflows
+- **`AGENTS.md`** - Repository guidelines and coding standards
+- **`src/reug_runtime/AGENTS.md`** - Runtime-specific agent instructions
+
+These documents provide comprehensive coverage of:
+- Event-driven neural architecture patterns
+- REUG Framework v3.7 and DTA 2.0 cognitive processing
+- MCP tool development and VS Code integration
+- Plugin development and inter-plugin communication
+- Testing strategies for event-driven systems
+- Security patterns and sandboxed execution
+- Performance optimization and production deployment
+- Debugging workflows and troubleshooting guides
+
+## Directory-Specific Guidelines
+For detailed instructions specific to different parts of the codebase, consult the nested AGENTS.md files:
+- `src/reug_runtime/AGENTS.md` - Runtime agent deployment and operations
+- `src/core/AGENTS.md` - Core system components and event bus
+- `src/plugins/AGENTS.md` - Plugin development and lifecycle
+- `src/sandbox/AGENTS.md` - Secure execution and sandboxing
+- `src/neural/AGENTS.md` - Neural atom/bond system
+- `mcp_server/AGENTS.md` - MCP server development
+- `docs/AGENTS.md` - Documentation standards
+- `tests/AGENTS.md` - Testing patterns and fixtures
+- `tools/AGENTS.md` - Utility tools and scripts
+
+## Security & Safety Guidelines
+- **Never bypass sandbox policies** - All dynamic code execution must go through `src/sandbox/exec_sandbox.py`
+- **Environment isolation** - Use proper environment variables, never hardcode secrets
+- **Plugin boundaries** - Plugins must only communicate via event bus, no direct imports
+- **Path traversal protection** - Always validate file paths against workspace boundaries
+- **Redis security** - Event bus connections must use proper authentication in production
+
+## Common Development Patterns
+
+### Plugin Creation Workflow
+```bash
+# 1. Generate plugin scaffold
+python -m src.core.meta_learning_creator generate --capability "your capability"
+
+# 2. Implement plugin interface
+# - Extend PluginInterface
+# - Implement required methods
+# - Add event handlers
+
+# 3. Register plugin
+# Add to plugin manifest or registry
+
+# 4. Test plugin
+pytest tests/plugins/test_your_plugin.py
+```
+
+### Event-Driven Development
+```python
+# Emit events with proper structure
+from src.core.events import create_event
+event = create_event(
+    "tool_call",
+    tool_name="example_tool",
+    parameters={"key": "value"},
+    source_plugin="your_plugin"
+)
+await self.event_bus.publish(event)
+
+# Handle events asynchronously
+async def handle_event(self, event: Dict[str, Any]) -> None:
+    if event["type"] == "tool_result":
+        await self.process_result(event["data"])
+```
+
+### Neural Atom Creation
+```python
+from src.core.neural_atom import create_atom
+from src.neural.atom import NeuralAtom
+
+# Create deterministic atoms
+atom = create_atom(
+    content="your content",
+    atom_type="tool_output",
+    title="Descriptive Title"
+)
+# UUID is automatically generated from content hash
+```
+

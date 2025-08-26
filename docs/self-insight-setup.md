@@ -27,11 +27,13 @@ This setup guide helps you deploy Super Alita with its enhanced self-insight cap
 
 ## Setup Instructions
 
+> See the [project README](../README.md) for base environment setup.
+
 ### 1. Install Dependencies
 
 ```bash
-# Core Python dependencies
-pip install fastapi uvicorn neo4j prometheus-client
+make deps
+pip install neo4j prometheus-client  # extras for self-insight
 
 # VS Code extension dependencies (if developing)
 npm install vscode @types/vscode
