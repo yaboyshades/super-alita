@@ -166,3 +166,32 @@ black .
 
 Apache 2.0 (placeholder – update as appropriate).
 
+## Alita Developer Experience (DX) Kit
+
+An integrated blueprint for AI-native development combining:
+
+- Semantic Kernel backend agent (`backend/semantic_kernel_agent.py`)
+- VS Code language tools extension with telemetry + LSP (`extensions/alita-language-tools`)
+- Experimental WASM component scaffold (`wasm/calculator`) for high-performance portable logic
+- Developer guides: architectural overview, refactoring, testing (`docs/01_architectural_overview.md`, `docs/02_refactoring_guide.md`, `docs/03_testing_guide.md`)
+
+### Quick Start (DX Kit Extras)
+
+Backend agent (requires Azure OpenAI env vars):
+
+```bash
+uvicorn backend.semantic_kernel_agent:app --reload --port 5001
+```
+
+WASM calculator (build & componentize):
+
+```bash
+cd wasm/calculator
+cargo build --target wasm32-unknown-unknown --release
+# (optional) wasm-tools component new target/wasm32-unknown-unknown/release/alita_wasm_calculator.wasm -o calculator.wasm
+```
+
+Extension worker scaffold includes `src/worker.ts` for future WASM binding via `@vscode/wasm-component-model`.
+
+See docs for deeper patterns and roadmap enhancements.
+

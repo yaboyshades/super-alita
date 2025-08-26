@@ -1,0 +1,19 @@
+package vscode:example;
+
+interface types {
+    record operands {
+        left: u32,
+        right: u32,
+    }
+    variant operation {
+        add(operands),
+        sub(operands),
+        mul(operands),
+        div(operands),
+    }
+}
+
+world calculator {
+    import log: func(msg: string);
+    export calc: func(op: operation) -> u32;
+}

@@ -25,15 +25,14 @@
   ],
   "main": "./out/src/extension.js",
   "browser": "./out/src/extension.js",
+  "workers": {
+    "wasmWorker": "./out/src/worker.js"
+  },
   "extensionKind": [
     "workspace",
     "ui"
   ],
   "activationEvents": [
-    "onLanguage:alita",
-    "onCommand:alita.restart",
-    "onCommand:alita.search",
-    "onCommand:alita.skillset",
     "onDebug",
     "workspaceContains:*.alita"
   ],
@@ -193,7 +192,8 @@
   },
   "dependencies": {
     "@vscode/extension-telemetry": "^0.9.7",
-    "vscode-languageclient": "^9.0.1"
+    "vscode-languageclient": "^9.0.1",
+    "@vscode/wasm-component-model": "^1.0.0"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
