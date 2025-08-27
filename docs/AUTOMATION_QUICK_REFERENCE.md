@@ -23,6 +23,20 @@ Actions → Performance Monitoring → Run workflow
 ```
 **Use for**: Performance regression testing
 
+### 🔧 Resolve Conflicts
+```bash
+Actions → Automatic Merge Conflict Resolution → Run workflow
+→ Enter: PR number → Select: auto/current/incoming → Run
+```
+**Use for**: Automatic merge conflict resolution
+
+**Comment Commands**:
+```bash
+@github-actions resolve conflicts auto      # Smart resolution
+@github-actions resolve conflicts current   # Take current branch  
+@github-actions resolve conflicts incoming  # Take incoming branch
+```
+
 ### 🧠 Code Review
 ```bash
 Actions → AI-Powered Code Review → Run workflow

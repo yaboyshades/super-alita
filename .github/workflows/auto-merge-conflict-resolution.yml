@@ -1,0 +1,561 @@
+name: Automatic Merge Conflict Resolution
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to resolve conflicts for'
+        required: true
+        type: string
+      strategy:
+        description: 'Resolution strategy'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - current
+          - incoming
+          - manual-review
+
+concurrency:
+  group: merge-conflict-resolution-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  detect-conflicts:
+    name: Detect Merge Conflicts
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      has_conflicts: ${{ steps.conflict_check.outputs.has_conflicts }}
+      conflict_files: ${{ steps.conflict_check.outputs.conflict_files }}
+      pr_number: ${{ steps.pr_info.outputs.pr_number }}
+      base_branch: ${{ steps.pr_info.outputs.base_branch }}
+      head_branch: ${{ steps.pr_info.outputs.head_branch }}
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR information
+        id: pr_info
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PR_NUMBER="${{ github.event.inputs.pr_number }}"
+            PR_INFO=$(gh pr view $PR_NUMBER --json number,baseRefName,headRefName)
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "base_branch=$(echo $PR_INFO | jq -r .baseRefName)" >> $GITHUB_OUTPUT
+            echo "head_branch=$(echo $PR_INFO | jq -r .headRefName)" >> $GITHUB_OUTPUT
+          else
+            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "base_branch=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
+            echo "head_branch=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for merge conflicts
+        id: conflict_check
+        run: |
+          # Setup git
+          git config user.name "Super Alita Bot"
+          git config user.email "bot@superalita.dev"
+          
+          BASE_BRANCH="${{ steps.pr_info.outputs.base_branch }}"
+          HEAD_BRANCH="${{ steps.pr_info.outputs.head_branch }}"
+          
+          # Fetch branches
+          git fetch origin $BASE_BRANCH:$BASE_BRANCH
+          git fetch origin $HEAD_BRANCH:$HEAD_BRANCH
+          
+          # Create temporary branch for testing merge
+          git checkout $BASE_BRANCH
+          git checkout -b temp-merge-test
+          
+          # Attempt merge to detect conflicts
+          if git merge $HEAD_BRANCH --no-commit --no-ff; then
+            echo "has_conflicts=false" >> $GITHUB_OUTPUT
+            echo "conflict_files=" >> $GITHUB_OUTPUT
+            git merge --abort 2>/dev/null || true
+          else
+            echo "has_conflicts=true" >> $GITHUB_OUTPUT
+            CONFLICT_FILES=$(git diff --name-only --diff-filter=U | tr '\n' ',' | sed 's/,$//')
+            echo "conflict_files=$CONFLICT_FILES" >> $GITHUB_OUTPUT
+            git merge --abort 2>/dev/null || true
+          fi
+          
+          # Cleanup
+          git checkout $BASE_BRANCH
+          git branch -D temp-merge-test
+
+  auto-resolve:
+    name: Auto-Resolve Conflicts
+    needs: detect-conflicts
+    if: needs.detect-conflicts.outputs.has_conflicts == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pathlib
+
+      - name: Setup git
+        run: |
+          git config user.name "Super Alita Bot"
+          git config user.email "bot@superalita.dev"
+
+      - name: Attempt automatic conflict resolution
+        id: auto_resolve
+        run: |
+          BASE_BRANCH="${{ needs.detect-conflicts.outputs.base_branch }}"
+          HEAD_BRANCH="${{ needs.detect-conflicts.outputs.head_branch }}"
+          PR_NUMBER="${{ needs.detect-conflicts.outputs.pr_number }}"
+          STRATEGY="${{ github.event.inputs.strategy || 'auto' }}"
+          
+          # Fetch branches
+          git fetch origin $BASE_BRANCH:$BASE_BRANCH
+          git fetch origin $HEAD_BRANCH:$HEAD_BRANCH
+          
+          # Create resolution branch
+          RESOLUTION_BRANCH="auto-resolve-conflicts-pr-$PR_NUMBER"
+          git checkout $HEAD_BRANCH
+          git checkout -b $RESOLUTION_BRANCH
+          
+          # Attempt merge
+          if git merge $BASE_BRANCH --no-commit --no-ff; then
+            echo "No conflicts detected in this attempt"
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "reason=no_conflicts_found" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Use Python script to resolve conflicts
+          python3 << 'EOF'
+          import sys
+          import subprocess
+          import re
+          from pathlib import Path
+          
+          def detect_conflicts():
+              """Detect files with merge conflicts."""
+              result = subprocess.run(
+                  ["git", "diff", "--name-only", "--diff-filter=U"],
+                  capture_output=True, text=True
+              )
+              if result.returncode != 0:
+                  return []
+              return [f.strip() for f in result.stdout.split('\n') if f.strip()]
+          
+          def analyze_conflict_file(file_path):
+              """Analyze a file with merge conflicts."""
+              try:
+                  with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                      content = f.read()
+              except Exception as e:
+                  print(f"Could not read {file_path}: {e}")
+                  return None
+              
+              # Find conflict markers
+              conflict_pattern = r'<<<<<<< .*?\n(.*?)\n=======\n(.*?)\n>>>>>>> .*?\n'
+              conflicts = []
+              
+              for match in re.finditer(conflict_pattern, content, re.DOTALL):
+                  conflicts.append({
+                      "start_pos": match.start(),
+                      "end_pos": match.end(),
+                      "current_branch": match.group(1).strip(),
+                      "incoming_branch": match.group(2).strip(),
+                      "full_match": match.group(0)
+                  })
+              
+              return conflicts if conflicts else None
+          
+          def resolve_conflict_auto(file_path, conflicts):
+              """Attempt automatic resolution of conflicts."""
+              try:
+                  with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                      content = f.read()
+              except Exception:
+                  return False
+              
+              resolved_content = content
+              
+              for conflict in conflicts:
+                  current = conflict["current_branch"]
+                  incoming = conflict["incoming_branch"]
+                  
+                  # Strategy 1: If one side is empty, take the non-empty side
+                  if not current.strip() and incoming.strip():
+                      resolution = incoming
+                  elif current.strip() and not incoming.strip():
+                      resolution = current
+                  # Strategy 2: If both sides are identical, use either
+                  elif current.strip() == incoming.strip():
+                      resolution = current
+                  # Strategy 3: For imports, try to merge
+                  elif is_import_section(current, incoming):
+                      resolution = merge_imports(current, incoming)
+                  # Strategy 4: For simple additions, combine both
+                  elif is_additive_change(current, incoming):
+                      resolution = current.rstrip() + '\n' + incoming.rstrip()
+                  else:
+                      # Can't auto-resolve
+                      return False
+                  
+                  # Replace the conflict section
+                  resolved_content = resolved_content.replace(conflict["full_match"], resolution + "\n")
+              
+              try:
+                  with open(file_path, 'w', encoding='utf-8') as f:
+                      f.write(resolved_content)
+                  return True
+              except Exception:
+                  return False
+          
+          def is_import_section(current, incoming):
+              """Check if conflict is in imports."""
+              import_keywords = ["import ", "from ", "#include", "using ", "require("]
+              return any(keyword in current or keyword in incoming for keyword in import_keywords)
+          
+          def is_additive_change(current, incoming):
+              """Check if changes are purely additive."""
+              current_lines = set(line.strip() for line in current.split('\n') if line.strip())
+              incoming_lines = set(line.strip() for line in incoming.split('\n') if line.strip())
+              return len(current_lines.intersection(incoming_lines)) == 0
+          
+          def merge_imports(current, incoming):
+              """Merge import statements."""
+              current_lines = [line.strip() for line in current.split('\n') if line.strip()]
+              incoming_lines = [line.strip() for line in incoming.split('\n') if line.strip()]
+              all_imports = list(dict.fromkeys(current_lines + incoming_lines))
+              return '\n'.join(all_imports)
+          
+          # Main resolution logic
+          strategy = "${{ github.event.inputs.strategy || 'auto' }}"
+          conflict_files = detect_conflicts()
+          
+          if not conflict_files:
+              print("No conflict files found")
+              sys.exit(1)
+          
+          print(f"Found {len(conflict_files)} files with conflicts: {conflict_files}")
+          
+          resolved_files = []
+          failed_files = []
+          
+          for file_path in conflict_files:
+              conflicts = analyze_conflict_file(file_path)
+              if not conflicts:
+                  print(f"No conflicts found in {file_path}")
+                  continue
+              
+              print(f"Resolving {len(conflicts)} conflicts in {file_path}")
+              
+              if strategy == "auto":
+                  success = resolve_conflict_auto(file_path, conflicts)
+              elif strategy == "current":
+                  success = resolve_conflict_take_current(file_path, conflicts)
+              elif strategy == "incoming":
+                  success = resolve_conflict_take_incoming(file_path, conflicts)
+              else:
+                  success = False
+              
+              if success:
+                  resolved_files.append(file_path)
+                  subprocess.run(["git", "add", file_path])
+              else:
+                  failed_files.append(file_path)
+          
+          def resolve_conflict_take_current(file_path, conflicts):
+              try:
+                  with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                      content = f.read()
+                  for conflict in conflicts:
+                      content = content.replace(conflict["full_match"], conflict["current_branch"] + "\n")
+                  with open(file_path, 'w', encoding='utf-8') as f:
+                      f.write(content)
+                  return True
+              except Exception:
+                  return False
+          
+          def resolve_conflict_take_incoming(file_path, conflicts):
+              try:
+                  with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                      content = f.read()
+                  for conflict in conflicts:
+                      content = content.replace(conflict["full_match"], conflict["incoming_branch"] + "\n")
+                  with open(file_path, 'w', encoding='utf-8') as f:
+                      f.write(content)
+                  return True
+              except Exception:
+                  return False
+          
+          print(f"Resolution complete: {len(resolved_files)} resolved, {len(failed_files)} failed")
+          print(f"Resolved files: {resolved_files}")
+          print(f"Failed files: {failed_files}")
+          
+          # Exit with success if all files were resolved
+          if len(failed_files) == 0 and len(resolved_files) > 0:
+              sys.exit(0)
+          else:
+              sys.exit(1)
+          EOF
+          
+          if [ $? -eq 0 ]; then
+            echo "success=true" >> $GITHUB_OUTPUT
+            
+            # Commit the resolution
+            git commit -m "chore: auto-resolve merge conflicts in PR #$PR_NUMBER
+
+            Auto-resolved merge conflicts using strategy: $STRATEGY
+            
+            This commit was automatically generated by the Super Alita merge conflict resolution workflow.
+            Please review the changes carefully before merging."
+            
+            # Push the resolution branch
+            git push origin $RESOLUTION_BRANCH
+            
+            echo "resolution_branch=$RESOLUTION_BRANCH" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "reason=auto_resolution_failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create or update resolution PR
+        if: steps.auto_resolve.outputs.success == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.detect-conflicts.outputs.pr_number }};
+            const resolutionBranch = '${{ steps.auto_resolve.outputs.resolution_branch }}';
+            const baseBranch = '${{ needs.detect-conflicts.outputs.base_branch }}';
+            const conflictFiles = '${{ needs.detect-conflicts.outputs.conflict_files }}';
+            const strategy = '${{ github.event.inputs.strategy || 'auto' }}';
+            
+            // Check if resolution PR already exists
+            const { data: existingPRs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${resolutionBranch}`
+            });
+            
+            const prBody = `## 🔧 Automatic Merge Conflict Resolution
+
+            This PR contains automatic resolution of merge conflicts found in PR #${prNumber}.
+
+            ### Resolution Details
+            - **Strategy Used**: \`${strategy}\`
+            - **Conflicted Files**: \`${conflictFiles}\`
+            - **Resolution Branch**: \`${resolutionBranch}\`
+
+            ### What This PR Does
+            - Automatically resolves merge conflicts using intelligent strategies
+            - Preserves both sides of additive changes when possible
+            - Merges import statements intelligently
+            - Uses the specified resolution strategy for other conflicts
+
+            ### Next Steps
+            1. 🔍 **Review the changes carefully** - especially in files with complex conflicts
+            2. 🧪 **Test the resolved code** to ensure functionality is preserved
+            3. ✅ **Approve and merge** if the resolution looks correct
+            4. 🔄 **Apply these changes** to the original PR #${prNumber}
+
+            ### ⚠️ Important Notes
+            - This is an automated resolution - human review is recommended
+            - Complex conflicts may need manual review and adjustment
+            - Test thoroughly before merging to ensure no functionality is broken
+
+            ---
+            *Generated by Super Alita Automatic Merge Conflict Resolution*`;
+
+            if (existingPRs.length > 0) {
+              // Update existing PR
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: existingPRs[0].number,
+                body: prBody
+              });
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingPRs[0].number,
+                body: `🔄 **Conflict resolution updated**\n\nThe merge conflicts have been re-resolved with the latest changes. Please review the updated resolution.`
+              });
+            } else {
+              // Create new PR
+              const { data: newPR } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🔧 Auto-resolve merge conflicts for PR #${prNumber}`,
+                head: resolutionBranch,
+                base: baseBranch,
+                body: prBody
+              });
+              
+              // Add labels
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: newPR.number,
+                labels: ['automated', 'merge-conflict-resolution', 'needs-review']
+              });
+            }
+
+      - name: Comment on original PR
+        if: steps.auto_resolve.outputs.success == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.detect-conflicts.outputs.pr_number }};
+            const resolutionBranch = '${{ steps.auto_resolve.outputs.resolution_branch }}';
+            const strategy = '${{ github.event.inputs.strategy || 'auto' }}';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `## 🤖 Automatic Merge Conflict Resolution
+
+            I've detected merge conflicts in this PR and attempted to resolve them automatically!
+
+            ### ✅ Resolution Status: Success
+            - **Strategy Used**: \`${strategy}\`
+            - **Resolution Branch**: \`${resolutionBranch}\`
+
+            ### 📋 Next Steps
+            1. Check the new PR created with the resolved conflicts
+            2. Review the automatic resolution carefully
+            3. If the resolution looks good, you can apply these changes to this PR
+
+            ### 🔧 Available Commands
+            - Comment \`@github-actions resolve conflicts auto\` to re-run with auto strategy
+            - Comment \`@github-actions resolve conflicts current\` to take current branch changes
+            - Comment \`@github-actions resolve conflicts incoming\` to take incoming branch changes
+
+            ---
+            *This is an automated message from Super Alita's conflict resolution system*`
+            });
+
+      - name: Handle resolution failure
+        if: steps.auto_resolve.outputs.success == 'false' && steps.auto_resolve.outputs.reason != 'no_conflicts_found'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.detect-conflicts.outputs.pr_number }};
+            const conflictFiles = '${{ needs.detect-conflicts.outputs.conflict_files }}';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `## ⚠️ Automatic Merge Conflict Resolution Failed
+
+            I attempted to automatically resolve the merge conflicts in this PR, but some conflicts are too complex for automatic resolution.
+
+            ### 🔍 Conflicted Files
+            \`${conflictFiles}\`
+
+            ### 🛠️ Manual Resolution Required
+            These conflicts require human intervention because they involve:
+            - Complex logic changes that conflict
+            - Ambiguous merges where both sides modify the same code
+            - Files that couldn't be automatically analyzed
+
+            ### 📋 Manual Resolution Steps
+            1. Check out this PR branch locally
+            2. Merge the base branch: \`git merge ${baseBranch}\`
+            3. Manually resolve conflicts in the listed files
+            4. Test your changes thoroughly
+            5. Commit and push the resolution
+
+            ### 🔧 Alternative Strategies
+            You can still try alternative automatic strategies:
+            - Comment \`@github-actions resolve conflicts current\` to take all current branch changes
+            - Comment \`@github-actions resolve conflicts incoming\` to take all incoming branch changes
+
+            ---
+            *This is an automated message from Super Alita's conflict resolution system*`
+            });
+
+  handle-comment-commands:
+    name: Handle Comment Commands
+    if: |
+      github.event_name == 'issue_comment' && 
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@github-actions resolve conflicts')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Parse command
+        id: parse_command
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+          if [[ "$COMMENT" =~ @github-actions[[:space:]]+resolve[[:space:]]+conflicts[[:space:]]+([a-z]+) ]]; then
+            STRATEGY="${BASH_REMATCH[1]}"
+            echo "strategy=$STRATEGY" >> $GITHUB_OUTPUT
+            echo "valid=true" >> $GITHUB_OUTPUT
+          else
+            echo "valid=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger workflow
+        if: steps.parse_command.outputs.valid == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'auto-merge-conflict-resolution.yml',
+              ref: 'main',
+              inputs: {
+                pr_number: '${{ github.event.issue.number }}',
+                strategy: '${{ steps.parse_command.outputs.strategy }}'
+              }
+            });
+
+      - name: Acknowledge command
+        if: steps.parse_command.outputs.valid == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ github.event.comment.id }},
+              content: '+1'
+            });
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.issue.number }},
+              body: `🤖 Command received! Starting automatic conflict resolution with strategy: \`${{ steps.parse_command.outputs.strategy }}\`\n\nI'll analyze the conflicts and attempt to resolve them. Check back in a few minutes for results.`
+            });

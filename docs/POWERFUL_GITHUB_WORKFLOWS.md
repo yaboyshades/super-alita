@@ -4,7 +4,7 @@ This document provides a comprehensive guide to the powerful automation workflow
 
 ## 📋 Overview
 
-The Super Alita automation system consists of 6 powerful workflows that work together to provide:
+The Super Alita automation system consists of 7 powerful workflows that work together to provide:
 
 - **Smart Release Management** with semantic versioning
 - **Intelligent Dependency Updates** with security-first approach
@@ -12,6 +12,7 @@ The Super Alita automation system consists of 6 powerful workflows that work tog
 - **AI-Powered Code Review** with DeepCode integration
 - **Intelligent Issue & PR Management** with auto-labeling
 - **Workflow Orchestration** with health monitoring
+- **Automatic Merge Conflict Resolution** with intelligent strategies
 
 ## 🔄 Workflow Details
 
@@ -167,6 +168,52 @@ benchmark_type: [quick, full, stress, comparison]
 - Live dashboard generation
 - System health alerting
 - Usage analytics
+
+### 7. Automatic Merge Conflict Resolution (`auto-merge-conflict-resolution.yml`)
+
+**Purpose**: Automatically detects and resolves merge conflicts in pull requests using intelligent strategies.
+
+**Triggers**:
+- Pull request opened/synchronized/reopened
+- Comment commands (`@github-actions resolve conflicts [strategy]`)
+- Manual workflow dispatch with PR number and strategy selection
+
+**Key Features**:
+- Intelligent conflict detection and analysis
+- Multiple resolution strategies: auto, current, incoming
+- Smart merging for imports and additive changes
+- Automatic PR creation with resolved conflicts
+- Comment-based manual triggering
+- Comprehensive conflict reporting
+
+**Resolution Strategies**:
+```yaml
+auto:     # Intelligent resolution using content analysis
+current:  # Take changes from the current branch
+incoming: # Take changes from the incoming branch
+```
+
+**Comment Commands**:
+```bash
+# Trigger automatic resolution
+@github-actions resolve conflicts auto
+
+# Take current branch changes
+@github-actions resolve conflicts current
+
+# Take incoming branch changes  
+@github-actions resolve conflicts incoming
+```
+
+**Manual Usage**:
+```bash
+# Emergency conflict resolution
+1. Go to Actions → Automatic Merge Conflict Resolution
+2. Click "Run workflow"
+3. Enter PR number
+4. Select resolution strategy (auto/current/incoming)
+5. Click "Run workflow"
+```
 
 **Health Status Levels**:
 - **Healthy**: 80%+ success rate (green)
