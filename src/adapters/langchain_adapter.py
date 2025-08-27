@@ -8,6 +8,7 @@ its own thread to avoid ``RuntimeError`` from ``asyncio.run``.
 """
 
 from __future__ import annotations
+
 import asyncio
 import threading
 from typing import Any, Protocol
@@ -69,8 +70,9 @@ class LangChainAdapter:
 
 from __future__ import annotations
 
-from typing import Any, Callable, TypeVar
 import inspect
+from collections.abc import Callable
+from typing import TypeVar
 
 T = TypeVar("T")
 

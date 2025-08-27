@@ -1,9 +1,6 @@
 
 from __future__ import annotations
 
-
-from __future__ import annotations
-
 from cortex.planner import parallel_wrapper as pw
 
 
@@ -39,6 +36,7 @@ def test_sequential_execution_without_langchain(monkeypatch):
 
 
 import pytest
+
 from cortex.planner.parallel_wrapper import ParallelWrapper
 
 
@@ -64,6 +62,7 @@ async def test_parallel_wrapper_standardizes_results():
 
 
 import asyncio
+
 from cortex.planner.parallel_wrapper import ParallelLadderWrapper
 
 

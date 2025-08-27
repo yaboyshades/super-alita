@@ -1,4 +1,3 @@
-import pytest
 
 from src.reug_runtime import adapter
 
