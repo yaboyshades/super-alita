@@ -9,10 +9,7 @@ from __future__ import annotations
 
 import argparse
 import ast
-import sys
 from pathlib import Path
-from typing import Set
-
 
 # Known standard library modules (Python 3.11+)
 STDLIB_MODULES = {
@@ -56,7 +53,7 @@ class ImportVisitor(ast.NodeVisitor):
     """AST visitor to extract import statements."""
     
     def __init__(self):
-        self.imports: Set[str] = set()
+        self.imports: set[str] = set()
     
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
@@ -67,10 +64,10 @@ class ImportVisitor(ast.NodeVisitor):
             self.imports.add(node.module.split('.')[0])
 
 
-def extract_imports_from_file(file_path: Path) -> Set[str]:
+def extract_imports_from_file(file_path: Path) -> set[str]:
     """Extract import statements from a Python file."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, encoding='utf-8') as f:
             content = f.read()
         
         tree = ast.parse(content)
@@ -82,7 +79,7 @@ def extract_imports_from_file(file_path: Path) -> Set[str]:
         return set()
 
 
-def scan_directory(directory: Path) -> Set[str]:
+def scan_directory(directory: Path) -> set[str]:
     """Scan a directory recursively for Python files and extract imports."""
     imports = set()
     
@@ -94,7 +91,7 @@ def scan_directory(directory: Path) -> Set[str]:
     return imports
 
 
-def filter_external_imports(imports: Set[str]) -> Set[str]:
+def filter_external_imports(imports: set[str]) -> set[str]:
     """Filter out standard library and relative imports."""
     external = set()
     
@@ -116,7 +113,7 @@ def filter_external_imports(imports: Set[str]) -> Set[str]:
     return external
 
 
-def generate_requirements(imports: Set[str], is_test: bool = False) -> list[str]:
+def generate_requirements(imports: set[str], is_test: bool = False) -> list[str]:
     """Generate requirements list from imports."""
     requirements = set()
     
