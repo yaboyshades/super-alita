@@ -223,7 +223,7 @@ class MCPBridge:
 
     def _create_mcp_executor(self, name: str):
         async def _exec(**kwargs):
-            return await self.mcp_registry.invoke(name, kwargs)
+            return await self.mcp_registry.ainvoke(name, kwargs)
 
         return _exec
 
