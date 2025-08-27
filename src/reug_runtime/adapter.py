@@ -6,7 +6,8 @@ minimal local implementations so calling code can continue to operate.
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable
+from collections.abc import Callable, Iterable
+from typing import Any
 
 try:  # pragma: no cover - optional dependency
     from langchain_core.runnables import RunnableLambda as _LCRunnableLambda

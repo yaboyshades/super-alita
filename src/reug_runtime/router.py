@@ -16,7 +16,6 @@ conflicts are resolved or provider-specific logic evolves.
 
 import asyncio
 import json
-import re
 import time
 import uuid
 from collections.abc import AsyncGenerator
@@ -24,8 +23,6 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
-
-from src.telemetry import build_copilot_context
 
 from .config import SETTINGS
 from .message_mw import MessageContext, apply_all

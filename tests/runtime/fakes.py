@@ -1,7 +1,7 @@
 import asyncio
+import inspect
 import json
 from collections.abc import AsyncGenerator
-import inspect
 from typing import Any
 
 
