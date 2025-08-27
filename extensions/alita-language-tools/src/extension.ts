@@ -76,6 +76,72 @@ export async function activate(ctx: vscode.ExtensionContext) {
   const telemetry = createTelemetry(ctx);
   telemetry?.send('alita/activated', {});
 
+  // ---- DeepCode Diff Results Tree (lightweight) ----
+  interface DeepCodeFileNode { type: 'file'; path: string; diff: string }
+  class DeepCodeDiffProvider implements vscode.TreeDataProvider<DeepCodeFileNode> {
+    private _onDidChangeTreeData = new vscode.EventEmitter<void>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+    private latest: { diffs?: any[] } | null = null;
+    constructor(private readonly ctx: vscode.ExtensionContext, private readonly telemetry?: ReturnType<typeof createTelemetry>) {}
+    refresh() { this._onDidChangeTreeData.fire(); }
+    setLatest(obj: any) { this.latest = obj || null; this.refresh(); }
+    getTreeItem(el: DeepCodeFileNode): vscode.TreeItem {
+      const t = new vscode.TreeItem(el.path, vscode.TreeItemCollapsibleState.None);
+      t.contextValue = 'deepcodeFile';
+      t.description = 'diff';
+      t.tooltip = 'Unified diff';
+      return t;
+    }
+    getChildren(): DeepCodeFileNode[] {
+      if (!this.latest) return [];
+      const diffs = Array.isArray(this.latest.diffs) ? this.latest.diffs : [];
+      return diffs.map(d => ({ type: 'file', path: String(d.path || d.file || 'unknown'), diff: String(d.diff || d.patch || '') }));
+    }
+    getLatestJson() { return this.latest; }
+  }
+  const dcProvider = new DeepCodeDiffProvider(ctx, telemetry ?? undefined);
+  vscode.window.registerTreeDataProvider('alitaDeepCodeView', dcProvider);
+
+  // Connectivity status bar & periodic poll
+  const connItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
+  connItem.text = 'Alita: $(sync~spin)';
+  connItem.tooltip = 'Checking Alita connectivity...';
+  connItem.command = 'alita.connectivity.ping';
+  connItem.show();
+  ctx.subscriptions.push(connItem);
+
+  async function checkConnectivity(silent = false) {
+    const cfg = vscode.workspace.getConfiguration('alita');
+    const runtime = (cfg.get<string>('runtime.host') || 'http://127.0.0.1:8080').replace(/\/$/, '');
+    const ollama = (cfg.get<string>('ollama.host') || 'http://127.0.0.1:11434').replace(/\/$/, '');
+    let rtOk = false; let llmOk = false;
+    try {
+      const r = await (globalThis as any).fetch(runtime + '/health/simple');
+      rtOk = r.ok;
+    } catch { /* ignore */ }
+    try {
+      const o = await (globalThis as any).fetch(ollama + '/api/tags');
+      if (o.ok) {
+        const tags = await o.json();
+        const target = cfg.get<string>('ollama.model') || 'gpt-oss:20b';
+        llmOk = Array.isArray(tags?.models) && tags.models.some((m: any) => m.name === target);
+      }
+    } catch { /* ignore */ }
+    const state = rtOk && llmOk ? '$(pass) Ready' : rtOk ? '$(server) LLM?' : llmOk ? '$(warning) Runtime?' : '$(circle-slash) Down';
+    connItem.text = `Alita: ${state}`;
+    connItem.tooltip = `Runtime: ${rtOk ? 'OK' : 'FAIL'} | LLM: ${llmOk ? 'OK' : 'FAIL'}`;
+    if (!silent) telemetry?.send('alita/connectivity', { runtime: String(rtOk), llm: String(llmOk) });
+    return { rtOk, llmOk };
+  }
+  void checkConnectivity(true);
+  const poll = setInterval(() => { void checkConnectivity(true); }, 30000);
+  ctx.subscriptions.push({ dispose: () => clearInterval(poll) });
+
+  ctx.subscriptions.push(vscode.commands.registerCommand('alita.connectivity.ping', async () => {
+    const { rtOk, llmOk } = await checkConnectivity(false);
+    vscode.window.showInformationMessage(`Alita connectivity - Runtime: ${rtOk ? 'OK' : 'FAIL'} | LLM: ${llmOk ? 'OK' : 'FAIL'}`);
+  }));
+
   // Report codegen metadata (if present)
   try {
     const ext = vscode.extensions.getExtension('super-alita.alita-language-tools');
@@ -305,6 +371,62 @@ export async function activate(ctx: vscode.ExtensionContext) {
     } catch (err) {
       vscode.window.showErrorMessage('DeepCode generate failed: ' + (err as Error).message);
       telemetry?.send('alita/deepcode/generate', { ok: 'false' });
+    }
+  }));
+
+  // DeepCode: Refresh results
+  disposables.push(vscode.commands.registerCommand('alita.deepcode.refreshResults', async () => {
+    const cfg = vscode.workspace.getConfiguration('alita');
+    const base = (cfg.get<string>('runtime.host') || 'http://127.0.0.1:8080').replace(/\/$/, '');
+    const url = `${base}/deepcode/latest`;
+    try {
+      const resp = await (globalThis as any).fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const json = await resp.json();
+      dcProvider.setLatest(json);
+      if (!Array.isArray(json.diffs) || json.diffs.length === 0) {
+        vscode.window.showInformationMessage('DeepCode: No diffs in latest proposal.');
+      }
+      telemetry?.send('alita/deepcode/refresh', { ok: 'true' });
+    } catch (err) {
+      vscode.window.showWarningMessage('DeepCode refresh failed: ' + (err as Error).message);
+      telemetry?.send('alita/deepcode/refresh', { ok: 'false' });
+    }
+  }));
+
+  // DeepCode: Show results (focus view)
+  disposables.push(vscode.commands.registerCommand('alita.deepcode.showResults', async () => {
+    await vscode.commands.executeCommand('alita.deepcode.refreshResults');
+    await vscode.commands.executeCommand('workbench.view.explorer');
+    // Try reveal by creating dummy selection (API limitations w/out view API)
+  }));
+
+  // DeepCode: Open diff document for selected file
+  disposables.push(vscode.commands.registerCommand('alita.deepcode.openDiffDoc', async (node?: any) => {
+    const target = node as { diff?: string; path?: string } | undefined;
+    if (!target || !target.diff) { vscode.window.showWarningMessage('No diff available.'); return; }
+    const doc = await vscode.workspace.openTextDocument({ content: target.diff, language: 'diff' });
+    await vscode.window.showTextDocument(doc, { preview: true });
+  }));
+
+  // DeepCode: Apply selected file diff (delegates to runtime orchestrator apply endpoint)
+  disposables.push(vscode.commands.registerCommand('alita.deepcode.applySelected', async (node?: any) => {
+    const target = node as { path?: string } | undefined;
+    if (!target || !target.path) { vscode.window.showWarningMessage('No file selected.'); return; }
+    const confirm = await vscode.window.showWarningMessage(`Apply proposed changes for ${target.path}?`, { modal: true }, 'Apply');
+    if (confirm !== 'Apply') return;
+    const cfg = vscode.workspace.getConfiguration('alita');
+    const base = (cfg.get<string>('runtime.host') || 'http://127.0.0.1:8080').replace(/\/$/, '');
+    const url = `${base}/deepcode/apply`;
+    try {
+      const resp = await (globalThis as any).fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paths: [target.path] }) });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const result = await resp.json();
+      vscode.window.showInformationMessage(`Apply request sent (files considered: ${result.file_count ?? '?'})`);
+      telemetry?.send('alita/deepcode/apply', { ok: 'true', count: String(result.file_count || 0) });
+    } catch (err) {
+      vscode.window.showErrorMessage('DeepCode apply failed: ' + (err as Error).message);
+      telemetry?.send('alita/deepcode/apply', { ok: 'false' });
     }
   }));
 

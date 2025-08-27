@@ -96,6 +96,11 @@
         "title": "Alita: Restart Language Server"
       },
       {
+        "command": "alita.connectivity.ping",
+        "title": "Alita: Connectivity Ping",
+        "category": "Alita"
+      },
+      {
         "command": "alita.search",
         "title": "Alita: MCP Search"
       },
@@ -129,6 +134,26 @@
       {
         "command": "alita.deepcode.generate",
         "title": "Alita: DeepCode — Generate From Prompt",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.deepcode.showResults",
+        "title": "Alita: DeepCode — Show Results",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.deepcode.refreshResults",
+        "title": "Alita: DeepCode — Refresh Results",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.deepcode.applySelected",
+        "title": "Alita: DeepCode — Apply Selected",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.deepcode.openDiffDoc",
+        "title": "Alita: DeepCode — Open Diff Document",
         "category": "Alita"
       },
       {
@@ -167,6 +192,35 @@
         {
           "command": "alita.codegen.status",
           "when": "!virtualWorkspace"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "alita.deepcode.applySelected",
+          "when": "view == alitaDeepCodeView && viewItem == deepcodeFile",
+          "group": "navigation@10"
+        },
+        {
+          "command": "alita.deepcode.openDiffDoc",
+          "when": "view == alitaDeepCodeView && viewItem == deepcodeFile",
+          "group": "navigation@11"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "alita.deepcode.refreshResults",
+          "when": "view == alitaDeepCodeView",
+          "group": "navigation@1"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "alitaDeepCodeView",
+          "name": "Alita DeepCode",
+          "when": "!virtualWorkspace",
+          "icon": "media/icon.png"
         }
       ]
     },

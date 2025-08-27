@@ -88,6 +88,14 @@ def _hash_json(obj: Any) -> str:
 # --- Resolve reug_runtime from local src if not installed ---
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
+# Ensure the PROJECT ROOT (parent of 'src') is on sys.path so that
+# package imports like 'src.core.events' resolve. Previously we only
+# inserted the 'src' directory itself which makes top-level packages
+# (core, agents, etc.) importable, but breaks fully-qualified
+# 'src.*' imports used throughout the codebase.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+# (Optionally also ensure direct 'src' path for simpler 'core.*' imports)
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
@@ -481,6 +489,22 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             )  # type: ignore
         result = await plugin.apply_latest(filter_paths)  # type: ignore
         return JSONResponse(status_code=200, content=result)  # type: ignore
+
+    # Simplified minimal health (no deep dependency checks)
+    @app.get("/health/simple")  # type: ignore
+    async def health_simple() -> dict[str, str]:  # type: ignore
+        return {"status": "ok"}
+
+    # Route enumeration (debug only)
+    @app.get("/routes")  # type: ignore
+    async def list_routes() -> list[dict[str, str]]:  # type: ignore
+        info: list[dict[str, str]] = []
+        for r in app.router.routes:  # type: ignore[attr-defined]
+            path = getattr(r, "path", "")
+            methods = ",".join(sorted(getattr(r, "methods", []) or []))
+            if path:
+                info.append({"path": path, "methods": methods})
+        return info
 
     return app
 
