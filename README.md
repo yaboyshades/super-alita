@@ -22,6 +22,7 @@ Production-ready architecture with:
 - Real-time telemetry broadcasting via MCP
 - Automatic LLM fallback (Gemini -> local Super Alita -> mock) with telemetry events
 - Direct local Hugging Face model loading (`LLM_MODEL=hf:<model_id>`)
+- Optional LangChain runnable support via `reug_runtime.adapter` with local fallbacks
 
 ## Quick Start
 
@@ -110,7 +111,7 @@ To use VS Code Insiders with GPT-OSS hosted by Ollama (streamlined setup):
 
 ### Usage in VS Code Insiders
 
-- **Direct Ollama**: Command palette → `Alita: Invoke Agent (Ollama)` 
+- **Direct Ollama**: Command palette → `Alita: Invoke Agent (Ollama)`
   - Uses your local Ollama directly with model `gpt-oss:20b` (configured as default)
   - Streams response to a new Markdown document
 
