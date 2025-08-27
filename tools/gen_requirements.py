@@ -35,12 +35,12 @@ PACKAGE_MAPPING = {
     'numpy': 'numpy>=1.24.0',
     'openai': 'openai>=1.0',
     'orjson': 'orjson>=3.10.7',
-    'pydantic': 'pydantic>=2.11',
+    'pydantic': 'pydantic>=2.11',  # Use higher version consistently
     'pytest': 'pytest>=8.0.0',
-    'redis': 'redis>=5.0.0',
+    'redis': 'redis>=5.0.0',  # Use higher version consistently
     'sentence_transformers': 'sentence-transformers>=2.2.0',
     'starlette': 'starlette',
-    'uvicorn': 'uvicorn>=0.18.0',
+    'uvicorn': 'uvicorn[standard]>=0.24.0',  # Use standard version consistently
     'yaml': 'pyyaml',
     'dotenv': 'python-dotenv>=1.0.0',
     'protobuf': 'protobuf>=4.0',
@@ -118,7 +118,7 @@ def filter_external_imports(imports: Set[str]) -> Set[str]:
 
 def generate_requirements(imports: Set[str], is_test: bool = False) -> list[str]:
     """Generate requirements list from imports."""
-    requirements = []
+    requirements = set()
     
     for imp in sorted(imports):
         if imp in PACKAGE_MAPPING:
@@ -126,7 +126,7 @@ def generate_requirements(imports: Set[str], is_test: bool = False) -> list[str]
             
             # Check if this is a test-only dependency
             if is_test or imp not in TEST_ONLY_DEPS:
-                requirements.append(req)
+                requirements.add(req)
     
     # Add core dependencies that might not be explicitly imported
     if not is_test:
@@ -143,18 +143,34 @@ def generate_requirements(imports: Set[str], is_test: bool = False) -> list[str]
             'chromadb>=0.4.0',
             'sentence-transformers>=2.2.0',
             'openai>=1.0',
-            'openai-agents>=0.1'
+            'openai-agents>=0.1',
+            # ML and evolution
+            'scikit-learn>=1.3.0',
+            'scipy>=1.10.0',
+            'torch>=2.2.0',
+            # Development and linting
+            'ruff~=0.4',
+            'black',
+            'mypy',
+            # Web framework
+            'uvicorn[standard]>=0.24.0',
+            'websockets>=12.0',
+            # ACP server and search tooling
+            'acp-sdk>=0.1.0',
+            'tenacity>=8.2.0',
         ]
         for dep in core_deps:
-            if dep not in requirements:
-                requirements.append(dep)
+            requirements.add(dep)
     else:
         test_deps = [
             'pytest>=8.0.0',
             'pytest-asyncio>=0.21.0',
-            'redis>=5.0',
+            'pytest-cov>=4.0',
+            'jsonschema>=4.0.0',
+            # Core dependencies also needed for tests
+            'redis>=5.0.0',
             'aiohttp>=3.9',
-            'pydantic>=2.0.0',
+            'pydantic>=2.11',  # Use consistent version
             'aioredis>=2.0.0',
             'chromadb>=0.4.0',
             'google-generativeai>=0.3.0',
@@ -165,10 +181,9 @@ def generate_requirements(imports: Set[str], is_test: bool = False) -> list[str]
             'fakeredis>=2.0.0'
         ]
         for dep in test_deps:
-            if dep not in requirements:
-                requirements.append(dep)
+            requirements.add(dep)
     
-    return sorted(set(requirements))
+    return sorted(requirements)
 
 
 def main():
@@ -215,12 +230,18 @@ def main():
             f.write('# Core dependencies\n')
             for req in main_reqs:
                 f.write(f'{req}\n')
+            f.write('\n# Optional but recommended: faster Redis protocol parsing\n')
+            f.write('# hiredis>=2.3.2\n')
+            f.write('\n# GPU support (optional, install manually if needed)\n')
+            f.write('# torch[gpu]>=2.2.0\n')
         
         with open('requirements-test.txt', 'w') as f:
             f.write('# Test requirements\n')
             f.write('# Keep pytest aligned with the minversion specified in pyproject.toml\n')
             for req in test_reqs:
                 f.write(f'{req}\n')
+            f.write('\n# Optional protobuf support\n')
+            f.write('# protobuf>=4.0.0\n')
         
         print("Updated requirements.txt and requirements-test.txt")
     else:
