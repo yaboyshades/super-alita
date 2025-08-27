@@ -1,6 +1,7 @@
 import asyncio
 import json
 from collections.abc import AsyncGenerator
+import inspect
 from typing import Any
 
 
@@ -19,6 +20,11 @@ class FakeAbilityRegistry:
     def __init__(self) -> None:
         self._known = {"echo"}
         self._calls: list[dict[str, Any]] = []
+        class _EchoTool:
+            async def aexecute(self, payload: str) -> dict[str, str]:
+                return {"echo": payload}
+
+        self._impls: dict[str, Any] = {"echo": _EchoTool()}
 
     def get_available_tools_schema(self) -> list[dict[str, Any]]:
         return [
@@ -49,14 +55,28 @@ class FakeAbilityRegistry:
         return True
 
     async def register(self, contract: dict[str, Any]) -> None:
-        self._known.add(contract["tool_id"])
+        tid = contract["tool_id"]
+        self._known.add(tid)
+        self._impls.setdefault(tid, lambda **kwargs: {"ok": True, "args": kwargs})
 
     async def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         self._calls.append({"tool": tool_name, "args": dict(args)})
-        if tool_name == "echo":
-            return {"echo": args["payload"]}
-        # default fallback for dynamically-added tools
-        return {"ok": True, "args": args}
+        impl = self._impls.get(tool_name)
+        if impl is None:
+            return {"ok": True, "args": args}
+        fn = getattr(impl, "aexecute", None) or getattr(impl, "run", None) or impl
+        sig = inspect.signature(fn)
+        params = sig.parameters
+        accepts_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+        unexpected = [k for k in args if k not in params] if not accepts_var_kw else []
+        if unexpected:
+            raise TypeError(
+                f"Unexpected argument(s): {', '.join(sorted(unexpected))} for tool '{tool_name}'"
+            )
+        filtered = {k: v for k, v in args.items() if accepts_var_kw or k in params}
+        if inspect.iscoroutinefunction(fn):
+            return await fn(**filtered)
+        return fn(**filtered)
 
 
 class FakeKG:

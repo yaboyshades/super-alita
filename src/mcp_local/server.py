@@ -127,8 +127,8 @@ async def execute_tool(request: ToolExecutionRequest) -> ToolExecutionResponse:
         raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
 
     try:
-        # Execute tool using invoke
-        result = await registry.invoke(tool_name, params)
+        # Execute tool using ainvoke
+        result = await registry.ainvoke(tool_name, params)
     except Exception as e:
         logger.exception("Error executing tool")  # exception already includes traceback
         return ToolExecutionResponse(tool_name=tool_name, success=False, error=str(e))
