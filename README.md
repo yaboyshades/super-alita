@@ -272,6 +272,22 @@ Telemetry events stream to MCP for real-time inspection. New events introduced:
 - `llm_fallback` (selection decision)
 - `performance_metric` (duration metrics)
 
+## GitHub Copilot Integration
+
+This repository is configured for GitHub Copilot coding agent with:
+
+- **Custom Instructions**: Comprehensive setup guide in `.github/copilot-instructions.md`
+- **Automated Environment**: Deterministic setup workflow in `.github/workflows/copilot-setup.yml`
+- **Issue Templates**: Well-scoped task template in `.github/ISSUE_TEMPLATE/copilot-task.yml`
+
+### For Copilot Coding Agent:
+
+1. **Use the issue template** to create well-scoped, single-PR tasks
+2. **Follow the setup instructions** in `.github/copilot-instructions.md` for environment setup
+3. **Validate changes** with `python validate_deployment.py` (should pass 7/7 tests)
+
+See [GitHub's Copilot best practices](https://docs.github.com/copilot/how-tos/agents/copilot-coding-agent/best-practices-for-using-copilot-to-work-on-tasks) for more information.
+
 ## Development
 
 Run tests:
