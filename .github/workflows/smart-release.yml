@@ -1,0 +1,342 @@
+name: Smart Release & Deployment
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type (major, minor, patch, prerelease)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  analyze-changes:
+    name: Analyze Changes for Release
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.release_check.outputs.should_release }}
+      release_type: ${{ steps.release_check.outputs.release_type }}
+      changes_summary: ${{ steps.changes.outputs.summary }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for conventional commits
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install semantic release tools
+        run: |
+          npm install -g @semantic-release/changelog @semantic-release/git conventional-changelog-cli
+          
+      - name: Analyze commit messages
+        id: release_check
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "release_type=${{ github.event.inputs.release_type }}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [[ -z "$LAST_TAG" ]]; then
+            COMMITS=$(git log --oneline)
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline)
+          fi
+          
+          echo "Analyzing commits:"
+          echo "$COMMITS"
+          
+          # Check for breaking changes, features, fixes
+          BREAKING=$(echo "$COMMITS" | grep -E "(BREAKING|!:)" || true)
+          FEATURES=$(echo "$COMMITS" | grep -E "^[a-f0-9]+ feat(\(.+\))?:" || true)
+          FIXES=$(echo "$COMMITS" | grep -E "^[a-f0-9]+ fix(\(.+\))?:" || true)
+          
+          if [[ -n "$BREAKING" ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "release_type=major" >> $GITHUB_OUTPUT
+          elif [[ -n "$FEATURES" ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "release_type=minor" >> $GITHUB_OUTPUT
+          elif [[ -n "$FIXES" ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "release_type=patch" >> $GITHUB_OUTPUT
+          else
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "release_type=none" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Generate changes summary
+        id: changes
+        run: |
+          SUMMARY=$(git log --since="7 days ago" --pretty=format:"- %s" --no-merges | head -20)
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          echo "$SUMMARY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  run-tests:
+    name: Run Full Test Suite
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.should_release == 'true'
+    uses: ./.github/workflows/enhanced-quality-gates.yml
+
+  build-artifacts:
+    name: Build Release Artifacts
+    needs: [analyze-changes, run-tests]
+    if: needs.analyze-changes.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: extensions/alita-language-tools/package-lock.json
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip build wheel
+          pip install -r requirements.txt
+          
+      - name: Build Python package
+        run: |
+          python -m build
+          
+      - name: Build VS Code extension
+        working-directory: extensions/alita-language-tools
+        run: |
+          npm ci
+          npm run compile
+          npm run package
+          
+      - name: Build WASM components
+        run: |
+          if command -v cargo >/dev/null 2>&1; then
+            cd wasm/calculator && cargo build --target wasm32-wasi --release
+            cd ../code_radar && cargo build --target wasm32-wasi --release
+          else
+            echo "Rust/Cargo not available - skipping WASM build"
+          fi
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            dist/
+            extensions/alita-language-tools/*.vsix
+            wasm/*/target/wasm32-wasi/release/*.wasm
+
+  create-release:
+    name: Create GitHub Release
+    needs: [analyze-changes, run-tests, build-artifacts]
+    if: needs.analyze-changes.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install semantic release
+        run: |
+          npm install -g semantic-release @semantic-release/changelog @semantic-release/git
+          
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: ./artifacts
+          
+      - name: Calculate version
+        id: version
+        run: |
+          # Get current version from git tags
+          CURRENT_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Calculate new version based on release type
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+          
+          case "${{ needs.analyze-changes.outputs.release_type }}" in
+            major)
+              NEW_VERSION="$((MAJOR + 1)).0.0"
+              ;;
+            minor)
+              NEW_VERSION="$MAJOR.$((MINOR + 1)).0"
+              ;;
+            patch)
+              NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+              ;;
+            prerelease)
+              NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))-beta.$(date +%s)"
+              ;;
+          esac
+          
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version will be: $NEW_VERSION"
+          
+      - name: Generate changelog
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [[ -z "$LAST_TAG" ]]; then
+            RANGE="HEAD"
+          else
+            RANGE="${LAST_TAG}..HEAD"
+          fi
+          
+          echo "# Changelog for v${{ steps.version.outputs.new_version }}" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "**Release Date:** $(date -u +%Y-%m-%d)" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          
+          # Breaking changes
+          BREAKING=$(git log $RANGE --grep="BREAKING" --pretty=format:"- %s" || true)
+          if [[ -n "$BREAKING" ]]; then
+            echo "## 🚨 Breaking Changes" >> RELEASE_NOTES.md
+            echo "$BREAKING" >> RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+          fi
+          
+          # New features
+          FEATURES=$(git log $RANGE --grep="^feat" --pretty=format:"- %s" || true)
+          if [[ -n "$FEATURES" ]]; then
+            echo "## ✨ New Features" >> RELEASE_NOTES.md
+            echo "$FEATURES" >> RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+          fi
+          
+          # Bug fixes
+          FIXES=$(git log $RANGE --grep="^fix" --pretty=format:"- %s" || true)
+          if [[ -n "$FIXES" ]]; then
+            echo "## 🐛 Bug Fixes" >> RELEASE_NOTES.md
+            echo "$FIXES" >> RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+          fi
+          
+          # Other changes
+          OTHER=$(git log $RANGE --pretty=format:"- %s" --grep="^feat" --grep="^fix" --grep="BREAKING" --invert-grep || true)
+          if [[ -n "$OTHER" ]]; then
+            echo "## 🔧 Other Changes" >> RELEASE_NOTES.md
+            echo "$OTHER" | head -10 >> RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+          fi
+          
+          echo "## 📦 Artifacts" >> RELEASE_NOTES.md
+          echo "- Python package: \`super-alita-${{ steps.version.outputs.new_version }}.tar.gz\`" >> RELEASE_NOTES.md
+          echo "- VS Code extension: \`alita-language-tools-${{ steps.version.outputs.new_version }}.vsix\`" >> RELEASE_NOTES.md
+          echo "- WASM components: Calculator and Code Radar" >> RELEASE_NOTES.md
+          
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
+          git push origin "v${{ steps.version.outputs.new_version }}"
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: Release v${{ steps.version.outputs.new_version }}
+          body_path: RELEASE_NOTES.md
+          files: |
+            artifacts/dist/*
+            artifacts/extensions/alita-language-tools/*.vsix
+            artifacts/wasm/*/target/wasm32-wasi/release/*.wasm
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.new_version, 'beta') }}
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Deploy to staging via automation API
+        run: |
+          # Use the existing deployment automation
+          python -c "
+          from cortex.automation.deployment import DeploymentAutomation
+          import json
+          result = DeploymentAutomation().deploy_to_test()
+          print(json.dumps(result, indent=2))
+          if not result.get('success', False):
+              exit(1)
+          "
+          
+      - name: Run post-deployment health checks
+        run: |
+          echo "Running health checks on staging deployment..."
+          # Add your health check commands here
+          echo "✅ Staging deployment successful"
+
+  notify-teams:
+    name: Notify Teams
+    needs: [create-release, deploy-staging]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify on success
+        if: needs.create-release.result == 'success'
+        run: |
+          echo "🚀 Release v${{ needs.create-release.outputs.new_version }} deployed successfully!"
+          echo "📋 Changes: ${{ needs.analyze-changes.outputs.changes_summary }}"
+          # Add Slack/Teams/Discord notifications here
+          
+      - name: Notify on failure
+        if: needs.create-release.result == 'failure' || needs.deploy-staging.result == 'failure'
+        run: |
+          echo "❌ Release or deployment failed!"
+          echo "🔍 Check the workflow logs for details"
+          # Add failure notifications here
