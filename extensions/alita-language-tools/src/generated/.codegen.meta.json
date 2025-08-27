@@ -9,7 +9,7 @@
     "/home/runner/work/super-alita/super-alita/wasm/calculator/calculator.wit"
   ],
   "metrics": {
-    "lines": 38,
+    "lines": 41,
     "exports": [
       "world",
       "add",
@@ -19,8 +19,9 @@
       "analyze",
       "analyzeFile",
       "detectSmells",
-      "predictIssues"
+      "predictIssues",
+      "getPerformanceStats"
     ]
   },
-  "ts": "2025-08-27T10:29:11.063Z"
+  "ts": "2025-08-27T23:42:44.067Z"
 }

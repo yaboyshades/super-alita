@@ -61,9 +61,9 @@ def _collect_plugin_capabilities() -> list[dict[str, Any]]:
 
             for module in list(sys.modules.values()):
                 if hasattr(module, "plugin_registry") and hasattr(
-                    getattr(module, "plugin_registry"), "plugins"
+                    module.plugin_registry, "plugins"
                 ):
-                    runtime_plugins = getattr(module.plugin_registry, "plugins")
+                    runtime_plugins = module.plugin_registry.plugins
                     break
                 if hasattr(module, "plugins") and isinstance(module.plugins, dict):
                     runtime_plugins = module.plugins

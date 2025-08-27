@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
+import sys
 from types import ModuleType
 from typing import Any
-
-import sys
 
 
 class _FakePlugin:
