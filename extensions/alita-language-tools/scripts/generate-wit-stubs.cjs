@@ -147,7 +147,11 @@ function summarizeGenerated() {
   const previousHash = fs.existsSync(hashPath) ? fs.readFileSync(hashPath, 'utf8') : '';
   if (!FORCE && previousHash === currentHash) {
     console.log('[codegen] up-to-date; skipping');
-    writeMeta({ mode: 'skip', toolchain, inputs, metrics: summarizeGenerated(), ts: new Date().toISOString() });
+    // Check if we have real generated files or just stubs
+    const metrics = summarizeGenerated();
+    const hasRealExports = metrics.exports.length > 0 && metrics.lines > 5;
+    const mode = hasRealExports ? 'generated' : 'skip';
+    writeMeta({ mode, toolchain, inputs, metrics, ts: new Date().toISOString() });
     return;
   }
 
