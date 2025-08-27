@@ -1,5 +1,9 @@
 
 from __future__ import annotations
+
+
+from __future__ import annotations
+
 from cortex.planner import parallel_wrapper as pw
 
 
@@ -152,5 +156,4 @@ async def test_emits_telemetry_sequential_failure(monkeypatch):
     assert event["steps"] == 2
     assert event["success"] is False
     assert event["duration"] >= 0
-
 

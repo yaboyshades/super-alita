@@ -1,6 +1,5 @@
-
+=
 from __future__ import annotations
-
 from typing import Any, Dict, Iterable
 
 try:
@@ -47,6 +46,7 @@ def parallel_wrapper(runnables: Dict[str, Any]) -> RunnableParallel | RunnableSe
     if should_parallelize(runnables):
         return RunnableParallel(runnables)
     return RunnableSequence(runnables.values())
+
 
 
 from __future__ import annotations
