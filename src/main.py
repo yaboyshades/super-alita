@@ -7,11 +7,11 @@ import argparse
 import asyncio
 import contextlib
 import hashlib
+import inspect
 import json
 import logging
 import os
 import sys
-import inspect
 from collections.abc import AsyncGenerator, Callable
 from logging.config import dictConfig
 from pathlib import Path

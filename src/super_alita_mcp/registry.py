@@ -2,9 +2,10 @@
 """Minimal dynamic tool registry."""
 
 from __future__ import annotations
-from collections.abc import AsyncIterator, Awaitable, Callable
+
 import asyncio
 import inspect
+from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
@@ -89,7 +90,7 @@ class ToolRegistry:
 
         tool = self._tools[name]
 
-        if hasattr(tool, "astream") and callable(getattr(tool, "astream")):
+        if hasattr(tool, "astream") and callable(tool.astream):
             async for chunk in tool.astream(**args):
                 yield chunk
             return
@@ -125,10 +126,8 @@ class ToolRegistry:
 
 from __future__ import annotations
 
-import asyncio
 import time
 from collections.abc import Awaitable, Callable
-from pathlib import Path
 from typing import Any
 
 try:  # pragma: no cover - telemetry optional

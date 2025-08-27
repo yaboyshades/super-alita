@@ -1,12 +1,12 @@
 {
-  "mode": "skip",
+  "mode": "stub",
   "toolchain": {
     "jco": false,
     "wasmTools": false
   },
   "inputs": [
-    "D:\\Coding_Projects\\super-alita-clean\\wasm\\code_radar\\radar.wit",
-    "D:\\Coding_Projects\\super-alita-clean\\wasm\\calculator\\calculator.wit"
+    "/home/runner/work/super-alita/super-alita/wasm/code_radar/radar.wit",
+    "/home/runner/work/super-alita/super-alita/wasm/calculator/calculator.wit"
   ],
   "metrics": {
     "lines": 5,
@@ -14,5 +14,5 @@
       "world"
     ]
   },
-  "ts": "2025-08-27T04:18:43.805Z"
+  "ts": "2025-08-27T06:15:47.120Z"
 }
