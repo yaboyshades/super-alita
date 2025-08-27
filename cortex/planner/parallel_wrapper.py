@@ -1,6 +1,56 @@
 
 from __future__ import annotations
 
+from typing import Any, Dict, Iterable
+
+try:
+    from langchain_core.runnables import RunnableParallel, RunnableSequence
+
+    HAS_LANGCHAIN = True
+except Exception:  # pragma: no cover - fallback when LangChain missing
+    HAS_LANGCHAIN = False
+
+    class RunnableParallel:
+        """Simplistic local fallback for LangChain's RunnableParallel."""
+
+        def __init__(self, steps: Dict[str, Any]):
+            self.steps = steps
+
+        def invoke(self, input: Any, **kwargs: Any) -> Dict[str, Any]:
+            return {
+                name: runnable.invoke(input, **kwargs)
+                for name, runnable in self.steps.items()
+            }
+
+    class RunnableSequence:
+        """Simplistic local fallback for LangChain's RunnableSequence."""
+
+        def __init__(self, steps: Iterable[Any]):
+            self.steps = list(steps)
+
+        def invoke(self, input: Any, **kwargs: Any) -> Any:
+            result = input
+            for step in self.steps:
+                result = step.invoke(result, **kwargs)
+            return result
+
+
+def should_parallelize(runnables: Dict[str, Any]) -> bool:
+    """Determine whether to parallelize a set of runnables."""
+    if not HAS_LANGCHAIN:
+        return False
+    return len(runnables) > 1
+
+
+def parallel_wrapper(runnables: Dict[str, Any]) -> RunnableParallel | RunnableSequence:
+    """Return a parallel or sequential wrapper depending on availability."""
+    if should_parallelize(runnables):
+        return RunnableParallel(runnables)
+    return RunnableSequence(runnables.values())
+
+
+from __future__ import annotations
+
 from typing import Any
 
 
@@ -30,7 +80,7 @@ class ParallelWrapper:
         """Execute decide-and-run on underlying planner and normalize output."""
         result = await self._planner.decide_and_run(*args, **kwargs)
         return self._process_parallel_results(result)
-=======
+
 
 import asyncio
 import logging
@@ -59,7 +109,7 @@ class ParallelLadderWrapper:
         tasks = [asyncio.create_task(run_one(name, r)) for name, r in self.steps]
         results = await asyncio.gather(*tasks)
         return {name: payload for name, payload in results}
-=======
+
 from __future__ import annotations
 
 import asyncio
@@ -108,7 +158,7 @@ async def decide_and_run(
     finally:
         duration = time.perf_counter() - start
         _emit_telemetry(mode, len(functions), duration, success)
-=======
+
 from typing import Sequence
 
 
@@ -160,5 +210,6 @@ def should_parallelize(
     parallel_time = _estimate_parallel_time(substeps)
     benefit = sequential_time - parallel_time
     return benefit > min_parallel_benefit
+
 
 
