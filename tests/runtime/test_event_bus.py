@@ -45,3 +45,52 @@ async def test_redis_event_bus_publishes():
     assert message is not None
     data = json.loads(message["data"])
     assert data["event_type"] == "PING"
+
+
+@pytest.mark.asyncio
+async def test_event_bus_stress_throughput_and_backpressure(monkeypatch):
+    """High-volume publish test with throughput metrics and backpressure."""
+    import asyncio
+    import fakeredis.aioredis
+    import redis.asyncio as redis
+
+    from src.core.event_bus_clean import EventBus
+    from src.core.events import BaseEvent
+
+    fake = fakeredis.aioredis.FakeRedis()
+    monkeypatch.setattr(redis, "Redis", lambda *a, **k: fake)
+
+    EventBus._instance = None
+    bus = EventBus()
+
+    max_queue = 50
+    queue: asyncio.Queue[BaseEvent] = asyncio.Queue(maxsize=max_queue)
+    dropped = 0
+
+    async def handler(evt: BaseEvent) -> None:
+        nonlocal dropped
+        try:
+            queue.put_nowait(evt)
+        except asyncio.QueueFull:
+            dropped += 1
+
+    await bus.subscribe("test_event", handler)
+    await bus.start()
+
+    total = 200
+    for _ in range(total):
+        await bus.publish(BaseEvent(event_type="test_event", source_plugin="tester"))
+
+    await asyncio.sleep(1.1)
+    await bus.publish(BaseEvent(event_type="test_event", source_plugin="tester"))
+    await asyncio.sleep(0.1)
+
+    metrics = bus.get_metrics()
+    assert metrics["recv_count"] == total + 1
+    assert metrics["eps"] > 0
+
+    processed = queue.qsize()
+    assert processed <= max_queue
+    assert processed + dropped == total + 1
+
+    await bus.shutdown()
