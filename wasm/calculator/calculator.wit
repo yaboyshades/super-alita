@@ -12,6 +12,7 @@ interface telemetry {
 
 world calculator {
     import telemetry;
+    use telemetry.{performance-metric};
     export add: func(a: u32, b: u32) -> u32;
     export multiply: func(a: u32, b: u32) -> u32;
     export divide: func(a: u32, b: u32) -> result<u32, string>;
