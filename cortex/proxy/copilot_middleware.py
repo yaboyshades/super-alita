@@ -62,6 +62,17 @@ class ProcessOut(BaseModel):
     lint_results: dict[str, Any] | None = None
 
 
+class PromptAnalysisIn(BaseModel):
+    message: str
+
+
+class PromptAnalysisOut(BaseModel):
+    original_message: str
+    optimized_message: str
+    analysis: dict[str, Any]
+    optimization_metadata: dict[str, Any]
+
+
 def _list_repo_files(limit: int = 50) -> list[str]:
     files = []
     ignore_patterns = [
@@ -91,7 +102,8 @@ def _list_repo_files(limit: int = 50) -> list[str]:
 
 def _build_system_message(situation_brief: str, relevant_files: list[str]) -> str:
     files_str = "\n".join(f"- {f}" for f in relevant_files[:10])
-    return f"""You are a coding copilot. Use the situation brief and relevant files to produce precise, minimal diffs.
+    return f"""You are a coding copilot. Use the situation brief and relevant files \
+to produce precise, minimal diffs.
 
 Situation Brief:
 {situation_brief}
@@ -110,7 +122,10 @@ Rules:
 
 
 def _simple_situation_brief() -> str:
-    return "Current priorities: address failing tests, improve developer experience, maintain code quality. Prefer small, focused changes."
+    return (
+        "Current priorities: address failing tests, improve developer experience, "
+        "maintain code quality. Prefer small, focused changes."
+    )
 
 
 @app.get("/health")
@@ -123,19 +138,69 @@ async def augment_prompt(inp: AugmentIn):
     user_msg = inp.message
     situation_brief = _simple_situation_brief()
     files = _list_repo_files(limit=20)
+
+    # Try to use the intelligent prompt optimizer if available
+    optimized_msg = user_msg
+    optimization_metadata = {}
+
+    try:
+        from src.prompt.optimizer import analyze_user_prompt, optimize_user_prompt
+
+        # Create context for optimization
+        context = {
+            "available_tools": ["file_read", "code_analysis", "repository_context"],
+            "current_project": situation_brief[:100],  # Truncate for context
+            "system_capabilities": True,
+        }
+
+        # Add any additional context from the request
+        if inp.context:
+            context.update(inp.context)
+
+        # Optimize the user message
+        optimized_msg = optimize_user_prompt(user_msg, context=context)
+
+        # Get analysis for metadata
+        analysis = analyze_user_prompt(user_msg)
+        optimization_metadata = {
+            "optimization_applied": True,
+            "prompt_type": analysis.prompt_type.value,
+            "complexity_score": analysis.complexity_score,
+            "clarity_score": analysis.clarity_score,
+            "original_length": len(user_msg),
+            "optimized_length": len(optimized_msg),
+        }
+
+    except ImportError:
+        log.info("Prompt optimizer not available, using standard augmentation")
+        optimization_metadata = {
+            "optimization_applied": False,
+            "reason": "optimizer_not_available",
+        }
+    except Exception as e:
+        log.warning(f"Prompt optimization failed: {e}")
+        optimization_metadata = {
+            "optimization_applied": False,
+            "reason": f"error: {str(e)}",
+        }
+
     sys_msg = _build_system_message(situation_brief, files)
+
     log.info(
         "augment_prompt",
         extra={
             "user_msg_length": len(user_msg),
+            "optimized_msg_length": len(optimized_msg),
             "file_count": len(files),
             "top_files": files[:5],
+            "optimization_metadata": optimization_metadata,
         },
     )
+
     return AugmentOut(
         messages=[
             {"role": "system", "content": sys_msg},
-            {"role": "user", "content": user_msg},
+            {"role": "user", "content": optimized_msg},
         ],
         max_tokens=4000,
         temperature=0.1,
@@ -209,6 +274,77 @@ async def process_response(inp: ProcessIn):
     return ProcessOut(
         original_response=text, changes=changes, test_results=test_results
     )
+
+
+@app.post("/v1/analyze-prompt", response_model=PromptAnalysisOut)
+async def analyze_prompt(inp: PromptAnalysisIn):
+    """Analyze and optimize a prompt for testing and development purposes."""
+    user_msg = inp.message
+
+    try:
+        from src.prompt.optimizer import analyze_user_prompt, optimize_user_prompt
+
+        # Create context for optimization
+        context = {
+            "available_tools": ["file_read", "code_analysis", "repository_context"],
+            "current_project": "Super Alita development",
+            "system_capabilities": True,
+        }
+
+        # Optimize the user message
+        optimized_msg = optimize_user_prompt(user_msg, context=context)
+
+        # Get detailed analysis
+        analysis = analyze_user_prompt(user_msg)
+
+        optimization_metadata = {
+            "optimization_applied": True,
+            "prompt_type": analysis.prompt_type.value,
+            "complexity_score": analysis.complexity_score,
+            "clarity_score": analysis.clarity_score,
+            "completeness_score": analysis.completeness_score,
+            "detected_entities": analysis.detected_entities,
+            "suggested_enhancements": analysis.suggested_enhancements,
+            "confidence": analysis.confidence,
+            "original_length": len(user_msg),
+            "optimized_length": len(optimized_msg),
+        }
+
+        return PromptAnalysisOut(
+            original_message=user_msg,
+            optimized_message=optimized_msg,
+            analysis={
+                "prompt_type": analysis.prompt_type.value,
+                "complexity_score": analysis.complexity_score,
+                "clarity_score": analysis.clarity_score,
+                "completeness_score": analysis.completeness_score,
+                "detected_entities": analysis.detected_entities,
+                "suggested_enhancements": analysis.suggested_enhancements,
+                "confidence": analysis.confidence,
+            },
+            optimization_metadata=optimization_metadata,
+        )
+
+    except ImportError:
+        return PromptAnalysisOut(
+            original_message=user_msg,
+            optimized_message=user_msg,
+            analysis={"error": "Prompt optimizer not available"},
+            optimization_metadata={
+                "optimization_applied": False,
+                "reason": "optimizer_not_available",
+            },
+        )
+    except Exception as e:
+        return PromptAnalysisOut(
+            original_message=user_msg,
+            optimized_message=user_msg,
+            analysis={"error": f"Analysis failed: {str(e)}"},
+            optimization_metadata={
+                "optimization_applied": False,
+                "reason": f"error: {str(e)}",
+            },
+        )
 
 
 # Mount automation API
