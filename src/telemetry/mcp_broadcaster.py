@@ -151,9 +151,13 @@ class MCPTelemetryBroadcaster:
                 "metadata": event.metadata,
             }
 
-            # TODO: Implement actual MCP transmission
-            # For now, log to stderr so MCP server can capture it
-            print(f"TELEMETRY: {json.dumps(mcp_data)}", flush=True)
+            try:
+                from cortex.telemetry import emit as telemetry_emit
+            except Exception:
+                telemetry_emit = None
+
+            if telemetry_emit:
+                telemetry_emit(mcp_data)
 
         except Exception as e:
             logger.error(f"Failed to send event to MCP: {e}")
