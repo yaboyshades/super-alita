@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import sys
+import inspect
 from collections.abc import AsyncGenerator, Callable
 from logging.config import dictConfig
 from pathlib import Path
@@ -169,6 +170,12 @@ class SimpleAbilityRegistry:
                 "output_schema": {"type": "object"},
             }
         }
+        # Tool implementations keyed by name
+        class _EchoTool:
+            async def aexecute(self, payload: str) -> dict[str, Any]:
+                return {"echo": payload}
+
+        self._impls: dict[str, Any] = {"echo": _EchoTool()}
 
     def get_available_tools_schema(self) -> list[dict[str, Any]]:
         return list(self._contracts.values())
@@ -190,13 +197,26 @@ class SimpleAbilityRegistry:
         tid = contract["tool_id"]
         self._contracts[tid] = contract
         self._known.add(tid)
+        # Default implementation accepts any kwargs
+        self._impls.setdefault(tid, lambda **kwargs: {"ok": True, "tool": tid, "args": kwargs})
 
     async def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
-        # Implement your actual bindings here (MCP, HTTP APIs, Python functions).
-        if tool_name == "echo":
-            return {"echo": args.get("payload", "")}
-        # Fallback generic
-        return {"ok": True, "tool": tool_name, "args": args}
+        impl = self._impls.get(tool_name)
+        if impl is None:
+            return {"ok": True, "tool": tool_name, "args": args}
+        fn = getattr(impl, "aexecute", None) or getattr(impl, "run", None) or impl
+        sig = inspect.signature(fn)
+        params = sig.parameters
+        accepts_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+        unexpected = [k for k in args if k not in params] if not accepts_var_kw else []
+        if unexpected:
+            raise TypeError(
+                f"Unexpected argument(s): {', '.join(sorted(unexpected))} for tool '{tool_name}'"
+            )
+        filtered = {k: v for k, v in args.items() if accepts_var_kw or k in params}
+        if inspect.iscoroutinefunction(fn):
+            return await fn(**filtered)
+        return fn(**filtered)
 
 
 # --- Knowledge graph (minimal; replace with your store/driver) ---
