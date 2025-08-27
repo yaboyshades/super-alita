@@ -396,6 +396,7 @@
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-import": "^2.32.0",
     "glob": "^8.1.0",
+    "@bytecodealliance/jco": "^1.4.0",
     "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
