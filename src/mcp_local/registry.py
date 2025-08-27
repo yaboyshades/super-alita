@@ -2,9 +2,21 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
+
+try:  # pragma: no cover - telemetry optional
+    from cortex import telemetry  # type: ignore
+except Exception:  # pragma: no cover - fallback when cortex not installed
+    class _Telemetry:
+        @staticmethod
+        def emit(*args: Any, **kwargs: Any) -> None:
+            """No-op telemetry emitter."""
+
+    telemetry = _Telemetry()
 
 ToolFunc = Callable[..., Awaitable[Any]]
 
@@ -46,23 +58,37 @@ class ToolRegistry:
             raise ValueError(f"No callable '{name}' found in provided code")
         self.register(name, fn)  # type: ignore[arg-type]
 
-    async def invoke(self, name: str, args: dict[str, Any]) -> Any:
-        """Invoke a registered tool.
+    async def _timed_invoke(self, name: str, args: dict[str, Any]) -> Any:
+        """Execute a tool with timing and telemetry."""
+        start = time.perf_counter()
+        success = True
+        try:
+            if name not in self._tools:
+                success = False
+                raise KeyError(name)
+            return await self._tools[name](**args)
+        except Exception:
+            success = False
+            raise
+        finally:
+            duration_ms = (time.perf_counter() - start) * 1000
+            try:
+                telemetry.emit(
+                    "tool_invocation",
+                    tool=name,
+                    duration_ms=duration_ms,
+                    success=success,
+                )
+            except Exception:  # pragma: no cover - telemetry failures ignored
+                pass
 
-        Args:
-            name: Registered tool name.
-            args: Argument dictionary passed to the tool.
+    async def ainvoke(self, name: str, args: dict[str, Any]) -> Any:
+        """Asynchronously invoke a registered tool with telemetry."""
+        return await self._timed_invoke(name, args)
 
-        Returns:
-            Any: Result from the tool.
-
-        Raises:
-            KeyError: If the tool is not registered.
-        """
-
-        if name not in self._tools:
-            raise KeyError(name)
-        return await self._tools[name](**args)
+    def invoke(self, name: str, args: dict[str, Any]) -> Any:
+        """Synchronously invoke a registered tool with telemetry."""
+        return asyncio.run(self._timed_invoke(name, args))
 
     def list_tools(self) -> list[str]:
         """Return the names of all registered tools."""
