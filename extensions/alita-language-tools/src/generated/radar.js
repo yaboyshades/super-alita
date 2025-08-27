@@ -825,6 +825,7 @@ let postReturn0;
 let postReturn1;
 let postReturn2;
 let postReturn3;
+let postReturn4;
 let exports1Cm32p2Analyze;
 
 function analyze(arg0) {
@@ -1082,10 +1083,46 @@ function predictIssues(arg0, arg1) {
   return retCopy;
   
 }
+let exports1Cm32p2GetPerformanceStats;
+
+function getPerformanceStats() {
+  _debugLog('[iface="get-performance-stats", function="get-performance-stats"] [Instruction::CallWasm] (async? false, @ enter)');
+  const _wasm_call_currentTaskID = startCurrentTask(0, false, 'exports1Cm32p2GetPerformanceStats');
+  const ret = exports1Cm32p2GetPerformanceStats();
+  endCurrentTask(0);
+  var len1 = dataView(memory0).getUint32(ret + 4, true);
+  var base1 = dataView(memory0).getUint32(ret + 0, true);
+  var result1 = [];
+  for (let i = 0; i < len1; i++) {
+    const base = base1 + i * 24;
+    var ptr0 = dataView(memory0).getUint32(base + 0, true);
+    var len0 = dataView(memory0).getUint32(base + 4, true);
+    var result0 = utf8Decoder.decode(new Uint8Array(memory0.buffer, ptr0, len0));
+    result1.push({
+      operation: result0,
+      durationMs: dataView(memory0).getInt32(base + 8, true) >>> 0,
+      memoryUsed: dataView(memory0).getInt32(base + 12, true) >>> 0,
+      timestamp: BigInt.asUintN(64, dataView(memory0).getBigInt64(base + 16, true)),
+    });
+  }
+  _debugLog('[iface="get-performance-stats", function="get-performance-stats"][Instruction::Return]', {
+    funcName: 'get-performance-stats',
+    paramCount: 1,
+    postReturn: true
+  });
+  const retCopy = result1;
+  
+  let cstate = getOrCreateAsyncState(0);
+  cstate.mayLeave = false;
+  postReturn4(ret);
+  cstate.mayLeave = true;
+  return retCopy;
+  
+}
 
 const $init = (() => {
   let gen = (function* init () {
-    const module0 = base64Compile('AGFzbQEAAAABLAdgBX9/f39+AGADf39/AGAFf39/f38AYAJ/fwF/YAF/AGAEf39/fwF/YAAAAsIBBB9jbTMycDJ8dnNjb2RlOmV4YW1wbGUvdGVsZW1ldHJ5C2VtaXQtbWV0cmljAAAeY20zMnAyfHZzY29kZTpleGFtcGxlL2hvc3QtYXBpDWdldC1maWxlLWluZm8AAR5jbTMycDJ8dnNjb2RlOmV4YW1wbGUvaG9zdC1hcGkRcmVhZC1maWxlLXNuaXBwZXQAAh5jbTMycDJ8dnNjb2RlOmV4YW1wbGUvaG9zdC1hcGkPZW1pdC1kaWFnbm9zdGljAAIDCwoDBAMEAwQFBAUGBQMBAAAH/gELD2NtMzJwMnx8YW5hbHl6ZQAEFGNtMzJwMnx8YW5hbHl6ZV9wb3N0AAUUY20zMnAyfHxhbmFseXplLWZpbGUABhljbTMycDJ8fGFuYWx5emUtZmlsZV9wb3N0AAcVY20zMnAyfHxkZXRlY3Qtc21lbGxzAAgaY20zMnAyfHxkZXRlY3Qtc21lbGxzX3Bvc3QACRZjbTMycDJ8fHByZWRpY3QtaXNzdWVzAAobY20zMnAyfHxwcmVkaWN0LWlzc3Vlc19wb3N0AAsNY20zMnAyX21lbW9yeQIADmNtMzJwMl9yZWFsbG9jAAwRY20zMnAyX2luaXRpYWxpemUADQokCgMAAAsCAAsDAAALAgALAwAACwIACwMAAAsCAAsDAAALAgALAC8JcHJvZHVjZXJzAQxwcm9jZXNzZWQtYnkBDXdpdC1jb21wb25lbnQHMC4yMzYuMQ');
+    const module0 = base64Compile('AGFzbQEAAAABMAhgBX9/f39+AGADf39/AGAFf39/f38AYAJ/fwF/YAF/AGAEf39/fwF/YAABf2AAAALCAQQfY20zMnAyfHZzY29kZTpleGFtcGxlL3RlbGVtZXRyeQtlbWl0LW1ldHJpYwAAHmNtMzJwMnx2c2NvZGU6ZXhhbXBsZS9ob3N0LWFwaQ1nZXQtZmlsZS1pbmZvAAEeY20zMnAyfHZzY29kZTpleGFtcGxlL2hvc3QtYXBpEXJlYWQtZmlsZS1zbmlwcGV0AAIeY20zMnAyfHZzY29kZTpleGFtcGxlL2hvc3QtYXBpD2VtaXQtZGlhZ25vc3RpYwACAw0MAwQDBAMEBQQGBAUHBQMBAAAHwwIND2NtMzJwMnx8YW5hbHl6ZQAEFGNtMzJwMnx8YW5hbHl6ZV9wb3N0AAUUY20zMnAyfHxhbmFseXplLWZpbGUABhljbTMycDJ8fGFuYWx5emUtZmlsZV9wb3N0AAcVY20zMnAyfHxkZXRlY3Qtc21lbGxzAAgaY20zMnAyfHxkZXRlY3Qtc21lbGxzX3Bvc3QACRZjbTMycDJ8fHByZWRpY3QtaXNzdWVzAAobY20zMnAyfHxwcmVkaWN0LWlzc3Vlc19wb3N0AAsdY20zMnAyfHxnZXQtcGVyZm9ybWFuY2Utc3RhdHMADCJjbTMycDJ8fGdldC1wZXJmb3JtYW5jZS1zdGF0c19wb3N0AA0NY20zMnAyX21lbW9yeQIADmNtMzJwMl9yZWFsbG9jAA4RY20zMnAyX2luaXRpYWxpemUADworDAMAAAsCAAsDAAALAgALAwAACwIACwMAAAsCAAsDAAALAgALAwAACwIACwAvCXByb2R1Y2VycwEMcHJvY2Vzc2VkLWJ5AQ13aXQtY29tcG9uZW50BzAuMjM2LjE');
     const module1 = base64Compile('AGFzbQEAAAABHwRgBX9/f39+AGADf39/AGAFf39/f38AYAV/f39/fwADBQQAAQIDBAUBcAEEBAccBQEwAAABMQABATIAAgEzAAMIJGltcG9ydHMBAApFBBEAIAAgASACIAMgBEEAEQAACw0AIAAgASACQQERAQALEQAgACABIAIgAyAEQQIRAgALEQAgACABIAIgAyAEQQMRAwALAC8JcHJvZHVjZXJzAQxwcm9jZXNzZWQtYnkBDXdpdC1jb21wb25lbnQHMC4yMzYuMQD/AQRuYW1lABMSd2l0LWNvbXBvbmVudDpzaGltAeIBBAA0aW5kaXJlY3QtY20zMnAyfHZzY29kZTpleGFtcGxlL3RlbGVtZXRyeS1lbWl0LW1ldHJpYwE1aW5kaXJlY3QtY20zMnAyfHZzY29kZTpleGFtcGxlL2hvc3QtYXBpLWdldC1maWxlLWluZm8COWluZGlyZWN0LWNtMzJwMnx2c2NvZGU6ZXhhbXBsZS9ob3N0LWFwaS1yZWFkLWZpbGUtc25pcHBldAM3aW5kaXJlY3QtY20zMnAyfHZzY29kZTpleGFtcGxlL2hvc3QtYXBpLWVtaXQtZGlhZ25vc3RpYw');
     const module2 = base64Compile('AGFzbQEAAAABHwRgBX9/f39+AGADf39/AGAFf39/f38AYAV/f39/fwACJAUAATAAAAABMQABAAEyAAIAATMAAwAIJGltcG9ydHMBcAEEBAkKAQBBAAsEAAECAwAvCXByb2R1Y2VycwEMcHJvY2Vzc2VkLWJ5AQ13aXQtY29tcG9uZW50BzAuMjM2LjEAHARuYW1lABUUd2l0LWNvbXBvbmVudDpmaXh1cHM');
     const module3 = base64Compile('AGFzbQEAAAABBAFgAAACBQEAAAAACAEA');
@@ -1120,10 +1157,12 @@ const $init = (() => {
     postReturn1 = exports1['cm32p2||analyze-file_post'];
     postReturn2 = exports1['cm32p2||detect-smells_post'];
     postReturn3 = exports1['cm32p2||predict-issues_post'];
+    postReturn4 = exports1['cm32p2||get-performance-stats_post'];
     exports1Cm32p2Analyze = exports1['cm32p2||analyze'];
     exports1Cm32p2AnalyzeFile = exports1['cm32p2||analyze-file'];
     exports1Cm32p2DetectSmells = exports1['cm32p2||detect-smells'];
     exports1Cm32p2PredictIssues = exports1['cm32p2||predict-issues'];
+    exports1Cm32p2GetPerformanceStats = exports1['cm32p2||get-performance-stats'];
   })();
   let promise, resolve, reject;
   function runNext (value) {
@@ -1150,4 +1189,4 @@ const $init = (() => {
 
 await $init;
 
-export { analyze, analyzeFile, detectSmells, predictIssues,  }
+export { analyze, analyzeFile, detectSmells, getPerformanceStats, predictIssues,  }

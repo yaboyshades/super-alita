@@ -1,4 +1,5 @@
 // world root:component/root
+export type PerformanceMetric = import('./interfaces/vscode-example-telemetry.js').PerformanceMetric;
 export interface PerformanceStat {
   operation: string,
   durationMs: number,

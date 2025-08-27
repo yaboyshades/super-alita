@@ -1,7 +1,8 @@
 import hashlib
 import uuid
 
-from hypothesis import assume, given, strategies as st
+from hypothesis import assume, given
+from hypothesis import strategies as st
 
 from src.core.ids import NAMESPACE_TOOLS, _content_key, deterministic_tool_id
 

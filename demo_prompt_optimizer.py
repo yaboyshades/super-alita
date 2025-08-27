@@ -7,8 +7,8 @@ of the prompt optimizer system.
 """
 
 from src.prompt.optimizer import (
-    PromptOptimizer,
     OptimizationStrategy,
+    PromptOptimizer,
     analyze_user_prompt,
     optimize_user_prompt,
 )

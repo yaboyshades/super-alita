@@ -51,6 +51,7 @@ async def test_redis_event_bus_publishes():
 async def test_event_bus_stress_throughput_and_backpressure(monkeypatch):
     """High-volume publish test with throughput metrics and backpressure."""
     import asyncio
+
     import fakeredis.aioredis
     import redis.asyncio as redis
 

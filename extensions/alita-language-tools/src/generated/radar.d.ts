@@ -1,4 +1,5 @@
 // world root:component/root
+export type PerformanceMetric = import('./interfaces/vscode-example-telemetry.js').PerformanceMetric;
 export interface Diagnostic {
   line: number,
   col: number,
@@ -19,3 +20,4 @@ export function analyze(source: string): Array<Diagnostic>;
 export function analyzeFile(path: string): Array<Diagnostic>;
 export function detectSmells(source: string): SmellAnalysis;
 export function predictIssues(source: string, history: Array<string>): Array<Diagnostic>;
+export function getPerformanceStats(): Array<PerformanceMetric>;

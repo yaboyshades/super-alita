@@ -1,19 +1,17 @@
 import asyncio
+import importlib
 import inspect
 import json
 import os
+import pathlib
 import sys
-from collections.abc import AsyncGenerator
-from contextlib import contextmanager
+from collections.abc import AsyncGenerator, Iterable
 from concurrent import futures
-import inspect
-from typing import Any, Iterable
+from contextlib import contextmanager
+from typing import Any
 
 import grpc
 from google.protobuf import empty_pb2, timestamp_pb2
-
-import importlib
-import pathlib
 
 _MANGLE_DIR = pathlib.Path(__file__).resolve().parents[2] / "src" / "core" / "mangle"
 sys_path_added = str(_MANGLE_DIR)
@@ -22,7 +20,6 @@ if sys_path_added not in sys.path:
 pb2 = importlib.import_module("super_alita_pb2")
 pb2_grpc = importlib.import_module("super_alita_pb2_grpc")
 
-from typing import Any
 
 
 class FakeEventBus:

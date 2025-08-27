@@ -7,15 +7,12 @@ by creating a mock conflict scenario and showing the resolution strategies.
 """
 
 import os
-import tempfile
-import shutil
-from pathlib import Path
 import sys
 
 # Add the project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from cortex.automation.git_workflow import GitAutomation, MergeConflictInfo
+from cortex.automation.git_workflow import GitAutomation
 
 
 def create_demo_conflict_file(file_path: str, conflict_type: str = "simple"):
@@ -137,7 +134,7 @@ def demo_conflict_resolution():
                 print(f"   Incoming branch: {len(section['incoming_branch'].split())} words")
                 
                 # Test resolution strategies
-                print(f"\n🛠️ Resolution strategies:")
+                print("\n🛠️ Resolution strategies:")
                 
                 # Check if it's an import section
                 if git_auto._is_import_section(section['current_branch'], section['incoming_branch']):
@@ -165,7 +162,7 @@ def demo_conflict_resolution():
         except:
             pass
     
-    print(f"\n🎯 Workflow Integration:")
+    print("\n🎯 Workflow Integration:")
     print("-" * 40)
     print("In GitHub, this workflow will:")
     print("1. 🔍 Automatically detect conflicts in PRs")
@@ -174,13 +171,13 @@ def demo_conflict_resolution():
     print("4. 💬 Comment on the original PR with results")
     print("5. 🎛️ Accept commands via comments for manual triggering")
     
-    print(f"\n📋 Available Commands:")
+    print("\n📋 Available Commands:")
     print("-" * 40)
     print("• @github-actions resolve conflicts auto      # Smart resolution")
     print("• @github-actions resolve conflicts current   # Take current branch")
     print("• @github-actions resolve conflicts incoming  # Take incoming branch")
     
-    print(f"\n✨ Features:")
+    print("\n✨ Features:")
     print("-" * 40)
     print("• 🧠 Intelligent conflict analysis")
     print("• 📦 Smart import merging")

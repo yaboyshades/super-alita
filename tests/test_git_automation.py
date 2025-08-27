@@ -1,13 +1,13 @@
 """
 Test the git automation merge conflict resolution functionality.
 """
-import unittest
-import tempfile
 import os
 import shutil
-from pathlib import Path
 import subprocess
 import sys
+import tempfile
+import unittest
+from pathlib import Path
 
 # Add the project root to the path so we can import the module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

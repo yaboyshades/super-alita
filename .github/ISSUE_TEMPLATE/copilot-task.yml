@@ -1,0 +1,113 @@
+name: Copilot Task
+description: Assign a single-PR task to the Copilot coding agent
+title: "[Copilot] <concise task name>"
+labels: ["copilot", "automate"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Provide enough context for Copilot to plan and complete the task with a single PR.
+        
+        ## Super Alita Context
+        This is an event-driven AI agent system with:
+        - Python/FastAPI backend with ML/AI components
+        - VS Code extensions with TypeScript
+        - MCP (Model Context Protocol) integration
+        - Plugin-based modular architecture
+        - WASM components for performance-critical features
+        
+        Please refer to the [Copilot Instructions](.github/copilot-instructions.md) for environment setup and development patterns.
+        
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      description: What problem should be solved and why now?
+      placeholder: "Brief summary of the issue or feature request"
+    validations:
+      required: true
+      
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and File Pointers
+      description: Limit scope; point to files/dirs/entry points Copilot should modify.
+      placeholder: |
+        Examples:
+        - src/core/event_bus.py
+        - src/plugins/[specific_plugin]/
+        - extensions/alita-language-tools/src/
+        - tests/core/
+        - .github/workflows/
+    validations:
+      required: true
+      
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Specific, testable outcomes that define 'done.'
+      placeholder: |
+        - [ ] Tests pass (`python validate_deployment.py`)
+        - [ ] Server starts without errors (`uvicorn app:app --reload --port 8080`)
+        - [ ] Health check returns expected response (`curl http://127.0.0.1:8080/healthz`)
+        - [ ] Code quality checks pass (`ruff check .` and `black . --check`)
+        - [ ] No regression in existing functionality
+        - [ ] Specific behavior X under condition Y
+    validations:
+      required: true
+      
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints and Non-goals
+      description: Performance, security, compatibility, or architectural limits.
+      placeholder: |
+        Examples:
+        - Must maintain compatibility with existing MCP protocol
+        - Performance: No regression in p95 latency for streaming endpoints
+        - Security: No secrets in code, follow existing auth patterns
+        - Architecture: Use existing event bus patterns, inherit from PluginInterface
+        
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation Steps
+      description: How to run, test, and verify success locally and in CI.
+      placeholder: |
+        Local validation:
+        1. `cp .env.example .env`
+        2. `pip install -r requirements.txt -r requirements-test.txt`
+        3. `python validate_deployment.py`
+        4. `uvicorn app:app --reload --port 8080`
+        5. Test specific endpoints or functionality
+        
+        CI validation:
+        - All GitHub Actions workflows pass
+        - Quality gates in enhanced-quality-gates.yml pass
+      
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How urgent is this task?
+      options:
+        - Low (nice to have)
+        - Medium (planned feature)
+        - High (blocking issue)
+        - Critical (production issue)
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Estimated Complexity
+      description: How complex is this change expected to be?
+      options:
+        - Simple (< 50 lines, single file)
+        - Medium (< 200 lines, few files)
+        - Complex (> 200 lines, multiple components)
+    validations:
+      required: true
