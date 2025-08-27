@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+import asyncio
+import inspect
 from pathlib import Path
 from typing import Any
 
-ToolFunc = Callable[..., Awaitable[Any]]
+ToolFunc = Callable[..., Awaitable[Any] | Any]
 
 
 class ToolRegistry:
@@ -62,7 +64,57 @@ class ToolRegistry:
 
         if name not in self._tools:
             raise KeyError(name)
-        return await self._tools[name](**args)
+        result = self._tools[name](**args)
+        if asyncio.iscoroutine(result):
+            return await result
+        if inspect.isasyncgen(result):
+            return "".join([chunk async for chunk in result])
+        if inspect.isgenerator(result):
+            return "".join(list(result))
+        return result
+
+    async def invoke_stream(
+        self, name: str, args: dict[str, Any]
+    ) -> AsyncIterator[Any]:
+        """Stream results from a registered tool.
+
+        If the tool defines an ``astream`` method, it will be used to yield
+        chunks. Otherwise the standard ``invoke`` result is yielded as a
+        single chunk. Tools that directly return an async or sync generator
+        are also supported.
+        """
+
+        if name not in self._tools:
+            raise KeyError(name)
+
+        tool = self._tools[name]
+
+        if hasattr(tool, "astream") and callable(getattr(tool, "astream")):
+            async for chunk in tool.astream(**args):
+                yield chunk
+            return
+
+        result = tool(**args)
+
+        if inspect.isasyncgen(result):
+            async for chunk in result:
+                yield chunk
+            return
+
+        if inspect.isgenerator(result):
+            for chunk in result:
+                yield chunk
+            return
+
+        if asyncio.iscoroutine(result):
+            result = await result
+        yield result
+
+    async def astream(self, name: str, args: dict[str, Any]) -> AsyncIterator[Any]:
+        """Alias for :meth:`invoke_stream` to match common streaming API."""
+
+        async for chunk in self.invoke_stream(name, args):
+            yield chunk
 
     def list_tools(self) -> list[str]:
         """Return the names of all registered tools."""
