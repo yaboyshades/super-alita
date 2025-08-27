@@ -1,18 +1,26 @@
 {
-  "mode": "skip",
+  "mode": "generated",
   "toolchain": {
-    "jco": false,
+    "jco": true,
     "wasmTools": false
   },
   "inputs": [
-    "D:\\Coding_Projects\\super-alita-clean\\wasm\\code_radar\\radar.wit",
-    "D:\\Coding_Projects\\super-alita-clean\\wasm\\calculator\\calculator.wit"
+    "/home/runner/work/super-alita/super-alita/wasm/code_radar/radar.wit",
+    "/home/runner/work/super-alita/super-alita/wasm/calculator/calculator.wit"
   ],
   "metrics": {
-    "lines": 5,
+    "lines": 38,
     "exports": [
-      "world"
+      "world",
+      "add",
+      "multiply",
+      "divide",
+      "getPerformanceStats",
+      "analyze",
+      "analyzeFile",
+      "detectSmells",
+      "predictIssues"
     ]
   },
-  "ts": "2025-08-26T19:38:39.085Z"
+  "ts": "2025-08-27T10:29:11.063Z"
 }

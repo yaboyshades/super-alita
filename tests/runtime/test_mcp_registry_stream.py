@@ -1,5 +1,6 @@
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from mcp_local.registry import ToolRegistry as LocalRegistry
 from super_alita_mcp.registry import ToolRegistry as RemoteRegistry

@@ -45,36 +45,76 @@ def _collect_plugin_capabilities() -> list[dict[str, Any]]:
     Returns:
         List of plugin capability descriptors
     """
-    plugins = []
+    plugins: list[dict[str, Any]] = []
 
     try:
-        # Try to get plugin info from loader if available
         from ..core.plugin_loader import get_plugin_info, load_plugin_manifest
 
         manifest = load_plugin_manifest()
+        plugin_info: dict[str, Any] = {}
         if manifest:
             plugin_info = get_plugin_info(manifest)
 
-            for name, info in plugin_info.items():
-                plugins.append(
-                    {
-                        "name": name,
-                        "module": info["module"],
-                        "enabled": info["enabled"],
-                        "priority": info["priority"],
-                        "depends_on": info["depends_on"],
-                        "description": info["description"],
-                        "category": info.get("category", "uncategorized"),
-                        "status": "configured",
-                    }
-                )
+        runtime_plugins: dict[str, Any] = {}
+        try:
+            import sys
 
-        # TODO: Add runtime plugin state detection
-        # Could check if plugin instances are actually loaded and active
+            for module in list(sys.modules.values()):
+                if hasattr(module, "plugin_registry") and hasattr(
+                    getattr(module, "plugin_registry"), "plugins"
+                ):
+                    runtime_plugins = getattr(module.plugin_registry, "plugins")
+                    break
+                if hasattr(module, "plugins") and isinstance(module.plugins, dict):
+                    runtime_plugins = module.plugins
+                    break
+        except Exception as e:  # pragma: no cover - best effort
+            logger.debug(f"Runtime plugin registry inspection failed: {e}")
+
+        processed: set[str] = set()
+        for name, info in plugin_info.items():
+            instance = runtime_plugins.get(name)
+            loaded = instance is not None
+            running = bool(getattr(instance, "is_running", False)) if loaded else False
+            status = "running" if running else ("loaded" if loaded else "configured")
+
+            plugins.append(
+                {
+                    "name": name,
+                    "module": info["module"],
+                    "enabled": info["enabled"],
+                    "priority": info["priority"],
+                    "depends_on": info["depends_on"],
+                    "description": info["description"],
+                    "category": info.get("category", "uncategorized"),
+                    "status": status,
+                    "loaded": loaded,
+                    "running": running,
+                }
+            )
+            processed.add(name)
+
+        for name, instance in runtime_plugins.items():
+            if name in processed:
+                continue
+            running = bool(getattr(instance, "is_running", False))
+            plugins.append(
+                {
+                    "name": name,
+                    "module": f"{instance.__class__.__module__}:{instance.__class__.__name__}",
+                    "enabled": True,
+                    "priority": None,
+                    "depends_on": [],
+                    "description": getattr(instance, "description", ""),
+                    "category": "runtime",
+                    "status": "running" if running else "loaded",
+                    "loaded": True,
+                    "running": running,
+                }
+            )
 
     except ImportError:
         logger.debug("Plugin loader not available - using fallback detection")
-        # Fallback: try to detect from common plugin locations
         plugins.append(
             {
                 "name": "fallback_detection",

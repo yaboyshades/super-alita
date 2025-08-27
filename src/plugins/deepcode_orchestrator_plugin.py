@@ -5,10 +5,11 @@ import asyncio
 import json
 import logging
 import os
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from src.core.plugin_interface import PluginInterface
 
@@ -29,25 +30,31 @@ def _utcnow() -> str:
 @runtime_checkable
 class DeepCodeClientInterface(Protocol):
     async def plan(self, request: Mapping[str, Any]) -> Mapping[str, Any]: ...
-    async def collect_references(self, plan: Mapping[str, Any]) -> Mapping[str, Any]: ...
-    async def generate_code(self, plan: Mapping[str, Any], references: Mapping[str, Any]) -> Mapping[str, Any]: ...
-    async def validate(self, implementation: Mapping[str, Any]) -> Mapping[str, Any]: ...
+    async def collect_references(
+        self, plan: Mapping[str, Any]
+    ) -> Mapping[str, Any]: ...
+    async def generate_code(
+        self, plan: Mapping[str, Any], references: Mapping[str, Any]
+    ) -> Mapping[str, Any]: ...
+    async def validate(
+        self, implementation: Mapping[str, Any]
+    ) -> Mapping[str, Any]: ...
 
 
 class _StubDeepCodeClient(DeepCodeClientInterface):
-    async def plan(self, request: dict[str, Any]) -> dict[str, Any]:  # noqa: D401
+    async def plan(self, request: Mapping[str, Any]) -> Mapping[str, Any]:  # noqa: D401
         return {
             "steps": ["draft plan", "produce impl"],
             "confidence": 0.73,
             "request": request,
         }
 
-    async def collect_references(self, plan: dict[str, Any]) -> dict[str, Any]:  # noqa: D401, ARG002
+    async def collect_references(self, plan: Mapping[str, Any]) -> Mapping[str, Any]:  # noqa: D401, ARG002
         return {"snippets": [], "confidence": 0.78}
 
     async def generate_code(  # noqa: D401, ARG002
-        self, plan: dict[str, Any], references: dict[str, Any]
-    ) -> dict[str, Any]:
+        self, plan: Mapping[str, Any], references: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
         return {
             "proposal_id": None,
             "diffs": [
@@ -94,8 +101,8 @@ class _StubDeepCodeClient(DeepCodeClientInterface):
         }
 
     async def validate(  # noqa: D401, ARG002
-        self, implementation: dict[str, Any]
-    ) -> dict[str, Any]:
+        self, implementation: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
         return {
             "status": "pass",
             "lint_errors": 0,
@@ -122,7 +129,7 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
         # Allow environment-configured real client
         self._client: DeepCodeClientInterface = client or self._maybe_real_client()
         self._active: dict[str, dict[str, Any]] = {}
-        self._tasks: set[asyncio.Task[None]] = set()
+        self._tasks: list[asyncio.Task[None]] = []
         self._obs: ObservabilityManager | None = None  # type: ignore[name-defined]
         self._latest: dict[str, Any] | None = None
         self._latest_path = Path(
@@ -196,8 +203,10 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
             timestamp=_utcnow(),
         )
         task: asyncio.Task[None] = asyncio.create_task(self._run_pipeline(request_id))
-        self._tasks.add(task)
-        task.add_done_callback(self._tasks.discard)
+        self._tasks.append(task)
+        task.add_done_callback(
+            lambda t: self._tasks.remove(t) if t in self._tasks else None
+        )
 
     async def _run_pipeline(self, request_id: str) -> None:
         ctx = self._active.get(request_id)
@@ -226,7 +235,7 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                 "reference_collection", self._client.collect_references, plan
             )
             await self.emit_event(
-                "deepcode_references_compiled",
+                "deepcode_references_collected",
                 source_plugin=self.name,
                 request_id=request_id,
                 conversation_id=conversation_id,
@@ -257,6 +266,82 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                     ).hexdigest()[:16]
                 )
             diffs = normalize_diffs(impl.get("diffs", []), proposed_by=self.name)
+
+            # --- Advanced analysis: risk scoring (moved here after diffs) ---
+            def _score_diff(d: dict[str, Any]) -> dict[str, Any]:
+                unified = d.get("unified_diff") or d.get("diff") or ""
+                path = d.get("path") or d.get("file") or "unknown"
+                lines_added = sum(
+                    1
+                    for ln in unified.splitlines()
+                    if ln.startswith("+") and not ln.startswith("+++")
+                )
+                lines_removed = sum(
+                    1
+                    for ln in unified.splitlines()
+                    if ln.startswith("-") and not ln.startswith("---")
+                )
+                size_factor = min((lines_added + lines_removed) / 80.0, 1.0)
+                ext = os.path.splitext(str(path))[1].lower()
+                ext_factor = (
+                    0.4
+                    if ext in {".py", ".rs", ".ts"}
+                    else 0.2
+                    if ext in {".md", ".json"}
+                    else 0.3
+                )
+                critical_tokens = [
+                    "eval(",
+                    "exec(",
+                    "subprocess",
+                    "os.system",
+                    "pickle.loads",
+                    "open(",
+                ]
+                token_hits = [tok for tok in critical_tokens if tok in unified]
+                token_factor = min(len(token_hits) * 0.2, 0.6)
+                test_related = path.startswith("tests/") or "test_" in os.path.basename(
+                    str(path)
+                )
+                test_factor = -0.15 if test_related else 0.0
+                raw_score = size_factor + ext_factor + token_factor + test_factor
+                score = max(0.0, min(raw_score, 1.0))
+                factors: dict[str, Any] = {
+                    "size_factor": round(size_factor, 3),
+                    "ext_factor": ext_factor,
+                    "token_factor": round(token_factor, 3),
+                    "test_factor": test_factor,
+                }
+                if token_hits:
+                    factors["tokens"] = token_hits
+                return {**d, "risk_score": round(score, 3), "risk_factors": factors}
+
+            enriched_diffs = [_score_diff(d) for d in diffs]
+            risk_summary: dict[str, Any]
+            if enriched_diffs:
+                avg_risk = sum(d.get("risk_score", 0.0) for d in enriched_diffs) / len(
+                    enriched_diffs
+                )
+                high_risk = [d for d in enriched_diffs if d.get("risk_score", 0) >= 0.7]
+                suggested_tests: list[str] = []
+                for d in enriched_diffs:
+                    pth = str(d.get("path", ""))
+                    if pth.endswith(".py") and "tests/" not in pth:
+                        candidate = "tests/test_" + os.path.basename(pth).replace(
+                            ".py", ".py"
+                        )
+                        suggested_tests.append(candidate)
+                risk_summary = {
+                    "average_risk": round(avg_risk, 3),
+                    "high_risk_count": len(high_risk),
+                    "suggested_tests": sorted(set(suggested_tests))[:25],
+                }
+            else:
+                risk_summary = {
+                    "average_risk": 0.0,
+                    "high_risk_count": 0,
+                    "suggested_tests": [],
+                }
             await self.emit_event(
                 "deepcode_implementation_proposed",
                 source_plugin=self.name,
@@ -265,7 +350,7 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                 conversation_id=conversation_id,
                 correlation_id=correlation_id,
                 timestamp=_utcnow(),
-                diffs=diffs,
+                diffs=enriched_diffs,
                 tests=impl.get("tests", []),
                 docs=impl.get("docs", []),
                 confidence=float(impl.get("confidence", 0.84)),
@@ -274,7 +359,7 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
             validation = await self._phase(
                 "validation",
                 self._client.validate,
-                {"proposal_id": pid, "diffs": diffs},
+                {"proposal_id": pid, "diffs": enriched_diffs},
             )
             success = validation.get("status") == "pass"
             await self.emit_event(
@@ -298,7 +383,7 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                     conversation_id=conversation_id,
                     correlation_id=correlation_id,
                     timestamp=_utcnow(),
-                    diffs=diffs,
+                    diffs=enriched_diffs,
                     tests=impl.get("tests", []),
                     docs=impl.get("docs", []),
                     validation_summary={
@@ -312,10 +397,11 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                     "proposal_id": pid,
                     "plan": plan,
                     "references": refs,
-                    "diffs": diffs,
+                    "diffs": enriched_diffs,
                     "tests": impl.get("tests", []),
                     "docs": impl.get("docs", []),
                     "validation": validation,
+                    "risk_summary": risk_summary,
                     "success": success,
                     "stored_at": _utcnow(),
                 }
@@ -348,7 +434,13 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                 error=str(e),
             )
 
-    async def _phase(self, name: str, func, *args, **kwargs) -> dict[str, Any]:
+    async def _phase(
+        self,
+        name: str,
+        func: Callable[..., Awaitable[Mapping[str, Any]]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         if self._obs:
             try:
                 async with self._obs.trace_operation(f"deepcode_{name}"):
@@ -360,7 +452,7 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
         out = await func(*args, **kwargs)
         return dict(out)
 
-    def get_tools(self):
+    def get_tools(self) -> list[dict[str, Any]]:
         return [
             {
                 "name": "deepcode_request",

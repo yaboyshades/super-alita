@@ -1,4 +1,5 @@
 import asyncio
+
 import pytest
 
 from src.adapters.langchain_adapter import LangChainAdapter

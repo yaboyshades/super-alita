@@ -42,6 +42,15 @@ async def test_deepcode_latest_and_apply(monkeypatch):
         return
     data = latest.json()
     assert "diffs" in data and isinstance(data["diffs"], list)
+    # New advanced analysis assertions
+    assert "risk_summary" in data, "risk_summary missing from latest proposal"
+    rs = data["risk_summary"]
+    assert isinstance(rs, dict)
+    for key in ["average_risk", "high_risk_count", "suggested_tests"]:
+        assert key in rs, f"risk_summary missing key {key}"
+    assert isinstance(rs["average_risk"], (int, float))  # noqa: UP038 keep tuple for broad numeric
+    assert isinstance(rs["high_risk_count"], int)
+    assert isinstance(rs["suggested_tests"], list)
 
     # Apply (dry, returns diffs)
     apply = client.post("/deepcode/apply", json={})
@@ -49,3 +58,7 @@ async def test_deepcode_latest_and_apply(monkeypatch):
     apply_data = apply.json()
     assert apply_data["status"] == "ok"
     assert "diffs" in apply_data
+    # risk scores should propagate to apply response diffs
+    if apply_data.get("diffs"):
+        first = apply_data["diffs"][0]
+        assert "risk_score" in first and "risk_factors" in first

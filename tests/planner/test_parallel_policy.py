@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from cortex.planner.parallel_wrapper import should_parallelize
 
+
 @dataclass
 class Step:
     estimated_time: float

@@ -16,7 +16,7 @@ interface host-api {
         size: u32,
         modified: u64
     }
-    
+
     get-file-info: func(path: string) -> result<file-info, string>;
     read-file-snippet: func(path: string, start-line: u32, end-line: u32) -> result<string, string>;
     emit-diagnostic: func(path: string, line: u32, message: string);
@@ -25,25 +25,27 @@ interface host-api {
 world code-radar {
     import telemetry;
     import host-api;
-    
-    record diagnostic { 
-        line: u32, 
-        col: u32, 
-        severity: u8, 
-        code: string, 
+    use telemetry.{performance-metric};
+
+    record diagnostic {
+        line: u32,
+        col: u32,
+        severity: u8,
+        code: string,
         message: string,
         suggestion: option<string>
     }
-    
+
     record smell-analysis {
         complexity-score: u32,
         maintainability-index: u32,
         debt-minutes: u32,
         smell-types: list<string>
     }
-    
+
     export analyze: func(source: string) -> list<diagnostic>;
     export analyze-file: func(path: string) -> result<list<diagnostic>, string>;
     export detect-smells: func(source: string) -> smell-analysis;
     export predict-issues: func(source: string, history: list<string>) -> list<diagnostic>;
+    export get-performance-stats: func() -> list<performance-metric>;
 }

@@ -8,7 +8,7 @@ import logging
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
 

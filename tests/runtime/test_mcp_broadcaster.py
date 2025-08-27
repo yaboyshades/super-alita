@@ -3,7 +3,7 @@ import types
 
 import pytest
 
-from src.telemetry.mcp_broadcaster import MCPTelemetryBroadcaster, EventTypes
+from src.telemetry.mcp_broadcaster import EventTypes, MCPTelemetryBroadcaster
 
 
 @pytest.mark.asyncio

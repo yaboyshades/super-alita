@@ -85,7 +85,7 @@
     "key": "ctrl+shift+`",
     "command": "workbench.action.terminal.focus"
   },
-  // Quick File Navigation for Agent Development  
+  // Quick File Navigation for Agent Development
   {
     "key": "ctrl+shift+alt+1",
     "command": "workbench.action.quickOpen",

@@ -5,7 +5,6 @@ This module broadcasts agent events and telemetry data to the MCP server
 for real-time monitoring and debugging through Copilot Chat.
 """
 
-import json
 import logging
 import time
 from dataclasses import asdict, dataclass

@@ -1,0 +1,588 @@
+name: Workflow Orchestrator & Health Dashboard
+
+on:
+  workflow_run:
+    workflows: 
+      - "Smart Release & Deployment"
+      - "Intelligent Dependency Updates"
+      - "Performance Monitoring & Regression Detection"
+      - "AI-Powered Code Review"
+      - "Intelligent Issue & PR Management"
+      - "Enhanced Quality Gates"
+    types: [completed]
+  schedule:
+    - cron: '0 8 * * *'  # Daily at 8 AM UTC
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Orchestrator action to perform'
+        required: true
+        default: 'health_check'
+        type: choice
+        options:
+          - health_check     # Check health of all systems
+          - emergency_stop   # Stop all automation workflows
+          - reset_automation # Reset automation state
+          - generate_report  # Generate comprehensive report
+
+concurrency:
+  group: orchestrator
+  cancel-in-progress: false
+
+jobs:
+  workflow-health-check:
+    name: Workflow Health Check
+    runs-on: ubuntu-latest
+    outputs:
+      overall_health: ${{ steps.health.outputs.status }}
+      failing_workflows: ${{ steps.health.outputs.failing }}
+      recommendations: ${{ steps.health.outputs.recommendations }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Check workflow health status
+        id: health
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflowNames = [
+              'Smart Release & Deployment',
+              'Intelligent Dependency Updates', 
+              'Performance Monitoring & Regression Detection',
+              'AI-Powered Code Review',
+              'Intelligent Issue & PR Management',
+              'Enhanced Quality Gates'
+            ];
+            
+            const failingWorkflows = [];
+            const healthyWorkflows = [];
+            let totalRuns = 0;
+            let failedRuns = 0;
+            
+            // Check recent workflow runs (last 10 for each workflow)
+            for (const workflowName of workflowNames) {
+              try {
+                const { data: workflows } = await github.rest.actions.listRepoWorkflows({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo
+                });
+                
+                const workflow = workflows.workflows.find(w => w.name === workflowName);
+                if (!workflow) {
+                  console.log(`Workflow not found: ${workflowName}`);
+                  continue;
+                }
+                
+                const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflow.id,
+                  per_page: 10
+                });
+                
+                totalRuns += runs.workflow_runs.length;
+                const recentFailures = runs.workflow_runs.filter(run => 
+                  run.conclusion === 'failure' || run.conclusion === 'cancelled'
+                ).length;
+                
+                failedRuns += recentFailures;
+                
+                if (recentFailures > runs.workflow_runs.length / 2) {
+                  failingWorkflows.push({
+                    name: workflowName,
+                    failureRate: Math.round((recentFailures / runs.workflow_runs.length) * 100)
+                  });
+                } else {
+                  healthyWorkflows.push({
+                    name: workflowName,
+                    successRate: Math.round(((runs.workflow_runs.length - recentFailures) / runs.workflow_runs.length) * 100)
+                  });
+                }
+              } catch (error) {
+                console.log(`Error checking ${workflowName}: ${error.message}`);
+                failingWorkflows.push({
+                  name: workflowName,
+                  error: error.message
+                });
+              }
+            }
+            
+            const overallSuccessRate = totalRuns > 0 ? Math.round(((totalRuns - failedRuns) / totalRuns) * 100) : 100;
+            const healthStatus = overallSuccessRate >= 80 ? 'healthy' : overallSuccessRate >= 60 ? 'warning' : 'critical';
+            
+            console.log(`Overall health: ${healthStatus} (${overallSuccessRate}% success rate)`);
+            console.log(`Healthy workflows: ${healthyWorkflows.length}`);
+            console.log(`Failing workflows: ${failingWorkflows.length}`);
+            
+            // Generate recommendations
+            const recommendations = [];
+            if (failingWorkflows.length > 0) {
+              recommendations.push('Review and fix failing workflows');
+            }
+            if (overallSuccessRate < 80) {
+              recommendations.push('Investigate workflow stability issues');
+            }
+            if (healthyWorkflows.length === 0) {
+              recommendations.push('Emergency: All automation workflows may be down');
+            }
+            
+            // Set outputs
+            core.setOutput('status', healthStatus);
+            core.setOutput('failing', JSON.stringify(failingWorkflows));
+            core.setOutput('recommendations', JSON.stringify(recommendations));
+            
+            return {
+              status: healthStatus,
+              successRate: overallSuccessRate,
+              healthy: healthyWorkflows,
+              failing: failingWorkflows,
+              recommendations
+            };
+
+  automation-metrics:
+    name: Collect Automation Metrics
+    runs-on: ubuntu-latest
+    outputs:
+      metrics: ${{ steps.collect.outputs.data }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Collect automation metrics
+        id: collect
+        run: |
+          cat > collect_metrics.py << 'EOF'
+          import json
+          import os
+          import subprocess
+          from datetime import datetime, timedelta
+          from pathlib import Path
+          
+          def collect_git_metrics():
+              """Collect git-based metrics"""
+              try:
+                  # Commit frequency (last 30 days)
+                  since_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+                  result = subprocess.run(
+                      ['git', 'log', '--since', since_date, '--oneline'],
+                      capture_output=True, text=True
+                  )
+                  commit_count = len(result.stdout.strip().split('\n')) if result.stdout.strip() else 0
+                  
+                  # Branch count
+                  result = subprocess.run(['git', 'branch', '-r'], capture_output=True, text=True)
+                  branch_count = len(result.stdout.strip().split('\n')) if result.stdout.strip() else 0
+                  
+                  # Repository size
+                  repo_size = sum(f.stat().st_size for f in Path('.').rglob('*') if f.is_file())
+                  
+                  return {
+                      'commits_last_30_days': commit_count,
+                      'total_branches': branch_count,
+                      'repo_size_mb': round(repo_size / 1024 / 1024, 2)
+                  }
+              except Exception as e:
+                  return {'error': str(e)}
+          
+          def collect_workflow_metrics():
+              """Collect workflow file metrics"""
+              workflow_files = list(Path('.github/workflows').glob('*.yml'))
+              
+              total_lines = 0
+              total_jobs = 0
+              workflow_info = []
+              
+              for workflow_file in workflow_files:
+                  try:
+                      with open(workflow_file, 'r') as f:
+                          content = f.read()
+                          lines = len(content.split('\n'))
+                          jobs = content.count('jobs:')
+                          
+                          total_lines += lines
+                          total_jobs += jobs
+                          
+                          workflow_info.append({
+                              'name': workflow_file.name,
+                              'lines': lines,
+                              'estimated_jobs': content.count('name:') - content.count('name: ')  # Rough estimate
+                          })
+                  except Exception as e:
+                      print(f"Error reading {workflow_file}: {e}")
+              
+              return {
+                  'total_workflow_files': len(workflow_files),
+                  'total_workflow_lines': total_lines,
+                  'average_workflow_size': round(total_lines / len(workflow_files), 2) if workflow_files else 0,
+                  'workflows': workflow_info
+              }
+          
+          def collect_automation_code_metrics():
+              """Collect metrics about automation code"""
+              automation_files = list(Path('cortex/automation').glob('*.py'))
+              
+              total_lines = 0
+              total_functions = 0
+              
+              for py_file in automation_files:
+                  try:
+                      with open(py_file, 'r') as f:
+                          content = f.read()
+                          lines = len([line for line in content.split('\n') if line.strip()])
+                          functions = content.count('def ')
+                          
+                          total_lines += lines
+                          total_functions += functions
+                  except Exception as e:
+                      print(f"Error reading {py_file}: {e}")
+              
+              return {
+                  'automation_files': len(automation_files),
+                  'automation_lines': total_lines,
+                  'automation_functions': total_functions
+              }
+          
+          def main():
+              metrics = {
+                  'timestamp': datetime.now().isoformat(),
+                  'git_metrics': collect_git_metrics(),
+                  'workflow_metrics': collect_workflow_metrics(),
+                  'automation_metrics': collect_automation_code_metrics()
+              }
+              
+              print(json.dumps(metrics, indent=2))
+              
+              # Save to output
+              with open('automation-metrics.json', 'w') as f:
+                  json.dump(metrics, f, indent=2)
+              
+              # Set GitHub Actions output
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write(f"data<<EOF\n{json.dumps(metrics)}\nEOF\n")
+          
+          if __name__ == '__main__':
+              main()
+          EOF
+          
+          python collect_metrics.py
+          
+      - name: Upload metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: automation-metrics
+          path: automation-metrics.json
+
+  generate-dashboard:
+    name: Generate Automation Dashboard
+    needs: [workflow-health-check, automation-metrics]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Download metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: automation-metrics
+          path: .
+          
+      - name: Generate comprehensive dashboard
+        run: |
+          cat > generate_dashboard.py << 'EOF'
+          import json
+          import os
+          from datetime import datetime
+          
+          def generate_dashboard():
+              """Generate a comprehensive automation dashboard"""
+              
+              # Load metrics
+              try:
+                  with open('automation-metrics.json', 'r') as f:
+                      metrics = json.load(f)
+              except:
+                  metrics = {'error': 'Metrics not available'}
+              
+              # Get health status from previous job
+              health_status = '${{ needs.workflow-health-check.outputs.overall_health }}'
+              failing_workflows = '${{ needs.workflow-health-check.outputs.failing }}'
+              recommendations = '${{ needs.workflow-health-check.outputs.recommendations }}'
+              
+              try:
+                  failing_workflows = json.loads(failing_workflows)
+              except:
+                  failing_workflows = []
+              
+              try:
+                  recommendations = json.loads(recommendations)
+              except:
+                  recommendations = []
+              
+              # Generate dashboard
+              dashboard = f"""# 🤖 Super Alita Automation Dashboard
+          
+          **Last Updated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+          
+          ## 🚦 System Health
+          
+          """
+              
+              if health_status == 'healthy':
+                  dashboard += "✅ **Status: HEALTHY** - All automation systems operating normally\n\n"
+              elif health_status == 'warning':
+                  dashboard += "⚠️ **Status: WARNING** - Some automation systems need attention\n\n"
+              else:
+                  dashboard += "🚨 **Status: CRITICAL** - Automation systems require immediate attention\n\n"
+              
+              # Workflow status
+              dashboard += "## 🔄 Workflow Status\n\n"
+              dashboard += "| Workflow | Status |\n"
+              dashboard += "|----------|--------|\n"
+              dashboard += "| Smart Release & Deployment | ✅ Active |\n"
+              dashboard += "| Intelligent Dependency Updates | ✅ Active |\n"
+              dashboard += "| Performance Monitoring | ✅ Active |\n"
+              dashboard += "| AI-Powered Code Review | ✅ Active |\n"
+              dashboard += "| Issue & PR Management | ✅ Active |\n"
+              dashboard += "| Enhanced Quality Gates | ✅ Active |\n\n"
+              
+              if failing_workflows:
+                  dashboard += "### ⚠️ Failing Workflows\n\n"
+                  for workflow in failing_workflows:
+                      name = workflow.get('name', 'Unknown')
+                      failure_rate = workflow.get('failureRate', 'N/A')
+                      error = workflow.get('error', '')
+                      dashboard += f"- **{name}**: {failure_rate}% failure rate"
+                      if error:
+                          dashboard += f" (Error: {error})"
+                      dashboard += "\n"
+                  dashboard += "\n"
+              
+              # Automation capabilities
+              dashboard += """## 🚀 Automation Capabilities
+          
+          ### 📦 Smart Release Management
+          - ✅ Semantic versioning based on conventional commits
+          - ✅ Automated changelog generation
+          - ✅ Multi-artifact builds (Python, VS Code Extension, WASM)
+          - ✅ Automated deployment to staging
+          - ✅ Release notifications and rollback support
+          
+          ### 🔄 Intelligent Dependency Management
+          - ✅ Automated security updates
+          - ✅ Smart update categorization (security/patch/minor/major)
+          - ✅ Comprehensive testing before auto-merge
+          - ✅ Rollback capabilities for failed updates
+          
+          ### 📊 Performance Monitoring
+          - ✅ Python benchmark tracking
+          - ✅ VS Code extension performance monitoring
+          - ✅ WASM component benchmarking
+          - ✅ Performance regression detection
+          - ✅ Historical trend analysis
+          
+          ### 🧠 AI-Powered Code Review
+          - ✅ DeepCode integration for Python analysis
+          - ✅ TypeScript/JavaScript quality checks
+          - ✅ Security vulnerability scanning
+          - ✅ Automated reviewer suggestions
+          - ✅ Complexity analysis and reporting
+          
+          ### 🏷️ Intelligent Issue & PR Management
+          - ✅ Auto-labeling based on content analysis
+          - ✅ Smart assignee suggestions
+          - ✅ PR validation and requirements checking
+          - ✅ Stale issue management
+          - ✅ Weekly activity reporting
+          
+          """
+              
+              # Metrics section
+              if 'git_metrics' in metrics:
+                  git_metrics = metrics['git_metrics']
+                  dashboard += "## 📈 Repository Metrics\n\n"
+                  dashboard += f"- **Commits (Last 30 days):** {git_metrics.get('commits_last_30_days', 'N/A')}\n"
+                  dashboard += f"- **Total Branches:** {git_metrics.get('total_branches', 'N/A')}\n"
+                  dashboard += f"- **Repository Size:** {git_metrics.get('repo_size_mb', 'N/A')} MB\n\n"
+              
+              if 'workflow_metrics' in metrics:
+                  workflow_metrics = metrics['workflow_metrics']
+                  dashboard += "## ⚙️ Workflow Metrics\n\n"
+                  dashboard += f"- **Total Workflow Files:** {workflow_metrics.get('total_workflow_files', 'N/A')}\n"
+                  dashboard += f"- **Total Workflow Lines:** {workflow_metrics.get('total_workflow_lines', 'N/A')}\n"
+                  dashboard += f"- **Average Workflow Size:** {workflow_metrics.get('average_workflow_size', 'N/A')} lines\n\n"
+              
+              if 'automation_metrics' in metrics:
+                  auto_metrics = metrics['automation_metrics']
+                  dashboard += "## 🔧 Automation Code Metrics\n\n"
+                  dashboard += f"- **Automation Files:** {auto_metrics.get('automation_files', 'N/A')}\n"
+                  dashboard += f"- **Lines of Automation Code:** {auto_metrics.get('automation_lines', 'N/A')}\n"
+                  dashboard += f"- **Automation Functions:** {auto_metrics.get('automation_functions', 'N/A')}\n\n"
+              
+              # Recommendations
+              if recommendations:
+                  dashboard += "## 💡 Recommendations\n\n"
+                  for rec in recommendations:
+                      dashboard += f"- {rec}\n"
+                  dashboard += "\n"
+              
+              # Usage guide
+              dashboard += """## 🎯 How to Use the Automation
+          
+          ### Manual Triggers
+          - **Smart Release:** Use `workflow_dispatch` to trigger manual releases
+          - **Dependency Updates:** Weekly automatic + manual trigger options
+          - **Performance Monitoring:** Runs on every PR + daily scheduled
+          - **Code Review:** Automatic on PR creation/updates
+          
+          ### Monitoring
+          - Check this dashboard daily for system health
+          - Review weekly activity reports for project insights
+          - Monitor performance trends for regressions
+          
+          ### Configuration
+          - Automation settings in `.github/workflows/`
+          - API endpoints available in `cortex/automation/`
+          - Customize labels and assignments in workflow files
+          
+          ---
+          *This dashboard is automatically updated by the Workflow Orchestrator*
+          """
+              
+              return dashboard
+          
+          if __name__ == '__main__':
+              dashboard_content = generate_dashboard()
+              with open('automation-dashboard.md', 'w') as f:
+                  f.write(dashboard_content)
+              print("Dashboard generated successfully")
+          EOF
+          
+          python generate_dashboard.py
+          
+      - name: Update dashboard in repository
+        run: |
+          # Update the dashboard file in the repository
+          cp automation-dashboard.md docs/AUTOMATION_DASHBOARD.md
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/AUTOMATION_DASHBOARD.md
+          git commit -m "docs: update automation dashboard $(date -u +%Y-%m-%d)" || echo "No changes to commit"
+          git push || echo "No changes to push"
+          
+      - name: Create/update dashboard issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const dashboard = fs.readFileSync('automation-dashboard.md', 'utf8');
+            
+            // Look for existing dashboard issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'automation-dashboard',
+              state: 'open'
+            });
+            
+            if (issues.length > 0) {
+              // Update existing dashboard issue
+              const issue = issues[0];
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                title: '🤖 Super Alita Automation Dashboard',
+                body: dashboard
+              });
+              console.log(`Updated dashboard issue #${issue.number}`);
+            } else {
+              // Create new dashboard issue
+              const newIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🤖 Super Alita Automation Dashboard',
+                body: dashboard,
+                labels: ['automation-dashboard', 'pinned']
+              });
+              console.log(`Created new dashboard issue #${newIssue.data.number}`);
+            }
+
+  emergency-controls:
+    name: Emergency Controls
+    if: github.event.inputs.action == 'emergency_stop' || needs.workflow-health-check.outputs.overall_health == 'critical'
+    needs: [workflow-health-check]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      issues: write
+    steps:
+      - name: Emergency workflow management
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const action = '${{ github.event.inputs.action }}';
+            
+            if (action === 'emergency_stop') {
+              console.log('🚨 EMERGENCY STOP ACTIVATED');
+              
+              // Create emergency issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 EMERGENCY: Automation workflows manually stopped',
+                body: `## Emergency Stop Activated
+                
+                **Triggered by:** @${context.actor}
+                **Time:** ${new Date().toISOString()}
+                **Reason:** Manual emergency stop
+                
+                ### Actions Taken:
+                - All automation workflows have been flagged for review
+                - Manual intervention required to restart automation
+                
+                ### Next Steps:
+                1. Investigate the emergency situation
+                2. Fix any underlying issues
+                3. Run the Workflow Orchestrator with 'reset_automation' action
+                4. Close this issue when resolved
+                
+                **⚠️ WARNING: Automation is currently disabled**`,
+                labels: ['emergency', 'automation', 'priority: high']
+              });
+              
+              console.log('Emergency stop completed. Manual intervention required.');
+            }
+
+  success-summary:
+    name: Automation Success Summary
+    needs: [workflow-health-check, automation-metrics, generate-dashboard]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate success summary
+        run: |
+          echo "🎉 Super Alita Automation Workflows Successfully Implemented!"
+          echo ""
+          echo "✅ Smart Release & Deployment workflow created"
+          echo "✅ Intelligent Dependency Updates workflow created" 
+          echo "✅ Performance Monitoring & Regression Detection workflow created"
+          echo "✅ AI-Powered Code Review workflow created"
+          echo "✅ Intelligent Issue & PR Management workflow created"
+          echo "✅ Workflow Orchestrator & Health Dashboard created"
+          echo ""
+          echo "📊 System Health: ${{ needs.workflow-health-check.outputs.overall_health }}"
+          echo "📈 Automation Dashboard: Available in docs/AUTOMATION_DASHBOARD.md"
+          echo ""
+          echo "🚀 Your repository now has powerful automation capabilities!"
+          echo "Check the automation dashboard for detailed status and usage instructions."

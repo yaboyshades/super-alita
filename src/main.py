@@ -10,8 +10,9 @@ import hashlib
 import json
 import logging
 import os
+import re
 import sys
-import inspect
+import urllib.request
 from collections.abc import AsyncGenerator, Callable
 from logging.config import dictConfig
 from pathlib import Path
@@ -37,6 +38,11 @@ except ImportError:
     StreamingResponse = None  # type: ignore
     uvicorn = None  # type: ignore
     FASTAPI_AVAILABLE = False
+
+# Event bus imports (moved up to avoid E402)
+from reug_runtime.event_bus import BaseEventBus, FileEventBus, make_event_bus
+from reug_runtime.llm_client import LLMClient, get_llm_client
+from src.core.events import create_event
 
 
 class JsonFormatter(logging.Formatter):
@@ -89,6 +95,14 @@ def _hash_json(obj: Any) -> str:
 # --- Resolve reug_runtime from local src if not installed ---
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
+# Ensure the PROJECT ROOT (parent of 'src') is on sys.path so that
+# package imports like 'src.core.events' resolve. Previously we only
+# inserted the 'src' directory itself which makes top-level packages
+# (core, agents, etc.) importable, but breaks fully-qualified
+# 'src.*' imports used throughout the codebase.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+# (Optionally also ensure direct 'src' path for simpler 'core.*' imports)
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
@@ -127,15 +141,28 @@ except Exception as e:  # pragma: no cover
         SETTINGS = type("Settings", (), {"api_prefix": ""})()  # type: ignore
 
 
-# --- Event bus (JSONL fallback + optional Redis) ---
+# --- Resolve reug_runtime from local src if not installed ---
+ROOT = Path(__file__).resolve().parent.parent
+SRC = ROOT / "src"
+# Ensure the PROJECT ROOT (parent of 'src') is on sys.path so that
+# package imports like 'src.core.events' resolve. Previously we only
+# inserted the 'src' directory itself which makes top-level packages
+# (core, agents, etc.) importable, but breaks fully-qualified
+# 'src.*' imports used throughout the codebase.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+# (Optionally also ensure direct 'src' path for simpler 'core.*' imports)
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
-from reug_runtime.event_bus import (
-    BaseEventBus,
-    FileEventBus,
-    make_event_bus,
-)
-from reug_runtime.llm_client import LLMClient, get_llm_client
-from src.core.events import create_event
+# REUG runtime routers (streaming agent + toolbox)
+try:
+    from reug_runtime.config import SETTINGS
+    from reug_runtime.router import router as agent_router
+    from reug_runtime.router_tools import tools as tools_router
+except Exception as e:  # pragma: no cover
+    # Fallback: minimal routers to allow boot/health during development
+    print("[WARN] reug_runtime import failed; falling back to minimal routers:", e)
 
 
 # --- Ability registry (minimal adapter; replace with your real one) ---
@@ -149,8 +176,14 @@ class SimpleAbilityRegistry:
     """
 
     def __init__(self) -> None:
-        # Seed with a friendly "echo" tool
-        self._known: set[str] = {"echo"}
+        # Seed with initial tools
+        self._known: set[str] = {
+            "echo",
+            "brainstorm_mcp_stub",
+            "fetch_github_raw",
+            "secure_scan_code",
+            "full_cycle_prototype",
+        }
         self._contracts: dict[str, dict[str, Any]] = {
             "echo": {
                 "tool_id": "echo",
@@ -160,14 +193,90 @@ class SimpleAbilityRegistry:
                     "properties": {"payload": {"type": "string"}},
                 },
                 "output_schema": {"type": "object"},
-            }
+            },
+            "brainstorm_mcp_stub": {
+                "tool_id": "brainstorm_mcp_stub",
+                "description": (
+                    "Lightweight brainstorming helper returning a structured "
+                    "idea list for a task."
+                ),
+                "input_schema": {
+                    "type": "object",
+                    "required": ["task"],
+                    "properties": {"task": {"type": "string"}},
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {
+                        "task": {"type": "string"},
+                        "ideas": {"type": "array", "items": {"type": "string"}},
+                    },
+                },
+            },
+            "fetch_github_raw": {
+                "tool_id": "fetch_github_raw",
+                "description": (
+                    "Fetch a raw file from GitHub (best-effort; graceful "
+                    "fallback if network disabled)."
+                ),
+                "input_schema": {
+                    "type": "object",
+                    "required": ["owner", "repo", "path"],
+                    "properties": {
+                        "owner": {"type": "string"},
+                        "repo": {"type": "string"},
+                        "path": {"type": "string"},
+                        "ref": {"type": "string"},
+                        "truncate": {"type": "integer"},
+                    },
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {
+                        "content": {"type": "string"},
+                        "url": {"type": "string"},
+                        "truncated": {"type": "boolean"},
+                        "error": {"type": "string"},
+                    },
+                },
+            },
+            "secure_scan_code": {
+                "tool_id": "secure_scan_code",
+                "description": (
+                    "Naive static scan (Bandit-inspired heuristics) for "
+                    "obvious risky patterns."
+                ),
+                "input_schema": {
+                    "type": "object",
+                    "required": ["code"],
+                    "properties": {"code": {"type": "string"}},
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {
+                        "issues": {"type": "array", "items": {"type": "object"}},
+                        "issue_count": {"type": "integer"},
+                    },
+                },
+            },
+            "full_cycle_prototype": {
+                "tool_id": "full_cycle_prototype",
+                "description": (
+                    "Synthetic build-run cycle: optional fetch then produce "
+                    "run instructions."
+                ),
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "task": {"type": "string"},
+                        "owner": {"type": "string"},
+                        "repo": {"type": "string"},
+                        "path": {"type": "string"},
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
         }
-        # Tool implementations keyed by name
-        class _EchoTool:
-            async def aexecute(self, payload: str) -> dict[str, Any]:
-                return {"echo": payload}
-
-        self._impls: dict[str, Any] = {"echo": _EchoTool()}
 
     def get_available_tools_schema(self) -> list[dict[str, Any]]:
         return list(self._contracts.values())
@@ -189,26 +298,108 @@ class SimpleAbilityRegistry:
         tid = contract["tool_id"]
         self._contracts[tid] = contract
         self._known.add(tid)
-        # Default implementation accepts any kwargs
-        self._impls.setdefault(tid, lambda **kwargs: {"ok": True, "tool": tid, "args": kwargs})
 
     async def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
-        impl = self._impls.get(tool_name)
-        if impl is None:
-            return {"ok": True, "tool": tool_name, "args": args}
-        fn = getattr(impl, "aexecute", None) or getattr(impl, "run", None) or impl
-        sig = inspect.signature(fn)
-        params = sig.parameters
-        accepts_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
-        unexpected = [k for k in args if k not in params] if not accepts_var_kw else []
-        if unexpected:
-            raise TypeError(
-                f"Unexpected argument(s): {', '.join(sorted(unexpected))} for tool '{tool_name}'"
-            )
-        filtered = {k: v for k, v in args.items() if accepts_var_kw or k in params}
-        if inspect.iscoroutinefunction(fn):
-            return await fn(**filtered)
-        return fn(**filtered)
+        # Implement your actual bindings here (MCP, HTTP APIs, Python functions).
+        if tool_name == "echo":
+            return {"echo": args.get("payload", "")}
+        if tool_name == "brainstorm_mcp_stub":
+            task = (args.get("task") or "").strip()
+            base = task or "unspecified task"
+            ideas = [
+                f"Outline {base}",
+                f"List core primitives for {base}",
+                f"Write minimal happy-path example for {base}",
+                f"Add edge case tests for {base}",
+                f"Refactor {base} for clarity",
+            ]
+            return {"task": task, "ideas": ideas}
+        if tool_name == "fetch_github_raw":
+            owner = args.get("owner")
+            repo = args.get("repo")
+            path = args.get("path")
+            ref = args.get("ref") or "main"
+            truncate_at = int(args.get("truncate") or 4000)
+            url_main = f"https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path}"
+            content = ""
+            err: str | None = None
+            truncated = False
+            for candidate_ref in [ref, "main", "master"]:
+                try:
+                    url = f"https://raw.githubusercontent.com/{owner}/{repo}/{candidate_ref}/{path}"
+                    with urllib.request.urlopen(url, timeout=5) as resp:  # nosec B310
+                        raw_bytes = resp.read()
+                    content = raw_bytes.decode("utf-8", errors="replace")
+                    if len(content) > truncate_at:
+                        content = content[:truncate_at]
+                        truncated = True
+                    url_main = url
+                    break
+                except Exception as e:  # pragma: no cover - network variability
+                    err = str(e)
+            return {
+                "content": content,
+                "url": url_main,
+                "truncated": truncated,
+                **({"error": err} if err and not content else {}),
+            }
+        if tool_name == "secure_scan_code":
+            code = args.get("code") or ""
+            patterns: list[tuple[str, str, str]] = [
+                (r"\beval\(", "HIGH", "Use of eval() can be unsafe"),
+                (r"\bexec\(", "HIGH", "Use of exec() can be unsafe"),
+                (
+                    r"subprocess\.Popen\(",
+                    "MEDIUM",
+                    "subprocess.Popen without sanitization",
+                ),
+                (r"os\.system\(", "MEDIUM", "os.system() call detected"),
+                (r"pickle\.loads\(", "MEDIUM", "Untrusted pickle.loads()"),
+            ]
+            issues: list[dict[str, Any]] = []
+            for pat, severity, message in patterns:
+                for m in re.finditer(pat, code):
+                    line = code.count("\n", 0, m.start()) + 1
+                    issues.append(
+                        {
+                            "severity": severity,
+                            "message": message,
+                            "line": line,
+                            "pattern": pat,
+                        }
+                    )
+            return {"issues": issues, "issue_count": len(issues)}
+        if tool_name == "full_cycle_prototype":
+            # Combine brainstorming + optional fetch to produce a synthetic plan
+            task = (args.get("task") or "hello world").strip()
+            owner = args.get("owner")
+            repo = args.get("repo")
+            path = args.get("path")
+            fetched: dict[str, Any] | None = None
+            if owner and repo and path:
+                fetched = await self.execute(
+                    "fetch_github_raw",
+                    {"owner": owner, "repo": repo, "path": path},
+                )
+            brainstorm = await self.execute("brainstorm_mcp_stub", {"task": task})
+            run_instructions = [
+                "# 1. Create virtual environment",
+                "python -m venv .venv",
+                "# 2. Activate venv",
+                "# (Windows) .venv\\Scripts\\activate",
+                "# 3. Write prototype code (hello.py)",
+                'print("Hello World")',
+                "# 4. Run it",
+                "python hello.py",
+            ]
+            return {
+                "task": task,
+                "brainstorm": brainstorm,
+                "fetched": fetched,
+                "plan": run_instructions,
+            }
+        # Fallback generic - echo contract
+        return {"ok": True, "tool": tool_name, "args": args}
 
 
 # --- Knowledge graph (minimal; replace with your store/driver) ---
@@ -248,12 +439,12 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     """Create FastAPI app or return None if FastAPI not available."""
     if not FASTAPI_AVAILABLE:
         print(
-            "[ERROR] FastAPI not available - please install: pip install fastapi uvicorn"
+            "[ERROR] FastAPI not available - install with: "
+            "'pip install fastapi uvicorn'"
         )
         return None
 
     _configure_logging()
-    logger = logging.getLogger()
     app = FastAPI(title="REUG Runtime", version="0.2.0")  # type: ignore
 
     # CORS (tweak as needed)
@@ -308,18 +499,19 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     app.state.kg = SimpleKG()  # type: ignore
     app.state.llm_model = get_llm_client(os.getenv("LLM_MODEL"))  # type: ignore
 
-    # Initialize and start DeepCode plugins (bridge + orchestrator)
-    with contextlib.suppress(Exception):
-        from src.plugins.deepcode_generator_plugin import (
-            DeepCodeGeneratorBridgePlugin,
-        )
-        from src.plugins.deepcode_orchestrator_plugin import (
-            DeepCodeOrchestratorPlugin,
-        )
+    # Lifespan handler (replaces deprecated on_event startup/shutdown)
+    app.state.plugins = []  # type: ignore
 
-        app.state.plugins = []  # type: ignore
+    async def _lifespan(_: Any) -> AsyncGenerator[None, None]:  # type: ignore
+        # Startup: initialize optional DeepCode plugins and emit runtime events
+        with contextlib.suppress(Exception):
+            from src.plugins.deepcode_generator_plugin import (
+                DeepCodeGeneratorBridgePlugin,
+            )
+            from src.plugins.deepcode_orchestrator_plugin import (
+                DeepCodeOrchestratorPlugin,
+            )
 
-        async def _start_plugins() -> None:
             gen = DeepCodeGeneratorBridgePlugin()
             orch = DeepCodeOrchestratorPlugin()
             await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
@@ -328,10 +520,40 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             await orch.start()
             app.state.plugins = [gen, orch]  # type: ignore
 
-        # schedule startup after app is ready
-        @app.on_event("startup")  # type: ignore
-        async def _start_dc() -> None:
-            await _start_plugins()
+        # Emit startup events
+        try:
+            corr = str(uuid4())
+            logging.getLogger().info("runtime startup")
+            await app.state.event_bus.emit(  # type: ignore
+                {
+                    "type": "STATE_TRANSITION",
+                    "from": "BOOT",
+                    "to": "READY",
+                    "correlation_id": corr,
+                }
+            )
+            await app.state.event_bus.emit(  # type: ignore
+                {
+                    "type": "TaskStarted",
+                    "correlation_id": corr,
+                    "goal": "startup",
+                    "user_msg_hash": _hash_json("startup"),
+                }
+            )
+        except Exception:
+            pass  # best-effort; keep service up even if telemetry fails
+
+        yield
+
+        # Shutdown: stop plugins gracefully
+        with contextlib.suppress(Exception):
+            for p in getattr(app.state, "plugins", []):  # type: ignore
+                stop = getattr(p, "stop", None)
+                if callable(stop):
+                    await stop()
+
+    # Register lifespan context (Starlette/FastAPI)
+    app.router.lifespan_context = _lifespan  # type: ignore[attr-defined]
 
     # Mount routers
     prefix = SETTINGS.api_prefix
@@ -422,26 +644,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         app.include_router(agent_router)  # type: ignore
         app.include_router(tools_router)  # type: ignore
 
-    @app.on_event("startup")  # type: ignore
-    async def _startup() -> None:
-        corr = str(uuid4())
-        logger.info("runtime startup")
-        await app.state.event_bus.emit(  # type: ignore
-            {
-                "type": "STATE_TRANSITION",
-                "from": "BOOT",
-                "to": "READY",
-                "correlation_id": corr,
-            }
-        )
-        await app.state.event_bus.emit(  # type: ignore
-            {
-                "type": "TaskStarted",
-                "correlation_id": corr,
-                "goal": "startup",
-                "user_msg_hash": _hash_json("startup"),
-            }
-        )
+    # Startup events are handled via lifespan; on_event is deprecated
 
     # DeepCode trigger endpoint (fire-and-forget). Accept generic JSON to
     # reduce tight coupling / avoid Pydantic forward issues across versions.
@@ -465,6 +668,47 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             await app.state.event_bus.emit(evt.model_dump())  # type: ignore
         return {"status": "accepted", "request": payload}
 
+    # Generic ability execution endpoint (internal tools registry exposure)
+    @app.post("/ability/execute/{tool_id}")  # type: ignore
+    async def execute_ability(tool_id: str, req: Request) -> JSONResponse:  # type: ignore
+        args: dict[str, Any] = {}
+        with contextlib.suppress(Exception):
+            parsed = await req.json()  # type: ignore
+            if isinstance(parsed, dict):
+                args = parsed
+        registry: SimpleAbilityRegistry = app.state.ability_registry  # type: ignore
+        if not registry.knows(tool_id):
+            return JSONResponse(
+                status_code=404, content={"error": "unknown_tool", "tool": tool_id}
+            )  # type: ignore
+        if not registry.validate_args(tool_id, args):
+            return JSONResponse(
+                status_code=400,
+                content={"error": "invalid_args", "tool": tool_id, "args": args},
+            )  # type: ignore
+        result = await registry.execute(tool_id, args)
+        return JSONResponse(  # type: ignore
+            status_code=200,
+            content={"tool": tool_id, "result": result},
+        )
+
+    # Bandit stats snapshot (consumed by IDE agent)
+    @app.get("/bandit/stats")  # type: ignore
+    async def bandit_stats() -> JSONResponse:  # type: ignore
+        try:
+            from cortex.bandit_stats_store import get_snapshot
+
+            snap = get_snapshot()
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "tools": snap.tools,
+                    "generated_at": snap.generated_at,
+                },
+            )  # type: ignore
+        except Exception as e:  # pragma: no cover
+            return JSONResponse(status_code=200, content={"tools": [], "error": str(e)})  # type: ignore
+
     # DeepCode latest retrieval
     @app.get("/deepcode/latest")  # type: ignore
     async def deepcode_latest() -> JSONResponse:  # type: ignore
@@ -481,6 +725,31 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         if not latest:
             return JSONResponse(status_code=404, content={"error": "no_latest"})  # type: ignore
         return JSONResponse(status_code=200, content=latest)  # type: ignore
+
+    # Bandit endpoints: decide + feedback
+    @app.post("/bandit/decide")  # type: ignore
+    async def bandit_decide(req: Request) -> JSONResponse:  # type: ignore
+        body = await req.json()  # type: ignore
+        policy_id = body.get("policy_id", "default")
+        from cortex.bandit_service import decide as bandit_decide_impl
+
+        result = bandit_decide_impl(policy_id)
+        return JSONResponse(status_code=200, content=result)  # type: ignore
+
+    @app.post("/bandit/feedback")  # type: ignore
+    async def bandit_feedback(req: Request) -> JSONResponse:  # type: ignore
+        body = await req.json()  # type: ignore
+        decision_id = body.get("decision_id")
+        reward = float(body.get("reward", 0.0))
+        source = body.get("source")
+        if not decision_id:
+            return JSONResponse(
+                status_code=400, content={"error": "missing decision_id"}
+            )  # type: ignore
+        from cortex.bandit_service import feedback as bandit_feedback_impl
+
+        result = bandit_feedback_impl(decision_id, reward, source)
+        return JSONResponse(status_code=200, content=result)  # type: ignore
 
     # DeepCode apply endpoint (delegates to orchestrator; guardian applies elsewhere)
     @app.post("/deepcode/apply")  # type: ignore
@@ -501,6 +770,22 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             )  # type: ignore
         result = await plugin.apply_latest(filter_paths)  # type: ignore
         return JSONResponse(status_code=200, content=result)  # type: ignore
+
+    # Simplified minimal health (no deep dependency checks)
+    @app.get("/health/simple")  # type: ignore
+    async def health_simple() -> dict[str, str]:  # type: ignore
+        return {"status": "ok"}
+
+    # Route enumeration (debug only)
+    @app.get("/routes")  # type: ignore
+    async def list_routes() -> list[dict[str, str]]:  # type: ignore
+        info: list[dict[str, str]] = []
+        for r in app.router.routes:  # type: ignore[attr-defined]
+            path = getattr(r, "path", "")
+            methods = ",".join(sorted(getattr(r, "methods", []) or []))
+            if path:
+                info.append({"path": path, "methods": methods})
+        return info
 
     return app
 

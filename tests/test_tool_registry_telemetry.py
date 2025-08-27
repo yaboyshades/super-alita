@@ -2,10 +2,6 @@ import pytest
 
 from src.mcp_local import registry as registry_module
 
-import pytest
-
-from src.mcp_local import registry as registry_module
-
 
 class TelemetryRecorder:
     def __init__(self) -> None:
