@@ -1,22 +1,25 @@
 # Test requirements
 # Keep pytest aligned with the minversion specified in pyproject.toml
-pytest>=8.0.0
+aiohttp>=3.9
+aioredis>=2.0.0
+chromadb>=0.4.0
+fakeredis>=2.0.0
+fastapi>=0.104.0
+google-generativeai>=0.3.0
+hypothesis>=6.0.0
+jsonschema>=4.0.0
+networkx>=3.0
+numpy>=1.24.0
+openai>=1.0
+orjson>=3.10.7
+pydantic>=2.11
 pytest-asyncio>=0.21.0
+pytest-cov>=4.0
+pytest>=8.0.0
+python-dotenv>=1.0.0
+pyyaml
+redis>=5.0.0
+uvicorn[standard]>=0.24.0
 
 # Optional protobuf support
 # protobuf>=4.0.0
-
-# Existing requirements from main application
-redis>=5.0  # runtime event bus client
-aiohttp>=3.9  # async HTTP support
-pydantic>=2.0.0
-aioredis>=2.0.0
-chromadb>=0.4.0
-google-generativeai>=0.3.0
-numpy>=1.24.0
-fastapi>=0.104.0
-networkx>=3.0
-hypothesis>=6.0.0
-fakeredis>=2.0.0
-jsonschema>=4.0.0
-
