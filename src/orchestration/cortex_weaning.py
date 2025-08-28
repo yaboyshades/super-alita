@@ -56,7 +56,9 @@ class CortexWeaningOrchestrator:
             ),
         }
 
-    async def should_use_cortex(self, confidence: float, context: dict[str, Any]) -> bool:
+    async def should_use_cortex(
+        self, confidence: float, context: dict[str, Any]
+    ) -> bool:
         cfg = self.phase_configs[self.current_phase]
         return confidence < cfg.cortex_intervention_threshold
 
