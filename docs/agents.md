@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-28T03:27:36Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-28T03:55:18Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -19,7 +19,7 @@
 <!-- AGENTS:START -->
 | Agent | Kind | Entrypoint | Abilities (count) | Plugins (count) | Owner(s) | Stability | Notes |
 |---:|----|----|----|----|----|----|----|
-| super-alita | runtime | src/main.py | 4 | 56 | @owners | beta |  |
+| super-alita | runtime | src/main.py | 4 | 57 | @owners | beta |  |
 <!-- AGENTS:END -->
 
 ### 1.1 Ownership & Contacts
@@ -78,6 +78,7 @@
 | dify_adapter_plugin | src/plugins/dify_adapter_plugin.py | (…) | ENV_* | function() => ok |  |
 | predictive_world_model_plugin | src/plugins/predictive_world_model_plugin.py | (…) | ENV_* | function() => ok |  |
 | ladder_aog_plugin | src/plugins/ladder_aog_plugin.py | (…) | ENV_* | function() => ok |  |
+| strategic_planner_plugin | src/plugins/strategic_planner_plugin.py | (…) | ENV_* | function() => ok |  |
 | tool_executor_plugin_unified | src/plugins/tool_executor_plugin_unified.py | (…) | ENV_* | function() => ok |  |
 | tool_executor_plugin | src/plugins/tool_executor_plugin.py | (…) | ENV_* | function() => ok |  |
 | skill_discovery_plugin | src/plugins/skill_discovery_plugin.py | (…) | ENV_* | function() => ok |  |
@@ -140,7 +141,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 76, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 155, 156, 157, 158, 159, 160, 164, 166, 167, 168, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 182, 187, 188, 189, 191]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 76, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 155, 156, 157, 158, 159, 160, 164, 166, 167, 168, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 182, 187, 188, 189, 191, 192]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -148,6 +149,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-28T03:27:36Z #191 Merge pull request #191 from yaboyshades/copilot/fix-3d5ae786-41f9-46ee-aebe-92b43c0cb0b4 (owner: @yaboyshades)
+- 2025-08-28T03:55:18Z #192 Merge pull request #192 from yaboyshades/copilot/fix-b221edf8-3b0c-4efd-ac9e-59fbf14e9eda (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-28T01:39:46Z #189 Merge pull request #189 from yaboyshades/copilot/fix-1bfcd0d4-b5fa-4715-88b1-d9402c663ff2 (owner: @yaboyshades)
+- 2025-08-28T03:27:36Z #191 Merge pull request #191 from yaboyshades/copilot/fix-3d5ae786-41f9-46ee-aebe-92b43c0cb0b4 (owner: @yaboyshades)
