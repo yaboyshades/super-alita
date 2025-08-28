@@ -183,6 +183,16 @@ class SimpleAbilityRegistry:
             "fetch_github_raw",
             "secure_scan_code",
             "full_cycle_prototype",
+            # DeepCode abilities
+            "analyze_code_file",
+            "analyze_code_directory", 
+            "get_code_quality_score",
+            "detect_code_patterns",
+            "analyze_workspace_context",
+            "analyze_file_context",
+            "check_file_support",
+            "get_supported_extensions",
+            "understand_code_structure",
         }
         self._contracts: dict[str, dict[str, Any]] = {
             "echo": {
@@ -272,6 +282,138 @@ class SimpleAbilityRegistry:
                         "owner": {"type": "string"},
                         "repo": {"type": "string"},
                         "path": {"type": "string"},
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            # DeepCode Analysis Tools
+            "analyze_code_file": {
+                "tool_id": "analyze_code_file",
+                "description": "Perform deep analysis on a single code file",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["file_path"],
+                    "properties": {
+                        "file_path": {"type": "string"},
+                        "analysis_level": {
+                            "type": "string",
+                            "enum": ["syntax", "semantic", "security", "performance", "architecture", "deep"],
+                            "default": "semantic"
+                        }
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "analyze_code_directory": {
+                "tool_id": "analyze_code_directory", 
+                "description": "Analyze all supported code files in a directory",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["directory_path"],
+                    "properties": {
+                        "directory_path": {"type": "string"},
+                        "analysis_level": {
+                            "type": "string",
+                            "enum": ["syntax", "semantic", "security", "performance", "architecture", "deep"],
+                            "default": "semantic"
+                        },
+                        "generate_report": {"type": "boolean", "default": True}
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "get_code_quality_score": {
+                "tool_id": "get_code_quality_score",
+                "description": "Calculate quality score for code analysis results",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["target_path"],
+                    "properties": {
+                        "target_path": {"type": "string"},
+                        "include_metrics": {"type": "boolean", "default": False}
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "detect_code_patterns": {
+                "tool_id": "detect_code_patterns",
+                "description": "Detect specific patterns and anti-patterns in code",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["file_path"],
+                    "properties": {
+                        "file_path": {"type": "string"},
+                        "pattern_types": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "default": ["security", "performance"]
+                        }
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            # DeepCode Integration Tools
+            "analyze_workspace_context": {
+                "tool_id": "analyze_workspace_context",
+                "description": "Analyze workspace to understand project structure and context",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["workspace_path"],
+                    "properties": {
+                        "workspace_path": {"type": "string"},
+                        "max_files": {"type": "integer", "default": 20},
+                        "include_quality_metrics": {"type": "boolean", "default": True}
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "analyze_file_context": {
+                "tool_id": "analyze_file_context",
+                "description": "Analyze a specific file with full context understanding",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["file_path"],
+                    "properties": {
+                        "file_path": {"type": "string"},
+                        "include_suggestions": {"type": "boolean", "default": True}
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "check_file_support": {
+                "tool_id": "check_file_support",
+                "description": "Check if a file type is supported by deepcode analysis",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["file_path"],
+                    "properties": {
+                        "file_path": {"type": "string"}
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "get_supported_extensions": {
+                "tool_id": "get_supported_extensions",
+                "description": "Get list of file extensions supported by deepcode",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                },
+                "output_schema": {"type": "object"},
+            },
+            "understand_code_structure": {
+                "tool_id": "understand_code_structure",
+                "description": "Analyze code structure and provide architectural insights",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["target_path"],
+                    "properties": {
+                        "target_path": {"type": "string"},
+                        "focus_area": {
+                            "type": "string",
+                            "enum": ["architecture", "dependencies", "complexity", "patterns"],
+                            "default": "architecture"
+                        }
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -398,8 +540,43 @@ class SimpleAbilityRegistry:
                 "fetched": fetched,
                 "plan": run_instructions,
             }
+        
+        # DeepCode tool execution
+        if tool_name in [
+            "analyze_code_file", "analyze_code_directory", "get_code_quality_score", 
+            "detect_code_patterns", "analyze_workspace_context", "analyze_file_context",
+            "check_file_support", "get_supported_extensions", "understand_code_structure"
+        ]:
+            return await self._execute_deepcode_tool(tool_name, args)
+        
         # Fallback generic - echo contract
         return {"ok": True, "tool": tool_name, "args": args}
+
+    async def _execute_deepcode_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+        """Execute deepcode tools by delegating to the appropriate ability"""
+        try:
+            # Import abilities dynamically to avoid circular imports
+            from src.abilities.deepcode_analysis_ability import DeepCodeAnalysisAbility
+            from src.abilities.deepcode_integration_ability import DeepCodeIntegrationAbility
+            
+            # Determine which ability to use
+            analysis_tools = ["analyze_code_file", "analyze_code_directory", "get_code_quality_score", "detect_code_patterns"]
+            integration_tools = ["analyze_workspace_context", "analyze_file_context", "check_file_support", "get_supported_extensions", "understand_code_structure"]
+            
+            if tool_name in analysis_tools:
+                ability = DeepCodeAnalysisAbility()
+                await ability.setup(None, None, {})
+                return await ability._execute_tool(tool_name, args)
+            elif tool_name in integration_tools:
+                ability = DeepCodeIntegrationAbility()
+                await ability.setup(None, None, {})
+                return await ability._execute_tool(tool_name, args)
+            else:
+                return {"error": f"Unknown deepcode tool: {tool_name}"}
+                
+        except Exception as e:
+            logger.exception(f"DeepCode tool execution failed for {tool_name}: {e}")
+            return {"error": f"Tool execution failed: {str(e)}"}
 
 
 # --- Knowledge graph (minimal; replace with your store/driver) ---
