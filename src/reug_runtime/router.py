@@ -146,6 +146,16 @@ async def execute_turn(
 
     orchestrator = Orchestrator(event_bus, registry, model, correlation_id)
 
+    # Emit goal_received event for strategic planning layer
+    goal_received_event = {
+        "type": "goal_received",
+        "correlation_id": correlation_id,
+        "goal": user_msg,
+        "session_id": session_id,
+    }
+    await event_bus.emit(goal_received_event)
+    yield goal_received_event
+
     start_event = {
         "type": "TaskStarted",
         "correlation_id": correlation_id,

@@ -27,7 +27,7 @@ class OakCoordinator(PluginInterface):
         self.subproblem_manager = SubproblemManager()
         self.option_trainer = OptionTrainer()
         self.prediction_engine = PredictionEngine()
-        self.planning_engine = PlanningEngine(option_source=self.option_trainer)
+        self.planning_engine = PlanningEngine()
         self.curation_manager = CurationManager()
         self._task: asyncio.Task | None = None
 

@@ -777,7 +777,101 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         return None
 
     _configure_logging()
-    app = FastAPI(title="REUG Runtime", version="0.2.0")  # type: ignore
+    
+    from contextlib import asynccontextmanager
+    
+    @asynccontextmanager
+    async def _lifespan(_: Any) -> AsyncGenerator[None, None]:  # type: ignore
+        # Startup: initialize plugins from manifest and emit runtime events
+        plugins_loaded = []
+        
+        # Load OaK integration plugins first
+        with contextlib.suppress(Exception):
+            from src.core.plugin_loader import load_plugin_manifest, discover_plugins
+            
+            try:
+                plugin_configs = load_plugin_manifest("plugins.yaml")
+                if plugin_configs:
+                    plugin_classes = discover_plugins(plugin_configs)
+                    
+                    # Initialize plugins in priority order
+                    for plugin_name, plugin_class in plugin_classes:
+                        try:
+                            # Find config for this plugin
+                            plugin_config = next(
+                                (p for p in plugin_configs if p["name"] == plugin_name), 
+                                {}
+                            )
+                            config = plugin_config.get("config", {})
+                            
+                            plugin_instance = plugin_class()
+                            await plugin_instance.setup(app.state.event_bus, store=None, config=config)  # type: ignore
+                            await plugin_instance.start()
+                            plugins_loaded.append(plugin_instance)
+                            logger.info(f"Loaded OaK plugin: {plugin_name}")
+                        except Exception as e:
+                            logger.warning(f"Failed to load plugin {plugin_name}: {e}")
+                            
+                    logger.info(f"Loaded {len(plugins_loaded)} OaK plugins from manifest")
+                else:
+                    logger.info("No plugins.yaml found, loading minimal plugins")
+            except Exception as e:
+                logger.warning(f"Plugin manifest loading failed: {e}")
+        
+        # Fallback: initialize optional DeepCode plugins if manifest loading failed
+        if not plugins_loaded:
+            with contextlib.suppress(Exception):
+                from src.plugins.deepcode_generator_plugin import (
+                    DeepCodeGeneratorBridgePlugin,
+                )
+                from src.plugins.deepcode_orchestrator_plugin import (
+                    DeepCodeOrchestratorPlugin,
+                )
+
+                gen = DeepCodeGeneratorBridgePlugin()
+                orch = DeepCodeOrchestratorPlugin()
+                await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
+                await orch.setup(app.state.event_bus, store=None, config={})  # type: ignore
+                await gen.start()
+                await orch.start()
+                plugins_loaded = [gen, orch]
+                
+        app.state.plugins = plugins_loaded  # type: ignore
+
+        # Emit startup events
+        try:
+            corr = str(uuid4())
+            logging.getLogger().info("runtime startup")
+            await app.state.event_bus.emit(  # type: ignore
+                {
+                    "type": "STATE_TRANSITION",
+                    "from": "BOOT",
+                    "to": "READY",
+                    "correlation_id": corr,
+                }
+            )
+            await app.state.event_bus.emit(  # type: ignore
+                {
+                    "type": "TaskStarted",
+                    "correlation_id": corr,
+                    "goal": "startup",
+                    "user_msg_hash": _hash_json("startup"),
+                }
+            )
+        except Exception:
+            pass  # best-effort; keep service up even if telemetry fails
+
+        yield
+
+        # Shutdown: stop plugins gracefully
+        with contextlib.suppress(Exception):
+            for p in getattr(app.state, "plugins", []):  # type: ignore
+                stop = getattr(p, "stop", None)
+                if callable(stop):
+                    await stop()
+    
+    # Create FastAPI app with lifespan handler
+    app = FastAPI(title="REUG Runtime", version="0.2.0", lifespan=_lifespan)  # type: ignore
 
     # CORS (tweak as needed)
     app.add_middleware(  # type: ignore
@@ -833,59 +927,6 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
     # Lifespan handler (replaces deprecated on_event startup/shutdown)
     app.state.plugins = []  # type: ignore
-
-    async def _lifespan(_: Any) -> AsyncGenerator[None, None]:  # type: ignore
-        # Startup: initialize optional DeepCode plugins and emit runtime events
-        with contextlib.suppress(Exception):
-            from src.plugins.deepcode_generator_plugin import (
-                DeepCodeGeneratorBridgePlugin,
-            )
-            from src.plugins.deepcode_orchestrator_plugin import (
-                DeepCodeOrchestratorPlugin,
-            )
-
-            gen = DeepCodeGeneratorBridgePlugin()
-            orch = DeepCodeOrchestratorPlugin()
-            await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await orch.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await gen.start()
-            await orch.start()
-            app.state.plugins = [gen, orch]  # type: ignore
-
-        # Emit startup events
-        try:
-            corr = str(uuid4())
-            logging.getLogger().info("runtime startup")
-            await app.state.event_bus.emit(  # type: ignore
-                {
-                    "type": "STATE_TRANSITION",
-                    "from": "BOOT",
-                    "to": "READY",
-                    "correlation_id": corr,
-                }
-            )
-            await app.state.event_bus.emit(  # type: ignore
-                {
-                    "type": "TaskStarted",
-                    "correlation_id": corr,
-                    "goal": "startup",
-                    "user_msg_hash": _hash_json("startup"),
-                }
-            )
-        except Exception:
-            pass  # best-effort; keep service up even if telemetry fails
-
-        yield
-
-        # Shutdown: stop plugins gracefully
-        with contextlib.suppress(Exception):
-            for p in getattr(app.state, "plugins", []):  # type: ignore
-                stop = getattr(p, "stop", None)
-                if callable(stop):
-                    await stop()
-
-    # Register lifespan context (Starlette/FastAPI)
-    app.router.lifespan_context = _lifespan  # type: ignore[attr-defined]
 
     # Mount routers
     prefix = SETTINGS.api_prefix
