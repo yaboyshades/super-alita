@@ -835,22 +835,61 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     app.state.plugins = []  # type: ignore
 
     async def _lifespan(_: Any) -> AsyncGenerator[None, None]:  # type: ignore
-        # Startup: initialize optional DeepCode plugins and emit runtime events
+        # Startup: initialize plugins from manifest and emit runtime events
+        plugins_loaded = []
+        
+        # Load OaK integration plugins first
         with contextlib.suppress(Exception):
-            from src.plugins.deepcode_generator_plugin import (
-                DeepCodeGeneratorBridgePlugin,
-            )
-            from src.plugins.deepcode_orchestrator_plugin import (
-                DeepCodeOrchestratorPlugin,
-            )
+            from src.core.plugin_loader import load_plugin_manifest, discover_plugins
+            
+            try:
+                plugin_configs = load_plugin_manifest("plugins.yaml")
+                if plugin_configs:
+                    plugin_classes = discover_plugins(plugin_configs)
+                    
+                    # Initialize plugins in priority order
+                    for plugin_name, plugin_class in plugin_classes:
+                        try:
+                            # Find config for this plugin
+                            plugin_config = next(
+                                (p for p in plugin_configs if p["name"] == plugin_name), 
+                                {}
+                            )
+                            config = plugin_config.get("config", {})
+                            
+                            plugin_instance = plugin_class()
+                            await plugin_instance.setup(app.state.event_bus, store=None, config=config)  # type: ignore
+                            await plugin_instance.start()
+                            plugins_loaded.append(plugin_instance)
+                            logger.info(f"Loaded OaK plugin: {plugin_name}")
+                        except Exception as e:
+                            logger.warning(f"Failed to load plugin {plugin_name}: {e}")
+                            
+                    logger.info(f"Loaded {len(plugins_loaded)} OaK plugins from manifest")
+                else:
+                    logger.info("No plugins.yaml found, loading minimal plugins")
+            except Exception as e:
+                logger.warning(f"Plugin manifest loading failed: {e}")
+        
+        # Fallback: initialize optional DeepCode plugins if manifest loading failed
+        if not plugins_loaded:
+            with contextlib.suppress(Exception):
+                from src.plugins.deepcode_generator_plugin import (
+                    DeepCodeGeneratorBridgePlugin,
+                )
+                from src.plugins.deepcode_orchestrator_plugin import (
+                    DeepCodeOrchestratorPlugin,
+                )
 
-            gen = DeepCodeGeneratorBridgePlugin()
-            orch = DeepCodeOrchestratorPlugin()
-            await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await orch.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await gen.start()
-            await orch.start()
-            app.state.plugins = [gen, orch]  # type: ignore
+                gen = DeepCodeGeneratorBridgePlugin()
+                orch = DeepCodeOrchestratorPlugin()
+                await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
+                await orch.setup(app.state.event_bus, store=None, config={})  # type: ignore
+                await gen.start()
+                await orch.start()
+                plugins_loaded = [gen, orch]
+                
+        app.state.plugins = plugins_loaded  # type: ignore
 
         # Emit startup events
         try:

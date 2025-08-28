@@ -93,6 +93,7 @@ class FeatureDiscoveryEngine(PluginInterface):
 
     def __init__(self):
         super().__init__()
+        self.cfg = {}  # Initialize configuration dictionary
 
     @property
     def name(self) -> str:
@@ -113,10 +114,12 @@ class FeatureDiscoveryEngine(PluginInterface):
             self.feature_extractor.parameters(), lr=1e-3
         )
         self.cfg.update(config or {})
+        
+        self.temporal_patterns = deque(maxlen=100)
+        
+        # Subscribe to events
         await self.subscribe("deliberation_tick", self.handle_tick)
         await self.subscribe("oak.feature_utility_updated", self.handle_utility_update)
-
-        self.temporal_patterns = deque(maxlen=100)
 
     async def start(self) -> None:
         await super().start()
