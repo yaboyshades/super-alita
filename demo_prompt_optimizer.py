@@ -58,7 +58,7 @@ def demo_optimization_strategies():
     context = {
         "available_tools": ["file_reader", "code_analyzer", "debugger"],
         "current_project": "web application development",
-        "session_context": "user is working on authentication system"
+        "session_context": "user is working on authentication system",
     }
 
     for strategy in strategies:
@@ -88,7 +88,7 @@ def demo_bypass_functionality():
         # Simulate the amplifier behavior
         if prompt.startswith(("noopt:", "raw:", "literal:")):
             prefix = prompt.split(":")[0]
-            clean = prompt[len(prefix)+1:]
+            clean = prompt[len(prefix) + 1 :]
             print(f"Output: {clean}")
             print(f"Status: Bypassed ({prefix})")
         else:
@@ -111,8 +111,8 @@ def demo_context_awareness():
         {
             "current_project": "React application",
             "available_tools": ["debugger", "profiler", "network_analyzer"],
-            "session_context": "user reported performance issues"
-        }
+            "session_context": "user reported performance issues",
+        },
     ]
 
     optimizer = PromptOptimizer()
@@ -178,4 +178,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Demo failed: {e}")
         import traceback
+
         traceback.print_exc()

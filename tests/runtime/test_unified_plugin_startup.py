@@ -85,7 +85,9 @@ async def test_unified_plugins_start_and_pipeline() -> None:
         loaded.append(name)
 
         # emit synthetic telemetry to confirm bus capture
-        await bus.emit("STATE_TRANSITION", plugin=name, from_state="setup", to_state="started")
+        await bus.emit(
+            "STATE_TRANSITION", plugin=name, from_state="setup", to_state="started"
+        )
         await bus.emit("AbilityCalled", plugin=name, ability="startup")
         await bus.emit("AbilitySucceeded", plugin=name, ability="startup")
 

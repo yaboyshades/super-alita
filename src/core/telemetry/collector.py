@@ -3,6 +3,7 @@ Telemetry data collection and aggregation for Cortex runtime
 """
 
 import asyncio
+import contextlib
 import json
 import time
 from collections.abc import Callable
@@ -17,6 +18,7 @@ from src.events import BaseEvent
 @dataclass
 class TelemetrySnapshot:
     """Snapshot of telemetry data at a point in time"""
+
     timestamp: float
     cycle_id: str
     phase: str
@@ -86,7 +88,7 @@ class TelemetryCollector:
                 handler(event)
 
             # Create snapshot if we have enough data
-            if hasattr(event, 'cycle_id') and hasattr(event, 'phase'):
+            if hasattr(event, "cycle_id") and hasattr(event, "phase"):
                 self._create_snapshot_for_event(event)
         except Exception as e:
             print(f"Error recording event: {e}")
@@ -96,19 +98,19 @@ class TelemetryCollector:
         try:
             # Extract markers for this cycle/phase
             cycle_markers = []
-            if hasattr(event, 'markers') and event.markers:
+            if hasattr(event, "markers") and event.markers:
                 for marker in event.markers:
-                    if hasattr(marker, 'to_dict'):
+                    if hasattr(marker, "to_dict"):
                         cycle_markers.append(marker.to_dict())
 
             # Create snapshot
             snapshot = TelemetrySnapshot(
                 timestamp=time.time(),
-                cycle_id=getattr(event, 'cycle_id', 'unknown'),
-                phase=getattr(event, 'phase', 'unknown'),
+                cycle_id=getattr(event, "cycle_id", "unknown"),
+                phase=getattr(event, "phase", "unknown"),
                 markers=cycle_markers,
                 events=[self._event_to_dict(event)],
-                system_metrics=self._collect_system_metrics()
+                system_metrics=self._collect_system_metrics(),
             )
 
             self.snapshots.append(snapshot)
@@ -123,12 +125,12 @@ class TelemetryCollector:
     def _event_to_dict(self, event: BaseEvent) -> dict[str, Any]:
         """Convert event to dictionary representation"""
         event_dict = {
-            'type': type(event).__name__,
-            'timestamp': time.time(),
+            "type": type(event).__name__,
+            "timestamp": time.time(),
         }
 
         # Add event attributes safely
-        for attr in ['cycle_id', 'phase', 'data', 'metadata']:
+        for attr in ["cycle_id", "phase", "data", "metadata"]:
             if hasattr(event, attr):
                 value = getattr(event, attr)
                 if value is not None:
@@ -139,9 +141,9 @@ class TelemetryCollector:
     def _collect_system_metrics(self) -> dict[str, Any]:
         """Collect basic system metrics"""
         return {
-            'timestamp': time.time(),
-            'active_markers_count': len(self.active_markers),
-            'snapshots_count': len(self.snapshots),
+            "timestamp": time.time(),
+            "active_markers_count": len(self.active_markers),
+            "snapshots_count": len(self.snapshots),
         }
 
     async def flush_to_disk(self) -> None:
@@ -156,15 +158,15 @@ class TelemetryCollector:
 
             # Convert snapshots to serializable format
             data = {
-                'snapshots': [asdict(snapshot) for snapshot in self.snapshots],
-                'metadata': {
-                    'collection_time': time.time(),
-                    'total_snapshots': len(self.snapshots),
-                }
+                "snapshots": [asdict(snapshot) for snapshot in self.snapshots],
+                "metadata": {
+                    "collection_time": time.time(),
+                    "total_snapshots": len(self.snapshots),
+                },
             }
 
             # Write to file
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, default=str)
 
             # Clear snapshots after successful write
@@ -176,10 +178,10 @@ class TelemetryCollector:
     def get_summary(self) -> dict[str, Any]:
         """Get a summary of collected telemetry data"""
         return {
-            'snapshots_count': len(self.snapshots),
-            'active_markers_count': len(self.active_markers),
-            'collection_enabled': self.collection_enabled,
-            'output_directory': str(self.output_dir),
+            "snapshots_count": len(self.snapshots),
+            "active_markers_count": len(self.active_markers),
+            "collection_enabled": self.collection_enabled,
+            "output_directory": str(self.output_dir),
         }
 
     async def shutdown(self) -> None:
@@ -189,10 +191,8 @@ class TelemetryCollector:
         # Cancel auto-flush task
         if self._flush_task and not self._flush_task.done():
             self._flush_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._flush_task
-            except asyncio.CancelledError:
-                pass
 
         # Final flush
         await self.flush_to_disk()

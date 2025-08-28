@@ -7,6 +7,7 @@ from typing import Any
 
 SAFE_ROOT = Path("./deepcode_lab").resolve()
 
+
 def ensure_safe_path(path: str) -> Path:
     p = (SAFE_ROOT / path).resolve()
     if SAFE_ROOT not in p.parents and p != SAFE_ROOT:
@@ -14,19 +15,25 @@ def ensure_safe_path(path: str) -> Path:
     p.parent.mkdir(parents=True, exist_ok=True)
     return p
 
+
 def repo_download_integrity(repo_dir: str) -> dict[str, Any]:
     d = Path(repo_dir)
     status = "ok"
     missing = []
     if not d.exists() or not any(d.iterdir()):
-        status = "partial"; missing.append("empty_dir")
-    if not (d/"README.md").exists():
-        status = "partial"; missing.append("README.md")
-    if not ((d/"pyproject.toml").exists() or (d/"setup.py").exists()):
-        status = "partial"; missing.append("build_descriptor")
-    if not ((d/"LICENSE").exists() or (d/"LICENSE.md").exists()):
-        status = "partial"; missing.append("license")
+        status = "partial"
+        missing.append("empty_dir")
+    if not (d / "README.md").exists():
+        status = "partial"
+        missing.append("README.md")
+    if not ((d / "pyproject.toml").exists() or (d / "setup.py").exists()):
+        status = "partial"
+        missing.append("build_descriptor")
+    if not ((d / "LICENSE").exists() or (d / "LICENSE.md").exists()):
+        status = "partial"
+        missing.append("license")
     return {"status": status, "missing": missing}
+
 
 def hash_top_files(repo_dir: str, top_n: int = 10) -> list[dict[str, Any]]:
     d = Path(repo_dir)

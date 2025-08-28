@@ -32,7 +32,8 @@ try:
 except ImportError as e:
     # Fallback import strategy
     import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+    sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
     try:
         from plugins.creator_plugin import (
             CognitiveAtom,
@@ -44,7 +45,10 @@ except ImportError as e:
             WorkflowPatternAnalyzer,
         )
     except ImportError:
-        pytest.skip(f"Cannot import cognitive architecture components: {e}", allow_module_level=True)
+        pytest.skip(
+            f"Cannot import cognitive architecture components: {e}",
+            allow_module_level=True,
+        )
 
 
 class TestCognitiveAtom:
@@ -57,7 +61,7 @@ class TestCognitiveAtom:
             atom_type="GAP_DETECTED",
             source="test_source",
             payload={"test": "data"},
-            correlation_id="test_correlation"
+            correlation_id="test_correlation",
         )
 
         assert atom.atom_id == "test_id"
@@ -69,11 +73,11 @@ class TestCognitiveAtom:
         assert isinstance(atom.timestamp, str)
 
         # Verify timestamp is valid ISO format
-        datetime.fromisoformat(atom.timestamp.replace('Z', '+00:00'))
+        datetime.fromisoformat(atom.timestamp.replace("Z", "+00:00"))
 
     @given(
         atom_type=st.text(min_size=1, max_size=50),
-        content=st.text(min_size=0, max_size=1000)
+        content=st.text(min_size=0, max_size=1000),
     )
     @settings(max_examples=50)
     def test_deterministic_id_generation_property(self, atom_type, content):
@@ -107,20 +111,26 @@ class TestCognitiveAtom:
 
     @given(
         atom_id=st.text(min_size=1),
-        atom_type=st.sampled_from(["GAP_DETECTED", "TOOL_CREATED", "PATTERN_DISCOVERED"]),
+        atom_type=st.sampled_from(
+            ["GAP_DETECTED", "TOOL_CREATED", "PATTERN_DISCOVERED"]
+        ),
         source=st.text(min_size=1),
-        payload=st.dictionaries(st.text(), st.one_of(st.text(), st.integers(), st.booleans())),
-        correlation_id=st.text(min_size=1)
+        payload=st.dictionaries(
+            st.text(), st.one_of(st.text(), st.integers(), st.booleans())
+        ),
+        correlation_id=st.text(min_size=1),
     )
     @settings(max_examples=20)
-    def test_cognitive_atom_properties(self, atom_id, atom_type, source, payload, correlation_id):
+    def test_cognitive_atom_properties(
+        self, atom_id, atom_type, source, payload, correlation_id
+    ):
         """Property-based test for cognitive atom creation with various inputs."""
         atom = CognitiveAtom(
             atom_id=atom_id,
             atom_type=atom_type,
             source=source,
             payload=payload,
-            correlation_id=correlation_id
+            correlation_id=correlation_id,
         )
 
         assert atom.atom_id == atom_id
@@ -128,9 +138,9 @@ class TestCognitiveAtom:
         assert atom.source == source
         assert atom.payload == payload
         assert atom.correlation_id == correlation_id
-        assert hasattr(atom, 'timestamp')
-        assert hasattr(atom, 'metadata')
-        assert hasattr(atom, 'provenance')
+        assert hasattr(atom, "timestamp")
+        assert hasattr(atom, "metadata")
+        assert hasattr(atom, "provenance")
 
 
 class TestCognitiveEventStore:
@@ -156,7 +166,7 @@ class TestCognitiveEventStore:
             atom_type="GAP_DETECTED",
             source="test",
             payload={"test": "data"},
-            correlation_id="test_correlation"
+            correlation_id="test_correlation",
         )
 
         await event_store.append_atom(atom)
@@ -177,7 +187,7 @@ class TestCognitiveEventStore:
             atom_type="TOOL_CREATED",  # Completion type
             source="test",
             payload={"tool": "test_tool"},
-            correlation_id="workflow_123"
+            correlation_id="workflow_123",
         )
 
         # Mock pattern analysis methods
@@ -304,7 +314,7 @@ class TestToolAbstractionEngine:
         pattern = {
             "goal": "tool_creation",
             "steps": ["GAP_DETECTED", "TOOL_CREATED"],
-            "confidence": 0.9
+            "confidence": 0.9,
         }
 
         tool_spec = await abstractor.abstract_pattern(pattern)
@@ -342,17 +352,15 @@ class TestToolAbstractionEngine:
     @given(
         goal=st.text(min_size=1),
         confidence=st.floats(min_value=0.0, max_value=1.0),
-        steps=st.lists(st.text(min_size=1), min_size=0, max_size=10)
+        steps=st.lists(st.text(min_size=1), min_size=0, max_size=10),
     )
     @settings(max_examples=10)
     @pytest.mark.asyncio
-    async def test_pattern_abstraction_property(self, abstractor, goal, confidence, steps):
+    async def test_pattern_abstraction_property(
+        self, abstractor, goal, confidence, steps
+    ):
         """Property-based test for pattern abstraction."""
-        pattern = {
-            "goal": goal,
-            "steps": steps,
-            "confidence": confidence
-        }
+        pattern = {"goal": goal, "steps": steps, "confidence": confidence}
 
         tool_spec = await abstractor.abstract_pattern(pattern)
 
@@ -435,7 +443,7 @@ class TestCreatorPluginCognitiveEnhancement:
         plugin = CreatorPlugin()
 
         # Mock the _try_import_gemini function to avoid import issues
-        with patch('plugins.creator_plugin._try_import_gemini', return_value=False):
+        with patch("plugins.creator_plugin._try_import_gemini", return_value=False):
             await plugin.setup(mock_event_bus, mock_store, {})
 
         return plugin
@@ -443,10 +451,10 @@ class TestCreatorPluginCognitiveEnhancement:
     @pytest.mark.asyncio
     async def test_cognitive_setup(self, creator_plugin):
         """Test that cognitive components are properly initialized."""
-        assert hasattr(creator_plugin, 'cognitive_store')
-        assert hasattr(creator_plugin, 'pattern_analyzer')
-        assert hasattr(creator_plugin, 'tool_abstractor')
-        assert hasattr(creator_plugin, 'metacognitive_observer')
+        assert hasattr(creator_plugin, "cognitive_store")
+        assert hasattr(creator_plugin, "pattern_analyzer")
+        assert hasattr(creator_plugin, "tool_abstractor")
+        assert hasattr(creator_plugin, "metacognitive_observer")
 
         assert isinstance(creator_plugin.cognitive_store, CognitiveEventStore)
         assert isinstance(creator_plugin.pattern_analyzer, WorkflowPatternAnalyzer)
@@ -465,6 +473,7 @@ class TestCreatorPluginCognitiveEnhancement:
                 def __init__(self, **kwargs):
                     for k, v in kwargs.items():
                         setattr(self, k, v)
+
             AtomGapEvent = MockAtomGapEvent
 
         # Mock the cognitive store
@@ -483,13 +492,15 @@ class TestCreatorPluginCognitiveEnhancement:
             description="test description",
             session_id="test_session",
             conversation_id="test_conversation",
-            gap_id="test_gap"
+            gap_id="test_gap",
         )
 
         await creator_plugin._handle_gap_event(gap_event)
 
         # Verify cognitive atoms were created
-        assert creator_plugin.cognitive_store.append_atom.call_count >= 2  # Gap detection + tool creation
+        assert (
+            creator_plugin.cognitive_store.append_atom.call_count >= 2
+        )  # Gap detection + tool creation
 
         # Verify the atoms have correct types
         calls = creator_plugin.cognitive_store.append_atom.call_args_list
@@ -509,15 +520,17 @@ class TestCreatorPluginCognitiveEnhancement:
                 "pattern": {
                     "goal": "tool_creation",
                     "steps": ["GAP_DETECTED", "TOOL_CREATED"],
-                    "confidence": 0.9
+                    "confidence": 0.9,
                 }
             },
-            correlation_id="pattern_corr"
+            correlation_id="pattern_corr",
         )
         pattern_atom.metadata = {"confidence": 0.9}
 
         # Mock dependencies
-        creator_plugin._generate_metacognitive_tool = AsyncMock(return_value="metacognitive code")
+        creator_plugin._generate_metacognitive_tool = AsyncMock(
+            return_value="metacognitive code"
+        )
         creator_plugin._save_tool = AsyncMock(return_value="meta_path")
         creator_plugin._register_tool = AsyncMock()
         creator_plugin.cognitive_store.append_atom = AsyncMock()
@@ -539,7 +552,7 @@ class TestCreatorPluginCognitiveEnhancement:
             "input_pattern": {"type": "test"},
             "output_pattern": {"type": "result"},
             "steps": ["STEP1", "STEP2"],
-            "confidence": 0.8
+            "confidence": 0.8,
         }
 
         # Test template generation (fallback)
@@ -548,7 +561,10 @@ class TestCreatorPluginCognitiveEnhancement:
         assert "test_metacognitive_tool" in code
         assert "automated_workflow" in code
         assert "metacognitive" in code.lower()
-        assert "def test_metacognitive_tool" in code or "def test_metacognitive_tool" in code.replace('-', '_')
+        assert (
+            "def test_metacognitive_tool" in code
+            or "def test_metacognitive_tool" in code.replace("-", "_")
+        )
 
     @pytest.mark.asyncio
     async def test_inefficiency_handling(self, creator_plugin):
@@ -560,9 +576,9 @@ class TestCreatorPluginCognitiveEnhancement:
             payload={
                 "type": "repeated_creation",
                 "description": "Multiple similar tools",
-                "suggested_improvement": "create_generic_template"
+                "suggested_improvement": "create_generic_template",
             },
-            correlation_id="inefficiency_corr"
+            correlation_id="inefficiency_corr",
         )
 
         # Mock template creation
@@ -577,7 +593,9 @@ class TestCreatorPluginCognitiveEnhancement:
     async def test_error_handling_in_gap_processing(self, creator_plugin):
         """Test error handling during gap event processing."""
         # Mock tool generation to raise an exception
-        creator_plugin._generate_tool_code = AsyncMock(side_effect=Exception("Generation failed"))
+        creator_plugin._generate_tool_code = AsyncMock(
+            side_effect=Exception("Generation failed")
+        )
         creator_plugin.cognitive_store.append_atom = AsyncMock()
 
         # Create a mock gap event
@@ -604,7 +622,7 @@ class TestIntegrationScenarios:
         mock_store = AsyncMock()
 
         # Create plugin with proper mocking
-        with patch('plugins.creator_plugin._try_import_gemini', return_value=False):
+        with patch("plugins.creator_plugin._try_import_gemini", return_value=False):
             plugin = CreatorPlugin()
             await plugin.setup(mock_event_bus, mock_store, {})
 
@@ -640,10 +658,10 @@ class TestIntegrationScenarios:
                 "pattern": {
                     "goal": "tool_creation",
                     "steps": ["GAP_DETECTED", "TOOL_CREATED"],
-                    "confidence": 0.95
+                    "confidence": 0.95,
                 }
             },
-            correlation_id="pattern_workflow"
+            correlation_id="pattern_workflow",
         )
         pattern_atom.metadata = {"confidence": 0.95}
 
@@ -667,8 +685,20 @@ class TestIntegrationScenarios:
         # Create multiple concurrent workflows
         workflows = [
             [
-                CognitiveAtom(f"id_{i}_1", "GAP_DETECTED", "plugin", {"tool": f"test_{i}"}, f"workflow_{i}"),
-                CognitiveAtom(f"id_{i}_2", "TOOL_CREATED", "plugin", {"tool": f"test_{i}"}, f"workflow_{i}"),
+                CognitiveAtom(
+                    f"id_{i}_1",
+                    "GAP_DETECTED",
+                    "plugin",
+                    {"tool": f"test_{i}"},
+                    f"workflow_{i}",
+                ),
+                CognitiveAtom(
+                    f"id_{i}_2",
+                    "TOOL_CREATED",
+                    "plugin",
+                    {"tool": f"test_{i}"},
+                    f"workflow_{i}",
+                ),
             ]
             for i in range(5)
         ]
@@ -718,7 +748,7 @@ async def test_cognitive_architecture_validation():
         pattern = {
             "goal": "tool_creation",
             "steps": analysis["sequences"],
-            "confidence": analysis["success_patterns"][0]["confidence"]
+            "confidence": analysis["success_patterns"][0]["confidence"],
         }
 
         tool_spec = await abstractor.abstract_pattern(pattern)
@@ -738,7 +768,7 @@ async def test_cognitive_architecture_validation():
         "distributed_cognition_operational": True,
         "property_based_testing": True,
         "edge_case_coverage": True,
-        "error_handling_robust": True
+        "error_handling_robust": True,
     }
 
 

@@ -88,26 +88,26 @@ class EnhancedCopilotAbility(PluginInterface):
                     "properties": {
                         "problem_description": {
                             "type": "string",
-                            "description": "Description of the coding problem or requirement"
+                            "description": "Description of the coding problem or requirement",
                         },
                         "code_context": {
                             "type": "string",
                             "description": "Optional existing code context for analysis",
-                            "default": ""
+                            "default": "",
                         },
                         "language_preference": {
                             "type": "string",
                             "description": "Preferred programming language (python, javascript, etc.)",
-                            "default": "python"
+                            "default": "python",
                         },
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of repository suggestions",
-                            "default": 5
-                        }
+                            "default": 5,
+                        },
                     },
-                    "required": ["problem_description"]
-                }
+                    "required": ["problem_description"],
+                },
             },
             {
                 "name": "automated_problem_solver",
@@ -117,26 +117,26 @@ class EnhancedCopilotAbility(PluginInterface):
                     "properties": {
                         "task_description": {
                             "type": "string",
-                            "description": "Detailed description of the task to solve"
+                            "description": "Detailed description of the task to solve",
                         },
                         "workspace_path": {
                             "type": "string",
                             "description": "Path to the workspace directory",
-                            "default": "."
+                            "default": ".",
                         },
                         "include_code_generation": {
                             "type": "boolean",
                             "description": "Whether to include code generation suggestions",
-                            "default": True
+                            "default": True,
                         },
                         "analyze_existing_code": {
                             "type": "boolean",
                             "description": "Whether to analyze existing code in workspace",
-                            "default": True
-                        }
+                            "default": True,
+                        },
                     },
-                    "required": ["task_description"]
-                }
+                    "required": ["task_description"],
+                },
             },
             {
                 "name": "repository_deep_analysis",
@@ -146,22 +146,28 @@ class EnhancedCopilotAbility(PluginInterface):
                     "properties": {
                         "repo_url": {
                             "type": "string",
-                            "description": "GitHub repository URL"
+                            "description": "GitHub repository URL",
                         },
                         "analysis_focus": {
                             "type": "string",
-                            "enum": ["architecture", "security", "performance", "usability", "all"],
+                            "enum": [
+                                "architecture",
+                                "security",
+                                "performance",
+                                "usability",
+                                "all",
+                            ],
                             "description": "Focus area for the analysis",
-                            "default": "all"
+                            "default": "all",
                         },
                         "include_dependencies": {
                             "type": "boolean",
                             "description": "Whether to analyze dependencies",
-                            "default": True
-                        }
+                            "default": True,
+                        },
                     },
-                    "required": ["repo_url"]
-                }
+                    "required": ["repo_url"],
+                },
             },
             {
                 "name": "enhanced_code_review",
@@ -171,22 +177,27 @@ class EnhancedCopilotAbility(PluginInterface):
                     "properties": {
                         "code_path": {
                             "type": "string",
-                            "description": "Path to code file or directory to review"
+                            "description": "Path to code file or directory to review",
                         },
                         "review_type": {
                             "type": "string",
-                            "enum": ["security", "performance", "best_practices", "comprehensive"],
+                            "enum": [
+                                "security",
+                                "performance",
+                                "best_practices",
+                                "comprehensive",
+                            ],
                             "description": "Type of review to perform",
-                            "default": "comprehensive"
+                            "default": "comprehensive",
                         },
                         "suggest_improvements": {
                             "type": "boolean",
                             "description": "Whether to suggest specific improvements with GitHub examples",
-                            "default": True
-                        }
+                            "default": True,
+                        },
                     },
-                    "required": ["code_path"]
-                }
+                    "required": ["code_path"],
+                },
             },
             {
                 "name": "discover_github_upgrades",
@@ -197,27 +208,32 @@ class EnhancedCopilotAbility(PluginInterface):
                         "workspace_path": {
                             "type": "string",
                             "description": "Path to the workspace directory to analyze",
-                            "default": "."
+                            "default": ".",
                         },
                         "focus_areas": {
                             "type": "array",
                             "items": {"type": "string"},
                             "description": "Specific areas to focus on: dependencies, security, performance, patterns, architecture",
-                            "default": ["dependencies", "security", "performance", "patterns"]
+                            "default": [
+                                "dependencies",
+                                "security",
+                                "performance",
+                                "patterns",
+                            ],
                         },
                         "max_suggestions": {
                             "type": "integer",
                             "description": "Maximum number of upgrade suggestions to return",
-                            "default": 10
+                            "default": 10,
                         },
                         "include_integration_steps": {
                             "type": "boolean",
                             "description": "Whether to include detailed integration steps for each suggestion",
-                            "default": True
-                        }
-                    }
-                }
-            }
+                            "default": True,
+                        },
+                    },
+                },
+            },
         ]
 
     async def _handle_tool_request(self, event: dict[str, Any]) -> None:
@@ -237,7 +253,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 session_id=session_id,
                 source_plugin=self.name,
                 success=not result.get("error"),
-                timestamp=_utcnow()
+                timestamp=_utcnow(),
             )
 
             if self.event_bus:
@@ -251,13 +267,15 @@ class EnhancedCopilotAbility(PluginInterface):
                 error=str(e),
                 session_id=event.get("session_id", "unknown"),
                 source_plugin=self.name,
-                timestamp=_utcnow()
+                timestamp=_utcnow(),
             )
 
             if self.event_bus:
                 await self.event_bus.publish(error_event)
 
-    async def _execute_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    async def _execute_tool(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute the specified enhanced copilot tool"""
 
         if tool_name == "analyze_and_suggest_repos":
@@ -292,7 +310,9 @@ class EnhancedCopilotAbility(PluginInterface):
             )
 
             # Step 3: Search GitHub repositories
-            repo_suggestions = await self._search_github_repos(search_query, max_results)
+            repo_suggestions = await self._search_github_repos(
+                search_query, max_results
+            )
 
             # Step 4: Analyze each suggested repository
             analyzed_repos = []
@@ -300,10 +320,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 repo_analysis = await self._analyze_repository_relevance(
                     repo, problem_description
                 )
-                analyzed_repos.append({
-                    **repo,
-                    "relevance_analysis": repo_analysis
-                })
+                analyzed_repos.append({**repo, "relevance_analysis": repo_analysis})
 
             return {
                 "problem_description": problem_description,
@@ -311,7 +328,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "code_analysis": code_analysis,
                 "repository_suggestions": analyzed_repos,
                 "total_found": len(repo_suggestions),
-                "timestamp": _utcnow()
+                "timestamp": _utcnow(),
             }
 
         except Exception as e:
@@ -331,36 +348,48 @@ class EnhancedCopilotAbility(PluginInterface):
             # Step 1: Analyze existing workspace if requested
             workspace_analysis = None
             if analyze_existing_code and Path(workspace_path).exists():
-                workspace_analysis = await self.deepcode_integration._analyze_workspace_context({
-                    "workspace_path": workspace_path
-                })
-                solution_steps.append({
-                    "step": "workspace_analysis",
-                    "description": "Analyzed existing workspace code",
-                    "result": workspace_analysis
-                })
+                workspace_analysis = (
+                    await self.deepcode_integration._analyze_workspace_context(
+                        {"workspace_path": workspace_path}
+                    )
+                )
+                solution_steps.append(
+                    {
+                        "step": "workspace_analysis",
+                        "description": "Analyzed existing workspace code",
+                        "result": workspace_analysis,
+                    }
+                )
 
             # Step 2: Find relevant repositories
-            repo_analysis = await self._analyze_and_suggest_repos({
-                "problem_description": task_description,
-                "code_context": json.dumps(workspace_analysis) if workspace_analysis else "",
-                "max_results": 5
-            })
-            solution_steps.append({
-                "step": "repository_discovery",
-                "description": "Found relevant GitHub repositories",
-                "result": repo_analysis
-            })
+            repo_analysis = await self._analyze_and_suggest_repos(
+                {
+                    "problem_description": task_description,
+                    "code_context": (
+                        json.dumps(workspace_analysis) if workspace_analysis else ""
+                    ),
+                    "max_results": 5,
+                }
+            )
+            solution_steps.append(
+                {
+                    "step": "repository_discovery",
+                    "description": "Found relevant GitHub repositories",
+                    "result": repo_analysis,
+                }
+            )
 
             # Step 3: Generate implementation plan
             implementation_plan = await self._generate_implementation_plan(
                 task_description, workspace_analysis, repo_analysis
             )
-            solution_steps.append({
-                "step": "implementation_planning",
-                "description": "Generated implementation plan",
-                "result": implementation_plan
-            })
+            solution_steps.append(
+                {
+                    "step": "implementation_planning",
+                    "description": "Generated implementation plan",
+                    "result": implementation_plan,
+                }
+            )
 
             # Step 4: Code generation (if requested)
             code_suggestions = None
@@ -368,11 +397,13 @@ class EnhancedCopilotAbility(PluginInterface):
                 code_suggestions = await self._generate_code_suggestions(
                     task_description, implementation_plan, repo_analysis
                 )
-                solution_steps.append({
-                    "step": "code_generation",
-                    "description": "Generated code suggestions",
-                    "result": code_suggestions
-                })
+                solution_steps.append(
+                    {
+                        "step": "code_generation",
+                        "description": "Generated code suggestions",
+                        "result": code_suggestions,
+                    }
+                )
 
             return {
                 "task_description": task_description,
@@ -381,7 +412,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "implementation_plan": implementation_plan,
                 "code_suggestions": code_suggestions,
                 "success": True,
-                "timestamp": _utcnow()
+                "timestamp": _utcnow(),
             }
 
         except Exception as e:
@@ -423,7 +454,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "focused_analysis": focused_analysis,
                 "dependency_analysis": dependency_analysis,
                 "analysis_focus": analysis_focus,
-                "timestamp": _utcnow()
+                "timestamp": _utcnow(),
             }
 
         except Exception as e:
@@ -439,15 +470,13 @@ class EnhancedCopilotAbility(PluginInterface):
 
             # Perform DeepCode analysis
             if Path(code_path).is_file():
-                deepcode_result = await self.deepcode_analysis._analyze_file({
-                    "file_path": code_path,
-                    "analysis_level": "deep"
-                })
+                deepcode_result = await self.deepcode_analysis._analyze_file(
+                    {"file_path": code_path, "analysis_level": "deep"}
+                )
             else:
-                deepcode_result = await self.deepcode_analysis._analyze_directory({
-                    "directory_path": code_path,
-                    "analysis_level": "deep"
-                })
+                deepcode_result = await self.deepcode_analysis._analyze_directory(
+                    {"directory_path": code_path, "analysis_level": "deep"}
+                )
 
             # Generate improvement suggestions with GitHub examples
             improvement_suggestions = []
@@ -461,7 +490,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "review_type": review_type,
                 "deepcode_analysis": deepcode_result,
                 "improvement_suggestions": improvement_suggestions,
-                "timestamp": _utcnow()
+                "timestamp": _utcnow(),
             }
 
         except Exception as e:
@@ -475,15 +504,17 @@ class EnhancedCopilotAbility(PluginInterface):
         try:
             # Create temporary file for analysis
             import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
+
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".py", delete=False
+            ) as temp_file:
                 temp_file.write(code_context)
                 temp_file_path = temp_file.name
 
             try:
-                result = await self.deepcode_analysis._analyze_file({
-                    "file_path": temp_file_path,
-                    "analysis_level": "semantic"
-                })
+                result = await self.deepcode_analysis._analyze_file(
+                    {"file_path": temp_file_path, "analysis_level": "semantic"}
+                )
                 return result
             finally:
                 Path(temp_file_path).unlink(missing_ok=True)
@@ -493,7 +524,10 @@ class EnhancedCopilotAbility(PluginInterface):
             return {"error": f"Code analysis failed: {str(e)}"}
 
     async def _generate_search_query(
-        self, problem_description: str, code_analysis: dict[str, Any] | None, language: str
+        self,
+        problem_description: str,
+        code_analysis: dict[str, Any] | None,
+        language: str,
     ) -> str:
         """Generate optimized search query for GitHub repositories"""
         query_parts = []
@@ -515,11 +549,15 @@ class EnhancedCopilotAbility(PluginInterface):
 
         return " ".join(query_parts)
 
-    async def _search_github_repos(self, query: str, max_results: int) -> list[dict[str, Any]]:
+    async def _search_github_repos(
+        self, query: str, max_results: int
+    ) -> list[dict[str, Any]]:
         """Search GitHub repositories using the web agent with fallback to mock data"""
         try:
             # Use the web agent's call method directly
-            search_result = await self.web_agent.call(query, web_k=0, github_k=max_results)
+            search_result = await self.web_agent.call(
+                query, web_k=0, github_k=max_results
+            )
 
             # Extract GitHub repositories from results
             github_repos = search_result.get("github", [])
@@ -535,149 +573,167 @@ class EnhancedCopilotAbility(PluginInterface):
             # Fallback to mock data for demonstration
             return self._generate_fallback_repos(query, max_results)
 
-    def _generate_fallback_repos(self, query: str, max_results: int) -> list[dict[str, Any]]:
+    def _generate_fallback_repos(
+        self, query: str, max_results: int
+    ) -> list[dict[str, Any]]:
         """Generate fallback repository suggestions when search is unavailable"""
-        
+
         # Analyze query to provide relevant suggestions
         query_lower = query.lower()
-        
+
         # Repository suggestions based on common query patterns
         fallback_repos = []
-        
+
         if "python" in query_lower and "dependencies" in query_lower:
-            fallback_repos.extend([
-                {
-                    "title": "pypa/pip-tools",
-                    "url": "https://github.com/pypa/pip-tools",
-                    "snippet": "A set of tools to keep your pinned Python dependencies fresh. Essential for Python dependency management, requirements upgrade, and package security."
-                },
-                {
-                    "title": "pyupio/safety",
-                    "url": "https://github.com/pyupio/safety", 
-                    "snippet": "Safety checks your installed dependencies for known security vulnerabilities and suggests updates. Perfect for Python dependency security."
-                },
-                {
-                    "title": "jazzband/pip-tools",
-                    "url": "https://github.com/jazzband/pip-tools",
-                    "snippet": "Pip-tools generates and maintains requirements.txt files. Ideal for dependency management and keeping Python dependencies updated."
-                }
-            ])
-            
+            fallback_repos.extend(
+                [
+                    {
+                        "title": "pypa/pip-tools",
+                        "url": "https://github.com/pypa/pip-tools",
+                        "snippet": "A set of tools to keep your pinned Python dependencies fresh. Essential for Python dependency management, requirements upgrade, and package security.",
+                    },
+                    {
+                        "title": "pyupio/safety",
+                        "url": "https://github.com/pyupio/safety",
+                        "snippet": "Safety checks your installed dependencies for known security vulnerabilities and suggests updates. Perfect for Python dependency security.",
+                    },
+                    {
+                        "title": "jazzband/pip-tools",
+                        "url": "https://github.com/jazzband/pip-tools",
+                        "snippet": "Pip-tools generates and maintains requirements.txt files. Ideal for dependency management and keeping Python dependencies updated.",
+                    },
+                ]
+            )
+
         elif "python" in query_lower and "security" in query_lower:
-            fallback_repos.extend([
-                {
-                    "title": "bandit-dev/bandit",
-                    "url": "https://github.com/bandit-dev/bandit",
-                    "snippet": "Bandit finds common security issues in Python code. Essential for Python security, secure python development, and security best practices."
-                },
-                {
-                    "title": "pyupio/safety",
-                    "url": "https://github.com/pyupio/safety",
-                    "snippet": "Safety scans Python dependencies for security vulnerabilities. Perfect for django security, flask security, and secure python practices."
-                },
-                {
-                    "title": "python-security/pyt",
-                    "url": "https://github.com/python-security/pyt", 
-                    "snippet": "Python Taint Analysis Tool for detecting security vulnerabilities in Python web applications. Great for python security hardening."
-                }
-            ])
-            
+            fallback_repos.extend(
+                [
+                    {
+                        "title": "bandit-dev/bandit",
+                        "url": "https://github.com/bandit-dev/bandit",
+                        "snippet": "Bandit finds common security issues in Python code. Essential for Python security, secure python development, and security best practices.",
+                    },
+                    {
+                        "title": "pyupio/safety",
+                        "url": "https://github.com/pyupio/safety",
+                        "snippet": "Safety scans Python dependencies for security vulnerabilities. Perfect for django security, flask security, and secure python practices.",
+                    },
+                    {
+                        "title": "python-security/pyt",
+                        "url": "https://github.com/python-security/pyt",
+                        "snippet": "Python Taint Analysis Tool for detecting security vulnerabilities in Python web applications. Great for python security hardening.",
+                    },
+                ]
+            )
+
         elif "python" in query_lower:
-            fallback_repos.extend([
-                {
-                    "title": "psf/requests",
-                    "url": "https://github.com/psf/requests", 
-                    "snippet": "A simple, yet elegant, HTTP library for Python. Great for API integration and modern HTTP patterns in python applications."
-                },
-                {
-                    "title": "python-patterns/python-patterns",
-                    "url": "https://github.com/python-patterns/python-patterns",
-                    "snippet": "A collection of design patterns and idioms in Python. Essential for learning modern Python patterns, best practices, and design patterns."
-                },
-                {
-                    "title": "fastapi/fastapi", 
-                    "url": "https://github.com/fastapi/fastapi",
-                    "snippet": "FastAPI framework, high performance, easy to learn, fast to code, ready for production. Modern python framework with best practices."
-                }
-            ])
-            
+            fallback_repos.extend(
+                [
+                    {
+                        "title": "psf/requests",
+                        "url": "https://github.com/psf/requests",
+                        "snippet": "A simple, yet elegant, HTTP library for Python. Great for API integration and modern HTTP patterns in python applications.",
+                    },
+                    {
+                        "title": "python-patterns/python-patterns",
+                        "url": "https://github.com/python-patterns/python-patterns",
+                        "snippet": "A collection of design patterns and idioms in Python. Essential for learning modern Python patterns, best practices, and design patterns.",
+                    },
+                    {
+                        "title": "fastapi/fastapi",
+                        "url": "https://github.com/fastapi/fastapi",
+                        "snippet": "FastAPI framework, high performance, easy to learn, fast to code, ready for production. Modern python framework with best practices.",
+                    },
+                ]
+            )
+
         if "security" in query_lower and not fallback_repos:
-            fallback_repos.extend([
-                {
-                    "title": "OWASP/CheatSheetSeries",
-                    "url": "https://github.com/OWASP/CheatSheetSeries", 
-                    "snippet": "The OWASP Cheat Sheet Series provides security best practices, vulnerability scanning guidelines, and code security recommendations."
-                },
-                {
-                    "title": "securecodewarrior/secure-code-review",
-                    "url": "https://github.com/securecodewarrior/secure-code-review",
-                    "snippet": "Comprehensive guide for secure code review, security tools, and security best practices for developers."
-                }
-            ])
-            
+            fallback_repos.extend(
+                [
+                    {
+                        "title": "OWASP/CheatSheetSeries",
+                        "url": "https://github.com/OWASP/CheatSheetSeries",
+                        "snippet": "The OWASP Cheat Sheet Series provides security best practices, vulnerability scanning guidelines, and code security recommendations.",
+                    },
+                    {
+                        "title": "securecodewarrior/secure-code-review",
+                        "url": "https://github.com/securecodewarrior/secure-code-review",
+                        "snippet": "Comprehensive guide for secure code review, security tools, and security best practices for developers.",
+                    },
+                ]
+            )
+
         if "dependency" in query_lower and not fallback_repos:
-            fallback_repos.extend([
-                {
-                    "title": "dependabot/dependabot-core",
-                    "url": "https://github.com/dependabot/dependabot-core",
-                    "snippet": "The core logic behind Dependabot's dependency management, update PR creation, and package security monitoring."
-                },
-                {
-                    "title": "pyupio/safety-db",
-                    "url": "https://github.com/pyupio/safety-db",
-                    "snippet": "Safety database of known security vulnerabilities in Python packages. Essential for dependency management and package security."
-                }
-            ])
-            
+            fallback_repos.extend(
+                [
+                    {
+                        "title": "dependabot/dependabot-core",
+                        "url": "https://github.com/dependabot/dependabot-core",
+                        "snippet": "The core logic behind Dependabot's dependency management, update PR creation, and package security monitoring.",
+                    },
+                    {
+                        "title": "pyupio/safety-db",
+                        "url": "https://github.com/pyupio/safety-db",
+                        "snippet": "Safety database of known security vulnerabilities in Python packages. Essential for dependency management and package security.",
+                    },
+                ]
+            )
+
         if "performance" in query_lower:
-            fallback_repos.extend([
-                {
-                    "title": "python-performance/perf",
-                    "url": "https://github.com/python-performance/perf",
-                    "snippet": "Collection of Python performance optimization techniques, profiling tools, and benchmarks for better performance."
-                },
-                {
-                    "title": "async-profiler/async-profiler",
-                    "url": "https://github.com/async-profiler/async-profiler", 
-                    "snippet": "Sampling CPU and HEAP profiler for performance optimization, featuring AsyncGetCallTrace + perf_events"
-                }
-            ])
-            
+            fallback_repos.extend(
+                [
+                    {
+                        "title": "python-performance/perf",
+                        "url": "https://github.com/python-performance/perf",
+                        "snippet": "Collection of Python performance optimization techniques, profiling tools, and benchmarks for better performance.",
+                    },
+                    {
+                        "title": "async-profiler/async-profiler",
+                        "url": "https://github.com/async-profiler/async-profiler",
+                        "snippet": "Sampling CPU and HEAP profiler for performance optimization, featuring AsyncGetCallTrace + perf_events",
+                    },
+                ]
+            )
+
         if "framework" in query_lower or "architecture" in query_lower:
-            fallback_repos.extend([
-                {
-                    "title": "microsoft/architecture-center", 
-                    "url": "https://github.com/microsoft/architecture-center",
-                    "snippet": "Azure Architecture Center. Guidance for architecting solutions on Azure using established patterns and practices."
-                },
-                {
-                    "title": "donnemartin/system-design-primer",
-                    "url": "https://github.com/donnemartin/system-design-primer",
-                    "snippet": "Learn how to design large-scale systems. Prep for the system design interview. Includes architecture patterns and best practices."
-                }
-            ])
-            
+            fallback_repos.extend(
+                [
+                    {
+                        "title": "microsoft/architecture-center",
+                        "url": "https://github.com/microsoft/architecture-center",
+                        "snippet": "Azure Architecture Center. Guidance for architecting solutions on Azure using established patterns and practices.",
+                    },
+                    {
+                        "title": "donnemartin/system-design-primer",
+                        "url": "https://github.com/donnemartin/system-design-primer",
+                        "snippet": "Learn how to design large-scale systems. Prep for the system design interview. Includes architecture patterns and best practices.",
+                    },
+                ]
+            )
+
         # If no specific matches, provide general popular repositories
         if not fallback_repos:
             fallback_repos = [
                 {
                     "title": "github/gitignore",
-                    "url": "https://github.com/github/gitignore", 
-                    "snippet": "A collection of useful .gitignore templates for various languages and frameworks. Great for best practices."
+                    "url": "https://github.com/github/gitignore",
+                    "snippet": "A collection of useful .gitignore templates for various languages and frameworks. Great for best practices.",
                 },
                 {
                     "title": "awesome-lists/awesome",
                     "url": "https://github.com/sindresorhus/awesome",
-                    "snippet": "Awesome lists about all kinds of interesting topics for developers. Curated list of best practices and tools."
+                    "snippet": "Awesome lists about all kinds of interesting topics for developers. Curated list of best practices and tools.",
                 },
                 {
                     "title": "best-practices/backend-best-practices",
                     "url": "https://github.com/futurice/backend-best-practices",
-                    "snippet": "An evolving description of general best practices for backend development, patterns, and architecture."
-                }
+                    "snippet": "An evolving description of general best practices for backend development, patterns, and architecture.",
+                },
             ]
-            
-        logger.info(f"Generated {len(fallback_repos)} fallback repositories for query: {query}")
+
+        logger.info(
+            f"Generated {len(fallback_repos)} fallback repositories for query: {query}"
+        )
         return fallback_repos[:max_results]
 
     async def _analyze_repository_relevance(
@@ -708,48 +764,67 @@ class EnhancedCopilotAbility(PluginInterface):
         self,
         task_description: str,
         workspace_analysis: dict[str, Any] | None,
-        repo_analysis: dict[str, Any]
+        repo_analysis: dict[str, Any],
     ) -> dict[str, Any]:
         """Generate implementation plan based on analysis"""
         try:
             plan_steps = []
 
             # Step 1: Environment setup
-            plan_steps.append({
-                "step": 1,
-                "title": "Environment Setup",
-                "description": "Set up development environment and dependencies",
-                "actions": ["Create virtual environment", "Install required packages"]
-            })
+            plan_steps.append(
+                {
+                    "step": 1,
+                    "title": "Environment Setup",
+                    "description": "Set up development environment and dependencies",
+                    "actions": [
+                        "Create virtual environment",
+                        "Install required packages",
+                    ],
+                }
+            )
 
             # Step 2: Repository integration
             if repo_analysis.get("repository_suggestions"):
                 top_repo = repo_analysis["repository_suggestions"][0]
-                plan_steps.append({
-                    "step": 2,
-                    "title": "Repository Integration",
-                    "description": f"Integrate patterns from {top_repo.get('title', 'N/A')}",
-                    "actions": [
-                        f"Study repository: {top_repo.get('url', 'N/A')}",
-                        "Adapt relevant patterns to current project"
-                    ]
-                })
+                plan_steps.append(
+                    {
+                        "step": 2,
+                        "title": "Repository Integration",
+                        "description": f"Integrate patterns from {top_repo.get('title', 'N/A')}",
+                        "actions": [
+                            f"Study repository: {top_repo.get('url', 'N/A')}",
+                            "Adapt relevant patterns to current project",
+                        ],
+                    }
+                )
 
             # Step 3: Implementation
-            plan_steps.append({
-                "step": 3,
-                "title": "Core Implementation",
-                "description": "Implement the main functionality",
-                "actions": ["Write core logic", "Add error handling", "Implement tests"]
-            })
+            plan_steps.append(
+                {
+                    "step": 3,
+                    "title": "Core Implementation",
+                    "description": "Implement the main functionality",
+                    "actions": [
+                        "Write core logic",
+                        "Add error handling",
+                        "Implement tests",
+                    ],
+                }
+            )
 
             # Step 4: Testing and validation
-            plan_steps.append({
-                "step": 4,
-                "title": "Testing and Validation",
-                "description": "Test and validate the implementation",
-                "actions": ["Write unit tests", "Perform integration testing", "Validate against requirements"]
-            })
+            plan_steps.append(
+                {
+                    "step": 4,
+                    "title": "Testing and Validation",
+                    "description": "Test and validate the implementation",
+                    "actions": [
+                        "Write unit tests",
+                        "Perform integration testing",
+                        "Validate against requirements",
+                    ],
+                }
+            )
 
             return {
                 "task_description": task_description,
@@ -758,8 +833,8 @@ class EnhancedCopilotAbility(PluginInterface):
                 "recommendations": [
                     "Follow existing code patterns in the workspace",
                     "Use proven solutions from suggested repositories",
-                    "Implement comprehensive error handling"
-                ]
+                    "Implement comprehensive error handling",
+                ],
             }
 
         except Exception as e:
@@ -770,35 +845,41 @@ class EnhancedCopilotAbility(PluginInterface):
         self,
         task_description: str,
         implementation_plan: dict[str, Any],
-        repo_analysis: dict[str, Any]
+        repo_analysis: dict[str, Any],
     ) -> dict[str, Any]:
         """Generate code suggestions based on analysis"""
         try:
             suggestions = []
 
             # Generate basic code structure
-            suggestions.append({
-                "type": "structure",
-                "title": "Basic Project Structure",
-                "code": self._generate_basic_structure(task_description),
-                "description": "Basic project structure to get started"
-            })
+            suggestions.append(
+                {
+                    "type": "structure",
+                    "title": "Basic Project Structure",
+                    "code": self._generate_basic_structure(task_description),
+                    "description": "Basic project structure to get started",
+                }
+            )
 
             # Generate implementation template
-            suggestions.append({
-                "type": "implementation",
-                "title": "Implementation Template",
-                "code": self._generate_implementation_template(task_description),
-                "description": "Template code based on task requirements"
-            })
+            suggestions.append(
+                {
+                    "type": "implementation",
+                    "title": "Implementation Template",
+                    "code": self._generate_implementation_template(task_description),
+                    "description": "Template code based on task requirements",
+                }
+            )
 
             # Generate test template
-            suggestions.append({
-                "type": "tests",
-                "title": "Test Template",
-                "code": self._generate_test_template(task_description),
-                "description": "Unit test template for the implementation"
-            })
+            suggestions.append(
+                {
+                    "type": "tests",
+                    "title": "Test Template",
+                    "code": self._generate_test_template(task_description),
+                    "description": "Unit test template for the implementation",
+                }
+            )
 
             return {
                 "task_description": task_description,
@@ -806,8 +887,8 @@ class EnhancedCopilotAbility(PluginInterface):
                 "usage_notes": [
                     "Adapt the templates to your specific requirements",
                     "Add proper error handling and logging",
-                    "Follow your project's coding standards"
-                ]
+                    "Follow your project's coding standards",
+                ],
             }
 
         except Exception as e:
@@ -817,9 +898,26 @@ class EnhancedCopilotAbility(PluginInterface):
     def _extract_keywords(self, text: str) -> list[str]:
         """Extract relevant keywords from text"""
         # Simple keyword extraction (could be enhanced with NLP)
-        common_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'a', 'an'}
-        words = [word.lower().strip('.,!?();') for word in text.split()]
-        keywords = [word for word in words if len(word) > 3 and word not in common_words]
+        common_words = {
+            "the",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "a",
+            "an",
+        }
+        words = [word.lower().strip(".,!?();") for word in text.split()]
+        keywords = [
+            word for word in words if len(word) > 3 and word not in common_words
+        ]
         return list(set(keywords))[:10]  # Return unique keywords, limited to 10
 
     def _extract_repo_info(self, repo_url: str) -> tuple[str, str]:
@@ -842,18 +940,16 @@ class EnhancedCopilotAbility(PluginInterface):
         try:
             headers = {
                 "Authorization": f"Bearer {self.github_token}",
-                "Accept": "application/vnd.github+json"
+                "Accept": "application/vnd.github+json",
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    f"https://api.github.com/repos/{owner}/{repo}",
-                    headers=headers
-                ) as response:
-                    if response.status == 200:
-                        return await response.json()
-                    else:
-                        return {"error": f"Failed to fetch metadata: {response.status}"}
+            async with aiohttp.ClientSession() as session, session.get(
+                f"https://api.github.com/repos/{owner}/{repo}", headers=headers
+            ) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    return {"error": f"Failed to fetch metadata: {response.status}"}
 
         except Exception as e:
             logger.error(f"Error fetching repo metadata: {e}")
@@ -867,7 +963,7 @@ class EnhancedCopilotAbility(PluginInterface):
             "has_tests": True,
             "has_ci": True,
             "main_language": "python",
-            "structure_score": 0.8
+            "structure_score": 0.8,
         }
 
     async def _perform_focused_analysis(
@@ -878,7 +974,7 @@ class EnhancedCopilotAbility(PluginInterface):
         return {
             "focus_area": focus,
             "analysis_results": f"Focused analysis on {focus} completed",
-            "recommendations": [f"Consider improving {focus} aspects"]
+            "recommendations": [f"Consider improving {focus} aspects"],
         }
 
     async def _analyze_dependencies(self, owner: str, repo: str) -> dict[str, Any]:
@@ -888,7 +984,7 @@ class EnhancedCopilotAbility(PluginInterface):
             "dependency_count": 15,
             "outdated_dependencies": 2,
             "security_issues": 0,
-            "recommendations": ["Update outdated dependencies"]
+            "recommendations": ["Update outdated dependencies"],
         }
 
     async def _generate_improvement_suggestions(
@@ -899,13 +995,15 @@ class EnhancedCopilotAbility(PluginInterface):
 
         issues = deepcode_result.get("issues", [])
         for issue in issues[:5]:  # Limit to top 5 issues
-            suggestions.append({
-                "issue": issue.get("message", "Unknown issue"),
-                "severity": issue.get("severity", "medium"),
-                "line": issue.get("line", 0),
-                "suggestion": f"Consider addressing this {issue.get('severity', 'medium')} severity issue",
-                "example_repos": []  # Could be populated with relevant GitHub examples
-            })
+            suggestions.append(
+                {
+                    "issue": issue.get("message", "Unknown issue"),
+                    "severity": issue.get("severity", "medium"),
+                    "line": issue.get("line", 0),
+                    "suggestion": f"Consider addressing this {issue.get('severity', 'medium')} severity issue",
+                    "example_repos": [],  # Could be populated with relevant GitHub examples
+                }
+            )
 
         return suggestions
 
@@ -913,21 +1011,29 @@ class EnhancedCopilotAbility(PluginInterface):
         """Analyze codebase and discover GitHub repositories with upgrade opportunities"""
         try:
             workspace_path = args.get("workspace_path", ".")
-            focus_areas = args.get("focus_areas", ["dependencies", "security", "performance", "patterns"])
+            focus_areas = args.get(
+                "focus_areas", ["dependencies", "security", "performance", "patterns"]
+            )
             max_suggestions = args.get("max_suggestions", 10)
             include_integration_steps = args.get("include_integration_steps", True)
 
             upgrade_suggestions = []
-            analysis_summary = {"workspace_path": workspace_path, "focus_areas": focus_areas}
+            analysis_summary = {
+                "workspace_path": workspace_path,
+                "focus_areas": focus_areas,
+            }
 
             # Step 1: Analyze workspace with DeepCode integration
-            workspace_analysis = await self.deepcode_integration._analyze_workspace_context({
-                "workspace_path": workspace_path,
-                "include_quality_metrics": True
-            })
+            workspace_analysis = (
+                await self.deepcode_integration._analyze_workspace_context(
+                    {"workspace_path": workspace_path, "include_quality_metrics": True}
+                )
+            )
 
             if "error" in workspace_analysis:
-                return {"error": f"Workspace analysis failed: {workspace_analysis['error']}"}
+                return {
+                    "error": f"Workspace analysis failed: {workspace_analysis['error']}"
+                }
 
             analysis_summary["workspace_analysis"] = workspace_analysis
 
@@ -941,37 +1047,51 @@ class EnhancedCopilotAbility(PluginInterface):
             for opportunity in improvement_opportunities[:max_suggestions]:
                 try:
                     # Generate search query for this opportunity
-                    search_query = await self._generate_upgrade_search_query(opportunity)
-                    
+                    search_query = await self._generate_upgrade_search_query(
+                        opportunity
+                    )
+
                     # Search GitHub for relevant repositories
                     github_repos = await self._search_github_repos(search_query, 3)
-                    
+
                     # Analyze each repository for upgrade potential
                     analyzed_repos = []
                     for repo in github_repos:
-                        repo_analysis = await self._analyze_upgrade_potential(repo, opportunity)
-                        if repo_analysis.get("upgrade_score", 0) > 0.3:  # Lowered threshold for demonstration
-                            analyzed_repos.append({**repo, "upgrade_analysis": repo_analysis})
+                        repo_analysis = await self._analyze_upgrade_potential(
+                            repo, opportunity
+                        )
+                        if (
+                            repo_analysis.get("upgrade_score", 0) > 0.3
+                        ):  # Lowered threshold for demonstration
+                            analyzed_repos.append(
+                                {**repo, "upgrade_analysis": repo_analysis}
+                            )
 
                     if analyzed_repos:
                         suggestion = {
                             "opportunity": opportunity,
                             "search_query": search_query,
                             "suggested_repositories": analyzed_repos,
-                            "priority": self._calculate_priority(opportunity, analyzed_repos),
-                            "timestamp": _utcnow()
+                            "priority": self._calculate_priority(
+                                opportunity, analyzed_repos
+                            ),
+                            "timestamp": _utcnow(),
                         }
 
                         # Add integration steps if requested
                         if include_integration_steps and analyzed_repos:
-                            suggestion["integration_steps"] = await self._generate_integration_steps(
-                                opportunity, analyzed_repos[0]
+                            suggestion["integration_steps"] = (
+                                await self._generate_integration_steps(
+                                    opportunity, analyzed_repos[0]
+                                )
                             )
 
                         upgrade_suggestions.append(suggestion)
 
                 except Exception as e:
-                    logger.warning(f"Failed to process opportunity {opportunity.get('type', 'unknown')}: {e}")
+                    logger.warning(
+                        f"Failed to process opportunity {opportunity.get('type', 'unknown')}: {e}"
+                    )
 
             return {
                 "workspace_path": workspace_path,
@@ -980,7 +1100,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "total_opportunities": len(improvement_opportunities),
                 "total_suggestions": len(upgrade_suggestions),
                 "focus_areas": focus_areas,
-                "timestamp": _utcnow()
+                "timestamp": _utcnow(),
             }
 
         except Exception as e:
@@ -995,7 +1115,7 @@ class EnhancedCopilotAbility(PluginInterface):
 
         # Extract quality metrics and project info
         quality_metrics = workspace_analysis.get("quality_metrics", {})
-        file_details = workspace_analysis.get("file_details", [])
+        workspace_analysis.get("file_details", [])
         project_type = workspace_analysis.get("project_type", "unknown")
         main_languages = workspace_analysis.get("main_languages", [])
         workspace_path = workspace_analysis.get("workspace_path", ".")
@@ -1004,163 +1124,279 @@ class EnhancedCopilotAbility(PluginInterface):
         if "dependencies" in focus_areas:
             # Check for common dependency files
             dependency_files_found = []
-            dependency_files = ["requirements.txt", "package.json", "pom.xml", "cargo.toml", "composer.json", "Gemfile", "go.mod"]
-            
+            dependency_files = [
+                "requirements.txt",
+                "package.json",
+                "pom.xml",
+                "cargo.toml",
+                "composer.json",
+                "Gemfile",
+                "go.mod",
+            ]
+
             # Check workspace for dependency files
             from pathlib import Path
+
             workspace = Path(workspace_path)
             for dep_file in dependency_files:
                 if (workspace / dep_file).exists():
                     dependency_files_found.append(dep_file)
-                    
+
             # Always suggest dependency analysis for Python projects
             if project_type == "python" or "Python" in main_languages:
-                opportunities.append({
-                    "type": "dependency_upgrade",
-                    "category": "dependencies",
-                    "description": "Python dependency analysis and potential upgrades",
-                    "file_path": "requirements.txt",
-                    "priority": "medium",
-                    "search_terms": ["python dependencies", "requirements upgrade", "pip-tools", "dependency management", "package security"]
-                })
-                
+                opportunities.append(
+                    {
+                        "type": "dependency_upgrade",
+                        "category": "dependencies",
+                        "description": "Python dependency analysis and potential upgrades",
+                        "file_path": "requirements.txt",
+                        "priority": "medium",
+                        "search_terms": [
+                            "python dependencies",
+                            "requirements upgrade",
+                            "pip-tools",
+                            "dependency management",
+                            "package security",
+                        ],
+                    }
+                )
+
             # Add opportunities for found dependency files
             for dep_file in dependency_files_found:
                 if dep_file != "requirements.txt":  # Avoid duplicates
-                    lang = {"package.json": "JavaScript", "pom.xml": "Java", "cargo.toml": "Rust", "composer.json": "PHP", "Gemfile": "Ruby", "go.mod": "Go"}.get(dep_file, "")
-                    opportunities.append({
-                        "type": "dependency_upgrade", 
-                        "category": "dependencies",
-                        "description": f"{lang} dependency updates in {dep_file}",
-                        "file_path": dep_file,
-                        "priority": "medium",
-                        "search_terms": [f"{lang.lower()} dependencies", "package upgrade", "security updates", f"{dep_file}"]
-                    })
-                    
+                    lang = {
+                        "package.json": "JavaScript",
+                        "pom.xml": "Java",
+                        "cargo.toml": "Rust",
+                        "composer.json": "PHP",
+                        "Gemfile": "Ruby",
+                        "go.mod": "Go",
+                    }.get(dep_file, "")
+                    opportunities.append(
+                        {
+                            "type": "dependency_upgrade",
+                            "category": "dependencies",
+                            "description": f"{lang} dependency updates in {dep_file}",
+                            "file_path": dep_file,
+                            "priority": "medium",
+                            "search_terms": [
+                                f"{lang.lower()} dependencies",
+                                "package upgrade",
+                                "security updates",
+                                f"{dep_file}",
+                            ],
+                        }
+                    )
+
             # Generic dependency opportunity if no specific files found
-            if not dependency_files_found and not any(opp["type"] == "dependency_upgrade" for opp in opportunities):
-                opportunities.append({
-                    "type": "dependency_upgrade",
-                    "category": "dependencies", 
-                    "description": "Dependency management and security audit",
-                    "priority": "low",
-                    "search_terms": ["dependency management", "security audit", "package vulnerabilities", "update dependencies"]
-                })
+            if not dependency_files_found and not any(
+                opp["type"] == "dependency_upgrade" for opp in opportunities
+            ):
+                opportunities.append(
+                    {
+                        "type": "dependency_upgrade",
+                        "category": "dependencies",
+                        "description": "Dependency management and security audit",
+                        "priority": "low",
+                        "search_terms": [
+                            "dependency management",
+                            "security audit",
+                            "package vulnerabilities",
+                            "update dependencies",
+                        ],
+                    }
+                )
 
         # Security-focused opportunities
         if "security" in focus_areas:
             security_issues = quality_metrics.get("security_issues", 0)
-            
+
             # Always suggest security improvements for active projects
             if security_issues > 0:
-                opportunities.append({
-                    "type": "security_improvement",
-                    "category": "security",
-                    "description": f"Address {security_issues} identified security issues",
-                    "issue_count": security_issues,
-                    "priority": "high",
-                    "search_terms": ["security vulnerability", "secure coding", "security best practices", "penetration testing"]
-                })
+                opportunities.append(
+                    {
+                        "type": "security_improvement",
+                        "category": "security",
+                        "description": f"Address {security_issues} identified security issues",
+                        "issue_count": security_issues,
+                        "priority": "high",
+                        "search_terms": [
+                            "security vulnerability",
+                            "secure coding",
+                            "security best practices",
+                            "penetration testing",
+                        ],
+                    }
+                )
             else:
                 # Proactive security opportunities based on project type
                 if project_type == "python" or "Python" in main_languages:
-                    opportunities.append({
-                        "type": "security_improvement",
-                        "category": "security",
-                        "description": "Python security hardening and best practices",
-                        "priority": "medium",
-                        "search_terms": ["python security", "django security", "flask security", "secure python", "bandit security"]
-                    })
-                    
+                    opportunities.append(
+                        {
+                            "type": "security_improvement",
+                            "category": "security",
+                            "description": "Python security hardening and best practices",
+                            "priority": "medium",
+                            "search_terms": [
+                                "python security",
+                                "django security",
+                                "flask security",
+                                "secure python",
+                                "bandit security",
+                            ],
+                        }
+                    )
+
                 # Web application security
                 web_indicators = ["flask", "django", "fastapi", "express", "spring"]
                 workspace_lower = str(workspace_path).lower()
                 if any(indicator in workspace_lower for indicator in web_indicators):
-                    opportunities.append({
-                        "type": "security_improvement",
-                        "category": "security", 
-                        "description": "Web application security enhancements",
-                        "priority": "high",
-                        "search_terms": ["web security", "owasp", "authentication", "csrf protection", "sql injection"]
-                    })
+                    opportunities.append(
+                        {
+                            "type": "security_improvement",
+                            "category": "security",
+                            "description": "Web application security enhancements",
+                            "priority": "high",
+                            "search_terms": [
+                                "web security",
+                                "owasp",
+                                "authentication",
+                                "csrf protection",
+                                "sql injection",
+                            ],
+                        }
+                    )
                 else:
                     # Generic security opportunity
-                    opportunities.append({
-                        "type": "security_improvement",
-                        "category": "security",
-                        "description": "Proactive security analysis and hardening",
-                        "priority": "medium",
-                        "search_terms": ["security best practices", "code security", "vulnerability scanning", "security tools"]
-                    })
+                    opportunities.append(
+                        {
+                            "type": "security_improvement",
+                            "category": "security",
+                            "description": "Proactive security analysis and hardening",
+                            "priority": "medium",
+                            "search_terms": [
+                                "security best practices",
+                                "code security",
+                                "vulnerability scanning",
+                                "security tools",
+                            ],
+                        }
+                    )
 
-        # Performance-focused opportunities  
+        # Performance-focused opportunities
         if "performance" in focus_areas:
             performance_issues = quality_metrics.get("performance_issues", 0)
-            
+
             if performance_issues > 0:
-                opportunities.append({
-                    "type": "performance_optimization",
-                    "category": "performance", 
-                    "description": f"Address {performance_issues} performance-related issues",
-                    "issue_count": performance_issues,
-                    "priority": "medium",
-                    "search_terms": ["performance optimization", "profiling", "caching", "database optimization", "async programming"]
-                })
+                opportunities.append(
+                    {
+                        "type": "performance_optimization",
+                        "category": "performance",
+                        "description": f"Address {performance_issues} performance-related issues",
+                        "issue_count": performance_issues,
+                        "priority": "medium",
+                        "search_terms": [
+                            "performance optimization",
+                            "profiling",
+                            "caching",
+                            "database optimization",
+                            "async programming",
+                        ],
+                    }
+                )
             else:
                 # Proactive performance opportunities
                 for language in main_languages:
                     if language.lower() == "python":
-                        opportunities.append({
-                            "type": "performance_optimization",
-                            "category": "performance",
-                            "description": "Python performance optimization techniques",
-                            "language": language,
-                            "priority": "low",
-                            "search_terms": ["python performance", "asyncio", "cython", "numpy optimization", "python profiling"]
-                        })
+                        opportunities.append(
+                            {
+                                "type": "performance_optimization",
+                                "category": "performance",
+                                "description": "Python performance optimization techniques",
+                                "language": language,
+                                "priority": "low",
+                                "search_terms": [
+                                    "python performance",
+                                    "asyncio",
+                                    "cython",
+                                    "numpy optimization",
+                                    "python profiling",
+                                ],
+                            }
+                        )
                     elif language.lower() == "javascript":
-                        opportunities.append({
-                            "type": "performance_optimization", 
-                            "category": "performance",
-                            "description": "JavaScript performance optimization",
-                            "language": language,
-                            "priority": "low",
-                            "search_terms": ["javascript performance", "node.js optimization", "webpack optimization", "js profiling"]
-                        })
+                        opportunities.append(
+                            {
+                                "type": "performance_optimization",
+                                "category": "performance",
+                                "description": "JavaScript performance optimization",
+                                "language": language,
+                                "priority": "low",
+                                "search_terms": [
+                                    "javascript performance",
+                                    "node.js optimization",
+                                    "webpack optimization",
+                                    "js profiling",
+                                ],
+                            }
+                        )
 
         # Code patterns and architecture
         if "patterns" in focus_areas:
             # Analyze code patterns based on language and structure
             for language in main_languages:
-                opportunities.append({
-                    "type": "pattern_modernization", 
-                    "category": "patterns",
-                    "description": f"Modern {language} patterns and best practices",
-                    "language": language,
-                    "priority": "low",
-                    "search_terms": [f"{language.lower()} patterns", "best practices", "modern", "design patterns", f"{language.lower()} framework"]
-                })
+                opportunities.append(
+                    {
+                        "type": "pattern_modernization",
+                        "category": "patterns",
+                        "description": f"Modern {language} patterns and best practices",
+                        "language": language,
+                        "priority": "low",
+                        "search_terms": [
+                            f"{language.lower()} patterns",
+                            "best practices",
+                            "modern",
+                            "design patterns",
+                            f"{language.lower()} framework",
+                        ],
+                    }
+                )
 
         # Architecture improvements
         if "architecture" in focus_areas:
             if project_type != "unknown":
-                opportunities.append({
-                    "type": "architecture_upgrade",
-                    "category": "architecture", 
-                    "description": f"Architecture improvements for {project_type} project",
-                    "project_type": project_type,
-                    "priority": "medium",
-                    "search_terms": [f"{project_type} architecture", "microservices", "clean architecture", "scalability", "system design"]
-                })
+                opportunities.append(
+                    {
+                        "type": "architecture_upgrade",
+                        "category": "architecture",
+                        "description": f"Architecture improvements for {project_type} project",
+                        "project_type": project_type,
+                        "priority": "medium",
+                        "search_terms": [
+                            f"{project_type} architecture",
+                            "microservices",
+                            "clean architecture",
+                            "scalability",
+                            "system design",
+                        ],
+                    }
+                )
             else:
                 # Generic architecture opportunity
-                opportunities.append({
-                    "type": "architecture_upgrade",
-                    "category": "architecture",
-                    "description": "Software architecture and design improvements",
-                    "priority": "low", 
-                    "search_terms": ["software architecture", "design patterns", "system design", "scalable architecture"]
-                })
+                opportunities.append(
+                    {
+                        "type": "architecture_upgrade",
+                        "category": "architecture",
+                        "description": "Software architecture and design improvements",
+                        "priority": "low",
+                        "search_terms": [
+                            "software architecture",
+                            "design patterns",
+                            "system design",
+                            "scalable architecture",
+                        ],
+                    }
+                )
 
         return opportunities
 
@@ -1168,11 +1404,11 @@ class EnhancedCopilotAbility(PluginInterface):
         """Generate GitHub search query for an improvement opportunity"""
         search_terms = opportunity.get("search_terms", [])
         category = opportunity.get("category", "")
-        priority = opportunity.get("priority", "medium")
+        opportunity.get("priority", "medium")
 
         # Build base query
         query_parts = []
-        
+
         # Add search terms
         if search_terms:
             query_parts.extend(search_terms[:3])  # Limit to top 3 terms
@@ -1196,13 +1432,13 @@ class EnhancedCopilotAbility(PluginInterface):
         """Analyze how well a repository addresses the improvement opportunity"""
         try:
             # Extract repository information
-            title = repo.get("title", "")
+            repo.get("title", "")
             url = repo.get("url", "")
-            snippet = repo.get("snippet", "")
-            
+            repo.get("snippet", "")
+
             # Calculate relevance score based on opportunity
             relevance_score = await self._calculate_relevance_score(repo, opportunity)
-            
+
             # Analyze repository metadata if available
             metadata_score = 0.5  # Default score
             if url and "github.com" in url:
@@ -1211,19 +1447,27 @@ class EnhancedCopilotAbility(PluginInterface):
                     owner, repo_name = self._extract_repo_info(url)
                     if owner and repo_name:
                         metadata = await self._fetch_repo_metadata(owner, repo_name)
-                        metadata_score = self._score_repository_metadata(metadata, opportunity)
+                        metadata_score = self._score_repository_metadata(
+                            metadata, opportunity
+                        )
                 except Exception as e:
                     logger.debug(f"Could not fetch metadata for {url}: {e}")
 
             # Combine scores
             upgrade_score = (relevance_score * 0.6) + (metadata_score * 0.4)
-            
+
             return {
                 "upgrade_score": min(upgrade_score, 1.0),
                 "relevance_score": relevance_score,
                 "metadata_score": metadata_score,
-                "recommendation": self._generate_upgrade_recommendation(repo, opportunity, upgrade_score),
-                "confidence": "high" if upgrade_score > 0.8 else "medium" if upgrade_score > 0.6 else "low"
+                "recommendation": self._generate_upgrade_recommendation(
+                    repo, opportunity, upgrade_score
+                ),
+                "confidence": (
+                    "high"
+                    if upgrade_score > 0.8
+                    else "medium" if upgrade_score > 0.6 else "low"
+                ),
             }
 
         except Exception as e:
@@ -1237,24 +1481,24 @@ class EnhancedCopilotAbility(PluginInterface):
         title = repo.get("title", "").lower()
         snippet = repo.get("snippet", "").lower()
         search_terms = [term.lower() for term in opportunity.get("search_terms", [])]
-        
+
         if not search_terms:
             return 0.5
-            
+
         score = 0.0
         total_possible_score = 0.0
-        
+
         # Check each search term
         for term in search_terms:
             term_words = term.split()
             term_score = 0.0
-            
+
             # For multi-word terms, check if all words appear
             if len(term_words) > 1:
                 # Multi-word term matching
                 title_matches = all(word in title for word in term_words)
                 snippet_matches = all(word in snippet for word in term_words)
-                
+
                 if title_matches:
                     term_score = 1.0  # Perfect match in title
                 elif snippet_matches:
@@ -1273,17 +1517,19 @@ class EnhancedCopilotAbility(PluginInterface):
                     term_score = 0.3
                 elif any(word in term for word in snippet.split()):
                     term_score = 0.2
-                    
+
             score += term_score
             total_possible_score += 1.0
-                
+
         final_score = score / total_possible_score if total_possible_score > 0 else 0.0
         return min(final_score, 1.0)
 
-    def _score_repository_metadata(self, metadata: dict[str, Any], opportunity: dict[str, Any]) -> float:
+    def _score_repository_metadata(
+        self, metadata: dict[str, Any], opportunity: dict[str, Any]
+    ) -> float:
         """Score repository based on metadata quality"""
         score = 0.0
-        
+
         # Check stars (popularity indicator)
         stars = metadata.get("stars", 0)
         if stars > 1000:
@@ -1292,22 +1538,22 @@ class EnhancedCopilotAbility(PluginInterface):
             score += 0.2
         elif stars > 10:
             score += 0.1
-            
+
         # Check recent activity
         updated_at = metadata.get("updated_at", "")
         if updated_at and "2024" in updated_at or "2023" in updated_at:
             score += 0.2
-            
+
         # Check if it has documentation
         has_readme = metadata.get("has_readme", False)
         if has_readme:
             score += 0.1
-            
+
         # Check language match
         language = metadata.get("language", "").lower()
         if language and language in opportunity.get("search_terms", []):
             score += 0.2
-            
+
         return min(score, 1.0)
 
     def _generate_upgrade_recommendation(
@@ -1317,7 +1563,7 @@ class EnhancedCopilotAbility(PluginInterface):
         repo_name = repo.get("title", "Repository")
         opportunity_type = opportunity.get("type", "improvement")
         category = opportunity.get("category", "general")
-        
+
         if upgrade_score > 0.8:
             return f"Highly recommended: {repo_name} is an excellent solution for {category} {opportunity_type}"
         elif upgrade_score > 0.6:
@@ -1325,15 +1571,17 @@ class EnhancedCopilotAbility(PluginInterface):
         else:
             return f"Consider: {repo_name} might provide some relevant insights for {category}"
 
-    def _calculate_priority(self, opportunity: dict[str, Any], repos: list[dict[str, Any]]) -> str:
+    def _calculate_priority(
+        self, opportunity: dict[str, Any], repos: list[dict[str, Any]]
+    ) -> str:
         """Calculate overall priority for an upgrade suggestion"""
         opp_priority = opportunity.get("priority", "medium")
-        repo_scores = [repo.get("upgrade_analysis", {}).get("upgrade_score", 0) for repo in repos]
+        repo_scores = [
+            repo.get("upgrade_analysis", {}).get("upgrade_score", 0) for repo in repos
+        ]
         avg_score = sum(repo_scores) / len(repo_scores) if repo_scores else 0
-        
-        if opp_priority == "high" and avg_score > 0.7:
-            return "high"
-        elif opp_priority == "high" or avg_score > 0.8:
+
+        if opp_priority == "high" and avg_score > 0.7 or opp_priority == "high" or avg_score > 0.8:
             return "high"
         elif avg_score > 0.6:
             return "medium"
@@ -1345,11 +1593,11 @@ class EnhancedCopilotAbility(PluginInterface):
     ) -> list[dict[str, Any]]:
         """Generate step-by-step integration guide"""
         steps = []
-        
+
         opportunity_type = opportunity.get("type", "improvement")
         repo_title = best_repo.get("title", "Repository")
         repo_url = best_repo.get("url", "")
-        
+
         # Generic integration steps based on opportunity type
         if opportunity_type == "dependency_upgrade":
             steps = [
@@ -1357,26 +1605,26 @@ class EnhancedCopilotAbility(PluginInterface):
                     "step": 1,
                     "title": "Research the dependency",
                     "description": f"Review {repo_title} documentation and compatibility requirements",
-                    "action": f"Visit {repo_url} and read the README"
+                    "action": f"Visit {repo_url} and read the README",
                 },
                 {
                     "step": 2,
                     "title": "Test in development",
                     "description": "Install and test the new dependency in a development environment",
-                    "action": "Create a feature branch and update dependency versions"
+                    "action": "Create a feature branch and update dependency versions",
                 },
                 {
                     "step": 3,
                     "title": "Update code if needed",
                     "description": "Modify code to work with the upgraded dependency",
-                    "action": "Run tests and fix any breaking changes"
+                    "action": "Run tests and fix any breaking changes",
                 },
                 {
                     "step": 4,
                     "title": "Deploy and monitor",
                     "description": "Deploy to staging/production and monitor for issues",
-                    "action": "Monitor performance and error rates"
-                }
+                    "action": "Monitor performance and error rates",
+                },
             ]
         elif opportunity_type == "security_improvement":
             steps = [
@@ -1384,20 +1632,20 @@ class EnhancedCopilotAbility(PluginInterface):
                     "step": 1,
                     "title": "Analyze security patterns",
                     "description": f"Study security patterns from {repo_title}",
-                    "action": f"Review security implementation in {repo_url}"
+                    "action": f"Review security implementation in {repo_url}",
                 },
                 {
                     "step": 2,
                     "title": "Identify vulnerable areas",
                     "description": "Identify areas in your code that need security improvements",
-                    "action": "Run security scans and review DeepCode analysis"
+                    "action": "Run security scans and review DeepCode analysis",
                 },
                 {
                     "step": 3,
                     "title": "Implement improvements",
                     "description": "Apply security patterns and best practices",
-                    "action": "Update authentication, validation, and encryption"
-                }
+                    "action": "Update authentication, validation, and encryption",
+                },
             ]
         else:
             # Generic steps
@@ -1406,22 +1654,22 @@ class EnhancedCopilotAbility(PluginInterface):
                     "step": 1,
                     "title": "Study the solution",
                     "description": f"Analyze how {repo_title} addresses your needs",
-                    "action": f"Review code and documentation at {repo_url}"
+                    "action": f"Review code and documentation at {repo_url}",
                 },
                 {
                     "step": 2,
                     "title": "Plan integration",
                     "description": "Plan how to integrate patterns or code into your project",
-                    "action": "Create an integration plan and timeline"
+                    "action": "Create an integration plan and timeline",
                 },
                 {
                     "step": 3,
                     "title": "Implement changes",
                     "description": "Implement the improvements in your codebase",
-                    "action": "Make incremental changes and test thoroughly"
-                }
+                    "action": "Make incremental changes and test thoroughly",
+                },
             ]
-        
+
         return steps
 
     def _generate_basic_structure(self, task_description: str) -> str:
@@ -1456,7 +1704,13 @@ class ProjectCore:
 if __name__ == "__main__":
     project = ProjectCore()
     project.main_function()
-'''.format(task=task_description[:50] + "..." if len(task_description) > 50 else task_description)
+'''.format(
+            task=(
+                task_description[:50] + "..."
+                if len(task_description) > 50
+                else task_description
+            )
+        )
 
     def _generate_implementation_template(self, task_description: str) -> str:
         """Generate implementation template code"""
@@ -1489,7 +1743,13 @@ async def process_task():
     """Process the main task logic"""
     # TODO: Implement task processing
     return "Task completed"
-'''.format(task=task_description[:50] + "..." if len(task_description) > 50 else task_description)
+'''.format(
+            task=(
+                task_description[:50] + "..."
+                if len(task_description) > 50
+                else task_description
+            )
+        )
 
     def _generate_test_template(self, task_description: str) -> str:
         """Generate test template code"""
@@ -1522,4 +1782,10 @@ def test_basic_functionality():
     """Test basic functionality"""
     # TODO: Implement basic tests
     assert True  # Placeholder
-'''.format(task=task_description[:50] + "..." if len(task_description) > 50 else task_description)
+'''.format(
+            task=(
+                task_description[:50] + "..."
+                if len(task_description) > 50
+                else task_description
+            )
+        )

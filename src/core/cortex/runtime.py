@@ -25,6 +25,7 @@ from .modules import (
 @dataclass
 class CortexContext:
     """Context for Cortex processing cycle"""
+
     cycle_id: str
     session_id: str
     user_id: str | None
@@ -48,13 +49,14 @@ class CortexContext:
             "user_id": self.user_id,
             "workspace": self.workspace,
             "metadata": self.metadata,
-            "variables": self.variables
+            "variables": self.variables,
         }
 
 
 @dataclass
 class CortexResult:
     """Complete result from Cortex processing cycle"""
+
     cycle_id: str
     success: bool
     perception_result: PerceptionResult | None
@@ -89,7 +91,9 @@ class CortexRuntime(PluginInterface):
         self.running = True
 
         # Initialize all modules
-        all_modules = self.perception_modules + self.reasoning_modules + self.action_modules
+        all_modules = (
+            self.perception_modules + self.reasoning_modules + self.action_modules
+        )
         for module in all_modules:
             module.set_performance_tracker(self.performance_tracker)
             await module.initialize()
@@ -105,7 +109,9 @@ class CortexRuntime(PluginInterface):
         self.running = False
 
         # Shutdown all modules
-        all_modules = self.perception_modules + self.reasoning_modules + self.action_modules
+        all_modules = (
+            self.perception_modules + self.reasoning_modules + self.action_modules
+        )
         for module in all_modules:
             await module.shutdown()
 
@@ -131,7 +137,7 @@ class CortexRuntime(PluginInterface):
         session_id: str,
         user_id: str | None = None,
         workspace: str | None = None,
-        **metadata
+        **metadata,
     ) -> CortexContext:
         """Create a new processing context"""
         cycle_id = str(uuid.uuid4())
@@ -141,16 +147,14 @@ class CortexRuntime(PluginInterface):
             session_id=session_id,
             user_id=user_id,
             workspace=workspace,
-            metadata=metadata
+            metadata=metadata,
         )
 
         self.active_cycles[cycle_id] = context
         return context
 
     async def process_cycle(
-        self,
-        input_data: Any,
-        context: CortexContext
+        self, input_data: Any, context: CortexContext
     ) -> CortexResult:
         """Execute a complete Cortex processing cycle"""
         cycle_start_time = time.time()
@@ -169,7 +173,7 @@ class CortexRuntime(PluginInterface):
                 raw_data=input_data,
                 context=context.to_dict(),
                 metadata=context.metadata,
-                cycle_id=context.cycle_id
+                cycle_id=context.cycle_id,
             )
 
             # Phase 1: Perception
@@ -179,7 +183,9 @@ class CortexRuntime(PluginInterface):
                 raise RuntimeError(error)
 
             # Phase 2: Reasoning
-            reasoning_result = await self._run_reasoning_phase(perception_result.data, context)
+            reasoning_result = await self._run_reasoning_phase(
+                perception_result.data, context
+            )
             if not reasoning_result or not reasoning_result.success:
                 error = f"Reasoning failed: {reasoning_result.error if reasoning_result else 'No result'}"
                 raise RuntimeError(error)
@@ -208,13 +214,25 @@ class CortexRuntime(PluginInterface):
             result = CortexResult(
                 cycle_id=context.cycle_id,
                 success=success,
-                perception_result=perception_result.data if perception_result and perception_result.success else None,
-                reasoning_result=reasoning_result.data if reasoning_result and reasoning_result.success else None,
-                action_result=action_result.data if action_result and action_result.success else None,
+                perception_result=(
+                    perception_result.data
+                    if perception_result and perception_result.success
+                    else None
+                ),
+                reasoning_result=(
+                    reasoning_result.data
+                    if reasoning_result and reasoning_result.success
+                    else None
+                ),
+                action_result=(
+                    action_result.data
+                    if action_result and action_result.success
+                    else None
+                ),
                 performance_markers=self.performance_tracker.get_markers(),
                 total_duration_ms=total_duration_ms,
                 error=error,
-                context=context
+                context=context,
             )
 
             # Emit Cortex event
@@ -227,9 +245,7 @@ class CortexRuntime(PluginInterface):
             return result
 
     async def _run_perception_phase(
-        self,
-        cortex_input: CortexInput,
-        context: CortexContext
+        self, cortex_input: CortexInput, context: CortexContext
     ) -> ModuleResult[PerceptionResult] | None:
         """Run perception phase with all registered modules"""
         self.performance_tracker.start_phase(CortexPhase.PERCEPTION)
@@ -241,8 +257,7 @@ class CortexRuntime(PluginInterface):
                     continue
 
                 result = await module.execute_with_tracking(
-                    cortex_input,
-                    context.to_dict()
+                    cortex_input, context.to_dict()
                 )
 
                 if result.success:
@@ -250,18 +265,14 @@ class CortexRuntime(PluginInterface):
 
             # No successful modules
             return ModuleResult(
-                data=None,
-                success=False,
-                error="No perception modules succeeded"
+                data=None, success=False, error="No perception modules succeeded"
             )
 
         finally:
             self.performance_tracker.end_phase(CortexPhase.PERCEPTION)
 
     async def _run_reasoning_phase(
-        self,
-        perception_result: PerceptionResult,
-        context: CortexContext
+        self, perception_result: PerceptionResult, context: CortexContext
     ) -> ModuleResult[ReasoningResult] | None:
         """Run reasoning phase with all registered modules"""
         self.performance_tracker.start_phase(CortexPhase.REASONING)
@@ -272,26 +283,21 @@ class CortexRuntime(PluginInterface):
                     continue
 
                 result = await module.execute_with_tracking(
-                    perception_result,
-                    context.to_dict()
+                    perception_result, context.to_dict()
                 )
 
                 if result.success:
                     return result
 
             return ModuleResult(
-                data=None,
-                success=False,
-                error="No reasoning modules succeeded"
+                data=None, success=False, error="No reasoning modules succeeded"
             )
 
         finally:
             self.performance_tracker.end_phase(CortexPhase.REASONING)
 
     async def _run_action_phase(
-        self,
-        reasoning_result: ReasoningResult,
-        context: CortexContext
+        self, reasoning_result: ReasoningResult, context: CortexContext
     ) -> ModuleResult[ActionResult] | None:
         """Run action phase with all registered modules"""
         self.performance_tracker.start_phase(CortexPhase.ACTION)
@@ -302,17 +308,14 @@ class CortexRuntime(PluginInterface):
                     continue
 
                 result = await module.execute_with_tracking(
-                    reasoning_result,
-                    context.to_dict()
+                    reasoning_result, context.to_dict()
                 )
 
                 if result.success:
                     return result
 
             return ModuleResult(
-                data=None,
-                success=False,
-                error="No action modules succeeded"
+                data=None, success=False, error="No action modules succeeded"
             )
 
         finally:
@@ -332,7 +335,7 @@ class CortexRuntime(PluginInterface):
                 context=result.context.to_dict() if result.context else {},
                 success=result.success,
                 duration_ms=result.total_duration_ms,
-                error=result.error
+                error=result.error,
             )
 
             # Emit to event bus
@@ -348,7 +351,7 @@ class CortexRuntime(PluginInterface):
             "reasoning_modules": len(self.reasoning_modules),
             "action_modules": len(self.action_modules),
             "active_cycles": len(self.active_cycles),
-            "running": self.running
+            "running": self.running,
         }
 
 

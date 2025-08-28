@@ -20,7 +20,9 @@ class DummyEventBus:
 
 
 class DummyStore:
-    async def register_capabilities(self, name: str, data: dict) -> None:  # pragma: no cover
+    async def register_capabilities(
+        self, name: str, data: dict
+    ) -> None:  # pragma: no cover
         self.name = name
         self.data = data
 
@@ -56,7 +58,9 @@ async def test_sync_once_main_logs(monkeypatch, caplog):
 
     monkeypatch.setattr(sync_once, "sync_metrics_to_todos", fake_sync)
     exit_code: dict[str, int] = {}
-    monkeypatch.setattr(sync_once.sys, "exit", lambda code: exit_code.setdefault("code", code))
+    monkeypatch.setattr(
+        sync_once.sys, "exit", lambda code: exit_code.setdefault("code", code)
+    )
 
     await sync_once.main()
 

@@ -1,3 +1,4 @@
+import contextlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
@@ -33,7 +34,9 @@ class ExecutionFlow:
         self.services = services
         self.emitter = emitter
 
-    def _emit_transition(self, from_state: State, to_state: State, correlation_id: str) -> None:
+    def _emit_transition(
+        self, from_state: State, to_state: State, correlation_id: str
+    ) -> None:
         self.emitter.emit(
             event_type="STATE_TRANSITION",
             payload={"from": from_state.name, "to": to_state.name},
@@ -55,33 +58,39 @@ class ExecutionFlow:
             payload={"tool_id": tool["tool_id"]},
             correlation_id=correlation_id,
         )
-        try:
+        with contextlib.suppress(Exception):
             await self.services["execute"](
                 tool,
                 {"_kind": "GENERATE", "text": "ping"},
                 {**ctx_dict, "step_index": ctx_dict["current_step"]},
             )
-        except Exception:
-            pass
         return tool
 
     async def run(self, user_input: dict[str, Any]) -> FSMContext:
         ctx = FSMContext(raw_input=user_input, results=[], correlation_id=new_id())
         ctx_dict = ctx.__dict__
-        self._emit_transition(State.AWAITING_INPUT, State.DECOMPOSE_TASK, ctx.correlation_id)
+        self._emit_transition(
+            State.AWAITING_INPUT, State.DECOMPOSE_TASK, ctx.correlation_id
+        )
         plan = await self.services["decompose"](user_input)
         ctx.plan = plan
 
         while ctx.current_step < len(plan.steps):
             self._emit_transition(
-                State.DECOMPOSE_TASK if ctx.current_step == 0 else State.PROCESS_TOOL_RESULT,
+                (
+                    State.DECOMPOSE_TASK
+                    if ctx.current_step == 0
+                    else State.PROCESS_TOOL_RESULT
+                ),
                 State.SELECT_TOOL,
                 ctx.correlation_id,
             )
             step = plan.steps[ctx.current_step]
             sel = await self.services["select_tool"](step, ctx_dict)
             if sel["status"] == "FOUND":
-                self._emit_transition(State.SELECT_TOOL, State.EXECUTE_TOOL, ctx.correlation_id)
+                self._emit_transition(
+                    State.SELECT_TOOL, State.EXECUTE_TOOL, ctx.correlation_id
+                )
                 args = sel.get("args", step.args)
                 res = await self.services["execute"](
                     sel["tool"],
@@ -91,23 +100,41 @@ class ExecutionFlow:
                 if res["status"] == "SUCCESS":
                     ctx.results.append(res["result"])
                     ctx.current_step += 1
-                    self._emit_transition(State.EXECUTE_TOOL, State.PROCESS_TOOL_RESULT, ctx.correlation_id)
+                    self._emit_transition(
+                        State.EXECUTE_TOOL,
+                        State.PROCESS_TOOL_RESULT,
+                        ctx.correlation_id,
+                    )
                     pr = await self.services["process_result"](ctx_dict)
                     if pr.get("task_complete"):
                         self._emit_transition(
-                            State.PROCESS_TOOL_RESULT, State.RESPONDING_SUCCESS, ctx.correlation_id
+                            State.PROCESS_TOOL_RESULT,
+                            State.RESPONDING_SUCCESS,
+                            ctx.correlation_id,
                         )
                         return ctx
                 else:
                     ctx.error = res.get("error")
-                    self._emit_transition(State.EXECUTE_TOOL, State.HANDLING_ERROR, ctx.correlation_id)
+                    self._emit_transition(
+                        State.EXECUTE_TOOL, State.HANDLING_ERROR, ctx.correlation_id
+                    )
                     return ctx
             else:
                 reason = sel.get("reason")
                 if reason == "UNKNOWN_TOOL":
-                    self._emit_transition(State.SELECT_TOOL, State.CREATING_DYNAMIC_TOOL, ctx.correlation_id)
-                    tool = await self._create_dynamic_tool(step, ctx_dict, ctx.correlation_id)
-                    self._emit_transition(State.CREATING_DYNAMIC_TOOL, State.EXECUTE_TOOL, ctx.correlation_id)
+                    self._emit_transition(
+                        State.SELECT_TOOL,
+                        State.CREATING_DYNAMIC_TOOL,
+                        ctx.correlation_id,
+                    )
+                    tool = await self._create_dynamic_tool(
+                        step, ctx_dict, ctx.correlation_id
+                    )
+                    self._emit_transition(
+                        State.CREATING_DYNAMIC_TOOL,
+                        State.EXECUTE_TOOL,
+                        ctx.correlation_id,
+                    )
                     res = await self.services["execute"](
                         tool,
                         step.args,
@@ -116,22 +143,33 @@ class ExecutionFlow:
                     if res["status"] == "SUCCESS":
                         ctx.results.append(res["result"])
                         ctx.current_step += 1
-                        self._emit_transition(State.EXECUTE_TOOL, State.PROCESS_TOOL_RESULT, ctx.correlation_id)
+                        self._emit_transition(
+                            State.EXECUTE_TOOL,
+                            State.PROCESS_TOOL_RESULT,
+                            ctx.correlation_id,
+                        )
                         pr = await self.services["process_result"](ctx_dict)
                         if pr.get("task_complete"):
                             self._emit_transition(
-                                State.PROCESS_TOOL_RESULT, State.RESPONDING_SUCCESS, ctx.correlation_id
+                                State.PROCESS_TOOL_RESULT,
+                                State.RESPONDING_SUCCESS,
+                                ctx.correlation_id,
                             )
                             return ctx
                     else:
                         ctx.error = res.get("error")
-                        self._emit_transition(State.EXECUTE_TOOL, State.HANDLING_ERROR, ctx.correlation_id)
+                        self._emit_transition(
+                            State.EXECUTE_TOOL, State.HANDLING_ERROR, ctx.correlation_id
+                        )
                         return ctx
                 else:
                     ctx.error = reason
-                    self._emit_transition(State.SELECT_TOOL, State.HANDLING_ERROR, ctx.correlation_id)
+                    self._emit_transition(
+                        State.SELECT_TOOL, State.HANDLING_ERROR, ctx.correlation_id
+                    )
                     return ctx
 
-        self._emit_transition(State.PROCESS_TOOL_RESULT, State.RESPONDING_SUCCESS, ctx.correlation_id)
+        self._emit_transition(
+            State.PROCESS_TOOL_RESULT, State.RESPONDING_SUCCESS, ctx.correlation_id
+        )
         return ctx
-

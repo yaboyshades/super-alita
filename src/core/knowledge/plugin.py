@@ -40,7 +40,9 @@ class KnowledgeGraphPlugin(PluginInterface):
             await self.event_bus.subscribe("*", self.handlers.handle_event)
             print(f"📊 Knowledge Graph Plugin initialized (DB: {self.db_path})")
         else:
-            print(f"📊 Knowledge Graph Plugin initialized without event bus (DB: {self.db_path})")
+            print(
+                f"📊 Knowledge Graph Plugin initialized without event bus (DB: {self.db_path})"
+            )
 
     async def start(self):
         """Start the knowledge graph plugin"""
@@ -102,14 +104,18 @@ class KnowledgeGraphPlugin(PluginInterface):
 
         return related_atoms
 
-    def create_manual_concept(self, name: str, description: str, properties: dict[str, Any] | None = None) -> str:
+    def create_manual_concept(
+        self, name: str, description: str, properties: dict[str, Any] | None = None
+    ) -> str:
         """Create a concept atom manually"""
         if not self.handlers:
             raise RuntimeError("Knowledge graph not initialized")
 
         return self.handlers.create_concept_atom(name, description, properties)
 
-    def create_manual_entity(self, name: str, entity_type: str, attributes: dict[str, Any] | None = None) -> str:
+    def create_manual_entity(
+        self, name: str, entity_type: str, attributes: dict[str, Any] | None = None
+    ) -> str:
         """Create an entity atom manually"""
         if not self.handlers:
             raise RuntimeError("Knowledge graph not initialized")
@@ -122,13 +128,15 @@ class KnowledgeGraphPlugin(PluginInterface):
         to_atom_id: str,
         relationship: str,
         strength: float = 1.0,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """Create a relationship between atoms"""
         if not self.handlers:
             raise RuntimeError("Knowledge graph not initialized")
 
-        return self.handlers.link_atoms(from_atom_id, to_atom_id, relationship, strength, metadata)
+        return self.handlers.link_atoms(
+            from_atom_id, to_atom_id, relationship, strength, metadata
+        )
 
     def export_graph_data(self) -> dict[str, Any]:
         """Export the entire knowledge graph for analysis"""
@@ -147,19 +155,21 @@ class KnowledgeGraphPlugin(PluginInterface):
         cursor = self.knowledge_store.connection.execute("SELECT * FROM bonds")
         all_bonds = []
         for row in cursor:
-            all_bonds.append({
-                "bond_id": row["bond_id"],
-                "from_atom_id": row["from_atom_id"],
-                "to_atom_id": row["to_atom_id"],
-                "bond_type": row["bond_type"],
-                "strength": row["strength"],
-                "metadata": row["metadata"],
-                "created_at": row["created_at"],
-                "updated_at": row["updated_at"]
-            })
+            all_bonds.append(
+                {
+                    "bond_id": row["bond_id"],
+                    "from_atom_id": row["from_atom_id"],
+                    "to_atom_id": row["to_atom_id"],
+                    "bond_type": row["bond_type"],
+                    "strength": row["strength"],
+                    "metadata": row["metadata"],
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                }
+            )
 
         return {
             "atoms": all_atoms,
             "bonds": all_bonds,
-            "statistics": self.get_statistics()
+            "statistics": self.get_statistics(),
         }

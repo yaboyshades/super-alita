@@ -22,7 +22,10 @@ class EventBus(Protocol):
 
 class Orchestrator(Protocol):
     event_bus: EventBus
-    async def execute_action(self, tool: str, todo: Any, context: str, shadow: bool = True) -> str: ...
+
+    async def execute_action(
+        self, tool: str, todo: Any, context: str, shadow: bool = True
+    ) -> str: ...
 
 
 class TodoStore(Protocol):

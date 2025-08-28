@@ -21,5 +21,6 @@ async def main():
     print("✅ Server created successfully")
     print(f"Server name: {server.name}")
 
+
 if __name__ == "__main__":
     asyncio.run(main())

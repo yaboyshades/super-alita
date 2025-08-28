@@ -4,6 +4,7 @@ The server uses FastAPI and verifies HMAC signatures on incoming
 requests.  This mirrors a typical Skillset setup where the caller
 authenticates using a shared secret.
 """
+
 from __future__ import annotations
 
 import hashlib

@@ -1,6 +1,7 @@
 """
 Test script for telemetry dashboard
 """
+
 import pytest
 
 pytest.skip("legacy test", allow_module_level=True)
@@ -49,7 +50,7 @@ async def test_telemetry_dashboard():
         "Analyze this code for potential improvements",
         "Design a REST API for user management",
         "Explain how machine learning works",
-        "Write unit tests for the fibonacci function"
+        "Write unit tests for the fibonacci function",
     ]
 
     for i, test_input in enumerate(test_inputs):
@@ -58,12 +59,14 @@ async def test_telemetry_dashboard():
         context = runtime.create_context(
             session_id=f"test_session_{i}",
             user_id="test_user",
-            workspace="/test/workspace"
+            workspace="/test/workspace",
         )
 
         result = await runtime.process_cycle(test_input, context)
 
-        print(f"    Success: {result.success}, Duration: {result.total_duration_ms:.1f}ms")
+        print(
+            f"    Success: {result.success}, Duration: {result.total_duration_ms:.1f}ms"
+        )
 
         # Small delay between cycles
         await asyncio.sleep(1)
@@ -91,6 +94,7 @@ async def test_telemetry_dashboard():
             output_file.unlink()
 
         print("Test completed!")
+
 
 if __name__ == "__main__":
     asyncio.run(test_telemetry_dashboard())

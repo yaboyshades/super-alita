@@ -155,9 +155,9 @@ class MemoryManagerAtom(PluginInterface):
                             session_id=session_id,
                             success=success,
                             result=result,
-                            error=""
-                            if success
-                            else result.get("error", "Unknown error"),
+                            error=(
+                                "" if success else result.get("error", "Unknown error")
+                            ),
                         )
                     )
                     logger.debug(

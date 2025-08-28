@@ -88,7 +88,9 @@ class PuterApiClient:
 
     async def write_file(self, path: str, content: str) -> None:
         await self._request(
-            "POST", "/api/fs/write", json={"path": path, "content": content, "create_dirs": True}
+            "POST",
+            "/api/fs/write",
+            json={"path": path, "content": content, "create_dirs": True},
         )
 
     async def delete_file(self, path: str) -> None:
@@ -102,7 +104,9 @@ class PuterApiClient:
         self, command: str, args: list[str], cwd: str
     ) -> dict[str, Any]:
         return await self._request(
-            "POST", "/api/exec", json={"command": command, "args": args, "cwd": cwd, "env": {}}
+            "POST",
+            "/api/exec",
+            json={"command": command, "args": args, "cwd": cwd, "env": {}},
         )
 
 
@@ -123,9 +127,7 @@ class PuterPlugin(PluginInterface):
             "api_url": os.getenv(
                 "PUTER_BASE_URL", config.get("puter_base_url", "https://puter.com")
             ),
-            "api_key": os.getenv(
-                "PUTER_API_KEY", config.get("puter_api_key", "")
-            ),
+            "api_key": os.getenv("PUTER_API_KEY", config.get("puter_api_key", "")),
             "workspace_id": os.getenv(
                 "PUTER_WORKSPACE_ID", config.get("puter_workspace_id", "default")
             ),
@@ -176,7 +178,11 @@ class PuterPlugin(PluginInterface):
         """Handle file I/O operations with Puter cloud."""
         try:
             # Check if event has proper metadata
-            if not hasattr(event, 'metadata') or event.metadata is None or not event.metadata:
+            if (
+                not hasattr(event, "metadata")
+                or event.metadata is None
+                or not event.metadata
+            ):
                 raise ValueError("Event missing required metadata")
 
             operation = event.metadata.get("operation", "read")
@@ -226,9 +232,7 @@ class PuterPlugin(PluginInterface):
             else:
                 raise ValueError(f"Unknown operation: {operation}")
 
-            duration_ms = int(
-                (datetime.now(UTC) - start_time).total_seconds() * 1000
-            )
+            duration_ms = int((datetime.now(UTC) - start_time).total_seconds() * 1000)
             output_hash = hashlib.sha256(
                 json.dumps(result, sort_keys=True).encode()
             ).hexdigest()
@@ -265,9 +269,7 @@ class PuterPlugin(PluginInterface):
             span_id = locals().get("span_id", str(uuid.uuid4()))
             start = locals().get("start_time", datetime.now(UTC))
             duration_ms = int((datetime.now(UTC) - start).total_seconds() * 1000)
-            neural_atom_id = (
-                atom.get_deterministic_uuid() if "atom" in locals() else ""
-            )
+            neural_atom_id = atom.get_deterministic_uuid() if "atom" in locals() else ""
             await self.emit_event(
                 "AbilityFailed",
                 tool="puter_file_operation",
@@ -277,7 +279,7 @@ class PuterPlugin(PluginInterface):
                 max_attempts=1,
                 duration_ms=duration_ms,
                 neural_atom_id=neural_atom_id,
-                conversation_id=getattr(event, 'conversation_id', 'unknown'),
+                conversation_id=getattr(event, "conversation_id", "unknown"),
             )
             await self.emit_event(
                 "puter_operation_failed",
@@ -285,7 +287,7 @@ class PuterPlugin(PluginInterface):
                 error=str(e),
                 timestamp=datetime.now(UTC),
                 source_plugin=self.name,
-                conversation_id=getattr(event, 'conversation_id', 'unknown'),
+                conversation_id=getattr(event, "conversation_id", "unknown"),
             )
 
     async def _handle_process_execution(self, event: BaseEvent) -> None:
@@ -329,9 +331,7 @@ class PuterPlugin(PluginInterface):
             success = exec_result.get("exit_code", 1) == 0
             result = {"success": success, **exec_result}
 
-            duration_ms = int(
-                (datetime.now(UTC) - start_time).total_seconds() * 1000
-            )
+            duration_ms = int((datetime.now(UTC) - start_time).total_seconds() * 1000)
             output_hash = hashlib.sha256(
                 json.dumps(result, sort_keys=True).encode()
             ).hexdigest()
@@ -373,9 +373,7 @@ class PuterPlugin(PluginInterface):
             span_id = locals().get("span_id", str(uuid.uuid4()))
             start = locals().get("start_time", datetime.now(UTC))
             duration_ms = int((datetime.now(UTC) - start).total_seconds() * 1000)
-            neural_atom_id = (
-                atom.get_deterministic_uuid() if "atom" in locals() else ""
-            )
+            neural_atom_id = atom.get_deterministic_uuid() if "atom" in locals() else ""
             await self.emit_event(
                 "AbilityFailed",
                 tool="puter_process_execution",
@@ -437,9 +435,7 @@ class PuterPlugin(PluginInterface):
                 "files_synced": len(remote_listing),
             }
 
-            duration_ms = int(
-                (datetime.now(UTC) - start_time).total_seconds() * 1000
-            )
+            duration_ms = int((datetime.now(UTC) - start_time).total_seconds() * 1000)
             output_hash = hashlib.sha256(
                 json.dumps(result, sort_keys=True).encode()
             ).hexdigest()
@@ -477,9 +473,7 @@ class PuterPlugin(PluginInterface):
             span_id = locals().get("span_id", str(uuid.uuid4()))
             start = locals().get("start_time", datetime.now(UTC))
             duration_ms = int((datetime.now(UTC) - start).total_seconds() * 1000)
-            neural_atom_id = (
-                atom.get_deterministic_uuid() if "atom" in locals() else ""
-            )
+            neural_atom_id = atom.get_deterministic_uuid() if "atom" in locals() else ""
             await self.emit_event(
                 "AbilityFailed",
                 tool="puter_workspace_sync",
@@ -503,7 +497,7 @@ class PuterPlugin(PluginInterface):
     async def _handle_tool_call(self, event: BaseEvent) -> None:
         """Handle tool calls that might need Puter cloud services."""
         try:
-            if not hasattr(event, 'tool_name'):
+            if not hasattr(event, "tool_name"):
                 return
 
             tool_name = event.tool_name
@@ -512,14 +506,14 @@ class PuterPlugin(PluginInterface):
             if not tool_name.startswith("puter_"):
                 return
 
-            parameters = getattr(event, 'parameters', {})
+            parameters = getattr(event, "parameters", {})
 
             if tool_name == "puter_file_read":
                 # Create a proper event object for file operation
                 file_event = create_event(
                     "puter_file_operation",
                     source_plugin=self.name,
-                    conversation_id=getattr(event, 'conversation_id', 'unknown'),
+                    conversation_id=getattr(event, "conversation_id", "unknown"),
                 )
                 file_event.metadata = {
                     "operation": "read",
@@ -532,7 +526,7 @@ class PuterPlugin(PluginInterface):
                 file_event = create_event(
                     "puter_file_operation",
                     source_plugin=self.name,
-                    conversation_id=getattr(event, 'conversation_id', 'unknown'),
+                    conversation_id=getattr(event, "conversation_id", "unknown"),
                 )
                 file_event.metadata = {
                     "operation": "write",
@@ -546,7 +540,7 @@ class PuterPlugin(PluginInterface):
                 exec_event = create_event(
                     "puter_process_execution",
                     source_plugin=self.name,
-                    conversation_id=getattr(event, 'conversation_id', 'unknown'),
+                    conversation_id=getattr(event, "conversation_id", "unknown"),
                 )
                 exec_event.metadata = {
                     "command": parameters.get("command", ""),

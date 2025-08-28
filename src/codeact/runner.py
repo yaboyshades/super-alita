@@ -15,13 +15,19 @@ logger = logging.getLogger(__name__)
 class CodeActRunner:
     """Simple loop executing actions and feeding observations to a policy."""
 
-    def __init__(self, sandbox: PythonSandbox, policy: Callable[[Observation], AgentFinish | IPythonRunCell]):
+    def __init__(
+        self,
+        sandbox: PythonSandbox,
+        policy: Callable[[Observation], AgentFinish | IPythonRunCell],
+    ):
         self.sandbox = sandbox
         self.policy = policy
 
     async def step(self, action: IPythonRunCell) -> Observation:
         result = await self.sandbox.run(action.code)
-        obs = Observation(stdout=result.stdout, stderr=result.stderr, error=result.error)
+        obs = Observation(
+            stdout=result.stdout, stderr=result.stderr, error=result.error
+        )
         self._track_resources(obs)
         return obs
 

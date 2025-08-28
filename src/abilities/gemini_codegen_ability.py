@@ -80,7 +80,11 @@ class GeminiCodegenAbility(PluginInterface):
 
         # --- Repo integrity snapshot (non-blocking, informational) ---
         integrity = repo_download_integrity(repo_path)
-        hashed = hash_top_files(repo_path, top_n=5) if integrity["status"] != "partial" else []
+        hashed = (
+            hash_top_files(repo_path, top_n=5)
+            if integrity["status"] != "partial"
+            else []
+        )
 
         # --- Build system prompt header with policies/guards ---
         sys_header = build_header(role="algorithm_extraction")
@@ -137,15 +141,21 @@ class GeminiCodegenAbility(PluginInterface):
         ]
         validation_summary = {"missing_required_fields": missing, "unknown_fields": []}
         telem = telemetry_footer(
-            retrieval_rounds=int(raw_obj.get("telemetry", {}).get("retrieval_rounds", 1))
-            if isinstance(raw_obj, dict)
-            else 1,
-            segments_used=int(raw_obj.get("telemetry", {}).get("segments_used", ledger.count()))
-            if isinstance(raw_obj, dict)
-            else ledger.count(),
-            totals=raw_obj.get("telemetry", {}).get("total_extracted", {})
-            if isinstance(raw_obj, dict)
-            else {},
+            retrieval_rounds=(
+                int(raw_obj.get("telemetry", {}).get("retrieval_rounds", 1))
+                if isinstance(raw_obj, dict)
+                else 1
+            ),
+            segments_used=(
+                int(raw_obj.get("telemetry", {}).get("segments_used", ledger.count()))
+                if isinstance(raw_obj, dict)
+                else ledger.count()
+            ),
+            totals=(
+                raw_obj.get("telemetry", {}).get("total_extracted", {})
+                if isinstance(raw_obj, dict)
+                else {}
+            ),
         )
         telem["telemetry"]["extraction_duration_ms"] = end_timer(t0)
 
@@ -172,12 +182,20 @@ class GeminiCodegenAbility(PluginInterface):
         repo_path: str,
         context_files: list[str],
         sys_header: str,
-    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], float, dict[str, Any]]:
+    ) -> tuple[
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+        float,
+        dict[str, Any],
+    ]:
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
             f"{self._cfg.model}:generateContent?key={self._cfg.api_key}"
         )
-        sys_message = sys_header + "\n\nYou are a repository-level code generation assistant.\n"
+        sys_message = (
+            sys_header + "\n\nYou are a repository-level code generation assistant.\n"
+        )
         # Execution cost guard is enforced by the retrieval tool on the caller side;
         # here we just pass the ceilings inside the policy header.
         user_message = {
@@ -214,19 +232,29 @@ class GeminiCodegenAbility(PluginInterface):
             raw = data["candidates"][0]["content"]["parts"][0]["text"]
             obj = json.loads(raw)
         except Exception:
-            obj = data if isinstance(data, dict) else {"diffs": [], "tests": [], "docs": [], "confidence": 0.3}
+            obj = (
+                data
+                if isinstance(data, dict)
+                else {"diffs": [], "tests": [], "docs": [], "confidence": 0.3}
+            )
 
         diffs = obj.get("diffs") or obj.get("alg_extraction_v1", {}).get("diffs") or []
         tests = obj.get("tests") or obj.get("alg_extraction_v1", {}).get("tests") or []
         docs = obj.get("docs") or obj.get("alg_extraction_v1", {}).get("docs") or []
-        confidence = float(obj.get("confidence") or obj.get("alg_extraction_v1", {}).get("confidence", 0.5))
+        confidence = float(
+            obj.get("confidence")
+            or obj.get("alg_extraction_v1", {}).get("confidence", 0.5)
+        )
         return diffs, tests, docs, confidence, obj
 
     def _fake_diff(self, requirements: str) -> dict[str, Any]:
         return {
             "path": "README.md",
             "patch": (
-                "--- a/README.md\n" "+++ b/README.md\n" "@@\n" f"+AUTO-GENERATED NOTE: {requirements}\n"
+                "--- a/README.md\n"
+                "+++ b/README.md\n"
+                "@@\n"
+                f"+AUTO-GENERATED NOTE: {requirements}\n"
             ),
         }
 

@@ -25,7 +25,7 @@ class TestCapabilitiesCollection:
         for key in expected_keys:
             assert key in capabilities
 
-        assert isinstance(capabilities["timestamp"], (int, float))
+        assert isinstance(capabilities["timestamp"], int | float)
         assert capabilities["version"] == "1.0"
         assert isinstance(capabilities["plugins"], list)
         assert isinstance(capabilities["events"], dict)

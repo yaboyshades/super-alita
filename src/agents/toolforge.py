@@ -45,7 +45,7 @@ def forge(spec: dict[str, Any]) -> Path:
         "from __future__ import annotations\n\n"
         "from typing import Any\n"
         "from mcp_server.server import app\n\n"
-        f"@app.tool(\n    name=\"{name}\",\n    description=\"{description}\",\n)\n"
+        f'@app.tool(\n    name="{name}",\n    description="{description}",\n)\n'
         f"async def {func_name}({args_sig}) -> Any:\n"
         f"{body}\n"
     )
@@ -58,7 +58,9 @@ def forge(spec: dict[str, Any]) -> Path:
 
 
 def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description="Forge MCP tool modules from a spec file")
+    parser = argparse.ArgumentParser(
+        description="Forge MCP tool modules from a spec file"
+    )
     parser.add_argument("--spec", required=True, help="Path to JSON tool specification")
     args = parser.parse_args(argv)
     spec = json.loads(Path(args.spec).read_text())

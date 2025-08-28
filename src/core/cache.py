@@ -5,6 +5,7 @@ Provides LRU cache with TTL, size limits, and metrics integration.
 """
 
 import asyncio
+import contextlib
 import time
 from collections import OrderedDict
 from collections.abc import Callable
@@ -231,10 +232,8 @@ class LocalCache:
         """Shutdown cache and cleanup resources"""
         if self._cleanup_task:
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         await self.clear()
 

@@ -8,15 +8,24 @@ from .correlation import get_correlation_id, get_session_id
 
 CONTEXT_VERSION = "1.0"
 
+
 @dataclass
 class ContextAssembler:
     """
     Builds normalized context payloads for decision, tool execution, and memory.
     Ensures stable shape + context_version across modules.
     """
-    def __init__(self, *, user_input: str = "", recent_events: list[dict[str, Any]] | None = None,
-                 memory_hits: list[dict[str, Any]] | None = None, active_goals: list[str] | None = None,
-                 tool_inventory: list[dict[str, Any]] | None = None, extras: dict[str, Any] | None = None):
+
+    def __init__(
+        self,
+        *,
+        user_input: str = "",
+        recent_events: list[dict[str, Any]] | None = None,
+        memory_hits: list[dict[str, Any]] | None = None,
+        active_goals: list[str] | None = None,
+        tool_inventory: list[dict[str, Any]] | None = None,
+        extras: dict[str, Any] | None = None,
+    ):
         self.user_input = user_input
         self.recent_events = recent_events or []
         self.memory_hits = memory_hits or []
@@ -58,9 +67,11 @@ class ContextAssembler:
     def _normalize_memory_hits(hits: list[dict[str, Any]]) -> list[dict[str, Any]]:
         out = []
         for h in hits:
-            out.append({
-                "atom_id": h.get("atom_id"),
-                "score": float(h.get("score", 0.0)),
-                "truncated_content_hash": h.get("truncated_content_hash"),
-            })
+            out.append(
+                {
+                    "atom_id": h.get("atom_id"),
+                    "score": float(h.get("score", 0.0)),
+                    "truncated_content_hash": h.get("truncated_content_hash"),
+                }
+            )
         return out

@@ -21,7 +21,9 @@ class FakeDC(DeepCodeClientInterface):
     async def collect_references(self, plan: dict[str, Any]) -> dict[str, Any]:
         return {"snippets": [{"path": "x.py", "code": "print(1)"}], "confidence": 0.79}
 
-    async def generate_code(self, plan: dict[str, Any], refs: dict[str, Any]) -> dict[str, Any]:
+    async def generate_code(
+        self, plan: dict[str, Any], refs: dict[str, Any]
+    ) -> dict[str, Any]:
         return {
             "proposal_id": "prop123",
             "diffs": [
@@ -38,7 +40,12 @@ class FakeDC(DeepCodeClientInterface):
         }
 
     async def validate(self, impl: dict[str, Any]) -> dict[str, Any]:
-        return {"status": "pass", "lint_errors": 0, "tests_passed": True, "confidence": 0.9}
+        return {
+            "status": "pass",
+            "lint_errors": 0,
+            "tests_passed": True,
+            "confidence": 0.9,
+        }
 
 
 @pytest.mark.asyncio
@@ -55,7 +62,12 @@ async def test_emits_full_sequence(monkeypatch):
     await plugin.start()
 
     await plugin._on_request(
-        {"request_id": "req1", "task_kind": "paper2code", "requirements": "do X", "conversation_id": "c1"}
+        {
+            "request_id": "req1",
+            "task_kind": "paper2code",
+            "requirements": "do X",
+            "conversation_id": "c1",
+        }
     )
     await asyncio.sleep(0.05)
 

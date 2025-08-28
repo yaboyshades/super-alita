@@ -375,7 +375,7 @@ class PlanExecutor:
 
             # Find waiting step by conversation_id
             waiting_key = None
-            for key in self.result_waiters.keys():
+            for key in self.result_waiters:
                 logger.info(
                     f"🔍 DEBUG: Checking key {key} against conversation_id {conversation_id}"
                 )
@@ -550,7 +550,7 @@ Focus on the key findings or outcomes, not the technical steps.
 
         # Remove result waiters (should be empty by now)
         keys_to_remove = [
-            k for k in self.result_waiters.keys() if k.startswith(plan_id)
+            k for k in self.result_waiters if k.startswith(plan_id)
         ]
         for key in keys_to_remove:
             del self.result_waiters[key]

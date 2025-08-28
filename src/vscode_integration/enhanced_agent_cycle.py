@@ -90,9 +90,15 @@ class EnhancedAgentCycle:
 
                 # Subscribe to development events
                 await self.event_bus.subscribe("file_changed", self._handle_file_change)
-                await self.event_bus.subscribe("task_created", self._handle_task_created)
-                await self.event_bus.subscribe("task_completed", self._handle_task_completed)
-                await self.event_bus.subscribe("code_analysis_request", self._handle_code_analysis)
+                await self.event_bus.subscribe(
+                    "task_created", self._handle_task_created
+                )
+                await self.event_bus.subscribe(
+                    "task_completed", self._handle_task_completed
+                )
+                await self.event_bus.subscribe(
+                    "code_analysis_request", self._handle_code_analysis
+                )
 
                 print("✅ Event-driven reactive workflows initialized")
             except Exception as e:
@@ -125,7 +131,9 @@ class EnhancedAgentCycle:
                 cycle_start = time.time()
 
                 print(f"\n{'='*60}")
-                print(f"🔄 AGENT CYCLE #{self.cycle_count + 1} - {datetime.now().strftime('%H:%M:%S')}")
+                print(
+                    f"🔄 AGENT CYCLE #{self.cycle_count + 1} - {datetime.now().strftime('%H:%M:%S')}"
+                )
                 print(f"{'='*60}")
 
                 # Execute one complete cycle
@@ -139,7 +147,9 @@ class EnhancedAgentCycle:
                 self.perf_monitor.record_cycle(cycle_duration)
 
                 print(f"⏱️ Cycle completed in {cycle_duration:.2f}s")
-                print(f"📊 Session Stats: {self.tasks_completed_this_session} tasks, {self.recommendations_generated} recommendations")
+                print(
+                    f"📊 Session Stats: {self.tasks_completed_this_session} tasks, {self.recommendations_generated} recommendations"
+                )
 
                 # Wait for next cycle
                 await asyncio.sleep(self.cycle_interval)
@@ -222,15 +232,15 @@ class EnhancedAgentCycle:
 
         status = await self.base_agent.get_development_status()
         high_priority_tasks = [
-            t for t in status["pending_tasks"]
+            t
+            for t in status["pending_tasks"]
             if t.get("priority", "medium") in ["high", "critical"]
         ]
 
         if high_priority_tasks:
             for task in high_priority_tasks[:2]:  # Plan top 2 high priority tasks
                 plan = await self.base_agent.plan_with_ladder(
-                    goal=task["title"],
-                    mode="shadow"
+                    goal=task["title"], mode="shadow"
                 )
 
                 if "error" not in plan:
@@ -277,8 +287,7 @@ class EnhancedAgentCycle:
         for task in status["pending_tasks"]:
             if await self._check_task_auto_completion(task):
                 await self.base_agent.complete_development_task(
-                    str(task["id"]),
-                    "Auto-completed by agent cycle"
+                    str(task["id"]), "Auto-completed by agent cycle"
                 )
                 todos_updated += 1
                 self.tasks_completed_this_session += 1
@@ -416,11 +425,7 @@ class CodeQualityAnalyzer:
     async def analyze_workspace(self) -> dict[str, Any]:
         """Analyze the entire workspace for code quality issues."""
         # Simplified implementation
-        return {
-            "issues_found": 0,
-            "files_analyzed": 0,
-            "suggestions": []
-        }
+        return {"issues_found": 0, "files_analyzed": 0, "suggestions": []}
 
     async def analyze_file(self, file_path: Path) -> dict[str, Any]:
         """Analyze a specific file for code quality."""

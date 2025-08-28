@@ -11,9 +11,7 @@ from src.main import (
 
 def test_app_factory_configures_app(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("REUG_EVENT_LOG_DIR", str(tmp_path))
-    monkeypatch.setenv(
-        "CORS_ALLOW_ORIGINS", "https://foo.com,https://bar.com"
-    )
+    monkeypatch.setenv("CORS_ALLOW_ORIGINS", "https://foo.com,https://bar.com")
 
     app = create_app()
 

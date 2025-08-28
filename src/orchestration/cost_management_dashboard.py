@@ -6,10 +6,10 @@ recommendations and budget controls.
 """
 
 import logging
-from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from enum import Enum
+from typing import Any
 
 from src.core.events import create_event
 
@@ -49,10 +49,10 @@ class CostEntry:
     currency: str = "USD"
     description: str = ""
     provider: str = ""  # e.g., "openai", "anthropic", "google"
-    usage_metrics: Dict[str, Any] = field(
+    usage_metrics: dict[str, Any] = field(
         default_factory=dict
     )  # tokens, requests, etc.
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -63,9 +63,9 @@ class BudgetLimit:
     name: str
     amount: float
     period: str  # "daily", "weekly", "monthly"
-    category: Optional[CostCategory] = None
-    agent_id: Optional[str] = None  # None for system-wide
-    alert_thresholds: List[float] = field(
+    category: CostCategory | None = None
+    agent_id: str | None = None  # None for system-wide
+    alert_thresholds: list[float] = field(
         default_factory=lambda: [0.75, 0.9, 1.0]
     )  # Percentages
     auto_disable: bool = False  # Auto-disable agent when budget exceeded
@@ -81,12 +81,12 @@ class CostAlert:
     timestamp: datetime
     level: AlertLevel
     message: str
-    budget_limit_id: Optional[str] = None
-    agent_id: Optional[str] = None
+    budget_limit_id: str | None = None
+    agent_id: str | None = None
     current_amount: float = 0.0
     limit_amount: float = 0.0
     percentage_used: float = 0.0
-    recommended_actions: List[str] = field(default_factory=list)
+    recommended_actions: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -97,9 +97,9 @@ class UsageMetrics:
     total_tokens: int = 0
     total_requests: int = 0
     total_compute_minutes: float = 0.0
-    peak_usage_hour: Optional[str] = None
+    peak_usage_hour: str | None = None
     average_cost_per_task: float = 0.0
-    most_expensive_task_type: Optional[str] = None
+    most_expensive_task_type: str | None = None
 
 
 class CostManagementDashboard:
@@ -108,18 +108,18 @@ class CostManagementDashboard:
     def __init__(self, event_bus=None, default_currency: str = "USD"):
         self.event_bus = event_bus
         self.default_currency = default_currency
-        self.cost_entries: List[CostEntry] = []
-        self.budget_limits: Dict[str, BudgetLimit] = {}
-        self.cost_alerts: List[CostAlert] = []
-        self.provider_rates: Dict[str, Dict[str, float]] = {}
+        self.cost_entries: list[CostEntry] = []
+        self.budget_limits: dict[str, BudgetLimit] = {}
+        self.cost_alerts: list[CostAlert] = []
+        self.provider_rates: dict[str, dict[str, float]] = {}
 
         # Initialize default provider rates (can be updated)
         self._initialize_default_rates()
 
         # Cost tracking by different dimensions
-        self.agent_costs: Dict[str, float] = {}
-        self.daily_costs: Dict[str, float] = {}
-        self.monthly_costs: Dict[str, float] = {}
+        self.agent_costs: dict[str, float] = {}
+        self.daily_costs: dict[str, float] = {}
+        self.monthly_costs: dict[str, float] = {}
 
         # Usage tracking
         self.usage_metrics = UsageMetrics()
@@ -165,8 +165,8 @@ class CostManagementDashboard:
         amount: float,
         description: str = "",
         provider: str = "",
-        usage_metrics: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        usage_metrics: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """Record a cost entry"""
         entry_id = self._generate_entry_id()
@@ -290,9 +290,9 @@ class CostManagementDashboard:
         name: str,
         amount: float,
         period: str,
-        category: Optional[CostCategory] = None,
-        agent_id: Optional[str] = None,
-        alert_thresholds: Optional[List[float]] = None,
+        category: CostCategory | None = None,
+        agent_id: str | None = None,
+        alert_thresholds: list[float] | None = None,
         auto_disable: bool = False,
     ) -> str:
         """Create a new budget limit"""
@@ -315,7 +315,7 @@ class CostManagementDashboard:
 
     async def _check_budget_limits(self, entry: CostEntry):
         """Check if any budget limits are exceeded"""
-        for limit_id, budget_limit in self.budget_limits.items():
+        for _limit_id, budget_limit in self.budget_limits.items():
             if not budget_limit.active:
                 continue
 
@@ -456,7 +456,7 @@ class CostManagementDashboard:
 
         logger.warning(f"Budget alert {alert_id}: {message}")
 
-    def get_cost_summary(self, time_period_days: int = 30) -> Dict[str, Any]:
+    def get_cost_summary(self, time_period_days: int = 30) -> dict[str, Any]:
         """Get cost summary for specified time period"""
         cutoff_date = datetime.now(UTC) - timedelta(days=time_period_days)
 
@@ -533,7 +533,7 @@ class CostManagementDashboard:
             "projected_monthly": (total_cost / time_period_days) * 30,
         }
 
-    def get_budget_status(self) -> Dict[str, Any]:
+    def get_budget_status(self) -> dict[str, Any]:
         """Get status of all budget limits"""
         budget_status = {}
 
@@ -568,7 +568,7 @@ class CostManagementDashboard:
 
         return budget_status
 
-    def get_cost_optimization_recommendations(self) -> List[str]:
+    def get_cost_optimization_recommendations(self) -> list[str]:
         """Generate cost optimization recommendations"""
         recommendations = []
 
@@ -623,7 +623,7 @@ class CostManagementDashboard:
 
         return recommendations or ["Costs appear optimized"]
 
-    def get_usage_analytics(self) -> Dict[str, Any]:
+    def get_usage_analytics(self) -> dict[str, Any]:
         """Get detailed usage analytics"""
         # Calculate hourly usage patterns
         hourly_costs = {}
@@ -706,7 +706,7 @@ class CostManagementDashboard:
 
     def export_cost_data(
         self, start_date: datetime, end_date: datetime
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Export cost data for specified date range"""
         relevant_entries = [
             entry

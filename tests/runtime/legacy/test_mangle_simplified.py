@@ -1,9 +1,10 @@
 """
 Simplified Mangle Integration Test
 
-Tests the core Mangle integration components without requiring 
+Tests the core Mangle integration components without requiring
 the full gRPC protobuf code generation.
 """
+
 import pytest
 
 pytest.skip("legacy test", allow_module_level=True)
@@ -24,14 +25,17 @@ def workspace_root():
     """Provide workspace root path."""
     return Path(__file__).parent
 
+
 @pytest.fixture
 def custom_registry():
     """Create a custom Prometheus registry for each test."""
     try:
         from prometheus_client import CollectorRegistry
+
         return CollectorRegistry()
     except ImportError:
         return None
+
 
 @pytest.fixture
 def mock_cortex_runtime():
@@ -42,10 +46,12 @@ def mock_cortex_runtime():
     cortex.modules = {"perception": Mock(), "reasoning": Mock(), "action": Mock()}
     return cortex
 
+
 @pytest.fixture
 def event_bus():
     """Provide simple event bus for testing."""
     return SimpleEventBus()
+
 
 class TestPrometheusMetrics:
     """Test Prometheus metrics collection."""
@@ -114,7 +120,9 @@ class TestPrometheusMetrics:
         collector.inc_optimization_decisions("policy_1", "thompson_sampling", "arm_1")
         collector.inc_optimization_rewards("policy_1", "arm_1")
         collector.observe_optimization_reward_value("policy_1", "arm_1", 0.8)
-        collector.set_optimization_arm_performance("policy_1", "arm_1", "success_rate", 0.75)
+        collector.set_optimization_arm_performance(
+            "policy_1", "arm_1", "success_rate", 0.75
+        )
 
         # Verify metrics are recorded
         assert collector._initialized
@@ -136,6 +144,7 @@ class TestPrometheusMetrics:
         content_type = collector.get_content_type()
         assert content_type == "text/plain; version=0.0.4; charset=utf-8"
 
+
 class TestRedisEventBusUnit:
     """Unit tests for Redis event bus (without actual Redis)."""
 
@@ -144,7 +153,7 @@ class TestRedisEventBusUnit:
         bus = RedisEventBus(
             redis_url="redis://localhost:6379",
             channel_prefix="test_alita",
-            event_ttl=3600
+            event_ttl=3600,
         )
 
         assert bus.redis_url == "redis://localhost:6379"
@@ -175,6 +184,7 @@ class TestRedisEventBusUnit:
         assert not stats["is_connected"]
         assert not stats["is_running"]
 
+
 @pytest.mark.asyncio
 class TestEventHandling:
     """Test event handling capabilities."""
@@ -184,14 +194,14 @@ class TestEventHandling:
         event = create_event(
             "cortex_cycle",
             source_plugin="cortex_runtime",
-            metadata={"session_id": "test_session", "cycle_count": 5}
+            metadata={"session_id": "test_session", "cycle_count": 5},
         )
 
         assert event.event_type == "cortex_cycle"
         assert event.source_plugin == "cortex_runtime"
         assert event.metadata["session_id"] == "test_session"
-        assert hasattr(event, 'event_id')
-        assert hasattr(event, 'timestamp')
+        assert hasattr(event, "event_id")
+        assert hasattr(event, "timestamp")
 
     async def test_simple_event_bus_functionality(self, event_bus):
         """Test simple event bus functionality."""
@@ -217,6 +227,7 @@ class TestEventHandling:
         # Emit another event (should not be received)
         await event_bus.emit(test_event)
         assert len(events_received) == 1  # No new events
+
 
 class TestMangleComponentsIntegration:
     """Test integration between Mangle components."""
@@ -283,6 +294,7 @@ class TestMangleComponentsIntegration:
         health = collector.health_check()
         assert health["status"] == "healthy"
 
+
 @pytest.mark.asyncio
 class TestEndToEndMangleValidation:
     """End-to-end validation tests for Mangle integration."""
@@ -308,13 +320,10 @@ class TestEndToEndMangleValidation:
         cortex_event = create_event(
             "cortex_cycle",
             source_plugin="cortex_runtime",
-            metadata={"session_id": "test_session"}
+            metadata={"session_id": "test_session"},
         )
 
-        system_event = create_event(
-            "system_status",
-            source_plugin="system_monitor"
-        )
+        system_event = create_event("system_status", source_plugin="system_monitor")
 
         await event_bus.emit(cortex_event)
         await event_bus.emit(system_event)
@@ -329,7 +338,7 @@ class TestEndToEndMangleValidation:
         collector = PrometheusMetricsCollector(custom_registry)
 
         async def collect_metrics(session_id, count):
-            for i in range(count):
+            for _i in range(count):
                 collector.inc_cortex_cycles(session_id)
                 collector.inc_events_processed("test_event", "test_handler")
                 await asyncio.sleep(0.001)  # Small delay
@@ -338,7 +347,7 @@ class TestEndToEndMangleValidation:
         tasks = [
             collect_metrics("session_1", 10),
             collect_metrics("session_2", 15),
-            collect_metrics("session_3", 8)
+            collect_metrics("session_3", 8),
         ]
 
         await asyncio.gather(*tasks)
@@ -384,6 +393,7 @@ class TestEndToEndMangleValidation:
         # Verify metrics are still accessible
         health = collector.health_check()
         assert health["status"] == "healthy"
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

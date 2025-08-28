@@ -13,14 +13,16 @@ import pytest
 
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["VECTOR_STORE_ID"] = "fake-vs-id"
-os.environ["MCP_ALLOW_NO_AUTH"] = "true" # Disable auth for tests
+os.environ["MCP_ALLOW_NO_AUTH"] = "true"  # Disable auth for tests
 
 from mcp import fastmcp_server
 
 
 # --- Fake OpenAI SDK Objects ---
 class FakeChunk:
-    def __init__(self, text): self.text = text
+    def __init__(self, text):
+        self.text = text
+
 
 class FakeFile:
     def __init__(self, file_id, filename, content):
@@ -28,34 +30,39 @@ class FakeFile:
         self.filename = filename
         self.content = content
 
+
 class FakeSearchResp:
-    def __init__(self, data): self.data = data
+    def __init__(self, data):
+        self.data = data
+
 
 class FakeContentResp:
-    def __init__(self, data): self.data = data
+    def __init__(self, data):
+        self.data = data
+
 
 class FakeRetrieveResp:
     def __init__(self, filename, attributes=None):
         self.filename = filename
         self.attributes = attributes
 
+
 class FakeClient:
     def __init__(self):
         self.vector_stores = types.SimpleNamespace(
             search=self._search,
-            files=types.SimpleNamespace(
-                content=self._content,
-                retrieve=self._retrieve
-            )
+            files=types.SimpleNamespace(content=self._content, retrieve=self._retrieve),
         )
-        self._files = {
-            "file-123": ("Cats.pdf", [FakeChunk("Meow.\nPurr.")])
-        }
+        self._files = {"file-123": ("Cats.pdf", [FakeChunk("Meow.\nPurr.")])}
 
     def _search(self, vector_store_id, query):
         if not query:
             return FakeSearchResp([])
-        fake_file = FakeFile("file-123", "Cats.pdf", [types.SimpleNamespace(text="Cats are great companions.")])
+        fake_file = FakeFile(
+            "file-123",
+            "Cats.pdf",
+            [types.SimpleNamespace(text="Cats are great companions.")],
+        )
         return FakeSearchResp([fake_file])
 
     def _content(self, vector_store_id, file_id):
@@ -66,12 +73,16 @@ class FakeClient:
         filename, _ = self._files[file_id]
         return FakeRetrieveResp(filename, attributes={"topic": "cats"})
 
+
 @pytest.fixture(autouse=True)
 def mock_openai_client(monkeypatch):
     """Fixture to replace the real OpenAI client with our fake one for all tests."""
     fake_client_instance = FakeClient()
     # Patch the function that returns the client
-    monkeypatch.setattr(fastmcp_server, "get_openai_client", lambda: fake_client_instance)
+    monkeypatch.setattr(
+        fastmcp_server, "get_openai_client", lambda: fake_client_instance
+    )
+
 
 @pytest.mark.asyncio
 async def test_search_and_fetch():
@@ -102,6 +113,7 @@ async def test_search_and_fetch():
     assert "metadata" in fetch_result
     assert fetch_result["metadata"]["topic"] == "cats"
 
+
 @pytest.mark.asyncio
 async def test_empty_query_returns_empty_results():
     """Ensures that an empty search query returns an empty result list."""
@@ -115,6 +127,7 @@ async def test_empty_query_returns_empty_results():
     result_whitespace = await search_tool("   ")
     assert "results" in result_whitespace
     assert result_whitespace["results"] == []
+
 
 @pytest.mark.asyncio
 async def test_fetch_with_empty_id_raises_error():

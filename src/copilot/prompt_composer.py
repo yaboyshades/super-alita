@@ -1,4 +1,5 @@
 """Prompt composition helpers for Copilot integration."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence

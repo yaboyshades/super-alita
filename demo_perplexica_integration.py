@@ -14,8 +14,7 @@ from src.plugins.perplexica_search_plugin import PerplexicaSearchPlugin, SearchM
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -74,10 +73,7 @@ async def demo_perplexica_basic_search():
         print(f"\n📊 Searching: '{query}' (mode: {mode})")
 
         response = await plugin.search(
-            query=query,
-            search_mode=mode,
-            max_results=5,
-            include_reasoning=True
+            query=query, search_mode=mode, max_results=5, include_reasoning=True
         )
 
         print(f"✅ Summary: {response.summary}")
@@ -118,10 +114,7 @@ async def demo_perplexica_with_web_agent():
     print(f"🔍 Searching with WebAgent backend: '{query}'")
 
     response = await plugin.search(
-        query=query,
-        search_mode=SearchMode.WEB,
-        max_results=5,
-        include_reasoning=True
+        query=query, search_mode=SearchMode.WEB, max_results=5, include_reasoning=True
     )
 
     print("✅ Enhanced Search Results:")
@@ -156,7 +149,7 @@ async def demo_perplexica_event_integration():
         "query": "quantum computing breakthroughs",
         "search_mode": "academic",
         "max_results": 3,
-        "session_id": "demo_session"
+        "session_id": "demo_session",
     }
 
     print("📨 Simulating search request event...")
@@ -164,13 +157,13 @@ async def demo_perplexica_event_integration():
     print(f"   Mode: {search_event['search_mode']}")
 
     # Handle the event (simulates external request)
-    mock_event = type('MockEvent', (), {'data': search_event})()
+    mock_event = type("MockEvent", (), {"data": search_event})()
     await plugin._handle_search_request(mock_event)
 
     # Check that result events were published
     print(f"📤 Events published: {len(event_bus.events)}")
     for event in event_bus.events:
-        if hasattr(event, 'event_type'):
+        if hasattr(event, "event_type"):
             print(f"   - {event.event_type}")
 
     await plugin.shutdown()
@@ -232,10 +225,7 @@ async def demo_comparison_with_basic_search():
     await plugin.start()
 
     enhanced_result = await plugin.search(
-        query=query,
-        search_mode=SearchMode.WEB,
-        max_results=3,
-        include_reasoning=True
+        query=query, search_mode=SearchMode.WEB, max_results=3, include_reasoning=True
     )
 
     print(f"   Results: {len(enhanced_result.sources)}")
@@ -283,6 +273,7 @@ async def main():
     except Exception as e:
         print(f"\n❌ Demo failed: {e}")
         import traceback
+
         traceback.print_exc()
 
 

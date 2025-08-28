@@ -21,7 +21,6 @@ pb2 = importlib.import_module("super_alita_pb2")
 pb2_grpc = importlib.import_module("super_alita_pb2_grpc")
 
 
-
 class FakeEventBus:
     def __init__(self) -> None:
         self.events: list[dict[str, Any]] = []
@@ -37,6 +36,7 @@ class FakeAbilityRegistry:
     def __init__(self) -> None:
         self._known = {"echo"}
         self._calls: list[dict[str, Any]] = []
+
         class _EchoTool:
             async def aexecute(self, payload: str) -> dict[str, str]:
                 return {"echo": payload}
@@ -84,7 +84,9 @@ class FakeAbilityRegistry:
         fn = getattr(impl, "aexecute", None) or getattr(impl, "run", None) or impl
         sig = inspect.signature(fn)
         params = sig.parameters
-        accepts_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+        accepts_var_kw = any(
+            p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()
+        )
         unexpected = [k for k in args if k not in params] if not accepts_var_kw else []
         if unexpected:
             raise TypeError(
@@ -119,8 +121,12 @@ class FakeKG:
         self.atoms.append(atom)
         return atom
 
-    async def create_bond(self, bond_type: str, source_atom_id: str, target_atom_id: str) -> None:
-        self.bonds.append({"type": bond_type, "src": source_atom_id, "tgt": target_atom_id})
+    async def create_bond(
+        self, bond_type: str, source_atom_id: str, target_atom_id: str
+    ) -> None:
+        self.bonds.append(
+            {"type": bond_type, "src": source_atom_id, "tgt": target_atom_id}
+        )
 
 
 class FakeLLM:
@@ -133,7 +139,10 @@ class FakeLLM:
         self, messages: list[dict[str, str]], timeout: float
     ) -> AsyncGenerator[dict[str, str], None]:
         # detect if a tool_result was injected
-        if any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
+        if any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        ):
             self._phase = 2
         if self._phase == 1:
             # yield a bit of prose and a well-formed tool_call block
@@ -153,16 +162,22 @@ class _FakeGrpcServicer(pb2_grpc.SuperAlitaAgentServicer):
     def __init__(self, fail: Iterable[str] | None = None) -> None:
         self._fail = set(fail or [])
 
-    def GetHealth(self, request: empty_pb2.Empty, context: grpc.ServicerContext) -> pb2.HealthResponse:
+    def GetHealth(
+        self, request: empty_pb2.Empty, context: grpc.ServicerContext
+    ) -> pb2.HealthResponse:
         if "health" in self._fail:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("health fail")
             return pb2.HealthResponse()
         ts = timestamp_pb2.Timestamp()
         ts.GetCurrentTime()
-        return pb2.HealthResponse(status=pb2.HealthResponse.HEALTHY, message="ok", timestamp=ts)
+        return pb2.HealthResponse(
+            status=pb2.HealthResponse.HEALTHY, message="ok", timestamp=ts
+        )
 
-    def GetStatus(self, request: empty_pb2.Empty, context: grpc.ServicerContext) -> pb2.StatusResponse:
+    def GetStatus(
+        self, request: empty_pb2.Empty, context: grpc.ServicerContext
+    ) -> pb2.StatusResponse:
         if "status" in self._fail:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("status fail")
@@ -178,14 +193,20 @@ class _FakeGrpcServicer(pb2_grpc.SuperAlitaAgentServicer):
             system_info={"ok": "true"},
         )
 
-    def ProcessTask(self, request: pb2.TaskRequest, context: grpc.ServicerContext) -> pb2.TaskResponse:
+    def ProcessTask(
+        self, request: pb2.TaskRequest, context: grpc.ServicerContext
+    ) -> pb2.TaskResponse:
         if "process" in self._fail:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("process fail")
-            return pb2.TaskResponse(task_id=request.task_id, success=False, error_message="process fail")
+            return pb2.TaskResponse(
+                task_id=request.task_id, success=False, error_message="process fail"
+            )
         return pb2.TaskResponse(task_id=request.task_id, result="done", success=True)
 
-    def QueryKnowledgeGraph(self, request: pb2.QueryRequest, context: grpc.ServicerContext) -> pb2.QueryResponse:
+    def QueryKnowledgeGraph(
+        self, request: pb2.QueryRequest, context: grpc.ServicerContext
+    ) -> pb2.QueryResponse:
         if "kg" in self._fail:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("kg fail")

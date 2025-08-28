@@ -6,6 +6,7 @@ Integrates decision policies, reward tracking, and learning with the event syste
 """
 
 import asyncio
+import contextlib
 import time
 from typing import Any
 
@@ -22,7 +23,7 @@ from .reward_tracker import (
 class OptimizationPlugin(PluginInterface):
     """
     Plugin that provides intelligent decision optimization using multi-armed bandit algorithms.
-    
+
     Features:
     - Multiple bandit algorithms (Thompson Sampling, UCB1, Epsilon-Greedy)
     - Decision policy management
@@ -41,7 +42,7 @@ class OptimizationPlugin(PluginInterface):
             "decisions_made": 0,
             "rewards_collected": 0,
             "policies_created": 0,
-            "average_reward": 0.0
+            "average_reward": 0.0,
         }
 
     @property
@@ -60,7 +61,9 @@ class OptimizationPlugin(PluginInterface):
         # Add reward callback to update metrics
         self.reward_tracker.add_callback(self._on_reward_received)
 
-        print(f"🎯 {self.name} initialized with {len(self.reward_tracker.rules)} reward rules")
+        print(
+            f"🎯 {self.name} initialized with {len(self.reward_tracker.rules)} reward rules"
+        )
 
     async def start(self) -> None:
         """Start the optimization plugin."""
@@ -68,9 +71,15 @@ class OptimizationPlugin(PluginInterface):
 
         # Subscribe to relevant events if event bus is available
         if self.event_bus:
-            await self.event_bus.subscribe("cortex_cycle_complete", self._handle_cortex_cycle)
-            await self.event_bus.subscribe("decision_needed", self._handle_decision_request)
-            await self.event_bus.subscribe("task_completed", self._handle_task_completion)
+            await self.event_bus.subscribe(
+                "cortex_cycle_complete", self._handle_cortex_cycle
+            )
+            await self.event_bus.subscribe(
+                "decision_needed", self._handle_decision_request
+            )
+            await self.event_bus.subscribe(
+                "task_completed", self._handle_task_completion
+            )
 
         # Start periodic optimization task
         self._optimization_task = self.add_task(self._periodic_optimization())
@@ -79,15 +88,19 @@ class OptimizationPlugin(PluginInterface):
         """Shutdown the optimization plugin."""
         if self._optimization_task:
             self._optimization_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._optimization_task
-            except asyncio.CancelledError:
-                pass
 
         if self.event_bus:
-            await self.event_bus.unsubscribe("cortex_cycle_complete", self._handle_cortex_cycle)
-            await self.event_bus.unsubscribe("decision_needed", self._handle_decision_request)
-            await self.event_bus.unsubscribe("task_completed", self._handle_task_completion)
+            await self.event_bus.unsubscribe(
+                "cortex_cycle_complete", self._handle_cortex_cycle
+            )
+            await self.event_bus.unsubscribe(
+                "decision_needed", self._handle_decision_request
+            )
+            await self.event_bus.unsubscribe(
+                "task_completed", self._handle_task_completion
+            )
 
         print(f"🎯 {self.name} shutdown complete")
 
@@ -105,12 +118,16 @@ class OptimizationPlugin(PluginInterface):
                         context = {
                             "success": cycle_data.get("success", False),
                             "execution_time": cycle_data.get("execution_time", 1.0),
-                            "performance_score": cycle_data.get("performance_score", 0.5),
+                            "performance_score": cycle_data.get(
+                                "performance_score", 0.5
+                            ),
                             "cycle_id": cycle_data.get("cycle_id"),
-                            "cycle_type": "cortex"
+                            "cycle_type": "cortex",
                         }
 
-                        await self.reward_tracker.calculate_automatic_rewards(decision_id, context)
+                        await self.reward_tracker.calculate_automatic_rewards(
+                            decision_id, context
+                        )
 
         except Exception as e:
             print(f"Error handling Cortex cycle event: {e}")
@@ -128,7 +145,7 @@ class OptimizationPlugin(PluginInterface):
                     user_id=request_data.get("user_id"),
                     workspace=request_data.get("workspace"),
                     task_type=request_data.get("task_type"),
-                    metadata=request_data.get("metadata", {})
+                    metadata=request_data.get("metadata", {}),
                 )
 
                 # Make decision
@@ -146,7 +163,7 @@ class OptimizationPlugin(PluginInterface):
                         arm_name=decision.bandit_decision.arm_name,
                         algorithm=decision.bandit_decision.algorithm,
                         confidence=decision.bandit_decision.confidence,
-                        context=decision.context.__dict__
+                        context=decision.context.__dict__,
                     )
                     await self.event_bus.emit_event(decision_event)
 
@@ -179,7 +196,7 @@ class OptimizationPlugin(PluginInterface):
                     reward_value=reward_value,
                     reward_type="immediate",
                     source="task_completion",
-                    metadata=task_data
+                    metadata=task_data,
                 )
 
                 # Provide feedback to policy engine
@@ -195,7 +212,10 @@ class OptimizationPlugin(PluginInterface):
         # Update average reward (simple moving average)
         if self._metrics["rewards_collected"] > 0:
             current_avg = self._metrics["average_reward"]
-            new_avg = (current_avg * (self._metrics["rewards_collected"] - 1) + reward_event.reward_value) / self._metrics["rewards_collected"]
+            new_avg = (
+                current_avg * (self._metrics["rewards_collected"] - 1)
+                + reward_event.reward_value
+            ) / self._metrics["rewards_collected"]
             self._metrics["average_reward"] = new_avg
 
     async def _periodic_optimization(self) -> None:
@@ -209,7 +229,9 @@ class OptimizationPlugin(PluginInterface):
 
                 # Apply recommendations if any
                 if results["recommendations"]:
-                    print(f"🎯 Optimization recommendations: {len(results['recommendations'])}")
+                    print(
+                        f"🎯 Optimization recommendations: {len(results['recommendations'])}"
+                    )
 
                     # Could automatically apply some recommendations here
                     for rec in results["recommendations"]:
@@ -222,7 +244,7 @@ class OptimizationPlugin(PluginInterface):
                                 policy_id=rec["policy_id"],
                                 current_value=rec["current"],
                                 suggested_value=rec["suggested"],
-                                reason=rec["reason"]
+                                reason=rec["reason"],
                             )
                             await self.event_bus.emit_event(rec_event)
 
@@ -240,7 +262,7 @@ class OptimizationPlugin(PluginInterface):
         description: str,
         algorithm_type: str,
         arms: list[dict[str, Any]],
-        **kwargs
+        **kwargs,
     ) -> str:
         """Create a new decision policy."""
         policy_id = self.policy_engine.create_policy(
@@ -248,7 +270,7 @@ class OptimizationPlugin(PluginInterface):
             description=description,
             algorithm_type=algorithm_type,
             arms=arms,
-            **kwargs
+            **kwargs,
         )
 
         self._metrics["policies_created"] += 1
@@ -261,7 +283,7 @@ class OptimizationPlugin(PluginInterface):
                 policy_id=policy_id,
                 name=name,
                 algorithm_type=algorithm_type,
-                arms_count=len(arms)
+                arms_count=len(arms),
             )
             await self.event_bus.emit_event(policy_event)
 
@@ -274,7 +296,7 @@ class OptimizationPlugin(PluginInterface):
         user_id: str | None = None,
         workspace: str | None = None,
         task_type: str | None = None,
-        **metadata
+        **metadata,
     ) -> PolicyDecision:
         """Make a decision using a specific policy."""
         context = DecisionContext(
@@ -282,7 +304,7 @@ class OptimizationPlugin(PluginInterface):
             user_id=user_id,
             workspace=workspace,
             task_type=task_type,
-            metadata=metadata
+            metadata=metadata,
         )
 
         decision = await self.policy_engine.make_decision(policy_id, context)
@@ -291,11 +313,7 @@ class OptimizationPlugin(PluginInterface):
         return decision
 
     async def provide_feedback(
-        self,
-        decision_id: str,
-        reward: float,
-        source: str = "manual",
-        **metadata
+        self, decision_id: str, reward: float, source: str = "manual", **metadata
     ) -> bool:
         """Provide feedback for a decision."""
         # Record in reward tracker
@@ -303,7 +321,7 @@ class OptimizationPlugin(PluginInterface):
             decision_id=decision_id,
             reward_value=reward,
             source=source,
-            metadata=metadata
+            metadata=metadata,
         )
 
         # Provide to policy engine
@@ -328,7 +346,7 @@ class OptimizationPlugin(PluginInterface):
             "policies": policy_stats,
             "rewards": reward_stats,
             "rules": rule_stats,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
     async def export_data(self) -> dict[str, Any]:
@@ -337,7 +355,7 @@ class OptimizationPlugin(PluginInterface):
             "policies": {
                 policy_id: {
                     "definition": policy.__dict__,
-                    "statistics": self.get_policy_statistics(policy_id)
+                    "statistics": self.get_policy_statistics(policy_id),
                 }
                 for policy_id, policy in self.policy_engine.policies.items()
             },
@@ -355,10 +373,10 @@ class OptimizationPlugin(PluginInterface):
                     "name": rule.name,
                     "description": rule.description,
                     "priority": rule.priority,
-                    "active": rule.active
+                    "active": rule.active,
                 }
                 for rule_id, rule in self.reward_tracker.rules.items()
             },
             "metrics": self._metrics,
-            "exported_at": time.time()
+            "exported_at": time.time(),
         }

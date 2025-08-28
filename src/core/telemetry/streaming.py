@@ -21,19 +21,25 @@ class ConnectionManager:
         self.active_connections: set[WebSocket] = set()
         self.connection_metadata: dict[WebSocket, dict[str, Any]] = {}
 
-    async def connect(self, websocket: WebSocket, client_info: dict[str, Any] | None = None):
+    async def connect(
+        self, websocket: WebSocket, client_info: dict[str, Any] | None = None
+    ):
         """Accept a new WebSocket connection"""
         await websocket.accept()
         self.active_connections.add(websocket)
         self.connection_metadata[websocket] = client_info or {}
-        logger.info(f"New telemetry client connected. Total: {len(self.active_connections)}")
+        logger.info(
+            f"New telemetry client connected. Total: {len(self.active_connections)}"
+        )
 
     def disconnect(self, websocket: WebSocket):
         """Remove a WebSocket connection"""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
             self.connection_metadata.pop(websocket, None)
-            logger.info(f"Telemetry client disconnected. Total: {len(self.active_connections)}")
+            logger.info(
+                f"Telemetry client disconnected. Total: {len(self.active_connections)}"
+            )
 
     async def send_to_all(self, data: dict[str, Any]):
         """Send data to all connected clients"""
@@ -88,13 +94,15 @@ class WebSocketStreamer:
             message = {
                 "type": "telemetry_event",
                 "data": event.to_dict(),
-                "timestamp": event.timestamp
+                "timestamp": event.timestamp,
             }
             await self.connection_manager.send_to_all(message)
         except Exception as e:
             logger.error(f"Error broadcasting telemetry event: {e}")
 
-    async def handle_websocket(self, websocket: WebSocket, client_id: str | None = None):
+    async def handle_websocket(
+        self, websocket: WebSocket, client_id: str | None = None
+    ):
         """Handle a WebSocket connection for telemetry streaming"""
         client_info = {"client_id": client_id} if client_id else {}
         await self.connection_manager.connect(websocket, client_info)
@@ -122,7 +130,7 @@ class WebSocketStreamer:
             metrics_message = {
                 "type": "metrics_update",
                 "data": self.collector.get_metrics().to_dict(),
-                "timestamp": asyncio.get_event_loop().time()
+                "timestamp": asyncio.get_event_loop().time(),
             }
             await self.connection_manager.send_to_client(websocket, metrics_message)
 
@@ -132,14 +140,16 @@ class WebSocketStreamer:
                 event_message = {
                     "type": "telemetry_event",
                     "data": event.to_dict(),
-                    "timestamp": event.timestamp
+                    "timestamp": event.timestamp,
                 }
                 await self.connection_manager.send_to_client(websocket, event_message)
 
         except Exception as e:
             logger.error(f"Error sending initial state: {e}")
 
-    async def _handle_client_message(self, websocket: WebSocket, message: dict[str, Any]):
+    async def _handle_client_message(
+        self, websocket: WebSocket, message: dict[str, Any]
+    ):
         """Handle incoming message from client"""
         try:
             msg_type = message.get("type")
@@ -149,7 +159,7 @@ class WebSocketStreamer:
                 response = {
                     "type": "metrics_update",
                     "data": self.collector.get_metrics().to_dict(),
-                    "timestamp": asyncio.get_event_loop().time()
+                    "timestamp": asyncio.get_event_loop().time(),
                 }
                 await self.connection_manager.send_to_client(websocket, response)
 
@@ -162,7 +172,7 @@ class WebSocketStreamer:
                         "type": "cycle_events",
                         "cycle_id": cycle_id,
                         "events": [event.to_dict() for event in events],
-                        "timestamp": asyncio.get_event_loop().time()
+                        "timestamp": asyncio.get_event_loop().time(),
                     }
                     await self.connection_manager.send_to_client(websocket, response)
 
@@ -175,7 +185,7 @@ class WebSocketStreamer:
                         "type": "phase_statistics",
                         "phase": phase,
                         "statistics": stats,
-                        "timestamp": asyncio.get_event_loop().time()
+                        "timestamp": asyncio.get_event_loop().time(),
                     }
                     await self.connection_manager.send_to_client(websocket, response)
 
@@ -184,7 +194,7 @@ class WebSocketStreamer:
                 response = {
                     "type": "streaming_status",
                     "streaming": True,
-                    "timestamp": asyncio.get_event_loop().time()
+                    "timestamp": asyncio.get_event_loop().time(),
                 }
                 await self.connection_manager.send_to_client(websocket, response)
 
@@ -193,7 +203,7 @@ class WebSocketStreamer:
                 response = {
                     "type": "streaming_status",
                     "streaming": False,
-                    "timestamp": asyncio.get_event_loop().time()
+                    "timestamp": asyncio.get_event_loop().time(),
                 }
                 await self.connection_manager.send_to_client(websocket, response)
 
@@ -208,7 +218,7 @@ class WebSocketStreamer:
                     metrics_message = {
                         "type": "metrics_update",
                         "data": self.collector.get_metrics().to_dict(),
-                        "timestamp": asyncio.get_event_loop().time()
+                        "timestamp": asyncio.get_event_loop().time(),
                     }
                     await self.connection_manager.send_to_all(metrics_message)
 
@@ -225,7 +235,5 @@ class WebSocketStreamer:
         """Get information about active connections"""
         return {
             "active_connections": self.get_connection_count(),
-            "clients": [
-                metadata for metadata in self.connection_manager.connection_metadata.values()
-            ]
+            "clients": list(self.connection_manager.connection_metadata.values()),
         }

@@ -234,9 +234,7 @@ class PythonDeepAnalyzer(CodeAnalyzer):
 
                 for child in ast.walk(node):
                     if (
-                        isinstance(child, ast.If | ast.While | ast.For | ast.AsyncFor)
-                        or isinstance(child, ast.ExceptHandler)
-                        or isinstance(child, ast.And | ast.Or)
+                        isinstance(child, ast.If | ast.While | ast.For | ast.AsyncFor | ast.ExceptHandler | (ast.And | ast.Or))
                     ):
                         complexity += 1
 

@@ -31,7 +31,7 @@ class CopilotTelemetryVerifier:
 
         handler = logging.FileHandler(log_dir / "telemetry.log")
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
         handler.setFormatter(formatter)
         logger.addHandler(handler)
@@ -46,7 +46,7 @@ class CopilotTelemetryVerifier:
             "Super Alita Architectural Guardian",
             "v2.0",
             "5 guidelines",
-            "yaboyshades"
+            "yaboyshades",
         ]
 
         # Simulate AI response (in real usage, this would be the actual response)
@@ -56,7 +56,7 @@ class CopilotTelemetryVerifier:
             "prompt": test_prompt,
             "expected_markers": expected_markers,
             "timestamp": datetime.now(UTC).isoformat(),
-            "status": "REQUIRES_MANUAL_VERIFICATION"
+            "status": "REQUIRES_MANUAL_VERIFICATION",
         }
 
         self.logger.info(f"Test 1 executed: {result}")
@@ -67,7 +67,7 @@ class CopilotTelemetryVerifier:
         test_prompts = [
             "List all Super Alita coding guidelines by name",
             "What is guideline #2 about?",
-            "Explain the REUG State Machine Pattern"
+            "Explain the REUG State Machine Pattern",
         ]
 
         expected_guidelines = [
@@ -75,7 +75,7 @@ class CopilotTelemetryVerifier:
             "Super Alita Tool Registry Management",
             "Super Alita REUG State Machine Patterns",
             "Super Alita Event Bus Patterns",
-            "Super Alita Component Integration"
+            "Super Alita Component Integration",
         ]
 
         result = {
@@ -83,7 +83,7 @@ class CopilotTelemetryVerifier:
             "prompts": test_prompts,
             "expected_guidelines": expected_guidelines,
             "timestamp": datetime.now(UTC).isoformat(),
-            "status": "REQUIRES_MANUAL_VERIFICATION"
+            "status": "REQUIRES_MANUAL_VERIFICATION",
         }
 
         self.logger.info(f"Test 2 executed: {result}")
@@ -94,36 +94,36 @@ class CopilotTelemetryVerifier:
 
         # Create test violations
         test_violations = {
-            "plugin_violation": '''
+            "plugin_violation": """
 class BadPlugin:  # Missing PluginInterface
     def __init__(self):
         pass
-            ''',
-            "registry_violation": '''
+            """,
+            "registry_violation": """
 class MyOwnRegistry:  # Creating separate registry
     def __init__(self):
         self.tools = {}
-            ''',
-            "state_violation": '''
+            """,
+            "state_violation": """
 def handle_state(self):  # Missing async
     return "success"  # Wrong return type
-            ''',
-            "event_violation": '''
+            """,
+            "event_violation": """
 def bad_event(self):
     self.event_bus.emit({"type": "decision"})  # Missing create_event
-            ''',
-            "integration_violation": '''
+            """,
+            "integration_violation": """
 class CompetingRouter:  # Not using DecisionPolicyEngine
     def route(self, input):
         pass
-            '''
+            """,
         }
 
         result = {
             "test": "violation_detection",
             "violations_tested": list(test_violations.keys()),
             "timestamp": datetime.now(UTC).isoformat(),
-            "status": "REQUIRES_MANUAL_VERIFICATION"
+            "status": "REQUIRES_MANUAL_VERIFICATION",
         }
 
         self.logger.info(f"Test 3 executed: {result}")
@@ -132,7 +132,7 @@ class CompetingRouter:  # Not using DecisionPolicyEngine
     async def test_refactor_capability(self) -> dict[str, Any]:
         """Test 4: Verify AI can refactor code to comply"""
 
-        bad_code = '''
+        bad_code = """
 # This code violates multiple guidelines
 class MyPlugin:
     def setup(self, config):  # Not async, missing interface
@@ -140,13 +140,13 @@ class MyPlugin:
         
     def emit_event(self, data):
         self.event_bus.emit({"data": data})  # Improper event creation
-        '''
+        """
 
         expected_fixes = [
             "inherit from PluginInterface",
             "async def setup",
             "use DecisionPolicyEngine.register_capability",
-            "use create_event helper"
+            "use create_event helper",
         ]
 
         result = {
@@ -154,7 +154,7 @@ class MyPlugin:
             "bad_code": bad_code,
             "expected_fixes": expected_fixes,
             "timestamp": datetime.now(UTC).isoformat(),
-            "status": "REQUIRES_MANUAL_VERIFICATION"
+            "status": "REQUIRES_MANUAL_VERIFICATION",
         }
 
         self.logger.info(f"Test 4 executed: {result}")
@@ -171,7 +171,7 @@ class MyPlugin:
             "async def shutdown",
             "event_bus.emit",
             "create_event",
-            "DecisionPolicyEngine"
+            "DecisionPolicyEngine",
         ]
 
         result = {
@@ -179,7 +179,7 @@ class MyPlugin:
             "prompt": generation_prompt,
             "expected_patterns": expected_patterns,
             "timestamp": datetime.now(UTC).isoformat(),
-            "status": "REQUIRES_MANUAL_VERIFICATION"
+            "status": "REQUIRES_MANUAL_VERIFICATION",
         }
 
         self.logger.info(f"Test 5 executed: {result}")
@@ -194,7 +194,7 @@ class MyPlugin:
             self.test_guideline_knowledge(),
             self.test_violation_detection(),
             self.test_refactor_capability(),
-            self.test_generation_compliance()
+            self.test_generation_compliance(),
         ]
 
         results = await asyncio.gather(*tests)
@@ -208,13 +208,17 @@ class MyPlugin:
         output_path = Path(".github/copilot/telemetry_results.json")
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_path, 'w') as f:
-            json.dump({
-                "version": self.prompt_version,
-                "timestamp": datetime.now(UTC).isoformat(),
-                "user": "yaboyshades",
-                "results": self.test_results
-            }, f, indent=2)
+        with open(output_path, "w") as f:
+            json.dump(
+                {
+                    "version": self.prompt_version,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                    "user": "yaboyshades",
+                    "results": self.test_results,
+                },
+                f,
+                indent=2,
+            )
 
         self.logger.info(f"Results saved to {output_path}")
 
@@ -232,7 +236,9 @@ class MyPlugin:
 |-----------|--------|-----------|
 """
         for result in self.test_results:
-            report += f"| {result['test']} | {result['status']} | {result['timestamp']} |\n"
+            report += (
+                f"| {result['test']} | {result['status']} | {result['timestamp']} |\n"
+            )
 
         report += """
 ## Manual Verification Checklist
@@ -267,6 +273,7 @@ class MyPlugin:
 - [ ] Generated code includes error handling
 """
         return report
+
 
 if __name__ == "__main__":
     verifier = CopilotTelemetryVerifier()

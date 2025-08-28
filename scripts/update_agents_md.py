@@ -40,8 +40,10 @@ MARKERS = {
     "RELEASE": ("<!-- AGENTS:RELEASE -->", "<!-- AGENTS:RELEASE -->"),
 }
 
+
 def _find_py(mod_root: str) -> list[pathlib.Path]:
     return [p for p in (ROOT / mod_root).rglob("*.py") if p.is_file()]
+
 
 def _scan_abilities():
     rows = []
@@ -50,9 +52,16 @@ def _scan_abilities():
         if re.search(r"(class .*Ability)|(register_ability\()|(@ability)", text):
             sig = re.search(r"def\s+([a-zA-Z_][\w]*)\(", text)
             name = sig.group(1) if sig else p.stem
-            guard = "yes" if ("try:" in text or "Timeout" in text or "guard" in text) else "unknown"
-            rows.append((name, str(p.relative_to(ROOT)), "(…)", guard, "Ability* events", ""))
+            guard = (
+                "yes"
+                if ("try:" in text or "Timeout" in text or "guard" in text)
+                else "unknown"
+            )
+            rows.append(
+                (name, str(p.relative_to(ROOT)), "(…)", guard, "Ability* events", "")
+            )
     return rows
+
 
 def _scan_plugins():
     rows = []
@@ -70,8 +79,18 @@ def _scan_plugins():
                     )
                 )
             )
-            rows.append((p.stem, str(p.relative_to(ROOT)), caps or "(…)", "ENV_*", "function() => ok", ""))
+            rows.append(
+                (
+                    p.stem,
+                    str(p.relative_to(ROOT)),
+                    caps or "(…)",
+                    "ENV_*",
+                    "function() => ok",
+                    "",
+                )
+            )
     return rows
+
 
 def _scan_agents_top():
     has_router = (ROOT / "src" / "reug_runtime" / "router.py").exists()
@@ -91,6 +110,7 @@ def _scan_agents_top():
     ]
     return rows
 
+
 def _codeowners():
     rows = []
     p = ROOT / "CODEOWNERS"
@@ -106,6 +126,7 @@ def _codeowners():
             continue
     return rows
 
+
 def _render_table(headers, rows):
     cols = len(headers)
     lines = [
@@ -117,6 +138,7 @@ def _render_table(headers, rows):
         lines.append("| " + " | ".join(cells) + " |")
     return "\n".join(lines)
 
+
 def _replace_block(text, key, body):
     start, end = MARKERS[key]
     if start == end:
@@ -125,6 +147,7 @@ def _replace_block(text, key, body):
     pattern = re.compile(re.escape(start) + r".*?" + re.escape(end), re.S)
     return pattern.sub(start + "\n" + body + "\n" + end, text)
 
+
 def _load_json(path: pathlib.Path, default):
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -132,13 +155,19 @@ def _load_json(path: pathlib.Path, default):
         return default
     return json.loads(path.read_text())
 
+
 def _update_ledger(pr_number: str | None):
     data = _load_json(LEDGER, {"series": []})
     if pr_number:
         series_id = f"series-{datetime.now(UTC).strftime('%Y%W')}"
         series = next((s for s in data["series"] if s["series_id"] == series_id), None)
         if not series:
-            series = {"series_id": series_id, "prs": [], "branches": [], "session_notes": []}
+            series = {
+                "series_id": series_id,
+                "prs": [],
+                "branches": [],
+                "session_notes": [],
+            }
             data["series"].append(series)
         if int(pr_number) not in series["prs"]:
             series["prs"].append(int(pr_number))
@@ -147,6 +176,7 @@ def _update_ledger(pr_number: str | None):
     for s in sorted(data["series"], key=lambda x: x["series_id"], reverse=True)[:6]:
         lines.append(f"- **{s['series_id']}** · PRs: {sorted(s['prs'])}")
     return "\n".join(lines) if lines else "- (none)"
+
 
 def main():
     md = DOC.read_text(encoding="utf-8")
@@ -207,6 +237,7 @@ def main():
 
     DOC.write_text(md, encoding="utf-8")
     print(f"Updated {DOC}")
+
 
 if __name__ == "__main__":
     sys.exit(main())

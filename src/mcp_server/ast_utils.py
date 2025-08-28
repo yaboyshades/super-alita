@@ -19,18 +19,19 @@ class _ReturnResultTransformer(cst.CSTTransformer):
 
         self.found = True
         body_stmts = list(updated_node.body.body)
-        if body_stmts and isinstance(
-            body_stmts[-1], cst.SimpleStatementLine
-        ) and any(isinstance(s, cst.Return) for s in body_stmts[-1].body):
+        if (
+            body_stmts
+            and isinstance(body_stmts[-1], cst.SimpleStatementLine)
+            and any(isinstance(s, cst.Return) for s in body_stmts[-1].body)
+        ):
             return updated_node
 
         last_assign: str | None = None
         for stmt in body_stmts:
             if isinstance(stmt, cst.SimpleStatementLine):
                 for small in stmt.body:
-                    if (
-                        isinstance(small, cst.Assign)
-                        and isinstance(small.targets[0].target, cst.Name)
+                    if isinstance(small, cst.Assign) and isinstance(
+                        small.targets[0].target, cst.Name
                     ):
                         last_assign = small.targets[0].target.value
 
@@ -38,9 +39,7 @@ class _ReturnResultTransformer(cst.CSTTransformer):
             return updated_node
 
         self.result_var = last_assign
-        return_stmt = cst.SimpleStatementLine(
-            [cst.Return(cst.Name(last_assign))]
-        )
+        return_stmt = cst.SimpleStatementLine([cst.Return(cst.Name(last_assign))])
         new_body = body_stmts + [return_stmt]
         return updated_node.with_changes(
             body=updated_node.body.with_changes(body=new_body)

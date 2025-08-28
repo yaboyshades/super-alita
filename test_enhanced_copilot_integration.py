@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Integration test demonstrating Enhanced Copilot capabilities
-This test shows how the enhanced copilot integrates DeepCode analysis with 
+This test shows how the enhanced copilot integrates DeepCode analysis with
 GitHub repository discovery for automated problem solving.
 """
 import asyncio
@@ -10,6 +10,7 @@ from pathlib import Path
 
 # Add the src directory to the path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
+
 
 async def demonstrate_enhanced_copilot():
     """Demonstrate the enhanced copilot functionality with realistic examples"""
@@ -31,11 +32,14 @@ async def demonstrate_enhanced_copilot():
         print("-" * 50)
 
         problem = "I need to build a Python web API with authentication and database integration"
-        result = await registry.execute("analyze_and_suggest_repos", {
-            "problem_description": problem,
-            "language_preference": "python",
-            "max_results": 5
-        })
+        result = await registry.execute(
+            "analyze_and_suggest_repos",
+            {
+                "problem_description": problem,
+                "language_preference": "python",
+                "max_results": 5,
+            },
+        )
 
         print(f"Problem: {problem}")
         print(f"Generated search query: {result.get('search_query', 'N/A')}")
@@ -47,26 +51,31 @@ async def demonstrate_enhanced_copilot():
         print("-" * 45)
 
         task = "Create a REST API server with JWT authentication"
-        result = await registry.execute("automated_problem_solver", {
-            "task_description": task,
-            "workspace_path": ".",
-            "include_code_generation": True,
-            "analyze_existing_code": True
-        })
+        result = await registry.execute(
+            "automated_problem_solver",
+            {
+                "task_description": task,
+                "workspace_path": ".",
+                "include_code_generation": True,
+                "analyze_existing_code": True,
+            },
+        )
 
         print(f"Task: {task}")
         print(f"Solution generated: {result.get('success', False)}")
 
-        if result.get('solution_steps'):
+        if result.get("solution_steps"):
             print("Solution steps:")
-            for i, step in enumerate(result['solution_steps'], 1):
+            for i, step in enumerate(result["solution_steps"], 1):
                 print(f"  {i}. {step.get('description', 'Unknown step')}")
 
-        if result.get('code_suggestions'):
-            suggestions = result['code_suggestions'].get('code_suggestions', [])
+        if result.get("code_suggestions"):
+            suggestions = result["code_suggestions"].get("code_suggestions", [])
             print(f"Code suggestions provided: {len(suggestions)}")
             for suggestion in suggestions:
-                print(f"  - {suggestion.get('title', 'Untitled')}: {suggestion.get('type', 'unknown')}")
+                print(
+                    f"  - {suggestion.get('title', 'Untitled')}: {suggestion.get('type', 'unknown')}"
+                )
         print()
 
         # Demo 3: Enhanced Code Review with DeepCode
@@ -101,25 +110,28 @@ def secure_function():
         test_file.write_text(sample_code)
 
         try:
-            result = await registry.execute("enhanced_code_review", {
-                "code_path": str(test_file),
-                "review_type": "security",
-                "suggest_improvements": True
-            })
+            result = await registry.execute(
+                "enhanced_code_review",
+                {
+                    "code_path": str(test_file),
+                    "review_type": "security",
+                    "suggest_improvements": True,
+                },
+            )
 
             print(f"Code review completed for: {test_file.name}")
 
-            if result.get('deepcode_analysis'):
-                issues = result['deepcode_analysis'].get('issues', [])
+            if result.get("deepcode_analysis"):
+                issues = result["deepcode_analysis"].get("issues", [])
                 print(f"Security issues found: {len(issues)}")
 
                 for issue in issues[:3]:  # Show first 3 issues
-                    severity = issue.get('severity', 'UNKNOWN')
-                    message = issue.get('message', 'No message')
-                    line = issue.get('line', 0)
+                    severity = issue.get("severity", "UNKNOWN")
+                    message = issue.get("message", "No message")
+                    line = issue.get("line", 0)
                     print(f"  ⚠️  {severity}: {message} (line {line})")
 
-            improvements = result.get('improvement_suggestions', [])
+            improvements = result.get("improvement_suggestions", [])
             if improvements:
                 print(f"Improvement suggestions: {len(improvements)}")
                 for imp in improvements[:2]:  # Show first 2 suggestions
@@ -134,14 +146,17 @@ def secure_function():
         print("-" * 35)
 
         repo_url = "https://github.com/fastapi/fastapi"
-        result = await registry.execute("repository_deep_analysis", {
-            "repo_url": repo_url,
-            "analysis_focus": "architecture",
-            "include_dependencies": True
-        })
+        result = await registry.execute(
+            "repository_deep_analysis",
+            {
+                "repo_url": repo_url,
+                "analysis_focus": "architecture",
+                "include_dependencies": True,
+            },
+        )
 
         print(f"Repository analyzed: {repo_url}")
-        if result.get('error'):
+        if result.get("error"):
             print(f"Analysis result: {result['error']} (Expected - no GitHub token)")
         else:
             print(f"Analysis completed for: {result.get('repository', 'N/A')}")
@@ -166,13 +181,16 @@ def secure_function():
     except Exception as e:
         print(f"❌ Demo failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 async def main():
     """Run the demonstration"""
     success = await demonstrate_enhanced_copilot()
     return success
+
 
 if __name__ == "__main__":
     success = asyncio.run(main())

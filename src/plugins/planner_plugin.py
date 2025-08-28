@@ -405,7 +405,7 @@ class PlannerPlugin(PluginInterface):
             # Generic fallback: if tool_name doesn't match any known static tool,
             # check if there's a dynamic tool with a similar name
             elif tool_name not in ["web_agent", "memory_manager"]:  # Known static tools
-                for tool_key in dynamic_tools.keys():
+                for tool_key in dynamic_tools:
                     if (
                         tool_name.lower() in tool_key.lower()
                         or tool_key.lower() in tool_name.lower()

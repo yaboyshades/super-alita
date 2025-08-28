@@ -33,6 +33,7 @@ class ToolProvidingPlugin(Protocol):  # pragma: no cover - structural typing hel
 
     def get_tools(self) -> list[ToolSpec]:  # noqa: D401
         ...
+
     def route_tools(
         self,
         all_tools: Sequence[ToolSpec],
@@ -40,6 +41,7 @@ class ToolProvidingPlugin(Protocol):  # pragma: no cover - structural typing hel
         memory_context: dict[str, Any],
     ) -> list[ToolSpec]:  # pragma: no cover - simple selection wrapper
         ...
+
     async def process_request(  # Optional; some plugins may expose this
         self, user_input: str, memory_context: dict[str, Any]
     ) -> Any:  # noqa: D401

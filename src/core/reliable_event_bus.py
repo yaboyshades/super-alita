@@ -280,9 +280,11 @@ class ReliableEventBus:
                 "duplicates_blocked": self._duplicate_events_blocked,
                 "efficiency": {
                     "throughput_with_reliability": base_metrics.get("eps", 0),
-                    "overhead_percentage": (self._reliability_overhead_ms / 1000) * 100
-                    if self._reliability_overhead_ms > 0
-                    else 0,
+                    "overhead_percentage": (
+                        (self._reliability_overhead_ms / 1000) * 100
+                        if self._reliability_overhead_ms > 0
+                        else 0
+                    ),
                 },
             },
             "timestamp": time.time(),
@@ -309,9 +311,11 @@ class ReliableEventBus:
             # Circuit breaker health
             cb_metrics = self._reliability_manager.circuit_breaker.get_metrics()
             health["components"]["circuit_breaker"] = {
-                "status": "healthy"
-                if self._reliability_manager.circuit_breaker.state.value == "CLOSED"
-                else "degraded",
+                "status": (
+                    "healthy"
+                    if self._reliability_manager.circuit_breaker.state.value == "CLOSED"
+                    else "degraded"
+                ),
                 "state": self._reliability_manager.circuit_breaker.state.value,
                 "failure_count": self._reliability_manager.circuit_breaker.failure_count,
                 "trips": cb_metrics.circuit_trips,
@@ -320,9 +324,9 @@ class ReliableEventBus:
             # Backpressure health
             bp_metrics = self._reliability_manager.backpressure.get_queue_metrics()
             health["components"]["backpressure"] = {
-                "status": "healthy"
-                if not bp_metrics["backpressure_active"]
-                else "warning",
+                "status": (
+                    "healthy" if not bp_metrics["backpressure_active"] else "warning"
+                ),
                 "queue_utilization": bp_metrics["utilization"],
                 "queue_size": bp_metrics["queue_size"],
             }

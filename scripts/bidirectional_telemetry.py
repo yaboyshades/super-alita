@@ -50,7 +50,7 @@ class BidirectionalTelemetryMonitor:
                     "architecturalComplianceRate": 0,
                     "feedbackPatterns": {},
                     "contextualAccuracy": 0,
-                    "codeQualityScore": 0
+                    "codeQualityScore": 0,
                 },
                 "ideInteraction": {
                     "editsTracked": 0,
@@ -62,11 +62,11 @@ class BidirectionalTelemetryMonitor:
                         "linesGenerated": 0,
                         "functionsCreated": 0,
                         "bugsIntroduced": 0,
-                        "testsCovered": 0
-                    }
-                }
+                        "testsCovered": 0,
+                    },
+                },
             },
-            "version": "2.0.0"
+            "version": "2.0.0",
         }
 
     def analyze_copilot_performance(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -80,7 +80,7 @@ class BidirectionalTelemetryMonitor:
             "strengths": [],
             "areas_for_improvement": [],
             "recommendations": [],
-            "performance_trends": {}
+            "performance_trends": {},
         }
 
         # Calculate overall performance score
@@ -94,19 +94,29 @@ class BidirectionalTelemetryMonitor:
             factors.append(quality_score)
 
             if avg_rating >= 4.0:
-                analysis["strengths"].append(f"High user satisfaction ({avg_rating:.1f}/5.0)")
+                analysis["strengths"].append(
+                    f"High user satisfaction ({avg_rating:.1f}/5.0)"
+                )
             else:
-                analysis["areas_for_improvement"].append(f"User satisfaction below target ({avg_rating:.1f}/5.0)")
+                analysis["areas_for_improvement"].append(
+                    f"User satisfaction below target ({avg_rating:.1f}/5.0)"
+                )
 
         # Architectural compliance
         compliance_rate = copilot.get("architecturalComplianceRate", 0)
         factors.append(compliance_rate)
 
         if compliance_rate >= 70:
-            analysis["strengths"].append(f"Good architectural compliance ({compliance_rate:.1f}%)")
+            analysis["strengths"].append(
+                f"Good architectural compliance ({compliance_rate:.1f}%)"
+            )
         else:
-            analysis["areas_for_improvement"].append(f"Architectural compliance needs improvement ({compliance_rate:.1f}%)")
-            analysis["recommendations"].append("Review REUG v9.1 guidelines more thoroughly")
+            analysis["areas_for_improvement"].append(
+                f"Architectural compliance needs improvement ({compliance_rate:.1f}%)"
+            )
+            analysis["recommendations"].append(
+                "Review REUG v9.1 guidelines more thoroughly"
+            )
 
         # Code quality (error rate)
         bugs_introduced = ide.get("productivityMetrics", {}).get("bugsIntroduced", 0)
@@ -118,8 +128,12 @@ class BidirectionalTelemetryMonitor:
         if error_rate < 5:
             analysis["strengths"].append(f"Low error rate ({error_rate:.1f}%)")
         else:
-            analysis["areas_for_improvement"].append(f"High error rate ({error_rate:.1f}%)")
-            analysis["recommendations"].append("Focus on code validation and testing patterns")
+            analysis["areas_for_improvement"].append(
+                f"High error rate ({error_rate:.1f}%)"
+            )
+            analysis["recommendations"].append(
+                "Focus on code validation and testing patterns"
+            )
 
         # Productivity impact
         productivity = ide.get("productivityMetrics", {})
@@ -127,10 +141,14 @@ class BidirectionalTelemetryMonitor:
         functions_created = productivity.get("functionsCreated", 0)
 
         if lines_generated > 100:
-            analysis["strengths"].append(f"High productivity ({lines_generated} lines generated)")
+            analysis["strengths"].append(
+                f"High productivity ({lines_generated} lines generated)"
+            )
 
         if functions_created > 5:
-            analysis["strengths"].append(f"Good function creation rate ({functions_created} functions)")
+            analysis["strengths"].append(
+                f"Good function creation rate ({functions_created} functions)"
+            )
 
         # Calculate overall score
         if factors:
@@ -138,11 +156,13 @@ class BidirectionalTelemetryMonitor:
 
         # Generate recommendations
         if analysis["overall_score"] < 70:
-            analysis["recommendations"].extend([
-                "Consider additional architectural training",
-                "Review error patterns and improve validation",
-                "Gather more user feedback to identify pain points"
-            ])
+            analysis["recommendations"].extend(
+                [
+                    "Consider additional architectural training",
+                    "Review error patterns and improve validation",
+                    "Gather more user feedback to identify pain points",
+                ]
+            )
 
         return analysis
 
@@ -160,7 +180,9 @@ class BidirectionalTelemetryMonitor:
         session_duration = "Unknown"
         if session_start:
             try:
-                start_time = datetime.fromisoformat(session_start.replace('Z', '+00:00'))
+                start_time = datetime.fromisoformat(
+                    session_start.replace("Z", "+00:00")
+                )
                 duration = datetime.now(UTC) - start_time
                 session_duration = f"{duration.total_seconds() / 3600:.1f} hours"
             except:
@@ -208,9 +230,15 @@ class BidirectionalTelemetryMonitor:
         ratings = copilot.get("userRatings", [])
         if ratings:
             for rating in ratings[-5:]:  # Last 5 ratings
-                stars = "⭐" * rating.get("rating", 0) + "☆" * (5 - rating.get("rating", 0))
+                stars = "⭐" * rating.get("rating", 0) + "☆" * (
+                    5 - rating.get("rating", 0)
+                )
                 timestamp = rating.get("timestamp", "")
-                context = rating.get("context", "")[:100] + "..." if len(rating.get("context", "")) > 100 else rating.get("context", "")
+                context = (
+                    rating.get("context", "")[:100] + "..."
+                    if len(rating.get("context", "")) > 100
+                    else rating.get("context", "")
+                )
                 report += f"- {stars} | {timestamp} | {context}\n"
         else:
             report += "- No ratings provided yet\n"
@@ -225,9 +253,13 @@ class BidirectionalTelemetryMonitor:
         # Add error patterns
         error_patterns = ide.get("errorPatterns", {})
         if error_patterns:
-            sorted_errors = sorted(error_patterns.items(), key=lambda x: x[1], reverse=True)
+            sorted_errors = sorted(
+                error_patterns.items(), key=lambda x: x[1], reverse=True
+            )
             for error_type, count in sorted_errors[:5]:
-                report += f"- {error_type.replace('_', ' ').title()}: {count} occurrences\n"
+                report += (
+                    f"- {error_type.replace('_', ' ').title()}: {count} occurrences\n"
+                )
         else:
             report += "- No error patterns detected\n"
 
@@ -257,10 +289,10 @@ This telemetry provides bidirectional feedback:
         """Export detailed analysis to file"""
         report = self.generate_performance_report()
 
-        timestamp = datetime.now(UTC).strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         export_file = self.export_dir / f"performance_analysis_{timestamp}.md"
 
-        with open(export_file, 'w', encoding='utf-8') as f:
+        with open(export_file, "w", encoding="utf-8") as f:
             f.write(report)
 
         print(f"📊 Performance analysis exported to: {export_file}")
@@ -281,15 +313,18 @@ This telemetry provides bidirectional feedback:
                 metrics = data.get("metrics", {})
                 copilot = metrics.get("copilotPerformance", {})
 
-                print(f"\\n{datetime.now().strftime('%H:%M:%S')} | " +
-                      f"Score: {analysis['overall_score']:.1f} | " +
-                      f"Responses: {copilot.get('responsesGenerated', 0)} | " +
-                      f"Acceptance: {copilot.get('responseAcceptanceRate', 0):.1f}%")
+                print(
+                    f"\\n{datetime.now().strftime('%H:%M:%S')} | "
+                    + f"Score: {analysis['overall_score']:.1f} | "
+                    + f"Responses: {copilot.get('responsesGenerated', 0)} | "
+                    + f"Acceptance: {copilot.get('responseAcceptanceRate', 0):.1f}%"
+                )
 
                 time.sleep(interval)
 
         except KeyboardInterrupt:
             print("\\n🛑 Monitoring stopped")
+
 
 def main():
     """Main entry point"""
@@ -307,11 +342,14 @@ def main():
             interval = int(sys.argv[3]) if len(sys.argv) > 3 else 30
             monitor.monitor_live(interval)
         else:
-            print("Usage: python bidirectional_telemetry.py [report|export|monitor] [workspace_path] [interval]")
+            print(
+                "Usage: python bidirectional_telemetry.py [report|export|monitor] [workspace_path] [interval]"
+            )
     else:
         # Default: generate report
         monitor = BidirectionalTelemetryMonitor()
         print(monitor.generate_performance_report())
+
 
 if __name__ == "__main__":
     main()

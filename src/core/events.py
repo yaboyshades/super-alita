@@ -163,9 +163,11 @@ class GoalReceivedEvent(BaseEvent):
 
 class Subgoal(BaseModel):
     """A sub-goal, which is a part of a larger goal."""
+
     description: str
     parent_goal_id: str
     subgoal_id: str
+
 
 class SubgoalDefinedEvent(BaseEvent):
     """Event triggered when a planner decomposes a goal into a subgoal."""

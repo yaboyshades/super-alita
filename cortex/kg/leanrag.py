@@ -278,7 +278,7 @@ class LeanRAG:
     ):
         """Create relations between aggregate nodes based on underlying connections"""
         for i, agg1 in enumerate(aggregate_nodes):
-            for j, agg2 in enumerate(aggregate_nodes[i + 1 :], i + 1):
+            for _j, agg2 in enumerate(aggregate_nodes[i + 1 :], i + 1):
                 # Calculate connection strength between clusters
                 strength = self._calculate_cluster_connection_strength(
                     graph, agg1, agg2

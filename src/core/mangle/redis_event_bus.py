@@ -6,6 +6,7 @@ Supports pub/sub, event persistence, and scalable event handling.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import time
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 class RedisEventBus:
     """
     Redis-backed event bus for Super Alita Agent system.
-    
+
     Provides:
     - Asynchronous pub/sub messaging
     - Event persistence and replay
@@ -38,11 +39,11 @@ class RedisEventBus:
         channel_prefix: str = "super_alita",
         event_ttl: int = 86400,  # 24 hours
         max_retry_attempts: int = 3,
-        retry_delay: float = 1.0
+        retry_delay: float = 1.0,
     ):
         """
         Initialize Redis event bus.
-        
+
         Args:
             redis_url: Redis connection URL
             channel_prefix: Prefix for all Redis channels
@@ -78,7 +79,7 @@ class RedisEventBus:
                 max_connections=20,
                 retry_on_timeout=True,
                 socket_keepalive=True,
-                socket_keepalive_options={}
+                socket_keepalive_options={},
             )
 
             self._redis = Redis(connection_pool=self._connection_pool)
@@ -102,10 +103,8 @@ class RedisEventBus:
 
             if self._subscription_task:
                 self._subscription_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self._subscription_task
-                except asyncio.CancelledError:
-                    pass
 
             if self._pubsub:
                 await self._pubsub.close()
@@ -132,7 +131,7 @@ class RedisEventBus:
     async def emit(self, event: BaseEvent) -> None:
         """
         Emit an event to the Redis event bus.
-        
+
         Args:
             event: Event to emit
         """
@@ -146,7 +145,7 @@ class RedisEventBus:
                 "event_type": event.event_type,
                 "timestamp": event.timestamp.isoformat(),
                 "source_plugin": event.source_plugin,
-                "data": event.metadata
+                "data": event.metadata,
             }
             event_json = json.dumps(event_data, default=str)
 
@@ -164,7 +163,7 @@ class RedisEventBus:
                     stream,
                     event_data,
                     maxlen=1000,  # Keep last 1000 events per type
-                    approximate=True
+                    approximate=True,
                 )
 
                 # Set TTL on stream
@@ -181,10 +180,12 @@ class RedisEventBus:
             await self._handle_connection_error()
             raise
 
-    async def subscribe(self, event_type: str, handler: Callable[[BaseEvent], None]) -> None:
+    async def subscribe(
+        self, event_type: str, handler: Callable[[BaseEvent], None]
+    ) -> None:
         """
         Subscribe to events of a specific type.
-        
+
         Args:
             event_type: Type of events to subscribe to
             handler: Function to call when events are received
@@ -204,10 +205,12 @@ class RedisEventBus:
             await self._pubsub.subscribe(channel)
             logger.info(f"Subscribed to events of type '{event_type}'")
 
-    async def subscribe_pattern(self, pattern: str, handler: Callable[[BaseEvent], None]) -> None:
+    async def subscribe_pattern(
+        self, pattern: str, handler: Callable[[BaseEvent], None]
+    ) -> None:
         """
         Subscribe to events matching a pattern.
-        
+
         Args:
             pattern: Pattern to match event types (Redis pattern syntax)
             handler: Function to call when matching events are received
@@ -227,10 +230,12 @@ class RedisEventBus:
             await self._pubsub.psubscribe(channel_pattern)
             logger.info(f"Subscribed to event pattern '{pattern}'")
 
-    async def unsubscribe(self, event_type: str, handler: Callable[[BaseEvent], None]) -> None:
+    async def unsubscribe(
+        self, event_type: str, handler: Callable[[BaseEvent], None]
+    ) -> None:
         """
         Unsubscribe from events of a specific type.
-        
+
         Args:
             event_type: Type of events to unsubscribe from
             handler: Handler function to remove
@@ -250,19 +255,16 @@ class RedisEventBus:
                         logger.info(f"Unsubscribed from events of type '{event_type}'")
 
     async def get_event_history(
-        self,
-        event_type: str,
-        limit: int = 100,
-        start_time: str | None = None
+        self, event_type: str, limit: int = 100, start_time: str | None = None
     ) -> list[BaseEvent]:
         """
         Get event history from Redis streams.
-        
+
         Args:
             event_type: Type of events to retrieve
             limit: Maximum number of events to return
             start_time: Start time for event retrieval (Redis stream ID format)
-            
+
         Returns:
             List of historical events
         """
@@ -276,15 +278,18 @@ class RedisEventBus:
             start_id = start_time or "-"
 
             # Read from stream
-            results = await self._redis.xrevrange(stream, max="+", min=start_id, count=limit)
+            results = await self._redis.xrevrange(
+                stream, max="+", min=start_id, count=limit
+            )
 
             events = []
-            for stream_id, fields in results:
+            for _stream_id, fields in results:
                 try:
                     # Reconstruct event
                     event_data = {k.decode(): v.decode() for k, v in fields.items()}
 
                     from ..events import deserialize_event
+
                     event = deserialize_event(event_data)
                     events.append(event)
 
@@ -317,7 +322,7 @@ class RedisEventBus:
                     # Get message with timeout
                     message = await asyncio.wait_for(
                         self._pubsub.get_message(ignore_subscribe_messages=True),
-                        timeout=1.0
+                        timeout=1.0,
                     )
 
                     if message and message["type"] == "message":
@@ -343,6 +348,7 @@ class RedisEventBus:
             # Deserialize event
             event_data = json.loads(message["data"])
             from ..events import deserialize_event
+
             event = deserialize_event(event_data)
 
             # Extract event type from channel
@@ -371,6 +377,7 @@ class RedisEventBus:
             # Similar to regular message but with pattern matching
             event_data = json.loads(message["data"])
             from ..events import deserialize_event
+
             event = deserialize_event(event_data)
 
             # Extract pattern from message
@@ -385,7 +392,9 @@ class RedisEventBus:
                         else:
                             handler(event)
                     except Exception as e:
-                        logger.error(f"Pattern handler error for event {event.event_id}: {e}")
+                        logger.error(
+                            f"Pattern handler error for event {event.event_id}: {e}"
+                        )
 
             self._events_received += 1
 
@@ -398,7 +407,9 @@ class RedisEventBus:
 
         for attempt in range(self.max_retry_attempts):
             try:
-                await asyncio.sleep(self.retry_delay * (2 ** attempt))  # Exponential backoff
+                await asyncio.sleep(
+                    self.retry_delay * (2**attempt)
+                )  # Exponential backoff
 
                 # Try to reconnect
                 await self.disconnect()
@@ -421,7 +432,7 @@ class RedisEventBus:
             "subscribers": len(self._subscribers),
             "pattern_subscribers": len(self._pattern_subscribers),
             "is_connected": self._redis is not None,
-            "is_running": self._running
+            "is_running": self._running,
         }
 
     async def health_check(self) -> dict[str, Any]:
@@ -441,12 +452,8 @@ class RedisEventBus:
                 "status": "healthy",
                 "healthy": True,
                 "latency_ms": latency * 1000,
-                "statistics": stats
+                "statistics": stats,
             }
 
         except Exception as e:
-            return {
-                "status": "unhealthy",
-                "healthy": False,
-                "error": str(e)
-            }
+            return {"status": "unhealthy", "healthy": False, "error": str(e)}

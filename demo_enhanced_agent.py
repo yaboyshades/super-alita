@@ -83,6 +83,7 @@ def efficient_function(items):
     return [item * 2 for item in items if item > 0]
 '''
 
+
 async def demonstrate_agent_capabilities():
     """Demonstrate the enhanced Super Alita agent's deepcode capabilities"""
 
@@ -96,7 +97,7 @@ async def demonstrate_agent_capabilities():
     registry = SimpleAbilityRegistry()
 
     # Create a demo file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
         f.write(DEMO_CODE)
         demo_file = f.name
 
@@ -115,10 +116,9 @@ async def demonstrate_agent_capabilities():
         # 2. Comprehensive code analysis
         print("\n2️⃣ COMPREHENSIVE CODE ANALYSIS")
         print("-" * 30)
-        result = await registry.execute("analyze_code_file", {
-            "file_path": demo_file,
-            "analysis_level": "deep"
-        })
+        result = await registry.execute(
+            "analyze_code_file", {"file_path": demo_file, "analysis_level": "deep"}
+        )
 
         print(f"   Analysis completed in {result['execution_time']:.3f}s")
         print(f"   Issues found: {result['issues_found']}")
@@ -127,50 +127,55 @@ async def demonstrate_agent_capabilities():
         print(f"   Classes: {result['metrics']['classes']}")
 
         # Show severity breakdown
-        severity = result['severity_breakdown']
+        severity = result["severity_breakdown"]
         print("   Severity breakdown:")
         for level, count in severity.items():
             if count > 0:
-                emoji = {"critical": "🔴", "error": "🟠", "warning": "🟡", "info": "🔵"}.get(level, "⚪")
+                emoji = {
+                    "critical": "🔴",
+                    "error": "🟠",
+                    "warning": "🟡",
+                    "info": "🔵",
+                }.get(level, "⚪")
                 print(f"     {emoji} {level.title()}: {count}")
 
         # 3. Security pattern detection
         print("\n3️⃣ SECURITY PATTERN DETECTION")
         print("-" * 30)
-        result = await registry.execute("detect_code_patterns", {
-            "file_path": demo_file,
-            "pattern_types": ["security"]
-        })
+        result = await registry.execute(
+            "detect_code_patterns",
+            {"file_path": demo_file, "pattern_types": ["security"]},
+        )
 
         print(f"   Security patterns found: {result['patterns_found']}")
-        for i, pattern in enumerate(result['patterns'][:3], 1):  # Show top 3
+        for i, pattern in enumerate(result["patterns"][:3], 1):  # Show top 3
             print(f"   {i}. {pattern['severity'].upper()}: {pattern['message']}")
             print(f"      → Line {pattern['line_number']}")
-            if pattern['suggestions']:
+            if pattern["suggestions"]:
                 print(f"      💡 Suggestion: {pattern['suggestions'][0]}")
 
         # 4. Performance analysis
         print("\n4️⃣ PERFORMANCE PATTERN ANALYSIS")
         print("-" * 30)
-        result = await registry.execute("detect_code_patterns", {
-            "file_path": demo_file,
-            "pattern_types": ["performance"]
-        })
+        result = await registry.execute(
+            "detect_code_patterns",
+            {"file_path": demo_file, "pattern_types": ["performance"]},
+        )
 
         print(f"   Performance patterns found: {result['patterns_found']}")
-        for i, pattern in enumerate(result['patterns'], 1):
+        for i, pattern in enumerate(result["patterns"], 1):
             print(f"   {i}. {pattern['message']}")
             print(f"      → Line {pattern['line_number']}")
 
         # 5. Quality score assessment
         print("\n5️⃣ CODE QUALITY ASSESSMENT")
         print("-" * 30)
-        result = await registry.execute("get_code_quality_score", {
-            "target_path": demo_file,
-            "include_metrics": True
-        })
+        result = await registry.execute(
+            "get_code_quality_score",
+            {"target_path": demo_file, "include_metrics": True},
+        )
 
-        quality_score = result['quality_score']
+        quality_score = result["quality_score"]
         print(f"   Overall Quality Score: {quality_score:.1f}/100")
 
         # Quality rating
@@ -187,35 +192,38 @@ async def demonstrate_agent_capabilities():
         print(f"   Total issues: {result['total_issues']}")
 
         # Show category breakdown
-        if 'category_breakdown' in result:
+        if "category_breakdown" in result:
             print("   Issue categories:")
-            for category, count in result['category_breakdown'].items():
+            for category, count in result["category_breakdown"].items():
                 print(f"     • {category}: {count}")
 
         # 6. Architectural insights
         print("\n6️⃣ ARCHITECTURAL INSIGHTS")
         print("-" * 30)
-        result = await registry.execute("understand_code_structure", {
-            "target_path": demo_file,
-            "focus_area": "complexity"
-        })
+        result = await registry.execute(
+            "understand_code_structure",
+            {"target_path": demo_file, "focus_area": "complexity"},
+        )
 
-        structure = result['structure_analysis']
+        structure = result["structure_analysis"]
         print("   Complexity analysis:")
         print(f"     • Complexity issues: {structure.get('complexity_issues', 0)}")
 
-        if 'complexity_details' in structure:
-            for detail in structure['complexity_details'][:2]:  # Show top 2
+        if "complexity_details" in structure:
+            for detail in structure["complexity_details"][:2]:  # Show top 2
                 print(f"     • {detail}")
 
         # 7. Workspace context (analyze src directory)
         print("\n7️⃣ WORKSPACE INTELLIGENCE")
         print("-" * 30)
-        result = await registry.execute("analyze_workspace_context", {
-            "workspace_path": "./src",
-            "max_files": 10,
-            "include_quality_metrics": False
-        })
+        result = await registry.execute(
+            "analyze_workspace_context",
+            {
+                "workspace_path": "./src",
+                "max_files": 10,
+                "include_quality_metrics": False,
+            },
+        )
 
         print(f"   Project type: {result.get('project_type', 'Unknown')}")
         print(f"   Main languages: {', '.join(result.get('main_languages', []))}")
@@ -237,6 +245,7 @@ async def demonstrate_agent_capabilities():
     except Exception as e:
         print(f"❌ Demo failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -246,8 +255,10 @@ async def demonstrate_agent_capabilities():
 
     return True
 
+
 if __name__ == "__main__":
     import sys
+
     sys.path.insert(0, "./src")
     sys.path.insert(0, "./reug")
 
@@ -255,10 +266,14 @@ if __name__ == "__main__":
     success = asyncio.run(demonstrate_agent_capabilities())
 
     if success:
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🚀 SUCCESS: Super Alita agent now has enhanced deepcode abilities!")
-        print("📊 The agent can perform sophisticated code analysis and provide insights")
-        print("🔍 Available for integration with chat, orchestration, and automation workflows")
+        print(
+            "📊 The agent can perform sophisticated code analysis and provide insights"
+        )
+        print(
+            "🔍 Available for integration with chat, orchestration, and automation workflows"
+        )
         exit(0)
     else:
         exit(1)

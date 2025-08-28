@@ -54,9 +54,7 @@ class PlannerPluginV2(PluginInterface):
                 f"Failed to initialize Gemini client: {e} - falling back to pattern matching"
             )
 
-        logger.info(
-            "PlannerPluginV2 setup complete."
-        )
+        logger.info("PlannerPluginV2 setup complete.")
 
     async def start(self) -> None:
         """Start the planner plugin."""
@@ -70,9 +68,7 @@ class PlannerPluginV2(PluginInterface):
         # await self.subscribe("user_message", self._handle_user_message)
         # await self.subscribe("atom_ready", self._handle_atom_ready)
 
-        logger.info(
-            "PlannerPluginV2 started - ready to create plans from goals."
-        )
+        logger.info("PlannerPluginV2 started - ready to create plans from goals.")
 
     async def shutdown(self) -> None:
         """Shutdown the planner plugin."""

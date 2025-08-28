@@ -112,8 +112,10 @@ class StateContext:
     error_message: str | None = None
     response_content: dict[str, Any] = field(default_factory=dict)
 
+
 # Backwards-compatible alias
 Context = StateContext
+
 
 @dataclass
 class StateTransition:
@@ -146,9 +148,9 @@ class StateMachine:
         self.session = session or Session()
 
         # Transition registry
-        self.transitions: dict[
-            tuple[StateType, TransitionTrigger], StateTransition
-        ] = {}
+        self.transitions: dict[tuple[StateType, TransitionTrigger], StateTransition] = (
+            {}
+        )
         self._setup_transitions()
 
         # Define ignored triggers (no warnings)

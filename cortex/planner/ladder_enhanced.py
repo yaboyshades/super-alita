@@ -326,7 +326,7 @@ class EnhancedLadderPlanner:
 
     async def _decompose_test_task(self, task: Todo) -> list[Todo]:
         """Decompose testing tasks into logical steps."""
-        base_id = int(time.time())
+        int(time.time())
         return [
             Todo(
                 id=str(uuid.uuid4()),
@@ -808,7 +808,7 @@ class EnhancedLadderPlanner:
         rewards.append(reward)
 
         penalty = self._calculate_consolidation_penalty(rewards)
-        adjusted = max(reward - penalty, 0.0)
+        max(reward - penalty, 0.0)
         # No self.bandit attribute; reward is already tracked in self.bandit_stats
 
         logger.debug(
@@ -978,7 +978,9 @@ class EnhancedLadderPlanner:
                 {"stage": stage.value, "free_energy": fe, "energy": new_energy},
             )
         else:
-            updated_t = t.model_copy(update={"stage": stage, "updated_at": datetime.now()})
+            updated_t = t.model_copy(
+                update={"stage": stage, "updated_at": datetime.now()}
+            )
             self.store.upsert(updated_t)
             self._emit_sync("todo.stage_advanced", t.id, {"stage": stage.value})
 

@@ -3,6 +3,7 @@ Multi-Armed Bandit Optimization Tests
 
 Comprehensive tests for the bandit algorithms, policy engine, reward tracker, and optimization plugin.
 """
+
 import pytest
 
 pytest.skip("legacy test", allow_module_level=True)
@@ -73,7 +74,7 @@ class TestBanditAlgorithms:
 
         # First decisions should explore all arms
         decisions = []
-        for i in range(3):
+        for _i in range(3):
             decision = bandit.select_arm()
             decisions.append(decision)
             bandit.update_reward(decision.decision_id, 0.5)
@@ -98,7 +99,7 @@ class TestBanditAlgorithms:
         bandit.add_arm("bad", "Bad Option")
 
         # Train with known rewards
-        for i in range(10):
+        for _i in range(10):
             decision = bandit.select_arm()
             # Good arm gets high reward, bad arm gets low reward
             reward = 0.9 if decision.arm_id == "good" else 0.1
@@ -106,7 +107,7 @@ class TestBanditAlgorithms:
 
         # Test exploitation behavior
         exploit_decisions = []
-        for i in range(20):
+        for _i in range(20):
             decision = bandit.select_arm()
             exploit_decisions.append(decision)
             reward = 0.9 if decision.arm_id == "good" else 0.1
@@ -120,6 +121,7 @@ class TestBanditAlgorithms:
         good_arm_stats = stats["arms"]["good"]
         assert good_arm_stats["success_rate"] > 0.8
 
+
 class TestDecisionPolicyEngine:
     """Test decision policy engine."""
 
@@ -132,14 +134,14 @@ class TestDecisionPolicyEngine:
         arms = [
             {"id": "option_a", "name": "Option A"},
             {"id": "option_b", "name": "Option B"},
-            {"id": "option_c", "name": "Option C"}
+            {"id": "option_c", "name": "Option C"},
         ]
 
         policy_id = policy_engine.create_policy(
             name="Test Policy",
             description="A test policy for demonstration",
             algorithm_type="thompson",
-            arms=arms
+            arms=arms,
         )
 
         assert policy_id in policy_engine.policies
@@ -154,7 +156,7 @@ class TestDecisionPolicyEngine:
                 name="Invalid Policy",
                 description="Should fail",
                 algorithm_type="invalid",
-                arms=arms
+                arms=arms,
             )
 
     @pytest.mark.asyncio
@@ -162,20 +164,18 @@ class TestDecisionPolicyEngine:
         """Test decision making."""
         arms = [
             {"id": "fast", "name": "Fast Approach"},
-            {"id": "thorough", "name": "Thorough Approach"}
+            {"id": "thorough", "name": "Thorough Approach"},
         ]
 
         policy_id = policy_engine.create_policy(
             name="Approach Policy",
             description="Choose between fast and thorough approaches",
             algorithm_type="ucb1",
-            arms=arms
+            arms=arms,
         )
 
         context = DecisionContext(
-            session_id="test_session",
-            user_id="test_user",
-            task_type="optimization"
+            session_id="test_session", user_id="test_user", task_type="optimization"
         )
 
         decision = await policy_engine.make_decision(policy_id, context)
@@ -186,7 +186,9 @@ class TestDecisionPolicyEngine:
         assert not decision.feedback_received
 
         # Test feedback
-        feedback_success = await policy_engine.provide_feedback(decision.decision_id, 0.8)
+        feedback_success = await policy_engine.provide_feedback(
+            decision.decision_id, 0.8
+        )
         assert feedback_success
         assert decision.feedback_received
         assert decision.reward == 0.8
@@ -199,7 +201,7 @@ class TestDecisionPolicyEngine:
             description="Test statistics",
             algorithm_type="epsilon_greedy",
             arms=arms,
-            epsilon=0.1
+            epsilon=0.1,
         )
 
         stats = policy_engine.get_policy_statistics(policy_id)
@@ -212,6 +214,7 @@ class TestDecisionPolicyEngine:
         global_stats = policy_engine.get_all_statistics()
         assert global_stats["engine"]["total_policies"] == 1
         assert policy_id in global_stats["policies"]
+
 
 class TestRewardTracker:
     """Test reward tracking system."""
@@ -230,7 +233,7 @@ class TestRewardTracker:
             reward_value=0.75,
             reward_type="immediate",
             source="test",
-            metadata={"test": True}
+            metadata={"test": True},
         )
 
         assert reward_id is not None
@@ -274,7 +277,9 @@ class TestRewardTracker:
 
         # Test success context
         success_context = {"success": True}
-        reward_ids = await reward_tracker.calculate_automatic_rewards(decision_id, success_context)
+        reward_ids = await reward_tracker.calculate_automatic_rewards(
+            decision_id, success_context
+        )
 
         assert len(reward_ids) == 1
         rewards = reward_tracker.get_decision_rewards(decision_id)
@@ -285,11 +290,14 @@ class TestRewardTracker:
         # Test failure context
         decision_id_2 = "auto_test_decision_2"
         failure_context = {"error": True}
-        reward_ids_2 = await reward_tracker.calculate_automatic_rewards(decision_id_2, failure_context)
+        reward_ids_2 = await reward_tracker.calculate_automatic_rewards(
+            decision_id_2, failure_context
+        )
 
         assert len(reward_ids_2) == 1
         rewards_2 = reward_tracker.get_decision_rewards(decision_id_2)
         assert rewards_2[0].reward_value == 0.0  # Error should give min reward
+
 
 @pytest.mark.asyncio
 class TestOptimizationPlugin:
@@ -317,14 +325,14 @@ class TestOptimizationPlugin:
 
         arms = [
             {"id": "strategy_a", "name": "Strategy A"},
-            {"id": "strategy_b", "name": "Strategy B"}
+            {"id": "strategy_b", "name": "Strategy B"},
         ]
 
         policy_id = await plugin.create_policy(
             name="Strategy Policy",
             description="Choose between strategies",
             algorithm_type="thompson",
-            arms=arms
+            arms=arms,
         )
 
         assert policy_id in plugin.policy_engine.policies
@@ -345,14 +353,14 @@ class TestOptimizationPlugin:
         # Create policy
         arms = [
             {"id": "approach_1", "name": "Approach 1"},
-            {"id": "approach_2", "name": "Approach 2"}
+            {"id": "approach_2", "name": "Approach 2"},
         ]
 
         policy_id = await plugin.create_policy(
             name="Approach Policy",
             description="Choose approach",
             algorithm_type="epsilon_greedy",
-            arms=arms
+            arms=arms,
         )
 
         # Make decision
@@ -360,7 +368,7 @@ class TestOptimizationPlugin:
             policy_id=policy_id,
             session_id="test_session",
             user_id="test_user",
-            task_type="test_task"
+            task_type="test_task",
         )
 
         assert decision.policy_id == policy_id
@@ -368,9 +376,7 @@ class TestOptimizationPlugin:
 
         # Provide feedback
         feedback_success = await plugin.provide_feedback(
-            decision_id=decision.decision_id,
-            reward=0.9,
-            source="test_feedback"
+            decision_id=decision.decision_id, reward=0.9, source="test_feedback"
         )
         assert feedback_success
 
@@ -391,33 +397,37 @@ class TestOptimizationPlugin:
 
         # Create a policy for the plugin to use
         arms = [{"id": "auto_arm", "name": "Auto Arm"}]
-        policy_id = await plugin.create_policy(
+        await plugin.create_policy(
             name="Auto Policy",
             description="Automatic decision policy",
             algorithm_type="ucb1",
-            arms=arms
+            arms=arms,
         )
 
         # Simulate a task completion event for reward calculation
         from core.events import create_event
-        task_event = create_event(
+
+        create_event(
             "task_completed",
             source_plugin="TestPlugin",
             decision_id="test_decision_123",
             success=True,
-            performance_score=0.8
+            performance_score=0.8,
         )
 
         # Emit event directly via simple event bus
-        await event_bus.emit("task_completed",
-                            decision_id="test_decision_123",
-                            success=True,
-                            performance_score=0.8)
+        await event_bus.emit(
+            "task_completed",
+            decision_id="test_decision_123",
+            success=True,
+            performance_score=0.8,
+        )
 
         # Give some time for event processing
         await asyncio.sleep(0.1)
 
         await plugin.shutdown()
+
 
 async def run_optimization_tests():
     """Run all optimization tests."""
@@ -468,6 +478,7 @@ async def run_optimization_tests():
     print("  ✓ Optimization plugin tests passed")
 
     print("✅ All optimization tests passed!")
+
 
 if __name__ == "__main__":
     asyncio.run(run_optimization_tests())

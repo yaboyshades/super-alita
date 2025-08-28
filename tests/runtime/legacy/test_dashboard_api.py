@@ -1,6 +1,7 @@
 """
 Simple test for telemetry dashboard API endpoints
 """
+
 import pytest
 
 pytest.skip("legacy test", allow_module_level=True)
@@ -32,7 +33,7 @@ async def test_dashboard_api():
     print("Generating test telemetry data...")
     for i in range(3):
         context = runtime.create_context(f"test_session_{i}", "test_user")
-        result = await runtime.process_cycle(f"Test query {i}", context)
+        await runtime.process_cycle(f"Test query {i}", context)
         await asyncio.sleep(0.01)  # Small delay
 
     await runtime.shutdown()
@@ -82,6 +83,7 @@ async def test_dashboard_api():
         output_file.unlink()
 
     print("All API tests passed!")
+
 
 if __name__ == "__main__":
     asyncio.run(test_dashboard_api())

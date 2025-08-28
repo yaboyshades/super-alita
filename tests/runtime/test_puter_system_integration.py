@@ -15,7 +15,8 @@ import pytest
 def test_puter_plugin_in_unified_system():
     """Test that Puter plugin can be loaded in the unified system."""
     import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src"))
 
     from main_unified import AVAILABLE_PLUGINS, _load_unified_plugins
 
@@ -23,9 +24,9 @@ def test_puter_plugin_in_unified_system():
     _load_unified_plugins()
 
     # Check Puter plugin is available
-    assert 'puter' in AVAILABLE_PLUGINS
+    assert "puter" in AVAILABLE_PLUGINS
 
-    plugin_class = AVAILABLE_PLUGINS['puter']
+    plugin_class = AVAILABLE_PLUGINS["puter"]
     assert plugin_class.__name__ == "PuterPlugin"
 
     # Test instantiation
@@ -37,7 +38,8 @@ def test_puter_plugin_in_unified_system():
 async def test_puter_plugin_initialization_with_env(monkeypatch):
     """Test Puter plugin initialization with environment configuration."""
     import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src"))
 
     # Set environment variables
     os.environ["PUTER_BASE_URL"] = "https://test.puter.com"
@@ -105,7 +107,9 @@ async def test_puter_plugin_initialization_with_env(monkeypatch):
         await plugin.start()
 
         # Verify subscriptions were made
-        assert workspace.subscribe.call_count >= 4  # Should subscribe to multiple events
+        assert (
+            workspace.subscribe.call_count >= 4
+        )  # Should subscribe to multiple events
 
         # Test shutdown
         await plugin.shutdown()
@@ -120,7 +124,8 @@ async def test_puter_plugin_initialization_with_env(monkeypatch):
 async def test_end_to_end_puter_workflow(monkeypatch):
     """Test end-to-end workflow with Puter plugin."""
     import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src"))
 
     from core.events import create_event
     from plugins.puter_plugin import PuterPlugin
@@ -132,6 +137,7 @@ async def test_end_to_end_puter_workflow(monkeypatch):
 
         async def emit(self, event_type, **kwargs):
             from core.events import create_event
+
             event = create_event(event_type, **kwargs)
             self.events.append(event)
             return event
@@ -157,7 +163,9 @@ async def test_end_to_end_puter_workflow(monkeypatch):
         async def read_file(self, path: str) -> str:
             return ""
 
-        async def write_file(self, path: str, content: str, create_dirs: bool = True) -> bool:
+        async def write_file(
+            self, path: str, content: str, create_dirs: bool = True
+        ) -> bool:
             return True
 
         async def delete_file(self, path: str) -> bool:
@@ -166,7 +174,9 @@ async def test_end_to_end_puter_workflow(monkeypatch):
         async def list_directory(self, path: str):
             return []
 
-        async def execute_command(self, command: str, args=None, cwd=None, env=None) -> dict[str, Any]:
+        async def execute_command(
+            self, command: str, args=None, cwd=None, env=None
+        ) -> dict[str, Any]:
             return {"stdout": "", "stderr": "", "exit_code": 0, "execution_time": 0}
 
     monkeypatch.setattr(

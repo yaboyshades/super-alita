@@ -104,6 +104,7 @@ async def test_full_agent_system():
 
     return True
 
+
 async def test_leanrag_integration():
     """Test LeanRAG integration with the agent system"""
     print("\n" + "=" * 50)
@@ -153,6 +154,7 @@ async def test_leanrag_integration():
         traceback.print_exc()
         return False
 
+
 async def main():
     """Run all integration tests"""
     print("🎯 Super Alita Agent - Full System Integration Tests")
@@ -184,6 +186,7 @@ async def main():
         print("\n⚠️ Some tests failed - check the output above for details")
 
     return agent_success and leanrag_success
+
 
 if __name__ == "__main__":
     asyncio.run(main())

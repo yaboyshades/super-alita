@@ -20,13 +20,14 @@ def add_triple(s: str, p: str, o: str, conf=1.0, src=None):
         f.write(json.dumps(triple) + "\n")
     return triple
 
-def query(s=None,p=None)->list[dict]:
-    if not os.path.exists(TRIPLE_PATH): return []
-    res=[]
+
+def query(s=None, p=None) -> list[dict]:
+    if not os.path.exists(TRIPLE_PATH):
+        return []
+    res = []
     with open(TRIPLE_PATH) as f:
         for line in f:
-            t=json.loads(line)
-            if (s is None or t["s"]==s) and (p is None or t["p"]==p):
+            t = json.loads(line)
+            if (s is None or t["s"] == s) and (p is None or t["p"] == p):
                 res.append(t)
     return res
-

@@ -48,9 +48,7 @@ class DifyAdapterPlugin(PluginInterface):
     def name(self) -> str:
         return "dify_adapter"
 
-    async def setup(
-        self, event_bus: Any, store: Any, config: dict[str, Any]
-    ) -> None:
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
         logger.info("DifyAdapter setup (enabled=%s)", self._cfg.enabled)
 
@@ -121,11 +119,11 @@ class DifyAdapterPlugin(PluginInterface):
             async with self._session.post(
                 f"{self._cfg.api_url}/callbacks/{callback_id}",
                 json=payload,
-                headers={
-                    "Authorization": f"Bearer {self._cfg.api_key}"
-                }
-                if self._cfg.api_key
-                else None,
+                headers=(
+                    {"Authorization": f"Bearer {self._cfg.api_key}"}
+                    if self._cfg.api_key
+                    else None
+                ),
                 timeout=aiohttp.ClientTimeout(total=20),
             ) as resp:
                 await resp.text()

@@ -18,7 +18,9 @@ def main():
     health_response = client.get("/health")
     healthz_response = client.get("/healthz")
 
-    print(f"✅ Health endpoint: {health_response.status_code} - {health_response.json()}")
+    print(
+        f"✅ Health endpoint: {health_response.status_code} - {health_response.json()}"
+    )
     print(f"✅ Healthz endpoint: {healthz_response.status_code}")
 
     # Test basic app structure
@@ -50,6 +52,7 @@ def main():
     print("   - ✅ All core components validated")
 
     return True
+
 
 if __name__ == "__main__":
     main()

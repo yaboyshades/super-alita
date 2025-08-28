@@ -7,7 +7,7 @@ Usage:
 
 Examples:
     python -m tools.list                               # List all tools
-    python -m tools.list --format json                 # JSON output  
+    python -m tools.list --format json                 # JSON output
     python -m tools.list --category utility            # Filter by category
     python -m tools.list --complexity low              # Filter by complexity
 """
@@ -62,8 +62,12 @@ def discover_tools() -> list[dict[str, Any]]:
 
     return tools
 
-def filter_tools(tools: list[dict[str, Any]], category: str | None = None,
-                complexity: str | None = None) -> list[dict[str, Any]]:
+
+def filter_tools(
+    tools: list[dict[str, Any]],
+    category: str | None = None,
+    complexity: str | None = None,
+) -> list[dict[str, Any]]:
     """Filter tools by category and/or complexity"""
     filtered = tools
 
@@ -74,6 +78,7 @@ def filter_tools(tools: list[dict[str, Any]], category: str | None = None,
         filtered = [t for t in filtered if t.get("complexity") == complexity]
 
     return filtered
+
 
 def format_text_output(tools: list[dict[str, Any]]) -> str:
     """Format tools as human-readable text"""
@@ -129,20 +134,23 @@ def format_text_output(tools: list[dict[str, Any]]) -> str:
 
     return "\n".join(lines)
 
+
 def format_json_output(tools: list[dict[str, Any]]) -> str:
     """Format tools as JSON"""
-    return json.dumps({
-        "tools_count": len(tools),
-        "tools": tools
-    }, indent=2)
+    return json.dumps({"tools_count": len(tools), "tools": tools}, indent=2)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Discover and list Super Alita tools")
-    parser.add_argument("--format", choices=["text", "json"], default="text",
-                       help="Output format")
+    parser.add_argument(
+        "--format", choices=["text", "json"], default="text", help="Output format"
+    )
     parser.add_argument("--category", help="Filter by category")
-    parser.add_argument("--complexity", choices=["low", "medium", "high", "critical"],
-                       help="Filter by complexity level")
+    parser.add_argument(
+        "--complexity",
+        choices=["low", "medium", "high", "critical"],
+        help="Filter by complexity level",
+    )
 
     args = parser.parse_args()
 
@@ -157,6 +165,7 @@ def main():
         print(format_json_output(filtered_tools))
     else:
         print(format_text_output(filtered_tools))
+
 
 if __name__ == "__main__":
     main()

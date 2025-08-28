@@ -35,14 +35,18 @@ except ImportError:
         def add_event(self, event: Event):
             print(f"[MOCK] Added event: {event.kind} from {event.actor}")
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class CortexBridge:
     """Bridge between VS Code telemetry and Cortex orchestrator"""
 
     def __init__(self, telemetry_path: pathlib.Path | None = None):
-        self.telemetry_path = telemetry_path or pathlib.Path.home() / ".super-alita" / "telemetry.jsonl"
+        self.telemetry_path = (
+            telemetry_path or pathlib.Path.home() / ".super-alita" / "telemetry.jsonl"
+        )
         self.orchestrator: Orchestrator | None = None
         self.running = False
 
@@ -68,12 +72,12 @@ class CortexBridge:
         """Transform VS Code event to Cortex Event format"""
         try:
             return Event(
-                id=vscode_event.get('id', ''),
-                kind=vscode_event.get('kind', 'UNKNOWN'),
-                ts=vscode_event.get('ts', time.time()),
-                actor=vscode_event.get('actor', 'unknown'),
-                payload=vscode_event.get('payload', {}),
-                schema_version=vscode_event.get('schema_version', 'v1')
+                id=vscode_event.get("id", ""),
+                kind=vscode_event.get("kind", "UNKNOWN"),
+                ts=vscode_event.get("ts", time.time()),
+                actor=vscode_event.get("actor", "unknown"),
+                payload=vscode_event.get("payload", {}),
+                schema_version=vscode_event.get("schema_version", "v1"),
             )
         except Exception as e:
             logger.error(f"Failed to transform event: {e}")
@@ -83,7 +87,7 @@ class CortexBridge:
         """Tail the JSONL file and feed events to Cortex"""
         logger.info(f"Starting to tail {self.telemetry_path}")
 
-        with open(self.telemetry_path, encoding='utf-8') as fp:
+        with open(self.telemetry_path, encoding="utf-8") as fp:
             # Seek to end of file
             fp.seek(0, 2)
 
@@ -101,7 +105,9 @@ class CortexBridge:
                     cortex_event = self.transform_vscode_event(vscode_event)
                     if cortex_event and self.orchestrator:
                         self.orchestrator.add_event(cortex_event)
-                        logger.info(f"Processed event: {cortex_event.kind} from {cortex_event.actor}")
+                        logger.info(
+                            f"Processed event: {cortex_event.kind} from {cortex_event.actor}"
+                        )
 
                 except json.JSONDecodeError:
                     logger.warning(f"Invalid JSON in telemetry: {line.strip()}")
@@ -121,6 +127,7 @@ class CortexBridge:
         logger.info("Stopping Cortex Bridge...")
         self.running = False
 
+
 class CortexAtomEmitter:
     """Emit structured Atom/Bond events for KG consistency"""
 
@@ -137,18 +144,19 @@ class CortexAtomEmitter:
             atom = {
                 "id": atom_id,
                 "type": "GuardianFinding",
-                "title": finding.get('rule', 'Unknown Rule'),
-                "content": finding.get('message', ''),
+                "title": finding.get("rule", "Unknown Rule"),
+                "content": finding.get("message", ""),
                 "metadata": {
                     "file_path": file_path,
-                    "severity": finding.get('severity', 'info'),
+                    "severity": finding.get("severity", "info"),
                     "timestamp": datetime.now(UTC).isoformat(),
-                    "source": "super_alita_guardian"
-                }
+                    "source": "super_alita_guardian",
+                },
             }
             atoms.append(atom)
 
         return atoms
+
 
 async def main():
     """Main entry point"""
@@ -162,6 +170,7 @@ async def main():
     except Exception as e:
         logger.error(f"Bridge error: {e}")
         bridge.stop()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

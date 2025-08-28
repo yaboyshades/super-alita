@@ -25,22 +25,20 @@ class MockBus:
             self.handlers[event_type] = []
         self.handlers[event_type].append(handler)
 
+
 class MockMessageStore:
     def __init__(self):
         self.persisted = []
+
     async def persist(self, event_type, payload):
         self.persisted.append((event_type, payload))
+
 
 @pytest.mark.asyncio
 async def test_option_trainer_learns() -> None:
     store = MockMessageStore()
 
-    config = {
-        "device": "cpu",
-        "batch_size": 2,
-        "update_frequency": 4,
-        "ppo_epochs": 1
-    }
+    config = {"device": "cpu", "batch_size": 2, "update_frequency": 4, "ppo_epochs": 1}
 
     trainer = OptionTrainer()
     bus = MockBus()
@@ -57,7 +55,9 @@ async def test_option_trainer_learns() -> None:
     await trainer.create_option(subproblem_event_data)
 
     # Get the option_id from the event emitted by the trainer
-    option_created_event = next((e for e in bus.emitted_events if e.event_type == "option_created"), None)
+    option_created_event = next(
+        (e for e in bus.emitted_events if e.event_type == "option_created"), None
+    )
     assert option_created_event is not None
     opt_id = option_created_event.option_id
 
@@ -68,8 +68,17 @@ async def test_option_trainer_learns() -> None:
     orig_params = [p.clone().detach() for p in net.parameters()]
 
     # Simulate transitions
-    for i in range(4):
-        await trainer.handle_transition({"state": {}, "action": 0, "reward": 1.0, "next_state": {}, "done": False, "features": []})
+    for _i in range(4):
+        await trainer.handle_transition(
+            {
+                "state": {},
+                "action": 0,
+                "reward": 1.0,
+                "next_state": {},
+                "done": False,
+                "features": [],
+            }
+        )
 
     # Check if training happened
     assert trainer.step_count == 4
@@ -83,6 +92,9 @@ async def test_option_trainer_learns() -> None:
     assert params_changed
 
     # Check for training event
-    training_update_event = next((e for e in bus.emitted_events if e.event_type == "option_training_update"), None)
+    training_update_event = next(
+        (e for e in bus.emitted_events if e.event_type == "option_training_update"),
+        None,
+    )
     assert training_update_event is not None
     assert training_update_event.option_id == opt_id

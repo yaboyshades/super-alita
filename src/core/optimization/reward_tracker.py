@@ -43,7 +43,7 @@ class RewardRule:
 class RewardTracker:
     """
     Tracks and manages rewards for bandit optimization decisions.
-    
+
     Supports both immediate and delayed rewards, automatic reward calculation,
     and integration with the event system for real-time feedback.
     """
@@ -62,11 +62,11 @@ class RewardTracker:
         condition: Callable[[dict[str, Any]], bool],
         calculator: Callable[[dict[str, Any]], float],
         priority: int = 0,
-        rule_id: str | None = None
+        rule_id: str | None = None,
     ) -> str:
         """
         Add a rule for automatic reward calculation.
-        
+
         Args:
             name: Human-readable name for the rule
             description: Description of what this rule measures
@@ -74,7 +74,7 @@ class RewardTracker:
             calculator: Function that takes context and returns reward value (0.0-1.0)
             priority: Priority for rule evaluation (higher = evaluated first)
             rule_id: Optional custom rule ID
-        
+
         Returns:
             The rule ID
         """
@@ -87,7 +87,7 @@ class RewardTracker:
             description=description,
             condition=condition,
             calculator=calculator,
-            priority=priority
+            priority=priority,
         )
 
         self.rules[rule_id] = rule
@@ -99,18 +99,18 @@ class RewardTracker:
         reward_value: float,
         reward_type: str = "immediate",
         source: str = "manual",
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """
         Record a reward for a decision.
-        
+
         Args:
             decision_id: ID of the decision being rewarded
             reward_value: Reward value (typically 0.0 to 1.0)
             reward_type: Type of reward ("immediate", "delayed", "cumulative")
             source: Source of the reward (e.g., "user", "system", "rule:rule_name")
             metadata: Additional reward metadata
-        
+
         Returns:
             The reward event ID
         """
@@ -120,7 +120,7 @@ class RewardTracker:
             reward_value=reward_value,
             reward_type=reward_type,
             source=source,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Store reward
@@ -146,7 +146,7 @@ class RewardTracker:
                     reward_value=reward_value,
                     reward_type=reward_type,
                     source=source,
-                    metadata=metadata
+                    metadata=metadata,
                 )
                 await self.event_bus.emit_event(reward_event)
             except Exception as e:
@@ -155,17 +155,15 @@ class RewardTracker:
         return event.event_id
 
     async def calculate_automatic_rewards(
-        self,
-        decision_id: str,
-        context: dict[str, Any]
+        self, decision_id: str, context: dict[str, Any]
     ) -> list[str]:
         """
         Calculate rewards automatically using registered rules.
-        
+
         Args:
             decision_id: ID of the decision to evaluate
             context: Context information for rule evaluation
-        
+
         Returns:
             List of reward event IDs that were created
         """
@@ -173,9 +171,7 @@ class RewardTracker:
 
         # Sort rules by priority (highest first)
         sorted_rules = sorted(
-            self.rules.values(),
-            key=lambda r: r.priority,
-            reverse=True
+            self.rules.values(), key=lambda r: r.priority, reverse=True
         )
 
         for rule in sorted_rules:
@@ -200,8 +196,8 @@ class RewardTracker:
                         metadata={
                             "rule_id": rule.rule_id,
                             "rule_name": rule.name,
-                            "auto_calculated": True
-                        }
+                            "auto_calculated": True,
+                        },
                     )
 
                     reward_ids.append(reward_id)
@@ -265,10 +261,10 @@ class RewardTracker:
                     "description": rule.description,
                     "priority": rule.priority,
                     "active": rule.active,
-                    "rewards_generated": rule_rewards.get(rule.name, 0)
+                    "rewards_generated": rule_rewards.get(rule.name, 0),
                 }
                 for rule in self.rules.values()
-            ]
+            ],
         }
 
     def get_global_statistics(self) -> dict[str, Any]:
@@ -277,7 +273,9 @@ class RewardTracker:
         total_rewards = sum(len(rewards) for rewards in self.rewards.values())
 
         # Calculate average rewards per decision
-        avg_rewards_per_decision = total_rewards / total_decisions if total_decisions > 0 else 0
+        avg_rewards_per_decision = (
+            total_rewards / total_decisions if total_decisions > 0 else 0
+        )
 
         # Count rewards by type and source
         reward_types = {}
@@ -286,7 +284,9 @@ class RewardTracker:
 
         for rewards_list in self.rewards.values():
             for reward in rewards_list:
-                reward_types[reward.reward_type] = reward_types.get(reward.reward_type, 0) + 1
+                reward_types[reward.reward_type] = (
+                    reward_types.get(reward.reward_type, 0) + 1
+                )
                 reward_sources[reward.source] = reward_sources.get(reward.source, 0) + 1
                 total_value += reward.reward_value
 
@@ -299,7 +299,7 @@ class RewardTracker:
             "average_reward_value": avg_reward_value,
             "total_reward_value": total_value,
             "reward_types": reward_types,
-            "reward_sources": reward_sources
+            "reward_sources": reward_sources,
         }
 
 
@@ -324,7 +324,7 @@ def create_success_rate_rule() -> RewardRule:
         description="Rewards decisions based on success/error indicators",
         condition=condition,
         calculator=calculator,
-        priority=100
+        priority=100,
     )
 
 
@@ -358,5 +358,5 @@ def create_performance_rule() -> RewardRule:
         description="Rewards decisions based on execution time and performance metrics",
         condition=condition,
         calculator=calculator,
-        priority=80
+        priority=80,
     )

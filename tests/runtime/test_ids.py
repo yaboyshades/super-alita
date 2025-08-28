@@ -59,7 +59,9 @@ def test_content_key_long_uses_sha256(code: str) -> None:
 
 def test_explicit_edge_cases() -> None:
     """Explicit regression for documented edge cases."""
-    assert deterministic_tool_id("", "", extra="") == deterministic_tool_id("", "", extra="")
+    assert deterministic_tool_id("", "", extra="") == deterministic_tool_id(
+        "", "", extra=""
+    )
 
     long_code = "x" * 1000
     ck = _content_key(long_code)

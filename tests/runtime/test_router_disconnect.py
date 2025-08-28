@@ -1,5 +1,3 @@
-
-
 import asyncio
 import socket
 
@@ -38,11 +36,11 @@ async def test_client_disconnect():
         while not server.started:
             await asyncio.sleep(0.01)
         async with httpx.AsyncClient(base_url=f"http://{host}:{port}") as client:
-              async with client.stream(
-                  "POST",
-                  prefix_path("/v1/chat/stream"),
-                  json={"message": "hi", "session_id": "s1"},
-              ) as resp:
+            async with client.stream(
+                "POST",
+                prefix_path("/v1/chat/stream"),
+                json={"message": "hi", "session_id": "s1"},
+            ) as resp:
                 chunk_iter = resp.aiter_text()
                 first_chunk = await chunk_iter.__anext__()
                 assert first_chunk
@@ -54,6 +52,7 @@ async def test_client_disconnect():
     events = app.state.event_bus.events
     assert {"type": "TaskFailed", "reason": "client_disconnected"} in events
     assert not any(e["type"] == "TaskSucceeded" for e in events)
+
 
 import pytest
 
@@ -71,4 +70,3 @@ def _mk_app():
 @pytest.mark.skip("client disconnect simulation not supported in test environment")
 def test_client_disconnect(monkeypatch):
     pass
-

@@ -5,6 +5,7 @@ Supports bypass mechanisms and integrates with the prompt optimizer for enhanced
 user input processing. The amplifier can operate in different modes based on
 configuration and user preferences.
 """
+
 from __future__ import annotations
 
 import os

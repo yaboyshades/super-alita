@@ -15,7 +15,9 @@ async def test_git_apply_patch(tmp_path):
     file_path = repo / "file.txt"
     file_path.write_text("hello\n")
     subprocess.run(["git", "add", "file.txt"], cwd=repo, check=True)
-    subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True
+    )
     file_path.write_text("hello\nworld\n")
     patch = subprocess.run(
         ["git", "diff", "file.txt"],

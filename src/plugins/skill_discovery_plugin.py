@@ -995,7 +995,7 @@ class SkillDiscoveryPlugin(PluginInterface):
                 [
                     e
                     for e in self.skill_evaluations.values()
-                    if e.skill_id in [s for s in self.skill_repository.keys()]
+                    if e.skill_id in list(self.skill_repository.keys())
                 ]
             ),
             "fitness_distribution": [],

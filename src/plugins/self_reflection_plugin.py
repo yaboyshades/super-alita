@@ -222,9 +222,9 @@ class SelfReflectionPlugin(PluginInterface):
                         # Add specific capabilities if the plugin has them
                         if hasattr(plugin, "get_capabilities"):
                             try:
-                                tool_info[
-                                    "capabilities"
-                                ] = await plugin.get_capabilities()
+                                tool_info["capabilities"] = (
+                                    await plugin.get_capabilities()
+                                )
                             except Exception as e:
                                 logger.debug(
                                     f"Could not get capabilities from {name}: {e}"

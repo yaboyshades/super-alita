@@ -25,4 +25,3 @@ async def test_mynewtool_validation() -> None:
 
     result_type = await MyNewTool(123)  # type: ignore[arg-type]
     assert result_type["error"] == "text must be a string"
-

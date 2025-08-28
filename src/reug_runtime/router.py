@@ -63,8 +63,10 @@ class Orchestrator:
             span_id = str(uuid.uuid4())
 
             ability_called_event = {
-                "type": "AbilityCalled", "tool": tool_name,
-                "correlation_id": self.correlation_id, "span_id": span_id
+                "type": "AbilityCalled",
+                "tool": tool_name,
+                "correlation_id": self.correlation_id,
+                "span_id": span_id,
             }
             await self.event_bus.emit(ability_called_event)
             yield ability_called_event
@@ -72,29 +74,43 @@ class Orchestrator:
             try:
                 result = await asyncio.wait_for(
                     self.registry.execute(tool_name, tool_args),
-                    timeout=SETTINGS.tool_timeout_s
+                    timeout=SETTINGS.tool_timeout_s,
                 )
                 ability_succeeded_event = {
-                    "type": "AbilitySucceeded", "tool": tool_name,
-                    "correlation_id": self.correlation_id, "span_id": span_id, "result": result
+                    "type": "AbilitySucceeded",
+                    "tool": tool_name,
+                    "correlation_id": self.correlation_id,
+                    "span_id": span_id,
+                    "result": result,
                 }
                 await self.event_bus.emit(ability_succeeded_event)
                 yield ability_succeeded_event
-                tool_messages.append({
-                    "role": "tool", "tool_call_id": tool_call_id,
-                    "name": tool_name, "content": json.dumps(result)
-                })
+                tool_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "name": tool_name,
+                        "content": json.dumps(result),
+                    }
+                )
             except Exception as e:
                 ability_failed_event = {
-                    "type": "AbilityFailed", "tool": tool_name,
-                    "correlation_id": self.correlation_id, "span_id": span_id, "error": str(e)
+                    "type": "AbilityFailed",
+                    "tool": tool_name,
+                    "correlation_id": self.correlation_id,
+                    "span_id": span_id,
+                    "error": str(e),
                 }
                 await self.event_bus.emit(ability_failed_event)
                 yield ability_failed_event
-                tool_messages.append({
-                    "role": "tool", "tool_call_id": tool_call_id, "name": tool_name,
-                    "content": f'{{"error": "Tool execution failed: {e}"}}'
-                })
+                tool_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "name": tool_name,
+                        "content": f'{{"error": "Tool execution failed: {e}"}}',
+                    }
+                )
         # Store the return values for later retrieval
         self._last_acting_result = tool_messages
 
@@ -130,12 +146,19 @@ async def execute_turn(
 
     orchestrator = Orchestrator(event_bus, registry, model, correlation_id)
 
-    start_event = {"type": "TaskStarted", "correlation_id": correlation_id, "goal": user_msg}
+    start_event = {
+        "type": "TaskStarted",
+        "correlation_id": correlation_id,
+        "goal": user_msg,
+    }
     await event_bus.emit(start_event)
     yield start_event
 
     messages: list[dict[str, Any]] = [
-        {"role": "system", "content": "You are a helpful assistant. Use tools when necessary."},
+        {
+            "role": "system",
+            "content": "You are a helpful assistant. Use tools when necessary.",
+        },
         {"role": "user", "content": user_msg},
     ]
 
@@ -162,13 +185,22 @@ async def execute_turn(
         tool_messages = orchestrator._last_acting_result
         messages.extend(tool_messages)
 
-    final_answer = {"content": llm_response_content or "Task complete.", "citations": []}
-    task_succeeded_event = {"type": "TaskSucceeded", "correlation_id": correlation_id, "data": final_answer}
+    final_answer = {
+        "content": llm_response_content or "Task complete.",
+        "citations": [],
+    }
+    task_succeeded_event = {
+        "type": "TaskSucceeded",
+        "correlation_id": correlation_id,
+        "data": final_answer,
+    }
     await event_bus.emit(task_succeeded_event)
     yield task_succeeded_event
 
 
-async def sse_transformer(event_generator: AsyncGenerator[dict[str, Any], None]) -> AsyncGenerator[str, None]:
+async def sse_transformer(
+    event_generator: AsyncGenerator[dict[str, Any], None],
+) -> AsyncGenerator[str, None]:
     async for event in event_generator:
         yield f"data: {json.dumps(event)}\n\n"
 

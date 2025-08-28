@@ -1,6 +1,7 @@
 """
 Test the Knowledge Graph implementation
 """
+
 import pytest
 
 pytest.skip("legacy test", allow_module_level=True)
@@ -31,13 +32,13 @@ async def test_knowledge_store():
             concept_atom = store.create_atom(
                 atom_type=AtomType.CONCEPT,
                 content={"name": "Machine Learning", "description": "AI technique"},
-                metadata={"source": "test"}
+                metadata={"source": "test"},
             )
 
             entity_atom = store.create_atom(
                 atom_type=AtomType.ENTITY,
                 content={"name": "Python", "type": "programming_language"},
-                metadata={"source": "test"}
+                metadata={"source": "test"},
             )
 
             print(f"    Created concept atom: {concept_atom.atom_id}")
@@ -47,7 +48,7 @@ async def test_knowledge_store():
             duplicate_atom = store.create_atom(
                 atom_type=AtomType.CONCEPT,
                 content={"name": "Machine Learning", "description": "AI technique"},
-                metadata={"source": "test_duplicate"}
+                metadata={"source": "test_duplicate"},
             )
 
             assert concept_atom.atom_id == duplicate_atom.atom_id
@@ -60,7 +61,7 @@ async def test_knowledge_store():
                 to_atom_id=concept_atom.atom_id,
                 bond_type=BondType.RELATES_TO,
                 strength=0.9,
-                metadata={"relationship": "used_for"}
+                metadata={"relationship": "used_for"},
             )
 
             print(f"    Created bond: {bond.bond_id}")
@@ -93,6 +94,7 @@ async def test_knowledge_store():
         if db_path.exists():
             db_path.unlink()
 
+
 async def test_event_handlers():
     """Test knowledge graph event handlers"""
     print("Testing Event Handlers...")
@@ -114,8 +116,8 @@ async def test_event_handlers():
                     "cycle_id": "test_cycle_123",
                     "success": True,
                     "duration_ms": 150.5,
-                    "error": None
-                }
+                    "error": None,
+                },
             )
 
             await handlers.handle_cortex_cycle_event(cortex_event)
@@ -127,14 +129,16 @@ async def test_event_handlers():
             assert len(cortex_atoms) >= 1
             assert len(event_atoms) >= 1
 
-            print(f"    Created {len(cortex_atoms)} cortex atoms and {len(event_atoms)} event atoms")
+            print(
+                f"    Created {len(cortex_atoms)} cortex atoms and {len(event_atoms)} event atoms"
+            )
 
             # Test concept creation
             print("  Testing manual concept creation...")
             concept_id = handlers.create_concept_atom(
                 "Neural Networks",
                 "Deep learning architecture",
-                {"layers": 3, "activation": "relu"}
+                {"layers": 3, "activation": "relu"},
             )
 
             concept_atom = store.get_atom(concept_id)
@@ -149,6 +153,7 @@ async def test_event_handlers():
         # Clean up
         if db_path.exists():
             db_path.unlink()
+
 
 async def test_plugin_integration():
     """Test knowledge graph plugin integration"""
@@ -175,7 +180,7 @@ async def test_plugin_integration():
         # Run some test cycles
         for i in range(2):
             context = runtime.create_context(f"test_session_{i}", "test_user")
-            result = await runtime.process_cycle(f"Test query {i}", context)
+            await runtime.process_cycle(f"Test query {i}", context)
             await asyncio.sleep(0.01)  # Small delay
 
         await runtime.shutdown()
@@ -192,25 +197,18 @@ async def test_plugin_integration():
 
         # Test manual concept creation
         concept_id = plugin.create_manual_concept(
-            "Test Concept",
-            "A concept created for testing",
-            {"test": True}
+            "Test Concept", "A concept created for testing", {"test": True}
         )
 
         print(f"  Created manual concept: {concept_id}")
 
         # Test relationships
         entity_id = plugin.create_manual_entity(
-            "Test Entity",
-            "test_type",
-            {"value": 42}
+            "Test Entity", "test_type", {"value": 42}
         )
 
         bond_id = plugin.link_concepts(
-            concept_id,
-            entity_id,
-            "relates_to",
-            strength=0.8
+            concept_id, entity_id, "relates_to", strength=0.8
         )
 
         print(f"  Created relationship: {bond_id}")
@@ -227,6 +225,7 @@ async def test_plugin_integration():
         # Clean up
         if db_path.exists():
             db_path.unlink()
+
 
 async def test_full_integration():
     """Test full integration with telemetry and knowledge graph"""
@@ -246,7 +245,9 @@ async def test_full_integration():
         runtime = create_cortex_runtime()
 
         # Connect everything
-        await knowledge_plugin.setup(event_bus=event_bus)  # This subscribes to events automatically
+        await knowledge_plugin.setup(
+            event_bus=event_bus
+        )  # This subscribes to events automatically
         await event_bus.subscribe("*", telemetry_collector.collect_event)
         await runtime.setup(event_bus=event_bus)
 
@@ -254,7 +255,9 @@ async def test_full_integration():
 
         # Run a cognitive cycle
         context = runtime.create_context("integration_test", "test_user")
-        result = await runtime.process_cycle("Integrate knowledge graph with telemetry", context)
+        await runtime.process_cycle(
+            "Integrate knowledge graph with telemetry", context
+        )
 
         await asyncio.sleep(0.1)  # Let events process
 
@@ -262,7 +265,9 @@ async def test_full_integration():
         kg_stats = knowledge_plugin.get_statistics()
         telemetry_metrics = telemetry_collector.get_metrics()
 
-        print(f"  Knowledge graph: {kg_stats['total_atoms']} atoms, {kg_stats['total_bonds']} bonds")
+        print(
+            f"  Knowledge graph: {kg_stats['total_atoms']} atoms, {kg_stats['total_bonds']} bonds"
+        )
         print(f"  Telemetry: {telemetry_metrics.total_events} events collected")
 
         assert kg_stats["total_atoms"] >= 1
@@ -286,6 +291,7 @@ async def test_full_integration():
         if db_path.exists():
             db_path.unlink()
 
+
 async def main():
     """Run all knowledge graph tests"""
     print("🔗 Running Knowledge Graph Tests")
@@ -296,6 +302,7 @@ async def main():
     await test_full_integration()
 
     print("✅ All knowledge graph tests passed!")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

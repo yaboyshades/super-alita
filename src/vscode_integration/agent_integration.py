@@ -194,9 +194,9 @@ class SuperAlitaAgent:
             "next_suggested_actions": self._suggest_next_actions(pending_tasks),
             "integration_status": {
                 "vscode_todos": "✅ Connected",
-                "ladder_planner": "✅ Available"
-                if self.ladder_planner
-                else "⚠️ Limited",
+                "ladder_planner": (
+                    "✅ Available" if self.ladder_planner else "⚠️ Limited"
+                ),
                 "mcp_server": "✅ Running",
                 "agent_mode": "✅ Active",
             },

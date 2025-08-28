@@ -15,7 +15,9 @@ class DeepCodePuterBridgePlugin(PluginInterface):
     def name(self) -> str:  # pragma: no cover - trivial
         return "deepcode_puter_bridge"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # pragma: no cover - simple
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:  # pragma: no cover - simple
         await super().setup(event_bus, store, config)
 
     async def start(self) -> None:

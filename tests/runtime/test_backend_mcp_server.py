@@ -1,4 +1,3 @@
-
 import pytest
 
 from backend.mcp_server import fetch, search

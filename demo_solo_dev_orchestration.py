@@ -7,7 +7,7 @@ for solo developers. It shows:
 
 1. Agent task routing based on specialization
 2. Cost tracking and budget management
-3. Performance analytics 
+3. Performance analytics
 4. Multi-agent workflows
 5. Capability mapping and recommendations
 
@@ -18,8 +18,9 @@ import asyncio
 import logging
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
+
 
 async def demo_solo_dev_orchestration():
     """Demonstrate the solo developer multi-agent orchestration system"""
@@ -28,11 +29,11 @@ async def demo_solo_dev_orchestration():
 
     try:
         # Import the orchestration system
-        from src.orchestration.solo_dev_orchestrator import (
-            SoloDevMultiAgentOrchestrator,
-            OrchestrationConfig
-        )
         from src.orchestration.agent_task_router import TaskType
+        from src.orchestration.solo_dev_orchestrator import (
+            OrchestrationConfig,
+            SoloDevMultiAgentOrchestrator,
+        )
 
         # Create configuration optimized for solo developer
         config = OrchestrationConfig(
@@ -43,7 +44,7 @@ async def demo_solo_dev_orchestration():
             default_task_timeout_minutes=30,
             max_concurrent_tasks_per_agent=2,  # Limit for cost control
             cost_alert_threshold=25.0,  # $25/day budget
-            performance_alert_threshold=0.75  # 75% success rate minimum
+            performance_alert_threshold=0.75,  # 75% success rate minimum
         )
 
         # Initialize the orchestrator
@@ -66,10 +67,14 @@ async def demo_solo_dev_orchestration():
             priority=9,  # High priority
             complexity=4,
             context={
-                "target_files": ["auth/login.py", "auth/session.py", "auth/middleware.py"],
+                "target_files": [
+                    "auth/login.py",
+                    "auth/session.py",
+                    "auth/middleware.py",
+                ],
                 "security_frameworks": ["OWASP Top 10", "NIST"],
-                "compliance_requirements": ["SOC2", "GDPR"]
-            }
+                "compliance_requirements": ["SOC2", "GDPR"],
+            },
         )
 
         print(f"   📋 Task submitted: {security_task}")
@@ -85,14 +90,14 @@ async def demo_solo_dev_orchestration():
             outputs_generated=[
                 "security_assessment_report.md",
                 "vulnerability_fixes.patch",
-                "security_test_cases.py"
+                "security_test_cases.py",
             ],
             files_modified=["auth/login.py", "auth/session.py"],
             security_issues_found=5,
             code_lines_changed=47,
             provider="openai",
             tokens_used=2100,
-            api_requests=3
+            api_requests=3,
         )
 
         print("   ✅ Security assessment completed")
@@ -115,13 +120,15 @@ async def demo_solo_dev_orchestration():
                     "CRUD operations for user profiles",
                     "Input validation with Pydantic",
                     "Authentication required",
-                    "Rate limiting"
-                ]
-            }
+                    "Rate limiting",
+                ],
+            },
         )
 
         print(f"   📋 Task submitted: {feature_task}")
-        print("   🎯 Routed to: Implementation Agent (expert in Python/API development)")
+        print(
+            "   🎯 Routed to: Implementation Agent (expert in Python/API development)"
+        )
 
         await orchestrator.complete_task(
             task_id=feature_task,
@@ -133,12 +140,12 @@ async def demo_solo_dev_orchestration():
                 "api/user_profiles.py",
                 "models/user_profile.py",
                 "schemas/user_profile.py",
-                "tests/test_user_profiles.py"
+                "tests/test_user_profiles.py",
             ],
             files_modified=[
                 "api/user_profiles.py",
                 "models/user_profile.py",
-                "main.py"
+                "main.py",
             ],
             code_lines_changed=178,
             tests_passed=15,
@@ -146,7 +153,7 @@ async def demo_solo_dev_orchestration():
             documentation_updated=True,
             provider="anthropic",
             tokens_used=3200,
-            api_requests=4
+            api_requests=4,
         )
 
         print("   ✅ API endpoints implemented with tests")
@@ -164,13 +171,13 @@ async def demo_solo_dev_orchestration():
                 "outputs_required": [
                     "payment_system_architecture.md",
                     "security_requirements.md",
-                    "api_specifications.yaml"
+                    "api_specifications.yaml",
                 ],
                 "verification_criteria": [
                     "Architecture supports PCI DSS compliance",
                     "Scalable to 10k+ transactions/hour",
-                    "Proper separation of concerns"
-                ]
+                    "Proper separation of concerns",
+                ],
             },
             {
                 "agent_id": "security_agent",
@@ -179,13 +186,13 @@ async def demo_solo_dev_orchestration():
                 "outputs_required": [
                     "security_review_report.md",
                     "threat_model.md",
-                    "security_test_plan.md"
+                    "security_test_plan.md",
                 ],
                 "verification_criteria": [
                     "PCI DSS requirements addressed",
                     "Threat model comprehensive",
-                    "Security controls specified"
-                ]
+                    "Security controls specified",
+                ],
             },
             {
                 "agent_id": "implementation_agent",
@@ -194,13 +201,13 @@ async def demo_solo_dev_orchestration():
                 "outputs_required": [
                     "payment_processor.py",
                     "payment_models.py",
-                    "payment_validation.py"
+                    "payment_validation.py",
                 ],
                 "verification_criteria": [
                     "All API endpoints implemented",
                     "Input validation comprehensive",
-                    "Error handling robust"
-                ]
+                    "Error handling robust",
+                ],
             },
             {
                 "agent_id": "testing_agent",
@@ -209,23 +216,25 @@ async def demo_solo_dev_orchestration():
                 "outputs_required": [
                     "test_payment_processor.py",
                     "test_payment_security.py",
-                    "integration_tests.py"
+                    "integration_tests.py",
                 ],
                 "verification_criteria": [
                     ">95% code coverage achieved",
                     "All security tests passing",
-                    "Performance tests included"
-                ]
-            }
+                    "Performance tests included",
+                ],
+            },
         ]
 
         workflow_id = await orchestrator.create_multi_agent_workflow(
             workflow_description="Complete e-commerce payment system with security focus",
-            steps=workflow_steps
+            steps=workflow_steps,
         )
 
         print(f"   📋 Workflow created: {workflow_id}")
-        print("   🔗 4-step workflow: Architecture → Security → Implementation → Testing")
+        print(
+            "   🔗 4-step workflow: Architecture → Security → Implementation → Testing"
+        )
         print("   ⏱️ Estimated duration: 2-3 hours with handoffs")
         print()
 
@@ -237,7 +246,9 @@ async def demo_solo_dev_orchestration():
         status = await orchestrator.get_system_status()
         print("   📈 System Status:")
         print(f"   - Active tasks: {status['orchestrator']['active_tasks']}")
-        print(f"   - Total tasks processed: {status['orchestrator']['stats']['total_tasks_processed']}")
+        print(
+            f"   - Total tasks processed: {status['orchestrator']['stats']['total_tasks_processed']}"
+        )
         print(f"   - Total cost: ${status['orchestrator']['stats']['total_cost']:.2f}")
         print()
 
@@ -245,14 +256,20 @@ async def demo_solo_dev_orchestration():
         cost_summary = orchestrator.cost_dashboard.get_cost_summary(1)  # Last day
         print("   💰 Cost Analysis:")
         print(f"   - Total cost (last 24h): ${cost_summary['total_cost']:.2f}")
-        print(f"   - Average per task: ${cost_summary.get('average_cost_per_entry', 0):.2f}")
-        print(f"   - Projected monthly: ${cost_summary.get('projected_monthly', 0):.2f}")
+        print(
+            f"   - Average per task: ${cost_summary.get('average_cost_per_entry', 0):.2f}"
+        )
+        print(
+            f"   - Projected monthly: ${cost_summary.get('projected_monthly', 0):.2f}"
+        )
         print()
 
         # Get performance analytics
-        performance_report = await orchestrator.performance_analytics.generate_performance_report()
-        if performance_report['comparative_analysis']['agents']:
-            best_agent = performance_report['comparative_analysis']['agents'][0]
+        performance_report = (
+            await orchestrator.performance_analytics.generate_performance_report()
+        )
+        if performance_report["comparative_analysis"]["agents"]:
+            best_agent = performance_report["comparative_analysis"]["agents"][0]
             print("   🏆 Top Performing Agent:")
             print(f"   - Agent: {best_agent['agent_id']}")
             print(f"   - Success rate: {best_agent['success_rate']:.1%}")
@@ -274,17 +291,21 @@ async def demo_solo_dev_orchestration():
         print("🧠 Demo 5: Agent Capability Insights")
         print("-" * 40)
 
-        capability_analytics = orchestrator.capability_mapping.get_capability_analytics()
+        capability_analytics = (
+            orchestrator.capability_mapping.get_capability_analytics()
+        )
         print("   🎯 Capability Coverage:")
-        print(f"   - Total capabilities tracked: {capability_analytics['total_capabilities']}")
+        print(
+            f"   - Total capabilities tracked: {capability_analytics['total_capabilities']}"
+        )
         print(f"   - Agents configured: {capability_analytics['total_agents']}")
 
-        if capability_analytics['most_common_capabilities']:
+        if capability_analytics["most_common_capabilities"]:
             print("   - Most common capabilities:")
-            for cap in capability_analytics['most_common_capabilities'][:3]:
+            for cap in capability_analytics["most_common_capabilities"][:3]:
                 print(f"     • {cap['capability_id']}: {cap['agent_count']} agents")
 
-        gaps = capability_analytics['capability_gaps']
+        gaps = capability_analytics["capability_gaps"]
         if gaps:
             print(f"   - Capability gaps found: {len(gaps)}")
             for gap in gaps[:2]:
@@ -312,15 +333,19 @@ async def demo_solo_dev_orchestration():
     except Exception as e:
         logger.error(f"Demo failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 async def main():
     """Main demo function"""
     success = await demo_solo_dev_orchestration()
     return 0 if success else 1
 
+
 if __name__ == "__main__":
     import sys
+
     result = asyncio.run(main())
     sys.exit(result)

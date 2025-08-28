@@ -15,6 +15,7 @@ from typing import Any
 
 class AtomType(Enum):
     """Types of atoms in the knowledge graph"""
+
     CONCEPT = "concept"
     ENTITY = "entity"
     EVENT = "event"
@@ -26,6 +27,7 @@ class AtomType(Enum):
 
 class BondType(Enum):
     """Types of bonds between atoms"""
+
     RELATES_TO = "relates_to"
     CAUSED_BY = "caused_by"
     CONTAINS = "contains"
@@ -39,6 +41,7 @@ class BondType(Enum):
 @dataclass
 class Atom:
     """An atom in the knowledge graph"""
+
     atom_id: str  # Deterministic UUID based on content
     atom_type: AtomType
     content: dict[str, Any]
@@ -56,7 +59,7 @@ class Atom:
             "metadata": self.metadata,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
-            "hash_signature": self.hash_signature
+            "hash_signature": self.hash_signature,
         }
 
     @classmethod
@@ -69,13 +72,14 @@ class Atom:
             metadata=data["metadata"],
             created_at=datetime.fromisoformat(data["created_at"]),
             updated_at=datetime.fromisoformat(data["updated_at"]),
-            hash_signature=data["hash_signature"]
+            hash_signature=data["hash_signature"],
         )
 
 
 @dataclass
 class Bond:
     """A bond between atoms in the knowledge graph"""
+
     bond_id: str  # Deterministic UUID based on atom IDs and bond type
     from_atom_id: str
     to_atom_id: str
@@ -95,7 +99,7 @@ class Bond:
             "strength": self.strength,
             "metadata": self.metadata,
             "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "updated_at": self.updated_at.isoformat(),
         }
 
     @classmethod
@@ -109,7 +113,7 @@ class Bond:
             strength=data["strength"],
             metadata=data["metadata"],
             created_at=datetime.fromisoformat(data["created_at"]),
-            updated_at=datetime.fromisoformat(data["updated_at"])
+            updated_at=datetime.fromisoformat(data["updated_at"]),
         )
 
 
@@ -129,7 +133,8 @@ class KnowledgeStore:
         self.connection.row_factory = sqlite3.Row  # Enable dict-like access
 
         # Create atoms table
-        self.connection.execute("""
+        self.connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS atoms (
                 atom_id TEXT PRIMARY KEY,
                 atom_type TEXT NOT NULL,
@@ -139,10 +144,12 @@ class KnowledgeStore:
                 updated_at TEXT NOT NULL,
                 hash_signature TEXT NOT NULL UNIQUE
             )
-        """)
+        """
+        )
 
         # Create bonds table
-        self.connection.execute("""
+        self.connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS bonds (
                 bond_id TEXT PRIMARY KEY,
                 from_atom_id TEXT NOT NULL,
@@ -155,14 +162,25 @@ class KnowledgeStore:
                 FOREIGN KEY (from_atom_id) REFERENCES atoms (atom_id),
                 FOREIGN KEY (to_atom_id) REFERENCES atoms (atom_id)
             )
-        """)
+        """
+        )
 
         # Create indexes for performance
-        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_atoms_type ON atoms (atom_type)")
-        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_atoms_hash ON atoms (hash_signature)")
-        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_bonds_from ON bonds (from_atom_id)")
-        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_bonds_to ON bonds (to_atom_id)")
-        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_bonds_type ON bonds (bond_type)")
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_atoms_type ON atoms (atom_type)"
+        )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_atoms_hash ON atoms (hash_signature)"
+        )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_bonds_from ON bonds (from_atom_id)"
+        )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_bonds_to ON bonds (to_atom_id)"
+        )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_bonds_type ON bonds (bond_type)"
+        )
 
         self.connection.commit()
 
@@ -183,7 +201,9 @@ class KnowledgeStore:
         uuid_str = f"{hash_digest[:8]}-{hash_digest[8:12]}-{hash_digest[12:16]}-{hash_digest[16:20]}-{hash_digest[20:32]}"
         return uuid_str
 
-    def _generate_bond_id(self, from_atom_id: str, to_atom_id: str, bond_type: BondType) -> str:
+    def _generate_bond_id(
+        self, from_atom_id: str, to_atom_id: str, bond_type: BondType
+    ) -> str:
         """Generate deterministic bond ID"""
         bond_data = f"{from_atom_id}:{to_atom_id}:{bond_type.value}"
         return str(uuid.uuid5(uuid.NAMESPACE_DNS, bond_data))
@@ -192,7 +212,7 @@ class KnowledgeStore:
         self,
         atom_type: AtomType,
         content: dict[str, Any],
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> Atom:
         """Create or retrieve existing atom (idempotent)"""
         if metadata is None:
@@ -204,22 +224,23 @@ class KnowledgeStore:
 
         # Check if atom already exists
         cursor = self.connection.execute(
-            "SELECT * FROM atoms WHERE hash_signature = ?",
-            (hash_signature,)
+            "SELECT * FROM atoms WHERE hash_signature = ?", (hash_signature,)
         )
         existing = cursor.fetchone()
 
         if existing:
             # Return existing atom
-            return Atom.from_dict({
-                "atom_id": existing["atom_id"],
-                "atom_type": existing["atom_type"],
-                "content": json.loads(existing["content"]),
-                "metadata": json.loads(existing["metadata"]),
-                "created_at": existing["created_at"],
-                "updated_at": existing["updated_at"],
-                "hash_signature": existing["hash_signature"]
-            })
+            return Atom.from_dict(
+                {
+                    "atom_id": existing["atom_id"],
+                    "atom_type": existing["atom_type"],
+                    "content": json.loads(existing["content"]),
+                    "metadata": json.loads(existing["metadata"]),
+                    "created_at": existing["created_at"],
+                    "updated_at": existing["updated_at"],
+                    "hash_signature": existing["hash_signature"],
+                }
+            )
 
         # Create new atom
         now = datetime.now(UTC)
@@ -230,24 +251,27 @@ class KnowledgeStore:
             metadata=metadata,
             created_at=now,
             updated_at=now,
-            hash_signature=hash_signature
+            hash_signature=hash_signature,
         )
 
         # Insert into database
-        self.connection.execute("""
+        self.connection.execute(
+            """
             INSERT INTO atoms (
                 atom_id, atom_type, content, metadata, 
                 created_at, updated_at, hash_signature
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            atom.atom_id,
-            atom.atom_type.value,
-            json.dumps(atom.content),
-            json.dumps(atom.metadata),
-            atom.created_at.isoformat(),
-            atom.updated_at.isoformat(),
-            atom.hash_signature
-        ))
+        """,
+            (
+                atom.atom_id,
+                atom.atom_type.value,
+                json.dumps(atom.content),
+                json.dumps(atom.metadata),
+                atom.created_at.isoformat(),
+                atom.updated_at.isoformat(),
+                atom.hash_signature,
+            ),
+        )
         self.connection.commit()
 
         return atom
@@ -258,7 +282,7 @@ class KnowledgeStore:
         to_atom_id: str,
         bond_type: BondType,
         strength: float = 1.0,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> Bond:
         """Create or update bond between atoms"""
         if metadata is None:
@@ -272,8 +296,7 @@ class KnowledgeStore:
 
         # Check if bond already exists
         cursor = self.connection.execute(
-            "SELECT * FROM bonds WHERE bond_id = ?",
-            (bond_id,)
+            "SELECT * FROM bonds WHERE bond_id = ?", (bond_id,)
         )
         existing = cursor.fetchone()
 
@@ -281,18 +304,16 @@ class KnowledgeStore:
 
         if existing:
             # Update existing bond
-            self.connection.execute("""
+            self.connection.execute(
+                """
                 UPDATE bonds SET 
                     strength = ?, 
                     metadata = ?, 
                     updated_at = ?
                 WHERE bond_id = ?
-            """, (
-                strength,
-                json.dumps(metadata),
-                now.isoformat(),
-                bond_id
-            ))
+            """,
+                (strength, json.dumps(metadata), now.isoformat(), bond_id),
+            )
 
             return Bond(
                 bond_id=bond_id,
@@ -302,7 +323,7 @@ class KnowledgeStore:
                 strength=strength,
                 metadata=metadata,
                 created_at=datetime.fromisoformat(existing["created_at"]),
-                updated_at=now
+                updated_at=now,
             )
         else:
             # Create new bond
@@ -314,24 +335,27 @@ class KnowledgeStore:
                 strength=strength,
                 metadata=metadata,
                 created_at=now,
-                updated_at=now
+                updated_at=now,
             )
 
-            self.connection.execute("""
+            self.connection.execute(
+                """
                 INSERT INTO bonds (
                     bond_id, from_atom_id, to_atom_id, bond_type,
                     strength, metadata, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                bond.bond_id,
-                bond.from_atom_id,
-                bond.to_atom_id,
-                bond.bond_type.value,
-                bond.strength,
-                json.dumps(bond.metadata),
-                bond.created_at.isoformat(),
-                bond.updated_at.isoformat()
-            ))
+            """,
+                (
+                    bond.bond_id,
+                    bond.from_atom_id,
+                    bond.to_atom_id,
+                    bond.bond_type.value,
+                    bond.strength,
+                    json.dumps(bond.metadata),
+                    bond.created_at.isoformat(),
+                    bond.updated_at.isoformat(),
+                ),
+            )
 
         self.connection.commit()
         return bond
@@ -339,109 +363,127 @@ class KnowledgeStore:
     def get_atom(self, atom_id: str) -> Atom | None:
         """Retrieve atom by ID"""
         cursor = self.connection.execute(
-            "SELECT * FROM atoms WHERE atom_id = ?",
-            (atom_id,)
+            "SELECT * FROM atoms WHERE atom_id = ?", (atom_id,)
         )
         row = cursor.fetchone()
 
         if not row:
             return None
 
-        return Atom.from_dict({
-            "atom_id": row["atom_id"],
-            "atom_type": row["atom_type"],
-            "content": json.loads(row["content"]),
-            "metadata": json.loads(row["metadata"]),
-            "created_at": row["created_at"],
-            "updated_at": row["updated_at"],
-            "hash_signature": row["hash_signature"]
-        })
-
-    def get_atoms_by_type(self, atom_type: AtomType, limit: int = 100) -> list[Atom]:
-        """Retrieve atoms by type"""
-        cursor = self.connection.execute(
-            "SELECT * FROM atoms WHERE atom_type = ? ORDER BY created_at DESC LIMIT ?",
-            (atom_type.value, limit)
-        )
-
-        atoms = []
-        for row in cursor:
-            atoms.append(Atom.from_dict({
+        return Atom.from_dict(
+            {
                 "atom_id": row["atom_id"],
                 "atom_type": row["atom_type"],
                 "content": json.loads(row["content"]),
                 "metadata": json.loads(row["metadata"]),
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"],
-                "hash_signature": row["hash_signature"]
-            }))
+                "hash_signature": row["hash_signature"],
+            }
+        )
+
+    def get_atoms_by_type(self, atom_type: AtomType, limit: int = 100) -> list[Atom]:
+        """Retrieve atoms by type"""
+        cursor = self.connection.execute(
+            "SELECT * FROM atoms WHERE atom_type = ? ORDER BY created_at DESC LIMIT ?",
+            (atom_type.value, limit),
+        )
+
+        atoms = []
+        for row in cursor:
+            atoms.append(
+                Atom.from_dict(
+                    {
+                        "atom_id": row["atom_id"],
+                        "atom_type": row["atom_type"],
+                        "content": json.loads(row["content"]),
+                        "metadata": json.loads(row["metadata"]),
+                        "created_at": row["created_at"],
+                        "updated_at": row["updated_at"],
+                        "hash_signature": row["hash_signature"],
+                    }
+                )
+            )
 
         return atoms
 
     def get_bonds_from_atom(self, atom_id: str) -> list[Bond]:
         """Get all bonds originating from an atom"""
         cursor = self.connection.execute(
-            "SELECT * FROM bonds WHERE from_atom_id = ?",
-            (atom_id,)
+            "SELECT * FROM bonds WHERE from_atom_id = ?", (atom_id,)
         )
 
         bonds = []
         for row in cursor:
-            bonds.append(Bond.from_dict({
-                "bond_id": row["bond_id"],
-                "from_atom_id": row["from_atom_id"],
-                "to_atom_id": row["to_atom_id"],
-                "bond_type": row["bond_type"],
-                "strength": row["strength"],
-                "metadata": json.loads(row["metadata"]),
-                "created_at": row["created_at"],
-                "updated_at": row["updated_at"]
-            }))
+            bonds.append(
+                Bond.from_dict(
+                    {
+                        "bond_id": row["bond_id"],
+                        "from_atom_id": row["from_atom_id"],
+                        "to_atom_id": row["to_atom_id"],
+                        "bond_type": row["bond_type"],
+                        "strength": row["strength"],
+                        "metadata": json.loads(row["metadata"]),
+                        "created_at": row["created_at"],
+                        "updated_at": row["updated_at"],
+                    }
+                )
+            )
 
         return bonds
 
     def get_bonds_to_atom(self, atom_id: str) -> list[Bond]:
         """Get all bonds pointing to an atom"""
         cursor = self.connection.execute(
-            "SELECT * FROM bonds WHERE to_atom_id = ?",
-            (atom_id,)
+            "SELECT * FROM bonds WHERE to_atom_id = ?", (atom_id,)
         )
 
         bonds = []
         for row in cursor:
-            bonds.append(Bond.from_dict({
-                "bond_id": row["bond_id"],
-                "from_atom_id": row["from_atom_id"],
-                "to_atom_id": row["to_atom_id"],
-                "bond_type": row["bond_type"],
-                "strength": row["strength"],
-                "metadata": json.loads(row["metadata"]),
-                "created_at": row["created_at"],
-                "updated_at": row["updated_at"]
-            }))
+            bonds.append(
+                Bond.from_dict(
+                    {
+                        "bond_id": row["bond_id"],
+                        "from_atom_id": row["from_atom_id"],
+                        "to_atom_id": row["to_atom_id"],
+                        "bond_type": row["bond_type"],
+                        "strength": row["strength"],
+                        "metadata": json.loads(row["metadata"]),
+                        "created_at": row["created_at"],
+                        "updated_at": row["updated_at"],
+                    }
+                )
+            )
 
         return bonds
 
     def search_atoms_by_content(self, search_term: str, limit: int = 50) -> list[Atom]:
         """Search atoms by content (simple text search)"""
-        cursor = self.connection.execute("""
+        cursor = self.connection.execute(
+            """
             SELECT * FROM atoms 
             WHERE content LIKE ? 
             ORDER BY created_at DESC 
             LIMIT ?
-        """, (f"%{search_term}%", limit))
+        """,
+            (f"%{search_term}%", limit),
+        )
 
         atoms = []
         for row in cursor:
-            atoms.append(Atom.from_dict({
-                "atom_id": row["atom_id"],
-                "atom_type": row["atom_type"],
-                "content": json.loads(row["content"]),
-                "metadata": json.loads(row["metadata"]),
-                "created_at": row["created_at"],
-                "updated_at": row["updated_at"],
-                "hash_signature": row["hash_signature"]
-            }))
+            atoms.append(
+                Atom.from_dict(
+                    {
+                        "atom_id": row["atom_id"],
+                        "atom_type": row["atom_type"],
+                        "content": json.loads(row["content"]),
+                        "metadata": json.loads(row["metadata"]),
+                        "created_at": row["created_at"],
+                        "updated_at": row["updated_at"],
+                        "hash_signature": row["hash_signature"],
+                    }
+                )
+            )
 
         return atoms
 
@@ -452,7 +494,7 @@ class KnowledgeStore:
         for atom_type in AtomType:
             cursor = self.connection.execute(
                 "SELECT COUNT(*) as count FROM atoms WHERE atom_type = ?",
-                (atom_type.value,)
+                (atom_type.value,),
             )
             atom_counts[atom_type.value] = cursor.fetchone()["count"]
 
@@ -461,7 +503,7 @@ class KnowledgeStore:
         for bond_type in BondType:
             cursor = self.connection.execute(
                 "SELECT COUNT(*) as count FROM bonds WHERE bond_type = ?",
-                (bond_type.value,)
+                (bond_type.value,),
             )
             bond_counts[bond_type.value] = cursor.fetchone()["count"]
 
@@ -474,7 +516,7 @@ class KnowledgeStore:
             "total_bonds": total_bonds,
             "atoms_by_type": atom_counts,
             "bonds_by_type": bond_counts,
-            "database_path": str(self.db_path)
+            "database_path": str(self.db_path),
         }
 
     def close(self):

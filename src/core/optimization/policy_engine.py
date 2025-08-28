@@ -61,7 +61,7 @@ class PolicyDecision:
 class DecisionPolicyEngine:
     """
     Engine for managing and executing decision policies using bandit algorithms.
-    
+
     Supports multiple policies, each with their own bandit algorithm and arms.
     Provides learning through reward feedback and performance tracking.
     """
@@ -79,11 +79,11 @@ class DecisionPolicyEngine:
         algorithm_type: str,
         arms: list[dict[str, Any]],
         policy_id: str | None = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Create a new decision policy.
-        
+
         Args:
             name: Human-readable name for the policy
             description: Description of what this policy decides
@@ -91,7 +91,7 @@ class DecisionPolicyEngine:
             arms: List of arm definitions, each with "id", "name", and optional "metadata"
             policy_id: Optional custom policy ID
             **kwargs: Additional metadata
-        
+
         Returns:
             The policy ID
         """
@@ -101,7 +101,9 @@ class DecisionPolicyEngine:
         # Validate algorithm type
         valid_algorithms = {"thompson", "ucb1", "epsilon_greedy"}
         if algorithm_type not in valid_algorithms:
-            raise ValueError(f"Invalid algorithm type: {algorithm_type}. Must be one of {valid_algorithms}")
+            raise ValueError(
+                f"Invalid algorithm type: {algorithm_type}. Must be one of {valid_algorithms}"
+            )
 
         # Validate arms
         if not arms:
@@ -118,7 +120,7 @@ class DecisionPolicyEngine:
             description=description,
             algorithm_type=algorithm_type,
             arms=arms,
-            metadata=kwargs
+            metadata=kwargs,
         )
 
         # Create bandit algorithm
@@ -129,7 +131,7 @@ class DecisionPolicyEngine:
             bandit.add_arm(
                 arm_id=arm_def["id"],
                 name=arm_def["name"],
-                metadata=arm_def.get("metadata", {})
+                metadata=arm_def.get("metadata", {}),
             )
 
         # Store policy and bandit
@@ -151,17 +153,15 @@ class DecisionPolicyEngine:
             raise ValueError(f"Unknown algorithm type: {algorithm_type}")
 
     async def make_decision(
-        self,
-        policy_id: str,
-        context: DecisionContext
+        self, policy_id: str, context: DecisionContext
     ) -> PolicyDecision:
         """
         Make a decision using the specified policy.
-        
+
         Args:
             policy_id: ID of the policy to use
             context: Decision context information
-        
+
         Returns:
             The policy decision
         """
@@ -178,7 +178,7 @@ class DecisionPolicyEngine:
             decision_id=str(uuid4()),
             policy_id=policy_id,
             bandit_decision=bandit_decision,
-            context=context
+            context=context,
         )
 
         # Store decision
@@ -188,19 +188,16 @@ class DecisionPolicyEngine:
         return decision
 
     async def provide_feedback(
-        self,
-        decision_id: str,
-        reward: float,
-        metadata: dict[str, Any] | None = None
+        self, decision_id: str, reward: float, metadata: dict[str, Any] | None = None
     ) -> bool:
         """
         Provide reward feedback for a previous decision.
-        
+
         Args:
             decision_id: ID of the decision to provide feedback for
             reward: Reward value (typically 0.0 to 1.0)
             metadata: Optional additional feedback metadata
-        
+
         Returns:
             True if feedback was successfully applied
         """
@@ -239,7 +236,9 @@ class DecisionPolicyEngine:
         bandit_stats = bandit.get_statistics()
 
         # Count decisions and feedback
-        policy_decisions = [d for d in self.decisions.values() if d.policy_id == policy_id]
+        policy_decisions = [
+            d for d in self.decisions.values() if d.policy_id == policy_id
+        ]
         decisions_with_feedback = [d for d in policy_decisions if d.feedback_received]
 
         return {
@@ -249,14 +248,18 @@ class DecisionPolicyEngine:
                 "description": policy.description,
                 "algorithm_type": policy.algorithm_type,
                 "created_at": policy.created_at,
-                "updated_at": policy.updated_at
+                "updated_at": policy.updated_at,
             },
             "bandit": bandit_stats,
             "decisions": {
                 "total": len(policy_decisions),
                 "with_feedback": len(decisions_with_feedback),
-                "feedback_rate": len(decisions_with_feedback) / len(policy_decisions) if policy_decisions else 0.0
-            }
+                "feedback_rate": (
+                    len(decisions_with_feedback) / len(policy_decisions)
+                    if policy_decisions
+                    else 0.0
+                ),
+            },
         }
 
     def get_all_statistics(self) -> dict[str, Any]:
@@ -265,12 +268,12 @@ class DecisionPolicyEngine:
             "engine": {
                 "total_policies": len(self.policies),
                 "total_decisions": len(self.decisions),
-                "active_sessions": len(self.active_sessions)
+                "active_sessions": len(self.active_sessions),
             },
             "policies": {
                 policy_id: self.get_policy_statistics(policy_id)
-                for policy_id in self.policies.keys()
-            }
+                for policy_id in self.policies
+            },
         }
 
     def list_policies(self) -> list[dict[str, Any]]:
@@ -282,7 +285,7 @@ class DecisionPolicyEngine:
                 "description": policy.description,
                 "algorithm_type": policy.algorithm_type,
                 "arms_count": len(policy.arms),
-                "created_at": policy.created_at
+                "created_at": policy.created_at,
             }
             for policy in self.policies.values()
         ]
@@ -302,7 +305,8 @@ class DecisionPolicyEngine:
 
         # Remove associated decisions
         decisions_to_remove = [
-            decision_id for decision_id, decision in self.decisions.items()
+            decision_id
+            for decision_id, decision in self.decisions.items()
             if decision.policy_id == policy_id
         ]
 
@@ -314,19 +318,19 @@ class DecisionPolicyEngine:
     async def optimize_all(self) -> dict[str, Any]:
         """
         Run optimization across all policies.
-        
+
         This can be used for periodic optimization tasks like:
         - Adjusting epsilon values for epsilon-greedy algorithms
         - Detecting and handling concept drift
         - Rebalancing arm priors
-        
+
         Returns:
             Optimization results and recommendations
         """
         results = {
             "optimized_policies": [],
             "recommendations": [],
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         for policy_id, policy in self.policies.items():
@@ -343,13 +347,15 @@ class DecisionPolicyEngine:
                     # High feedback rate suggests we can reduce exploration
                     current_epsilon = self.bandits[policy_id].epsilon
                     if current_epsilon > 0.05:
-                        results["recommendations"].append({
-                            "policy_id": policy_id,
-                            "type": "reduce_epsilon",
-                            "current": current_epsilon,
-                            "suggested": max(0.05, current_epsilon * 0.9),
-                            "reason": "High feedback rate suggests effective exploitation"
-                        })
+                        results["recommendations"].append(
+                            {
+                                "policy_id": policy_id,
+                                "type": "reduce_epsilon",
+                                "current": current_epsilon,
+                                "suggested": max(0.05, current_epsilon * 0.9),
+                                "reason": "High feedback rate suggests effective exploitation",
+                            }
+                        )
 
             results["optimized_policies"].append(policy_id)
 

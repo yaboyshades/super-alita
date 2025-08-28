@@ -438,9 +438,11 @@ class AdaptiveNeuralAtom(NeuralAtom):
             "adaptation_rate": self.learning_metrics.adaptation_rate,
             "patterns_learned": len(self.execution_patterns),
             "adaptation_score": self._calculate_adaptation_score(),
-            "confidence_trend": np.mean(self.learning_metrics.confidence_history[-10:])
-            if len(self.learning_metrics.confidence_history) >= 10
-            else 0.5,
+            "confidence_trend": (
+                np.mean(self.learning_metrics.confidence_history[-10:])
+                if len(self.learning_metrics.confidence_history) >= 10
+                else 0.5
+            ),
             "last_updated": self.learning_metrics.last_updated.isoformat(),
         }
 

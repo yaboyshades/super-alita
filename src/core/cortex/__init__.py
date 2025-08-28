@@ -25,5 +25,5 @@ __all__ = [
     "CortexEvent",
     "create_cortex_event",
     "CortexPhase",
-    "MarkerType"
+    "MarkerType",
 ]

@@ -19,5 +19,6 @@ def main():
     # Run the lsp_server module as the main entry point
     runpy.run_module("lsp_server", run_name="__main__")
 
+
 if __name__ == "__main__":
     main()

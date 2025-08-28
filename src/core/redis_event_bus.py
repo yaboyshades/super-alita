@@ -4,6 +4,7 @@ Redis-based EventBus for inter-process communication
 """
 
 import asyncio
+import contextlib
 import logging
 from collections import defaultdict
 from collections.abc import Callable
@@ -30,7 +31,7 @@ class RedisEventBus:
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super(RedisEventBus, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self, host: str = "localhost", port: int = 6379, db: int = 0):
@@ -84,10 +85,8 @@ class RedisEventBus:
 
         if self._listener_task:
             self._listener_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._listener_task
-            except asyncio.CancelledError:
-                pass
 
         if self._pubsub:
             await self._pubsub.close()

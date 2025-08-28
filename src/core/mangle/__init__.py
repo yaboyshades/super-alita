@@ -1,7 +1,7 @@
 """
 Mangle Integration Orchestrator for Super Alita Agent System
 
-Coordinates all Mangle components: gRPC server, Prometheus metrics, 
+Coordinates all Mangle components: gRPC server, Prometheus metrics,
 Redis event bus, and provides unified management interface.
 """
 
@@ -19,6 +19,7 @@ from .redis_event_bus import RedisEventBus
 # Try to import gRPC server (optional dependency)
 try:
     from .grpc_server import SuperAlitaGrpcServer
+
     grpc_available = True
 except ImportError as e:
     logging.warning(f"gRPC server not available: {e}")
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 class MangleIntegration:
     """
     Complete Mangle integration orchestrator.
-    
+
     Manages the full distributed agent system including:
     - gRPC server for external communication
     - Prometheus metrics for monitoring
@@ -45,13 +46,11 @@ class MangleIntegration:
     """
 
     def __init__(
-        self,
-        config: dict[str, Any] | None = None,
-        workspace_root: Path | None = None
+        self, config: dict[str, Any] | None = None, workspace_root: Path | None = None
     ):
         """
         Initialize Mangle integration.
-        
+
         Args:
             config: Configuration dictionary
             workspace_root: Root directory for the workspace
@@ -85,11 +84,11 @@ class MangleIntegration:
         grpc_port: int = 50051,
         redis_url: str = "redis://localhost:6379",
         enable_metrics: bool = True,
-        enable_redis: bool = True
+        enable_redis: bool = True,
     ) -> None:
         """
         Configure Mangle components.
-        
+
         Args:
             grpc_host: gRPC server host
             grpc_port: gRPC server port
@@ -110,10 +109,7 @@ class MangleIntegration:
 
         # Initialize gRPC server
         if grpc_available and SuperAlitaGrpcServer:
-            self.grpc_server = SuperAlitaGrpcServer(
-                host=grpc_host,
-                port=grpc_port
-            )
+            self.grpc_server = SuperAlitaGrpcServer(host=grpc_host, port=grpc_port)
             logger.info(f"🚀 gRPC server configured on {grpc_host}:{grpc_port}")
         else:
             logger.warning("🚀 gRPC server not available - skipping gRPC configuration")
@@ -123,11 +119,11 @@ class MangleIntegration:
         cortex_runtime: CortexRuntime | None = None,
         telemetry_collector: TelemetryCollector | None = None,
         knowledge_plugin: KnowledgeGraphPlugin | None = None,
-        optimization_plugin: OptimizationPlugin | None = None
+        optimization_plugin: OptimizationPlugin | None = None,
     ) -> None:
         """
         Setup agent components for integration.
-        
+
         Args:
             cortex_runtime: Cortex runtime instance
             telemetry_collector: Telemetry collector instance
@@ -162,7 +158,7 @@ class MangleIntegration:
                     telemetry_collector=self.telemetry_collector,
                     knowledge_plugin=self.knowledge_plugin,
                     optimization_plugin=self.optimization_plugin,
-                    metrics_collector=self.metrics_collector
+                    metrics_collector=self.metrics_collector,
                 )
                 await self.grpc_server.start()
                 logger.info("🚀 gRPC server started")
@@ -234,12 +230,24 @@ class MangleIntegration:
             self.metrics_collector.set_system_uptime(uptime)
 
         # Set component health
-        self.metrics_collector.set_component_health("cortex", self.cortex_runtime is not None)
-        self.metrics_collector.set_component_health("telemetry", self.telemetry_collector is not None)
-        self.metrics_collector.set_component_health("knowledge", self.knowledge_plugin is not None)
-        self.metrics_collector.set_component_health("optimization", self.optimization_plugin is not None)
-        self.metrics_collector.set_component_health("grpc", self.grpc_server is not None)
-        self.metrics_collector.set_component_health("redis", self.redis_event_bus is not None)
+        self.metrics_collector.set_component_health(
+            "cortex", self.cortex_runtime is not None
+        )
+        self.metrics_collector.set_component_health(
+            "telemetry", self.telemetry_collector is not None
+        )
+        self.metrics_collector.set_component_health(
+            "knowledge", self.knowledge_plugin is not None
+        )
+        self.metrics_collector.set_component_health(
+            "optimization", self.optimization_plugin is not None
+        )
+        self.metrics_collector.set_component_health(
+            "grpc", self.grpc_server is not None
+        )
+        self.metrics_collector.set_component_health(
+            "redis", self.redis_event_bus is not None
+        )
 
     async def _setup_event_bus_integration(self) -> None:
         """Setup event bus integration with agent components."""
@@ -248,8 +256,12 @@ class MangleIntegration:
 
         # Subscribe to key event types for metrics collection
         await self.redis_event_bus.subscribe("cortex_cycle", self._handle_cortex_event)
-        await self.redis_event_bus.subscribe("knowledge_operation", self._handle_knowledge_event)
-        await self.redis_event_bus.subscribe("optimization_decision", self._handle_optimization_event)
+        await self.redis_event_bus.subscribe(
+            "knowledge_operation", self._handle_knowledge_event
+        )
+        await self.redis_event_bus.subscribe(
+            "optimization_decision", self._handle_optimization_event
+        )
         await self.redis_event_bus.subscribe("system_status", self._handle_system_event)
 
         logger.info("🚀 Event bus subscriptions configured")
@@ -257,43 +269,54 @@ class MangleIntegration:
     async def _handle_cortex_event(self, event) -> None:
         """Handle Cortex events for metrics."""
         if self.metrics_collector:
-            self.metrics_collector.inc_events_processed("cortex_cycle", "mangle_integration")
+            self.metrics_collector.inc_events_processed(
+                "cortex_cycle", "mangle_integration"
+            )
 
             # Extract session info if available
-            session_id = getattr(event, 'metadata', {}).get('session_id', 'unknown')
+            session_id = getattr(event, "metadata", {}).get("session_id", "unknown")
             self.metrics_collector.inc_cortex_cycles(session_id)
 
     async def _handle_knowledge_event(self, event) -> None:
         """Handle knowledge graph events for metrics."""
         if self.metrics_collector:
-            self.metrics_collector.inc_events_processed("knowledge_operation", "mangle_integration")
+            self.metrics_collector.inc_events_processed(
+                "knowledge_operation", "mangle_integration"
+            )
 
             # Extract operation info if available
-            operation = getattr(event, 'metadata', {}).get('operation', 'unknown')
+            operation = getattr(event, "metadata", {}).get("operation", "unknown")
             self.metrics_collector.inc_knowledge_operations(operation)
 
     async def _handle_optimization_event(self, event) -> None:
         """Handle optimization events for metrics."""
         if self.metrics_collector:
-            self.metrics_collector.inc_events_processed("optimization_decision", "mangle_integration")
+            self.metrics_collector.inc_events_processed(
+                "optimization_decision", "mangle_integration"
+            )
 
             # Extract decision info if available
-            metadata = getattr(event, 'metadata', {})
-            policy_id = metadata.get('policy_id', 'unknown')
-            algorithm = metadata.get('algorithm', 'unknown')
-            arm_id = metadata.get('arm_id', 'unknown')
+            metadata = getattr(event, "metadata", {})
+            policy_id = metadata.get("policy_id", "unknown")
+            algorithm = metadata.get("algorithm", "unknown")
+            arm_id = metadata.get("arm_id", "unknown")
 
-            self.metrics_collector.inc_optimization_decisions(policy_id, algorithm, arm_id)
+            self.metrics_collector.inc_optimization_decisions(
+                policy_id, algorithm, arm_id
+            )
 
     async def _handle_system_event(self, event) -> None:
         """Handle system events for metrics."""
         if self.metrics_collector:
-            self.metrics_collector.inc_events_processed("system_status", "mangle_integration")
+            self.metrics_collector.inc_events_processed(
+                "system_status", "mangle_integration"
+            )
 
         self.total_events_processed += 1
 
     def _setup_signal_handlers(self) -> None:
         """Setup signal handlers for graceful shutdown."""
+
         def signal_handler(signum, frame):
             logger.info(f"Received signal {signum}, initiating shutdown...")
             asyncio.create_task(self.stop())
@@ -320,12 +343,12 @@ class MangleIntegration:
                 "cortex_runtime": self.cortex_runtime is not None,
                 "telemetry_collector": self.telemetry_collector is not None,
                 "knowledge_plugin": self.knowledge_plugin is not None,
-                "optimization_plugin": self.optimization_plugin is not None
+                "optimization_plugin": self.optimization_plugin is not None,
             },
             "statistics": {
                 "total_grpc_requests": self.total_grpc_requests,
-                "total_events_processed": self.total_events_processed
-            }
+                "total_events_processed": self.total_events_processed,
+            },
         }
 
         # Add component-specific status
@@ -343,11 +366,7 @@ class MangleIntegration:
 
     async def health_check(self) -> dict[str, Any]:
         """Perform comprehensive health check."""
-        health = {
-            "status": "healthy",
-            "timestamp": time.time(),
-            "components": {}
-        }
+        health = {"status": "healthy", "timestamp": time.time(), "components": {}}
 
         overall_healthy = True
 
@@ -381,7 +400,7 @@ class MangleIntegration:
             "cortex": self.cortex_runtime is not None,
             "telemetry": self.telemetry_collector is not None,
             "knowledge": self.knowledge_plugin is not None,
-            "optimization": self.optimization_plugin is not None
+            "optimization": self.optimization_plugin is not None,
         }
 
         if not all(health["components"]["agent"].values()):
@@ -412,19 +431,18 @@ class MangleIntegration:
 
 # Convenience functions for easy deployment
 
+
 async def create_and_run_mangle_integration(
-    config: dict[str, Any] | None = None,
-    workspace_root: Path | None = None,
-    **kwargs
+    config: dict[str, Any] | None = None, workspace_root: Path | None = None, **kwargs
 ) -> MangleIntegration:
     """
     Create, configure, and run a complete Mangle integration.
-    
+
     Args:
         config: Configuration dictionary
         workspace_root: Workspace root directory
         **kwargs: Additional configuration parameters
-        
+
     Returns:
         Configured and running MangleIntegration instance
     """
