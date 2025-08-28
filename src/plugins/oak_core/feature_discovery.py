@@ -2,19 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import uuid
-import time
-from typing import Dict, List, Optional, Set, Any
-from datetime import datetime, timezone
 from collections import deque
+from datetime import UTC, datetime
+from typing import Any
+
 import numpy as np
 import torch
 import torch.nn as nn
-import json
-
 from pydantic import BaseModel, Field
+
 from src.core.plugin_interface import PluginInterface
-from src.neural.store import MessageStore
 from src.neural.atom import Atom
 
 
@@ -23,7 +22,7 @@ class Feature(BaseModel):
     id: str
     name: str
     composition_type: str  # 'primitive', 'conjunction', 'sequence', 'function', 'contrast'
-    base_features: List[str] = Field(default_factory=list)
+    base_features: list[str] = Field(default_factory=list)
 
     # IDBD parameters
     learning_rate: float = Field(default=0.01, ge=0.0001, le=1.0)
@@ -40,9 +39,9 @@ class Feature(BaseModel):
 
     # Metadata
     activation_count: int = 0
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_activated: Optional[datetime] = None
-    evaluator: Optional[str] = None  # Serialized form (for registry/traceability)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_activated: datetime | None = None
+    evaluator: str | None = None  # Serialized form (for registry/traceability)
 
     def compute_combined_utility(self) -> float:
         weights = {"play": 0.4, "prediction": 0.3, "planning": 0.2, "novelty": 0.1}
@@ -97,8 +96,8 @@ class FeatureDiscoveryEngine(PluginInterface):
         self.state_dim = self.get_config("state_dim", 100)
         self.discovery_rate_limit = self.get_config("discovery_rate_limit", 10)
 
-        self.features: Dict[str, Feature] = {}
-        self.feature_graph: Dict[str, Set[str]] = {}
+        self.features: dict[str, Feature] = {}
+        self.feature_graph: dict[str, set[str]] = {}
 
         self.feature_extractor = FeatureExtractor(self.state_dim, 64, 32)
         self.extractor_optimizer = torch.optim.Adam(self.feature_extractor.parameters(), lr=1e-3)
@@ -115,15 +114,15 @@ class FeatureDiscoveryEngine(PluginInterface):
         await self.subscribe("prediction_error", self.handle_prediction_feedback)
         await self.subscribe("planning_usage", self.handle_planning_feedback)
 
-    def generate_feature_id(self, composition: List[str], type_: str) -> str:
+    def generate_feature_id(self, composition: list[str], type_: str) -> str:
         ns = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
         return str(uuid.uuid5(ns, f"{type_}:{'_'.join(sorted(composition))}"))
 
-    async def handle_observation(self, event: Dict[str, Any]):
+    async def handle_observation(self, event: dict[str, Any]):
         obs = event.get("data", {}) or {}
         primitives = await self._extract_primitives(obs)
 
-        candidates: List[Feature] = []
+        candidates: list[Feature] = []
         candidates += self._generate_conjunctions(primitives)
         candidates += self._generate_sequences()
         candidates += self._generate_functions(obs)
@@ -142,12 +141,12 @@ class FeatureDiscoveryEngine(PluginInterface):
                 "features_discovered",
                 feature_ids=added,
                 total_features=len(self.features),
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
-    async def _extract_primitives(self, obs: Dict[str, Any]) -> List[Feature]:
-        out: List[Feature] = []
-        for key in obs.keys():
+    async def _extract_primitives(self, obs: dict[str, Any]) -> list[Feature]:
+        out: list[Feature] = []
+        for key in obs:
             fid = self.generate_feature_id([key], "primitive")
             if fid not in self.features:
                 f = Feature(
@@ -172,13 +171,13 @@ class FeatureDiscoveryEngine(PluginInterface):
                     "feature_created",
                     feature_id=fid,
                     composition_type="primitive",
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                 )
             out.append(self.features[fid])
         return out
 
-    def _generate_conjunctions(self, features: List[Feature]) -> List[Feature]:
-        out: List[Feature] = []
+    def _generate_conjunctions(self, features: list[Feature]) -> list[Feature]:
+        out: list[Feature] = []
         tops = sorted(features, key=lambda x: x.combined_utility, reverse=True)[:8]
         for i, a in enumerate(tops):
             for b in tops[i+1:]:
@@ -195,8 +194,8 @@ class FeatureDiscoveryEngine(PluginInterface):
                 ))
         return out
 
-    def _generate_sequences(self) -> List[Feature]:
-        out: List[Feature] = []
+    def _generate_sequences(self) -> list[Feature]:
+        out: list[Feature] = []
         if len(self.temporal_patterns) < 3:
             return out
         seq = []
@@ -214,8 +213,8 @@ class FeatureDiscoveryEngine(PluginInterface):
                 ))
         return out
 
-    def _generate_functions(self, obs: Dict[str, Any]) -> List[Feature]:
-        out: List[Feature] = []
+    def _generate_functions(self, obs: dict[str, Any]) -> list[Feature]:
+        out: list[Feature] = []
         vec = self._obs_to_vector(obs)
         with torch.no_grad():
             feats = self.feature_extractor(torch.FloatTensor(vec).unsqueeze(0)).squeeze().numpy()
@@ -235,8 +234,8 @@ class FeatureDiscoveryEngine(PluginInterface):
             ))
         return out
 
-    def _generate_contrasts(self, feats: List[Feature]) -> List[Feature]:
-        out: List[Feature] = []
+    def _generate_contrasts(self, feats: list[Feature]) -> list[Feature]:
+        out: list[Feature] = []
         if len(feats) < 2:
             return out
         pairs = min(3, len(feats)//2)
@@ -255,7 +254,7 @@ class FeatureDiscoveryEngine(PluginInterface):
             ))
         return out
 
-    def _obs_to_vector(self, obs: Dict[str, Any]) -> np.ndarray:
+    def _obs_to_vector(self, obs: dict[str, Any]) -> np.ndarray:
         vec = np.zeros(self.state_dim, dtype=np.float32)
         i = 0
         for k, v in obs.items():
@@ -295,7 +294,7 @@ class FeatureDiscoveryEngine(PluginInterface):
             "feature_created",
             feature_id=f.id,
             composition_type=f.composition_type,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         return True
 
@@ -327,7 +326,7 @@ class FeatureDiscoveryEngine(PluginInterface):
                 f.learning_rate *= float(np.exp(np.clip(upd, -0.1, 0.1)))
                 f.learning_rate = float(np.clip(f.learning_rate, 0.0001, 1.0))
 
-    async def handle_option_feedback(self, event: Dict[str, Any]):
+    async def handle_option_feedback(self, event: dict[str, Any]):
         feats = event.get("features", []) or []
         success = bool(event.get("success", False))
         for fid in feats:
@@ -338,7 +337,7 @@ class FeatureDiscoveryEngine(PluginInterface):
             delta = tgt - f.play_utility
             f.play_utility = float(np.clip(f.play_utility + f.learning_rate * delta, 0.0, 1.0))
             f.activation_count += 1
-            f.last_activated = datetime.now(timezone.utc)
+            f.last_activated = datetime.now(UTC)
             await self.emit_event(
                 "feature_utility_update",
                 feature_id=fid,
@@ -350,10 +349,10 @@ class FeatureDiscoveryEngine(PluginInterface):
                     "planning": f.planning_utility,
                     "novelty": f.novelty_score,
                 },
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
-    async def handle_prediction_feedback(self, event: Dict[str, Any]):
+    async def handle_prediction_feedback(self, event: dict[str, Any]):
         feats = event.get("features", []) or []
         error = float(event.get("error", 1.0))
         for fid in feats:
@@ -374,10 +373,10 @@ class FeatureDiscoveryEngine(PluginInterface):
                     "planning": f.planning_utility,
                     "novelty": f.novelty_score,
                 },
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
-    async def handle_planning_feedback(self, event: Dict[str, Any]):
+    async def handle_planning_feedback(self, event: dict[str, Any]):
         feats = event.get("features", []) or []
         val = float(event.get("value", 0.0))
         tgt = 1.0 / (1.0 + np.exp(-val))
@@ -398,5 +397,5 @@ class FeatureDiscoveryEngine(PluginInterface):
                     "planning": f.planning_utility,
                     "novelty": f.novelty_score,
                 },
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )

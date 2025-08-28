@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-27T06:35:58Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-26T04:06:01Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -19,7 +19,7 @@
 <!-- AGENTS:START -->
 | Agent | Kind | Entrypoint | Abilities (count) | Plugins (count) | Owner(s) | Stability | Notes |
 |---:|----|----|----|----|----|----|----|
-| super-alita | runtime | src/main.py | 1 | 56 | @owners | beta |  |
+| super-alita | runtime | src/main.py | 1 | 54 | @owners | beta |  |
 <!-- AGENTS:END -->
 
 ### 1.1 Ownership & Contacts
@@ -66,9 +66,7 @@
 | puter_plugin | src/plugins/puter_plugin.py | "cloud_storage", "process_execution", "file_io" | ENV_* | function() => ok |  |
 | autonomy_tracker | src/plugins/autonomy_tracker.py | (…) | ENV_* | function() => ok |  |
 | atom_tools_plugin | src/plugins/atom_tools_plugin.py | (…) | ENV_* | function() => ok |  |
-| option_executor_plugin | src/plugins/option_executor_plugin.py | (…) | ENV_* | function() => ok |  |
 | core_utils_plugin | src/plugins/core_utils_plugin.py | (…) | ENV_* | function() => ok |  |
-| planner_plugin_v2 | src/plugins/planner_plugin_v2.py | (…) | ENV_* | function() => ok |  |
 | conversation_plugin | src/plugins/conversation_plugin.py | **, 🧠 **Cognitive Architecture**: I use a plugin-based system with neural atoms for reactive state management | ENV_* | function() => ok |  |
 | memory_manager_plugin | src/plugins/memory_manager_plugin.py | "storage", "recall", "memory" | ENV_* | function() => ok |  |
 | event_bus_plugin | src/plugins/event_bus_plugin.py | (…) | ENV_* | function() => ok |  |
@@ -137,7 +135,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 76, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 155, 156, 157, 158, 159, 160, 164, 166, 167, 168, 171]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 76, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -145,6 +143,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-27T06:35:58Z #171 Merge pull request #171 from yaboyshades/copilot/fix-170 (owner: @yaboyshades)
+- 2025-08-26T04:06:01Z #146 Merge pull request #146 from yaboyshades/oak-core-integration (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-27T06:35:14Z #168 Merge pull request #168 from yaboyshades/copilot/fix-b1c06d30-151c-44b7-bb00-5edc74c8c059 (owner: @yaboyshades)
+- 2025-08-26T03:44:18Z #144 Merge pull request #144 from yaboyshades/codex/create-alita-language-tools-extension (owner: @yaboyshades)

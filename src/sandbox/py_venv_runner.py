@@ -5,9 +5,10 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
-from src.core.proc import ProcError, run as run_proc
+from src.core.proc import ProcError
+from src.core.proc import run as run_proc
 
 
 def _venv_python(venv_dir: Path) -> str:
@@ -19,7 +20,7 @@ def _venv_python(venv_dir: Path) -> str:
     return str(cand)
 
 
-def run_in_temp_venv(code: str, *, timeout: float = 10.0) -> Dict[str, Any]:
+def run_in_temp_venv(code: str, *, timeout: float = 10.0) -> dict[str, Any]:
     """
     Create a temporary venv, run a short Python snippet, and return outputs.
     Falls back to system python if venv creation is unavailable.

@@ -112,6 +112,12 @@ def _hash_json(obj: Any) -> str:
     return "na"
 
 
+# Initialize routers - set defaults first
+if FASTAPI_AVAILABLE:
+    autogen_router = APIRouter(prefix="/autogen", tags=["autogen"])  # type: ignore
+else:
+    autogen_router = None  # type: ignore
+
 # REUG runtime routers (streaming agent + toolbox)
 try:
     from reug_runtime.config import SETTINGS
@@ -143,50 +149,53 @@ except Exception as e:  # pragma: no cover
         async def tools_health() -> dict[str, str]:
             return {"status": "ok"}
 
-        # Autogen capability creation router
-        autogen_router = APIRouter(prefix="/autogen", tags=["autogen"])  # type: ignore
-
-        @autogen_router.post("/trigger")  # type: ignore
-        async def trigger_autogen(
-            description: str = Body(..., embed=True)  # type: ignore
-        ) -> dict[str, Any]:  # type: ignore
-            """Manually trigger autogen capability creation."""
-            try:
-                from src.pipelines.autogen_pipeline import autogen_any
-                result = autogen_any(description=description)
-                return {"status": "success", "result": result}
-            except Exception as e:
-                return {"status": "error", "error": str(e)}
-
-        @autogen_router.get("/capabilities")  # type: ignore
-        async def list_capabilities() -> dict[str, Any]:  # type: ignore
-            """List detected capability patterns."""
-            from src.policies.need_detector import NeedDetector
-            return {
-                "status": "success",
-                "capability_kinds": list(NeedDetector.KINDS.keys()),
-                "patterns": {
-                    kind: [p.pattern for p in patterns]
-                    for kind, patterns in NeedDetector.KINDS.items()
-                }
-            }
-
-        @autogen_router.post("/detect")  # type: ignore
-        async def detect_needs(
-            description: str = Body(..., embed=True)  # type: ignore
-        ) -> dict[str, Any]:  # type: ignore
-            """Detect capability needs from description."""
-            from src.policies.need_detector import NeedDetector
-            detector = NeedDetector()
-            needs = detector.detect(description)
-            return {
-                "status": "success",
-                "description": description,
-                "detected_needs": needs
-            }
-
         # Create minimal settings
         SETTINGS = type("Settings", (), {"api_prefix": ""})()  # type: ignore
+
+# Define autogen router endpoints if FastAPI is available
+if FASTAPI_AVAILABLE and autogen_router is not None:
+
+    @autogen_router.post("/trigger")  # type: ignore
+    async def trigger_autogen(
+        description: str = Body(..., embed=True)  # type: ignore
+    ) -> dict[str, Any]:  # type: ignore
+        """Manually trigger autogen capability creation."""
+        try:
+            from src.pipelines.autogen_pipeline import autogen_any
+
+            result = autogen_any(description=description)
+            return {"status": "success", "result": result}
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+    @autogen_router.get("/capabilities")  # type: ignore
+    async def list_capabilities() -> dict[str, Any]:  # type: ignore
+        """List detected capability patterns."""
+        from src.policies.need_detector import NeedDetector
+
+        return {
+            "status": "success",
+            "capability_kinds": list(NeedDetector.KINDS.keys()),
+            "patterns": {
+                kind: [p.pattern for p in patterns]
+                for kind, patterns in NeedDetector.KINDS.items()
+            },
+        }
+
+    @autogen_router.post("/detect")  # type: ignore
+    async def detect_needs(
+        description: str = Body(..., embed=True)  # type: ignore
+    ) -> dict[str, Any]:  # type: ignore
+        """Detect capability needs from description."""
+        from src.policies.need_detector import NeedDetector
+
+        detector = NeedDetector()
+        needs = detector.detect(description)
+        return {
+            "status": "success",
+            "description": description,
+            "detected_needs": needs,
+        }
 
 
 # --- Ability registry (minimal adapter; replace with your real one) ---
@@ -584,9 +593,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                             source=str(source),
                             data=data,  # type: ignore[arg-type]
                             session_id=str(session_id) if session_id else None,
-                            conversation_id=str(conversation_id)
-                            if conversation_id
-                            else None,
+                            conversation_id=(
+                                str(conversation_id) if conversation_id else None
+                            ),
                             metadata=meta if isinstance(meta, dict) else None,
                         )
                     except Exception:
@@ -612,15 +621,15 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             gen = DeepCodeGeneratorBridgePlugin()
             orch = DeepCodeOrchestratorPlugin()
             autogen = AutogenCreatorPlugin()
-            
+
             await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
             await orch.setup(app.state.event_bus, store=None, config={})  # type: ignore
             await autogen.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            
+
             await gen.start()
             await orch.start()
             await autogen.start()
-            
+
             app.state.plugins = [gen, orch, autogen]  # type: ignore
 
         # Emit startup events
@@ -755,6 +764,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
                             request = Request(request.scope, _receive)  # type: ignore
             return await call_next(request)
+
     else:
         app.include_router(agent_router)  # type: ignore
         app.include_router(tools_router)  # type: ignore

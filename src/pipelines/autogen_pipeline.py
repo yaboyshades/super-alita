@@ -84,15 +84,12 @@ Task: {desc}
 def _emit(bus: EventBus, topic: str, payload: dict[str, Any]) -> None:
     """Emit event to EventBus."""
     import asyncio
-    
+
     # Add required source_plugin field
-    payload_with_source = {
-        "source_plugin": "autogen_pipeline",
-        **payload
-    }
-    
+    payload_with_source = {"source_plugin": "autogen_pipeline", **payload}
+
     event = create_event(event_type=topic, **payload_with_source)
-    
+
     # Handle sync/async properly
     try:
         loop = asyncio.get_event_loop()

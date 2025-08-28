@@ -77,7 +77,9 @@ def test_circuit_breaker(monkeypatch):
     assert terminals[0]["type"] == "TaskSucceeded"
     succ = {e["span_id"] for e in evts if e["type"] == "AbilitySucceeded"}
     fail = {e["span_id"] for e in evts if e["type"] == "AbilityFailed"}
-    assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls
+    assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls)
+
+
 try:
     from reug_runtime.router import breaker, router
 except ImportError:  # pragma: no cover - skip if implementation missing

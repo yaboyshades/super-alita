@@ -15,8 +15,9 @@ from typing import Any
 # Remove the workspace from the Python path to avoid conflicts
 sys.path = [p for p in sys.path if "super-alita-clean" not in p and "ATLAI" not in p]
 
-# Add the virtual environment paths explicitly
-venv_base = r"D:\Coding_Projects\super-alita-clean\.venv"
+# Add the virtual environment paths explicitly (resolve relative to repo root)
+REPO_ROOT = Path(__file__).resolve().parent
+venv_base = str(REPO_ROOT / ".venv")
 sys.path.extend(
     [
         os.path.join(venv_base, "Lib", "site-packages"),
@@ -29,8 +30,13 @@ sys.path.extend(
 # Import the MCP modules first
 from mcp.server.fastmcp import FastMCP
 
-# Restore the path so we can import local modules
-sys.path.insert(0, r"D:\Coding_Projects\super-alita-clean\src")
+# Restore the path so we can import local modules. For 'import src.*', the
+# parent directory of 'src' must be on sys.path. Add both repo root and src.
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+src_dir = REPO_ROOT / "src"
+if str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mcp_server")

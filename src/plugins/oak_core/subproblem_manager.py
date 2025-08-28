@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import uuid
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timezone
 import json
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
+
 from src.core.plugin_interface import PluginInterface
 from src.neural.atom import Atom
 
@@ -21,12 +22,12 @@ class Subproblem(BaseModel):
     kappa: float = Field(default=1.0, ge=0.0, le=10.0)           # Intrinsic attainment weight
     extrinsic_weight: float = Field(default=1.0, ge=0.0, le=1.0)
 
-    termination_features: List[str] = Field(default_factory=list)
+    termination_features: list[str] = Field(default_factory=list)
     max_steps: int = Field(default=100, ge=1, le=2000)
 
     created_by: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    linked_options: List[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    linked_options: list[str] = Field(default_factory=list)
 
     # Perf
     success_rate: float = 0.0
@@ -105,10 +106,10 @@ class SubproblemManager(PluginInterface):
                     subproblem_id=sp.id,
                     feature_id=feature_id,
                     kappa=k,
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                 )
 
-    async def handle_utility_update(self, event: Dict[str, Any]):
+    async def handle_utility_update(self, event: dict[str, Any]):
         fid = event.get("feature_id")
         utility = float(event.get("value", 0.0))
         if not fid or utility <= self.min_utility_threshold:
@@ -124,10 +125,10 @@ class SubproblemManager(PluginInterface):
                         subproblem_id=sp.id,
                         feature_id=fid,
                         kappa=new_k,
-                        timestamp=datetime.now(timezone.utc),
+                        timestamp=datetime.now(UTC),
                     )
 
-    async def _create_subproblem(self, feature_id: str, kappa: float) -> Optional[Subproblem]:
+    async def _create_subproblem(self, feature_id: str, kappa: float) -> Subproblem | None:
         sp_id = self.generate_subproblem_id(feature_id, kappa)
         if sp_id in self.subproblems:
             return None
@@ -155,7 +156,7 @@ class SubproblemManager(PluginInterface):
         )
         return sp
 
-    async def link_option_to_subproblem(self, event: Dict[str, Any]):
+    async def link_option_to_subproblem(self, event: dict[str, Any]):
         opt_id = event.get("option_id")
         sp_id = event.get("subproblem_id")
         sp = self.subproblems.get(sp_id)
@@ -178,10 +179,10 @@ class SubproblemManager(PluginInterface):
                 "subproblem_option_linked",
                 subproblem_id=sp_id,
                 option_id=opt_id,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
-    async def handle_termination(self, event: Dict[str, Any]):
+    async def handle_termination(self, event: dict[str, Any]):
         sp_id = event.get("subproblem_id")
         success = bool(event.get("success", False))
         steps = int(event.get("steps", 0))
@@ -213,5 +214,5 @@ class SubproblemManager(PluginInterface):
                 old_kappa=old,
                 new_kappa=sp.kappa,
                 reason="performance_adaptation",
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
