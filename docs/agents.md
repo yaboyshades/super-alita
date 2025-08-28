@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-27T23:45:54Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-28T00:52:50Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -19,7 +19,7 @@
 <!-- AGENTS:START -->
 | Agent | Kind | Entrypoint | Abilities (count) | Plugins (count) | Owner(s) | Stability | Notes |
 |---:|----|----|----|----|----|----|----|
-| super-alita | runtime | src/main.py | 1 | 56 | @owners | beta |  |
+| super-alita | runtime | src/main.py | 3 | 56 | @owners | beta |  |
 <!-- AGENTS:END -->
 
 ### 1.1 Ownership & Contacts
@@ -36,6 +36,8 @@
 <!-- ABILITIES:START -->
 | Ability | Module | Signature | Guardrails | Telemetry Events | Notes |
 |---:|----|----|----|----|----|
+| _utcnow | src/abilities/deepcode_integration_ability.py | (…) | yes | Ability* events |  |
+| _utcnow | src/abilities/deepcode_analysis_ability.py | (…) | yes | Ability* events |  |
 | _utcnow | src/abilities/gemini_codegen_ability.py | (…) | yes | Ability* events |  |
 <!-- ABILITIES:END -->
 
@@ -137,7 +139,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 76, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 155, 156, 157, 158, 159, 160, 164, 166, 167, 168, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 182]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 76, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 155, 156, 157, 158, 159, 160, 164, 166, 167, 168, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 182, 187]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -145,6 +147,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-27T23:45:54Z #182 Merge pull request #182 from yaboyshades/copilot/fix-d2d0a529-4089-45cc-881c-63666962c340 (owner: @yaboyshades)
+- 2025-08-28T00:52:50Z #187 Merge pull request #187 from yaboyshades/copilot/fix-e4633ee8-45ab-4f87-9d09-60a008c69078 (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-27T23:32:19Z #180 Merge pull request #180 from yaboyshades/copilot/fix-b41f7d79-0fef-41f5-b906-735a4c53c20c (owner: @yaboyshades)
+- 2025-08-27T23:45:54Z #182 Merge pull request #182 from yaboyshades/copilot/fix-d2d0a529-4089-45cc-881c-63666962c340 (owner: @yaboyshades)
