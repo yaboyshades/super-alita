@@ -40,8 +40,8 @@ except ImportError:
     FASTAPI_AVAILABLE = False
 
 # Event bus imports (moved up to avoid E402)
-from reug_runtime.event_bus import BaseEventBus, FileEventBus, make_event_bus
-from reug_runtime.llm_client import LLMClient, get_llm_client
+from src.reug_runtime.event_bus import BaseEventBus, FileEventBus, make_event_bus
+from src.reug_runtime.llm_client import LLMClient, get_llm_client
 from src.core.events import create_event
 
 
@@ -198,6 +198,7 @@ class SimpleAbilityRegistry:
             "automated_problem_solver",
             "repository_deep_analysis",
             "enhanced_code_review",
+            "discover_github_upgrades",
         }
         self._contracts: dict[str, dict[str, Any]] = {
             "echo": {
@@ -624,7 +625,7 @@ class SimpleAbilityRegistry:
         # Enhanced Copilot tool execution
         if tool_name in [
             "analyze_and_suggest_repos", "automated_problem_solver",
-            "repository_deep_analysis", "enhanced_code_review"
+            "repository_deep_analysis", "enhanced_code_review", "discover_github_upgrades"
         ]:
             return await self._execute_enhanced_copilot_tool(tool_name, args)
 
