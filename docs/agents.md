@@ -3,7 +3,7 @@
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
 > Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-28T01:39:46Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-28T03:27:36Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -86,7 +86,7 @@
 | memory_manager_plugin_clean | src/plugins/memory_manager_plugin_clean.py | "storage", "recall", "memory" | ENV_* | function() => ok |  |
 | enhanced_protocol_plugin | src/plugins/enhanced_protocol_plugin.py | (…) | ENV_* | function() => ok |  |
 | deepcode_orchestrator_plugin | src/plugins/deepcode_orchestrator_plugin.py | (…) | ENV_* | function() => ok |  |
-| core_utils_plugin_dynamic | src/plugins/core_utils_plugin_dynamic.py | ", len(self._capabilities)), # Tool not in our discovered capabilities, dict[str, Callable, {name}" | ENV_* | function() => ok |  |
+| core_utils_plugin_dynamic | src/plugins/core_utils_plugin_dynamic.py | ", len(self._capabilities), # Tool not in our discovered capabilities, dict[str, Callable, {name}" | ENV_* | function() => ok |  |
 | creator_plugin_unified | src/plugins/creator_plugin_unified.py | = "calculate":, Capability Needed: {request.capability_description}, [, capabilities = ["execute", "process", "respond", capabilities,, if capability == "search":, if capability.lower() in task_lower:, json.dumps(spec.capabilities),, {capabilities}, | ENV_* | function() => ok |  |
 | option_executor_plugin | src/plugins/option_executor_plugin.py | (…) | ENV_* | function() => ok |  |
 | brainstorm_plugin | src/plugins/brainstorm_plugin.py | atom.tool | ENV_* | function() => ok |  |
@@ -140,7 +140,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 76, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 155, 156, 157, 158, 159, 160, 164, 166, 167, 168, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 182, 187, 188, 189]
+- **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 76, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 155, 156, 157, 158, 159, 160, 164, 166, 167, 168, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 182, 187, 188, 189, 191]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
 
 ---
@@ -148,6 +148,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-08-28T01:39:46Z #189 Merge pull request #189 from yaboyshades/copilot/fix-1bfcd0d4-b5fa-4715-88b1-d9402c663ff2 (owner: @yaboyshades)
+- 2025-08-28T03:27:36Z #191 Merge pull request #191 from yaboyshades/copilot/fix-3d5ae786-41f9-46ee-aebe-92b43c0cb0b4 (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-08-28T01:12:51Z #188 Merge pull request #188 from yaboyshades/copilot/fix-751f5208-ebc3-44e8-934e-a845ae7b0d54 (owner: @yaboyshades)
+- 2025-08-28T01:39:46Z #189 Merge pull request #189 from yaboyshades/copilot/fix-1bfcd0d4-b5fa-4715-88b1-d9402c663ff2 (owner: @yaboyshades)
