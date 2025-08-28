@@ -68,11 +68,31 @@ python -m uvicorn src.main:app --reload --port 8080
 
 ### 4. Run tests
 
+Super Alita provides comprehensive Jest-equivalent testing using pytest and related packages:
+
 ```bash
+# Basic test run (Jest equivalent: jest)
 make test
 # or manually
 pytest -q
+
+# Coverage reporting (Jest equivalent: jest --coverage)
+pytest --cov=src --cov-report=term-missing
+
+# Parallel execution (Jest equivalent: built-in parallelism)
+pytest -n auto
+
+# Watch mode (Jest equivalent: jest --watch)
+ptw
+
+# Snapshot testing (Jest equivalent: Jest snapshots)
+pytest --snapshot-update
+
+# Run Jest-like pattern examples
+python demo_jest_for_python.py
 ```
+
+For complete Jest-to-Python testing guide, see [docs/jest_for_python_guide.md](docs/jest_for_python_guide.md).
 
 Health check:
 
