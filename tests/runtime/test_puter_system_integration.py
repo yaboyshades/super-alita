@@ -16,18 +16,18 @@ def test_puter_plugin_in_unified_system():
     """Test that Puter plugin can be loaded in the unified system."""
     import sys
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
-    
+
     from main_unified import AVAILABLE_PLUGINS, _load_unified_plugins
-    
+
     # Load plugins
     _load_unified_plugins()
-    
+
     # Check Puter plugin is available
     assert 'puter' in AVAILABLE_PLUGINS
-    
+
     plugin_class = AVAILABLE_PLUGINS['puter']
     assert plugin_class.__name__ == "PuterPlugin"
-    
+
     # Test instantiation
     plugin = plugin_class()
     assert plugin.name == "puter"
@@ -38,12 +38,12 @@ async def test_puter_plugin_initialization_with_env(monkeypatch):
     """Test Puter plugin initialization with environment configuration."""
     import sys
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
-    
+
     # Set environment variables
     os.environ["PUTER_BASE_URL"] = "https://test.puter.com"
     os.environ["PUTER_API_KEY"] = "test_key_123"
     os.environ["PUTER_WORKSPACE_ID"] = "test_workspace"
-    
+
     try:
         from plugins.puter_plugin import PuterPlugin
 
@@ -109,7 +109,7 @@ async def test_puter_plugin_initialization_with_env(monkeypatch):
 
         # Test shutdown
         await plugin.shutdown()
-        
+
     finally:
         # Clean up environment
         for key in ["PUTER_BASE_URL", "PUTER_API_KEY", "PUTER_WORKSPACE_ID"]:
@@ -121,27 +121,27 @@ async def test_end_to_end_puter_workflow(monkeypatch):
     """Test end-to-end workflow with Puter plugin."""
     import sys
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
-    
+
     from core.events import create_event
     from plugins.puter_plugin import PuterPlugin
-    
+
     # Mock event bus that captures events
     class MockEventBus:
         def __init__(self):
             self.events = []
-        
+
         async def emit(self, event_type, **kwargs):
             from core.events import create_event
             event = create_event(event_type, **kwargs)
             self.events.append(event)
             return event
-        
+
         async def publish(self, event):
             self.events.append(event)
-        
+
         async def subscribe(self, event_type, handler):
             pass
-    
+
     # Set up plugin
     plugin = PuterPlugin()
     mock_bus = MockEventBus()
@@ -181,7 +181,7 @@ async def test_end_to_end_puter_workflow(monkeypatch):
 
     await plugin.setup(mock_bus, mock_store, config)
     await plugin.start()
-    
+
     # Test file operation workflow
     file_event = create_event(
         "puter_file_operation",
@@ -193,9 +193,9 @@ async def test_end_to_end_puter_workflow(monkeypatch):
         "file_path": "/test/file.txt",
         "content": "Hello Puter World!",
     }
-    
+
     await plugin._handle_file_operation(file_event)
-    
+
     # Verify operation was recorded and event emitted
     assert len(plugin.operation_history) == 1
     completion_event = next(
@@ -203,13 +203,13 @@ async def test_end_to_end_puter_workflow(monkeypatch):
     )
     assert completion_event.operation_type == "file_operation"
     assert completion_event.file_path == "/test/file.txt"
-    
+
     # Verify neural atom was created
     atom = plugin.operation_history[0]
     assert atom.operation_type == "file_operation"
     assert atom.operation_data["file_path"] == "/test/file.txt"
     assert atom.get_deterministic_uuid() is not None
-    
+
     await plugin.shutdown()
 
 
@@ -217,12 +217,12 @@ if __name__ == "__main__":
     # Run simple integration tests
     test_puter_plugin_in_unified_system()
     print("✅ Plugin integration test passed")
-    
+
     # Run async tests
     asyncio.run(test_puter_plugin_initialization_with_env())
     print("✅ Environment configuration test passed")
-    
+
     asyncio.run(test_end_to_end_puter_workflow())
     print("✅ End-to-end workflow test passed")
-    
+
     print("🎉 All integration tests passed!")

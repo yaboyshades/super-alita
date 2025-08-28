@@ -8,7 +8,7 @@ from .gemini_codegen_ability import GeminiCodegenAbility
 
 __all__ = [
     "DeepCodeAnalysisAbility",
-    "DeepCodeIntegrationAbility", 
+    "DeepCodeIntegrationAbility",
     "GeminiCodegenAbility",
     "create_deepcode_analysis_ability",
     "create_deepcode_integration_ability",

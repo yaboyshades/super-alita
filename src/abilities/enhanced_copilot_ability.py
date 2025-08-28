@@ -11,7 +11,6 @@ This ability combines:
 """
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import os
@@ -40,23 +39,23 @@ class EnhancedCopilotAbility(PluginInterface):
     def __init__(self) -> None:
         super().__init__()
         self.enabled = os.getenv("ENHANCED_COPILOT_ENABLED", "true").lower() == "true"
-        
+
         # Initialize sub-abilities
         self.deepcode_analysis = DeepCodeAnalysisAbility()
         self.deepcode_integration = DeepCodeIntegrationAbility()
         self.web_agent = WebAgentAtom()
-        
+
         # GitHub token for enhanced repository access
         self.github_token = os.getenv("GITHUB_TOKEN", "")
 
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
-        
+
         # Setup sub-abilities
         await self.deepcode_analysis.setup(event_bus, store, config)
         await self.deepcode_integration.setup(event_bus, store, config)
         await self.web_agent.setup(event_bus, store, config)
-        
+
         logger.info("EnhancedCopilotAbility setup complete")
 
     @property
@@ -68,12 +67,12 @@ class EnhancedCopilotAbility(PluginInterface):
         if not self.enabled:
             logger.info("EnhancedCopilotAbility disabled; not starting.")
             return
-            
+
         # Start sub-abilities
         await self.deepcode_analysis.start()
         await self.deepcode_integration.start()
         await self.web_agent.start()
-        
+
         # Register as a tool provider
         await self.subscribe("tool_execution_request", self._handle_tool_request)
         logger.info("EnhancedCopilotAbility started")
@@ -210,7 +209,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 success=not result.get("error"),
                 timestamp=_utcnow()
             )
-            
+
             if self.event_bus:
                 await self.event_bus.publish(result_event)
 
@@ -224,13 +223,13 @@ class EnhancedCopilotAbility(PluginInterface):
                 source_plugin=self.name,
                 timestamp=_utcnow()
             )
-            
+
             if self.event_bus:
                 await self.event_bus.publish(error_event)
 
     async def _execute_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         """Execute the specified enhanced copilot tool"""
-        
+
         if tool_name == "analyze_and_suggest_repos":
             return await self._analyze_and_suggest_repos(args)
         elif tool_name == "automated_problem_solver":
@@ -466,22 +465,22 @@ class EnhancedCopilotAbility(PluginInterface):
     ) -> str:
         """Generate optimized search query for GitHub repositories"""
         query_parts = []
-        
+
         # Add language filter
         query_parts.append(f"language:{language}")
-        
+
         # Extract keywords from problem description
         problem_keywords = self._extract_keywords(problem_description)
         query_parts.extend(problem_keywords[:3])  # Limit to top 3 keywords
-        
+
         # Add technology keywords from code analysis
         if code_analysis and "technologies" in code_analysis:
             tech_keywords = code_analysis["technologies"][:2]  # Limit to top 2
             query_parts.extend(tech_keywords)
-        
+
         # Add common quality filters
         query_parts.append("stars:>10")
-        
+
         return " ".join(query_parts)
 
     async def _search_github_repos(self, query: str, max_results: int) -> list[dict[str, Any]]:
@@ -489,12 +488,12 @@ class EnhancedCopilotAbility(PluginInterface):
         try:
             # Use the web agent's call method directly
             search_result = await self.web_agent.call(query, web_k=0, github_k=max_results)
-            
+
             # Extract GitHub repositories from results
             github_repos = search_result.get("github", [])
-            
+
             return github_repos[:max_results]
-            
+
         except Exception as e:
             logger.error(f"Error searching GitHub repos: {e}")
             return []
@@ -508,23 +507,23 @@ class EnhancedCopilotAbility(PluginInterface):
             repo_description = repo.get("snippet", "").lower()
             problem_words = set(problem_description.lower().split())
             repo_words = set(repo_description.split())
-            
+
             # Calculate word overlap
             common_words = problem_words.intersection(repo_words)
             relevance_score = len(common_words) / max(len(problem_words), 1)
-            
+
             return {
                 "relevance_score": min(relevance_score, 1.0),
                 "matching_keywords": list(common_words),
                 "analysis_summary": f"Repository shows {relevance_score:.2%} relevance to the problem",
             }
-            
+
         except Exception as e:
             logger.error(f"Error analyzing repository relevance: {e}")
             return {"error": f"Relevance analysis failed: {str(e)}"}
 
     async def _generate_implementation_plan(
-        self, 
+        self,
         task_description: str,
         workspace_analysis: dict[str, Any] | None,
         repo_analysis: dict[str, Any]
@@ -532,7 +531,7 @@ class EnhancedCopilotAbility(PluginInterface):
         """Generate implementation plan based on analysis"""
         try:
             plan_steps = []
-            
+
             # Step 1: Environment setup
             plan_steps.append({
                 "step": 1,
@@ -540,7 +539,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "description": "Set up development environment and dependencies",
                 "actions": ["Create virtual environment", "Install required packages"]
             })
-            
+
             # Step 2: Repository integration
             if repo_analysis.get("repository_suggestions"):
                 top_repo = repo_analysis["repository_suggestions"][0]
@@ -553,7 +552,7 @@ class EnhancedCopilotAbility(PluginInterface):
                         "Adapt relevant patterns to current project"
                     ]
                 })
-            
+
             # Step 3: Implementation
             plan_steps.append({
                 "step": 3,
@@ -561,7 +560,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "description": "Implement the main functionality",
                 "actions": ["Write core logic", "Add error handling", "Implement tests"]
             })
-            
+
             # Step 4: Testing and validation
             plan_steps.append({
                 "step": 4,
@@ -569,7 +568,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "description": "Test and validate the implementation",
                 "actions": ["Write unit tests", "Perform integration testing", "Validate against requirements"]
             })
-            
+
             return {
                 "task_description": task_description,
                 "plan_steps": plan_steps,
@@ -580,7 +579,7 @@ class EnhancedCopilotAbility(PluginInterface):
                     "Implement comprehensive error handling"
                 ]
             }
-            
+
         except Exception as e:
             logger.error(f"Error generating implementation plan: {e}")
             return {"error": f"Plan generation failed: {str(e)}"}
@@ -594,7 +593,7 @@ class EnhancedCopilotAbility(PluginInterface):
         """Generate code suggestions based on analysis"""
         try:
             suggestions = []
-            
+
             # Generate basic code structure
             suggestions.append({
                 "type": "structure",
@@ -602,7 +601,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "code": self._generate_basic_structure(task_description),
                 "description": "Basic project structure to get started"
             })
-            
+
             # Generate implementation template
             suggestions.append({
                 "type": "implementation",
@@ -610,7 +609,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "code": self._generate_implementation_template(task_description),
                 "description": "Template code based on task requirements"
             })
-            
+
             # Generate test template
             suggestions.append({
                 "type": "tests",
@@ -618,7 +617,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "code": self._generate_test_template(task_description),
                 "description": "Unit test template for the implementation"
             })
-            
+
             return {
                 "task_description": task_description,
                 "code_suggestions": suggestions,
@@ -628,7 +627,7 @@ class EnhancedCopilotAbility(PluginInterface):
                     "Follow your project's coding standards"
                 ]
             }
-            
+
         except Exception as e:
             logger.error(f"Error generating code suggestions: {e}")
             return {"error": f"Code generation failed: {str(e)}"}
@@ -657,13 +656,13 @@ class EnhancedCopilotAbility(PluginInterface):
         """Fetch repository metadata from GitHub API"""
         if not self.github_token:
             return {"error": "GitHub token not configured"}
-            
+
         try:
             headers = {
                 "Authorization": f"Bearer {self.github_token}",
                 "Accept": "application/vnd.github+json"
             }
-            
+
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     f"https://api.github.com/repos/{owner}/{repo}",
@@ -673,7 +672,7 @@ class EnhancedCopilotAbility(PluginInterface):
                         return await response.json()
                     else:
                         return {"error": f"Failed to fetch metadata: {response.status}"}
-                        
+
         except Exception as e:
             logger.error(f"Error fetching repo metadata: {e}")
             return {"error": f"Metadata fetch failed: {str(e)}"}
@@ -715,7 +714,7 @@ class EnhancedCopilotAbility(PluginInterface):
     ) -> list[dict[str, Any]]:
         """Generate improvement suggestions based on DeepCode analysis"""
         suggestions = []
-        
+
         issues = deepcode_result.get("issues", [])
         for issue in issues[:5]:  # Limit to top 5 issues
             suggestions.append({
@@ -725,7 +724,7 @@ class EnhancedCopilotAbility(PluginInterface):
                 "suggestion": f"Consider addressing this {issue.get('severity', 'medium')} severity issue",
                 "example_repos": []  # Could be populated with relevant GitHub examples
             })
-        
+
         return suggestions
 
     def _generate_basic_structure(self, task_description: str) -> str:

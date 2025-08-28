@@ -4,7 +4,6 @@ DeepCode Integration Ability - Provides workspace analysis and code understandin
 """
 from __future__ import annotations
 
-import json
 import logging
 import os
 import uuid
@@ -48,7 +47,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
         if not self.enabled:
             logger.info("DeepCodeIntegrationAbility disabled; not starting.")
             return
-        
+
         # Register as a tool provider
         await self.subscribe("tool_execution_request", self._handle_tool_request)
         logger.info("DeepCodeIntegrationAbility started")
@@ -175,7 +174,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
 
     async def _execute_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         """Execute the specified deepcode integration tool"""
-        
+
         if tool_name == "analyze_workspace_context":
             return await self._analyze_workspace_context(args)
         elif tool_name == "analyze_file_context":
@@ -194,14 +193,14 @@ class DeepCodeIntegrationAbility(PluginInterface):
         workspace_path = args["workspace_path"]
         max_files = args.get("max_files", 20)
         include_quality_metrics = args.get("include_quality_metrics", True)
-        
+
         # Validate workspace exists
         if not Path(workspace_path).exists():
             raise FileNotFoundError(f"Workspace not found: {workspace_path}")
 
         # Use the integration to analyze workspace
         analysis_result = await analyze_workspace_sample(workspace_path)
-        
+
         if "error" in analysis_result:
             return {
                 "workspace_path": workspace_path,
@@ -232,7 +231,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
         """Analyze a specific file with full context understanding"""
         file_path = args["file_path"]
         include_suggestions = args.get("include_suggestions", True)
-        
+
         # Validate file exists
         if not Path(file_path).exists():
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -247,7 +246,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
 
         # Analyze the file
         analysis_result = await analyze_current_file(file_path)
-        
+
         if "error" in analysis_result:
             return {
                 "file_path": file_path,
@@ -278,10 +277,10 @@ class DeepCodeIntegrationAbility(PluginInterface):
     async def _check_file_support(self, args: dict[str, Any]) -> dict[str, Any]:
         """Check if a file type is supported by deepcode analysis"""
         file_path = args["file_path"]
-        
+
         path = Path(file_path)
         supported = is_supported_file(file_path)
-        
+
         return {
             "file_path": file_path,
             "file_extension": path.suffix,
@@ -293,7 +292,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
         """Get list of file extensions supported by deepcode"""
         # Get supported extensions from the integration
         supported_extensions = self.integration.get_supported_extensions()
-        
+
         return {
             "supported_extensions": list(supported_extensions),
             "count": len(supported_extensions),
@@ -308,7 +307,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
         """Analyze code structure and provide architectural insights"""
         target_path = args["target_path"]
         focus_area = args.get("focus_area", "architecture")
-        
+
         path = Path(target_path)
         if not path.exists():
             raise FileNotFoundError(f"Path not found: {target_path}")
@@ -321,7 +320,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
                     "supported": False,
                     "message": "File type not supported for structure analysis"
                 }
-            
+
             analysis_result = await analyze_current_file(str(path))
             structure_info = self._extract_structure_info(analysis_result, focus_area)
         else:
@@ -338,7 +337,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
     def _infer_project_type(self, workspace_path: str) -> str:
         """Infer the type of project based on files present"""
         path = Path(workspace_path)
-        
+
         # Check for specific project indicators
         if (path / "requirements.txt").exists() or (path / "pyproject.toml").exists():
             return "python"
@@ -359,7 +358,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
         """Identify the main programming languages used in the workspace"""
         path = Path(workspace_path)
         language_files = {}
-        
+
         # Count files by extension
         for file_path in path.rglob("*"):
             if file_path.is_file():
@@ -395,7 +394,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
         """Generate improvement suggestions based on file analysis"""
         suggestions = []
         issues = analysis_result.get("issues", [])
-        
+
         # Group issues by category
         security_issues = [i for i in issues if "security" in i.get("category", "").lower()]
         complexity_issues = [i for i in issues if "complexity" in i.get("category", "").lower()]
@@ -407,18 +406,18 @@ class DeepCodeIntegrationAbility(PluginInterface):
             suggestions.append("Consider refactoring complex functions for better maintainability")
         if performance_issues:
             suggestions.append("Optimize performance-related patterns")
-        
+
         # Add generic suggestions based on quality score
         quality_score = analysis_result.get("quality_score", 100)
         if quality_score < 70:
             suggestions.append("Overall code quality could be improved")
-        
+
         return suggestions
 
     def _extract_structure_info(self, analysis_result: dict[str, Any], focus_area: str) -> dict[str, Any]:
         """Extract structure information from file analysis"""
         metrics = analysis_result.get("metrics", {})
-        
+
         base_info = {
             "lines_of_code": metrics.get("lines_of_code", 0),
             "functions": metrics.get("functions", 0),

@@ -291,7 +291,7 @@ class UnifiedSuperAlita:
 
             # Merge environment variables for plugin-specific configuration
             final_config = plugin_config.copy()
-            
+
             # Special handling for Puter plugin - load from environment variables
             if plugin_name == "puter":
                 import os
@@ -312,7 +312,7 @@ class UnifiedSuperAlita:
                 logger.info(
                     f"Puter plugin configured with base URL: {env_config['puter_base_url']}"
                 )
-            
+
             # Special handling for Perplexica plugin - provide WebAgent integration
             elif plugin_name == "perplexica_search":
                 if "web_agent" in self.plugins:

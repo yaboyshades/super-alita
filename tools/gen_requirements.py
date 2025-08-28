@@ -51,14 +51,14 @@ TEST_ONLY_DEPS = {
 
 class ImportVisitor(ast.NodeVisitor):
     """AST visitor to extract import statements."""
-    
+
     def __init__(self):
         self.imports: set[str] = set()
-    
+
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             self.imports.add(alias.name.split('.')[0])
-    
+
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module:
             self.imports.add(node.module.split('.')[0])
@@ -69,7 +69,7 @@ def extract_imports_from_file(file_path: Path) -> set[str]:
     try:
         with open(file_path, encoding='utf-8') as f:
             content = f.read()
-        
+
         tree = ast.parse(content)
         visitor = ImportVisitor()
         visitor.visit(tree)
@@ -82,49 +82,49 @@ def extract_imports_from_file(file_path: Path) -> set[str]:
 def scan_directory(directory: Path) -> set[str]:
     """Scan a directory recursively for Python files and extract imports."""
     imports = set()
-    
+
     for py_file in directory.rglob('*.py'):
         if '__pycache__' in str(py_file):
             continue
         imports.update(extract_imports_from_file(py_file))
-    
+
     return imports
 
 
 def filter_external_imports(imports: set[str]) -> set[str]:
     """Filter out standard library and relative imports."""
     external = set()
-    
+
     for imp in imports:
         # Skip standard library modules
         if imp in STDLIB_MODULES:
             continue
-        
+
         # Skip relative imports (starting with .)
         if imp.startswith('.'):
             continue
-        
+
         # Skip local modules (common patterns)
         if imp in {'src', 'tests', 'tools', 'scripts', 'config'}:
             continue
-        
+
         external.add(imp)
-    
+
     return external
 
 
 def generate_requirements(imports: set[str], is_test: bool = False) -> list[str]:
     """Generate requirements list from imports."""
     requirements = set()
-    
+
     for imp in sorted(imports):
         if imp in PACKAGE_MAPPING:
             req = PACKAGE_MAPPING[imp]
-            
+
             # Check if this is a test-only dependency
             if is_test or imp not in TEST_ONLY_DEPS:
                 requirements.add(req)
-    
+
     # Add core dependencies that might not be explicitly imported
     if not is_test:
         core_deps = [
@@ -179,7 +179,7 @@ def generate_requirements(imports: set[str], is_test: bool = False) -> list[str]
         ]
         for dep in test_deps:
             requirements.add(dep)
-    
+
     return sorted(requirements)
 
 
@@ -189,9 +189,9 @@ def main():
     parser.add_argument('--tests', default='tests', help='Test directory to scan')
     parser.add_argument('--write', action='store_true', help='Write to requirements files')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    
+
     args = parser.parse_args()
-    
+
     # Scan source directories
     src_imports = set()
     for src_dir in args.src:
@@ -200,7 +200,7 @@ def main():
             if args.verbose:
                 print(f"Scanning {src_path}")
             src_imports.update(scan_directory(src_path))
-    
+
     # Scan test directory
     test_imports = set()
     test_path = Path(args.tests)
@@ -208,19 +208,19 @@ def main():
         if args.verbose:
             print(f"Scanning {test_path}")
         test_imports.update(scan_directory(test_path))
-    
+
     # Filter external imports
     src_external = filter_external_imports(src_imports)
     test_external = filter_external_imports(test_imports)
-    
+
     if args.verbose:
         print(f"Found {len(src_external)} external imports in source")
         print(f"Found {len(test_external)} external imports in tests")
-    
+
     # Generate requirements
     main_reqs = generate_requirements(src_external, is_test=False)
     test_reqs = generate_requirements(test_external | src_external, is_test=True)
-    
+
     # Output or write files
     if args.write:
         with open('requirements.txt', 'w') as f:
@@ -231,7 +231,7 @@ def main():
             f.write('# hiredis>=2.3.2\n')
             f.write('\n# GPU support (optional, install manually if needed)\n')
             f.write('# torch[gpu]>=2.2.0\n')
-        
+
         with open('requirements-test.txt', 'w') as f:
             f.write('# Test requirements\n')
             f.write('# Keep pytest aligned with the minversion specified in pyproject.toml\n')
@@ -239,13 +239,13 @@ def main():
                 f.write(f'{req}\n')
             f.write('\n# Optional protobuf support\n')
             f.write('# protobuf>=4.0.0\n')
-        
+
         print("Updated requirements.txt and requirements-test.txt")
     else:
         print("Main requirements:")
         for req in main_reqs:
             print(f"  {req}")
-        
+
         print("\nTest requirements:")
         for req in test_reqs:
             print(f"  {req}")

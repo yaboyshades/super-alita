@@ -160,13 +160,13 @@ class PerplexicaSearchPlugin(PluginInterface):
     async def start(self) -> None:
         """Start the plugin and subscribe to search events."""
         await super().start()
-        
+
         # Subscribe to Perplexica search requests
         await self.subscribe("perplexica_search", self._handle_search_request)
-        
+
         # Also handle generic "enhanced_search" events
         await self.subscribe("enhanced_search", self._handle_search_request)
-        
+
         logger.info("PerplexicaSearchPlugin started - ready for AI-powered search")
 
     async def shutdown(self) -> None:
@@ -182,7 +182,7 @@ class PerplexicaSearchPlugin(PluginInterface):
             import os
 
             import google.generativeai as genai
-            
+
             api_key = os.getenv("GEMINI_API_KEY")
             if api_key and api_key != "your-key-here":
                 genai.configure(api_key=api_key)
@@ -190,7 +190,7 @@ class PerplexicaSearchPlugin(PluginInterface):
                 logger.info("Initialized Gemini client for AI reasoning")
             else:
                 logger.warning("No valid GEMINI_API_KEY found - reasoning will be simplified")
-                
+
         except Exception as e:
             logger.warning(f"Failed to initialize LLM client: {e}")
             self.llm_client = None
@@ -246,14 +246,14 @@ class PerplexicaSearchPlugin(PluginInterface):
                 success=True,
                 result=response.model_dump()
             )
-            
+
             await self.event_bus.publish(tool_result)
 
             logger.info(f"✅ Perplexica search completed in {response.processing_time:.2f}s")
 
         except Exception as e:
             logger.error(f"Error handling search request: {e}")
-            
+
             # Emit error result
             error_result = ToolResultEvent(
                 source_plugin=self.name,
@@ -287,11 +287,11 @@ class PerplexicaSearchPlugin(PluginInterface):
             PerplexicaResponse with search results and AI analysis
         """
         logger.info(f"Starting {search_mode} search for: '{query}'")
-        
+
         # Get raw search results based on mode
         handler = self.mode_handlers.get(search_mode, self._search_web)
         raw_results = await handler(query, max_results)
-        
+
         # Convert to SearchResult objects
         search_results = [
             SearchResult(
@@ -308,7 +308,7 @@ class PerplexicaSearchPlugin(PluginInterface):
 
         # Remove duplicates across providers
         search_results = self._dedupe_results(search_results)
-        
+
         # Generate AI reasoning and summary if requested
         if include_reasoning and self.llm_client:
             summary, reasoning, citations, follow_ups = await self._generate_ai_analysis(
@@ -462,9 +462,9 @@ class PerplexicaSearchPlugin(PluginInterface):
         return deduped
 
     async def _generate_ai_analysis(
-        self, 
-        query: str, 
-        results: list[SearchResult], 
+        self,
+        query: str,
+        results: list[SearchResult],
         search_mode: SearchMode
     ) -> tuple[str, str, list[str], list[str]]:
         """Generate AI-powered analysis of search results."""
@@ -474,7 +474,7 @@ class PerplexicaSearchPlugin(PluginInterface):
         try:
             # Prepare context for LLM
             context = self._prepare_llm_context(query, results, search_mode)
-            
+
             # Generate reasoning and summary
             prompt = f"""
 You are an AI research assistant analyzing search results. Based on the search query and results below, provide:
@@ -495,20 +495,20 @@ Please provide a detailed analysis that synthesizes the information and highligh
 
             response = await self.llm_client.generate_content_async(prompt)
             response_text = response.text if hasattr(response, 'text') else str(response)
-            
+
             # Parse the response (simplified for now)
             lines = response_text.split('\n')
             summary = ""
             reasoning = ""
             citations = []
             follow_ups = []
-            
+
             current_section = None
             for line in lines:
                 line = line.strip()
                 if not line:
                     continue
-                    
+
                 if "summary" in line.lower():
                     current_section = "summary"
                 elif "reasoning" in line.lower():
@@ -525,7 +525,7 @@ Please provide a detailed analysis that synthesizes the information and highligh
                     citations.append(line)
                 elif current_section == "follow_ups":
                     follow_ups.append(line)
-            
+
             # Fallback if parsing failed
             if not summary:
                 summary = response_text[:200] + "..." if len(response_text) > 200 else response_text
@@ -539,35 +539,35 @@ Please provide a detailed analysis that synthesizes the information and highligh
                     f"How does {query} compare to alternatives?",
                     f"What are the practical applications of {query}?"
                 ]
-            
+
             return summary, reasoning.strip(), citations, follow_ups
-            
+
         except Exception as e:
             logger.error(f"AI analysis failed: {e}")
             return self._generate_simple_analysis(query, results, search_mode)
 
     def _generate_simple_analysis(
-        self, 
-        query: str, 
-        results: list[SearchResult], 
+        self,
+        query: str,
+        results: list[SearchResult],
         search_mode: SearchMode
     ) -> tuple[str, str, list[str], list[str]]:
         """Generate simple analysis when AI is not available."""
         summary = f"Found {len(results)} {search_mode} results for '{query}'. "
         if results:
             summary += f"Top result: {results[0].title}"
-        
+
         reasoning = f"Performed {search_mode} search and retrieved {len(results)} results. "
         reasoning += "Results are ranked by relevance and recency."
-        
+
         citations = [f"[{i+1}] {r.title} - {r.url}" for i, r in enumerate(results[:5])]
-        
+
         follow_ups = [
             f"Can you provide more details about {query}?",
             f"What are related topics to {query}?",
             f"How can I learn more about {query}?"
         ]
-        
+
         return summary, reasoning, citations, follow_ups
 
     def _prepare_llm_context(self, query: str, results: list[SearchResult], search_mode: SearchMode) -> str:
@@ -575,25 +575,25 @@ Please provide a detailed analysis that synthesizes the information and highligh
         context_parts = []
         for i, result in enumerate(results[:5]):  # Limit to top 5 for context window
             context_parts.append(f"{i+1}. {result.title}\n   {result.snippet}\n   Source: {result.url}\n")
-        
+
         return "\n".join(context_parts)
 
     def _generate_simple_summary(self, query: str, results: list[SearchResult]) -> str:
         """Generate a simple summary without AI."""
         if not results:
             return f"No results found for '{query}'"
-        
+
         return f"Found {len(results)} results for '{query}'. Top result: {results[0].title}"
 
     def _calculate_confidence(self, results: list[SearchResult]) -> float:
         """Calculate confidence score based on search results."""
         if not results:
             return 0.0
-        
+
         # Simple confidence calculation based on number and quality of results
         base_confidence = min(len(results) / 10.0, 1.0)  # More results = higher confidence
         avg_relevance = sum(r.relevance_score for r in results) / len(results)
-        
+
         return min((base_confidence + avg_relevance) / 2.0, 1.0)
 
     async def get_search_history(self, limit: int = 10) -> list[PerplexicaResponse]:
@@ -611,7 +611,7 @@ Please provide a detailed analysis that synthesizes the information and highligh
                 "parameters": {
                     "query": {"type": "string", "description": "Search query"},
                     "search_mode": {
-                        "type": "string", 
+                        "type": "string",
                         "enum": [mode.value for mode in SearchMode],
                         "default": "web",
                         "description": "Type of search to perform"

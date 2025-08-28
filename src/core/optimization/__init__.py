@@ -12,7 +12,7 @@ from .reward_tracker import RewardTracker
 
 __all__ = [
     "ThompsonSamplingBandit",
-    "UCB1Bandit", 
+    "UCB1Bandit",
     "EpsilonGreedyBandit",
     "DecisionPolicyEngine",
     "RewardTracker",

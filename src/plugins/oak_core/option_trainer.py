@@ -131,7 +131,7 @@ class OptionTrainer(PluginInterface):
 
         feature_id = event.get("feature_id")
         kappa = event.get("kappa", 1.0)
-        
+
         opt_id = self.generate_option_id(sp_id)
         if opt_id in self.options:
             return
@@ -260,7 +260,7 @@ class OptionTrainer(PluginInterface):
                 gae = delta + opt.gamma * opt.gae_lambda * gae
                 adv[t] = gae
             adv = (adv - adv.mean()) / (adv.std() + 1e-8)
-            
+
             ret = adv + old_vals
 
         for _ in range(self.ppo_epochs):

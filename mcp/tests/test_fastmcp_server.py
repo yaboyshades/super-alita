@@ -84,7 +84,7 @@ async def test_search_and_fetch():
     search_result = await search_tool("cat behavior")
     assert "results" in search_result
     assert len(search_result["results"]) == 1
-    
+
     first_item = search_result["results"][0]
     assert first_item["id"] == "file-123"
     assert first_item["title"] == "Cats.pdf"
@@ -94,7 +94,7 @@ async def test_search_and_fetch():
     # Test fetch using the ID from search
     doc_id = first_item["id"]
     fetch_result = await fetch_tool(doc_id)
-    
+
     assert fetch_result["id"] == "file-123"
     assert fetch_result["title"] == "Cats.pdf"
     assert "Meow.\nPurr." in fetch_result["text"]

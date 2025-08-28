@@ -35,7 +35,7 @@ def _validate(ls: AlitaPythonLspServer, params):
     text_doc = ls.workspace.get_document(params.text_document.uri)
     source = text_doc.source
     diagnostics = []
-    
+
     # Example: Find all-caps words as warnings
     lines = source.splitlines()
     for line_num, line in enumerate(lines):

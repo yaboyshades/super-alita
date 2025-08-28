@@ -185,7 +185,7 @@ class SimpleAbilityRegistry:
             "full_cycle_prototype",
             # DeepCode abilities
             "analyze_code_file",
-            "analyze_code_directory", 
+            "analyze_code_directory",
             "get_code_quality_score",
             "detect_code_patterns",
             "analyze_workspace_context",
@@ -310,7 +310,7 @@ class SimpleAbilityRegistry:
                 "output_schema": {"type": "object"},
             },
             "analyze_code_directory": {
-                "tool_id": "analyze_code_directory", 
+                "tool_id": "analyze_code_directory",
                 "description": "Analyze all supported code files in a directory",
                 "input_schema": {
                     "type": "object",
@@ -612,22 +612,22 @@ class SimpleAbilityRegistry:
                 "fetched": fetched,
                 "plan": run_instructions,
             }
-        
+
         # DeepCode tool execution
         if tool_name in [
-            "analyze_code_file", "analyze_code_directory", "get_code_quality_score", 
+            "analyze_code_file", "analyze_code_directory", "get_code_quality_score",
             "detect_code_patterns", "analyze_workspace_context", "analyze_file_context",
             "check_file_support", "get_supported_extensions", "understand_code_structure"
         ]:
             return await self._execute_deepcode_tool(tool_name, args)
-        
+
         # Enhanced Copilot tool execution
         if tool_name in [
-            "analyze_and_suggest_repos", "automated_problem_solver", 
+            "analyze_and_suggest_repos", "automated_problem_solver",
             "repository_deep_analysis", "enhanced_code_review"
         ]:
             return await self._execute_enhanced_copilot_tool(tool_name, args)
-        
+
         # Fallback generic - echo contract
         return {"ok": True, "tool": tool_name, "args": args}
 
@@ -637,11 +637,11 @@ class SimpleAbilityRegistry:
             # Import abilities dynamically to avoid circular imports
             from src.abilities.deepcode_analysis_ability import DeepCodeAnalysisAbility
             from src.abilities.deepcode_integration_ability import DeepCodeIntegrationAbility
-            
+
             # Determine which ability to use
             analysis_tools = ["analyze_code_file", "analyze_code_directory", "get_code_quality_score", "detect_code_patterns"]
             integration_tools = ["analyze_workspace_context", "analyze_file_context", "check_file_support", "get_supported_extensions", "understand_code_structure"]
-            
+
             if tool_name in analysis_tools:
                 ability = DeepCodeAnalysisAbility()
                 await ability.setup(None, None, {})
@@ -652,7 +652,7 @@ class SimpleAbilityRegistry:
                 return await ability._execute_tool(tool_name, args)
             else:
                 return {"error": f"Unknown deepcode tool: {tool_name}"}
-                
+
         except Exception as e:
             logger.exception(f"DeepCode tool execution failed for {tool_name}: {e}")
             return {"error": f"Tool execution failed: {str(e)}"}
@@ -662,14 +662,14 @@ class SimpleAbilityRegistry:
         try:
             # Import ability dynamically to avoid circular imports
             from src.abilities.enhanced_copilot_ability import EnhancedCopilotAbility
-            
+
             # Create and setup ability
             ability = EnhancedCopilotAbility()
             await ability.setup(None, None, {})
-            
+
             # Execute the tool
             return await ability._execute_tool(tool_name, args)
-                
+
         except Exception as e:
             logger.exception(f"Enhanced Copilot tool execution failed for {tool_name}: {e}")
             return {"error": f"Tool execution failed: {str(e)}"}

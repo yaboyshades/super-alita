@@ -61,7 +61,7 @@ class CalculatorPlugin(PluginInterface):
     async def start(self) -> None:
         """Start the calculator plugin by subscribing to tool call events."""
         logger.info("CalculatorPlugin started and ready for tool calls")
-        
+
         # Subscribe to tool call events for our specific tool
         await self.event_bus.subscribe("tool_call", self._handle_tool_call)
 
@@ -76,7 +76,7 @@ class CalculatorPlugin(PluginInterface):
                 "type": "object",
                 "properties": {
                     "expression": {
-                        "type": "string", 
+                        "type": "string",
                         "description": "Mathematical expression to evaluate (e.g., '2 + 3 * 4', 'abs(-5)', 'round(3.14159, 2)')"
                     }
                 },
@@ -85,7 +85,7 @@ class CalculatorPlugin(PluginInterface):
             },
             # Metadata for validator
             "cost_hint": "low",
-            "latency_hint": "low", 
+            "latency_hint": "low",
             "safety_level": "high",  # AST-based parsing prevents injection
             "test_reference": "tests/plugins/test_calculator_plugin.py::test_basic_arithmetic",
             "category": "utility",
