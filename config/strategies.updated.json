@@ -1,0 +1,56 @@
+[
+  {
+    "arm_id": "concise",
+    "description": "Short direct answer, minimal reasoning tokens",
+    "base_weight": 0.7018,
+    "constraints": {
+      "max_reasoning_tokens": 128
+    },
+    "meta": {
+      "category": "prompt_style"
+    },
+    "stats": {
+      "samples": 51,
+      "recent_mean_reward": 0.4035008590446663
+    }
+  },
+  {
+    "arm_id": "cot",
+    "description": "Chain-of-thought reasoning prior to answer",
+    "base_weight": 0.7122,
+    "constraints": {
+      "max_reasoning_tokens": 512
+    },
+    "meta": {
+      "category": "prompt_style"
+    },
+    "stats": {
+      "samples": 50,
+      "recent_mean_reward": 0.42440470553585263
+    }
+  },
+  {
+    "arm_id": "retrieval_vector",
+    "description": "Vector store only retrieval",
+    "base_weight": 0.6545,
+    "meta": {
+      "category": "retrieval_policy"
+    },
+    "stats": {
+      "samples": 62,
+      "recent_mean_reward": 0.40890561854574514
+    }
+  },
+  {
+    "arm_id": "retrieval_hybrid",
+    "description": "Hybrid vector + semantic graph retrieval",
+    "base_weight": 0.738,
+    "meta": {
+      "category": "retrieval_policy"
+    },
+    "stats": {
+      "samples": 37,
+      "recent_mean_reward": 0.37608640558947576
+    }
+  }
+]

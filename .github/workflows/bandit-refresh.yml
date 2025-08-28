@@ -1,0 +1,48 @@
+name: Bandit Priors Refresh
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+jobs:
+  bandit-refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt || true
+
+      - name: Fetch reward logs
+        env:
+          TELEMETRY_TOKEN: ${{ secrets.TELEMETRY_TOKEN }}
+        run: python scripts/fetch_rewards.py --since-hours 6 --out data/rewards_window.json
+
+      - name: Recompute priors
+        run: |
+          python scripts/recompute_bandit_priors.py \
+            --rewards data/rewards_window.json \
+            --strategies config/strategies.json \
+            --out config/strategies.updated.json
+
+      - name: Diff & commit or PR
+        run: |
+          if ! diff -q config/strategies.json config/strategies.updated.json; then
+            mv config/strategies.updated.json config/strategies.json
+            git config user.name "github-actions"
+            git config user.email "actions@users.noreply.github.com"
+            git checkout -b bandit-refresh-$(date -u +%Y%m%d%H%M)
+            git add config/strategies.json
+            git commit -m "Auto bandit priors refresh"
+            git push origin HEAD
+            gh pr create --title "Bandit priors refresh" --body "Automated update of strategy priors." || true
+          else
+            echo "No changes in priors."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,35 @@
+name: Safety & Policy Lint
+on:
+  pull_request:
+    paths:
+      - 'prompts/**'
+      - 'config/**'
+      - 'src/**'
+      - 'policies/**'
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install tooling
+        run: |
+          pip install safety bandit ruff
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt || true
+
+      - name: Dependency vulnerability scan
+        run: safety check || true  # consider gating later
+
+      - name: Bandit security scan
+        run: bandit -r src -ll -iii
+
+      - name: Prompt / policy lint
+        run: python scripts/lint_prompts.py prompts policies config/strategies.json
+
+      - name: Config schema validation
+        run: python scripts/validate_config.py config/
