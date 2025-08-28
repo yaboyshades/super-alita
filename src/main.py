@@ -787,7 +787,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         
         # Load OaK integration plugins first
         with contextlib.suppress(Exception):
-            from src.core.plugin_loader import load_plugin_manifest, discover_plugins
+            from src.core.plugin_loader import discover_plugins, load_plugin_manifest
             
             try:
                 plugin_configs = load_plugin_manifest("plugins.yaml")

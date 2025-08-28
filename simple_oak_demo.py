@@ -15,9 +15,9 @@ ROOT = Path(__file__).parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.reug_runtime.event_bus import make_event_bus
-from src.plugins.strategic_planner_plugin import StrategicPlannerPlugin
 from src.plugins.option_executor_plugin import OptionExecutorPlugin
+from src.plugins.strategic_planner_plugin import StrategicPlannerPlugin
+from src.reug_runtime.event_bus import make_event_bus
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
