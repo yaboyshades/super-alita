@@ -1,0 +1,712 @@
+name: Project Management Automation
+
+on:
+  issues:
+    types: [opened, closed, labeled, assigned]
+  pull_request:
+    types: [opened, closed, merged]
+  milestone:
+    types: [created, closed, opened]
+  schedule:
+    - cron: '0 9 * * 1'  # Weekly on Monday at 9 AM UTC
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Project management action to perform'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full              # Complete project management automation
+          - milestone-update  # Update milestone progress
+          - team-metrics      # Generate team productivity metrics
+          - roadmap-update    # Update project roadmap
+          - sprint-planning   # Automated sprint planning assistance
+
+concurrency:
+  group: project-mgmt-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  milestone-management:
+    name: Milestone Progress Tracking
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Analyze milestone progress
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get all milestones
+            const { data: milestones } = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+            
+            console.log(`Found ${milestones.length} open milestones`);
+            
+            for (const milestone of milestones) {
+              const { data: issues } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                milestone: milestone.number,
+                state: 'all'
+              });
+              
+              const totalIssues = issues.length;
+              const closedIssues = issues.filter(issue => issue.state === 'closed').length;
+              const progressPercent = totalIssues > 0 ? Math.round((closedIssues / totalIssues) * 100) : 0;
+              
+              console.log(`Milestone "${milestone.title}": ${progressPercent}% complete (${closedIssues}/${totalIssues})`);
+              
+              // Create progress comment if milestone is due soon
+              const dueDate = new Date(milestone.due_on);
+              const now = new Date();
+              const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+              
+              if (daysUntilDue <= 7 && daysUntilDue > 0 && progressPercent < 80) {
+                // Find milestone tracking issue or create one
+                const trackingIssues = await github.rest.issues.listForRepo({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  labels: `milestone:${milestone.title.toLowerCase().replace(/\s+/g, '-')}`
+                });
+                
+                const progressReport = `## 📊 Milestone Progress Update
+                
+                **Milestone**: ${milestone.title}
+                **Due Date**: ${milestone.due_on}
+                **Progress**: ${progressPercent}% (${closedIssues}/${totalIssues} issues)
+                **Days Remaining**: ${daysUntilDue}
+                
+                ### ⚠️ Status Alert
+                ${progressPercent < 50 ? '🔴 **Behind Schedule**: Milestone significantly behind target' :
+                  progressPercent < 80 ? '🟡 **At Risk**: Milestone may not meet deadline' :
+                  '🟢 **On Track**: Milestone progressing well'}
+                
+                ### 📋 Remaining Issues
+                ${issues.filter(issue => issue.state === 'open').slice(0, 5).map(issue => 
+                  `- [ ] [#${issue.number}](${issue.html_url}) ${issue.title}`
+                ).join('\n')}
+                
+                ### 🎯 Recommendations
+                ${progressPercent < 50 ? '- Consider extending deadline or reducing scope\n- Prioritize critical issues\n- Allocate additional resources' :
+                  progressPercent < 80 ? '- Focus on high-priority remaining issues\n- Consider deferring nice-to-have features\n- Monitor daily progress' :
+                  '- Continue current pace\n- Prepare for milestone completion'}
+                
+                ---
+                *Updated automatically by Project Management Automation*`;
+                
+                if (trackingIssues.data.length > 0) {
+                  // Update existing tracking issue
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: trackingIssues.data[0].number,
+                    body: progressReport
+                  });
+                } else {
+                  // Create new tracking issue
+                  await github.rest.issues.create({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    title: `📊 Milestone Progress: ${milestone.title}`,
+                    body: progressReport,
+                    labels: [`milestone:${milestone.title.toLowerCase().replace(/\s+/g, '-')}`, 'project-management', 'tracking']
+                  });
+                }
+              }
+            }
+
+  team-productivity-metrics:
+    name: Team Productivity Analytics
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Generate team productivity metrics
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+            
+            // Get recent activity
+            const { data: recentIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              since: oneMonthAgo.toISOString(),
+              per_page: 100
+            });
+            
+            const { data: recentPRs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              sort: 'updated',
+              direction: 'desc',
+              per_page: 100
+            });
+            
+            // Analyze contributor activity
+            const contributorStats = {};
+            
+            // Process issues
+            recentIssues.forEach(issue => {
+              if (!issue.pull_request) {
+                const author = issue.user.login;
+                if (!contributorStats[author]) {
+                  contributorStats[author] = {
+                    issuesOpened: 0,
+                    issuesClosed: 0,
+                    prsOpened: 0,
+                    prsMerged: 0,
+                    commentsPosted: 0
+                  };
+                }
+                
+                if (new Date(issue.created_at) >= oneMonthAgo) {
+                  contributorStats[author].issuesOpened++;
+                }
+                
+                if (issue.state === 'closed' && new Date(issue.closed_at) >= oneMonthAgo) {
+                  contributorStats[author].issuesClosed++;
+                }
+              }
+            });
+            
+            // Process PRs
+            recentPRs.forEach(pr => {
+              const author = pr.user.login;
+              if (!contributorStats[author]) {
+                contributorStats[author] = {
+                  issuesOpened: 0,
+                  issuesClosed: 0,
+                  prsOpened: 0,
+                  prsMerged: 0,
+                  commentsPosted: 0
+                };
+              }
+              
+              if (new Date(pr.created_at) >= oneMonthAgo) {
+                contributorStats[author].prsOpened++;
+              }
+              
+              if (pr.merged_at && new Date(pr.merged_at) >= oneMonthAgo) {
+                contributorStats[author].prsMerged++;
+              }
+            });
+            
+            // Generate productivity report
+            let report = `# 📈 Team Productivity Report\n\n`;
+            report += `**Report Period**: ${oneMonthAgo.toDateString()} - ${new Date().toDateString()}\n\n`;
+            
+            // Summary metrics
+            const totalIssuesOpened = recentIssues.filter(i => !i.pull_request && new Date(i.created_at) >= oneMonthAgo).length;
+            const totalIssuesClosed = recentIssues.filter(i => !i.pull_request && i.state === 'closed' && new Date(i.closed_at) >= oneMonthAgo).length;
+            const totalPRsOpened = recentPRs.filter(pr => new Date(pr.created_at) >= oneMonthAgo).length;
+            const totalPRsMerged = recentPRs.filter(pr => pr.merged_at && new Date(pr.merged_at) >= oneMonthAgo).length;
+            
+            report += `## 📊 Overall Metrics (Last 30 Days)\n\n`;
+            report += `- **Issues Opened**: ${totalIssuesOpened}\n`;
+            report += `- **Issues Closed**: ${totalIssuesClosed}\n`;
+            report += `- **Pull Requests Opened**: ${totalPRsOpened}\n`;
+            report += `- **Pull Requests Merged**: ${totalPRsMerged}\n`;
+            report += `- **Issue Resolution Rate**: ${totalIssuesOpened > 0 ? Math.round((totalIssuesClosed / totalIssuesOpened) * 100) : 0}%\n`;
+            report += `- **PR Merge Rate**: ${totalPRsOpened > 0 ? Math.round((totalPRsMerged / totalPRsOpened) * 100) : 0}%\n\n`;
+            
+            // Top contributors
+            const topContributors = Object.entries(contributorStats)
+              .map(([user, stats]) => ({
+                user,
+                totalActivity: stats.issuesOpened + stats.issuesClosed + stats.prsOpened + stats.prsMerged,
+                ...stats
+              }))
+              .sort((a, b) => b.totalActivity - a.totalActivity)
+              .slice(0, 10);
+            
+            if (topContributors.length > 0) {
+              report += `## 🏆 Top Contributors (Last 30 Days)\n\n`;
+              report += `| Contributor | Issues Opened | Issues Closed | PRs Opened | PRs Merged | Total Activity |\n`;
+              report += `|-------------|---------------|---------------|------------|------------|----------------|\n`;
+              topContributors.forEach(contributor => {
+                report += `| @${contributor.user} | ${contributor.issuesOpened} | ${contributor.issuesClosed} | ${contributor.prsOpened} | ${contributor.prsMerged} | ${contributor.totalActivity} |\n`;
+              });
+              report += `\n`;
+            }
+            
+            // Activity trends
+            const weeklyIssues = recentIssues.filter(i => !i.pull_request && new Date(i.created_at) >= oneWeekAgo).length;
+            const weeklyPRs = recentPRs.filter(pr => new Date(pr.created_at) >= oneWeekAgo).length;
+            
+            report += `## 📈 Weekly Trends\n\n`;
+            report += `- **This Week's Issues**: ${weeklyIssues} (${totalIssuesOpened > 0 ? Math.round((weeklyIssues / totalIssuesOpened) * 100) : 0}% of monthly total)\n`;
+            report += `- **This Week's PRs**: ${weeklyPRs} (${totalPRsOpened > 0 ? Math.round((weeklyPRs / totalPRsOpened) * 100) : 0}% of monthly total)\n\n`;
+            
+            // Recommendations
+            report += `## 🎯 Recommendations\n\n`;
+            if (totalIssuesClosed / Math.max(totalIssuesOpened, 1) < 0.7) {
+              report += `- 📋 **Issue Resolution**: Focus on closing existing issues (${Math.round((1 - totalIssuesClosed / Math.max(totalIssuesOpened, 1)) * 100)}% of opened issues remain open)\n`;
+            }
+            if (totalPRsMerged / Math.max(totalPRsOpened, 1) < 0.8) {
+              report += `- 🔄 **PR Review**: Improve PR review and merge process\n`;
+            }
+            if (topContributors.length < 3) {
+              report += `- 👥 **Contributor Engagement**: Encourage more team members to contribute\n`;
+            }
+            
+            report += `\n---\n*Generated automatically by Project Management Automation*`;
+            
+            // Save report as artifact
+            require('fs').writeFileSync('team-productivity-report.md', report);
+            console.log('Team productivity report generated');
+            
+      - name: Upload productivity report
+        uses: actions/upload-artifact@v4
+        with:
+          name: team-productivity-report
+          path: team-productivity-report.md
+
+  project-roadmap-automation:
+    name: Project Roadmap Updates
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Generate project roadmap
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get milestones and their progress
+            const { data: milestones } = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              sort: 'due_on',
+              direction: 'asc'
+            });
+            
+            let roadmap = `# 🗺️ Super Alita Project Roadmap\n\n`;
+            roadmap += `**Last Updated**: ${new Date().toDateString()}\n\n`;
+            roadmap += `This roadmap shows the planned development milestones and progress for Super Alita.\n\n`;
+            
+            // Categorize milestones
+            const openMilestones = milestones.filter(m => m.state === 'open');
+            const closedMilestones = milestones.filter(m => m.state === 'closed');
+            
+            // Current milestones
+            if (openMilestones.length > 0) {
+              roadmap += `## 🎯 Active Milestones\n\n`;
+              
+              for (const milestone of openMilestones.slice(0, 5)) {
+                const { data: issues } = await github.rest.issues.listForRepo({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  milestone: milestone.number,
+                  state: 'all'
+                });
+                
+                const totalIssues = issues.length;
+                const closedIssues = issues.filter(issue => issue.state === 'closed').length;
+                const progressPercent = totalIssues > 0 ? Math.round((closedIssues / totalIssues) * 100) : 0;
+                
+                const progressBar = '█'.repeat(Math.floor(progressPercent / 10)) + '░'.repeat(10 - Math.floor(progressPercent / 10));
+                const statusIcon = progressPercent >= 80 ? '🟢' : progressPercent >= 50 ? '🟡' : '🔴';
+                
+                roadmap += `### ${statusIcon} ${milestone.title}\n\n`;
+                if (milestone.description) {
+                  roadmap += `${milestone.description}\n\n`;
+                }
+                roadmap += `**Progress**: ${progressBar} ${progressPercent}% (${closedIssues}/${totalIssues})\n`;
+                if (milestone.due_on) {
+                  const dueDate = new Date(milestone.due_on);
+                  const daysUntilDue = Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24));
+                  roadmap += `**Due Date**: ${dueDate.toDateString()}`;
+                  if (daysUntilDue > 0) {
+                    roadmap += ` (${daysUntilDue} days remaining)`;
+                  } else if (daysUntilDue < 0) {
+                    roadmap += ` (${Math.abs(daysUntilDue)} days overdue)`;
+                  } else {
+                    roadmap += ` (due today)`;
+                  }
+                  roadmap += `\n`;
+                }
+                roadmap += `\n`;
+                
+                // Show key issues
+                const keyIssues = issues.filter(issue => 
+                  issue.labels.some(label => 
+                    label.name.includes('priority: high') || 
+                    label.name.includes('epic') ||
+                    label.name.includes('feature')
+                  )
+                ).slice(0, 3);
+                
+                if (keyIssues.length > 0) {
+                  roadmap += `**Key Items**:\n`;
+                  keyIssues.forEach(issue => {
+                    const status = issue.state === 'closed' ? '✅' : '⏳';
+                    roadmap += `- ${status} [#${issue.number}](${issue.html_url}) ${issue.title}\n`;
+                  });
+                  roadmap += `\n`;
+                }
+              }
+            }
+            
+            // Recently completed milestones
+            if (closedMilestones.length > 0) {
+              roadmap += `## ✅ Recently Completed\n\n`;
+              
+              const recentlyCompleted = closedMilestones
+                .filter(m => m.closed_at && new Date(m.closed_at) >= new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
+                .slice(0, 3);
+                
+              recentlyCompleted.forEach(milestone => {
+                roadmap += `### ✅ ${milestone.title}\n`;
+                if (milestone.description) {
+                  roadmap += `${milestone.description}\n`;
+                }
+                roadmap += `**Completed**: ${new Date(milestone.closed_at).toDateString()}\n\n`;
+              });
+            }
+            
+            // Technology roadmap
+            roadmap += `## 🔬 Technology Roadmap\n\n`;
+            roadmap += `### Core Platform\n`;
+            roadmap += `- **Event-Driven Architecture**: Redis-backed event bus with MCP integration\n`;
+            roadmap += `- **Streaming Orchestration**: Real-time agent response processing\n`;
+            roadmap += `- **Plugin System**: Modular architecture for extensibility\n`;
+            roadmap += `- **Knowledge Graph**: Cognitive fabric with atoms/bonds structure\n\n`;
+            
+            roadmap += `### AI & ML Integration\n`;
+            roadmap += `- **Multi-LLM Support**: Gemini, OpenAI, local models with fallback routing\n`;
+            roadmap += `- **Tool Execution Framework**: Dynamic tool creation and execution\n`;
+            roadmap += `- **Performance Monitoring**: Regression detection and optimization\n`;
+            roadmap += `- **Intelligent Automation**: AI-powered code review and analysis\n\n`;
+            
+            roadmap += `### Development Experience\n`;
+            roadmap += `- **VS Code Integration**: Language server and extension support\n`;
+            roadmap += `- **Automation Workflows**: 16+ GitHub Actions for CI/CD\n`;
+            roadmap += `- **Developer Tools**: Comprehensive testing and quality gates\n`;
+            roadmap += `- **Documentation**: Auto-generated API docs and guides\n\n`;
+            
+            // Future vision
+            roadmap += `## 🚀 Future Vision\n\n`;
+            roadmap += `### Short Term (1-3 months)\n`;
+            roadmap += `- Enhanced AI capabilities with improved model routing\n`;
+            roadmap += `- Advanced automation workflows for development productivity\n`;
+            roadmap += `- Expanded VS Code integration and tooling\n`;
+            roadmap += `- Performance optimizations and scalability improvements\n\n`;
+            
+            roadmap += `### Medium Term (3-6 months)\n`;
+            roadmap += `- Multi-agent coordination and collaboration\n`;
+            roadmap += `- Advanced knowledge graph analytics\n`;
+            roadmap += `- Enterprise-grade security and compliance features\n`;
+            roadmap += `- Cloud deployment and orchestration options\n\n`;
+            
+            roadmap += `### Long Term (6+ months)\n`;
+            roadmap += `- Industry-specific agent specializations\n`;
+            roadmap += `- Advanced AI reasoning and planning capabilities\n`;
+            roadmap += `- Ecosystem partnerships and integrations\n`;
+            roadmap += `- Open source community and contribution framework\n\n`;
+            
+            roadmap += `---\n\n`;
+            roadmap += `*This roadmap is automatically updated based on milestone progress and project activity.*\n`;
+            roadmap += `*For questions or suggestions, create an issue with the \`roadmap\` label.*`;
+            
+            // Save roadmap
+            require('fs').writeFileSync('docs/PROJECT_ROADMAP.md', roadmap);
+            console.log('Project roadmap updated');
+            
+      - name: Commit roadmap updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/PROJECT_ROADMAP.md
+          git commit -m "docs: update project roadmap" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
+  sprint-planning-assistance:
+    name: Sprint Planning Automation
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'sprint-planning' || github.event_name == 'schedule'
+    permissions:
+      issues: write
+    steps:
+      - name: Generate sprint planning report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get all open issues
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            // Filter out pull requests
+            const openIssues = issues.filter(issue => !issue.pull_request);
+            
+            // Categorize issues by priority and type
+            const highPriority = openIssues.filter(issue => 
+              issue.labels.some(label => label.name.includes('priority: high'))
+            );
+            
+            const mediumPriority = openIssues.filter(issue => 
+              issue.labels.some(label => label.name.includes('priority: medium'))
+            );
+            
+            const lowPriority = openIssues.filter(issue => 
+              issue.labels.some(label => label.name.includes('priority: low'))
+            );
+            
+            const bugs = openIssues.filter(issue => 
+              issue.labels.some(label => label.name.includes('bug'))
+            );
+            
+            const features = openIssues.filter(issue => 
+              issue.labels.some(label => label.name.includes('feature') || label.name.includes('enhancement'))
+            );
+            
+            const easyIssues = openIssues.filter(issue => 
+              issue.labels.some(label => label.name.includes('good first issue') || label.name.includes('easy'))
+            );
+            
+            // Generate sprint planning report
+            let report = `# 📋 Sprint Planning Assistant\n\n`;
+            report += `**Generated**: ${new Date().toDateString()}\n`;
+            report += `**Total Open Issues**: ${openIssues.length}\n\n`;
+            
+            // Sprint recommendations
+            report += `## 🎯 Sprint Recommendations\n\n`;
+            
+            // Suggested sprint backlog
+            const suggestedIssues = [
+              ...highPriority.slice(0, 3),
+              ...bugs.slice(0, 2),
+              ...mediumPriority.slice(0, 2),
+              ...easyIssues.slice(0, 2)
+            ].slice(0, 8); // Limit to 8 issues for a typical sprint
+            
+            if (suggestedIssues.length > 0) {
+              report += `### 🚀 Suggested Sprint Backlog (${suggestedIssues.length} issues)\n\n`;
+              suggestedIssues.forEach((issue, index) => {
+                const priorityLabel = issue.labels.find(l => l.name.includes('priority:'))?.name || 'priority: medium';
+                const typeLabel = issue.labels.find(l => l.name.includes('bug') || l.name.includes('feature') || l.name.includes('enhancement'))?.name || 'task';
+                report += `${index + 1}. [#${issue.number}](${issue.html_url}) ${issue.title}\n`;
+                report += `   - **Priority**: ${priorityLabel}\n`;
+                report += `   - **Type**: ${typeLabel}\n`;
+                report += `   - **Assignee**: ${issue.assignee ? '@' + issue.assignee.login : 'Unassigned'}\n\n`;
+              });
+            }
+            
+            // Priority breakdown
+            report += `## 📊 Issue Breakdown\n\n`;
+            report += `### By Priority\n`;
+            report += `- 🔴 **High Priority**: ${highPriority.length} issues\n`;
+            report += `- 🟡 **Medium Priority**: ${mediumPriority.length} issues\n`;
+            report += `- 🟢 **Low Priority**: ${lowPriority.length} issues\n`;
+            report += `- ⚪ **No Priority**: ${openIssues.length - highPriority.length - mediumPriority.length - lowPriority.length} issues\n\n`;
+            
+            report += `### By Type\n`;
+            report += `- 🐛 **Bugs**: ${bugs.length} issues\n`;
+            report += `- ✨ **Features/Enhancements**: ${features.length} issues\n`;
+            report += `- 👥 **Good First Issues**: ${easyIssues.length} issues\n\n`;
+            
+            // Team capacity insights
+            const assignedIssues = openIssues.filter(issue => issue.assignee);
+            const unassignedIssues = openIssues.filter(issue => !issue.assignee);
+            
+            report += `### Team Capacity\n`;
+            report += `- 👤 **Assigned Issues**: ${assignedIssues.length}\n`;
+            report += `- 👥 **Unassigned Issues**: ${unassignedIssues.length}\n\n`;
+            
+            // Assignee workload
+            const assigneeWorkload = {};
+            assignedIssues.forEach(issue => {
+              const assignee = issue.assignee.login;
+              assigneeWorkload[assignee] = (assigneeWorkload[assignee] || 0) + 1;
+            });
+            
+            if (Object.keys(assigneeWorkload).length > 0) {
+              report += `**Current Workload by Assignee**:\n`;
+              Object.entries(assigneeWorkload)
+                .sort(([,a], [,b]) => b - a)
+                .forEach(([assignee, count]) => {
+                  report += `- @${assignee}: ${count} issues\n`;
+                });
+              report += `\n`;
+            }
+            
+            // Sprint health indicators
+            report += `## 🏥 Sprint Health Indicators\n\n`;
+            
+            const healthScore = Math.round(
+              (Math.min(highPriority.length, 5) / 5 * 30) + // High priority issues (max 30 points)
+              (Math.min(bugs.length, 3) / 3 * 25) + // Bug issues (max 25 points)
+              (Math.min(easyIssues.length, 4) / 4 * 20) + // Easy issues for new contributors (max 20 points)
+              (assignedIssues.length / Math.max(openIssues.length, 1) * 25) // Assignment ratio (max 25 points)
+            );
+            
+            const healthStatus = healthScore >= 80 ? '🟢 Excellent' : 
+                               healthScore >= 60 ? '🟡 Good' : 
+                               healthScore >= 40 ? '🟠 Fair' : '🔴 Needs Attention';
+            
+            report += `**Sprint Readiness Score**: ${healthScore}/100 (${healthStatus})\n\n`;
+            
+            if (healthScore < 60) {
+              report += `### 🎯 Improvement Recommendations\n`;
+              if (highPriority.length === 0) {
+                report += `- Add priority labels to issues\n`;
+              }
+              if (bugs.length > 5) {
+                report += `- Address existing bugs before adding new features\n`;
+              }
+              if (unassignedIssues.length > assignedIssues.length) {
+                report += `- Assign more issues to team members\n`;
+              }
+              if (easyIssues.length === 0) {
+                report += `- Mark some issues as 'good first issue' for new contributors\n`;
+              }
+              report += `\n`;
+            }
+            
+            // Next actions
+            report += `## 🎬 Next Actions\n\n`;
+            report += `1. **Review suggested sprint backlog** and adjust based on team capacity\n`;
+            report += `2. **Assign unassigned high-priority issues** to team members\n`;
+            report += `3. **Estimate effort** for selected sprint issues\n`;
+            report += `4. **Set sprint milestone** and due date\n`;
+            report += `5. **Communicate sprint goals** to the team\n\n`;
+            
+            report += `---\n*Generated automatically by Project Management Automation*`;
+            
+            // Create or update sprint planning issue
+            const { data: existingIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'sprint-planning',
+              state: 'open'
+            });
+            
+            if (existingIssues.length > 0) {
+              // Update existing sprint planning issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssues[0].number,
+                title: '📋 Sprint Planning Assistant',
+                body: report
+              });
+              console.log(`Updated sprint planning issue #${existingIssues[0].number}`);
+            } else {
+              // Create new sprint planning issue
+              const newIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '📋 Sprint Planning Assistant',
+                body: report,
+                labels: ['sprint-planning', 'project-management', 'automated']
+              });
+              console.log(`Created sprint planning issue #${newIssue.data.number}`);
+            }
+
+  project-management-summary:
+    name: Project Management Summary
+    needs: [milestone-management, team-productivity-metrics, project-roadmap-automation]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Generate project management summary
+        run: |
+          cat > project-management-summary.md << 'EOF'
+          # 📊 Project Management Automation Summary
+          
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Workflow Run:** ${{ github.run_id }}
+          
+          ## 🎯 Automation Activities Completed
+          
+          ### Milestone Management
+          EOF
+          
+          if [ "${{ needs.milestone-management.result }}" == "success" ]; then
+            echo "- ✅ **Milestone Progress**: Updated milestone tracking and progress reports" >> project-management-summary.md
+          else
+            echo "- ❌ **Milestone Progress**: Issues with milestone tracking" >> project-management-summary.md
+          fi
+          
+          cat >> project-management-summary.md << 'EOF'
+          
+          ### Team Analytics
+          EOF
+          
+          if [ "${{ needs.team-productivity-metrics.result }}" == "success" ]; then
+            echo "- ✅ **Productivity Metrics**: Generated team performance analytics" >> project-management-summary.md
+          else
+            echo "- ❌ **Productivity Metrics**: Issues with analytics generation" >> project-management-summary.md
+          fi
+          
+          cat >> project-management-summary.md << 'EOF'
+          
+          ### Roadmap Updates
+          EOF
+          
+          if [ "${{ needs.project-roadmap-automation.result }}" == "success" ]; then
+            echo "- ✅ **Project Roadmap**: Updated roadmap with current milestone progress" >> project-management-summary.md
+          else
+            echo "- ❌ **Project Roadmap**: Issues with roadmap updates" >> project-management-summary.md
+          fi
+          
+          cat >> project-management-summary.md << 'EOF'
+          
+          ## 📈 Key Insights
+          
+          - **Milestone Tracking**: Automated progress monitoring for all active milestones
+          - **Team Performance**: Monthly productivity metrics and contributor analytics
+          - **Project Planning**: Updated roadmap with technology and feature timelines
+          - **Sprint Support**: Automated sprint planning assistance and recommendations
+          
+          ## 🎯 Recommendations
+          
+          1. **Review milestone progress** and adjust timelines if needed
+          2. **Check team productivity metrics** for workload balancing
+          3. **Update project roadmap** based on current progress
+          4. **Use sprint planning assistant** for upcoming sprint planning
+          
+          ## 📚 Generated Resources
+          
+          - 📊 Team Productivity Report (artifact)
+          - 🗺️ Updated Project Roadmap (docs/PROJECT_ROADMAP.md)
+          - 📋 Milestone Progress Updates (issues)
+          - 🚀 Sprint Planning Assistant (issue)
+          
+          ---
+          *This automation runs weekly to keep project management current and actionable*
+          EOF
+          
+      - name: Upload project management summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-management-summary
+          path: project-management-summary.md

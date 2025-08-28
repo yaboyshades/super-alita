@@ -1,0 +1,813 @@
+name: Repository Organization & Maintenance
+
+on:
+  push:
+    branches: [master, main]
+  schedule:
+    - cron: '0 4 * * 1'  # Weekly on Monday at 4 AM UTC
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Maintenance action to perform'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full              # Complete maintenance and organization
+          - structure-check   # Repository structure validation
+          - cleanup          # File cleanup and organization
+          - metrics          # Code metrics and analysis
+          - unused-code      # Find unused code and files
+
+concurrency:
+  group: maintenance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-structure-validation:
+    name: Repository Structure Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Validate repository structure
+        run: |
+          echo "# 📁 Repository Structure Validation Report" > structure-report.md
+          echo "" >> structure-report.md
+          echo "**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> structure-report.md
+          echo "" >> structure-report.md
+          
+          # Define expected structure
+          expected_dirs=(
+            "src"
+            "tests"
+            "docs"
+            ".github/workflows"
+            "cortex"
+            "extensions"
+          )
+          
+          expected_files=(
+            "README.md"
+            "pyproject.toml"
+            "requirements.txt"
+            ".env.example"
+            "Makefile"
+            "app.py"
+          )
+          
+          echo "## 📂 Directory Structure Check" >> structure-report.md
+          echo "" >> structure-report.md
+          
+          for dir in "${expected_dirs[@]}"; do
+            if [ -d "$dir" ]; then
+              echo "- ✅ $dir/" >> structure-report.md
+            else
+              echo "- ❌ $dir/ (missing)" >> structure-report.md
+            fi
+          done
+          
+          echo "" >> structure-report.md
+          echo "## 📄 Essential Files Check" >> structure-report.md
+          echo "" >> structure-report.md
+          
+          for file in "${expected_files[@]}"; do
+            if [ -f "$file" ]; then
+              echo "- ✅ $file" >> structure-report.md
+            else
+              echo "- ❌ $file (missing)" >> structure-report.md
+            fi
+          done
+          
+          echo "" >> structure-report.md
+          echo "## 📊 Repository Statistics" >> structure-report.md
+          echo "" >> structure-report.md
+          
+          # File counts
+          echo "- **Total Files**: $(find . -type f | wc -l)" >> structure-report.md
+          echo "- **Python Files**: $(find . -name "*.py" | wc -l)" >> structure-report.md
+          echo "- **Markdown Files**: $(find . -name "*.md" | wc -l)" >> structure-report.md
+          echo "- **YAML Files**: $(find . -name "*.yml" -o -name "*.yaml" | wc -l)" >> structure-report.md
+          echo "- **JavaScript/TypeScript Files**: $(find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" | wc -l)" >> structure-report.md
+          
+          # Directory sizes
+          echo "" >> structure-report.md
+          echo "## 📏 Directory Sizes" >> structure-report.md
+          echo "" >> structure-report.md
+          echo "\`\`\`" >> structure-report.md
+          du -sh */ 2>/dev/null | sort -hr | head -10 >> structure-report.md
+          echo "\`\`\`" >> structure-report.md
+          
+      - name: Check for common anti-patterns
+        run: |
+          echo "" >> structure-report.md
+          echo "## ⚠️ Potential Issues" >> structure-report.md
+          echo "" >> structure-report.md
+          
+          issues_found=false
+          
+          # Check for large files
+          large_files=$(find . -type f -size +10M -not -path "./.git/*" 2>/dev/null)
+          if [ -n "$large_files" ]; then
+            echo "### Large Files (>10MB)" >> structure-report.md
+            echo "\`\`\`" >> structure-report.md
+            echo "$large_files" | while read file; do
+              size=$(du -sh "$file" | cut -f1)
+              echo "$size $file" >> structure-report.md
+            done
+            echo "\`\`\`" >> structure-report.md
+            echo "" >> structure-report.md
+            issues_found=true
+          fi
+          
+          # Check for potential security issues
+          sensitive_patterns=(
+            "password"
+            "secret"
+            "api_key"
+            "private_key"
+            "token"
+          )
+          
+          for pattern in "${sensitive_patterns[@]}"; do
+            matches=$(grep -r -i "$pattern" . --include="*.py" --include="*.js" --include="*.ts" --exclude-dir=".git" | grep -v "example\|template\|test" | head -5)
+            if [ -n "$matches" ]; then
+              if [ "$issues_found" = false ]; then
+                echo "### Potential Security Issues" >> structure-report.md
+                echo "\`\`\`" >> structure-report.md
+                issues_found=true
+              fi
+              echo "Pattern '$pattern' found:" >> structure-report.md
+              echo "$matches" >> structure-report.md
+              echo "" >> structure-report.md
+            fi
+          done
+          
+          if [ "$issues_found" = true ]; then
+            echo "\`\`\`" >> structure-report.md
+          fi
+          
+          # Check for TODO/FIXME comments
+          todos=$(grep -r -n "TODO\|FIXME\|XXX\|HACK" --include="*.py" --include="*.js" --include="*.ts" --exclude-dir=".git" . | wc -l)
+          if [ "$todos" -gt 0 ]; then
+            echo "" >> structure-report.md
+            echo "### Technical Debt" >> structure-report.md
+            echo "- **TODO/FIXME Comments**: $todos found" >> structure-report.md
+            echo "" >> structure-report.md
+            echo "Top 10 TODO items:" >> structure-report.md
+            echo "\`\`\`" >> structure-report.md
+            grep -r -n "TODO\|FIXME\|XXX\|HACK" --include="*.py" --include="*.js" --include="*.ts" --exclude-dir=".git" . | head -10 >> structure-report.md
+            echo "\`\`\`" >> structure-report.md
+          fi
+          
+      - name: Upload structure report
+        uses: actions/upload-artifact@v4
+        with:
+          name: structure-validation-report
+          path: structure-report.md
+
+  code-metrics-analysis:
+    name: Code Metrics Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install analysis tools
+        run: |
+          pip install cloc pygount radon vulture
+          
+      - name: Generate comprehensive code metrics
+        run: |
+          echo "# 📊 Code Metrics Analysis" > metrics-report.md
+          echo "" >> metrics-report.md
+          echo "**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> metrics-report.md
+          echo "" >> metrics-report.md
+          
+          # Lines of code analysis
+          echo "## 📏 Lines of Code" >> metrics-report.md
+          echo "" >> metrics-report.md
+          
+          if command -v cloc >/dev/null 2>&1; then
+            echo "\`\`\`" >> metrics-report.md
+            cloc . --exclude-dir=.git,node_modules,__pycache__,.pytest_cache >> metrics-report.md
+            echo "\`\`\`" >> metrics-report.md
+          else
+            # Fallback to manual counting
+            echo "- **Python**: $(find . -name "*.py" -exec wc -l {} + | tail -1 | awk '{print $1}') lines" >> metrics-report.md
+            echo "- **JavaScript/TypeScript**: $(find . -name "*.js" -o -name "*.ts" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0) lines" >> metrics-report.md
+            echo "- **Markdown**: $(find . -name "*.md" -exec wc -l {} + | tail -1 | awk '{print $1}') lines" >> metrics-report.md
+          fi
+          
+          echo "" >> metrics-report.md
+          
+          # Python-specific metrics
+          echo "## 🐍 Python Code Analysis" >> metrics-report.md
+          echo "" >> metrics-report.md
+          
+          # File and function counts
+          py_files=$(find . -name "*.py" | wc -l)
+          echo "- **Python Files**: $py_files" >> metrics-report.md
+          
+          # Count functions and classes
+          python << 'EOF'
+          import ast
+          import os
+          from pathlib import Path
+          
+          total_functions = 0
+          total_classes = 0
+          total_imports = 0
+          
+          for py_file in Path('.').rglob('*.py'):
+              try:
+                  with open(py_file, 'r') as f:
+                      tree = ast.parse(f.read())
+                  
+                  for node in ast.walk(tree):
+                      if isinstance(node, ast.FunctionDef):
+                          total_functions += 1
+                      elif isinstance(node, ast.ClassDef):
+                          total_classes += 1
+                      elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                          total_imports += 1
+              except:
+                  pass
+          
+          print(f"- **Functions**: {total_functions}")
+          print(f"- **Classes**: {total_classes}")
+          print(f"- **Import Statements**: {total_imports}")
+          EOF
+          
+          # Complexity analysis
+          echo "" >> metrics-report.md
+          echo "### Complexity Metrics" >> metrics-report.md
+          echo "" >> metrics-report.md
+          echo "\`\`\`" >> metrics-report.md
+          radon cc . --average 2>/dev/null | tail -1 >> metrics-report.md || echo "No complexity data available" >> metrics-report.md
+          echo "\`\`\`" >> metrics-report.md
+          
+          # Maintainability index
+          echo "" >> metrics-report.md
+          echo "### Maintainability Index" >> metrics-report.md
+          echo "" >> metrics-report.md
+          echo "\`\`\`" >> metrics-report.md
+          radon mi . --show 2>/dev/null | head -10 >> metrics-report.md || echo "No maintainability data available" >> metrics-report.md
+          echo "\`\`\`" >> metrics-report.md
+          
+      - name: Analyze file organization
+        run: |
+          echo "" >> metrics-report.md
+          echo "## 📁 File Organization Analysis" >> metrics-report.md
+          echo "" >> metrics-report.md
+          
+          # Find files that might be misplaced
+          echo "### Potential Organization Issues" >> metrics-report.md
+          echo "" >> metrics-report.md
+          
+          # Look for test files outside test directories
+          test_files_outside=$(find . -name "*test*.py" -not -path "./tests/*" -not -path "./*/test_*" | head -5)
+          if [ -n "$test_files_outside" ]; then
+            echo "**Test files outside test directories:**" >> metrics-report.md
+            echo "\`\`\`" >> metrics-report.md
+            echo "$test_files_outside" >> metrics-report.md
+            echo "\`\`\`" >> metrics-report.md
+            echo "" >> metrics-report.md
+          fi
+          
+          # Look for configuration files in wrong places
+          config_files=$(find . -name "*.config.*" -o -name "config.*" -not -path "./config/*" | head -5)
+          if [ -n "$config_files" ]; then
+            echo "**Configuration files outside config directory:**" >> metrics-report.md
+            echo "\`\`\`" >> metrics-report.md
+            echo "$config_files" >> metrics-report.md
+            echo "\`\`\`" >> metrics-report.md
+            echo "" >> metrics-report.md
+          fi
+          
+          # Directory depth analysis
+          echo "### Directory Structure Depth" >> metrics-report.md
+          echo "" >> metrics-report.md
+          max_depth=$(find . -type d | awk -F/ '{print NF-1}' | sort -n | tail -1)
+          echo "- **Maximum Directory Depth**: $max_depth" >> metrics-report.md
+          
+          if [ "$max_depth" -gt 6 ]; then
+            echo "- ⚠️ **Deep Directory Structure**: Consider flattening some nested directories" >> metrics-report.md
+          fi
+          
+          echo "" >> metrics-report.md
+          echo "**Deepest directories:**" >> metrics-report.md
+          echo "\`\`\`" >> metrics-report.md
+          find . -type d | awk -F/ '{print NF-1 " " $0}' | sort -n | tail -5 | awk '{print $2}' >> metrics-report.md
+          echo "\`\`\`" >> metrics-report.md
+          
+      - name: Upload metrics report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-metrics-report
+          path: metrics-report.md
+
+  unused-code-detection:
+    name: Unused Code Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install analysis tools
+        run: |
+          pip install vulture unimport
+          pip install -r requirements.txt || true
+          
+      - name: Find unused code
+        run: |
+          echo "# 🔍 Unused Code Analysis" > unused-code-report.md
+          echo "" >> unused-code-report.md
+          echo "**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> unused-code-report.md
+          echo "" >> unused-code-report.md
+          
+          # Find unused imports
+          echo "## 📦 Unused Imports" >> unused-code-report.md
+          echo "" >> unused-code-report.md
+          
+          if command -v unimport >/dev/null 2>&1; then
+            echo "\`\`\`" >> unused-code-report.md
+            unimport --check --diff src/ 2>/dev/null | head -20 >> unused-code-report.md || echo "No unused imports found" >> unused-code-report.md
+            echo "\`\`\`" >> unused-code-report.md
+          else
+            echo "unimport not available" >> unused-code-report.md
+          fi
+          
+          echo "" >> unused-code-report.md
+          
+          # Find dead code
+          echo "## 💀 Potentially Dead Code" >> unused-code-report.md
+          echo "" >> unused-code-report.md
+          
+          if command -v vulture >/dev/null 2>&1; then
+            echo "\`\`\`" >> unused-code-report.md
+            vulture src/ --min-confidence 80 2>/dev/null | head -20 >> unused-code-report.md || echo "No dead code detected" >> unused-code-report.md
+            echo "\`\`\`" >> unused-code-report.md
+          else
+            echo "vulture not available" >> unused-code-report.md
+          fi
+          
+          echo "" >> unused-code-report.md
+          
+          # Find unused files
+          echo "## 📄 Potentially Unused Files" >> unused-code-report.md
+          echo "" >> unused-code-report.md
+          
+          # Simple heuristic: Python files not imported anywhere
+          python << 'EOF'
+          import os
+          import re
+          from pathlib import Path
+          
+          # Get all Python files
+          py_files = list(Path('.').rglob('*.py'))
+          src_files = [f for f in py_files if f.parts[0] == 'src']
+          
+          potentially_unused = []
+          
+          for py_file in src_files:
+              if py_file.name == '__init__.py':
+                  continue
+                  
+              # Create possible import names
+              module_name = py_file.stem
+              relative_path = str(py_file.relative_to('src')).replace('/', '.').replace('.py', '')
+              
+              # Search for imports in all Python files
+              found_import = False
+              for search_file in py_files:
+                  if search_file == py_file:
+                      continue
+                      
+                  try:
+                      with open(search_file, 'r') as f:
+                          content = f.read()
+                      
+                      # Look for various import patterns
+                      patterns = [
+                          f'import {module_name}',
+                          f'from .* import .*{module_name}',
+                          f'from {relative_path}',
+                          f'import {relative_path}',
+                      ]
+                      
+                      for pattern in patterns:
+                          if re.search(pattern, content):
+                              found_import = True
+                              break
+                      
+                      if found_import:
+                          break
+                  except:
+                      pass
+              
+              if not found_import:
+                  potentially_unused.append(str(py_file))
+          
+          if potentially_unused:
+              print("Files that may not be imported anywhere:")
+              for f in potentially_unused[:10]:  # Show first 10
+                  print(f"- {f}")
+          else:
+              print("No obviously unused files detected")
+          EOF
+          
+      - name: Find empty or minimal files
+        run: |
+          echo "" >> unused-code-report.md
+          echo "## 📝 Empty or Minimal Files" >> unused-code-report.md
+          echo "" >> unused-code-report.md
+          
+          # Find empty Python files
+          empty_files=$(find . -name "*.py" -size 0 2>/dev/null)
+          if [ -n "$empty_files" ]; then
+            echo "**Empty Python files:**" >> unused-code-report.md
+            echo "\`\`\`" >> unused-code-report.md
+            echo "$empty_files" >> unused-code-report.md
+            echo "\`\`\`" >> unused-code-report.md
+            echo "" >> unused-code-report.md
+          fi
+          
+          # Find very small Python files (might be stubs)
+          echo "**Very small Python files (<50 bytes):**" >> unused-code-report.md
+          echo "\`\`\`" >> unused-code-report.md
+          find . -name "*.py" -size -50c 2>/dev/null | head -10 >> unused-code-report.md || echo "None found" >> unused-code-report.md
+          echo "\`\`\`" >> unused-code-report.md
+          
+          echo "" >> unused-code-report.md
+          echo "## 🎯 Recommendations" >> unused-code-report.md
+          echo "" >> unused-code-report.md
+          echo "1. **Review unused imports**: Remove unnecessary imports to improve performance" >> unused-code-report.md
+          echo "2. **Archive dead code**: Move unused functions to a separate archive or remove them" >> unused-code-report.md
+          echo "3. **Consolidate small files**: Consider merging very small related files" >> unused-code-report.md
+          echo "4. **Document exceptions**: Add comments for intentionally unused code" >> unused-code-report.md
+          
+      - name: Upload unused code report
+        uses: actions/upload-artifact@v4
+        with:
+          name: unused-code-report
+          path: unused-code-report.md
+
+  file-cleanup-automation:
+    name: File Cleanup & Organization
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Organize and clean up files
+        run: |
+          echo "# 🧹 File Cleanup Report" > cleanup-report.md
+          echo "" >> cleanup-report.md
+          echo "**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> cleanup-report.md
+          echo "" >> cleanup-report.md
+          
+          # Remove common temporary and cache files
+          echo "## 🗑️ Cleaned Up Files" >> cleanup-report.md
+          echo "" >> cleanup-report.md
+          
+          cleaned_count=0
+          
+          # Python cache files
+          cache_files=$(find . -name "__pycache__" -type d 2>/dev/null)
+          if [ -n "$cache_files" ]; then
+            echo "$cache_files" | wc -l >> cleanup-report.md
+            rm -rf $(find . -name "__pycache__" -type d 2>/dev/null)
+            cleaned_count=$((cleaned_count + $(echo "$cache_files" | wc -l)))
+            echo "- Removed $cache_files Python cache directories" >> cleanup-report.md
+          fi
+          
+          # Temporary files
+          temp_files=$(find . -name "*.tmp" -o -name "*.temp" -o -name ".DS_Store" 2>/dev/null)
+          if [ -n "$temp_files" ]; then
+            temp_count=$(echo "$temp_files" | wc -l)
+            rm -f $(find . -name "*.tmp" -o -name "*.temp" -o -name ".DS_Store" 2>/dev/null)
+            cleaned_count=$((cleaned_count + temp_count))
+            echo "- Removed $temp_count temporary files" >> cleanup-report.md
+          fi
+          
+          # Log files that might be accidentally committed
+          log_files=$(find . -name "*.log" -not -path "./.git/*" 2>/dev/null)
+          if [ -n "$log_files" ]; then
+            log_count=$(echo "$log_files" | wc -l)
+            echo "- Found $log_count log files (review for removal)" >> cleanup-report.md
+            echo "\`\`\`" >> cleanup-report.md
+            echo "$log_files" >> cleanup-report.md
+            echo "\`\`\`" >> cleanup-report.md
+          fi
+          
+          echo "" >> cleanup-report.md
+          echo "**Total files cleaned**: $cleaned_count" >> cleanup-report.md
+          
+      - name: Validate file naming conventions
+        run: |
+          echo "" >> cleanup-report.md
+          echo "## 📝 File Naming Convention Check" >> cleanup-report.md
+          echo "" >> cleanup-report.md
+          
+          # Check for files with spaces in names
+          space_files=$(find . -name "* *" -not -path "./.git/*" 2>/dev/null)
+          if [ -n "$space_files" ]; then
+            echo "**Files with spaces in names:**" >> cleanup-report.md
+            echo "\`\`\`" >> cleanup-report.md
+            echo "$space_files" >> cleanup-report.md
+            echo "\`\`\`" >> cleanup-report.md
+            echo "" >> cleanup-report.md
+          fi
+          
+          # Check for non-ASCII characters in file names
+          non_ascii=$(find . -name "*[^[:ascii:]]*" -not -path "./.git/*" 2>/dev/null)
+          if [ -n "$non_ascii" ]; then
+            echo "**Files with non-ASCII characters:**" >> cleanup-report.md
+            echo "\`\`\`" >> cleanup-report.md
+            echo "$non_ascii" >> cleanup-report.md
+            echo "\`\`\`" >> cleanup-report.md
+            echo "" >> cleanup-report.md
+          fi
+          
+          # Check Python file naming (snake_case)
+          camelcase_py=$(find . -name "*.py" | grep -E "[A-Z]" | head -10)
+          if [ -n "$camelcase_py" ]; then
+            echo "**Python files not following snake_case:**" >> cleanup-report.md
+            echo "\`\`\`" >> cleanup-report.md
+            echo "$camelcase_py" >> cleanup-report.md
+            echo "\`\`\`" >> cleanup-report.md
+            echo "" >> cleanup-report.md
+          fi
+          
+      - name: Update .gitignore if needed
+        run: |
+          # Ensure .gitignore covers common patterns
+          python << 'EOF'
+          import os
+          
+          common_patterns = [
+              "__pycache__/",
+              "*.pyc",
+              "*.pyo",
+              "*.pyd",
+              ".Python",
+              "build/",
+              "develop-eggs/",
+              "dist/",
+              "downloads/",
+              "eggs/",
+              ".eggs/",
+              "lib/",
+              "lib64/",
+              "parts/",
+              "sdist/",
+              "var/",
+              "wheels/",
+              "*.egg-info/",
+              ".installed.cfg",
+              "*.egg",
+              ".pytest_cache/",
+              ".coverage",
+              "htmlcov/",
+              ".tox/",
+              ".env",
+              ".venv",
+              "env/",
+              "venv/",
+              "ENV/",
+              "env.bak/",
+              "venv.bak/",
+              ".DS_Store",
+              "*.log",
+              "*.tmp",
+              "*.temp",
+              "node_modules/",
+              ".npm",
+              ".next",
+              "out/"
+          ]
+          
+          if os.path.exists('.gitignore'):
+              with open('.gitignore', 'r') as f:
+                  current_content = f.read()
+          else:
+              current_content = ""
+          
+          patterns_to_add = []
+          for pattern in common_patterns:
+              if pattern not in current_content:
+                  patterns_to_add.append(pattern)
+          
+          if patterns_to_add:
+              with open('.gitignore', 'a') as f:
+                  f.write('\n# Auto-added common patterns\n')
+                  for pattern in patterns_to_add:
+                      f.write(f'{pattern}\n')
+              
+              print(f"Added {len(patterns_to_add)} patterns to .gitignore")
+          else:
+              print("✅ .gitignore is up to date")
+          EOF
+          
+      - name: Commit cleanup changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .gitignore
+          git commit -m "chore: automated file cleanup and organization" || echo "No changes to commit"
+          git push || echo "No changes to push"
+          
+      - name: Upload cleanup report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleanup-report
+          path: cleanup-report.md
+
+  maintenance-summary:
+    name: Maintenance Summary
+    needs: [repository-structure-validation, code-metrics-analysis, unused-code-detection, file-cleanup-automation]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        
+      - name: Generate comprehensive maintenance report
+        run: |
+          cat > maintenance-summary.md << 'EOF'
+          # 🔧 Repository Maintenance Summary
+          
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Workflow Run:** ${{ github.run_id }}
+          
+          ## 🏗️ Maintenance Activities
+          
+          ### Structure Validation
+          EOF
+          
+          if [ "${{ needs.repository-structure-validation.result }}" == "success" ]; then
+            echo "- ✅ **Repository Structure**: Validation completed successfully" >> maintenance-summary.md
+          else
+            echo "- ❌ **Repository Structure**: Validation found issues" >> maintenance-summary.md
+          fi
+          
+          cat >> maintenance-summary.md << 'EOF'
+          
+          ### Code Metrics
+          EOF
+          
+          if [ "${{ needs.code-metrics-analysis.result }}" == "success" ]; then
+            echo "- ✅ **Code Analysis**: Metrics generated successfully" >> maintenance-summary.md
+          else
+            echo "- ❌ **Code Analysis**: Issues with metrics generation" >> maintenance-summary.md
+          fi
+          
+          cat >> maintenance-summary.md << 'EOF'
+          
+          ### Unused Code Detection
+          EOF
+          
+          if [ "${{ needs.unused-code-detection.result }}" == "success" ]; then
+            echo "- ✅ **Dead Code Analysis**: Completed successfully" >> maintenance-summary.md
+          else
+            echo "- ❌ **Dead Code Analysis**: Analysis failed" >> maintenance-summary.md
+          fi
+          
+          cat >> maintenance-summary.md << 'EOF'
+          
+          ### File Cleanup
+          EOF
+          
+          if [ "${{ needs.file-cleanup-automation.result }}" == "success" ]; then
+            echo "- ✅ **File Organization**: Cleanup completed" >> maintenance-summary.md
+          else
+            echo "- ❌ **File Organization**: Cleanup encountered issues" >> maintenance-summary.md
+          fi
+          
+          cat >> maintenance-summary.md << 'EOF'
+          
+          ## 📊 Quick Statistics
+          
+          EOF
+          
+          # Extract key metrics from reports
+          if [ -f code-metrics-report/metrics-report.md ]; then
+            echo "### Code Metrics" >> maintenance-summary.md
+            grep -E "^- \*\*" code-metrics-report/metrics-report.md | head -5 >> maintenance-summary.md || true
+            echo "" >> maintenance-summary.md
+          fi
+          
+          if [ -f structure-validation-report/structure-report.md ]; then
+            echo "### Repository Health" >> maintenance-summary.md
+            grep -E "^- \*\*" structure-validation-report/structure-report.md | head -5 >> maintenance-summary.md || true
+            echo "" >> maintenance-summary.md
+          fi
+          
+          cat >> maintenance-summary.md << 'EOF'
+          
+          ## 🎯 Action Items
+          
+          Based on the maintenance analysis, consider the following:
+          
+          EOF
+          
+          # Generate recommendations based on job results
+          if [ "${{ needs.repository-structure-validation.result }}" != "success" ]; then
+            echo "1. **Structure Issues**: Review and fix repository structure problems" >> maintenance-summary.md
+          fi
+          
+          if [ "${{ needs.unused-code-detection.result }}" == "success" ]; then
+            echo "2. **Code Cleanup**: Review and remove identified unused code" >> maintenance-summary.md
+          fi
+          
+          if [ "${{ needs.code-metrics-analysis.result }}" == "success" ]; then
+            echo "3. **Code Quality**: Address high complexity functions and improve maintainability" >> maintenance-summary.md
+          fi
+          
+          cat >> maintenance-summary.md << 'EOF'
+          
+          ## 📚 Detailed Reports
+          
+          For detailed analysis, check the individual reports:
+          
+          - 📁 [Repository Structure Validation](structure-validation-report/)
+          - 📊 [Code Metrics Analysis](code-metrics-report/)
+          - 🔍 [Unused Code Detection](unused-code-detection/)
+          - 🧹 [File Cleanup Report](cleanup-report/)
+          
+          ## 🔄 Next Maintenance
+          
+          This maintenance workflow runs weekly. For urgent issues:
+          1. Create an issue with the `maintenance` label
+          2. Manually trigger this workflow from the Actions tab
+          3. Review and implement the recommendations above
+          
+          ---
+          *This summary was generated by the Repository Organization & Maintenance workflow*
+          EOF
+          
+      - name: Post maintenance summary as issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('maintenance-summary.md', 'utf8');
+            
+            // Look for existing maintenance issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'maintenance-report',
+              state: 'open'
+            });
+            
+            if (issues.length > 0) {
+              // Update existing issue
+              const issue = issues[0];
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                title: '🔧 Weekly Repository Maintenance Report',
+                body: summary
+              });
+              console.log(`Updated maintenance issue #${issue.number}`);
+            } else {
+              // Create new issue
+              const newIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🔧 Weekly Repository Maintenance Report',
+                body: summary,
+                labels: ['maintenance-report', 'automated']
+              });
+              console.log(`Created new maintenance issue #${newIssue.data.number}`);
+            }
+            
+      - name: Upload maintenance summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: maintenance-summary-report
+          path: maintenance-summary.md
