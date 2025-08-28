@@ -1,11 +1,11 @@
 from __future__ import annotations
+
 import logging
 import re
 from collections import defaultdict
-from typing import Any, Dict
+from typing import Any
 
 from src.core.plugin_interface import PluginInterface
-
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +34,13 @@ class CurationManager(PluginInterface):
 
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
-        self.cfg: Dict[str, float] = {
+        self.cfg: dict[str, float] = {
             "play_weight": self.get_config("play_weight", 0.1),
             "planning_weight": self.get_config("planning_weight", 0.2),
             "semantic_error_penalty": self.get_config("semantic_error_penalty", -0.2),
             "syntactic_error_penalty": self.get_config("syntactic_error_penalty", -0.1),
         }
-        self.error_counts: Dict[str, int] = defaultdict(int)
+        self.error_counts: dict[str, int] = defaultdict(int)
         self._required_features = {"global_play", "global_planning"}
 
     async def start(self) -> None:
@@ -90,7 +90,11 @@ class CurationManager(PluginInterface):
         return False
 
     async def _emit_utility_update(
-        self, feature_id: str, signal_type: str, value: float, components: dict[str, float]
+        self,
+        feature_id: str,
+        signal_type: str,
+        value: float,
+        components: dict[str, float],
     ) -> None:
         if not self._feature_exists(feature_id):
             logger.warning(
@@ -112,31 +116,28 @@ class CurationManager(PluginInterface):
     async def shutdown(self) -> None:  # type: ignore[override]
         await super().shutdown()
 
-
     async def handle_tool_result(self, event: Any) -> None:
         success = bool(event.get("success", False))
         error_msg = event.get("error", "") or ""
         if not success:
             if re.search(r"(schema|validation|type|required)", error_msg, re.I):
-                category = "syntactic"; signal = self.cfg["syntactic_error_penalty"]
+                category = "syntactic"
+                signal = self.cfg["syntactic_error_penalty"]
             else:
-
-                category = "semantic"; signal = self.cfg["semantic_error_penalty"]
-            self.error_counts[category] += 1
-            await self.emit_event("oak.curation_feedback", category=category, success=False, error=error_msg[:256])
-
                 category = "semantic"
                 signal = self.cfg["semantic_error_penalty"]
-            self.error_counts[category] += 1  # type: ignore[index]
+
+            self.error_counts[category] += 1
+
             # Emit process feedback (planning utility impact)
             await self.emit_event(
                 "oak.curation_feedback",
-                category=category or "unknown",
+                category=category,
                 success=False,
                 error=str(error_msg)[:256],
             )
-            # Global planning utility nudge (no specific feature_id attached)
 
+            # Global planning utility nudge (no specific feature_id attached)
 
             await self.emit_event(
                 "oak.feature_utility_updated",
@@ -144,10 +145,10 @@ class CurationManager(PluginInterface):
                 signal_type="planning",
                 value=signal,
                 components={"planning": signal},
+            )
 
             await self._emit_utility_update(
                 "global_planning", "planning", signal, {"planning": signal}
-
             )
         else:
             signal = float(self.cfg["play_weight"])
@@ -158,10 +159,10 @@ class CurationManager(PluginInterface):
                 signal_type="play",
                 value=signal,
                 components={"play": signal},
+            )
 
             await self._emit_utility_update(
                 "global_play", "play", signal, {"play": signal}
-
             )
 
     async def handle_prediction_error(self, event: Any) -> None:
@@ -173,15 +174,14 @@ class CurationManager(PluginInterface):
         err = float(getattr(event, "error", 0.0))
         signal = 1.0 / (1.0 + err)
 
-
         await self.emit_event(
             "oak.feature_utility_updated",
             feature_id="global_planning",
             signal_type="planning",
             value=signal,
             components={"planning": signal},
+        )
 
         await self._emit_utility_update(
             "global_planning", "planning", signal, {"planning": signal}
-
         )

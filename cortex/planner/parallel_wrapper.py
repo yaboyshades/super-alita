@@ -1,6 +1,15 @@
-=
 from __future__ import annotations
-from typing import Any, Dict, Iterable
+
+import asyncio
+import logging
+import time
+from collections.abc import Awaitable, Callable, Iterable, Sequence
+from typing import Any
+
+# Simple telemetry hook; tests monkeypatch this
+TELEMETRY_EVENTS: list[dict[str, Any]] = []
+
+logger = logging.getLogger(__name__)
 
 try:
     from langchain_core.runnables import RunnableParallel, RunnableSequence
@@ -12,10 +21,10 @@ except Exception:  # pragma: no cover - fallback when LangChain missing
     class RunnableParallel:
         """Simplistic local fallback for LangChain's RunnableParallel."""
 
-        def __init__(self, steps: Dict[str, Any]):
+        def __init__(self, steps: dict[str, Any]):
             self.steps = steps
 
-        def invoke(self, input: Any, **kwargs: Any) -> Dict[str, Any]:
+        def invoke(self, input: Any, **kwargs: Any) -> dict[str, Any]:
             return {
                 name: runnable.invoke(input, **kwargs)
                 for name, runnable in self.steps.items()
@@ -34,24 +43,18 @@ except Exception:  # pragma: no cover - fallback when LangChain missing
             return result
 
 
-def should_parallelize(runnables: Dict[str, Any]) -> bool:
+def should_parallelize_runnables(runnables: dict[str, Any]) -> bool:
     """Determine whether to parallelize a set of runnables."""
     if not HAS_LANGCHAIN:
         return False
     return len(runnables) > 1
 
 
-def parallel_wrapper(runnables: Dict[str, Any]) -> RunnableParallel | RunnableSequence:
+def parallel_wrapper(runnables: dict[str, Any]) -> RunnableParallel | RunnableSequence:
     """Return a parallel or sequential wrapper depending on availability."""
-    if should_parallelize(runnables):
+    if should_parallelize_runnables(runnables):
         return RunnableParallel(runnables)
     return RunnableSequence(runnables.values())
-
-
-
-from __future__ import annotations
-
-from typing import Any
 
 
 class ParallelWrapper:
@@ -60,12 +63,18 @@ class ParallelWrapper:
     def __init__(self, planner: Any) -> None:
         self._planner = planner
 
-    def _process_parallel_results(self, parallel_results: dict[str, Any]) -> dict[str, Any]:
+    def _process_parallel_results(
+        self, parallel_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Convert result dict to {"steps": ..., "parallel": True} shape."""
         steps = parallel_results.get("steps")
         if steps is None:
             # Assume dict mapping step identifiers -> step payloads
-            steps = list(parallel_results.values()) if isinstance(parallel_results, dict) else parallel_results
+            steps = (
+                list(parallel_results.values())
+                if isinstance(parallel_results, dict)
+                else parallel_results
+            )
         # Ensure steps is a list
         if not isinstance(steps, list):
             steps = [steps]
@@ -80,14 +89,6 @@ class ParallelWrapper:
         """Execute decide-and-run on underlying planner and normalize output."""
         result = await self._planner.decide_and_run(*args, **kwargs)
         return self._process_parallel_results(result)
-
-
-import asyncio
-import logging
-from typing import Any, Iterable
-
-
-logger = logging.getLogger(__name__)
 
 
 class ParallelLadderWrapper:
@@ -109,15 +110,6 @@ class ParallelLadderWrapper:
         tasks = [asyncio.create_task(run_one(name, r)) for name, r in self.steps]
         results = await asyncio.gather(*tasks)
         return {name: payload for name, payload in results}
-
-from __future__ import annotations
-
-import asyncio
-import time
-from typing import Awaitable, Callable, Iterable, Any
-
-# Simple telemetry hook; tests monkeypatch this
-TELEMETRY_EVENTS: list[dict[str, Any]] = []
 
 
 def _emit_telemetry(mode: str, steps: int, duration: float, success: bool) -> None:
@@ -158,8 +150,6 @@ async def decide_and_run(
     finally:
         duration = time.perf_counter() - start
         _emit_telemetry(mode, len(functions), duration, success)
-
-from typing import Sequence
 
 
 def _have_shared_dependencies(substeps: Sequence[object]) -> bool:
@@ -210,6 +200,3 @@ def should_parallelize(
     parallel_time = _estimate_parallel_time(substeps)
     benefit = sequential_time - parallel_time
     return benefit > min_parallel_benefit
-
-
-

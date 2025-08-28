@@ -943,9 +943,12 @@ class EnhancedCopilotAbility(PluginInterface):
                 "Accept": "application/vnd.github+json",
             }
 
-            async with aiohttp.ClientSession() as session, session.get(
-                f"https://api.github.com/repos/{owner}/{repo}", headers=headers
-            ) as response:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(
+                    f"https://api.github.com/repos/{owner}/{repo}", headers=headers
+                ) as response,
+            ):
                 if response.status == 200:
                     return await response.json()
                 else:
@@ -1581,7 +1584,12 @@ class EnhancedCopilotAbility(PluginInterface):
         ]
         avg_score = sum(repo_scores) / len(repo_scores) if repo_scores else 0
 
-        if opp_priority == "high" and avg_score > 0.7 or opp_priority == "high" or avg_score > 0.8:
+        if (
+            opp_priority == "high"
+            and avg_score > 0.7
+            or opp_priority == "high"
+            or avg_score > 0.8
+        ):
             return "high"
         elif avg_score > 0.6:
             return "medium"

@@ -214,11 +214,14 @@ class TestCorrelationIntegration:
         test_correlation_id = "test-correlation-123"
         test_session_id = "test-session-456"
 
-        with patch(
-            "src.core.context_builder.get_correlation_id",
-            return_value=test_correlation_id,
-        ), patch(
-            "src.core.context_builder.get_session_id", return_value=test_session_id
+        with (
+            patch(
+                "src.core.context_builder.get_correlation_id",
+                return_value=test_correlation_id,
+            ),
+            patch(
+                "src.core.context_builder.get_session_id", return_value=test_session_id
+            ),
         ):
             assembler = ContextAssembler(user_input="test")
             ctx = assembler.build_for_decision()

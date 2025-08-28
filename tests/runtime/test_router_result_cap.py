@@ -1,8 +1,7 @@
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from reug_runtime.router import router
 
+from reug_runtime.router import router
 from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeEventBus, FakeKG
 
@@ -39,7 +38,9 @@ class BigLLM:
             None,
         )
         if tr is not None:
-            yield {"content": f'<final_answer>{{"content":"{tr}","citations":[]}}</final_answer>'}
+            yield {
+                "content": f'<final_answer>{{"content":"{tr}","citations":[]}}</final_answer>'
+            }
             return
         yield {"content": '<tool_call>{"tool":"big","args":{}}</tool_call>'}
 
@@ -71,24 +72,6 @@ def test_result_capping():
     succ = {e["span_id"] for e in evts if e["type"] == "AbilitySucceeded"}
     fail = {e["span_id"] for e in evts if e["type"] == "AbilityFailed"}
     assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls)
-=======
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from reug_runtime.router import router
-
-from tests.runtime.fakes import FakeEventBus, FakeKG
-
-
-class BigResultRegistry:
-    def get_available_tools_schema(self):
-        return [
-            {
-                "tool_id": "big",
-                "description": "big result",
-                "input_schema": {"type": "object"},
-                "output_schema": {"type": "object"},
-            }
-        ]
 
     def knows(self, name):
         return name == "big"
@@ -111,7 +94,9 @@ class BigLLM:
             None,
         )
         if tr is not None:
-            yield {"content": f'<final_answer>{{"content":"{tr}","citations":[]}}</final_answer>'}
+            yield {
+                "content": f'<final_answer>{{"content":"{tr}","citations":[]}}</final_answer>'
+            }
             return
         yield {"content": '<tool_call>{"tool":"big","args":{}}</tool_call>'}
 
@@ -141,4 +126,3 @@ def test_result_capping():
     succ = {e["span_id"] for e in evts if e["type"] == "AbilitySucceeded"}
     fail = {e["span_id"] for e in evts if e["type"] == "AbilityFailed"}
     assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls)
-
