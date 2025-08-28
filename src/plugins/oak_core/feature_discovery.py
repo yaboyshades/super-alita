@@ -71,6 +71,9 @@ class FeatureExtractor(nn.Module):
 class FeatureDiscoveryEngine(PluginInterface):
     """Online discovery and utility-tracking of features/abstractions.
 
+    Continual feature discovery with IDBD adaptive meta-learning.
+    Generates features via primitives, conjunctions, sequences, contrasts, and NN functions.
+
     Emits:
       - oak.feature_created
       - oak.features_discovered
@@ -78,9 +81,6 @@ class FeatureDiscoveryEngine(PluginInterface):
     Subscribes:
       - deliberation_tick
       - oak.feature_utility_updated
-    """
-    Continual feature discovery with IDBD adaptive meta-learning.
-    Generates features via primitives, conjunctions, sequences, contrasts, and NN functions.
     """
 
     def __init__(self):

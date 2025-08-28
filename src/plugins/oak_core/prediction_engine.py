@@ -84,6 +84,8 @@ class PredictionEngine(PluginInterface):
     async def create_gvfs_for_option(self, event: Dict[str, Any]):
         opt_id = event.get("option_id")
         if not opt_id:
+            return
+
     async def start(self) -> None:  # type: ignore[override]
         await super().start()
 

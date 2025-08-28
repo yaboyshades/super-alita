@@ -86,17 +86,6 @@ class PuterPlugin(PluginInterface):
 
         self.is_initialized = True
 
-            connector=connector, timeout=timeout, headers=headers
-        )
-
-        try:
-            await self._make_request("GET", "/api/health")
-            logger.info("Successfully connected to Puter instance")
-            self.is_initialized = True
-        except Exception as exc:  # pragma: no cover - network failure
-            logger.error("Failed to connect to Puter: %s", exc)
-            raise PuterAPIError(f"Connection failed: {exc}")
-
 
     async def cleanup(self) -> None:
         if self.session:

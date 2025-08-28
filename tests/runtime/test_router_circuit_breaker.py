@@ -2,6 +2,12 @@ from fastapi import FastAPI
 import pytest
 from fastapi.testclient import TestClient
 from reug_runtime import config
+
+try:
+    from reug_runtime.router import breaker, router
+except ImportError:  # pragma: no cover - skip if implementation missing
+    pytest.skip("breaker not available", allow_module_level=True)
+
 from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeEventBus, FakeKG
 
@@ -34,7 +40,9 @@ class FlakyRegistry:
 class LoopLLM:
     async def stream_chat(self, messages, timeout):
         errors = sum(
-            1 for m in messages if m["role"] == "assistant" and "<tool_error" in m["content"]
+            1
+            for m in messages
+            if m["role"] == "assistant" and "<tool_error" in m["content"]
         )
         if errors >= 4:
             yield {
@@ -77,13 +85,7 @@ def test_circuit_breaker(monkeypatch):
     assert terminals[0]["type"] == "TaskSucceeded"
     succ = {e["span_id"] for e in evts if e["type"] == "AbilitySucceeded"}
     fail = {e["span_id"] for e in evts if e["type"] == "AbilityFailed"}
-    assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls
-try:
-    from reug_runtime.router import breaker, router
-except ImportError:  # pragma: no cover - skip if implementation missing
-    pytest.skip("breaker not available", allow_module_level=True)
-
-from tests.runtime.fakes import FakeEventBus, FakeKG
+    assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls)
 
 
 class FlakyRegistry:
@@ -114,7 +116,9 @@ class FlakyRegistry:
 class LoopLLM:
     async def stream_chat(self, messages, timeout):
         errors = sum(
-            1 for m in messages if m["role"] == "assistant" and "<tool_error" in m["content"]
+            1
+            for m in messages
+            if m["role"] == "assistant" and "<tool_error" in m["content"]
         )
         if errors >= 4:
             yield {
@@ -155,4 +159,4 @@ def test_circuit_breaker(monkeypatch):
     assert terminals[0]["type"] == "TaskSucceeded"
     succ = {e["span_id"] for e in evts if e["type"] == "AbilitySucceeded"}
     fail = {e["span_id"] for e in evts if e["type"] == "AbilityFailed"}
-    assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls
+    assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls)
