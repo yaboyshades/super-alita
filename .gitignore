@@ -148,3 +148,10 @@ models/
 # Configuration overrides
 config.local.*
 settings.local.*
+
+# Auto-added common patterns
+*.pyc
+*.pyo
+*.pyd
+.npm
+.next
