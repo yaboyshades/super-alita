@@ -1,6 +1,7 @@
-from fastapi import FastAPI
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
 from reug_runtime import config
 
 try:

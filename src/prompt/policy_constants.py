@@ -75,7 +75,7 @@ class ExecutionGuards:
 
 
 def BASE_POLICY_BLOCK():
-    return (f"""
+    return f"""
 SYSTEM_POLICY:
   prompt_version: {PROMPT_VERSION}
   schema_version: {SCHEMA_VERSION}
@@ -107,7 +107,7 @@ SYSTEM_POLICY:
     min_components: 3
   ceiling_controls:
     segment_pull_ceiling: {ExecutionGuards().segment_pull_ceiling}
-""")
+"""
 
 
 def build_role_extension(role: str) -> str:

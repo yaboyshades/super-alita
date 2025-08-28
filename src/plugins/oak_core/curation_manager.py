@@ -1,11 +1,11 @@
 from __future__ import annotations
+
 import logging
 import re
 from collections import defaultdict
-from typing import Any, Dict
+from typing import Any
 
 from src.core.plugin_interface import PluginInterface
-
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +34,13 @@ class CurationManager(PluginInterface):
 
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
-        self.cfg: Dict[str, float] = {
+        self.cfg: dict[str, float] = {
             "play_weight": self.get_config("play_weight", 0.1),
             "planning_weight": self.get_config("planning_weight", 0.2),
             "semantic_error_penalty": self.get_config("semantic_error_penalty", -0.2),
             "syntactic_error_penalty": self.get_config("syntactic_error_penalty", -0.1),
         }
-        self.error_counts: Dict[str, int] = defaultdict(int)
+        self.error_counts: dict[str, int] = defaultdict(int)
         self._required_features = {"global_play", "global_planning"}
 
     async def start(self) -> None:

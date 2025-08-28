@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import uuid
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timezone
-from collections import deque
+from datetime import UTC, datetime
+from typing import Any
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
 from pydantic import BaseModel, Field
+
 from src.core.plugin_interface import PluginInterface
 
 
@@ -20,7 +19,7 @@ class GVF(BaseModel):
     option_id: str
     discount: float = Field(default=0.99, ge=0.0, le=1.0)
     cumulant_type: str  # 'reward', 'feature', 'duration', 'success'
-    cumulant_params: Dict[str, Any] = Field(default_factory=dict)
+    cumulant_params: dict[str, Any] = Field(default_factory=dict)
 
     learning_rate: float = 1e-3
     lambda_param: float = Field(default=0.9, ge=0.0, le=1.0)
@@ -30,16 +29,18 @@ class GVF(BaseModel):
     prediction_error: float = 1.0
     td_error_ema: float = 0.0
     updates: int = 0
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_updated: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime | None = None
 
 
 class GVFNetwork(nn.Module):
     def __init__(self, input_dim: int, hidden: int = 64):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
+            nn.Linear(input_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
             nn.Linear(hidden, 1),
         )
 
@@ -67,10 +68,10 @@ class PredictionEngine(PluginInterface):
         self.device = torch.device(self.get_config("device", "cpu"))
         self.state_dim = self.get_config("state_dim", 100)
 
-        self.gvfs: Dict[str, GVF] = {}
-        self.networks: Dict[str, GVFNetwork] = {}
-        self.optimizers: Dict[str, torch.optim.Adam] = {}
-        self.by_option: Dict[str, List[str]] = {}
+        self.gvfs: dict[str, GVF] = {}
+        self.networks: dict[str, GVFNetwork] = {}
+        self.optimizers: dict[str, torch.optim.Adam] = {}
+        self.by_option: dict[str, list[str]] = {}
 
     async def start(self) -> None:
         await super().start()
@@ -78,10 +79,10 @@ class PredictionEngine(PluginInterface):
         await self.subscribe("state_transition", self.update_predictions)
 
     def _gvf_id(self, option_id: str, kind: str) -> str:
-        ns = uuid.UUID('6ba7b813-9dad-11d1-80b4-00c04fd430c8')
+        ns = uuid.UUID("6ba7b813-9dad-11d1-80b4-00c04fd430c8")
         return str(uuid.uuid5(ns, f"gvf_{option_id}_{kind}"))
 
-    async def create_gvfs_for_option(self, event: Dict[str, Any]):
+    async def create_gvfs_for_option(self, event: dict[str, Any]):
         opt_id = event.get("option_id")
         if not opt_id:
             return
@@ -121,24 +122,26 @@ class PredictionEngine(PluginInterface):
                 gvf_id=gid,
                 option_id=opt_id,
                 prediction_type=kind,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
-    def _state_to_tensor(self, state: Dict[str, Any]) -> torch.Tensor:
+    def _state_to_tensor(self, state: dict[str, Any]) -> torch.Tensor:
         vec = torch.zeros(self.state_dim, dtype=torch.float32)
         i = 0
         for k, v in state.items():
             if i >= self.state_dim:
                 break
             if isinstance(v, (int, float, bool)):
-                vec[i] = float(v); i += 1
+                vec[i] = float(v)
+                i += 1
             elif k == "features" and isinstance(v, list):
                 for j in range(min(10, len(v))):
-                    if i + j < self.state_dim: vec[i + j] = 1.0
+                    if i + j < self.state_dim:
+                        vec[i + j] = 1.0
                 i += 10
         return vec.to(self.device)
 
-    def _cumulant(self, g: GVF, reward: float, next_state: Dict[str, Any]) -> float:
+    def _cumulant(self, g: GVF, reward: float, next_state: dict[str, Any]) -> float:
         if g.cumulant_type == "duration":
             return 1.0
         if g.cumulant_type == "attainment":
@@ -150,7 +153,7 @@ class PredictionEngine(PluginInterface):
             return float(reward)
         return 0.0
 
-    async def update_predictions(self, event: Dict[str, Any]):
+    async def update_predictions(self, event: dict[str, Any]):
         opt_id = event.get("option_id")
         if not opt_id:
             return
@@ -175,7 +178,9 @@ class PredictionEngine(PluginInterface):
 
             c = self._cumulant(g, reward, ns)
             gamma = 0.0 if done else g.discount
-            target = torch.tensor(c + gamma * float(v_next), dtype=torch.float32, device=self.device)
+            target = torch.tensor(
+                c + gamma * float(v_next), dtype=torch.float32, device=self.device
+            )
             pred = net(s_t).squeeze()
 
             # ETD-style emphasis update (very lightweight)
@@ -189,7 +194,7 @@ class PredictionEngine(PluginInterface):
             err = float(torch.abs(pred - target).item())
             g.updates += 1
             g.td_error_ema = 0.9 * g.td_error_ema + 0.1 * err
-            g.last_updated = datetime.now(timezone.utc)
+            g.last_updated = datetime.now(UTC)
 
             await self.emit_event(
                 "prediction_error",
@@ -197,5 +202,5 @@ class PredictionEngine(PluginInterface):
                 option_id=opt_id,
                 error=err,
                 prediction_type=g.cumulant_type,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )

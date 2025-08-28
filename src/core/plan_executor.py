@@ -549,9 +549,7 @@ Focus on the key findings or outcomes, not the technical steps.
             del self.active_plans[plan_id]
 
         # Remove result waiters (should be empty by now)
-        keys_to_remove = [
-            k for k in self.result_waiters if k.startswith(plan_id)
-        ]
+        keys_to_remove = [k for k in self.result_waiters if k.startswith(plan_id)]
         for key in keys_to_remove:
             del self.result_waiters[key]
 

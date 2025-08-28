@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, Awaitable, Callable, Dict, Iterable, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Sequence
+from typing import Any
 
 # Simple telemetry hook; tests monkeypatch this
 TELEMETRY_EVENTS: list[dict[str, Any]] = []
@@ -20,10 +21,10 @@ except Exception:  # pragma: no cover - fallback when LangChain missing
     class RunnableParallel:
         """Simplistic local fallback for LangChain's RunnableParallel."""
 
-        def __init__(self, steps: Dict[str, Any]):
+        def __init__(self, steps: dict[str, Any]):
             self.steps = steps
 
-        def invoke(self, input: Any, **kwargs: Any) -> Dict[str, Any]:
+        def invoke(self, input: Any, **kwargs: Any) -> dict[str, Any]:
             return {
                 name: runnable.invoke(input, **kwargs)
                 for name, runnable in self.steps.items()
@@ -42,14 +43,14 @@ except Exception:  # pragma: no cover - fallback when LangChain missing
             return result
 
 
-def should_parallelize_runnables(runnables: Dict[str, Any]) -> bool:
+def should_parallelize_runnables(runnables: dict[str, Any]) -> bool:
     """Determine whether to parallelize a set of runnables."""
     if not HAS_LANGCHAIN:
         return False
     return len(runnables) > 1
 
 
-def parallel_wrapper(runnables: Dict[str, Any]) -> RunnableParallel | RunnableSequence:
+def parallel_wrapper(runnables: dict[str, Any]) -> RunnableParallel | RunnableSequence:
     """Return a parallel or sequential wrapper depending on availability."""
     if should_parallelize_runnables(runnables):
         return RunnableParallel(runnables)

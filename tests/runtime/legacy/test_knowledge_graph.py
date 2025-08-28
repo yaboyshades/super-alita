@@ -255,9 +255,7 @@ async def test_full_integration():
 
         # Run a cognitive cycle
         context = runtime.create_context("integration_test", "test_user")
-        await runtime.process_cycle(
-            "Integrate knowledge graph with telemetry", context
-        )
+        await runtime.process_cycle("Integrate knowledge graph with telemetry", context)
 
         await asyncio.sleep(0.1)  # Let events process
 
