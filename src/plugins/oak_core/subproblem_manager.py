@@ -48,8 +48,10 @@ class SubproblemManager(PluginInterface):
     Manages reward-respecting subproblems for feature attainment.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
+        self.cfg: dict[str, Any] = {}
+        self.feature_to_sub: dict[str, list[str]] = {}
 
     @property
     def name(self) -> str:
@@ -60,16 +62,23 @@ class SubproblemManager(PluginInterface):
         self.subproblems: dict[str, Subproblem] = {}
         self.feature_to_subproblems: dict[str, list[str]] = {}
 
+        
+        # Legacy config approach using get_config
+
         self.min_utility_threshold = self.get_config("min_utility_threshold", 0.2)
         self.kappa_range = self.get_config("kappa_range", (0.1, 5.0))
         self.kappa_values = self.get_config("kappa_values", [0.5, 1.0, 2.0])
-
-    async def start(self) -> None:
-        await super().start()
-        await self.subscribe("feature_created", self.handle_feature_created)
+        
+        # Modern config approach using self.cfg
+        self.cfg.update(config or {})
+        self.cfg.setdefault("min_utility_threshold", 0.2)
+        self.cfg.setdefault("max_per_feature", 5)
+        
+        # Subscribe to both legacy and modern event patterns
         await self.subscribe("feature_utility_update", self.handle_utility_update)
         await self.subscribe("option_created", self.link_option_to_subproblem)
         await self.subscribe("subproblem_terminated", self.handle_termination)
+
 
     def generate_subproblem_id(self, feature_id: str, kappa: float) -> str:
         ns = uuid.UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8")
@@ -88,14 +97,23 @@ class SubproblemManager(PluginInterface):
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # type: ignore[override]
         await super().setup(event_bus, store, config)
         self.cfg.update(config or {})
+
         await self.subscribe("oak.feature_utility_updated", self.handle_feature_utility)
         await self.subscribe("oak.option_completed", self.handle_option_completed)
 
-    async def start(self) -> None:  # type: ignore[override]
+    async def start(self) -> None:
         await super().start()
 
-    async def shutdown(self) -> None:  # type: ignore[override]
+    async def shutdown(self) -> None:
         await super().shutdown()
+
+    def generate_subproblem_id(self, feature_id: str, kappa: float) -> str:
+        ns = uuid.UUID('6ba7b811-9dad-11d1-80b4-00c04fd430c8')
+        return str(uuid.uuid5(ns, f"subproblem_{feature_id}_k{kappa:.2f}"))
+
+    async def handle_option_completed(self, event: Any) -> None:
+        """Handle completion of options linked to subproblems."""
+        pass  # Implementation would track option outcomes
 
     async def handle_feature_utility(self, event: Any) -> None:
         feature_id = getattr(event, "feature_id", None)
@@ -108,12 +126,12 @@ class SubproblemManager(PluginInterface):
         ):
             return
         for k in self.kappa_values:
-            sp = await self._create_subproblem(fid, k)
+            sp = await self._create_subproblem(feature_id, k)
             if sp:
                 await self.emit_event(
                     "subproblem_defined",
                     subproblem_id=sp.id,
-                    feature_id=fid,
+                    feature_id=feature_id,
                     kappa=k,
                     timestamp=datetime.now(UTC),
                 )
