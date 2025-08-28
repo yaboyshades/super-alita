@@ -1,0 +1,459 @@
+name: Advanced Code Quality & Security
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of scan to perform'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full          # Complete security and quality scan
+          - security      # Security vulnerabilities only
+          - dependencies  # Dependency audit only
+          - quality      # Code quality metrics only
+
+concurrency:
+  group: code-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install security tools
+        run: |
+          pip install bandit[toml] safety semgrep
+          
+      - name: Run Bandit security scan
+        run: |
+          bandit -r src/ -f json -o bandit-report.json || true
+          bandit -r src/ -f txt
+          
+      - name: Run Safety dependency check
+        run: |
+          safety check --json --output safety-report.json || true
+          safety check
+          
+      - name: Run Semgrep security scan
+        run: |
+          semgrep --config=auto src/ --json --output=semgrep-report.json || true
+          semgrep --config=auto src/
+          
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+            semgrep-report.json
+
+  license-compliance:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install license tools
+        run: |
+          pip install pip-licenses licensecheck
+          pip install -r requirements.txt -r requirements-test.txt
+          
+      - name: Generate license report
+        run: |
+          pip-licenses --format=json --output-file=licenses.json
+          pip-licenses --format=markdown --output-file=licenses.md
+          
+      - name: Check for problematic licenses
+        run: |
+          # Check for licenses that might be problematic
+          python << 'EOF'
+          import json
+          
+          # Load license data
+          with open('licenses.json', 'r') as f:
+              licenses = json.load(f)
+          
+          # Define problematic license patterns
+          problematic_patterns = [
+              'GPL', 'AGPL', 'LGPL',  # Copyleft licenses
+              'SSPL',  # Server Side Public License
+              'Commons Clause',  # Commons Clause
+              'BUSL',  # Business Source License
+          ]
+          
+          issues = []
+          for pkg in licenses:
+              license_name = pkg.get('License', '')
+              for pattern in problematic_patterns:
+                  if pattern.lower() in license_name.lower():
+                      issues.append(f"Package '{pkg['Name']}' uses potentially problematic license: {license_name}")
+          
+          if issues:
+              print("⚠️ License compliance issues found:")
+              for issue in issues:
+                  print(f"  - {issue}")
+              exit(1)
+          else:
+              print("✅ No license compliance issues found")
+          EOF
+          
+      - name: Upload license reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-reports
+          path: |
+            licenses.json
+            licenses.md
+
+  code-complexity:
+    name: Code Complexity Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install analysis tools
+        run: |
+          pip install radon xenon mccabe
+          
+      - name: Run complexity analysis
+        run: |
+          # Cyclomatic complexity
+          radon cc src/ --json --output complexity.json
+          radon cc src/ --show-complexity --min C
+          
+          # Maintainability index
+          radon mi src/ --json --output maintainability.json
+          radon mi src/ --show --min B
+          
+          # Halstead metrics
+          radon hal src/ --json --output halstead.json
+          
+      - name: Check complexity thresholds
+        run: |
+          # Use xenon to enforce complexity limits
+          xenon --max-absolute C --max-modules C --max-average A src/
+          
+      - name: Generate complexity report
+        run: |
+          cat > complexity-report.md << 'EOF'
+          # Code Complexity Report
+          
+          ## Cyclomatic Complexity
+          ```
+          EOF
+          radon cc src/ --show-complexity >> complexity-report.md
+          cat >> complexity-report.md << 'EOF'
+          ```
+          
+          ## Maintainability Index
+          ```
+          EOF
+          radon mi src/ --show >> complexity-report.md
+          cat >> complexity-report.md << 'EOF'
+          ```
+          
+          ## Summary
+          - Files with high complexity should be refactored
+          - Maintainability index should be kept above B grade
+          - Consider breaking down functions with complexity > 10
+          EOF
+          
+      - name: Upload complexity reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: complexity-reports
+          path: |
+            complexity.json
+            maintainability.json
+            halstead.json
+            complexity-report.md
+
+  dependency-audit:
+    name: Dependency Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install audit tools
+        run: |
+          pip install pip-audit cyclonedx-bom
+          
+      - name: Generate SBOM (Software Bill of Materials)
+        run: |
+          pip install -r requirements.txt -r requirements-test.txt
+          cyclonedx-py -o sbom.json
+          cyclonedx-py -o sbom.xml --format xml
+          
+      - name: Run pip-audit
+        run: |
+          pip-audit --format=json --output=audit-report.json || true
+          pip-audit
+          
+      - name: Check for outdated packages
+        run: |
+          pip list --outdated --format=json > outdated-packages.json
+          python << 'EOF'
+          import json
+          
+          with open('outdated-packages.json', 'r') as f:
+              outdated = json.load(f)
+          
+          if outdated:
+              print("📦 Outdated packages found:")
+              for pkg in outdated:
+                  print(f"  - {pkg['name']}: {pkg['version']} → {pkg['latest_version']}")
+          else:
+              print("✅ All packages are up to date")
+          EOF
+          
+      - name: Upload audit reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit
+          path: |
+            sbom.json
+            sbom.xml
+            audit-report.json
+            outdated-packages.json
+
+  quality-summary:
+    name: Quality Summary Report
+    needs: [security-scan, license-compliance, code-complexity, dependency-audit]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        
+      - name: Generate comprehensive quality report
+        run: |
+          cat > quality-report.md << 'EOF'
+          # 🔍 Code Quality & Security Report
+          
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          
+          ## 🛡️ Security Analysis
+          
+          ### Bandit Security Scan
+          EOF
+          
+          if [ -f security-reports/bandit-report.json ]; then
+            python << 'PYTHON'
+          import json
+          try:
+              with open('security-reports/bandit-report.json', 'r') as f:
+                  data = json.load(f)
+              
+              print(f"- **High Severity Issues:** {len([i for i in data.get('results', []) if i.get('issue_severity') == 'HIGH'])}")
+              print(f"- **Medium Severity Issues:** {len([i for i in data.get('results', []) if i.get('issue_severity') == 'MEDIUM'])}")
+              print(f"- **Low Severity Issues:** {len([i for i in data.get('results', []) if i.get('issue_severity') == 'LOW'])}")
+              
+              high_issues = [i for i in data.get('results', []) if i.get('issue_severity') == 'HIGH']
+              if high_issues:
+                  print("\n**High Severity Issues:**")
+                  for issue in high_issues[:5]:  # Show first 5
+                      print(f"- {issue.get('filename')}:{issue.get('line_number')} - {issue.get('issue_text')}")
+          except:
+              print("- Bandit report not available")
+          PYTHON
+          else
+            echo "- Bandit scan not completed"
+          fi >> quality-report.md
+          
+          cat >> quality-report.md << 'EOF'
+          
+          ### Safety Dependency Check
+          EOF
+          
+          if [ -f security-reports/safety-report.json ]; then
+            python << 'PYTHON'
+          import json
+          try:
+              with open('security-reports/safety-report.json', 'r') as f:
+                  data = json.load(f)
+              
+              vulnerabilities = data.get('vulnerabilities', [])
+              print(f"- **Vulnerabilities Found:** {len(vulnerabilities)}")
+              
+              if vulnerabilities:
+                  print("\n**Critical Vulnerabilities:**")
+                  for vuln in vulnerabilities[:5]:
+                      print(f"- {vuln.get('package_name')} {vuln.get('analyzed_version')} - {vuln.get('advisory')}")
+          except:
+              print("- Safety report not available")
+          PYTHON
+          else
+            echo "- Safety scan not completed"
+          fi >> quality-report.md
+          
+          cat >> quality-report.md << 'EOF'
+          
+          ## 📊 Code Quality Metrics
+          
+          ### Complexity Analysis
+          EOF
+          
+          if [ -f complexity-reports/complexity.json ]; then
+            python << 'PYTHON'
+          import json
+          try:
+              with open('complexity-reports/complexity.json', 'r') as f:
+                  data = json.load(f)
+              
+              total_functions = 0
+              high_complexity = 0
+              
+              for file_data in data.values():
+                  for item in file_data:
+                      if item['type'] in ['function', 'method']:
+                          total_functions += 1
+                          if item['complexity'] > 10:
+                              high_complexity += 1
+              
+              print(f"- **Total Functions:** {total_functions}")
+              print(f"- **High Complexity Functions (>10):** {high_complexity}")
+              print(f"- **Complexity Score:** {'Good' if high_complexity / max(total_functions, 1) < 0.1 else 'Needs Improvement'}")
+          except:
+              print("- Complexity analysis not available")
+          PYTHON
+          else
+            echo "- Complexity analysis not completed"
+          fi >> quality-report.md
+          
+          cat >> quality-report.md << 'EOF'
+          
+          ## 📦 Dependencies
+          
+          ### License Compliance
+          EOF
+          
+          if [ -f license-reports/licenses.json ]; then
+            python << 'PYTHON'
+          import json
+          try:
+              with open('license-reports/licenses.json', 'r') as f:
+                  licenses = json.load(f)
+              
+              license_counts = {}
+              for pkg in licenses:
+                  license_name = pkg.get('License', 'Unknown')
+                  license_counts[license_name] = license_counts.get(license_name, 0) + 1
+              
+              print(f"- **Total Packages:** {len(licenses)}")
+              print("- **License Distribution:**")
+              for license_name, count in sorted(license_counts.items(), key=lambda x: x[1], reverse=True)[:10]:
+                  print(f"  - {license_name}: {count} packages")
+          except:
+              print("- License analysis not available")
+          PYTHON
+          else
+            echo "- License analysis not completed"
+          fi >> quality-report.md
+          
+          cat >> quality-report.md << 'EOF'
+          
+          ### Security Audit
+          EOF
+          
+          if [ -f dependency-audit/audit-report.json ]; then
+            python << 'PYTHON'
+          import json
+          try:
+              with open('dependency-audit/audit-report.json', 'r') as f:
+                  data = json.load(f)
+              
+              vulnerabilities = data.get('vulnerabilities', [])
+              print(f"- **Vulnerable Packages:** {len(vulnerabilities)}")
+              
+              if vulnerabilities:
+                  print("\n**Vulnerable Dependencies:**")
+                  for vuln in vulnerabilities[:5]:
+                      print(f"- {vuln.get('package')} {vuln.get('installed_version')} - {vuln.get('description', 'No description')[:100]}...")
+          except:
+              print("- Dependency audit not available")
+          PYTHON
+          else
+            echo "- Dependency audit not completed"
+          fi >> quality-report.md
+          
+          cat >> quality-report.md << 'EOF'
+          
+          ## 🎯 Recommendations
+          
+          1. **Security**: Address high-severity security issues first
+          2. **Complexity**: Refactor functions with complexity > 10
+          3. **Dependencies**: Update vulnerable packages
+          4. **Licenses**: Review any GPL/AGPL dependencies for compliance
+          5. **Maintenance**: Consider breaking down large modules
+          
+          ---
+          *This report was generated automatically by the Advanced Code Quality workflow*
+          EOF
+          
+      - name: Post quality report as PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('quality-report.md', 'utf8');
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: report
+            });
+            
+      - name: Upload quality report
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-summary-report
+          path: quality-report.md

@@ -1,0 +1,697 @@
+name: Documentation Automation
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'src/**/*.py'
+      - 'docs/**/*.md'
+      - 'README.md'
+      - '*.md'
+  pull_request:
+    paths:
+      - 'src/**/*.py'
+      - 'docs/**/*.md'
+      - 'README.md'
+      - '*.md'
+  schedule:
+    - cron: '0 3 * * 1'  # Weekly on Monday at 3 AM UTC
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Documentation action to perform'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full           # Complete documentation update
+          - api-only       # API documentation only
+          - links-check    # Check documentation links
+          - generate-adr   # Generate Architecture Decision Records
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api-documentation:
+    name: Generate API Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install documentation tools
+        run: |
+          pip install sphinx sphinx-autodoc-typehints sphinx-rtd-theme pydocstyle
+          pip install -r requirements.txt
+          
+      - name: Generate API documentation from docstrings
+        run: |
+          mkdir -p docs/api
+          
+          # Generate module documentation
+          python << 'EOF'
+          import os
+          import importlib.util
+          import inspect
+          from pathlib import Path
+          
+          def generate_module_docs(module_path, output_dir):
+              """Generate documentation for a Python module."""
+              try:
+                  spec = importlib.util.spec_from_file_location("module", module_path)
+                  module = importlib.util.module_from_spec(spec)
+                  spec.loader.exec_module(module)
+                  
+                  doc_content = f"# {module_path.stem}\n\n"
+                  
+                  if module.__doc__:
+                      doc_content += f"{module.__doc__}\n\n"
+                  
+                  # Get classes
+                  classes = [obj for name, obj in inspect.getmembers(module, inspect.isclass) 
+                            if obj.__module__ == module.__name__]
+                  
+                  if classes:
+                      doc_content += "## Classes\n\n"
+                      for cls in classes:
+                          doc_content += f"### {cls.__name__}\n\n"
+                          if cls.__doc__:
+                              doc_content += f"{cls.__doc__}\n\n"
+                          
+                          methods = [method for name, method in inspect.getmembers(cls, inspect.ismethod)]
+                          if methods:
+                              doc_content += "#### Methods\n\n"
+                              for method in methods:
+                                  if not method.__name__.startswith('_'):
+                                      doc_content += f"- `{method.__name__}`"
+                                      if method.__doc__:
+                                          doc_content += f": {method.__doc__.split('.')[0]}"
+                                      doc_content += "\n"
+                              doc_content += "\n"
+                  
+                  # Get functions
+                  functions = [obj for name, obj in inspect.getmembers(module, inspect.isfunction) 
+                              if obj.__module__ == module.__name__]
+                  
+                  if functions:
+                      doc_content += "## Functions\n\n"
+                      for func in functions:
+                          if not func.__name__.startswith('_'):
+                              doc_content += f"### {func.__name__}\n\n"
+                              if func.__doc__:
+                                  doc_content += f"{func.__doc__}\n\n"
+                              
+                              # Get signature
+                              try:
+                                  sig = inspect.signature(func)
+                                  doc_content += f"**Signature:** `{func.__name__}{sig}`\n\n"
+                              except:
+                                  pass
+                  
+                  # Write documentation file
+                  output_file = output_dir / f"{module_path.stem}.md"
+                  with open(output_file, 'w') as f:
+                      f.write(doc_content)
+                  
+                  return True
+              except Exception as e:
+                  print(f"Error processing {module_path}: {e}")
+                  return False
+          
+          # Process all Python files in src/
+          src_dir = Path("src")
+          docs_dir = Path("docs/api")
+          docs_dir.mkdir(exist_ok=True)
+          
+          # Generate index
+          index_content = "# API Documentation\n\n"
+          index_content += "Auto-generated documentation for Super Alita modules.\n\n"
+          
+          modules_documented = []
+          
+          for py_file in src_dir.rglob("*.py"):
+              if py_file.name != "__init__.py" and "test" not in str(py_file):
+                  relative_path = py_file.relative_to(src_dir)
+                  print(f"Processing {relative_path}...")
+                  
+                  if generate_module_docs(py_file, docs_dir):
+                      modules_documented.append(relative_path)
+                      index_content += f"- [{relative_path.stem}]({py_file.stem}.md)\n"
+          
+          # Write index file
+          with open(docs_dir / "README.md", 'w') as f:
+              f.write(index_content)
+          
+          print(f"Generated documentation for {len(modules_documented)} modules")
+          EOF
+          
+      - name: Generate FastAPI OpenAPI docs
+        run: |
+          # Generate OpenAPI specification
+          python << 'EOF'
+          import sys
+          sys.path.insert(0, './src')
+          
+          try:
+              from app import app
+              import json
+              
+              # Get OpenAPI schema
+              openapi_schema = app.openapi()
+              
+              # Save as JSON
+              with open('docs/api/openapi.json', 'w') as f:
+                  json.dump(openapi_schema, f, indent=2)
+              
+              # Generate markdown documentation
+              doc_content = "# API Endpoints\n\n"
+              doc_content += "Auto-generated from FastAPI application.\n\n"
+              
+              for path, methods in openapi_schema.get('paths', {}).items():
+                  doc_content += f"## {path}\n\n"
+                  for method, details in methods.items():
+                      doc_content += f"### {method.upper()}\n\n"
+                      if 'summary' in details:
+                          doc_content += f"{details['summary']}\n\n"
+                      if 'description' in details:
+                          doc_content += f"{details['description']}\n\n"
+                      doc_content += "---\n\n"
+              
+              with open('docs/api/endpoints.md', 'w') as f:
+                  f.write(doc_content)
+              
+              print("✅ FastAPI documentation generated")
+          except Exception as e:
+              print(f"⚠️ Could not generate FastAPI docs: {e}")
+          EOF
+          
+      - name: Upload API documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation
+          path: docs/api/
+
+  link-checker:
+    name: Documentation Link Checker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install link checker
+        run: |
+          npm install -g markdown-link-check
+          
+      - name: Check all markdown files for broken links
+        run: |
+          echo "# 🔗 Link Check Report" > link-check-report.md
+          echo "" >> link-check-report.md
+          echo "**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> link-check-report.md
+          echo "" >> link-check-report.md
+          
+          failed_files=()
+          
+          # Find all markdown files
+          find . -name "*.md" -not -path "./node_modules/*" -not -path "./.git/*" | while read file; do
+            echo "Checking $file..."
+            if markdown-link-check "$file" --config .github/link-check-config.json 2>/dev/null; then
+              echo "✅ $file - All links OK" >> link-check-report.md
+            else
+              echo "❌ $file - Broken links found" >> link-check-report.md
+              failed_files+=("$file")
+            fi
+          done
+          
+          echo "" >> link-check-report.md
+          echo "## Summary" >> link-check-report.md
+          
+          if [ ${#failed_files[@]} -eq 0 ]; then
+            echo "🎉 All documentation links are working!" >> link-check-report.md
+          else
+            echo "⚠️ Found broken links in ${#failed_files[@]} files" >> link-check-report.md
+            echo "" >> link-check-report.md
+            echo "### Files with issues:" >> link-check-report.md
+            for file in "${failed_files[@]}"; do
+              echo "- $file" >> link-check-report.md
+            done
+          fi
+          
+      - name: Create link checker config if missing
+        run: |
+          if [ ! -f .github/link-check-config.json ]; then
+            cat > .github/link-check-config.json << 'EOF'
+          {
+            "ignorePatterns": [
+              {
+                "pattern": "^http://localhost"
+              },
+              {
+                "pattern": "^https://localhost"
+              },
+              {
+                "pattern": "^http://127.0.0.1"
+              }
+            ],
+            "timeout": "20s",
+            "retryOn429": true,
+            "retryCount": 3,
+            "fallbackRetryDelay": "30s",
+            "aliveStatusCodes": [200, 206]
+          }
+          EOF
+          fi
+          
+      - name: Upload link check report
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-check-report
+          path: link-check-report.md
+
+  documentation-coverage:
+    name: Documentation Coverage Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install analysis tools
+        run: |
+          pip install pydocstyle interrogate
+          
+      - name: Analyze documentation coverage
+        run: |
+          # Check docstring coverage
+          interrogate src/ --generate-badge docs/coverage-badge.svg --output docs/docstring-coverage.txt
+          
+          # Style check
+          pydocstyle src/ --explain --source > docs/pydocstyle-report.txt || true
+          
+          # Generate coverage report
+          python << 'EOF'
+          import os
+          import ast
+          from pathlib import Path
+          
+          def count_docstrings(file_path):
+              """Count functions/classes with and without docstrings."""
+              try:
+                  with open(file_path, 'r') as f:
+                      tree = ast.parse(f.read())
+                  
+                  total_functions = 0
+                  documented_functions = 0
+                  total_classes = 0
+                  documented_classes = 0
+                  
+                  for node in ast.walk(tree):
+                      if isinstance(node, ast.FunctionDef):
+                          total_functions += 1
+                          if ast.get_docstring(node):
+                              documented_functions += 1
+                      elif isinstance(node, ast.ClassDef):
+                          total_classes += 1
+                          if ast.get_docstring(node):
+                              documented_classes += 1
+                  
+                  return {
+                      'total_functions': total_functions,
+                      'documented_functions': documented_functions,
+                      'total_classes': total_classes,
+                      'documented_classes': documented_classes
+                  }
+              except:
+                  return None
+          
+          # Analyze all Python files
+          src_dir = Path("src")
+          total_stats = {
+              'total_functions': 0,
+              'documented_functions': 0,
+              'total_classes': 0,
+              'documented_classes': 0,
+              'files_analyzed': 0
+          }
+          
+          for py_file in src_dir.rglob("*.py"):
+              if py_file.name != "__init__.py":
+                  stats = count_docstrings(py_file)
+                  if stats:
+                      for key in stats:
+                          total_stats[key] += stats[key]
+                      total_stats['files_analyzed'] += 1
+          
+          # Calculate percentages
+          func_coverage = (total_stats['documented_functions'] / max(total_stats['total_functions'], 1)) * 100
+          class_coverage = (total_stats['documented_classes'] / max(total_stats['total_classes'], 1)) * 100
+          
+          # Generate report
+          report = f"""# Documentation Coverage Report
+          
+          **Generated:** {os.popen('date -u "+%Y-%m-%d %H:%M:%S UTC"').read().strip()}
+          
+          ## Summary
+          
+          - **Files Analyzed:** {total_stats['files_analyzed']}
+          - **Function Documentation:** {total_stats['documented_functions']}/{total_stats['total_functions']} ({func_coverage:.1f}%)
+          - **Class Documentation:** {total_stats['documented_classes']}/{total_stats['total_classes']} ({class_coverage:.1f}%)
+          
+          ## Recommendations
+          
+          """
+          
+          if func_coverage < 70:
+              report += "- 📝 **Function Documentation**: Add docstrings to more functions\n"
+          if class_coverage < 80:
+              report += "- 📚 **Class Documentation**: Improve class documentation coverage\n"
+          if func_coverage >= 70 and class_coverage >= 80:
+              report += "- ✅ **Good Coverage**: Documentation coverage meets recommended standards\n"
+          
+          report += f"""
+          ## Detailed Analysis
+          
+          See generated reports:
+          - [Docstring Coverage](docstring-coverage.txt)
+          - [Style Issues](pydocstyle-report.txt)
+          """
+          
+          with open('docs/documentation-coverage-report.md', 'w') as f:
+              f.write(report)
+          
+          print(f"Documentation coverage: Functions {func_coverage:.1f}%, Classes {class_coverage:.1f}%")
+          EOF
+          
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-coverage
+          path: docs/
+
+  changelog-generator:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for changelog
+          
+      - name: Generate changelog from conventional commits
+        run: |
+          # Install conventional-changelog if needed
+          npm install -g conventional-changelog-cli
+          
+          # Generate changelog
+          conventional-changelog -p angular -i CHANGELOG.md -s -r 0
+          
+          # If CHANGELOG.md doesn't exist, create it
+          if [ ! -f CHANGELOG.md ]; then
+            cat > CHANGELOG.md << 'EOF'
+          # Changelog
+          
+          All notable changes to this project will be documented in this file.
+          
+          The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+          and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+          
+          EOF
+            
+            # Add recent commits
+            echo "## [Unreleased]" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            
+            # Get recent commits (last 50)
+            git log --oneline -50 --pretty=format:"- %s (%h)" >> CHANGELOG.md
+          fi
+          
+      - name: Update README.md if outdated
+        run: |
+          # Check if README needs updates based on recent changes
+          python << 'EOF'
+          import os
+          import re
+          from datetime import datetime
+          
+          def update_readme():
+              """Update README.md with current information."""
+              try:
+                  with open('README.md', 'r') as f:
+                      content = f.read()
+                  
+                  updated = False
+                  
+                  # Update last modified date if pattern exists
+                  date_pattern = r'(Last updated|Updated): \d{4}-\d{2}-\d{2}'
+                  if re.search(date_pattern, content):
+                      new_date = f"Last updated: {datetime.now().strftime('%Y-%m-%d')}"
+                      content = re.sub(date_pattern, new_date, content)
+                      updated = True
+                  
+                  # Update workflow count if mentioned
+                  workflow_pattern = r'(\d+) workflows?'
+                  workflow_count = len([f for f in os.listdir('.github/workflows') if f.endswith('.yml')])
+                  if re.search(workflow_pattern, content):
+                      content = re.sub(workflow_pattern, f"{workflow_count} workflows", content)
+                      updated = True
+                  
+                  if updated:
+                      with open('README.md', 'w') as f:
+                          f.write(content)
+                      print("✅ README.md updated")
+                  else:
+                      print("ℹ️ README.md is up to date")
+                      
+              except Exception as e:
+                  print(f"Error updating README: {e}")
+          
+          update_readme()
+          EOF
+          
+      - name: Generate architecture decision records
+        run: |
+          mkdir -p docs/adr
+          
+          # Generate ADR template if directory is new
+          if [ ! -f docs/adr/0001-record-architecture-decisions.md ]; then
+            cat > docs/adr/0001-record-architecture-decisions.md << 'EOF'
+          # 1. Record architecture decisions
+          
+          Date: $(date +%Y-%m-%d)
+          
+          ## Status
+          
+          Accepted
+          
+          ## Context
+          
+          We need to record the architectural decisions made on this project.
+          
+          ## Decision
+          
+          We will use Architecture Decision Records, as described by Michael Nygard.
+          
+          ## Consequences
+          
+          See Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's adr-tools.
+          EOF
+          fi
+          
+          # Create ADR index
+          cat > docs/adr/README.md << 'EOF'
+          # Architecture Decision Records
+          
+          This directory contains architecture decision records (ADRs) for Super Alita.
+          
+          ## ADR Index
+          
+          EOF
+          
+          # List all ADRs
+          find docs/adr -name "*.md" -not -name "README.md" | sort | while read adr; do
+            title=$(head -1 "$adr" | sed 's/^# //')
+            echo "- [$title](./${adr##*/})" >> docs/adr/README.md
+          done
+          
+      - name: Commit documentation updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md README.md docs/
+          git commit -m "docs: automatic documentation updates" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
+  documentation-summary:
+    name: Documentation Summary
+    needs: [api-documentation, link-checker, documentation-coverage, changelog-generator]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Download all documentation artifacts
+        uses: actions/download-artifact@v4
+        
+      - name: Generate comprehensive documentation report
+        run: |
+          cat > docs-summary-report.md << 'EOF'
+          # 📚 Documentation Status Report
+          
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Workflow Run:** ${{ github.run_id }}
+          
+          ## 🔍 Documentation Health
+          
+          ### API Documentation
+          EOF
+          
+          if [ "${{ needs.api-documentation.result }}" == "success" ]; then
+            echo "- ✅ **API Docs**: Successfully generated" >> docs-summary-report.md
+            if [ -d api-documentation ]; then
+              echo "- 📄 **Files Generated**: $(find api-documentation -name "*.md" | wc -l) documentation files" >> docs-summary-report.md
+            fi
+          else
+            echo "- ❌ **API Docs**: Generation failed" >> docs-summary-report.md
+          fi
+          
+          cat >> docs-summary-report.md << 'EOF'
+          
+          ### Link Validation
+          EOF
+          
+          if [ "${{ needs.link-checker.result }}" == "success" ]; then
+            echo "- ✅ **Link Check**: Completed successfully" >> docs-summary-report.md
+            if [ -f link-check-report/link-check-report.md ]; then
+              echo "- 🔗 **Status**: $(grep -c "✅" link-check-report/link-check-report.md || echo 0) files with working links" >> docs-summary-report.md
+            fi
+          else
+            echo "- ❌ **Link Check**: Issues found" >> docs-summary-report.md
+          fi
+          
+          cat >> docs-summary-report.md << 'EOF'
+          
+          ### Documentation Coverage
+          EOF
+          
+          if [ "${{ needs.documentation-coverage.result }}" == "success" ]; then
+            echo "- ✅ **Coverage Analysis**: Completed" >> docs-summary-report.md
+            if [ -f documentation-coverage/documentation-coverage-report.md ]; then
+              grep -E "(Function Documentation|Class Documentation)" documentation-coverage/documentation-coverage-report.md >> docs-summary-report.md || true
+            fi
+          else
+            echo "- ❌ **Coverage Analysis**: Failed to complete" >> docs-summary-report.md
+          fi
+          
+          cat >> docs-summary-report.md << 'EOF'
+          
+          ### Content Updates
+          EOF
+          
+          if [ "${{ needs.changelog-generator.result }}" == "success" ]; then
+            echo "- ✅ **Changelog**: Updated successfully" >> docs-summary-report.md
+            echo "- 📝 **README**: Checked and updated if needed" >> docs-summary-report.md
+          else
+            echo "- ❌ **Content Updates**: Issues occurred" >> docs-summary-report.md
+          fi
+          
+          cat >> docs-summary-report.md << 'EOF'
+          
+          ## 📊 Documentation Metrics
+          
+          EOF
+          
+          # Count documentation files
+          md_files=$(find . -name "*.md" -not -path "./.git/*" | wc -l)
+          echo "- **Markdown Files**: $md_files" >> docs-summary-report.md
+          
+          # Count API documentation
+          if [ -d docs/api ]; then
+            api_files=$(find docs/api -name "*.md" | wc -l)
+            echo "- **API Documentation Files**: $api_files" >> docs-summary-report.md
+          fi
+          
+          # Check for common documentation files
+          cat >> docs-summary-report.md << 'EOF'
+          
+          ## 📋 Documentation Checklist
+          
+          EOF
+          
+          [ -f README.md ] && echo "- ✅ README.md" >> docs-summary-report.md || echo "- ❌ README.md missing" >> docs-summary-report.md
+          [ -f CONTRIBUTING.md ] && echo "- ✅ CONTRIBUTING.md" >> docs-summary-report.md || echo "- ❌ CONTRIBUTING.md missing" >> docs-summary-report.md
+          [ -f CHANGELOG.md ] && echo "- ✅ CHANGELOG.md" >> docs-summary-report.md || echo "- ❌ CHANGELOG.md missing" >> docs-summary-report.md
+          [ -d docs ] && echo "- ✅ docs/ directory" >> docs-summary-report.md || echo "- ❌ docs/ directory missing" >> docs-summary-report.md
+          [ -f docs/api/README.md ] && echo "- ✅ API documentation" >> docs-summary-report.md || echo "- ❌ API documentation missing" >> docs-summary-report.md
+          
+          cat >> docs-summary-report.md << 'EOF'
+          
+          ## 🎯 Recommendations
+          
+          EOF
+          
+          if [ "${{ needs.api-documentation.result }}" != "success" ]; then
+            echo "- 📝 **API Documentation**: Review docstring format and module imports" >> docs-summary-report.md
+          fi
+          
+          if [ "${{ needs.link-checker.result }}" != "success" ]; then
+            echo "- 🔗 **Broken Links**: Fix broken links in documentation" >> docs-summary-report.md
+          fi
+          
+          if [ "${{ needs.documentation-coverage.result }}" != "success" ]; then
+            echo "- 📊 **Coverage**: Improve documentation coverage analysis" >> docs-summary-report.md
+          fi
+          
+          cat >> docs-summary-report.md << 'EOF'
+          
+          ## 📚 Resources
+          
+          - [API Documentation](docs/api/)
+          - [Architecture Decision Records](docs/adr/)
+          - [Development Guide](docs/DEVELOPMENT_SETUP_GUIDE.md)
+          - [Workflow Documentation](docs/POWERFUL_GITHUB_WORKFLOWS.md)
+          
+          ---
+          *This report was generated by the Documentation Automation workflow*
+          EOF
+          
+      - name: Post documentation report as PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('docs-summary-report.md', 'utf8');
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: report
+            });
+            
+      - name: Upload documentation summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-summary-report
+          path: docs-summary-report.md
