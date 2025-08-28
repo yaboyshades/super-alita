@@ -1,0 +1,8 @@
+name: retrieval_policy_experiment
+cases:
+  - {id: c1, input: "Summarize latest design changes."}
+  - {id: c2, input: "Find the function that handles tool selection."}
+  - {id: c3, input: "Explain memory distillation process."}
+arms:
+  - {name: retrieval_vector}
+  - {name: retrieval_hybrid}

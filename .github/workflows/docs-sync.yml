@@ -1,0 +1,32 @@
+name: Docs Sync
+on:
+  push:
+    paths:
+      - 'architecture/**'
+      - 'diagrams/**'
+  workflow_dispatch:
+jobs:
+  docs-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PlantUML render
+        uses: timbru31/action-plantuml@v3
+        with:
+          files: diagrams
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build composite docs
+        run: python scripts/build_arch_docs.py --src architecture --out docs/ARCHITECTURE.md
+      - name: Commit docs
+        run: |
+          if [ -n "$(git status --porcelain docs/ARCHITECTURE.md diagrams/*.png diagrams/*.svg 2>/dev/null)" ]; then
+            git config user.name "github-actions"
+            git config user.email "actions@users.noreply.github.com"
+            git add docs/ARCHITECTURE.md diagrams/*.png diagrams/*.svg || true
+            git commit -m "Update architecture docs"
+            git push
+          else
+            echo "No doc changes."
+          fi

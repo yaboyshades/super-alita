@@ -1,0 +1,10 @@
+[
+  {
+    "model": "fast-model",
+    "prompt_style": "concise",
+    "cases": 2,
+    "latency_mean": 1.0728836059570312e-06,
+    "latency_p95": 1.3947486877441405e-06,
+    "quality_mean": 0.35714285714285715
+  }
+]

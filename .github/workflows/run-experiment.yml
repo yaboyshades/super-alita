@@ -1,0 +1,33 @@
+name: Run Experiment
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: "Experiment spec file path (experiments/*.yaml)"
+        required: true
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt || true
+      - name: Run experiment
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          python evaluation/run_experiment.py --spec ${{ inputs.spec }} --out experiment_results
+      - name: Summarize
+        run: python evaluation/summarize_experiment.py --input experiment_results --out reports/exp_summary.md
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment
+          path: |
+            experiment_results
+            reports/exp_summary.md

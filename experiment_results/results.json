@@ -1,0 +1,44 @@
+[
+  {
+    "case_id": "c1",
+    "arm": "retrieval_vector",
+    "reward": 0.7081001393287484,
+    "latency_ms": 392,
+    "cost_tokens": 948
+  },
+  {
+    "case_id": "c1",
+    "arm": "retrieval_hybrid",
+    "reward": 0.8947717024810123,
+    "latency_ms": 401,
+    "cost_tokens": 551
+  },
+  {
+    "case_id": "c2",
+    "arm": "retrieval_vector",
+    "reward": 0.7653810240033972,
+    "latency_ms": 695,
+    "cost_tokens": 1170
+  },
+  {
+    "case_id": "c2",
+    "arm": "retrieval_hybrid",
+    "reward": 0.17926900034620818,
+    "latency_ms": 342,
+    "cost_tokens": 736
+  },
+  {
+    "case_id": "c3",
+    "arm": "retrieval_vector",
+    "reward": 0.08274823407965815,
+    "latency_ms": 547,
+    "cost_tokens": 1365
+  },
+  {
+    "case_id": "c3",
+    "arm": "retrieval_hybrid",
+    "reward": 0.5838822016979645,
+    "latency_ms": 777,
+    "cost_tokens": 1384
+  }
+]
