@@ -85,6 +85,7 @@ class PredictionEngine(PluginInterface):
     async def create_gvfs_for_option(self, event: dict[str, Any]):
         opt_id = event.get("option_id")
         if not opt_id:
+
             return
 
     async def start(self) -> None:  # type: ignore[override]
@@ -96,7 +97,9 @@ class PredictionEngine(PluginInterface):
     async def handle_option_created(self, event: Any) -> None:
         option_id = getattr(event, "option_id", None)
         if not option_id:
+
             return
+        
         for kind in ("duration", "attainment"):
             gid = self._gvf_id(opt_id, kind)
             if gid in self.gvfs:

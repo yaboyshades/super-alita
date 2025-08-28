@@ -89,6 +89,9 @@ class FeatureDiscoveryEngine(PluginInterface):
     Subscribes:
       - deliberation_tick
       - oak.feature_utility_updated
+    Continual feature discovery with IDBD adaptive meta-learning.
+    Generates features via primitives, conjunctions, sequences, contrasts, and NN functions.
+
     """
 
     def __init__(self):
