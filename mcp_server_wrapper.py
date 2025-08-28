@@ -75,7 +75,9 @@ def _emit_event(event_type: str, **data: Any) -> None:
         fp.write("\n")
 
 
-def _telemetry_wrapper(name: str) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
+def _telemetry_wrapper(
+    name: str,
+) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
     def decorator(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
         @functools.wraps(func)
         async def wrapped(*args: Any, **kwargs: Any) -> Any:
@@ -83,7 +85,9 @@ def _telemetry_wrapper(name: str) -> Callable[[Callable[..., Awaitable[Any]]], C
             args_hash = hashlib.sha256(
                 json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True).encode()
             ).hexdigest()
-            _emit_event("AbilityCalled", tool=name, span_id=span_id, args_hash=args_hash)
+            _emit_event(
+                "AbilityCalled", tool=name, span_id=span_id, args_hash=args_hash
+            )
             start = time.perf_counter()
             try:
                 result = await func(*args, **kwargs)
@@ -94,7 +98,9 @@ def _telemetry_wrapper(name: str) -> Callable[[Callable[..., Awaitable[Any]]], C
                 if len(output_bytes) > 200_000:
                     sha = hashlib.sha256(output_bytes).hexdigest()
                     artifact_id = sha[:8]
-                    artifact_path = TELEMETRY_FILE.with_name(f"artifact_{artifact_id}.json")
+                    artifact_path = TELEMETRY_FILE.with_name(
+                        f"artifact_{artifact_id}.json"
+                    )
                     artifact_path.write_bytes(output_bytes)
                     _emit_event(
                         "ArtifactCreated",

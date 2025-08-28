@@ -33,4 +33,3 @@ def test_trace_integrity(tmp_path, monkeypatch):
         if e.get("event_type") in {"TOOL_CALL_OK", "TOOL_CALL_ERR"}
     }
     assert starts == ends
-

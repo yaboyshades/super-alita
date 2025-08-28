@@ -377,7 +377,6 @@ class TestMCPRouterSingleFlight:
     ):
         """Test that concurrent identical requests are coalesced into single execution"""
         # Setup slow response to ensure concurrency
-        original_call_tool = mock_mcp_client.call_tool
 
         async def slow_call_tool(base_url, tool, args):
             # Call the original to maintain call count tracking

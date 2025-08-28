@@ -65,7 +65,11 @@ async def test_deepcode_diffs_mirrored_to_puter():
     for e in write_events:
         await bus.emit(
             "puter_file_operation",
-            metadata={"operation": "write", "file_path": e.file_path, "content": e.content},
+            metadata={
+                "operation": "write",
+                "file_path": e.file_path,
+                "content": e.content,
+            },
             conversation_id="c1",
             source_plugin="deepcode_puter_bridge",
         )

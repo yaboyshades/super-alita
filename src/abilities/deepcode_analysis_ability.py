@@ -62,17 +62,24 @@ class DeepCodeAnalysisAbility(PluginInterface):
                     "properties": {
                         "file_path": {
                             "type": "string",
-                            "description": "Path to the code file to analyze"
+                            "description": "Path to the code file to analyze",
                         },
                         "analysis_level": {
                             "type": "string",
-                            "enum": ["syntax", "semantic", "security", "performance", "architecture", "deep"],
+                            "enum": [
+                                "syntax",
+                                "semantic",
+                                "security",
+                                "performance",
+                                "architecture",
+                                "deep",
+                            ],
                             "description": "Level of analysis to perform",
-                            "default": "semantic"
-                        }
+                            "default": "semantic",
+                        },
                     },
-                    "required": ["file_path"]
-                }
+                    "required": ["file_path"],
+                },
             },
             {
                 "name": "analyze_code_directory",
@@ -82,22 +89,29 @@ class DeepCodeAnalysisAbility(PluginInterface):
                     "properties": {
                         "directory_path": {
                             "type": "string",
-                            "description": "Path to the directory to analyze"
+                            "description": "Path to the directory to analyze",
                         },
                         "analysis_level": {
                             "type": "string",
-                            "enum": ["syntax", "semantic", "security", "performance", "architecture", "deep"],
+                            "enum": [
+                                "syntax",
+                                "semantic",
+                                "security",
+                                "performance",
+                                "architecture",
+                                "deep",
+                            ],
                             "description": "Level of analysis to perform",
-                            "default": "semantic"
+                            "default": "semantic",
                         },
                         "generate_report": {
                             "type": "boolean",
                             "description": "Whether to generate a comprehensive report",
-                            "default": True
-                        }
+                            "default": True,
+                        },
                     },
-                    "required": ["directory_path"]
-                }
+                    "required": ["directory_path"],
+                },
             },
             {
                 "name": "get_code_quality_score",
@@ -107,16 +121,16 @@ class DeepCodeAnalysisAbility(PluginInterface):
                     "properties": {
                         "target_path": {
                             "type": "string",
-                            "description": "Path to file or directory to analyze for quality score"
+                            "description": "Path to file or directory to analyze for quality score",
                         },
                         "include_metrics": {
                             "type": "boolean",
                             "description": "Whether to include detailed metrics in response",
-                            "default": False
-                        }
+                            "default": False,
+                        },
                     },
-                    "required": ["target_path"]
-                }
+                    "required": ["target_path"],
+                },
             },
             {
                 "name": "detect_code_patterns",
@@ -126,18 +140,18 @@ class DeepCodeAnalysisAbility(PluginInterface):
                     "properties": {
                         "file_path": {
                             "type": "string",
-                            "description": "Path to the code file to analyze"
+                            "description": "Path to the code file to analyze",
                         },
                         "pattern_types": {
                             "type": "array",
                             "items": {"type": "string"},
                             "description": "Types of patterns to detect (security, performance, architecture)",
-                            "default": ["security", "performance"]
-                        }
+                            "default": ["security", "performance"],
+                        },
                     },
-                    "required": ["file_path"]
-                }
-            }
+                    "required": ["file_path"],
+                },
+            },
         ]
 
     async def _handle_tool_request(self, event: dict[str, Any]) -> None:
@@ -157,7 +171,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
                 tool_name=tool_name,
                 result=result,
                 status="success",
-                timestamp=_utcnow()
+                timestamp=_utcnow(),
             )
         except Exception as e:
             logger.exception(f"Tool execution failed for {tool_name}: {e}")
@@ -167,10 +181,12 @@ class DeepCodeAnalysisAbility(PluginInterface):
                 tool_name=tool_name,
                 error=str(e),
                 status="error",
-                timestamp=_utcnow()
+                timestamp=_utcnow(),
             )
 
-    async def _execute_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    async def _execute_tool(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute the specified deepcode analysis tool"""
 
         if tool_name == "analyze_code_file":
@@ -207,13 +223,15 @@ class DeepCodeAnalysisAbility(PluginInterface):
             "analysis_level": analysis_level.value,
             "issues_found": len(result.issues),
             "execution_time": result.execution_time,
-            "issues": [issue.to_dict() for issue in result.issues[:20]],  # Limit for performance
+            "issues": [
+                issue.to_dict() for issue in result.issues[:20]
+            ],  # Limit for performance
             "metrics": result.metrics,
             "suggestions": result.suggestions,
             "severity_breakdown": {
                 severity.value: len(result.get_issues_by_severity(severity))
                 for severity in SeverityLevel
-            }
+            },
         }
 
     async def _analyze_directory(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -241,7 +259,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
                 "directory_path": directory_path,
                 "analysis_level": analysis_level.value,
                 "files_analyzed": len(results),
-                "report": report
+                "report": report,
             }
         else:
             # Return simplified results
@@ -251,7 +269,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
                 "analysis_level": analysis_level.value,
                 "files_analyzed": len(results),
                 "total_issues": total_issues,
-                "files_with_issues": len([r for r in results.values() if r.issues])
+                "files_with_issues": len([r for r in results.values() if r.issues]),
             }
 
     async def _get_quality_score(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -269,7 +287,9 @@ class DeepCodeAnalysisAbility(PluginInterface):
             results = {str(path): result}
         else:
             # Directory analysis
-            results = await self.engine.analyze_directory(str(path), AnalysisLevel.SEMANTIC)
+            results = await self.engine.analyze_directory(
+                str(path), AnalysisLevel.SEMANTIC
+            )
 
         # Generate report to get quality score
         report = self.engine.generate_report(results)
@@ -278,7 +298,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
             "target_path": target_path,
             "quality_score": report["summary"]["quality_score"],
             "total_issues": report["summary"]["total_issues"],
-            "files_analyzed": report["summary"]["files_analyzed"]
+            "files_analyzed": report["summary"]["files_analyzed"],
         }
 
         if include_metrics:
@@ -318,10 +338,10 @@ class DeepCodeAnalysisAbility(PluginInterface):
                     "severity": issue.severity.value,
                     "message": issue.message,
                     "line_number": issue.line_number,
-                    "suggestions": issue.suggestions
+                    "suggestions": issue.suggestions,
                 }
                 for issue in filtered_issues
-            ]
+            ],
         }
 
 

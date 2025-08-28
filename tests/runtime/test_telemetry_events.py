@@ -33,7 +33,12 @@ def test_success_turn_emits_required_fields() -> None:
     assert resp.status_code == 200
     events = app.state.event_bus.events
     kinds = {e["type"] for e in events}
-    assert {"TaskStarted", "AbilityCalled", "AbilitySucceeded", "TaskSucceeded"} <= kinds
+    assert {
+        "TaskStarted",
+        "AbilityCalled",
+        "AbilitySucceeded",
+        "TaskSucceeded",
+    } <= kinds
     for evt in events:
         assert "correlation_id" in evt
         assert "timestamp_ms" in evt
@@ -43,10 +48,15 @@ def test_success_turn_emits_required_fields() -> None:
 
 class NoFinalLLM:
     async def stream_chat(self, messages, timeout):
-        if any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
+        if any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        ):
             yield {"content": "still thinking"}
         else:
-            yield {"content": '<tool_call>{"tool":"echo","args":{"payload":"hi"}}</tool_call>'}
+            yield {
+                "content": '<tool_call>{"tool":"echo","args":{"payload":"hi"}}</tool_call>'
+            }
 
 
 def test_failing_turn_emits_required_fields(monkeypatch) -> None:

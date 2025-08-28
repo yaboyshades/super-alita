@@ -32,7 +32,9 @@ class DeepCodeIntegrationAbility(PluginInterface):
     def __init__(self) -> None:
         super().__init__()
         self.integration = get_deepcode_integration()
-        self.enabled = os.getenv("DEEPCODE_INTEGRATION_ENABLED", "true").lower() == "true"
+        self.enabled = (
+            os.getenv("DEEPCODE_INTEGRATION_ENABLED", "true").lower() == "true"
+        )
 
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
@@ -63,21 +65,21 @@ class DeepCodeIntegrationAbility(PluginInterface):
                     "properties": {
                         "workspace_path": {
                             "type": "string",
-                            "description": "Path to the workspace directory"
+                            "description": "Path to the workspace directory",
                         },
                         "max_files": {
                             "type": "integer",
                             "description": "Maximum number of files to analyze",
-                            "default": 20
+                            "default": 20,
                         },
                         "include_quality_metrics": {
                             "type": "boolean",
                             "description": "Whether to include quality metrics in analysis",
-                            "default": True
-                        }
+                            "default": True,
+                        },
                     },
-                    "required": ["workspace_path"]
-                }
+                    "required": ["workspace_path"],
+                },
             },
             {
                 "name": "analyze_file_context",
@@ -87,16 +89,16 @@ class DeepCodeIntegrationAbility(PluginInterface):
                     "properties": {
                         "file_path": {
                             "type": "string",
-                            "description": "Path to the file to analyze"
+                            "description": "Path to the file to analyze",
                         },
                         "include_suggestions": {
                             "type": "boolean",
                             "description": "Whether to include improvement suggestions",
-                            "default": True
-                        }
+                            "default": True,
+                        },
                     },
-                    "required": ["file_path"]
-                }
+                    "required": ["file_path"],
+                },
             },
             {
                 "name": "check_file_support",
@@ -106,19 +108,16 @@ class DeepCodeIntegrationAbility(PluginInterface):
                     "properties": {
                         "file_path": {
                             "type": "string",
-                            "description": "Path to the file to check"
+                            "description": "Path to the file to check",
                         }
                     },
-                    "required": ["file_path"]
-                }
+                    "required": ["file_path"],
+                },
             },
             {
                 "name": "get_supported_extensions",
                 "description": "Get list of file extensions supported by deepcode",
-                "parameters": {
-                    "type": "object",
-                    "properties": {}
-                }
+                "parameters": {"type": "object", "properties": {}},
             },
             {
                 "name": "understand_code_structure",
@@ -128,18 +127,23 @@ class DeepCodeIntegrationAbility(PluginInterface):
                     "properties": {
                         "target_path": {
                             "type": "string",
-                            "description": "Path to file or directory to analyze"
+                            "description": "Path to file or directory to analyze",
                         },
                         "focus_area": {
                             "type": "string",
-                            "enum": ["architecture", "dependencies", "complexity", "patterns"],
+                            "enum": [
+                                "architecture",
+                                "dependencies",
+                                "complexity",
+                                "patterns",
+                            ],
                             "description": "Specific area to focus analysis on",
-                            "default": "architecture"
-                        }
+                            "default": "architecture",
+                        },
                     },
-                    "required": ["target_path"]
-                }
-            }
+                    "required": ["target_path"],
+                },
+            },
         ]
 
     async def _handle_tool_request(self, event: dict[str, Any]) -> None:
@@ -159,7 +163,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
                 tool_name=tool_name,
                 result=result,
                 status="success",
-                timestamp=_utcnow()
+                timestamp=_utcnow(),
             )
         except Exception as e:
             logger.exception(f"Tool execution failed for {tool_name}: {e}")
@@ -169,10 +173,12 @@ class DeepCodeIntegrationAbility(PluginInterface):
                 tool_name=tool_name,
                 error=str(e),
                 status="error",
-                timestamp=_utcnow()
+                timestamp=_utcnow(),
             )
 
-    async def _execute_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    async def _execute_tool(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute the specified deepcode integration tool"""
 
         if tool_name == "analyze_workspace_context":
@@ -205,7 +211,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
             return {
                 "workspace_path": workspace_path,
                 "status": "error",
-                "error": analysis_result["error"]
+                "error": analysis_result["error"],
             }
 
         # Extract insights from workspace analysis
@@ -241,7 +247,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
             return {
                 "file_path": file_path,
                 "supported": False,
-                "message": "File type not supported by deepcode analysis"
+                "message": "File type not supported by deepcode analysis",
             }
 
         # Analyze the file
@@ -251,7 +257,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
             return {
                 "file_path": file_path,
                 "status": "error",
-                "error": analysis_result["error"]
+                "error": analysis_result["error"],
             }
 
         response = {
@@ -261,7 +267,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
             "issues_count": analysis_result.get("issues_count", 0),
             "quality_score": analysis_result.get("quality_score", 0),
             "execution_time": analysis_result.get("execution_time", 0),
-            "metrics": analysis_result.get("metrics", {})
+            "metrics": analysis_result.get("metrics", {}),
         }
 
         # Include detailed issues if there are any
@@ -270,7 +276,9 @@ class DeepCodeIntegrationAbility(PluginInterface):
 
         # Include suggestions if requested
         if include_suggestions and analysis_result.get("issues_count", 0) > 0:
-            response["improvement_suggestions"] = self._generate_file_suggestions(analysis_result)
+            response["improvement_suggestions"] = self._generate_file_suggestions(
+                analysis_result
+            )
 
         return response
 
@@ -285,7 +293,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
             "file_path": file_path,
             "file_extension": path.suffix,
             "supported": supported,
-            "can_analyze": supported and path.exists()
+            "can_analyze": supported and path.exists(),
         }
 
     async def _get_supported_extensions(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -299,8 +307,8 @@ class DeepCodeIntegrationAbility(PluginInterface):
             "categories": {
                 "python": [".py", ".pyw"],
                 "config": [".json", ".yaml", ".yml", ".toml"],
-                "documentation": [".md", ".rst", ".txt"]
-            }
+                "documentation": [".md", ".rst", ".txt"],
+            },
         }
 
     async def _understand_code_structure(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -318,7 +326,7 @@ class DeepCodeIntegrationAbility(PluginInterface):
                 return {
                     "target_path": target_path,
                     "supported": False,
-                    "message": "File type not supported for structure analysis"
+                    "message": "File type not supported for structure analysis",
                 }
 
             analysis_result = await analyze_current_file(str(path))
@@ -326,12 +334,14 @@ class DeepCodeIntegrationAbility(PluginInterface):
         else:
             # Directory structure analysis
             analysis_result = await analyze_workspace_sample(str(path))
-            structure_info = self._extract_workspace_structure(analysis_result, focus_area)
+            structure_info = self._extract_workspace_structure(
+                analysis_result, focus_area
+            )
 
         return {
             "target_path": target_path,
             "focus_area": focus_area,
-            "structure_analysis": structure_info
+            "structure_analysis": structure_info,
         }
 
     def _infer_project_type(self, workspace_path: str) -> str:
@@ -377,12 +387,14 @@ class DeepCodeIntegrationAbility(PluginInterface):
             ".rs": "Rust",
             ".go": "Go",
             ".rb": "Ruby",
-            ".php": "PHP"
+            ".php": "PHP",
         }
 
         # Get top languages by file count
         languages = []
-        for ext, count in sorted(language_files.items(), key=lambda x: x[1], reverse=True):
+        for ext, count in sorted(
+            language_files.items(), key=lambda x: x[1], reverse=True
+        ):
             if ext in ext_to_lang and count > 0:
                 languages.append(ext_to_lang[ext])
             if len(languages) >= 3:  # Limit to top 3
@@ -396,14 +408,22 @@ class DeepCodeIntegrationAbility(PluginInterface):
         issues = analysis_result.get("issues", [])
 
         # Group issues by category
-        security_issues = [i for i in issues if "security" in i.get("category", "").lower()]
-        complexity_issues = [i for i in issues if "complexity" in i.get("category", "").lower()]
-        performance_issues = [i for i in issues if "performance" in i.get("category", "").lower()]
+        security_issues = [
+            i for i in issues if "security" in i.get("category", "").lower()
+        ]
+        complexity_issues = [
+            i for i in issues if "complexity" in i.get("category", "").lower()
+        ]
+        performance_issues = [
+            i for i in issues if "performance" in i.get("category", "").lower()
+        ]
 
         if security_issues:
             suggestions.append("Review security issues and sanitize inputs")
         if complexity_issues:
-            suggestions.append("Consider refactoring complex functions for better maintainability")
+            suggestions.append(
+                "Consider refactoring complex functions for better maintainability"
+            )
         if performance_issues:
             suggestions.append("Optimize performance-related patterns")
 
@@ -414,7 +434,9 @@ class DeepCodeIntegrationAbility(PluginInterface):
 
         return suggestions
 
-    def _extract_structure_info(self, analysis_result: dict[str, Any], focus_area: str) -> dict[str, Any]:
+    def _extract_structure_info(
+        self, analysis_result: dict[str, Any], focus_area: str
+    ) -> dict[str, Any]:
         """Extract structure information from file analysis"""
         metrics = analysis_result.get("metrics", {})
 
@@ -427,9 +449,13 @@ class DeepCodeIntegrationAbility(PluginInterface):
         if focus_area == "complexity":
             # Focus on complexity metrics
             issues = analysis_result.get("issues", [])
-            complexity_issues = [i for i in issues if "complexity" in i.get("category", "").lower()]
+            complexity_issues = [
+                i for i in issues if "complexity" in i.get("category", "").lower()
+            ]
             base_info["complexity_issues"] = len(complexity_issues)
-            base_info["complexity_details"] = [i.get("message", "") for i in complexity_issues[:5]]
+            base_info["complexity_details"] = [
+                i.get("message", "") for i in complexity_issues[:5]
+            ]
 
         elif focus_area == "dependencies":
             # Focus on imports and dependencies
@@ -446,13 +472,15 @@ class DeepCodeIntegrationAbility(PluginInterface):
 
         return base_info
 
-    def _extract_workspace_structure(self, analysis_result: dict[str, Any], focus_area: str) -> dict[str, Any]:
+    def _extract_workspace_structure(
+        self, analysis_result: dict[str, Any], focus_area: str
+    ) -> dict[str, Any]:
         """Extract structure information from workspace analysis"""
         return {
             "files_analyzed": analysis_result.get("files_analyzed", 0),
             "total_issues": analysis_result.get("total_issues", 0),
             "focus_area": focus_area,
-            "workspace_summary": "Structure analysis completed"
+            "workspace_summary": "Structure analysis completed",
         }
 
 

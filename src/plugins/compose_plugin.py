@@ -354,7 +354,7 @@ class ComposePlugin(PluginInterface):
                 memories = await self.store.attention(zero_vec, top_k=50)
 
                 atoms = []
-                for key, score in memories:
+                for key, _score in memories:
                     atom = self.store.get(key)
                     if atom and hasattr(atom, "value"):
                         try:
@@ -455,7 +455,6 @@ Do not include explanations or markdown formatting."""
 
         except Exception as e:
             logger.error(f"Error executing composed tool: {e}")
-
 
     async def _store_atom(self, memory_id: str, atom: DynamicAtom) -> None:
         """Store composed atom in semantic memory"""

@@ -14,13 +14,16 @@ def validate_extension_installation() -> bool:
     print("🔍 Validating VS Code Extension Installation...")
 
     # Check if VSIX was built
-    vsix_path = pathlib.Path("D:/Coding_Projects/super-alita-clean/.vscode/extensions/super-alita-guardian/super-alita-guardian-2.0.0.vsix")
+    vsix_path = pathlib.Path(
+        "D:/Coding_Projects/super-alita-clean/.vscode/extensions/super-alita-guardian/super-alita-guardian-2.0.0.vsix"
+    )
     if vsix_path.exists():
         print(f"  ✅ Extension VSIX built: {vsix_path}")
         return True
     else:
         print(f"  ❌ Extension VSIX not found: {vsix_path}")
         return False
+
 
 def validate_telemetry_file() -> dict[str, Any]:
     """Validate telemetry file exists and has correct structure"""
@@ -36,7 +39,7 @@ def validate_telemetry_file() -> dict[str, Any]:
 
     # Parse events
     events = []
-    with open(telemetry_path, encoding='utf-8') as f:
+    with open(telemetry_path, encoding="utf-8") as f:
         for line_num, line in enumerate(f, 1):
             try:
                 event = json.loads(line.strip())
@@ -54,7 +57,10 @@ def validate_telemetry_file() -> dict[str, Any]:
     for event in events:
         if all(field in event for field in required_fields):
             valid_events += 1
-            if event.get("payload", {}).get("meta", {}).get("PROMPT_VERSION") == "2.0.0":
+            if (
+                event.get("payload", {}).get("meta", {}).get("PROMPT_VERSION")
+                == "2.0.0"
+            ):
                 cortex_events += 1
 
     print(f"  ✅ Valid events: {valid_events}/{len(events)}")
@@ -65,15 +71,20 @@ def validate_telemetry_file() -> dict[str, Any]:
         "total_events": len(events),
         "valid_events": valid_events,
         "cortex_events": cortex_events,
-        "events": events[-5:]  # Last 5 events
+        "events": events[-5:],  # Last 5 events
     }
+
 
 def validate_cortex_bridge() -> bool:
     """Check if Cortex bridge components exist"""
     print("🌉 Validating Cortex Bridge...")
 
-    bridge_path = pathlib.Path("D:/Coding_Projects/super-alita-clean/scripts/cortex_bridge.py")
-    listener_path = pathlib.Path("D:/Coding_Projects/super-alita-clean/.vscode/extensions/super-alita-guardian/src/vscode_listener.ts")
+    bridge_path = pathlib.Path(
+        "D:/Coding_Projects/super-alita-clean/scripts/cortex_bridge.py"
+    )
+    listener_path = pathlib.Path(
+        "D:/Coding_Projects/super-alita-clean/.vscode/extensions/super-alita-guardian/src/vscode_listener.ts"
+    )
 
     if bridge_path.exists():
         print(f"  ✅ Cortex bridge exists: {bridge_path}")
@@ -89,6 +100,7 @@ def validate_cortex_bridge() -> bool:
 
     return True
 
+
 def validate_event_types(events: list) -> dict[str, int]:
     """Validate that all expected event types are present"""
     print("📋 Validating Event Types...")
@@ -98,7 +110,7 @@ def validate_event_types(events: list) -> dict[str, int]:
         "TOOL_RUN",
         "ARCHITECTURAL_AUDIT",
         "IDE_INTERACTION",
-        "USER_FEEDBACK"
+        "USER_FEEDBACK",
     ]
 
     event_counts = {}
@@ -115,6 +127,7 @@ def validate_event_types(events: list) -> dict[str, int]:
 
     return event_counts
 
+
 def validate_telemetry_markers(events: list) -> dict[str, Any]:
     """Validate telemetry markers for Cortex bandit learning"""
     print("🎯 Validating Telemetry Markers...")
@@ -122,7 +135,7 @@ def validate_telemetry_markers(events: list) -> dict[str, Any]:
     markers_found = {
         "PROMPT_VERSION": 0,
         "ARCHITECTURE_HASH": 0,
-        "VERIFICATION_MODE": 0
+        "VERIFICATION_MODE": 0,
     }
 
     total_with_meta = 0
@@ -146,11 +159,12 @@ def validate_telemetry_markers(events: list) -> dict[str, Any]:
 
     return markers_found
 
+
 def display_integration_summary():
     """Display final integration summary"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🎯 VS CODE → CORTEX INTEGRATION SUMMARY")
-    print("="*60)
+    print("=" * 60)
 
     print("\n✅ COMPLETED FEATURES:")
     print("  🔧 Fixed VS Code extension installation (was using wrong installer)")
@@ -180,10 +194,11 @@ def display_integration_summary():
     print("  • Implement bandit optimization based on markers")
     print("  • Add atom/bond events for deterministic KG storage")
 
+
 def main():
     """Main validation flow"""
     print("🚀 FINAL VALIDATION: VS Code → Cortex Integration")
-    print("="*60)
+    print("=" * 60)
 
     # Run all validations
     extension_ok = validate_extension_installation()
@@ -191,8 +206,8 @@ def main():
     bridge_ok = validate_cortex_bridge()
 
     if telemetry_result["valid"] and telemetry_result["events"]:
-        event_types = validate_event_types(telemetry_result["events"])
-        markers = validate_telemetry_markers(telemetry_result["events"])
+        validate_event_types(telemetry_result["events"])
+        validate_telemetry_markers(telemetry_result["events"])
 
     # Overall status
     print("\n📊 VALIDATION RESULTS:")
@@ -207,6 +222,7 @@ def main():
         print("\n⚠️ INTEGRATION STATUS: Partial - some components need attention")
 
     display_integration_summary()
+
 
 if __name__ == "__main__":
     main()

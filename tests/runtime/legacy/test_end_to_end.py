@@ -10,6 +10,7 @@ from datetime import UTC
 
 # Add src to path
 
+
 async def test_agent_request_handling():
     """Test the agent's ability to handle a real user request."""
     print("🤖 Testing Agent Request Handling...")
@@ -23,7 +24,7 @@ async def test_agent_request_handling():
         from main import create_app
 
         # Create the app
-        app = create_app()
+        create_app()
         print("  ✅ Agent app created")
 
         # Create decision policy engine
@@ -38,7 +39,7 @@ async def test_agent_request_handling():
             "user_request",
             source_plugin="test_client",
             message=user_request,
-            timestamp=datetime.now(UTC)
+            timestamp=datetime.now(UTC),
         )
         print(f"  ✅ Request event created: {request_event.event_type}")
 
@@ -57,6 +58,7 @@ async def test_agent_request_handling():
         print(f"  ❌ Agent request test failed: {e}")
         return False
 
+
 async def test_tool_execution():
     """Test tool execution capabilities."""
     print("\n🔧 Testing Tool Execution...")
@@ -71,7 +73,9 @@ async def test_tool_execution():
 
         # Test echo tool if available
         if registry.knows("echo"):
-            echo_result = await registry.execute("echo", {"payload": "Hello Super Alita!"})
+            echo_result = await registry.execute(
+                "echo", {"payload": "Hello Super Alita!"}
+            )
             print(f"  ✅ Echo tool executed: {echo_result}")
         else:
             print("  ⚠️ Echo tool not available")
@@ -81,6 +85,7 @@ async def test_tool_execution():
     except Exception as e:
         print(f"  ❌ Tool execution test failed: {e}")
         return False
+
 
 async def test_streaming_response():
     """Test streaming response capability."""
@@ -92,10 +97,11 @@ async def test_streaming_response():
 
         # Check that the main app has streaming routes
         from main import create_app
+
         app = create_app()
 
         routes = [route.path for route in app.routes]
-        streaming_routes = [r for r in routes if 'stream' in r]
+        streaming_routes = [r for r in routes if "stream" in r]
         print(f"  ✅ Streaming routes available: {streaming_routes}")
 
         return True
@@ -103,6 +109,7 @@ async def test_streaming_response():
     except Exception as e:
         print(f"  ❌ Streaming test failed: {e}")
         return False
+
 
 async def test_complete_workflow():
     """Test complete agent workflow simulation."""
@@ -117,7 +124,7 @@ async def test_complete_workflow():
         from main import SimpleAbilityRegistry, create_app
 
         # 1. Initialize agent
-        app = create_app()
+        create_app()
         engine = DecisionPolicyEngine()
         registry = SimpleAbilityRegistry()
         print("  ✅ Agent components initialized")
@@ -127,11 +134,11 @@ async def test_complete_workflow():
         print(f"  📝 User request: {user_request}")
 
         # 3. Create request event
-        event = create_event(
+        create_event(
             "user_request",
             source_plugin="user_interface",
             message=user_request,
-            timestamp=datetime.now(UTC)
+            timestamp=datetime.now(UTC),
         )
         print("  ✅ Request event created")
 
@@ -148,14 +155,14 @@ async def test_complete_workflow():
         print(f"  � Available tools: {len(available_tools)}")
 
         # 7. Generate response event with required fields
-        response_event = create_event(
+        create_event(
             "agent_response",
             source_plugin="decision_engine",
             session_id="test_session_123",
             response_text=f"I'll help you create a todo list application. Based on your request, I've classified this as a {intent} task.",
             response_id="response_123",
             reasoning="Classified user intent and generated appropriate response",
-            timestamp=datetime.now(UTC)
+            timestamp=datetime.now(UTC),
         )
         print("  ✅ Response event created")
 
@@ -166,6 +173,7 @@ async def test_complete_workflow():
         print(f"  ❌ Complete workflow test failed: {e}")
         return False
 
+
 async def main():
     """Run all end-to-end tests."""
     print("🚀 Super Alita End-to-End Testing")
@@ -175,7 +183,7 @@ async def main():
         test_agent_request_handling,
         test_tool_execution,
         test_streaming_response,
-        test_complete_workflow
+        test_complete_workflow,
     ]
 
     results = []
@@ -205,6 +213,7 @@ async def main():
     else:
         print("⚠️ Some tests failed. Please review the issues above.")
         return False
+
 
 if __name__ == "__main__":
     success = asyncio.run(main())

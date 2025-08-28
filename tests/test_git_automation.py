@@ -1,6 +1,7 @@
 """
 Test the git automation merge conflict resolution functionality.
 """
+
 import os
 import shutil
 import subprocess
@@ -25,7 +26,9 @@ class TestGitAutomation(unittest.TestCase):
         # Initialize git repo
         subprocess.run(["git", "init"], capture_output=True)
         subprocess.run(["git", "config", "user.name", "Test User"], capture_output=True)
-        subprocess.run(["git", "config", "user.email", "test@example.com"], capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.com"], capture_output=True
+        )
 
         self.git_auto = GitAutomation()
 
@@ -65,8 +68,12 @@ more code"""
         self.assertIsNotNone(result)
         self.assertEqual(result.file_path, "test_conflict.py")
         self.assertEqual(len(result.conflict_sections), 1)
-        self.assertEqual(result.conflict_sections[0]["current_branch"], "current branch code")
-        self.assertEqual(result.conflict_sections[0]["incoming_branch"], "incoming branch code")
+        self.assertEqual(
+            result.conflict_sections[0]["current_branch"], "current branch code"
+        )
+        self.assertEqual(
+            result.conflict_sections[0]["incoming_branch"], "incoming branch code"
+        )
 
     def test_analyze_conflict_file_no_conflicts(self):
         """Test analyzing a file without conflict markers."""
@@ -80,8 +87,12 @@ more code"""
     def test_is_import_section(self):
         """Test import section detection."""
         self.assertTrue(self.git_auto._is_import_section("import os", "import sys"))
-        self.assertTrue(self.git_auto._is_import_section("from pathlib import Path", "import json"))
-        self.assertFalse(self.git_auto._is_import_section("def function():", "return value"))
+        self.assertTrue(
+            self.git_auto._is_import_section("from pathlib import Path", "import json")
+        )
+        self.assertFalse(
+            self.git_auto._is_import_section("def function():", "return value")
+        )
 
     def test_is_additive_change(self):
         """Test additive change detection."""
@@ -101,7 +112,7 @@ more code"""
         result = self.git_auto._merge_imports(current, incoming)
 
         # Should contain all imports
-        lines = result.split('\n')
+        lines = result.split("\n")
         self.assertIn("import os", lines)
         self.assertIn("import sys", lines)
         self.assertIn("import json", lines)

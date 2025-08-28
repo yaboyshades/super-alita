@@ -5,12 +5,12 @@ Manages structured handoffs between agents with context preservation
 and task completion verification.
 """
 
+import json
 import logging
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
-from dataclasses import dataclass, field
-import json
+from typing import Any
 
 from src.core.events import create_event
 
@@ -44,17 +44,17 @@ class TaskContext:
 
     task_id: str
     description: str
-    files_modified: List[str] = field(default_factory=list)
-    dependencies: List[str] = field(default_factory=list)
-    outputs_generated: List[str] = field(default_factory=list)
-    code_changes: Dict[str, str] = field(
+    files_modified: list[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
+    outputs_generated: list[str] = field(default_factory=list)
+    code_changes: dict[str, str] = field(
         default_factory=dict
     )  # file_path -> changes_description
-    test_results: Dict[str, Any] = field(default_factory=dict)
-    documentation_updates: List[str] = field(default_factory=list)
-    performance_metrics: Dict[str, float] = field(default_factory=dict)
-    security_considerations: List[str] = field(default_factory=list)
-    custom_metadata: Dict[str, Any] = field(default_factory=dict)
+    test_results: dict[str, Any] = field(default_factory=dict)
+    documentation_updates: list[str] = field(default_factory=list)
+    performance_metrics: dict[str, float] = field(default_factory=dict)
+    security_considerations: list[str] = field(default_factory=list)
+    custom_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -69,11 +69,11 @@ class AgentHandoff:
     handoff_message: str
     status: HandoffStatus = HandoffStatus.PENDING
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    completed_at: Optional[datetime] = None
-    timeout_at: Optional[datetime] = None
-    verification_checklist: List[str] = field(default_factory=list)
-    completed_verifications: Set[str] = field(default_factory=set)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    completed_at: datetime | None = None
+    timeout_at: datetime | None = None
+    verification_checklist: list[str] = field(default_factory=list)
+    completed_verifications: set[str] = field(default_factory=set)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -83,9 +83,9 @@ class WorkflowStep:
     step_id: str
     agent_id: str
     task_description: str
-    depends_on: List[str] = field(default_factory=list)
-    outputs_required: List[str] = field(default_factory=list)
-    verification_criteria: List[str] = field(default_factory=list)
+    depends_on: list[str] = field(default_factory=list)
+    outputs_required: list[str] = field(default_factory=list)
+    verification_criteria: list[str] = field(default_factory=list)
     estimated_duration: float = 10.0
     status: TaskStatus = TaskStatus.CREATED
 
@@ -96,15 +96,15 @@ class MultiAgentWorkflow:
 
     workflow_id: str
     description: str
-    steps: List[WorkflowStep]
+    steps: list[WorkflowStep]
     current_step: int = 0
     status: TaskStatus = TaskStatus.CREATED
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     shared_context: TaskContext = field(
         default_factory=lambda: TaskContext(task_id="", description="")
     )
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class AgentHandoffProtocol:
@@ -112,10 +112,10 @@ class AgentHandoffProtocol:
 
     def __init__(self, event_bus=None):
         self.event_bus = event_bus
-        self.active_handoffs: Dict[str, AgentHandoff] = {}
-        self.active_workflows: Dict[str, MultiAgentWorkflow] = {}
-        self.handoff_history: List[AgentHandoff] = []
-        self.context_store: Dict[str, TaskContext] = {}
+        self.active_handoffs: dict[str, AgentHandoff] = {}
+        self.active_workflows: dict[str, MultiAgentWorkflow] = {}
+        self.handoff_history: list[AgentHandoff] = []
+        self.context_store: dict[str, TaskContext] = {}
         self.default_timeout_minutes = 30
 
         # Verification templates for different handoff types
@@ -160,7 +160,7 @@ class AgentHandoffProtocol:
 
     def _get_verification_template(
         self, source_agent: str, target_agent: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Get verification checklist template for handoff type"""
         # Simple mapping based on agent names - can be enhanced
         handoff_type = f"{source_agent}_to_{target_agent}"
@@ -189,8 +189,8 @@ class AgentHandoffProtocol:
         task_id: str,
         context: TaskContext,
         handoff_message: str,
-        custom_verifications: Optional[List[str]] = None,
-        timeout_minutes: Optional[int] = None,
+        custom_verifications: list[str] | None = None,
+        timeout_minutes: int | None = None,
     ) -> str:
         """Initiate a handoff between two agents"""
         handoff_id = self._generate_handoff_id()
@@ -345,11 +345,11 @@ class AgentHandoffProtocol:
 
         logger.info(f"Handoff {handoff_id} completed successfully")
 
-    def get_task_context(self, task_id: str) -> Optional[TaskContext]:
+    def get_task_context(self, task_id: str) -> TaskContext | None:
         """Retrieve task context"""
         return self.context_store.get(task_id)
 
-    def update_task_context(self, task_id: str, context_updates: Dict[str, Any]):
+    def update_task_context(self, task_id: str, context_updates: dict[str, Any]):
         """Update task context with new information"""
         if task_id not in self.context_store:
             logger.warning(
@@ -384,8 +384,8 @@ class AgentHandoffProtocol:
     async def create_workflow(
         self,
         description: str,
-        steps: List[WorkflowStep],
-        shared_context: Optional[TaskContext] = None,
+        steps: list[WorkflowStep],
+        shared_context: TaskContext | None = None,
     ) -> str:
         """Create a multi-agent workflow"""
         workflow_id = self._generate_workflow_id()
@@ -479,7 +479,7 @@ class AgentHandoffProtocol:
         )
         return True
 
-    def get_handoff_status(self, handoff_id: str) -> Optional[Dict[str, Any]]:
+    def get_handoff_status(self, handoff_id: str) -> dict[str, Any] | None:
         """Get status of a handoff"""
         handoff = self.active_handoffs.get(handoff_id)
         if not handoff:
@@ -509,7 +509,7 @@ class AgentHandoffProtocol:
             ],
         }
 
-    def get_workflow_status(self, workflow_id: str) -> Optional[Dict[str, Any]]:
+    def get_workflow_status(self, workflow_id: str) -> dict[str, Any] | None:
         """Get status of a workflow"""
         workflow = self.active_workflows.get(workflow_id)
         if not workflow:

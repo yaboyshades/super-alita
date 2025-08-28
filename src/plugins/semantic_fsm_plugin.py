@@ -170,9 +170,9 @@ class SemanticFSM:
         self.states: dict[str, FSMState] = {}
         self.transitions: list[FSMTransition] = []
         self.current_state: str | None = None
-        self.state_history: list[
-            tuple[str, datetime, str]
-        ] = []  # (state, timestamp, trigger)
+        self.state_history: list[tuple[str, datetime, str]] = (
+            []
+        )  # (state, timestamp, trigger)
         self.context: dict[str, Any] = {}
         self.start_time: datetime | None = None
         self.state_enter_time: datetime | None = None
@@ -899,7 +899,7 @@ class SemanticFSMPlugin(PluginInterface):
             try:
                 await asyncio.sleep(10)  # Check every 10 seconds
 
-                for fsm_name, fsm in self.fsms.items():
+                for _fsm_name, fsm in self.fsms.items():
                     if not fsm.current_state:
                         continue
 

@@ -59,9 +59,7 @@ class PuterTool:
             raise RuntimeError("PuterTool not initialized")
         try:
             content = await self.puter_plugin.read_file(path)
-            await self._emit_event(
-                "file_read", {"path": path, "size": len(content)}
-            )
+            await self._emit_event("file_read", {"path": path, "size": len(content)})
             return content
         except PuterAPIError as exc:
             logger.error("Failed to read file %s: %s", path, exc)
@@ -76,9 +74,7 @@ class PuterTool:
         if not self.puter_plugin:
             raise RuntimeError("PuterTool not initialized")
         try:
-            result = await self.puter_plugin.write_file(
-                path, content, create_dirs
-            )
+            result = await self.puter_plugin.write_file(path, content, create_dirs)
             await self._emit_event(
                 "file_written",
                 {"path": path, "size": len(content), "created_dirs": create_dirs},

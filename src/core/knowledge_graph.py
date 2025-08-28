@@ -505,9 +505,9 @@ class KnowledgeGraphEnricher:
             "entity_types": entity_types,
             "relationship_types": relationship_types,
             "enrichment_events": len(self.enrichment_log),
-            "latest_enrichment": self.enrichment_log[-1]
-            if self.enrichment_log
-            else None,
+            "latest_enrichment": (
+                self.enrichment_log[-1] if self.enrichment_log else None
+            ),
         }
 
     def export_graph(self) -> dict[str, Any]:

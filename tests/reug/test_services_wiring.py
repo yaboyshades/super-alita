@@ -15,8 +15,11 @@ def test_services_end_to_end_fallback(tmp_path, monkeypatch):
     services = create_services(emitter)
 
     async def run():
-        flow = ExecutionFlow(services, lambda event: None)
-        ctx = FSMContext(raw_input={"sot": ["compute: 1+1", "analyze: 2*3", "generate: ok"]}, results=[])
+        ExecutionFlow(services, lambda event: None)
+        ctx = FSMContext(
+            raw_input={"sot": ["compute: 1+1", "analyze: 2*3", "generate: ok"]},
+            results=[],
+        )
         # Kick manually: decompose then iterate SELECT→EXECUTE→PROCESS until done
         ctx.plan = await services["decompose"](ctx.raw_input)
         ctx.step_index = 0
@@ -24,7 +27,9 @@ def test_services_end_to_end_fallback(tmp_path, monkeypatch):
             step = ctx.plan.steps[ctx.step_index]
             sel = await services["select_tool"](step, ctx.__dict__)
             assert sel["status"] == "FOUND"
-            ex = await services["execute"](sel["tool"], step.args, {**ctx.__dict__, "step_index": ctx.step_index})
+            ex = await services["execute"](
+                sel["tool"], step.args, {**ctx.__dict__, "step_index": ctx.step_index}
+            )
             assert ex["status"] == "SUCCESS"
             ctx.results.append(ex["result"])
             ctx.step_index += 1

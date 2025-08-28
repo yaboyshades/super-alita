@@ -1,4 +1,3 @@
-
 """
 Synchronous wrapper around LangChain's async interface.
 The adapter exposes a synchronous ``invoke`` method that delegates to
@@ -68,6 +67,7 @@ class LangChainAdapter:
             raise exc
         return result
 
+
 from __future__ import annotations
 
 import inspect
@@ -100,4 +100,3 @@ class LangChainAdapter:
         """Call ``func`` ensuring keyword arguments match its signature."""
         validate_kwargs(func, kwargs)
         return func(**kwargs)
-

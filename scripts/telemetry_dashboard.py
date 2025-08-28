@@ -16,15 +16,10 @@ class TelemetryDashboard:
                 "registry_management": 0,
                 "state_machine": 0,
                 "event_bus": 0,
-                "integration": 0
+                "integration": 0,
             },
-            "mode_usage": {
-                "guardian": 0,
-                "refactor": 0,
-                "generator": 0,
-                "audit": 0
-            },
-            "compliance_score": 0.0
+            "mode_usage": {"guardian": 0, "refactor": 0, "generator": 0, "audit": 0},
+            "compliance_score": 0.0,
         }
 
     def track_interaction(self, response_text: str) -> dict:
@@ -35,7 +30,7 @@ class TelemetryDashboard:
             "version_mentioned": False,
             "guidelines_referenced": [],
             "mode_detected": None,
-            "compliance_patterns": []
+            "compliance_patterns": [],
         }
 
         # Check for persona acknowledgment
@@ -52,7 +47,7 @@ class TelemetryDashboard:
             ("Tool Registry", "registry_management"),
             ("State Machine", "state_machine"),
             ("Event Bus", "event_bus"),
-            ("Component Integration", "integration")
+            ("Component Integration", "integration"),
         ]
 
         for guideline_name, metric_key in guidelines:
@@ -80,7 +75,7 @@ class TelemetryDashboard:
             "PluginInterface",
             "DecisionPolicyEngine",
             "create_event",
-            "TransitionTrigger"
+            "TransitionTrigger",
         ]
 
         for pattern in compliance_patterns:
@@ -142,17 +137,18 @@ class TelemetryDashboard:
 
     def _calc_percentage(self, guideline: str) -> float:
         """Calculate guideline reference percentage"""
-        total = sum(self.metrics['guideline_references'].values())
+        total = sum(self.metrics["guideline_references"].values())
         if total == 0:
             return 0.0
-        return (self.metrics['guideline_references'][guideline] / total) * 100
+        return (self.metrics["guideline_references"][guideline] / total) * 100
 
     def _calc_mode_percentage(self, mode: str) -> float:
         """Calculate mode usage percentage"""
-        total = sum(self.metrics['mode_usage'].values())
+        total = sum(self.metrics["mode_usage"].values())
         if total == 0:
             return 0.0
-        return (self.metrics['mode_usage'][mode] / total) * 100
+        return (self.metrics["mode_usage"][mode] / total) * 100
+
 
 if __name__ == "__main__":
     # Example usage
@@ -163,7 +159,7 @@ if __name__ == "__main__":
         "I am the Super Alita Architectural Guardian v2.0. This code should inherit from PluginInterface.",
         "This violates guideline #2 - Tool Registry Management. Use DecisionPolicyEngine instead.",
         "Let me refactor this to use async def and create_event properly.",
-        "Generating a new plugin with proper Event Bus patterns..."
+        "Generating a new plugin with proper Event Bus patterns...",
     ]
 
     for response in sample_responses:

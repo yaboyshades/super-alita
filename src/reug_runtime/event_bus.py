@@ -28,7 +28,9 @@ class BaseEventBus(ABC):
     ) -> None:  # pragma: no cover - optional
         return None
 
-    async def publish(self, event: dict[str, Any]) -> dict[str, Any]:  # pragma: no cover - optional
+    async def publish(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any]:  # pragma: no cover - optional
         # Fallback to emit-only buses
         return await self.emit(event)
 
@@ -93,7 +95,9 @@ class InMemoryPubSubEventBus(FileEventBus):
 class RedisEventBus(BaseEventBus):
     """Publish events to a Redis channel asynchronously."""
 
-    def __init__(self, url: str = "redis://localhost:6379/0", channel: str = "reug-events"):
+    def __init__(
+        self, url: str = "redis://localhost:6379/0", channel: str = "reug-events"
+    ):
         import redis  # type: ignore
 
         self._r = redis.Redis.from_url(url)
@@ -119,7 +123,8 @@ def make_event_bus() -> BaseEventBus:
             return RedisEventBus(url=url, channel=channel)
         except Exception as e:  # pragma: no cover
             logger.warning(
-                "Redis event bus unavailable (%s); falling back to file", e,
+                "Redis event bus unavailable (%s); falling back to file",
+                e,
                 extra={"error": str(e)},
             )
     # Default to in-memory pub/sub with file logging to support plugins

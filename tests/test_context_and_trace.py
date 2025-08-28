@@ -19,7 +19,7 @@ class TestContextAssembler:
         assembler = ContextAssembler(
             user_input="test query",
             recent_events=[{"type": "test", "data": "value"}],
-            active_goals=["goal1", "goal2"]
+            active_goals=["goal1", "goal2"],
         )
 
         base_ctx = assembler._base()
@@ -59,7 +59,7 @@ class TestContextAssembler:
         """Test memory hits normalization"""
         hits = [
             {"atom_id": "test-1", "score": "0.85", "extra": "ignored"},
-            {"atom_id": "test-2", "score": 0.75}
+            {"atom_id": "test-2", "score": 0.75},
         ]
 
         normalized = ContextAssembler._normalize_memory_hits(hits)
@@ -214,19 +214,25 @@ class TestCorrelationIntegration:
         test_correlation_id = "test-correlation-123"
         test_session_id = "test-session-456"
 
-        with patch('src.core.context_builder.get_correlation_id', return_value=test_correlation_id):
-            with patch('src.core.context_builder.get_session_id', return_value=test_session_id):
-                assembler = ContextAssembler(user_input="test")
-                ctx = assembler.build_for_decision()
+        with patch(
+            "src.core.context_builder.get_correlation_id",
+            return_value=test_correlation_id,
+        ), patch(
+            "src.core.context_builder.get_session_id", return_value=test_session_id
+        ):
+            assembler = ContextAssembler(user_input="test")
+            ctx = assembler.build_for_decision()
 
-                assert ctx["correlation_id"] == test_correlation_id
-                assert ctx["session_id"] == test_session_id
+            assert ctx["correlation_id"] == test_correlation_id
+            assert ctx["session_id"] == test_session_id
 
     def test_correlation_in_trace(self):
         """Test that trace entries include correlation IDs"""
         test_correlation_id = "trace-correlation-789"
 
-        with patch('src.core.trace.get_correlation_id', return_value=test_correlation_id):
+        with patch(
+            "src.core.trace.get_correlation_id", return_value=test_correlation_id
+        ):
             tracer = TurnTracer()
             tracer.new_turn()
             tracer.log("test_event", "test_component")

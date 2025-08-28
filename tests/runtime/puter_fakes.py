@@ -2,7 +2,6 @@
 Fake servers for testing plugin integrations.
 """
 
-
 from aiohttp import web
 
 
@@ -20,8 +19,6 @@ class FakePuterServer:
         }
 
         self.flaky_calls = 0
-
-
 
     def create_app(self) -> web.Application:
         app = web.Application()
@@ -80,14 +77,12 @@ class FakePuterServer:
 
         return web.json_response({"success": True})
 
-
     async def create_directory(self, request: web.Request) -> web.Response:
         data = await request.json()
         path = data.get("path")
         if path:
             self.directories[path] = []
         return web.json_response({"success": True})
-
 
     async def flaky_endpoint(self, request: web.Request) -> web.Response:
         self.flaky_calls += 1

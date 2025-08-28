@@ -49,10 +49,9 @@ async def asafe_publish(
         if hasattr(event_bus, name):
             cand = getattr(event_bus, name)
             break
-    if cand is None:
-        if on_warn:
-            on_warn(f"asafe_publish: no emit/publish on event_bus for {channel}")
-            return False
+    if cand is None and on_warn:
+        on_warn(f"asafe_publish: no emit/publish on event_bus for {channel}")
+        return False
     if cand is None:  # double-check (static analyzers)
         if on_warn:
             on_warn(f"asafe_publish: internal error (no callable) for {channel}")

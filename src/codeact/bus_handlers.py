@@ -40,7 +40,9 @@ async def _emit_observation(bus: Any, code: str, obs: Observation) -> None:
         "content": code,
     }
     obs_atom = obs.to_atom(CODEACT_NAMESPACE)
-    await bus.emit({"event_type": "batch_atoms_created", "atoms": [code_atom, obs_atom]})
+    await bus.emit(
+        {"event_type": "batch_atoms_created", "atoms": [code_atom, obs_atom]}
+    )
     bond = {
         "bond_id": _bond_id(code_atom["atom_id"], "OBSERVED", obs_atom["atom_id"]),
         "source_id": code_atom["atom_id"],
@@ -51,7 +53,9 @@ async def _emit_observation(bus: Any, code: str, obs: Observation) -> None:
     await bus.emit({"event_type": "ui_notification", "message": obs_atom["content"]})
 
 
-async def handle_start(event: CodeActStartRequest, bus: Any, runner: CodeActRunner) -> Observation:
+async def handle_start(
+    event: CodeActStartRequest, bus: Any, runner: CodeActRunner
+) -> Observation:
     logger.debug("CodeAct start: %s", event.code)
     initial = IPythonRunCell(code=event.code)
     obs = await runner.run(initial)
@@ -59,7 +63,9 @@ async def handle_start(event: CodeActStartRequest, bus: Any, runner: CodeActRunn
     return obs
 
 
-async def handle_step(event: CodeActStepRequest, bus: Any, runner: CodeActRunner) -> Observation:
+async def handle_step(
+    event: CodeActStepRequest, bus: Any, runner: CodeActRunner
+) -> Observation:
     logger.debug("CodeAct step: %s", event.code)
     action = IPythonRunCell(code=event.code)
     obs = await runner.run(action)

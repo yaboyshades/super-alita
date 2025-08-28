@@ -1,4 +1,3 @@
-
 """Minimal dynamic tool registry."""
 
 from __future__ import annotations
@@ -122,6 +121,7 @@ class ToolRegistry:
 
         return sorted(self._tools.keys())
 
+
 """Minimal dynamic tool registry."""
 
 from __future__ import annotations
@@ -133,6 +133,7 @@ from typing import Any
 try:  # pragma: no cover - telemetry optional
     from cortex import telemetry  # type: ignore
 except Exception:  # pragma: no cover - fallback when cortex not installed
+
     class _Telemetry:
         @staticmethod
         def emit(*args: Any, **kwargs: Any) -> None:

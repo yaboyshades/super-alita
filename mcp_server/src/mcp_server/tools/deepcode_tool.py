@@ -1,4 +1,5 @@
 """MCP tool for DeepCode repository-level operations (safe, dry-run by default)."""
+
 from __future__ import annotations
 
 import os
@@ -59,7 +60,13 @@ async def execute(params: dict[str, Any]) -> dict[str, Any]:
         }
 
     if action == "analyze":
-        cmd = ["python", str(run_script), "--repo", str(repo_path.resolve()), "--analyze"]
+        cmd = [
+            "python",
+            str(run_script),
+            "--repo",
+            str(repo_path.resolve()),
+            "--analyze",
+        ]
         if dry_run:
             return {"success": True, "dry_run": True, "command": " ".join(cmd)}
         result = subprocess.run(cmd, capture_output=True, text=True)

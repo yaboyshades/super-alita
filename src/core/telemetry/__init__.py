@@ -10,5 +10,5 @@ __all__ = [
     "TelemetryCollector",
     "TelemetryEvent",
     "TelemetryDashboard",
-    "WebSocketStreamer"
+    "WebSocketStreamer",
 ]

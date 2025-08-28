@@ -17,7 +17,9 @@ from urllib import error, request
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--host", default=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"))
+    ap.add_argument(
+        "--host", default=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
+    )
     ap.add_argument("--model", default=os.getenv("OLLAMA_MODEL", "llama3.1:8b"))
     ap.add_argument(
         "--prompt",
@@ -67,4 +69,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

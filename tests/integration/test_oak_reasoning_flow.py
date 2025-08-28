@@ -39,6 +39,7 @@ def _redis_running(host: str = "localhost", port: int = 6379) -> bool:
 if not _redis_running():
     pytest.skip("Redis server not available", allow_module_level=True)
 
+
 # A mock tool for testing purposes
 class EchoTool(PluginInterface):
     @property
@@ -73,11 +74,11 @@ class TestOakReasoningFlow:
                         "option_mapping": {
                             "test-option": {
                                 "tool_name": "echo_tool",
-                                "parameters": {"message": "{goal}"}
+                                "parameters": {"message": "{goal}"},
                             }
-                        }
+                        },
                     },
-                    "echo_tool": {"enabled": True}, # Our mock tool
+                    "echo_tool": {"enabled": True},  # Our mock tool
                     # Disable other plugins to isolate the test
                     "memory_manager": {"enabled": False},
                     "tool_executor": {"enabled": False},
@@ -102,6 +103,7 @@ class TestOakReasoningFlow:
 
         # Add our mock tool to the list of available plugins
         from src.main_unified import AVAILABLE_PLUGINS, PLUGIN_ORDER
+
         AVAILABLE_PLUGINS["echo_tool"] = EchoTool
         if "echo_tool" not in PLUGIN_ORDER:
             PLUGIN_ORDER.append("echo_tool")
@@ -122,7 +124,11 @@ class TestOakReasoningFlow:
             }
 
             async def handler(event):
-                event_type = event.event_type if hasattr(event, "event_type") else event.get("event_type")
+                event_type = (
+                    event.event_type
+                    if hasattr(event, "event_type")
+                    else event.get("event_type")
+                )
                 if event_type in collected_events:
                     collected_events[event_type].append(event)
 
@@ -136,7 +142,6 @@ class TestOakReasoningFlow:
             option_trainer = alita.plugins["oak_coordinator"].option_trainer
             option_trainer.options["test-option"] = {"id": "test-option"}
 
-
             goal = "echo this message"
             await test_bus.publish(
                 GoalReceivedEvent(
@@ -149,21 +154,26 @@ class TestOakReasoningFlow:
             await asyncio.sleep(5.0)  # Wait for processing
 
             # 1. Assert that a subgoal was defined
-            assert len(collected_events["subgoal_defined"]) > 0, "A subgoal should have been defined"
+            assert (
+                len(collected_events["subgoal_defined"]) > 0
+            ), "A subgoal should have been defined"
             subgoal_event = collected_events["subgoal_defined"][0]
             assert subgoal_event.subgoal.description == goal
 
             # 2. Assert that the correct tool was called
-            assert len(collected_events["tool_call"]) > 0, "A tool call should have been made"
+            assert (
+                len(collected_events["tool_call"]) > 0
+            ), "A tool call should have been made"
             tool_call_event = collected_events["tool_call"][0]
             assert tool_call_event.tool_name == "echo_tool"
             assert tool_call_event.parameters["message"] == goal
 
             # 3. Assert that our mock tool was executed
-            assert len(collected_events["echo_tool_called"]) > 0, "The mock tool should have been called"
+            assert (
+                len(collected_events["echo_tool_called"]) > 0
+            ), "The mock tool should have been called"
             echo_event = collected_events["echo_tool_called"][0]
             assert echo_event.message == goal
-
 
         finally:
             await alita.shutdown()

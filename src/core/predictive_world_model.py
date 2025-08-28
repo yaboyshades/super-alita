@@ -402,9 +402,9 @@ class PredictiveWorldModel:
             "alternative_generation_working": self.enable_alternative_generation,
             "learning_active": self.enable_learning,
             "memory_usage": len(self.state_transitions),
-            "model_confidence": self._calculate_model_confidence()
-            if self.state_transitions
-            else 0.0,
+            "model_confidence": (
+                self._calculate_model_confidence() if self.state_transitions else 0.0
+            ),
         }
 
     async def predict_outcome(
@@ -729,15 +729,21 @@ class PredictiveWorldModel:
             "top_successful_actions": self._get_top_actions(success=True),
             "top_risky_actions": self._get_top_actions(success=False),
             "learning_summary": {
-                "oldest_data": self.state_transitions[0].timestamp.isoformat()
-                if self.state_transitions
-                else None,
-                "newest_data": self.state_transitions[-1].timestamp.isoformat()
-                if self.state_transitions
-                else None,
-                "avg_success_rate": np.mean([t.success for t in self.state_transitions])
-                if self.state_transitions
-                else 0.0,
+                "oldest_data": (
+                    self.state_transitions[0].timestamp.isoformat()
+                    if self.state_transitions
+                    else None
+                ),
+                "newest_data": (
+                    self.state_transitions[-1].timestamp.isoformat()
+                    if self.state_transitions
+                    else None
+                ),
+                "avg_success_rate": (
+                    np.mean([t.success for t in self.state_transitions])
+                    if self.state_transitions
+                    else 0.0
+                ),
             },
         }
 

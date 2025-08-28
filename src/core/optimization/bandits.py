@@ -65,7 +65,7 @@ class BanditDecision:
         arm: BanditArm,
         algorithm: str,
         confidence: float,
-        context: dict[str, Any] | None = None
+        context: dict[str, Any] | None = None,
     ) -> "BanditDecision":
         """Create a new bandit decision."""
         import time
@@ -77,7 +77,7 @@ class BanditDecision:
             algorithm=algorithm,
             confidence=confidence,
             context=context or {},
-            timestamp=time.time()
+            timestamp=time.time(),
         )
 
 
@@ -89,13 +89,11 @@ class BanditAlgorithm(ABC):
         self.arms: dict[str, BanditArm] = {}
         self.decision_history: list[BanditDecision] = []
 
-    def add_arm(self, arm_id: str, name: str, metadata: dict[str, Any] | None = None) -> BanditArm:
+    def add_arm(
+        self, arm_id: str, name: str, metadata: dict[str, Any] | None = None
+    ) -> BanditArm:
         """Add a new arm to the bandit."""
-        arm = BanditArm(
-            arm_id=arm_id,
-            name=name,
-            metadata=metadata or {}
-        )
+        arm = BanditArm(arm_id=arm_id, name=name, metadata=metadata or {})
         self.arms[arm_id] = arm
         return arm
 
@@ -140,17 +138,17 @@ class BanditAlgorithm(ABC):
                     "successes": arm.successes,
                     "failures": arm.failures,
                     "success_rate": arm.success_rate,
-                    "last_reward": arm.last_reward
+                    "last_reward": arm.last_reward,
                 }
                 for arm_id, arm in self.arms.items()
-            }
+            },
         }
 
 
 class ThompsonSamplingBandit(BanditAlgorithm):
     """
     Thompson Sampling bandit using Beta distributions.
-    
+
     Each arm is modeled as a Beta distribution with parameters (successes + 1, failures + 1).
     At each step, we sample from each arm's distribution and select the highest sample.
     """
@@ -194,10 +192,7 @@ class ThompsonSamplingBandit(BanditAlgorithm):
             confidence = min(1.0, 0.5 + margin)
 
         decision = BanditDecision.create(
-            arm=best_arm,
-            algorithm=self.name,
-            confidence=confidence,
-            context=context
+            arm=best_arm, algorithm=self.name, confidence=confidence, context=context
         )
 
         self.decision_history.append(decision)
@@ -207,7 +202,7 @@ class ThompsonSamplingBandit(BanditAlgorithm):
 class UCB1Bandit(BanditAlgorithm):
     """
     Upper Confidence Bound (UCB1) bandit algorithm.
-    
+
     Selects the arm with the highest upper confidence bound:
     UCB1(i) = average_reward(i) + sqrt(2 * ln(total_pulls) / pulls(i))
     """
@@ -229,21 +224,23 @@ class UCB1Bandit(BanditAlgorithm):
                     arm=arm,
                     algorithm=self.name,
                     confidence=1.0,  # High confidence for exploration
-                    context=context
+                    context=context,
                 )
                 self.decision_history.append(decision)
                 return decision
 
         best_arm = None
-        best_ucb = -float('inf')
+        best_ucb = -float("inf")
         arm_ucbs = {}
 
         # Calculate UCB1 value for each arm
         for arm in self.arms.values():
             if arm.total_pulls == 0:
-                ucb_value = float('inf')
+                ucb_value = float("inf")
             else:
-                confidence_radius = math.sqrt(2 * math.log(total_pulls) / arm.total_pulls)
+                confidence_radius = math.sqrt(
+                    2 * math.log(total_pulls) / arm.total_pulls
+                )
                 ucb_value = arm.success_rate + confidence_radius
 
             arm_ucbs[arm.arm_id] = ucb_value
@@ -259,15 +256,12 @@ class UCB1Bandit(BanditAlgorithm):
         # Calculate confidence based on UCB margin
         sorted_ucbs = sorted(arm_ucbs.values(), reverse=True)
         confidence = min(1.0, best_ucb)
-        if len(sorted_ucbs) > 1 and sorted_ucbs[0] != float('inf'):
+        if len(sorted_ucbs) > 1 and sorted_ucbs[0] != float("inf"):
             margin = sorted_ucbs[0] - sorted_ucbs[1]
             confidence = min(1.0, 0.5 + margin / 2)
 
         decision = BanditDecision.create(
-            arm=best_arm,
-            algorithm=self.name,
-            confidence=confidence,
-            context=context
+            arm=best_arm, algorithm=self.name, confidence=confidence, context=context
         )
 
         self.decision_history.append(decision)
@@ -277,7 +271,7 @@ class UCB1Bandit(BanditAlgorithm):
 class EpsilonGreedyBandit(BanditAlgorithm):
     """
     Epsilon-Greedy bandit algorithm.
-    
+
     With probability epsilon, explores by selecting a random arm.
     With probability (1-epsilon), exploits by selecting the arm with highest success rate.
     """
@@ -308,14 +302,20 @@ class EpsilonGreedyBandit(BanditAlgorithm):
                     best_arm = arm
 
             selected_arm = best_arm or random.choice(list(self.arms.values()))
-            confidence = 1.0 - self.epsilon + (self.epsilon * best_rate)  # Higher confidence for exploitation
+            confidence = (
+                1.0 - self.epsilon + (self.epsilon * best_rate)
+            )  # Higher confidence for exploitation
             exploration = False
 
         decision = BanditDecision.create(
             arm=selected_arm,
             algorithm=self.name,
             confidence=confidence,
-            context={**(context or {}), "exploration": exploration, "epsilon": self.epsilon}
+            context={
+                **(context or {}),
+                "exploration": exploration,
+                "epsilon": self.epsilon,
+            },
         )
 
         self.decision_history.append(decision)

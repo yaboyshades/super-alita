@@ -12,6 +12,9 @@ import sys
 # Add the project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import builtins
+import contextlib
+
 from cortex.automation.git_workflow import GitAutomation
 
 
@@ -96,7 +99,7 @@ class DataProcessor:
 >>>>>>> feature-branch
 """
 
-    with open(file_path, 'w') as f:
+    with open(file_path, "w") as f:
         f.write(content)
 
 
@@ -112,7 +115,7 @@ def demo_conflict_resolution():
         "simple_conflict.py": "simple",
         "import_conflict.py": "imports",
         "additive_conflict.py": "additive",
-        "complex_conflict.py": "complex"
+        "complex_conflict.py": "complex",
     }
 
     for file_name, conflict_type in demo_files.items():
@@ -130,26 +133,36 @@ def demo_conflict_resolution():
 
             for i, section in enumerate(conflict_info.conflict_sections):
                 print(f"\n🔍 Conflict {i+1}:")
-                print(f"   Current branch: {len(section['current_branch'].split())} words")
-                print(f"   Incoming branch: {len(section['incoming_branch'].split())} words")
+                print(
+                    f"   Current branch: {len(section['current_branch'].split())} words"
+                )
+                print(
+                    f"   Incoming branch: {len(section['incoming_branch'].split())} words"
+                )
 
                 # Test resolution strategies
                 print("\n🛠️ Resolution strategies:")
 
                 # Check if it's an import section
-                if git_auto._is_import_section(section['current_branch'], section['incoming_branch']):
+                if git_auto._is_import_section(
+                    section["current_branch"], section["incoming_branch"]
+                ):
                     print("   📦 Import conflict detected - will merge imports")
-                    merged = git_auto._merge_imports(section['current_branch'], section['incoming_branch'])
+                    merged = git_auto._merge_imports(
+                        section["current_branch"], section["incoming_branch"]
+                    )
                     print(f"   ✅ Merged result: {len(merged.split())} unique imports")
 
                 # Check if it's additive
-                elif git_auto._is_additive_change(section['current_branch'], section['incoming_branch']):
+                elif git_auto._is_additive_change(
+                    section["current_branch"], section["incoming_branch"]
+                ):
                     print("   ➕ Additive conflict detected - will combine both sides")
 
                 # Check for empty sides
-                elif not section['current_branch'].strip():
+                elif not section["current_branch"].strip():
                     print("   ⬅️ Current branch empty - will take incoming changes")
-                elif not section['incoming_branch'].strip():
+                elif not section["incoming_branch"].strip():
                     print("   ➡️ Incoming branch empty - will take current changes")
                 else:
                     print("   ⚠️ Complex conflict - requires manual review")
@@ -157,10 +170,8 @@ def demo_conflict_resolution():
             print("❌ No conflicts found in file")
 
         # Clean up demo file
-        try:
+        with contextlib.suppress(builtins.BaseException):
             os.remove(file_name)
-        except:
-            pass
 
     print("\n🎯 Workflow Integration:")
     print("-" * 40)

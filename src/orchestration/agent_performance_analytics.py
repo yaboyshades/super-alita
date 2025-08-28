@@ -6,11 +6,11 @@ analytics for optimizing agent task routing.
 """
 
 import logging
-from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
-from enum import Enum
 import statistics
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from enum import Enum
+from typing import Any
 
 from src.core.events import create_event
 
@@ -38,22 +38,22 @@ class TaskExecution:
     task_id: str
     task_type: str
     start_time: datetime
-    end_time: Optional[datetime] = None
-    duration_minutes: Optional[float] = None
-    success: Optional[bool] = None
+    end_time: datetime | None = None
+    duration_minutes: float | None = None
+    success: bool | None = None
     cost: float = 0.0
-    quality_score: Optional[float] = None  # 0-1 scale
-    user_satisfaction: Optional[float] = None  # 0-1 scale
-    error_message: Optional[str] = None
-    outputs_generated: List[str] = field(default_factory=list)
-    files_modified: List[str] = field(default_factory=list)
+    quality_score: float | None = None  # 0-1 scale
+    user_satisfaction: float | None = None  # 0-1 scale
+    error_message: str | None = None
+    outputs_generated: list[str] = field(default_factory=list)
+    files_modified: list[str] = field(default_factory=list)
     tests_passed: int = 0
     tests_failed: int = 0
     code_lines_changed: int = 0
     documentation_updated: bool = False
     security_issues_found: int = 0
-    performance_improvement: Optional[float] = None  # Percentage improvement
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    performance_improvement: float | None = None  # Percentage improvement
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -69,13 +69,13 @@ class AgentPerformanceProfile:
     total_cost: float = 0.0
     average_quality_score: float = 0.0
     average_user_satisfaction: float = 0.0
-    task_type_performance: Dict[str, Dict[str, float]] = field(default_factory=dict)
-    recent_executions: List[TaskExecution] = field(default_factory=list)
-    performance_trend: List[Tuple[datetime, float]] = field(
+    task_type_performance: dict[str, dict[str, float]] = field(default_factory=dict)
+    recent_executions: list[TaskExecution] = field(default_factory=list)
+    performance_trend: list[tuple[datetime, float]] = field(
         default_factory=list
     )  # (timestamp, success_rate)
-    strengths: List[str] = field(default_factory=list)
-    weaknesses: List[str] = field(default_factory=list)
+    strengths: list[str] = field(default_factory=list)
+    weaknesses: list[str] = field(default_factory=list)
     last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -84,11 +84,11 @@ class AgentPerformanceAnalytics:
 
     def __init__(self, event_bus=None):
         self.event_bus = event_bus
-        self.executions: Dict[str, TaskExecution] = {}
-        self.agent_profiles: Dict[str, AgentPerformanceProfile] = {}
-        self.performance_history: List[TaskExecution] = []
-        self.analytics_cache: Dict[str, Any] = {}
-        self.cache_expiry: Dict[str, datetime] = {}
+        self.executions: dict[str, TaskExecution] = {}
+        self.agent_profiles: dict[str, AgentPerformanceProfile] = {}
+        self.performance_history: list[TaskExecution] = []
+        self.analytics_cache: dict[str, Any] = {}
+        self.cache_expiry: dict[str, datetime] = {}
 
         # Performance thresholds for alerts
         self.performance_thresholds = {
@@ -103,7 +103,7 @@ class AgentPerformanceAnalytics:
         agent_id: str,
         task_id: str,
         task_type: str,
-        execution_id: Optional[str] = None,
+        execution_id: str | None = None,
     ) -> str:
         """Start tracking a task execution"""
         if not execution_id:
@@ -135,18 +135,18 @@ class AgentPerformanceAnalytics:
         execution_id: str,
         success: bool,
         cost: float = 0.0,
-        quality_score: Optional[float] = None,
-        user_satisfaction: Optional[float] = None,
-        outputs_generated: Optional[List[str]] = None,
-        files_modified: Optional[List[str]] = None,
+        quality_score: float | None = None,
+        user_satisfaction: float | None = None,
+        outputs_generated: list[str] | None = None,
+        files_modified: list[str] | None = None,
         tests_passed: int = 0,
         tests_failed: int = 0,
         code_lines_changed: int = 0,
         documentation_updated: bool = False,
         security_issues_found: int = 0,
-        performance_improvement: Optional[float] = None,
-        error_message: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        performance_improvement: float | None = None,
+        error_message: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Complete task execution with results"""
         if execution_id not in self.executions:
@@ -418,7 +418,7 @@ class AgentPerformanceAnalytics:
                 f"Performance alerts for agent {agent_id}: {'; '.join(alerts)}"
             )
 
-    def get_agent_performance(self, agent_id: str) -> Optional[Dict[str, Any]]:
+    def get_agent_performance(self, agent_id: str) -> dict[str, Any] | None:
         """Get performance summary for an agent"""
         if agent_id not in self.agent_profiles:
             return None
@@ -469,7 +469,7 @@ class AgentPerformanceAnalytics:
 
         return performance_summary
 
-    def get_comparative_analysis(self) -> Dict[str, Any]:
+    def get_comparative_analysis(self) -> dict[str, Any]:
         """Get comparative analysis of all agents"""
         cache_key = "comparative_analysis"
         if (
@@ -560,7 +560,7 @@ class AgentPerformanceAnalytics:
 
         return result
 
-    def get_task_type_analysis(self) -> Dict[str, Any]:
+    def get_task_type_analysis(self) -> dict[str, Any]:
         """Analyze performance by task type across all agents"""
         cache_key = "task_type_analysis"
         if (
@@ -645,7 +645,7 @@ class AgentPerformanceAnalytics:
             if key in self.cache_expiry:
                 del self.cache_expiry[key]
 
-    def get_cost_analysis(self, time_period_days: int = 30) -> Dict[str, Any]:
+    def get_cost_analysis(self, time_period_days: int = 30) -> dict[str, Any]:
         """Get cost analysis for specified time period"""
         cutoff_date = datetime.now(UTC) - timedelta(days=time_period_days)
 
@@ -704,8 +704,8 @@ class AgentPerformanceAnalytics:
         }
 
     async def generate_performance_report(
-        self, agent_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, agent_id: str | None = None
+    ) -> dict[str, Any]:
         """Generate comprehensive performance report"""
         if agent_id:
             # Single agent report
@@ -735,7 +735,7 @@ class AgentPerformanceAnalytics:
                 "generated_at": datetime.now(UTC).isoformat(),
             }
 
-    def _generate_agent_recommendations(self, agent_id: str) -> List[str]:
+    def _generate_agent_recommendations(self, agent_id: str) -> list[str]:
         """Generate recommendations for improving agent performance"""
         profile = self.agent_profiles.get(agent_id)
         if not profile:
@@ -768,7 +768,7 @@ class AgentPerformanceAnalytics:
 
         return recommendations
 
-    def _generate_system_recommendations(self) -> List[str]:
+    def _generate_system_recommendations(self) -> list[str]:
         """Generate system-wide recommendations"""
         recommendations = []
         comparative = self.get_comparative_analysis()

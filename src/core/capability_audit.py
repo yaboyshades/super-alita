@@ -850,7 +850,7 @@ class CapabilityAuditor:
         total_capabilities = 0
         total_errors = 0
 
-        for category, results in audit_results.items():
+        for _category, results in audit_results.items():
             total_capabilities += results.get("total", 0)
             total_errors += len(results.get("errors", []))
 

@@ -36,7 +36,9 @@ class PythonSandbox:
         stderr_limit: int = 10_000,
         workdir: str | None = None,
     ) -> None:
-        self.allowed_imports = set(allowed_imports or {"math", "json", "csv", "statistics"})
+        self.allowed_imports = set(
+            allowed_imports or {"math", "json", "csv", "statistics"}
+        )
         self.timeout = timeout
         self.stdout_limit = stdout_limit
         self.stderr_limit = stderr_limit
@@ -59,7 +61,13 @@ class PythonSandbox:
             "open": open,
         }
 
-        def _import(name: str, globals: Any = None, locals: Any = None, fromlist: tuple[str, ...] = (), level: int = 0):
+        def _import(
+            name: str,
+            globals: Any = None,
+            locals: Any = None,
+            fromlist: tuple[str, ...] = (),
+            level: int = 0,
+        ):
             if name in self.allowed_imports:
                 return __import__(name, globals, locals, fromlist, level)
             raise SandboxError(f"import of '{name}' is not allowed")
@@ -78,7 +86,10 @@ class PythonSandbox:
 
         def _execute() -> SandboxResult:
             try:
-                with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                with (
+                    contextlib.redirect_stdout(stdout),
+                    contextlib.redirect_stderr(stderr),
+                ):
                     exec(compile(code, "<sandbox>", "exec"), globals_ns, globals_ns)
                 return SandboxResult(
                     stdout.getvalue()[-self.stdout_limit :],
@@ -102,7 +113,9 @@ class PythonSandbox:
                 os.makedirs(self.workdir, exist_ok=True)
                 os.chdir(self.workdir)
                 try:
-                    return await asyncio.wait_for(asyncio.to_thread(_execute), self.timeout)
+                    return await asyncio.wait_for(
+                        asyncio.to_thread(_execute), self.timeout
+                    )
                 finally:
                     os.chdir(cwd)
             return await asyncio.wait_for(asyncio.to_thread(_execute), self.timeout)

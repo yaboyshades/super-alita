@@ -142,10 +142,7 @@ class EnhancedProtocolPlugin(PluginInterface):
             return True
 
         # Check for question complexity (multiple question marks, complex structure)
-        if message_lower.count("?") > 1:
-            return True
-
-        return False
+        return message_lower.count("?") > 1
 
     async def _process_with_enhanced_protocol(self, event: ConversationEvent):
         """Process conversation event through enhanced protocol."""

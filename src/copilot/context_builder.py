@@ -86,7 +86,7 @@ def _extract_symbols(source: str) -> list[str]:
 
     symbols: list[str] = []
     for node in tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
             symbols.append(node.name)
     return symbols
 
@@ -98,7 +98,9 @@ def _extract_selection(content: str, selection: tuple[int, int]) -> str:
     return "\n".join(selected)
 
 
-def _compute_content_hash(open_files: Iterable[OpenFile], attachments: Iterable[OpenFile]) -> str:
+def _compute_content_hash(
+    open_files: Iterable[OpenFile], attachments: Iterable[OpenFile]
+) -> str:
     data = {
         "open_files": [
             {"path": f.path, "content": f.content, "selection": f.selection}
@@ -141,4 +143,3 @@ def build_copilot_context(chat: ChatContext) -> CopilotContext:
         content_hash=content_hash,
         quality_mode=chat.quality_mode,
     )
-

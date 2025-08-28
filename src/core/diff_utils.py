@@ -6,10 +6,11 @@ from typing import Any
 
 DiffDict = dict[str, Any]
 
+
 @dataclass
 class DiffEntry:
     path: str
-    change_type: str = "modify"   # modify|add|delete
+    change_type: str = "modify"  # modify|add|delete
     unified_diff: str = ""
     new_content: str | None = None
     old_sha: str | None = None
@@ -21,6 +22,7 @@ class DiffEntry:
         if self.new_content is not None:
             d["new_sha"] = hashlib.sha1(self.new_content.encode("utf-8")).hexdigest()
         return d
+
 
 def normalize_diffs(diffs: list[dict[str, Any]], *, proposed_by: str) -> list[DiffDict]:
     out: list[DiffDict] = []

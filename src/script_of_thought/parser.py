@@ -261,12 +261,7 @@ class ScriptOfThoughtParser:
             rec_stack.remove(node)
             return False
 
-        for node in graph:
-            if node not in visited:
-                if has_cycle(node):
-                    return True
-
-        return False
+        return any(node not in visited and has_cycle(node) for node in graph)
 
     def parse_script(self, script_text: str) -> ScriptOfThought | None:
         """

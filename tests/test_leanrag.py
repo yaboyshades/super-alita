@@ -57,7 +57,7 @@ async def test_hierarchy_and_retrieval_pipeline(monkeypatch):
     assert len(agg_nodes) > 0
 
     # Check for relations between aggregate nodes with correct edge kind
-    aggregate_edges = [
+    [
         (u, v)
         for u, v, d in graph_with_hierarchy.edges(data=True)
         if graph_with_hierarchy.nodes[u].get("type") == "aggregate"

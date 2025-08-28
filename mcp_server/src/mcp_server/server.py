@@ -10,6 +10,7 @@ from mcp.server.fastmcp import FastMCP
 
 # Dynamic tool loader: import all modules in mcp_server.tools
 
+
 def load_tools() -> list[str]:
     imported = []
     import mcp_server.tools as tools_pkg
@@ -31,7 +32,9 @@ def copy_tool_template(name: str, dest_dir: Path | None = None) -> Path:
         Path to the created module.
     """
     template = Path(__file__).resolve().parents[2] / "tools" / "_template.py"
-    destination = (Path(__file__).resolve().parent / "tools") if dest_dir is None else dest_dir
+    destination = (
+        (Path(__file__).resolve().parent / "tools") if dest_dir is None else dest_dir
+    )
     destination.mkdir(parents=True, exist_ok=True)
     target = destination / f"{name}.py"
     content = template.read_text().replace("tool_name", name)

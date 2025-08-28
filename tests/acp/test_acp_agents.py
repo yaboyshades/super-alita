@@ -1,4 +1,5 @@
 """Tests for ACP agents."""
+
 import asyncio
 import contextlib
 
@@ -74,7 +75,9 @@ async def test_router_stream(client: Client):
 
 @pytest.mark.asyncio
 async def test_search_agent(client: Client):
-    messages = [Message(parts=[MessagePart(text="what is RAG", metadata={"mode": "web"})])]
+    messages = [
+        Message(parts=[MessagePart(text="what is RAG", metadata={"mode": "web"})])
+    ]
     response = await client.run_sync("search", messages)
 
     full_text = "".join(

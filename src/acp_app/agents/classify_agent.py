@@ -1,4 +1,5 @@
 """Classification agent returning structured response."""
+
 import json
 from collections.abc import AsyncGenerator
 

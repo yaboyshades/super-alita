@@ -4,6 +4,7 @@ All plugins must implement this interface for hot-swappable modularity.
 """
 
 import asyncio
+import contextlib
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
@@ -99,10 +100,8 @@ class PluginInterface(ABC):
         for task in self._tasks:
             if not task.done():
                 task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await task
-                except asyncio.CancelledError:
-                    pass
 
         self._tasks.clear()
         await self.shutdown()

@@ -30,9 +30,7 @@ def cortex_context():
     """Create a test Cortex context"""
     runtime = create_cortex_runtime()
     return runtime.create_context(
-        session_id="test_session",
-        user_id="test_user",
-        workspace="test_workspace"
+        session_id="test_session", user_id="test_user", workspace="test_workspace"
     )
 
 
@@ -58,7 +56,7 @@ class TestCortexRuntime:
             session_id="test_session",
             user_id="test_user",
             workspace="/test/workspace",
-            custom_meta="test_value"
+            custom_meta="test_value",
         )
 
         assert context.cycle_id is not None
@@ -141,7 +139,7 @@ class TestCortexModules:
             raw_data="Hello world, this is a test message with questions?",
             context={},
             metadata={},
-            cycle_id="test_cycle"
+            cycle_id="test_cycle",
         )
 
         result = await module.process(cortex_input, {})
@@ -154,10 +152,7 @@ class TestCortexModules:
 
         # Test invalid input
         invalid_input = CortexInput(
-            raw_data=123,  # Not a string
-            context={},
-            metadata={},
-            cycle_id="test_cycle"
+            raw_data=123, context={}, metadata={}, cycle_id="test_cycle"  # Not a string
         )
 
         result = await module.process(invalid_input, {})
@@ -176,9 +171,9 @@ class TestCortexModules:
             features={
                 "has_commands": True,
                 "has_questions": False,
-                "complexity_score": 0.3
+                "complexity_score": 0.3,
             },
-            confidence=0.8
+            confidence=0.8,
         )
 
         result = await module.process(perception_result, {})
@@ -200,7 +195,7 @@ class TestCortexModules:
         reasoning_result = ReasoningResult(
             analysis={"intent": "command", "complexity": "high"},
             conclusions=["User is requesting action", "High complexity task detected"],
-            confidence=0.9
+            confidence=0.9,
         )
 
         result = await module.process(reasoning_result, {})
@@ -244,7 +239,7 @@ class TestPerformanceTracking:
             module_name="test_module",
             phase=CortexPhase.PERCEPTION,
             duration_ms=10.5,
-            metrics={"test_metric": 42}
+            metrics={"test_metric": 42},
         )
         assert module_marker_id is not None
 
@@ -273,15 +268,15 @@ class TestPerformanceTracking:
                 id="marker_1",
                 marker_type=MarkerType.CYCLE_START,
                 phase=None,
-                timestamp=1000.0
+                timestamp=1000.0,
             ),
             PerformanceMarker(
                 id="marker_2",
                 marker_type=MarkerType.CYCLE_END,
                 phase=None,
                 timestamp=1001.0,
-                duration_ms=1000.0
-            )
+                duration_ms=1000.0,
+            ),
         ]
 
         cortex_event = create_cortex_event(
@@ -289,7 +284,7 @@ class TestPerformanceTracking:
             cycle_id="test_cycle",
             phase=CortexPhase.PERCEPTION,
             markers=markers,
-            context={"test": "value"}
+            context={"test": "value"},
         )
 
         assert cortex_event.cycle_id == "test_cycle"
@@ -315,8 +310,7 @@ async def test_cortex_integration():
         # Create context and process input
         context = runtime.create_context("integration_test")
         result = await runtime.process_cycle(
-            "Build a web scraper to extract product data",
-            context
+            "Build a web scraper to extract product data", context
         )
 
         # Verify successful processing

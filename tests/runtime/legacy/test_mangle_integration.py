@@ -5,6 +5,7 @@ Comprehensive test suite that validates the complete Mangle integration
 including gRPC server, Prometheus metrics, Redis event bus, and all
 agent component integrations.
 """
+
 import pytest
 
 pytest.skip("legacy test", allow_module_level=True)
@@ -27,6 +28,7 @@ def workspace_root():
     """Provide workspace root path."""
     return Path(__file__).parent.parent.parent.parent
 
+
 @pytest.fixture
 def mock_cortex_runtime():
     """Mock Cortex runtime for testing."""
@@ -36,10 +38,12 @@ def mock_cortex_runtime():
     cortex.modules = {"perception": Mock(), "reasoning": Mock(), "action": Mock()}
     return cortex
 
+
 @pytest.fixture
 def mock_telemetry_collector():
     """Mock telemetry collector for testing."""
     return Mock()
+
 
 @pytest.fixture
 def mock_knowledge_plugin():
@@ -47,14 +51,17 @@ def mock_knowledge_plugin():
     plugin = Mock()
     plugin.create_concept = AsyncMock(return_value="concept_123")
     plugin.create_relationship = AsyncMock(return_value="relation_456")
-    plugin.get_statistics = Mock(return_value={
-        "total_atoms": 100,
-        "total_bonds": 50,
-        "atoms_by_type": {"concept": 80, "entity": 20},
-        "bonds_by_type": {"relation": 50},
-        "database_path": "/tmp/test.db"
-    })
+    plugin.get_statistics = Mock(
+        return_value={
+            "total_atoms": 100,
+            "total_bonds": 50,
+            "atoms_by_type": {"concept": 80, "entity": 20},
+            "bonds_by_type": {"relation": 50},
+            "database_path": "/tmp/test.db",
+        }
+    )
     return plugin
+
 
 @pytest.fixture
 def mock_optimization_plugin():
@@ -73,30 +80,47 @@ def mock_optimization_plugin():
 
     plugin.make_decision = AsyncMock(return_value=mock_decision)
     plugin.provide_feedback = AsyncMock(return_value=True)
-    plugin.get_global_statistics = Mock(return_value={
-        "engine": {"total_policies": 5, "total_decisions": 100},
-        "rewards": {"total_rewards": 80, "average_reward_value": 0.75},
-        "policies": {
+    plugin.get_global_statistics = Mock(
+        return_value={
+            "engine": {"total_policies": 5, "total_decisions": 100},
+            "rewards": {"total_rewards": 80, "average_reward_value": 0.75},
             "policies": {
-                "policy_1": {
-                    "policy": {"name": "Test Policy", "algorithm_type": "thompson_sampling"},
-                    "bandit": {
-                        "arms": {
-                            "arm_1": {"name": "Arm 1", "pulls": 50, "successes": 40, "success_rate": 0.8},
-                            "arm_2": {"name": "Arm 2", "pulls": 30, "successes": 20, "success_rate": 0.67}
-                        }
-                    },
-                    "decisions": {"total": 80, "with_feedback": 70}
+                "policies": {
+                    "policy_1": {
+                        "policy": {
+                            "name": "Test Policy",
+                            "algorithm_type": "thompson_sampling",
+                        },
+                        "bandit": {
+                            "arms": {
+                                "arm_1": {
+                                    "name": "Arm 1",
+                                    "pulls": 50,
+                                    "successes": 40,
+                                    "success_rate": 0.8,
+                                },
+                                "arm_2": {
+                                    "name": "Arm 2",
+                                    "pulls": 30,
+                                    "successes": 20,
+                                    "success_rate": 0.67,
+                                },
+                            }
+                        },
+                        "decisions": {"total": 80, "with_feedback": 70},
+                    }
                 }
-            }
+            },
         }
-    })
+    )
     return plugin
+
 
 @pytest.fixture
 def event_bus():
     """Provide simple event bus for testing."""
     return SimpleEventBus()
+
 
 class TestMangleIntegrationUnit:
     """Unit tests for Mangle integration components."""
@@ -122,7 +146,7 @@ class TestMangleIntegrationUnit:
             grpc_port=50051,
             redis_url="redis://localhost:6379",
             enable_metrics=True,
-            enable_redis=True
+            enable_redis=True,
         )
 
         assert integration.grpc_server is not None
@@ -137,7 +161,7 @@ class TestMangleIntegrationUnit:
         mock_cortex_runtime,
         mock_telemetry_collector,
         mock_knowledge_plugin,
-        mock_optimization_plugin
+        mock_optimization_plugin,
     ):
         """Test agent components setup."""
         integration = MangleIntegration(workspace_root=workspace_root)
@@ -146,13 +170,14 @@ class TestMangleIntegrationUnit:
             cortex_runtime=mock_cortex_runtime,
             telemetry_collector=mock_telemetry_collector,
             knowledge_plugin=mock_knowledge_plugin,
-            optimization_plugin=mock_optimization_plugin
+            optimization_plugin=mock_optimization_plugin,
         )
 
         assert integration.cortex_runtime == mock_cortex_runtime
         assert integration.telemetry_collector == mock_telemetry_collector
         assert integration.knowledge_plugin == mock_knowledge_plugin
         assert integration.optimization_plugin == mock_optimization_plugin
+
 
 class TestPrometheusMetrics:
     """Test Prometheus metrics collection."""
@@ -221,7 +246,9 @@ class TestPrometheusMetrics:
         collector.inc_optimization_decisions("policy_1", "thompson_sampling", "arm_1")
         collector.inc_optimization_rewards("policy_1", "arm_1")
         collector.observe_optimization_reward_value("policy_1", "arm_1", 0.8)
-        collector.set_optimization_arm_performance("policy_1", "arm_1", "success_rate", 0.75)
+        collector.set_optimization_arm_performance(
+            "policy_1", "arm_1", "success_rate", 0.75
+        )
 
         # Verify metrics are recorded
         assert collector._initialized
@@ -243,6 +270,7 @@ class TestPrometheusMetrics:
         content_type = collector.get_content_type()
         assert content_type == "text/plain; version=0.0.4; charset=utf-8"
 
+
 class TestRedisEventBusUnit:
     """Unit tests for Redis event bus (without actual Redis)."""
 
@@ -251,7 +279,7 @@ class TestRedisEventBusUnit:
         bus = RedisEventBus(
             redis_url="redis://localhost:6379",
             channel_prefix="test_alita",
-            event_ttl=3600
+            event_ttl=3600,
         )
 
         assert bus.redis_url == "redis://localhost:6379"
@@ -282,6 +310,7 @@ class TestRedisEventBusUnit:
         assert not stats["is_connected"]
         assert not stats["is_running"]
 
+
 @pytest.mark.asyncio
 class TestMangleIntegrationAsync:
     """Async integration tests for Mangle components."""
@@ -292,7 +321,7 @@ class TestMangleIntegrationAsync:
         mock_cortex_runtime,
         mock_telemetry_collector,
         mock_knowledge_plugin,
-        mock_optimization_plugin
+        mock_optimization_plugin,
     ):
         """Test complete Mangle integration lifecycle."""
         integration = MangleIntegration(workspace_root=workspace_root)
@@ -302,7 +331,7 @@ class TestMangleIntegrationAsync:
             grpc_host="localhost",
             grpc_port=50052,  # Different port for testing
             enable_metrics=True,
-            enable_redis=False  # Disable Redis for unit test
+            enable_redis=False,  # Disable Redis for unit test
         )
 
         # Setup agent components
@@ -310,7 +339,7 @@ class TestMangleIntegrationAsync:
             cortex_runtime=mock_cortex_runtime,
             telemetry_collector=mock_telemetry_collector,
             knowledge_plugin=mock_knowledge_plugin,
-            optimization_plugin=mock_optimization_plugin
+            optimization_plugin=mock_optimization_plugin,
         )
 
         # Test status before start
@@ -338,12 +367,7 @@ class TestMangleIntegrationAsync:
         await integration.stop()
         assert not integration.is_running
 
-    async def test_event_handling(
-        self,
-        workspace_root,
-        mock_cortex_runtime,
-        event_bus
-    ):
+    async def test_event_handling(self, workspace_root, mock_cortex_runtime, event_bus):
         """Test event handling in Mangle integration."""
         integration = MangleIntegration(workspace_root=workspace_root)
         integration.configure(enable_redis=False, enable_metrics=True)
@@ -353,7 +377,7 @@ class TestMangleIntegrationAsync:
         cortex_event = create_event(
             "cortex_cycle",
             source_plugin="cortex_runtime",
-            metadata={"session_id": "test_session"}
+            metadata={"session_id": "test_session"},
         )
 
         await integration._handle_cortex_event(cortex_event)
@@ -380,6 +404,7 @@ class TestMangleIntegrationAsync:
 
         await integration.stop()
 
+
 @pytest.mark.asyncio
 class TestGrpcServerUnit:
     """Unit tests for gRPC server without actual gRPC calls."""
@@ -389,7 +414,7 @@ class TestGrpcServerUnit:
         mock_cortex_runtime,
         mock_telemetry_collector,
         mock_knowledge_plugin,
-        mock_optimization_plugin
+        mock_optimization_plugin,
     ):
         """Test gRPC server setup."""
         server = SuperAlitaGrpcServer(host="localhost", port=50053)
@@ -401,13 +426,14 @@ class TestGrpcServerUnit:
             telemetry_collector=mock_telemetry_collector,
             knowledge_plugin=mock_knowledge_plugin,
             optimization_plugin=mock_optimization_plugin,
-            metrics_collector=metrics_collector
+            metrics_collector=metrics_collector,
         )
 
         assert server.servicer is not None
         assert server.servicer.cortex_runtime == mock_cortex_runtime
         assert server.servicer.knowledge_plugin == mock_knowledge_plugin
         assert server.server is not None
+
 
 @pytest.mark.asyncio
 class TestEndToEndValidation:
@@ -419,7 +445,7 @@ class TestEndToEndValidation:
         mock_cortex_runtime,
         mock_telemetry_collector,
         mock_knowledge_plugin,
-        mock_optimization_plugin
+        mock_optimization_plugin,
     ):
         """Test complete Mangle system integration."""
 
@@ -429,7 +455,7 @@ class TestEndToEndValidation:
             grpc_host="localhost",
             grpc_port=50054,
             enable_metrics=True,
-            enable_redis=False  # Disabled for unit testing
+            enable_redis=False,  # Disabled for unit testing
         )
 
         # Setup all agent components
@@ -437,7 +463,7 @@ class TestEndToEndValidation:
             cortex_runtime=mock_cortex_runtime,
             telemetry_collector=mock_telemetry_collector,
             knowledge_plugin=mock_knowledge_plugin,
-            optimization_plugin=mock_optimization_plugin
+            optimization_plugin=mock_optimization_plugin,
         )
 
         # Start the system
@@ -502,7 +528,7 @@ class TestEndToEndValidation:
         workspace_root,
         mock_cortex_runtime,
         mock_knowledge_plugin,
-        mock_optimization_plugin
+        mock_optimization_plugin,
     ):
         """Test concurrent operations on Mangle system."""
         integration = MangleIntegration(workspace_root=workspace_root)
@@ -510,7 +536,7 @@ class TestEndToEndValidation:
         integration.setup_agent_components(
             cortex_runtime=mock_cortex_runtime,
             knowledge_plugin=mock_knowledge_plugin,
-            optimization_plugin=mock_optimization_plugin
+            optimization_plugin=mock_optimization_plugin,
         )
 
         await integration.start()
@@ -525,9 +551,7 @@ class TestEndToEndValidation:
         # Multiple event handling simulations
         for i in range(3):
             event = create_event(
-                "system_status",
-                source_plugin="test",
-                metadata={"task_id": i}
+                "system_status", source_plugin="test", metadata={"task_id": i}
             )
             tasks.append(integration._handle_system_event(event))
 
@@ -544,6 +568,7 @@ class TestEndToEndValidation:
             assert health["status"] in ["healthy", "degraded"]
 
         await integration.stop()
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

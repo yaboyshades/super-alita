@@ -10,6 +10,7 @@ from pathlib import Path
 # Add the src directory to the path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+
 async def test_enhanced_copilot():
     """Test the enhanced copilot functionality"""
     try:
@@ -31,29 +32,38 @@ async def test_enhanced_copilot():
 
         # Test 2: Test analyze_and_suggest_repos
         print("\n🔍 Test 2: Testing analyze_and_suggest_repos...")
-        result = await ability._execute_tool("analyze_and_suggest_repos", {
-            "problem_description": "I need to create a web scraping tool in Python",
-            "language_preference": "python",
-            "max_results": 3
-        })
-        print(f"✅ analyze_and_suggest_repos result: {json.dumps(result, indent=2)[:500]}...")
+        result = await ability._execute_tool(
+            "analyze_and_suggest_repos",
+            {
+                "problem_description": "I need to create a web scraping tool in Python",
+                "language_preference": "python",
+                "max_results": 3,
+            },
+        )
+        print(
+            f"✅ analyze_and_suggest_repos result: {json.dumps(result, indent=2)[:500]}..."
+        )
 
         # Test 3: Test automated_problem_solver
         print("\n🤖 Test 3: Testing automated_problem_solver...")
-        result = await ability._execute_tool("automated_problem_solver", {
-            "task_description": "Create a simple REST API server",
-            "workspace_path": ".",
-            "include_code_generation": True
-        })
+        result = await ability._execute_tool(
+            "automated_problem_solver",
+            {
+                "task_description": "Create a simple REST API server",
+                "workspace_path": ".",
+                "include_code_generation": True,
+            },
+        )
         print(f"✅ automated_problem_solver completed: {result.get('success', False)}")
-        if result.get('solution_steps'):
+        if result.get("solution_steps"):
             print(f"  Generated {len(result['solution_steps'])} solution steps")
 
         # Test 4: Test enhanced_code_review
         print("\n📝 Test 4: Testing enhanced_code_review...")
         # Create a test file
         test_file = Path("test_code.py")
-        test_file.write_text("""
+        test_file.write_text(
+            """
 def unsafe_function(user_input):
     # This is intentionally unsafe code for testing
     exec(user_input)
@@ -61,17 +71,21 @@ def unsafe_function(user_input):
 
 def good_function():
     return "safe"
-""")
+"""
+        )
 
         try:
-            result = await ability._execute_tool("enhanced_code_review", {
-                "code_path": str(test_file),
-                "review_type": "security",
-                "suggest_improvements": True
-            })
+            result = await ability._execute_tool(
+                "enhanced_code_review",
+                {
+                    "code_path": str(test_file),
+                    "review_type": "security",
+                    "suggest_improvements": True,
+                },
+            )
             print("✅ enhanced_code_review completed")
-            if result.get('deepcode_analysis'):
-                issues = result['deepcode_analysis'].get('issues', [])
+            if result.get("deepcode_analysis"):
+                issues = result["deepcode_analysis"].get("issues", [])
                 print(f"  Found {len(issues)} code issues")
         finally:
             test_file.unlink(missing_ok=True)
@@ -82,8 +96,10 @@ def good_function():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 async def test_ability_registry_integration():
     """Test integration with the ability registry"""
@@ -100,7 +116,7 @@ async def test_ability_registry_integration():
             "analyze_and_suggest_repos",
             "automated_problem_solver",
             "repository_deep_analysis",
-            "enhanced_code_review"
+            "enhanced_code_review",
         ]
 
         for tool in enhanced_tools:
@@ -111,10 +127,10 @@ async def test_ability_registry_integration():
 
         # Test tool execution via registry
         print("\n🧪 Testing tool execution via registry...")
-        result = await registry.execute("analyze_and_suggest_repos", {
-            "problem_description": "Create a simple calculator app",
-            "max_results": 2
-        })
+        result = await registry.execute(
+            "analyze_and_suggest_repos",
+            {"problem_description": "Create a simple calculator app", "max_results": 2},
+        )
 
         if "error" not in result:
             print("✅ Registry execution successful")
@@ -126,8 +142,10 @@ async def test_ability_registry_integration():
     except Exception as e:
         print(f"❌ Registry integration test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 async def main():
     """Run all tests"""
@@ -147,6 +165,7 @@ async def main():
     else:
         print("\n❌ Some tests FAILED. Check the output above for details.")
         return False
+
 
 if __name__ == "__main__":
     success = asyncio.run(main())

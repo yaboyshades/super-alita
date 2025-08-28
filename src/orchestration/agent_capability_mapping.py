@@ -6,11 +6,10 @@ based on capability matching and performance history.
 """
 
 import logging
-from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from enum import Enum
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +44,10 @@ class Capability:
     name: str
     description: str
     capability_type: CapabilityType
-    required_for_tasks: List[str] = field(default_factory=list)
-    related_capabilities: List[str] = field(default_factory=list)
-    keywords: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    required_for_tasks: list[str] = field(default_factory=list)
+    related_capabilities: list[str] = field(default_factory=list)
+    keywords: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -56,21 +55,21 @@ class AgentCapabilityProfile:
     """Agent's capability profile with proficiency levels"""
 
     agent_id: str
-    capabilities: Dict[str, ProficiencyLevel] = field(
+    capabilities: dict[str, ProficiencyLevel] = field(
         default_factory=dict
     )  # capability_id -> proficiency
-    capability_scores: Dict[str, float] = field(
+    capability_scores: dict[str, float] = field(
         default_factory=dict
     )  # capability_id -> performance score (0-1)
-    learned_capabilities: Set[str] = field(
+    learned_capabilities: set[str] = field(
         default_factory=set
     )  # Capabilities learned over time
-    improving_capabilities: Set[str] = field(
+    improving_capabilities: set[str] = field(
         default_factory=set
     )  # Currently improving capabilities
     last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
     total_tasks_completed: int = 0
-    specialization_focus: Optional[CapabilityType] = None
+    specialization_focus: CapabilityType | None = None
 
 
 @dataclass
@@ -79,12 +78,12 @@ class TaskRequirement:
 
     task_id: str
     task_type: str
-    required_capabilities: List[str]  # Must have these
-    preferred_capabilities: List[str] = field(default_factory=list)  # Nice to have
-    minimum_proficiency: Dict[str, ProficiencyLevel] = field(
+    required_capabilities: list[str]  # Must have these
+    preferred_capabilities: list[str] = field(default_factory=list)  # Nice to have
+    minimum_proficiency: dict[str, ProficiencyLevel] = field(
         default_factory=dict
     )  # capability_id -> min level
-    capability_weights: Dict[str, float] = field(
+    capability_weights: dict[str, float] = field(
         default_factory=dict
     )  # Importance weights
     complexity_score: float = 1.0  # 0.1 to 5.0
@@ -100,14 +99,14 @@ class CapabilityMatch:
     overall_score: float  # 0-1
     required_capabilities_met: float  # Percentage of required capabilities met
     preferred_capabilities_met: float  # Percentage of preferred capabilities met
-    capability_scores: Dict[str, float] = field(
+    capability_scores: dict[str, float] = field(
         default_factory=dict
     )  # Individual capability scores
-    missing_capabilities: List[str] = field(default_factory=list)
-    weak_capabilities: List[str] = field(
+    missing_capabilities: list[str] = field(default_factory=list)
+    weak_capabilities: list[str] = field(
         default_factory=list
     )  # Below required proficiency
-    strengths: List[str] = field(default_factory=list)  # Strong capability matches
+    strengths: list[str] = field(default_factory=list)  # Strong capability matches
     confidence: float = 0.5
     recommendation: str = ""
 
@@ -117,11 +116,11 @@ class AgentCapabilityMapping:
 
     def __init__(self, event_bus=None):
         self.event_bus = event_bus
-        self.capabilities: Dict[str, Capability] = {}
-        self.agent_profiles: Dict[str, AgentCapabilityProfile] = {}
-        self.task_requirements: Dict[str, TaskRequirement] = {}
-        self.capability_performance_history: Dict[
-            str, List[Tuple[datetime, str, bool, float]]
+        self.capabilities: dict[str, Capability] = {}
+        self.agent_profiles: dict[str, AgentCapabilityProfile] = {}
+        self.task_requirements: dict[str, TaskRequirement] = {}
+        self.capability_performance_history: dict[
+            str, list[tuple[datetime, str, bool, float]]
         ] = {}  # capability_id -> [(timestamp, agent_id, success, score)]
 
         # Initialize default capabilities
@@ -356,10 +355,10 @@ class AgentCapabilityMapping:
         self,
         task_id: str,
         task_type: str,
-        required_capabilities: List[str],
-        preferred_capabilities: Optional[List[str]] = None,
-        minimum_proficiency: Optional[Dict[str, ProficiencyLevel]] = None,
-        capability_weights: Optional[Dict[str, float]] = None,
+        required_capabilities: list[str],
+        preferred_capabilities: list[str] | None = None,
+        minimum_proficiency: dict[str, ProficiencyLevel] | None = None,
+        capability_weights: dict[str, float] | None = None,
         complexity_score: float = 1.0,
         description: str = "",
     ):
@@ -382,7 +381,7 @@ class AgentCapabilityMapping:
 
     def auto_detect_task_requirements(
         self, task_description: str, task_type: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Automatically detect required capabilities from task description"""
         detected_capabilities = []
         description_lower = task_description.lower()
@@ -411,7 +410,7 @@ class AgentCapabilityMapping:
         )
         return unique_capabilities
 
-    def match_agents_to_task(self, task_id: str) -> List[CapabilityMatch]:
+    def match_agents_to_task(self, task_id: str) -> list[CapabilityMatch]:
         """Find agents that match task requirements"""
         if task_id not in self.task_requirements:
             logger.error(f"Task requirements not found for {task_id}")
@@ -439,7 +438,7 @@ class AgentCapabilityMapping:
         """Calculate how well an agent matches task requirements"""
         required_caps = requirements.required_capabilities
         preferred_caps = requirements.preferred_capabilities
-        all_caps = required_caps + preferred_caps
+        required_caps + preferred_caps
 
         capability_scores = {}
         missing_capabilities = []
@@ -580,9 +579,9 @@ class AgentCapabilityMapping:
         required_met: float,
         preferred_met: float,
         overall_score: float,
-        missing: List[str],
-        weak: List[str],
-        strengths: List[str],
+        missing: list[str],
+        weak: list[str],
+        strengths: list[str],
     ) -> str:
         """Generate recommendation based on match analysis"""
         if overall_score >= 0.9:
@@ -601,7 +600,7 @@ class AgentCapabilityMapping:
         else:
             return "Not recommended - lacks essential capabilities"
 
-    def get_agent_capability_profile(self, agent_id: str) -> Optional[Dict[str, Any]]:
+    def get_agent_capability_profile(self, agent_id: str) -> dict[str, Any] | None:
         """Get detailed capability profile for an agent"""
         if agent_id not in self.agent_profiles:
             return None
@@ -671,7 +670,7 @@ class AgentCapabilityMapping:
             "last_updated": profile.last_updated.isoformat(),
         }
 
-    def get_capability_analytics(self) -> Dict[str, Any]:
+    def get_capability_analytics(self) -> dict[str, Any]:
         """Get analytics on capability usage and performance"""
         capability_stats = {}
 
@@ -738,7 +737,7 @@ class AgentCapabilityMapping:
             "capability_gaps": self._identify_capability_gaps(),
         }
 
-    def _identify_capability_gaps(self) -> List[Dict[str, Any]]:
+    def _identify_capability_gaps(self) -> list[dict[str, Any]]:
         """Identify capability gaps in the agent system"""
         gaps = []
 
@@ -784,7 +783,7 @@ class AgentCapabilityMapping:
 
     async def suggest_capability_improvements(
         self, agent_id: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Suggest capability improvements for an agent"""
         if agent_id not in self.agent_profiles:
             return []

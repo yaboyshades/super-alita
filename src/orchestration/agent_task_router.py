@@ -6,10 +6,10 @@ capability requirements, and agent performance history.
 """
 
 import logging
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
+from typing import Any
 
 from src.core.events import create_event
 
@@ -50,7 +50,7 @@ class AgentCapability:
 
     agent_id: str
     specialization: AgentSpecialization
-    supported_tasks: List[TaskType]
+    supported_tasks: list[TaskType]
     performance_score: float = 0.8
     cost_per_task: float = 0.0
     availability: bool = True
@@ -66,10 +66,10 @@ class TaskRequest:
     task_type: TaskType
     description: str
     priority: int = 5  # 1-10, 10 = highest
-    context: Dict[str, Any] = field(default_factory=dict)
-    required_capabilities: List[str] = field(default_factory=list)
+    context: dict[str, Any] = field(default_factory=dict)
+    required_capabilities: list[str] = field(default_factory=list)
     estimated_complexity: int = 3  # 1-5, 5 = most complex
-    deadline: Optional[datetime] = None
+    deadline: datetime | None = None
     session_id: str = ""
     conversation_id: str = ""
 
@@ -85,8 +85,8 @@ class RoutingDecision:
     reasoning: str
     estimated_duration: float
     estimated_cost: float
-    fallback_agents: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    fallback_agents: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class AgentTaskRouter:
@@ -94,9 +94,9 @@ class AgentTaskRouter:
 
     def __init__(self, event_bus=None):
         self.event_bus = event_bus
-        self.agents: Dict[str, AgentCapability] = {}
-        self.task_history: List[Dict[str, Any]] = []
-        self.performance_metrics: Dict[str, Dict[str, float]] = {}
+        self.agents: dict[str, AgentCapability] = {}
+        self.task_history: list[dict[str, Any]] = []
+        self.performance_metrics: dict[str, dict[str, float]] = {}
         self.routing_strategy = (
             "capability_match"  # capability_match, load_balance, performance_optimized
         )
@@ -231,7 +231,7 @@ class AgentTaskRouter:
 
         return min(base_score, 1.0)
 
-    def _select_best_agent(self, task: TaskRequest) -> Tuple[Optional[str], List[str]]:
+    def _select_best_agent(self, task: TaskRequest) -> tuple[str | None, list[str]]:
         """Select best agent for task and return fallback options"""
         agent_scores = []
 
@@ -334,7 +334,7 @@ class AgentTaskRouter:
         )
         return decision
 
-    def get_agent_status(self) -> Dict[str, Any]:
+    def get_agent_status(self) -> dict[str, Any]:
         """Get status of all agents"""
         status = {}
         for agent_id, agent in self.agents.items():
@@ -351,7 +351,7 @@ class AgentTaskRouter:
             }
         return status
 
-    def get_routing_analytics(self) -> Dict[str, Any]:
+    def get_routing_analytics(self) -> dict[str, Any]:
         """Get routing analytics and performance data"""
         total_tasks = len(self.task_history)
 

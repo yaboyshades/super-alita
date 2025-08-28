@@ -18,7 +18,9 @@ from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG
 
 class GreedyLLM:
     async def stream_chat(self, messages, timeout):
-        yield {"content": '<tool_call>{"tool":"echo","args":{"payload":"hi"}}</tool_call>'}
+        yield {
+            "content": '<tool_call>{"tool":"echo","args":{"payload":"hi"}}</tool_call>'
+        }
 
 
 def _mk_app_max_calls(monkeypatch):
@@ -71,8 +73,12 @@ class SlowRegistry:
 
 class TimeoutLLM:
     async def stream_chat(self, messages, timeout):
-        if any(m["role"] == "assistant" and "<tool_error" in m["content"] for m in messages):
-            yield {"content": '<final_answer>{"content":"gave up","citations":[]}</final_answer>'}
+        if any(
+            m["role"] == "assistant" and "<tool_error" in m["content"] for m in messages
+        ):
+            yield {
+                "content": '<final_answer>{"content":"gave up","citations":[]}</final_answer>'
+            }
         else:
             yield {"content": '<tool_call>{"tool":"slow","args":{}}</tool_call>'}
 
@@ -129,8 +135,12 @@ class FailingRegistry:
 
 class BackoffLLM:
     async def stream_chat(self, messages, timeout):
-        if any(m["role"] == "assistant" and "<tool_error" in m["content"] for m in messages):
-            yield {"content": '<final_answer>{"content":"done","citations":[]}</final_answer>'}
+        if any(
+            m["role"] == "assistant" and "<tool_error" in m["content"] for m in messages
+        ):
+            yield {
+                "content": '<final_answer>{"content":"done","citations":[]}</final_answer>'
+            }
         else:
             yield {"content": '<tool_call>{"tool":"flaky","args":{}}</tool_call>'}
 

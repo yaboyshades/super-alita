@@ -305,7 +305,7 @@ class AtomToolsPlugin(PluginInterface):
             **self._execution_stats,
             "available_tools": len(self._tools_cache),
             "tool_categories": list(
-                set(tool.category for tool in self._tools_cache.values())
+                {tool.category for tool in self._tools_cache.values()}
             ),
         }
 

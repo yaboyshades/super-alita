@@ -4,6 +4,7 @@ This module attempts to import lightweight "Runnable" helpers from
 ``langchain_core``. When the dependency is unavailable, it falls back to
 minimal local implementations so calling code can continue to operate.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
@@ -12,6 +13,7 @@ from typing import Any
 try:  # pragma: no cover - optional dependency
     from langchain_core.runnables import RunnableLambda as _LCRunnableLambda
     from langchain_core.runnables import RunnableSequence as _LCRunnableSequence
+
     HAS_LANGCHAIN = True
 except Exception:  # pragma: no cover - no langchain at runtime
     _LCRunnableLambda = None  # type: ignore[assignment]

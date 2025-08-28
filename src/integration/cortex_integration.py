@@ -1,6 +1,7 @@
 """
 Main integration point for cortex-assisted development.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -20,14 +21,18 @@ class _PolicyAdapter:
     def __init__(self, orchestrator: CortexWeaningOrchestrator) -> None:
         self.orchestrator = orchestrator
 
-    async def should_use_cortex(self, confidence: float, context: dict[str, Any]) -> bool:
+    async def should_use_cortex(
+        self, confidence: float, context: dict[str, Any]
+    ) -> bool:
         return await self.orchestrator.should_use_cortex(confidence, context)
 
 
 class CortexIntegration:
     """Main class for integrating cortex-assisted development."""
 
-    def __init__(self, event_bus: EventBus, graph: TemporalGraph, navigator: NeuralNavigator) -> None:
+    def __init__(
+        self, event_bus: EventBus, graph: TemporalGraph, navigator: NeuralNavigator
+    ) -> None:
         self.event_bus = event_bus
         self.graph = graph
         self.navigator = navigator
@@ -35,7 +40,9 @@ class CortexIntegration:
         self.cortex_adapter = CortexAdapterPlugin(event_bus, graph, navigator)
         self.autonomy_tracker = AutonomyTracker(event_bus)
         self.weaning_orchestrator = CortexWeaningOrchestrator()
-        self.gap_detector = KnowledgeGapDetector(event_bus, policy=_PolicyAdapter(self.weaning_orchestrator))
+        self.gap_detector = KnowledgeGapDetector(
+            event_bus, policy=_PolicyAdapter(self.weaning_orchestrator)
+        )
 
         self.cortex_adapter.register_cortex("github_copilot", GitHubCopilotCortex())
 
@@ -54,7 +61,9 @@ class CortexIntegration:
         correlation_id = data.get("correlation_id") or str(uuid.uuid4())
         trace_id = data.get("trace_id") or correlation_id
 
-        advanced = await self.weaning_orchestrator.advance_phase_if_ready(autonomy_score)
+        advanced = await self.weaning_orchestrator.advance_phase_if_ready(
+            autonomy_score
+        )
         if advanced:
             await self.event_bus.publish(
                 create_event(
@@ -82,8 +91,12 @@ class CortexIntegration:
                     )
                 )
 
-    async def should_use_cortex(self, confidence: float, context: dict[str, Any] | None = None) -> bool:
-        return await self.weaning_orchestrator.should_use_cortex(confidence, context or {})
+    async def should_use_cortex(
+        self, confidence: float, context: dict[str, Any] | None = None
+    ) -> bool:
+        return await self.weaning_orchestrator.should_use_cortex(
+            confidence, context or {}
+        )
 
     async def get_system_status(self) -> dict[str, Any]:
         learning_stats = await self.cortex_adapter.get_learning_stats()

@@ -225,12 +225,12 @@ class GitAutomation:
 
     def _is_additive_change(self, current: str, incoming: str) -> bool:
         """Check if the changes are purely additive (no overlapping modifications)."""
-        current_lines = set(
+        current_lines = {
             line.strip() for line in current.split("\n") if line.strip()
-        )
-        incoming_lines = set(
+        }
+        incoming_lines = {
             line.strip() for line in incoming.split("\n") if line.strip()
-        )
+        }
 
         # If there's no overlap, it's additive
         return len(current_lines.intersection(incoming_lines)) == 0

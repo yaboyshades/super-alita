@@ -160,9 +160,9 @@ class RiskEngine:
         self.weights = weights or RiskWeights()
         self.cooldown_s = cooldown_s
         self.priority_states: dict[str, PriorityState] = {}
-        self.risk_history: dict[
-            str, list[tuple[float, float]]
-        ] = {}  # (timestamp, score)
+        self.risk_history: dict[str, list[tuple[float, float]]] = (
+            {}
+        )  # (timestamp, score)
 
     def assess_risk(
         self,

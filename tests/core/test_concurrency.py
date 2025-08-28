@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 import pytest
 
-sys.path.append('src')
+sys.path.append("src")
 
 from core.metrics_registry import get_metrics_registry
 from core.session import get_session
@@ -43,7 +43,7 @@ class TestFallbackBehavior:
         )
 
         # Mock execution flow to return no tools
-        with patch('core.execution_flow.find_applicable_tools', return_value=[]):
+        with patch("core.execution_flow.find_applicable_tools", return_value=[]):
             # Transition to GENERATE state
             await fsm.transition(TransitionTrigger.TOOLS_SELECTED)
 
@@ -53,7 +53,10 @@ class TestFallbackBehavior:
             # Assertions
             assert result == TransitionTrigger.RESPONSE_READY
             assert context.response is not None
-            assert "fallback" in context.response.lower() or "unable" in context.response.lower()
+            assert (
+                "fallback" in context.response.lower()
+                or "unable" in context.response.lower()
+            )
 
             # Check metrics
             fallback_count = metrics.get_counter("sa_fsm_fallback_responses_total")
@@ -74,7 +77,7 @@ class TestFallbackBehavior:
         )
 
         # Mock tool execution to fail
-        with patch('core.execution_flow._execute_tools_with_comp_env') as mock_execute:
+        with patch("core.execution_flow._execute_tools_with_comp_env") as mock_execute:
             mock_execute.side_effect = Exception("Tool execution failed")
 
             result = await fsm._handle_generate_state(context)
@@ -101,11 +104,7 @@ class TestReEntrantInput:
         fsm = StateMachine(session, metrics)
 
         # Simulate multiple rapid inputs
-        inputs = [
-            "First request",
-            "Second request",
-            "Third request"
-        ]
+        inputs = ["First request", "Second request", "Third request"]
 
         # Submit inputs concurrently
         tasks = []
@@ -178,9 +177,7 @@ class TestStaleCompletions:
 
         # Create a context with an old operation ID
         context = Context(
-            user_input="Test request",
-            session_id="test_stale",
-            turn_id="old_turn_id"
+            user_input="Test request", session_id="test_stale", turn_id="old_turn_id"
         )
 
         # Start a new operation to make the old one stale
@@ -207,7 +204,7 @@ class TestStaleCompletions:
             context = Context(
                 user_input=f"Request {i}",
                 session_id="test_stale_rate",
-                turn_id=f"turn_{i}"
+                turn_id=f"turn_{i}",
             )
 
             if i < 3:
@@ -240,7 +237,9 @@ class TestCircuitBreaker:
         fsm = StateMachine(session, metrics)
 
         # Try to overwhelm the mailbox
-        overflow_inputs = [f"Overflow {i}" for i in range(150)]  # Exceed MAILBOX_MAX_SIZE
+        overflow_inputs = [
+            f"Overflow {i}" for i in range(150)
+        ]  # Exceed MAILBOX_MAX_SIZE
 
         tasks = []
         for user_input in overflow_inputs:
@@ -273,7 +272,7 @@ class TestCircuitBreaker:
         fsm = StateMachine(session, metrics)
 
         # Rapid fire transitions to exceed rate limit
-        for i in range(15):  # Exceed TRANSITION_RATE_LIMIT
+        for _i in range(15):  # Exceed TRANSITION_RATE_LIMIT
             await fsm.transition(TransitionTrigger.USER_INPUT_RECEIVED)
             # No delay - trying to exceed rate limit
 
@@ -297,7 +296,11 @@ class TestCircuitBreaker:
         assert fsm.circuit_breaker.is_open
 
         # Wait for timeout (using short timeout for test)
-        original_timeout = fsm.CIRCUIT_BREAKER_TIMEOUT if hasattr(fsm, 'CIRCUIT_BREAKER_TIMEOUT') else 30
+        original_timeout = (
+            fsm.CIRCUIT_BREAKER_TIMEOUT
+            if hasattr(fsm, "CIRCUIT_BREAKER_TIMEOUT")
+            else 30
+        )
         fsm.CIRCUIT_BREAKER_TIMEOUT = 0.1  # 100ms for test
 
         await asyncio.sleep(0.2)
@@ -354,7 +357,9 @@ class TestIntegrationScenarios:
             "operations_total": metrics.get_counter("sa_fsm_operations_total"),
             "mailbox_pressure": metrics.get_gauge("sa_fsm_mailbox_pressure"),
             "stale_completions": metrics.get_counter("sa_fsm_stale_completions_total"),
-            "circuit_breaker_trips": metrics.get_counter("sa_fsm_circuit_breaker_trips_total"),
+            "circuit_breaker_trips": metrics.get_counter(
+                "sa_fsm_circuit_breaker_trips_total"
+            ),
         }
 
         print(f"Final metrics: {final_metrics}")

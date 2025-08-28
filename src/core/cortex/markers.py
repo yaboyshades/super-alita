@@ -14,6 +14,7 @@ from ..events import BaseEvent as Event
 
 class CortexPhase(Enum):
     """Phases of the Cortex processing cycle"""
+
     PERCEPTION = "perception"
     REASONING = "reasoning"
     ACTION = "action"
@@ -22,6 +23,7 @@ class CortexPhase(Enum):
 
 class MarkerType(Enum):
     """Types of performance markers"""
+
     CYCLE_START = "cycle_start"
     CYCLE_END = "cycle_end"
     PHASE_START = "phase_start"
@@ -34,6 +36,7 @@ class MarkerType(Enum):
 @dataclass
 class PerformanceMarker:
     """Performance marker for tracking Cortex execution metrics"""
+
     id: str
     marker_type: MarkerType
     phase: CortexPhase | None
@@ -54,6 +57,7 @@ class PerformanceMarker:
 @dataclass
 class CortexEvent:
     """Cortex-specific event that extends the base Event system"""
+
     cycle_id: str
     phase: CortexPhase | None
     markers: list[PerformanceMarker]
@@ -66,7 +70,9 @@ class CortexEvent:
         if not self.markers:
             return 0.0
 
-        start_markers = [m for m in self.markers if m.marker_type == MarkerType.CYCLE_START]
+        start_markers = [
+            m for m in self.markers if m.marker_type == MarkerType.CYCLE_START
+        ]
         end_markers = [m for m in self.markers if m.marker_type == MarkerType.CYCLE_END]
 
         if start_markers and end_markers:
@@ -82,8 +88,11 @@ class CortexEvent:
         durations = {}
 
         for phase in CortexPhase:
-            phase_markers = [m for m in self.markers
-                           if m.phase == phase and m.duration_ms is not None]
+            phase_markers = [
+                m
+                for m in self.markers
+                if m.phase == phase and m.duration_ms is not None
+            ]
             if phase_markers:
                 durations[phase.value] = sum(m.duration_ms for m in phase_markers)
 
@@ -108,7 +117,7 @@ class PerformanceTracker:
             id=str(uuid.uuid4()),
             marker_type=MarkerType.CYCLE_START,
             phase=None,
-            timestamp=time.time()
+            timestamp=time.time(),
         )
         self.markers.append(marker)
         return marker.id
@@ -122,11 +131,10 @@ class PerformanceTracker:
             id=str(uuid.uuid4()),
             marker_type=MarkerType.CYCLE_END,
             phase=None,
-            timestamp=time.time()
+            timestamp=time.time(),
         )
         self.markers.append(marker)
 
-        cycle_id = self.current_cycle_id
         self.current_cycle_id = None
         return marker.id
 
@@ -139,7 +147,7 @@ class PerformanceTracker:
             id=str(uuid.uuid4()),
             marker_type=MarkerType.PHASE_START,
             phase=phase,
-            timestamp=start_time
+            timestamp=start_time,
         )
         self.markers.append(marker)
         return marker.id
@@ -159,7 +167,7 @@ class PerformanceTracker:
             marker_type=MarkerType.PHASE_END,
             phase=phase,
             timestamp=end_time,
-            duration_ms=duration_ms
+            duration_ms=duration_ms,
         )
         self.markers.append(marker)
 
@@ -171,7 +179,7 @@ class PerformanceTracker:
         module_name: str,
         phase: CortexPhase,
         duration_ms: float,
-        metrics: dict[str, Any] | None = None
+        metrics: dict[str, Any] | None = None,
     ) -> str:
         """Track module execution metrics"""
         marker = PerformanceMarker(
@@ -181,7 +189,7 @@ class PerformanceTracker:
             timestamp=time.time(),
             duration_ms=duration_ms,
             module_name=module_name,
-            metrics=metrics or {}
+            metrics=metrics or {},
         )
         self.markers.append(marker)
         return marker.id
@@ -190,7 +198,7 @@ class PerformanceTracker:
         self,
         error: str,
         phase: CortexPhase | None = None,
-        module_name: str | None = None
+        module_name: str | None = None,
     ) -> str:
         """Track an error during execution"""
         marker = PerformanceMarker(
@@ -199,7 +207,7 @@ class PerformanceTracker:
             phase=phase,
             timestamp=time.time(),
             module_name=module_name,
-            error=error
+            error=error,
         )
         self.markers.append(marker)
         return marker.id
@@ -208,7 +216,7 @@ class PerformanceTracker:
         self,
         metric_name: str,
         value: int | float | str,
-        phase: CortexPhase | None = None
+        phase: CortexPhase | None = None,
     ) -> str:
         """Add a custom metric"""
         marker = PerformanceMarker(
@@ -216,7 +224,7 @@ class PerformanceTracker:
             marker_type=MarkerType.METRIC,
             phase=phase,
             timestamp=time.time(),
-            metrics={metric_name: value}
+            metrics={metric_name: value},
         )
         self.markers.append(marker)
         return marker.id
@@ -238,7 +246,7 @@ def create_cortex_event(
     phase: CortexPhase | None = None,
     markers: list[PerformanceMarker] | None = None,
     context: dict[str, Any] | None = None,
-    **kwargs
+    **kwargs,
 ) -> CortexEvent:
     """Create a Cortex event with performance tracking"""
     from ..events import create_event
@@ -251,8 +259,8 @@ def create_cortex_event(
         metadata={
             "cycle_id": cycle_id,
             "phase": phase.value if phase else None,
-            **kwargs
-        }
+            **kwargs,
+        },
     )
 
     # Create Cortex event
@@ -261,7 +269,7 @@ def create_cortex_event(
         phase=phase,
         markers=markers or [],
         context=context or {},
-        base_event=base_event
+        base_event=base_event,
     )
 
     return cortex_event

@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -40,7 +39,10 @@ class DynamicLLM(FakeLLM):
     """Requests a brand new tool."""
 
     async def stream_chat(self, messages, timeout):
-        if any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
+        if any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        ):
             yield {
                 "content": '<final_answer>{"content":"done dynamic","citations":[]}</final_answer>'
             }
@@ -114,7 +116,10 @@ class DynamicLLM(FakeLLM):
     """Requests a brand new tool."""
 
     async def stream_chat(self, messages, timeout):
-        if any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
+        if any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        ):
             yield {
                 "content": '<final_answer>{"content":"done dynamic","citations":[]}</final_answer>'
             }
@@ -148,4 +153,3 @@ def test_dynamic_registration_flow():
         "AbilitySucceeded",
         "TaskSucceeded",
     } <= kinds
-

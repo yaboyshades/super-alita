@@ -7,16 +7,14 @@ performance analytics, cost management, and capability mapping.
 
 import asyncio
 import logging
-from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 
 from src.core.events import create_event
-from src.orchestration.agent_task_router import (
-    AgentTaskRouter,
-    TaskRequest,
-    AgentSpecialization,
-    TaskType,
+from src.orchestration.agent_capability_mapping import (
+    AgentCapabilityMapping,
+    ProficiencyLevel,
 )
 from src.orchestration.agent_handoff_protocol import (
     AgentHandoffProtocol,
@@ -24,13 +22,15 @@ from src.orchestration.agent_handoff_protocol import (
     WorkflowStep,
 )
 from src.orchestration.agent_performance_analytics import AgentPerformanceAnalytics
-from src.orchestration.cost_management_dashboard import (
-    CostManagementDashboard,
-    CostCategory,
+from src.orchestration.agent_task_router import (
+    AgentSpecialization,
+    AgentTaskRouter,
+    TaskRequest,
+    TaskType,
 )
-from src.orchestration.agent_capability_mapping import (
-    AgentCapabilityMapping,
-    ProficiencyLevel,
+from src.orchestration.cost_management_dashboard import (
+    CostCategory,
+    CostManagementDashboard,
 )
 
 logger = logging.getLogger(__name__)
@@ -62,7 +62,7 @@ class SoloDevMultiAgentOrchestrator:
     - Agent Capability Mapping
     """
 
-    def __init__(self, event_bus=None, config: Optional[OrchestrationConfig] = None):
+    def __init__(self, event_bus=None, config: OrchestrationConfig | None = None):
         self.event_bus = event_bus
         self.config = config or OrchestrationConfig()
 
@@ -74,8 +74,8 @@ class SoloDevMultiAgentOrchestrator:
         self.capability_mapping = AgentCapabilityMapping(event_bus)
 
         # Active tasks tracking
-        self.active_tasks: Dict[str, Dict[str, Any]] = {}
-        self.task_executions: Dict[str, str] = {}  # task_id -> execution_id
+        self.active_tasks: dict[str, dict[str, Any]] = {}
+        self.task_executions: dict[str, str] = {}  # task_id -> execution_id
 
         # System state
         self.is_running = False
@@ -205,7 +205,7 @@ class SoloDevMultiAgentOrchestrator:
         complexity: int = 3,
         session_id: str = "",
         conversation_id: str = "",
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> str:
         """Submit a task for processing by the multi-agent system"""
         import uuid
@@ -297,17 +297,17 @@ class SoloDevMultiAgentOrchestrator:
         task_id: str,
         success: bool,
         cost: float = 0.0,
-        quality_score: Optional[float] = None,
-        user_satisfaction: Optional[float] = None,
-        outputs_generated: Optional[List[str]] = None,
-        files_modified: Optional[List[str]] = None,
+        quality_score: float | None = None,
+        user_satisfaction: float | None = None,
+        outputs_generated: list[str] | None = None,
+        files_modified: list[str] | None = None,
         tests_passed: int = 0,
         tests_failed: int = 0,
         code_lines_changed: int = 0,
         documentation_updated: bool = False,
         security_issues_found: int = 0,
-        performance_improvement: Optional[float] = None,
-        error_message: Optional[str] = None,
+        performance_improvement: float | None = None,
+        error_message: str | None = None,
         provider: str = "",
         tokens_used: int = 0,
         api_requests: int = 0,
@@ -448,7 +448,7 @@ class SoloDevMultiAgentOrchestrator:
     async def create_multi_agent_workflow(
         self,
         workflow_description: str,
-        steps: List[Dict[str, Any]],
+        steps: list[dict[str, Any]],
         session_id: str = "",
         conversation_id: str = "",
     ) -> str:
@@ -486,7 +486,7 @@ class SoloDevMultiAgentOrchestrator:
         )
         return workflow_id
 
-    async def get_system_status(self) -> Dict[str, Any]:
+    async def get_system_status(self) -> dict[str, Any]:
         """Get comprehensive system status"""
         status = {
             "orchestrator": {
@@ -540,7 +540,7 @@ class SoloDevMultiAgentOrchestrator:
 
         return status
 
-    async def get_recommendations(self) -> Dict[str, List[str]]:
+    async def get_recommendations(self) -> dict[str, list[str]]:
         """Get system-wide recommendations for optimization"""
         recommendations = {
             "performance": [],

@@ -15,6 +15,7 @@ from .streaming import WebSocketStreamer
 
 class TelemetryQuery(BaseModel):
     """Query parameters for telemetry data"""
+
     cycle_id: str | None = None
     phase: str | None = None
     limit: int = 100
@@ -26,7 +27,12 @@ class TelemetryDashboard:
     FastAPI-based telemetry dashboard
     """
 
-    def __init__(self, telemetry_collector: TelemetryCollector, host: str = "0.0.0.0", port: int = 8001):
+    def __init__(
+        self,
+        telemetry_collector: TelemetryCollector,
+        host: str = "0.0.0.0",
+        port: int = 8001,
+    ):
         self.collector = telemetry_collector
         self.streamer = WebSocketStreamer(telemetry_collector)
         self.host = host
@@ -36,7 +42,7 @@ class TelemetryDashboard:
         self.app = FastAPI(
             title="Super Alita Telemetry Dashboard",
             description="Real-time monitoring and analytics for Cortex runtime",
-            version="1.0.0"
+            version="1.0.0",
         )
 
         self._setup_routes()
@@ -60,7 +66,7 @@ class TelemetryDashboard:
             limit: int = 100,
             cycle_id: str | None = None,
             phase: str | None = None,
-            event_type: str | None = None
+            event_type: str | None = None,
         ) -> list[dict[str, Any]]:
             """Get telemetry events with optional filtering"""
             events = self.collector.get_recent_events(limit)
@@ -86,7 +92,9 @@ class TelemetryDashboard:
             """Get statistics for a specific phase"""
             stats = self.collector.get_phase_statistics(phase)
             if not stats:
-                raise HTTPException(status_code=404, detail=f"No statistics found for phase: {phase}")
+                raise HTTPException(
+                    status_code=404, detail=f"No statistics found for phase: {phase}"
+                )
             return stats
 
         @self.app.get("/api/health")
@@ -96,7 +104,7 @@ class TelemetryDashboard:
                 "status": "healthy",
                 "total_events": self.collector.metrics.total_events,
                 "active_connections": self.streamer.get_connection_count(),
-                "uptime": "unknown"  # Would need startup time tracking
+                "uptime": "unknown",  # Would need startup time tracking
             }
 
         @self.app.websocket("/ws/{client_id}")
@@ -110,10 +118,14 @@ class TelemetryDashboard:
             await self.streamer.handle_websocket(websocket)
 
         @self.app.post("/api/clear_events")
-        async def clear_old_events(background_tasks: BackgroundTasks, keep_last: int = 1000):
+        async def clear_old_events(
+            background_tasks: BackgroundTasks, keep_last: int = 1000
+        ):
             """Clear old events to prevent memory growth"""
             background_tasks.add_task(self.collector.clear_old_events, keep_last)
-            return {"message": f"Scheduled clearing of old events, keeping {keep_last} most recent"}
+            return {
+                "message": f"Scheduled clearing of old events, keeping {keep_last} most recent"
+            }
 
     def _setup_static_files(self):
         """Setup static file serving"""
@@ -387,7 +399,7 @@ class TelemetryDashboard:
             host=self.host,
             port=self.port,
             log_level="info",
-            access_log=False
+            access_log=False,
         )
         server = uvicorn.Server(config)
         await server.serve()

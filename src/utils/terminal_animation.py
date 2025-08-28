@@ -8,6 +8,7 @@ from typing import TextIO
 
 SPINNER_FRAMES = ["-", "\\", "|", "/"]
 
+
 def build_spinner_frames(prompt: str) -> list[str]:
     """Build frames for a loading animation with dynamic prompt text.
 
@@ -21,7 +22,10 @@ def build_spinner_frames(prompt: str) -> list[str]:
         frames.append(f"{spinner} {prompt[:i]}")
     return frames
 
-def animate_prompt(prompt: str, delay: float = 0.1, stream: TextIO | None = None) -> None:
+
+def animate_prompt(
+    prompt: str, delay: float = 0.1, stream: TextIO | None = None
+) -> None:
     """Render a loading animation for the given prompt.
 
     Parameters

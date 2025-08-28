@@ -38,12 +38,12 @@ class KnowledgeGraphEventHandlers:
                         "success": success,
                         "duration_ms": duration_ms,
                         "error": error,
-                        "timestamp": event.timestamp.isoformat()
+                        "timestamp": event.timestamp.isoformat(),
                     },
                     metadata={
                         "event_id": event.event_id,
-                        "source_plugin": event.source_plugin
-                    }
+                        "source_plugin": event.source_plugin,
+                    },
                 )
 
                 # Create atom for the event itself
@@ -53,9 +53,9 @@ class KnowledgeGraphEventHandlers:
                         "event_type": event.event_type,
                         "event_id": event.event_id,
                         "timestamp": event.timestamp.isoformat(),
-                        "source_plugin": event.source_plugin
+                        "source_plugin": event.source_plugin,
                     },
-                    metadata=event.metadata
+                    metadata=event.metadata,
                 )
 
                 # Create bond between event and cortex result
@@ -64,7 +64,7 @@ class KnowledgeGraphEventHandlers:
                     to_atom_id=cortex_atom.atom_id,
                     bond_type=BondType.CAUSED_BY,
                     strength=1.0,
-                    metadata={"event_type": "cortex_cycle_complete"}
+                    metadata={"event_type": "cortex_cycle_complete"},
                 )
 
                 print(f"📊 Knowledge: Created atoms for Cortex cycle {cycle_id}")
@@ -83,11 +83,9 @@ class KnowledgeGraphEventHandlers:
                     "event_id": event.event_id,
                     "source_plugin": event.source_plugin,
                     "timestamp": event.timestamp.isoformat(),
-                    "metadata": event.metadata
+                    "metadata": event.metadata,
                 },
-                metadata={
-                    "captured_at": datetime.now(UTC).isoformat()
-                }
+                metadata={"captured_at": datetime.now(UTC).isoformat()},
             )
 
             # If there's a cycle_id in metadata, create relationship
@@ -103,7 +101,7 @@ class KnowledgeGraphEventHandlers:
                             to_atom_id=atom.atom_id,
                             bond_type=BondType.RELATES_TO,
                             strength=0.8,
-                            metadata={"relationship": "telemetry_data"}
+                            metadata={"relationship": "telemetry_data"},
                         )
                         break
 
@@ -113,27 +111,31 @@ class KnowledgeGraphEventHandlers:
     async def handle_cognitive_turn_event(self, event: BaseEvent) -> None:
         """Handle cognitive turn events from DTA system"""
         try:
-            if hasattr(event, 'turn_data') or 'turn_data' in event.metadata:
-                turn_data = getattr(event, 'turn_data', event.metadata.get('turn_data', {}))
+            if hasattr(event, "turn_data") or "turn_data" in event.metadata:
+                turn_data = getattr(
+                    event, "turn_data", event.metadata.get("turn_data", {})
+                )
 
                 # Create atom for the cognitive turn
-                turn_atom = self.knowledge_store.create_atom(
+                self.knowledge_store.create_atom(
                     atom_type=AtomType.COGNITIVE_TURN,
                     content={
                         "turn_id": turn_data.get("turn_id", event.event_id),
                         "user_input": turn_data.get("user_input", ""),
                         "agent_response": turn_data.get("agent_response", ""),
                         "confidence": turn_data.get("confidence", 0.0),
-                        "timestamp": event.timestamp.isoformat()
+                        "timestamp": event.timestamp.isoformat(),
                     },
                     metadata={
                         "event_id": event.event_id,
                         "source_plugin": event.source_plugin,
-                        **turn_data
-                    }
+                        **turn_data,
+                    },
                 )
 
-                print(f"🧠 Knowledge: Created atom for cognitive turn {turn_data.get('turn_id', event.event_id)}")
+                print(
+                    f"🧠 Knowledge: Created atom for cognitive turn {turn_data.get('turn_id', event.event_id)}"
+                )
 
         except Exception as e:
             print(f"⚠️ Error handling cognitive turn event: {e}")
@@ -148,9 +150,9 @@ class KnowledgeGraphEventHandlers:
                     "event_type": event.event_type,
                     "event_id": event.event_id,
                     "source_plugin": event.source_plugin,
-                    "timestamp": event.timestamp.isoformat()
+                    "timestamp": event.timestamp.isoformat(),
                 },
-                metadata=event.metadata
+                metadata=event.metadata,
             )
 
             # Check for relationships in metadata
@@ -161,14 +163,16 @@ class KnowledgeGraphEventHandlers:
 
                 for related_id in related_ids:
                     # Try to find related atoms
-                    related_atoms = self.knowledge_store.search_atoms_by_content(related_id)
+                    related_atoms = self.knowledge_store.search_atoms_by_content(
+                        related_id
+                    )
                     for related_atom in related_atoms:
                         self.knowledge_store.create_bond(
                             from_atom_id=event_atom.atom_id,
                             to_atom_id=related_atom.atom_id,
                             bond_type=BondType.RELATES_TO,
                             strength=0.6,
-                            metadata={"inferred_relationship": True}
+                            metadata={"inferred_relationship": True},
                         )
 
         except Exception as e:
@@ -194,7 +198,7 @@ class KnowledgeGraphEventHandlers:
         self,
         concept_name: str,
         description: str,
-        properties: dict[str, Any] | None = None
+        properties: dict[str, Any] | None = None,
     ) -> str:
         """Create a concept atom and return its ID"""
         if properties is None:
@@ -205,12 +209,12 @@ class KnowledgeGraphEventHandlers:
             content={
                 "name": concept_name,
                 "description": description,
-                "properties": properties
+                "properties": properties,
             },
             metadata={
                 "created_by": "knowledge_graph_handlers",
-                "manual_creation": True
-            }
+                "manual_creation": True,
+            },
         )
 
         return atom.atom_id
@@ -219,7 +223,7 @@ class KnowledgeGraphEventHandlers:
         self,
         entity_name: str,
         entity_type: str,
-        attributes: dict[str, Any] | None = None
+        attributes: dict[str, Any] | None = None,
     ) -> str:
         """Create an entity atom and return its ID"""
         if attributes is None:
@@ -230,12 +234,12 @@ class KnowledgeGraphEventHandlers:
             content={
                 "name": entity_name,
                 "type": entity_type,
-                "attributes": attributes
+                "attributes": attributes,
             },
             metadata={
                 "created_by": "knowledge_graph_handlers",
-                "manual_creation": True
-            }
+                "manual_creation": True,
+            },
         )
 
         return atom.atom_id
@@ -246,7 +250,7 @@ class KnowledgeGraphEventHandlers:
         to_atom_id: str,
         relationship_type: str,
         strength: float = 1.0,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """Create a bond between atoms and return bond ID"""
         if metadata is None:
@@ -261,7 +265,7 @@ class KnowledgeGraphEventHandlers:
             "part_of": BondType.PART_OF,
             "similar_to": BondType.SIMILAR_TO,
             "derived_from": BondType.DERIVED_FROM,
-            "triggers": BondType.TRIGGERS
+            "triggers": BondType.TRIGGERS,
         }
 
         bond_type = bond_type_mapping.get(relationship_type, BondType.RELATES_TO)
@@ -274,8 +278,8 @@ class KnowledgeGraphEventHandlers:
             metadata={
                 **metadata,
                 "created_by": "knowledge_graph_handlers",
-                "manual_creation": True
-            }
+                "manual_creation": True,
+            },
         )
 
         return bond.bond_id

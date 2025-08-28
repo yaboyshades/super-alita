@@ -16,9 +16,7 @@ try:  # pragma: no cover - optional dependency
     from telemetry import EventTypes, broadcast_agent_event  # type: ignore
 except Exception:  # pragma: no cover
 
-    async def broadcast_agent_event(  # type: ignore
-        *_, **__
-    ) -> None:  # noqa: D401
+    async def broadcast_agent_event(*_, **__) -> None:  # type: ignore  # noqa: D401
         """No-op broadcast when telemetry not available."""
         return None
 
@@ -445,7 +443,9 @@ class OllamaClient(LLMClient):
 
     def __init__(self, model_name: str, host: str | None = None) -> None:
         self.model_name = model_name
-        self.host = (host or os.getenv("OLLAMA_HOST") or "http://127.0.0.1:11434").rstrip("/")
+        self.host = (
+            host or os.getenv("OLLAMA_HOST") or "http://127.0.0.1:11434"
+        ).rstrip("/")
         self._client = httpx.AsyncClient(timeout=None) if httpx else None
 
     async def stream_chat(

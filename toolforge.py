@@ -55,6 +55,7 @@ def register_with(
         )
 
     for prm in prompts or []:
+
         @app.prompt(name=prm.name, description=prm.description)
         async def _prompt(prm=prm) -> str:
             return prm.content

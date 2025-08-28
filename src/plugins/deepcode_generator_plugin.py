@@ -27,6 +27,7 @@ class DeepCodeGeneratorBridgePlugin(PluginInterface):
       - deepcode_request
       - cognitive_turn (breadcrumb)
     """
+
     @property
     def name(self) -> str:
         return "deepcode_generator"
@@ -49,7 +50,9 @@ class DeepCodeGeneratorBridgePlugin(PluginInterface):
         if not self.is_running:
             return
         prompt = event.get("prompt") or event.get("data", {}).get("prompt") or ""
-        repo_path = event.get("repo_path") or event.get("data", {}).get("repo_path") or "."
+        repo_path = (
+            event.get("repo_path") or event.get("data", {}).get("repo_path") or "."
+        )
         conversation_id = event.get("conversation_id")
 
         await self.emit_event(
@@ -84,6 +87,7 @@ class DeepCodeGeneratorBridgePlugin(PluginInterface):
             conversation_id=conversation_id,
             timestamp=_utcnow(),
         )
+
 
 def create_plugin():
     return DeepCodeGeneratorBridgePlugin()

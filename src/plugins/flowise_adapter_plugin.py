@@ -67,10 +67,16 @@ class FlowiseAdapterPlugin(PluginInterface):
         await super().shutdown()
 
     async def _connect_and_listen(self) -> None:
-        headers = {"Authorization": f"Bearer {self._cfg.api_key}"} if self._cfg.api_key else None
+        headers = (
+            {"Authorization": f"Bearer {self._cfg.api_key}"}
+            if self._cfg.api_key
+            else None
+        )
         while self.is_running:
             try:
-                async with websockets.connect(self._cfg.ws_url, extra_headers=headers) as ws:
+                async with websockets.connect(
+                    self._cfg.ws_url, extra_headers=headers
+                ) as ws:
                     self._ws = ws
                     await self._register_node(ws)
                     async for raw in ws:
@@ -125,16 +131,21 @@ class FlowiseAdapterPlugin(PluginInterface):
                 task_kind="text2backend",
                 requirements=inputs.get("prompt") or "",
                 repo_path=inputs.get("repoPath") or ".",
-                context_files=(inputs.get("contextFiles") or "").splitlines()
-                if inputs.get("contextFiles")
-                else [],
+                context_files=(
+                    (inputs.get("contextFiles") or "").splitlines()
+                    if inputs.get("contextFiles")
+                    else []
+                ),
                 flowise_session_id=session_id,
                 timestamp=_utcnow(),
             )
         elif mtype == "chat_message":
             message = msg.get("message") or ""
             session_id = msg.get("sessionId")
-            if any(k in message.lower() for k in ("generate", "create", "implement", "write code")):
+            if any(
+                k in message.lower()
+                for k in ("generate", "create", "implement", "write code")
+            ):
                 await self.emit_event(
                     "codegen_request",
                     source_plugin=self.name,

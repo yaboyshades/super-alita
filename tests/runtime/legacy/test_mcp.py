@@ -5,6 +5,7 @@ pytest.skip("legacy test", allow_module_level=True)
 
 try:
     from mcp.server.fastmcp import FastMCP
+
     print("✅ FastMCP imported successfully")
     app = FastMCP("test")
     print("✅ FastMCP app created successfully")

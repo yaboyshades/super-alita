@@ -4,6 +4,7 @@ Direct Mangle Component Tests
 Tests individual Mangle components directly without importing
 the full module that has gRPC dependencies.
 """
+
 import pytest
 
 pytest.skip("legacy test", allow_module_level=True)
@@ -82,7 +83,9 @@ class TestPrometheusMetrics:
         collector.inc_optimization_decisions("policy_1", "thompson_sampling", "arm_1")
         collector.inc_optimization_rewards("policy_1", "arm_1")
         collector.observe_optimization_reward_value("policy_1", "arm_1", 0.8)
-        collector.set_optimization_arm_performance("policy_1", "arm_1", "success_rate", 0.75)
+        collector.set_optimization_arm_performance(
+            "policy_1", "arm_1", "success_rate", 0.75
+        )
 
         # Verify metrics are recorded
         assert collector._initialized
@@ -104,6 +107,7 @@ class TestPrometheusMetrics:
         content_type = collector.get_content_type()
         assert content_type == "text/plain; version=0.0.4; charset=utf-8"
 
+
 class TestRedisEventBusUnit:
     """Unit tests for Redis event bus (without actual Redis)."""
 
@@ -112,7 +116,7 @@ class TestRedisEventBusUnit:
         bus = RedisEventBus(
             redis_url="redis://localhost:6379",
             channel_prefix="test_alita",
-            event_ttl=3600
+            event_ttl=3600,
         )
 
         assert bus.redis_url == "redis://localhost:6379"
@@ -142,6 +146,7 @@ class TestRedisEventBusUnit:
         assert stats["subscribers"] == 0
         assert not stats["is_connected"]
         assert not stats["is_running"]
+
 
 class TestMangleComponentsIntegration:
     """Test integration between working Mangle components."""
@@ -253,7 +258,9 @@ class TestMangleComponentsIntegration:
 
             # Optimization decisions
             if i % 3 == 0:
-                collector.inc_optimization_decisions("policy_1", "thompson_sampling", "arm_1")
+                collector.inc_optimization_decisions(
+                    "policy_1", "thompson_sampling", "arm_1"
+                )
                 collector.inc_optimization_rewards("policy_1", "arm_1")
                 collector.observe_optimization_reward_value("policy_1", "arm_1", 0.8)
 
@@ -280,6 +287,7 @@ class TestMangleComponentsIntegration:
 
         print(f"✅ Comprehensive metrics scenario completed in {final_uptime:.3f}s")
         print(f"✅ Metrics output length: {len(metrics_text)} characters")
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "-s"])

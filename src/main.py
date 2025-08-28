@@ -40,9 +40,9 @@ except ImportError:
     FASTAPI_AVAILABLE = False
 
 # Event bus imports (moved up to avoid E402)
+from src.core.events import create_event
 from src.reug_runtime.event_bus import BaseEventBus, FileEventBus, make_event_bus
 from src.reug_runtime.llm_client import LLMClient, get_llm_client
-from src.core.events import create_event
 
 logger = logging.getLogger(__name__)
 
@@ -305,9 +305,16 @@ class SimpleAbilityRegistry:
                         "file_path": {"type": "string"},
                         "analysis_level": {
                             "type": "string",
-                            "enum": ["syntax", "semantic", "security", "performance", "architecture", "deep"],
-                            "default": "semantic"
-                        }
+                            "enum": [
+                                "syntax",
+                                "semantic",
+                                "security",
+                                "performance",
+                                "architecture",
+                                "deep",
+                            ],
+                            "default": "semantic",
+                        },
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -322,10 +329,17 @@ class SimpleAbilityRegistry:
                         "directory_path": {"type": "string"},
                         "analysis_level": {
                             "type": "string",
-                            "enum": ["syntax", "semantic", "security", "performance", "architecture", "deep"],
-                            "default": "semantic"
+                            "enum": [
+                                "syntax",
+                                "semantic",
+                                "security",
+                                "performance",
+                                "architecture",
+                                "deep",
+                            ],
+                            "default": "semantic",
                         },
-                        "generate_report": {"type": "boolean", "default": True}
+                        "generate_report": {"type": "boolean", "default": True},
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -338,7 +352,7 @@ class SimpleAbilityRegistry:
                     "required": ["target_path"],
                     "properties": {
                         "target_path": {"type": "string"},
-                        "include_metrics": {"type": "boolean", "default": False}
+                        "include_metrics": {"type": "boolean", "default": False},
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -354,8 +368,8 @@ class SimpleAbilityRegistry:
                         "pattern_types": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "default": ["security", "performance"]
-                        }
+                            "default": ["security", "performance"],
+                        },
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -370,7 +384,7 @@ class SimpleAbilityRegistry:
                     "properties": {
                         "workspace_path": {"type": "string"},
                         "max_files": {"type": "integer", "default": 20},
-                        "include_quality_metrics": {"type": "boolean", "default": True}
+                        "include_quality_metrics": {"type": "boolean", "default": True},
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -383,7 +397,7 @@ class SimpleAbilityRegistry:
                     "required": ["file_path"],
                     "properties": {
                         "file_path": {"type": "string"},
-                        "include_suggestions": {"type": "boolean", "default": True}
+                        "include_suggestions": {"type": "boolean", "default": True},
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -394,9 +408,7 @@ class SimpleAbilityRegistry:
                 "input_schema": {
                     "type": "object",
                     "required": ["file_path"],
-                    "properties": {
-                        "file_path": {"type": "string"}
-                    },
+                    "properties": {"file_path": {"type": "string"}},
                 },
                 "output_schema": {"type": "object"},
             },
@@ -419,9 +431,14 @@ class SimpleAbilityRegistry:
                         "target_path": {"type": "string"},
                         "focus_area": {
                             "type": "string",
-                            "enum": ["architecture", "dependencies", "complexity", "patterns"],
-                            "default": "architecture"
-                        }
+                            "enum": [
+                                "architecture",
+                                "dependencies",
+                                "complexity",
+                                "patterns",
+                            ],
+                            "default": "architecture",
+                        },
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -437,7 +454,7 @@ class SimpleAbilityRegistry:
                         "problem_description": {"type": "string"},
                         "code_context": {"type": "string", "default": ""},
                         "language_preference": {"type": "string", "default": "python"},
-                        "max_results": {"type": "integer", "default": 5}
+                        "max_results": {"type": "integer", "default": 5},
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -452,7 +469,7 @@ class SimpleAbilityRegistry:
                         "task_description": {"type": "string"},
                         "workspace_path": {"type": "string", "default": "."},
                         "include_code_generation": {"type": "boolean", "default": True},
-                        "analyze_existing_code": {"type": "boolean", "default": True}
+                        "analyze_existing_code": {"type": "boolean", "default": True},
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -467,10 +484,16 @@ class SimpleAbilityRegistry:
                         "repo_url": {"type": "string"},
                         "analysis_focus": {
                             "type": "string",
-                            "enum": ["architecture", "security", "performance", "usability", "all"],
-                            "default": "all"
+                            "enum": [
+                                "architecture",
+                                "security",
+                                "performance",
+                                "usability",
+                                "all",
+                            ],
+                            "default": "all",
                         },
-                        "include_dependencies": {"type": "boolean", "default": True}
+                        "include_dependencies": {"type": "boolean", "default": True},
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -485,10 +508,15 @@ class SimpleAbilityRegistry:
                         "code_path": {"type": "string"},
                         "review_type": {
                             "type": "string",
-                            "enum": ["security", "performance", "best_practices", "comprehensive"],
-                            "default": "comprehensive"
+                            "enum": [
+                                "security",
+                                "performance",
+                                "best_practices",
+                                "comprehensive",
+                            ],
+                            "default": "comprehensive",
                         },
-                        "suggest_improvements": {"type": "boolean", "default": True}
+                        "suggest_improvements": {"type": "boolean", "default": True},
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -618,32 +646,56 @@ class SimpleAbilityRegistry:
 
         # DeepCode tool execution
         if tool_name in [
-            "analyze_code_file", "analyze_code_directory", "get_code_quality_score",
-            "detect_code_patterns", "analyze_workspace_context", "analyze_file_context",
-            "check_file_support", "get_supported_extensions", "understand_code_structure"
+            "analyze_code_file",
+            "analyze_code_directory",
+            "get_code_quality_score",
+            "detect_code_patterns",
+            "analyze_workspace_context",
+            "analyze_file_context",
+            "check_file_support",
+            "get_supported_extensions",
+            "understand_code_structure",
         ]:
             return await self._execute_deepcode_tool(tool_name, args)
 
         # Enhanced Copilot tool execution
         if tool_name in [
-            "analyze_and_suggest_repos", "automated_problem_solver",
-            "repository_deep_analysis", "enhanced_code_review", "discover_github_upgrades"
+            "analyze_and_suggest_repos",
+            "automated_problem_solver",
+            "repository_deep_analysis",
+            "enhanced_code_review",
+            "discover_github_upgrades",
         ]:
             return await self._execute_enhanced_copilot_tool(tool_name, args)
 
         # Fallback generic - echo contract
         return {"ok": True, "tool": tool_name, "args": args}
 
-    async def _execute_deepcode_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    async def _execute_deepcode_tool(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute deepcode tools by delegating to the appropriate ability"""
         try:
             # Import abilities dynamically to avoid circular imports
             from src.abilities.deepcode_analysis_ability import DeepCodeAnalysisAbility
-            from src.abilities.deepcode_integration_ability import DeepCodeIntegrationAbility
+            from src.abilities.deepcode_integration_ability import (
+                DeepCodeIntegrationAbility,
+            )
 
             # Determine which ability to use
-            analysis_tools = ["analyze_code_file", "analyze_code_directory", "get_code_quality_score", "detect_code_patterns"]
-            integration_tools = ["analyze_workspace_context", "analyze_file_context", "check_file_support", "get_supported_extensions", "understand_code_structure"]
+            analysis_tools = [
+                "analyze_code_file",
+                "analyze_code_directory",
+                "get_code_quality_score",
+                "detect_code_patterns",
+            ]
+            integration_tools = [
+                "analyze_workspace_context",
+                "analyze_file_context",
+                "check_file_support",
+                "get_supported_extensions",
+                "understand_code_structure",
+            ]
 
             if tool_name in analysis_tools:
                 ability = DeepCodeAnalysisAbility()
@@ -660,7 +712,9 @@ class SimpleAbilityRegistry:
             logger.exception(f"DeepCode tool execution failed for {tool_name}: {e}")
             return {"error": f"Tool execution failed: {str(e)}"}
 
-    async def _execute_enhanced_copilot_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    async def _execute_enhanced_copilot_tool(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute enhanced copilot tools by delegating to the enhanced copilot ability"""
         try:
             # Import ability dynamically to avoid circular imports
@@ -674,7 +728,9 @@ class SimpleAbilityRegistry:
             return await ability._execute_tool(tool_name, args)
 
         except Exception as e:
-            logger.exception(f"Enhanced Copilot tool execution failed for {tool_name}: {e}")
+            logger.exception(
+                f"Enhanced Copilot tool execution failed for {tool_name}: {e}"
+            )
             return {"error": f"Tool execution failed: {str(e)}"}
 
 
@@ -916,6 +972,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
                             request = Request(request.scope, _receive)  # type: ignore
             return await call_next(request)
+
     else:
         app.include_router(agent_router)  # type: ignore
         app.include_router(tools_router)  # type: ignore

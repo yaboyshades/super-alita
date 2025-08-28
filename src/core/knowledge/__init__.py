@@ -13,5 +13,5 @@ __all__ = [
     "AtomType",
     "BondType",
     "KnowledgeGraphEventHandlers",
-    "KnowledgeGraphPlugin"
+    "KnowledgeGraphPlugin",
 ]
