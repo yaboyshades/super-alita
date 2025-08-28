@@ -63,19 +63,19 @@ def iter_plugin_modules(root: Path, excludes: list[str]) -> Iterable[str]:
     """Yield dotted module names under src/plugins/** that end with _plugin.py"""
     if should_ignore(root, excludes):
         return []
-    
+
     # Find the workspace root (where src folder is located)
     workspace_root = Path.cwd()
     src_root = workspace_root / "src"
-    
+
     # Add the workspace root to sys.path so we can import src.plugins
     if str(workspace_root) not in sys.path:
         sys.path.insert(0, str(workspace_root))
-    
+
     plugins_pkg = src_root / "plugins"
     if not plugins_pkg.exists():
         return []
-        
+
     try:
         pkg = importlib.import_module("src.plugins")
         for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):

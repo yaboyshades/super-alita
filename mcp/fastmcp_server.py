@@ -94,7 +94,7 @@ def create_server() -> FastMCP:
                 file_id = getattr(item, "file_id", f"unknown_{i}")
                 filename = getattr(item, "filename", f"Document {i+1}")
                 content_list = getattr(item, "content", [])
-                
+
                 text_content = ""
                 if content_list:
                     first_content = content_list[0]
@@ -104,7 +104,7 @@ def create_server() -> FastMCP:
                         text_content = first_content.get('text', '')
 
                 snippet = (text_content[:200] + "...") if len(text_content) > 200 else text_content
-                
+
                 results.append({
                     "id": file_id,
                     "title": filename,
@@ -136,16 +136,16 @@ def create_server() -> FastMCP:
             raise ValueError("Document ID is required.")
 
         client = get_openai_client()
-        
+
         content_response = client.vector_stores.files.content(vector_store_id=VECTOR_STORE_ID, file_id=id)
         file_info = client.vector_stores.files.retrieve(vector_store_id=VECTOR_STORE_ID, file_id=id)
-        
+
         content_parts: list[str] = []
         if hasattr(content_response, "data"):
             for chunk in content_response.data:
                 if hasattr(chunk, "text") and chunk.text:
                     content_parts.append(chunk.text)
-        
+
         full_text = "\n".join(content_parts) if content_parts else "No content available"
         title = getattr(file_info, "filename", f"Document {id}")
 
@@ -156,7 +156,7 @@ def create_server() -> FastMCP:
             "url": f"https://platform.openai.com/storage/files/{id}",
             "metadata": None,
         }
-        
+
         if hasattr(file_info, "attributes") and file_info.attributes:
             result["metadata"] = file_info.attributes
 
@@ -176,7 +176,7 @@ def main():
 
     server = create_server()
     logger.info(f"Starting MCP server '{SERVER_NAME}' on {HOST}:{PORT} via {TRANSPORT} transport.")
-    
+
     try:
         server.run(transport=TRANSPORT, host=HOST, port=PORT)
     except KeyboardInterrupt:

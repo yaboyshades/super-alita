@@ -21,7 +21,7 @@ try:
 except ImportError:
     # Fallback for development
     print("Warning: Cortex components not found, running in mock mode")
-    
+
     @dataclass
     class Event:
         id: str
@@ -30,7 +30,7 @@ except ImportError:
         actor: str
         payload: dict[str, Any]
         schema_version: str = "v1"
-    
+
     class Orchestrator:
         def add_event(self, event: Event):
             print(f"[MOCK] Added event: {event.kind} from {event.actor}")
@@ -40,19 +40,19 @@ logger = logging.getLogger(__name__)
 
 class CortexBridge:
     """Bridge between VS Code telemetry and Cortex orchestrator"""
-    
+
     def __init__(self, telemetry_path: pathlib.Path | None = None):
         self.telemetry_path = telemetry_path or pathlib.Path.home() / ".super-alita" / "telemetry.jsonl"
         self.orchestrator: Orchestrator | None = None
         self.running = False
-        
+
         # Ensure telemetry directory exists
         self.telemetry_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Touch the file if it doesn't exist
         if not self.telemetry_path.exists():
             self.telemetry_path.touch()
-    
+
     async def initialize_cortex(self):
         """Initialize Cortex orchestrator (adapt to your setup)"""
         try:
@@ -63,7 +63,7 @@ class CortexBridge:
         except Exception as e:
             logger.error(f"Failed to initialize Cortex: {e}")
             self.orchestrator = Orchestrator()  # Fallback mock
-    
+
     def transform_vscode_event(self, vscode_event: dict[str, Any]) -> Event:
         """Transform VS Code event to Cortex Event format"""
         try:
@@ -78,44 +78,44 @@ class CortexBridge:
         except Exception as e:
             logger.error(f"Failed to transform event: {e}")
             return None
-    
+
     async def tail_jsonl(self):
         """Tail the JSONL file and feed events to Cortex"""
         logger.info(f"Starting to tail {self.telemetry_path}")
-        
+
         with open(self.telemetry_path, encoding='utf-8') as fp:
             # Seek to end of file
             fp.seek(0, 2)
-            
+
             while self.running:
                 line = fp.readline()
                 if not line:
                     await asyncio.sleep(0.2)
                     continue
-                
+
                 try:
                     # Parse JSON event
                     vscode_event = json.loads(line.strip())
-                    
+
                     # Transform to Cortex format
                     cortex_event = self.transform_vscode_event(vscode_event)
                     if cortex_event and self.orchestrator:
                         self.orchestrator.add_event(cortex_event)
                         logger.info(f"Processed event: {cortex_event.kind} from {cortex_event.actor}")
-                    
+
                 except json.JSONDecodeError:
                     logger.warning(f"Invalid JSON in telemetry: {line.strip()}")
                 except Exception as e:
                     logger.error(f"Error processing event: {e}")
-    
+
     async def start(self):
         """Start the bridge"""
         logger.info("Starting Cortex Bridge...")
         self.running = True
-        
+
         await self.initialize_cortex()
         await self.tail_jsonl()
-    
+
     def stop(self):
         """Stop the bridge"""
         logger.info("Stopping Cortex Bridge...")
@@ -123,17 +123,17 @@ class CortexBridge:
 
 class CortexAtomEmitter:
     """Emit structured Atom/Bond events for KG consistency"""
-    
+
     @staticmethod
     def emit_guardian_atoms(findings: list, file_path: str) -> list:
         """Convert guardian findings to deterministic atoms"""
         atoms = []
-        
+
         for finding in findings:
             # Generate deterministic UUID v5
             content = f"GuardianFinding|{finding.get('rule', 'unknown')}|{finding.get('message', '')}"
             atom_id = f"atom_{hash(content) % 1000000}"  # Simplified for demo
-            
+
             atom = {
                 "id": atom_id,
                 "type": "GuardianFinding",
@@ -147,13 +147,13 @@ class CortexAtomEmitter:
                 }
             }
             atoms.append(atom)
-        
+
         return atoms
 
 async def main():
     """Main entry point"""
     bridge = CortexBridge()
-    
+
     try:
         await bridge.start()
     except KeyboardInterrupt:

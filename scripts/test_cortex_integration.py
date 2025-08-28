@@ -15,7 +15,7 @@ def emit_test_events():
     """Emit test events to the telemetry.jsonl file"""
     telemetry_path = pathlib.Path.home() / ".super-alita" / "telemetry.jsonl"
     telemetry_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Test events from VS Code extension
     test_events = [
         {
@@ -128,15 +128,15 @@ def emit_test_events():
             "schema_version": "v1"
         }
     ]
-    
+
     print(f"📝 Emitting {len(test_events)} test events to {telemetry_path}")
-    
+
     with open(telemetry_path, 'a', encoding='utf-8') as f:
         for i, event in enumerate(test_events):
             f.write(json.dumps(event) + '\n')
             print(f"  ✅ Event {i+1}: {event['kind']} from {event['actor']}")
             time.sleep(0.5)  # Small delay to simulate real usage
-    
+
     print("\n🎯 All test events emitted! Bridge should process them.")
     return telemetry_path
 
@@ -145,9 +145,9 @@ def analyze_telemetry_file(telemetry_path):
     if not telemetry_path.exists():
         print(f"❌ Telemetry file not found: {telemetry_path}")
         return
-    
+
     print(f"\n📊 Analyzing telemetry file: {telemetry_path}")
-    
+
     events = []
     with open(telemetry_path, encoding='utf-8') as f:
         for line_num, line in enumerate(f, 1):
@@ -156,28 +156,28 @@ def analyze_telemetry_file(telemetry_path):
                 events.append(event)
             except json.JSONDecodeError as e:
                 print(f"  ⚠️ Line {line_num}: Invalid JSON - {e}")
-    
+
     print(f"📈 Total events in file: {len(events)}")
-    
+
     # Group by kind
     by_kind = {}
     by_actor = {}
-    
+
     for event in events:
         kind = event.get('kind', 'UNKNOWN')
         actor = event.get('actor', 'unknown')
-        
+
         by_kind[kind] = by_kind.get(kind, 0) + 1
         by_actor[actor] = by_actor.get(actor, 0) + 1
-    
+
     print("\n📋 Events by type:")
     for kind, count in sorted(by_kind.items()):
         print(f"  {kind}: {count}")
-    
+
     print("\n👥 Events by actor:")
     for actor, count in sorted(by_actor.items()):
         print(f"  {actor}: {count}")
-    
+
     # Show recent events
     print("\n🕒 Most recent events:")
     recent_events = sorted(events, key=lambda x: x.get('ts', 0))[-3:]
@@ -189,17 +189,17 @@ def main():
     """Main test execution"""
     print("🚀 Testing VS Code → Cortex Bridge Integration")
     print("=" * 50)
-    
+
     # Emit test events
     telemetry_path = emit_test_events()
-    
+
     # Wait a bit for bridge to process
     print("\n⏳ Waiting 3 seconds for bridge to process events...")
     time.sleep(3)
-    
+
     # Analyze results
     analyze_telemetry_file(telemetry_path)
-    
+
     print("\n✅ Test complete! Check the Cortex bridge logs for processing confirmation.")
     print("\n💡 Next steps:")
     print("  1. Test the actual VS Code extension by using @alita in chat")

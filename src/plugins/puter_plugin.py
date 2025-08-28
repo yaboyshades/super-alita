@@ -22,26 +22,26 @@ logger = logging.getLogger(__name__)
 
 class PuterOperationAtom(TextualMemoryAtom):
     """Neural atom for Puter cloud operations with deterministic UUIDs."""
-    
+
     def __init__(self, operation_type: str, operation_data: dict[str, Any]):
         # Generate deterministic UUID for the operation
         operation_signature = f"puter_{operation_type}_{hash(str(operation_data))}"
         atom_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, operation_signature))
-        
+
         metadata = NeuralAtomMetadata(
             name=f"puter_{operation_type}_{atom_uuid[:8]}",
             description=f"Puter {operation_type} operation",
             capabilities=["cloud_storage", "process_execution", "file_io"],
             tags={"puter", operation_type, "cloud"},
         )
-        
+
         content = f"Puter {operation_type}: {operation_data.get('description', 'Cloud operation')}"
         super().__init__(metadata, content)
-        
+
         self.operation_type = operation_type
         self.operation_data = operation_data
         self.atom_uuid = atom_uuid
-        
+
     def get_deterministic_uuid(self) -> str:
         """Return the deterministic UUID for this operation."""
         return self.atom_uuid
@@ -115,7 +115,7 @@ class PuterPlugin(PluginInterface):
 
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
-        
+
         # Initialize Puter client configuration
         import os
 
@@ -150,7 +150,7 @@ class PuterPlugin(PluginInterface):
         await self.subscribe("puter_file_operation", self._handle_file_operation)
         await self.subscribe("puter_process_execution", self._handle_process_execution)
         await self.subscribe("puter_workspace_sync", self._handle_workspace_sync)
-        
+
         # Subscribe to general tool calls that might need Puter
         await self.subscribe("tool_call", self._handle_tool_call)
 
@@ -178,11 +178,11 @@ class PuterPlugin(PluginInterface):
             # Check if event has proper metadata
             if not hasattr(event, 'metadata') or event.metadata is None or not event.metadata:
                 raise ValueError("Event missing required metadata")
-                
+
             operation = event.metadata.get("operation", "read")
             file_path = event.metadata.get("file_path", "")
             content = event.metadata.get("content", "")
-            
+
             # Create neural atom for this operation
             operation_data = {
                 "operation": operation,
@@ -190,7 +190,7 @@ class PuterPlugin(PluginInterface):
                 "timestamp": datetime.now(UTC).isoformat(),
                 "description": f"File {operation} operation on {file_path}",
             }
-            
+
             atom = PuterOperationAtom("file_operation", operation_data)
             self.operation_history.append(atom)
 
@@ -294,7 +294,7 @@ class PuterPlugin(PluginInterface):
             command = event.metadata.get("command", "")
             args = event.metadata.get("args", [])
             working_dir = event.metadata.get("working_dir", "/")
-            
+
             # Create neural atom for this operation
             operation_data = {
                 "command": command,
@@ -303,7 +303,7 @@ class PuterPlugin(PluginInterface):
                 "timestamp": datetime.now(UTC).isoformat(),
                 "description": f"Process execution: {command} {' '.join(args)}",
             }
-            
+
             atom = PuterOperationAtom("process_execution", operation_data)
             self.operation_history.append(atom)
 
@@ -402,7 +402,7 @@ class PuterPlugin(PluginInterface):
             sync_type = event.metadata.get("sync_type", "bidirectional")
             local_path = event.metadata.get("local_path", ".")
             remote_path = event.metadata.get("remote_path", "/workspace")
-            
+
             # Create neural atom for this operation
             operation_data = {
                 "sync_type": sync_type,
@@ -411,7 +411,7 @@ class PuterPlugin(PluginInterface):
                 "timestamp": datetime.now(UTC).isoformat(),
                 "description": f"Workspace sync: {sync_type} between {local_path} and {remote_path}",
             }
-            
+
             atom = PuterOperationAtom("workspace_sync", operation_data)
             self.operation_history.append(atom)
 
@@ -505,15 +505,15 @@ class PuterPlugin(PluginInterface):
         try:
             if not hasattr(event, 'tool_name'):
                 return
-                
+
             tool_name = event.tool_name
-            
+
             # Check if this is a Puter-related tool call
             if not tool_name.startswith("puter_"):
                 return
-                
+
             parameters = getattr(event, 'parameters', {})
-            
+
             if tool_name == "puter_file_read":
                 # Create a proper event object for file operation
                 file_event = create_event(
@@ -526,7 +526,7 @@ class PuterPlugin(PluginInterface):
                     "file_path": parameters.get("file_path", ""),
                 }
                 await self._handle_file_operation(file_event)
-                
+
             elif tool_name == "puter_file_write":
                 # Create a proper event object for file operation
                 file_event = create_event(
@@ -540,7 +540,7 @@ class PuterPlugin(PluginInterface):
                     "content": parameters.get("content", ""),
                 }
                 await self._handle_file_operation(file_event)
-                
+
             elif tool_name == "puter_execute":
                 # Create a proper event object for process execution
                 exec_event = create_event(
@@ -554,7 +554,7 @@ class PuterPlugin(PluginInterface):
                     "working_dir": parameters.get("working_dir", "/"),
                 }
                 await self._handle_process_execution(exec_event)
-                
+
         except Exception:
             logger.exception("❌ Puter tool call error")
 

@@ -4,7 +4,6 @@ DeepCode Analysis Ability - Exposes advanced code analysis capabilities to the a
 """
 from __future__ import annotations
 
-import json
 import logging
 import os
 import uuid
@@ -47,7 +46,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
         if not self.enabled:
             logger.info("DeepCodeAnalysisAbility disabled; not starting.")
             return
-        
+
         # Register as a tool provider
         await self.subscribe("tool_execution_request", self._handle_tool_request)
         logger.info("DeepCodeAnalysisAbility started")
@@ -173,7 +172,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
 
     async def _execute_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         """Execute the specified deepcode analysis tool"""
-        
+
         if tool_name == "analyze_code_file":
             return await self._analyze_file(args)
         elif tool_name == "analyze_code_directory":
@@ -189,7 +188,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
         """Analyze a single code file"""
         file_path = args["file_path"]
         analysis_level_str = args.get("analysis_level", "semantic")
-        
+
         # Convert string to enum
         try:
             analysis_level = AnalysisLevel(analysis_level_str.lower())
@@ -202,7 +201,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
 
         # Perform analysis
         result = await self.engine.analyze_file(file_path, analysis_level)
-        
+
         return {
             "file_path": file_path,
             "analysis_level": analysis_level.value,
@@ -222,7 +221,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
         directory_path = args["directory_path"]
         analysis_level_str = args.get("analysis_level", "semantic")
         generate_report = args.get("generate_report", True)
-        
+
         # Convert string to enum
         try:
             analysis_level = AnalysisLevel(analysis_level_str.lower())
@@ -235,7 +234,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
 
         # Perform analysis
         results = await self.engine.analyze_directory(directory_path, analysis_level)
-        
+
         if generate_report:
             report = self.engine.generate_report(results)
             return {
@@ -259,7 +258,7 @@ class DeepCodeAnalysisAbility(PluginInterface):
         """Calculate quality score for a file or directory"""
         target_path = args["target_path"]
         include_metrics = args.get("include_metrics", False)
-        
+
         path = Path(target_path)
         if not path.exists():
             raise FileNotFoundError(f"Path not found: {target_path}")
@@ -274,14 +273,14 @@ class DeepCodeAnalysisAbility(PluginInterface):
 
         # Generate report to get quality score
         report = self.engine.generate_report(results)
-        
+
         response = {
             "target_path": target_path,
             "quality_score": report["summary"]["quality_score"],
             "total_issues": report["summary"]["total_issues"],
             "files_analyzed": report["summary"]["files_analyzed"]
         }
-        
+
         if include_metrics:
             response["metrics"] = report["metrics"]
             response["severity_breakdown"] = report["summary"]["severity_breakdown"]
@@ -293,14 +292,14 @@ class DeepCodeAnalysisAbility(PluginInterface):
         """Detect specific patterns in code"""
         file_path = args["file_path"]
         pattern_types = args.get("pattern_types", ["security", "performance"])
-        
+
         # Validate file exists
         if not Path(file_path).exists():
             raise FileNotFoundError(f"File not found: {file_path}")
 
         # Perform deep analysis to catch all patterns
         result = await self.engine.analyze_file(file_path, AnalysisLevel.DEEP)
-        
+
         # Filter issues by requested pattern types
         filtered_issues = []
         for issue in result.issues:

@@ -25,36 +25,36 @@ class TelemetryDashboard:
     """
     FastAPI-based telemetry dashboard
     """
-    
+
     def __init__(self, telemetry_collector: TelemetryCollector, host: str = "0.0.0.0", port: int = 8001):
         self.collector = telemetry_collector
         self.streamer = WebSocketStreamer(telemetry_collector)
         self.host = host
         self.port = port
-        
+
         # Create FastAPI app
         self.app = FastAPI(
             title="Super Alita Telemetry Dashboard",
             description="Real-time monitoring and analytics for Cortex runtime",
             version="1.0.0"
         )
-        
+
         self._setup_routes()
         self._setup_static_files()
-        
+
     def _setup_routes(self):
         """Setup API routes"""
-        
+
         @self.app.get("/", response_class=HTMLResponse)
         async def dashboard_home():
             """Serve the main dashboard HTML"""
             return self._get_dashboard_html()
-        
+
         @self.app.get("/api/metrics", response_model=dict)
         async def get_metrics() -> dict[str, Any]:
             """Get current telemetry metrics"""
             return self.collector.get_metrics().to_dict()
-        
+
         @self.app.get("/api/events", response_model=list[dict])
         async def get_events(
             limit: int = 100,
@@ -64,7 +64,7 @@ class TelemetryDashboard:
         ) -> list[dict[str, Any]]:
             """Get telemetry events with optional filtering"""
             events = self.collector.get_recent_events(limit)
-            
+
             # Apply filters
             if cycle_id:
                 events = [e for e in events if e.cycle_id == cycle_id]
@@ -72,15 +72,15 @@ class TelemetryDashboard:
                 events = [e for e in events if e.phase == phase]
             if event_type:
                 events = [e for e in events if e.event_type == event_type]
-                
+
             return [event.to_dict() for event in events]
-        
+
         @self.app.get("/api/cycles/{cycle_id}/events", response_model=list[dict])
         async def get_cycle_events(cycle_id: str) -> list[dict[str, Any]]:
             """Get all events for a specific cycle"""
             events = self.collector.get_events_by_cycle(cycle_id)
             return [event.to_dict() for event in events]
-        
+
         @self.app.get("/api/phases/{phase}/stats", response_model=dict)
         async def get_phase_stats(phase: str) -> dict[str, Any]:
             """Get statistics for a specific phase"""
@@ -88,7 +88,7 @@ class TelemetryDashboard:
             if not stats:
                 raise HTTPException(status_code=404, detail=f"No statistics found for phase: {phase}")
             return stats
-        
+
         @self.app.get("/api/health")
         async def health_check() -> dict[str, Any]:
             """Health check endpoint"""
@@ -98,29 +98,29 @@ class TelemetryDashboard:
                 "active_connections": self.streamer.get_connection_count(),
                 "uptime": "unknown"  # Would need startup time tracking
             }
-        
+
         @self.app.websocket("/ws/{client_id}")
         async def websocket_endpoint(websocket: WebSocket, client_id: str):
             """WebSocket endpoint for real-time streaming"""
             await self.streamer.handle_websocket(websocket, client_id)
-        
+
         @self.app.websocket("/ws")
         async def websocket_endpoint_anonymous(websocket: WebSocket):
             """Anonymous WebSocket endpoint"""
             await self.streamer.handle_websocket(websocket)
-        
+
         @self.app.post("/api/clear_events")
         async def clear_old_events(background_tasks: BackgroundTasks, keep_last: int = 1000):
             """Clear old events to prevent memory growth"""
             background_tasks.add_task(self.collector.clear_old_events, keep_last)
             return {"message": f"Scheduled clearing of old events, keeping {keep_last} most recent"}
-    
+
     def _setup_static_files(self):
         """Setup static file serving"""
         # In a real deployment, you'd serve static files from a directory
         # For now, we'll serve the dashboard HTML inline
         pass
-    
+
     def _get_dashboard_html(self) -> str:
         """Generate dashboard HTML"""
         return """
@@ -373,14 +373,14 @@ class TelemetryDashboard:
 </body>
 </html>
         """
-    
+
     async def start_server(self):
         """Start the telemetry dashboard server"""
         import uvicorn
-        
+
         # Start background tasks
         asyncio.create_task(self.streamer.start_metrics_broadcast())
-        
+
         # Start the server
         config = uvicorn.Config(
             app=self.app,
@@ -391,7 +391,7 @@ class TelemetryDashboard:
         )
         server = uvicorn.Server(config)
         await server.serve()
-    
+
     def get_app(self) -> FastAPI:
         """Get the FastAPI app instance"""
         return self.app

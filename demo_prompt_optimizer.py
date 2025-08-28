@@ -18,7 +18,7 @@ def demo_prompt_analysis():
     """Demonstrate prompt analysis capabilities."""
     print("🔍 PROMPT ANALYSIS DEMO")
     print("=" * 50)
-    
+
     test_prompts = [
         "help",
         "write python function",
@@ -26,7 +26,7 @@ def demo_prompt_analysis():
         "Create a REST API with authentication and database",
         "Debug this JavaScript error: TypeError undefined",
     ]
-    
+
     for i, prompt in enumerate(test_prompts, 1):
         print(f"\n{i}. Original: {prompt}")
         analysis = analyze_user_prompt(prompt)
@@ -44,23 +44,23 @@ def demo_optimization_strategies():
     """Demonstrate different optimization strategies."""
     print("\n\n🚀 OPTIMIZATION STRATEGIES DEMO")
     print("=" * 50)
-    
+
     prompt = "write code"
     optimizer = PromptOptimizer()
-    
+
     strategies = [
         OptimizationStrategy.MINIMAL,
         OptimizationStrategy.STANDARD,
         OptimizationStrategy.AGGRESSIVE,
         OptimizationStrategy.CONTEXT_RICH,
     ]
-    
+
     context = {
         "available_tools": ["file_reader", "code_analyzer", "debugger"],
         "current_project": "web application development",
         "session_context": "user is working on authentication system"
     }
-    
+
     for strategy in strategies:
         print(f"\n📋 {strategy.value.upper()} Strategy:")
         result = optimizer.optimize(prompt, strategy=strategy, context=context)
@@ -76,13 +76,13 @@ def demo_bypass_functionality():
     """Demonstrate bypass functionality."""
     print("\n\n🛡️ BYPASS FUNCTIONALITY DEMO")
     print("=" * 50)
-    
+
     bypass_prompts = [
         "noopt:raw message without optimization",
         "raw:keep this exactly as is",
         "literal:don't change this prompt",
     ]
-    
+
     for prompt in bypass_prompts:
         print(f"\nInput: {prompt}")
         # Simulate the amplifier behavior
@@ -101,9 +101,9 @@ def demo_context_awareness():
     """Demonstrate context-aware optimization."""
     print("\n\n🧠 CONTEXT-AWARE OPTIMIZATION DEMO")
     print("=" * 50)
-    
+
     prompt = "help me fix this bug"
-    
+
     contexts = [
         {},
         {"available_tools": ["debugger"]},
@@ -114,9 +114,9 @@ def demo_context_awareness():
             "session_context": "user reported performance issues"
         }
     ]
-    
+
     optimizer = PromptOptimizer()
-    
+
     for i, context in enumerate(contexts, 1):
         print(f"\n{i}. Context: {context if context else 'None'}")
         result = optimizer.optimize(prompt, context=context)
@@ -130,9 +130,9 @@ def demo_performance():
     """Demonstrate performance characteristics."""
     print("\n\n⚡ PERFORMANCE DEMO")
     print("=" * 50)
-    
+
     import time
-    
+
     # Test different prompt sizes
     prompts = [
         "help",
@@ -141,14 +141,14 @@ def demo_performance():
         "database integration, API endpoints, frontend interface, and deployment pipeline",
         "implement a machine learning model " * 20,  # Very long prompt
     ]
-    
+
     optimizer = PromptOptimizer()
-    
+
     for i, prompt in enumerate(prompts, 1):
         start_time = time.time()
         result = optimizer.optimize(prompt)
         end_time = time.time()
-        
+
         print(f"\n{i}. Length: {len(prompt)} chars")
         print(f"   Processing time: {(end_time - start_time) * 1000:.2f}ms")
         print(f"   Strategy used: {result.strategy_used.value}")
@@ -158,14 +158,14 @@ def demo_performance():
 if __name__ == "__main__":
     print("🎯 SUPER ALITA PROMPT OPTIMIZER & AMPLIFIER DEMO")
     print("=" * 60)
-    
+
     try:
         demo_prompt_analysis()
         demo_optimization_strategies()
         demo_bypass_functionality()
         demo_context_awareness()
         demo_performance()
-        
+
         print("\n\n✅ Demo completed successfully!")
         print("\nThe Super Alita Prompt Optimizer provides:")
         print("• Intelligent prompt analysis and classification")
@@ -174,7 +174,7 @@ if __name__ == "__main__":
         print("• Bypass mechanisms for raw prompts")
         print("• High performance with caching")
         print("• Integration with existing message amplifier")
-        
+
     except Exception as e:
         print(f"\n❌ Demo failed: {e}")
         import traceback

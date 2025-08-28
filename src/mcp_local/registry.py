@@ -121,7 +121,7 @@ class ToolRegistry:
         """Return the names of all registered tools."""
 
         return sorted(self._tools.keys())
-      
+
 """Minimal dynamic tool registry."""
 
 from __future__ import annotations

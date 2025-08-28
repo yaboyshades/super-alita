@@ -32,7 +32,7 @@ PUTER_CONFIG = {
     "auto_create_dirs": True,
     "default_working_directory": "/",
     "log_level": "INFO",
-  
+
 }
 
 if os.getenv("PUTER_API_KEY"):

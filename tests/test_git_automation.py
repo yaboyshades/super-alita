@@ -21,12 +21,12 @@ class TestGitAutomation(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp()
         self.original_dir = os.getcwd()
         os.chdir(self.test_dir)
-        
+
         # Initialize git repo
         subprocess.run(["git", "init"], capture_output=True)
         subprocess.run(["git", "config", "user.name", "Test User"], capture_output=True)
         subprocess.run(["git", "config", "user.email", "test@example.com"], capture_output=True)
-        
+
         self.git_auto = GitAutomation()
 
     def tearDown(self):
@@ -57,10 +57,10 @@ current branch code
 incoming branch code
 >>>>>>> branch
 more code"""
-        
+
         test_file = Path("test_conflict.py")
         test_file.write_text(test_content)
-        
+
         result = self.git_auto._analyze_conflict_file("test_conflict.py")
         self.assertIsNotNone(result)
         self.assertEqual(result.file_path, "test_conflict.py")
@@ -73,7 +73,7 @@ more code"""
         test_content = "normal code without conflicts"
         test_file = Path("normal.py")
         test_file.write_text(test_content)
-        
+
         result = self.git_auto._analyze_conflict_file("normal.py")
         self.assertIsNone(result)
 
@@ -88,7 +88,7 @@ more code"""
         current = "line1\nline2"
         incoming = "line3\nline4"
         self.assertTrue(self.git_auto._is_additive_change(current, incoming))
-        
+
         # Overlapping changes should not be additive
         current = "line1\nline2"
         incoming = "line1\nline3"
@@ -99,7 +99,7 @@ more code"""
         current = "import os\nimport sys"
         incoming = "import json\nimport pathlib"
         result = self.git_auto._merge_imports(current, incoming)
-        
+
         # Should contain all imports
         lines = result.split('\n')
         self.assertIn("import os", lines)
@@ -112,7 +112,7 @@ more code"""
         current = "line1\nline2"
         incoming = "line3\nline4"
         result = self.git_auto._merge_additive_changes(current, incoming)
-        
+
         expected = "line1\nline2\nline3\nline4"
         self.assertEqual(result, expected)
 

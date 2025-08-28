@@ -43,7 +43,7 @@ class PerformanceMarker:
     metrics: dict[str, Any] = None
     metadata: dict[str, Any] = None
     error: str | None = None
-    
+
     def __post_init__(self):
         if self.metrics is None:
             self.metrics = {}
@@ -59,51 +59,51 @@ class CortexEvent:
     markers: list[PerformanceMarker]
     context: dict[str, Any]
     base_event: Event
-    
+
     @property
     def total_duration_ms(self) -> float:
         """Calculate total duration from markers"""
         if not self.markers:
             return 0.0
-        
+
         start_markers = [m for m in self.markers if m.marker_type == MarkerType.CYCLE_START]
         end_markers = [m for m in self.markers if m.marker_type == MarkerType.CYCLE_END]
-        
+
         if start_markers and end_markers:
             start_time = min(m.timestamp for m in start_markers)
             end_time = max(m.timestamp for m in end_markers)
             return (end_time - start_time) * 1000
-        
+
         return 0.0
-    
+
     @property
     def phase_durations(self) -> dict[str, float]:
         """Calculate duration for each phase"""
         durations = {}
-        
+
         for phase in CortexPhase:
-            phase_markers = [m for m in self.markers 
+            phase_markers = [m for m in self.markers
                            if m.phase == phase and m.duration_ms is not None]
             if phase_markers:
                 durations[phase.value] = sum(m.duration_ms for m in phase_markers)
-        
+
         return durations
 
 
 class PerformanceTracker:
     """Tracks performance metrics during Cortex execution"""
-    
+
     def __init__(self):
         self.markers: list[PerformanceMarker] = []
         self.current_cycle_id: str | None = None
         self.phase_start_times: dict[CortexPhase, float] = {}
-    
+
     def start_cycle(self, cycle_id: str) -> str:
         """Start tracking a new Cortex cycle"""
         self.current_cycle_id = cycle_id
         self.markers.clear()
         self.phase_start_times.clear()
-        
+
         marker = PerformanceMarker(
             id=str(uuid.uuid4()),
             marker_type=MarkerType.CYCLE_START,
@@ -112,12 +112,12 @@ class PerformanceTracker:
         )
         self.markers.append(marker)
         return marker.id
-    
+
     def end_cycle(self) -> str | None:
         """End the current cycle tracking"""
         if not self.current_cycle_id:
             return None
-        
+
         marker = PerformanceMarker(
             id=str(uuid.uuid4()),
             marker_type=MarkerType.CYCLE_END,
@@ -125,16 +125,16 @@ class PerformanceTracker:
             timestamp=time.time()
         )
         self.markers.append(marker)
-        
+
         cycle_id = self.current_cycle_id
         self.current_cycle_id = None
         return marker.id
-    
+
     def start_phase(self, phase: CortexPhase) -> str:
         """Start tracking a Cortex phase"""
         start_time = time.time()
         self.phase_start_times[phase] = start_time
-        
+
         marker = PerformanceMarker(
             id=str(uuid.uuid4()),
             marker_type=MarkerType.PHASE_START,
@@ -143,17 +143,17 @@ class PerformanceTracker:
         )
         self.markers.append(marker)
         return marker.id
-    
+
     def end_phase(self, phase: CortexPhase) -> str | None:
         """End tracking a Cortex phase"""
         end_time = time.time()
         start_time = self.phase_start_times.get(phase)
-        
+
         if start_time is None:
             return None
-        
+
         duration_ms = (end_time - start_time) * 1000
-        
+
         marker = PerformanceMarker(
             id=str(uuid.uuid4()),
             marker_type=MarkerType.PHASE_END,
@@ -162,13 +162,13 @@ class PerformanceTracker:
             duration_ms=duration_ms
         )
         self.markers.append(marker)
-        
+
         del self.phase_start_times[phase]
         return marker.id
-    
+
     def track_module_execution(
-        self, 
-        module_name: str, 
+        self,
+        module_name: str,
         phase: CortexPhase,
         duration_ms: float,
         metrics: dict[str, Any] | None = None
@@ -185,10 +185,10 @@ class PerformanceTracker:
         )
         self.markers.append(marker)
         return marker.id
-    
+
     def track_error(
-        self, 
-        error: str, 
+        self,
+        error: str,
         phase: CortexPhase | None = None,
         module_name: str | None = None
     ) -> str:
@@ -203,10 +203,10 @@ class PerformanceTracker:
         )
         self.markers.append(marker)
         return marker.id
-    
+
     def add_metric(
-        self, 
-        metric_name: str, 
+        self,
+        metric_name: str,
         value: int | float | str,
         phase: CortexPhase | None = None
     ) -> str:
@@ -220,11 +220,11 @@ class PerformanceTracker:
         )
         self.markers.append(marker)
         return marker.id
-    
+
     def get_markers(self) -> list[PerformanceMarker]:
         """Get all tracked markers"""
         return self.markers.copy()
-    
+
     def clear(self):
         """Clear all tracking data"""
         self.markers.clear()
@@ -242,11 +242,11 @@ def create_cortex_event(
 ) -> CortexEvent:
     """Create a Cortex event with performance tracking"""
     from ..events import create_event
-    
+
     # Create base event with required source_plugin
     # Put Cortex-specific fields in metadata
     base_event = create_event(
-        event_type, 
+        event_type,
         source_plugin="cortex_runtime",
         metadata={
             "cycle_id": cycle_id,
@@ -254,7 +254,7 @@ def create_cortex_event(
             **kwargs
         }
     )
-    
+
     # Create Cortex event
     cortex_event = CortexEvent(
         cycle_id=cycle_id,
@@ -263,5 +263,5 @@ def create_cortex_event(
         context=context or {},
         base_event=base_event
     )
-    
+
     return cortex_event

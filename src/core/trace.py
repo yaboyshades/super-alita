@@ -30,7 +30,7 @@ class TurnTracer:
     def new_turn(self):
         self.current_turn += 1
 
-    def log(self, event_type: str, component: str, details: dict[str, Any] | None = None, 
+    def log(self, event_type: str, component: str, details: dict[str, Any] | None = None,
             duration_ms: float | None = None):
         entry = TraceEntry(
             timestamp=datetime.now(UTC),
@@ -65,16 +65,16 @@ def trace_component_call(component: str):
                 result = await func(*args, **kwargs)
                 end = datetime.now(UTC)
                 duration_ms = (end - start).total_seconds() * 1000
-                _tracer.log("component_call", component, 
+                _tracer.log("component_call", component,
                            {"function": func.__name__, "success": True}, duration_ms)
                 return result
             except Exception as e:
                 end = datetime.now(UTC)
                 duration_ms = (end - start).total_seconds() * 1000
-                _tracer.log("component_call", component, 
+                _tracer.log("component_call", component,
                            {"function": func.__name__, "success": False, "error": str(e)}, duration_ms)
                 raise
-        
+
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
             start = datetime.now(UTC)
@@ -82,16 +82,16 @@ def trace_component_call(component: str):
                 result = func(*args, **kwargs)
                 end = datetime.now(UTC)
                 duration_ms = (end - start).total_seconds() * 1000
-                _tracer.log("component_call", component, 
+                _tracer.log("component_call", component,
                            {"function": func.__name__, "success": True}, duration_ms)
                 return result
             except Exception as e:
                 end = datetime.now(UTC)
                 duration_ms = (end - start).total_seconds() * 1000
-                _tracer.log("component_call", component, 
+                _tracer.log("component_call", component,
                            {"function": func.__name__, "success": False, "error": str(e)}, duration_ms)
                 raise
-        
+
         # Return appropriate wrapper based on whether function is async
         import asyncio
         if asyncio.iscoroutinefunction(func):

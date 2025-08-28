@@ -15,20 +15,20 @@ from typing import Any
 
 class CopilotTelemetryVerifier:
     """Verify that Copilot is correctly using the architectural prompt"""
-    
+
     def __init__(self):
         self.test_results = []
         self.prompt_version = "2.0.0"
         self.logger = self._setup_logging()
-        
+
     def _setup_logging(self) -> logging.Logger:
         """Setup telemetry logging"""
         logger = logging.getLogger("CopilotVerifier")
-        
+
         # Create .github/copilot directory if it doesn't exist
         log_dir = Path(".github/copilot")
         log_dir.mkdir(parents=True, exist_ok=True)
-        
+
         handler = logging.FileHandler(log_dir / "telemetry.log")
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -37,18 +37,18 @@ class CopilotTelemetryVerifier:
         logger.addHandler(handler)
         logger.setLevel(logging.INFO)
         return logger
-        
+
     async def test_persona_acknowledgment(self) -> dict[str, Any]:
         """Test 1: Verify AI acknowledges the persona"""
         test_prompt = "What is your role and which version of the architectural guidelines are you using?"
-        
+
         expected_markers = [
             "Super Alita Architectural Guardian",
             "v2.0",
             "5 guidelines",
             "yaboyshades"
         ]
-        
+
         # Simulate AI response (in real usage, this would be the actual response)
         # You would manually check this or use API if available
         result = {
@@ -58,10 +58,10 @@ class CopilotTelemetryVerifier:
             "timestamp": datetime.now(UTC).isoformat(),
             "status": "REQUIRES_MANUAL_VERIFICATION"
         }
-        
+
         self.logger.info(f"Test 1 executed: {result}")
         return result
-        
+
     async def test_guideline_knowledge(self) -> dict[str, Any]:
         """Test 2: Verify AI knows all 5 guidelines"""
         test_prompts = [
@@ -69,7 +69,7 @@ class CopilotTelemetryVerifier:
             "What is guideline #2 about?",
             "Explain the REUG State Machine Pattern"
         ]
-        
+
         expected_guidelines = [
             "Super Alita Plugin Architecture",
             "Super Alita Tool Registry Management",
@@ -77,7 +77,7 @@ class CopilotTelemetryVerifier:
             "Super Alita Event Bus Patterns",
             "Super Alita Component Integration"
         ]
-        
+
         result = {
             "test": "guideline_knowledge",
             "prompts": test_prompts,
@@ -85,13 +85,13 @@ class CopilotTelemetryVerifier:
             "timestamp": datetime.now(UTC).isoformat(),
             "status": "REQUIRES_MANUAL_VERIFICATION"
         }
-        
+
         self.logger.info(f"Test 2 executed: {result}")
         return result
-        
+
     async def test_violation_detection(self) -> dict[str, Any]:
         """Test 3: Verify AI detects guideline violations"""
-        
+
         # Create test violations
         test_violations = {
             "plugin_violation": '''
@@ -118,20 +118,20 @@ class CompetingRouter:  # Not using DecisionPolicyEngine
         pass
             '''
         }
-        
+
         result = {
             "test": "violation_detection",
             "violations_tested": list(test_violations.keys()),
             "timestamp": datetime.now(UTC).isoformat(),
             "status": "REQUIRES_MANUAL_VERIFICATION"
         }
-        
+
         self.logger.info(f"Test 3 executed: {result}")
         return result
-        
+
     async def test_refactor_capability(self) -> dict[str, Any]:
         """Test 4: Verify AI can refactor code to comply"""
-        
+
         bad_code = '''
 # This code violates multiple guidelines
 class MyPlugin:
@@ -141,14 +141,14 @@ class MyPlugin:
     def emit_event(self, data):
         self.event_bus.emit({"data": data})  # Improper event creation
         '''
-        
+
         expected_fixes = [
             "inherit from PluginInterface",
             "async def setup",
             "use DecisionPolicyEngine.register_capability",
             "use create_event helper"
         ]
-        
+
         result = {
             "test": "refactor_capability",
             "bad_code": bad_code,
@@ -156,15 +156,15 @@ class MyPlugin:
             "timestamp": datetime.now(UTC).isoformat(),
             "status": "REQUIRES_MANUAL_VERIFICATION"
         }
-        
+
         self.logger.info(f"Test 4 executed: {result}")
         return result
-        
+
     async def test_generation_compliance(self) -> dict[str, Any]:
         """Test 5: Verify AI generates compliant code"""
-        
+
         generation_prompt = "Generate a new plugin that handles user authentication"
-        
+
         expected_patterns = [
             "class.*PluginInterface",
             "async def setup",
@@ -173,7 +173,7 @@ class MyPlugin:
             "create_event",
             "DecisionPolicyEngine"
         ]
-        
+
         result = {
             "test": "generation_compliance",
             "prompt": generation_prompt,
@@ -181,14 +181,14 @@ class MyPlugin:
             "timestamp": datetime.now(UTC).isoformat(),
             "status": "REQUIRES_MANUAL_VERIFICATION"
         }
-        
+
         self.logger.info(f"Test 5 executed: {result}")
         return result
-        
+
     async def run_all_tests(self) -> None:
         """Execute all telemetry tests"""
         self.logger.info(f"Starting telemetry verification - {datetime.now(UTC)}")
-        
+
         tests = [
             self.test_persona_acknowledgment(),
             self.test_guideline_knowledge(),
@@ -196,18 +196,18 @@ class MyPlugin:
             self.test_refactor_capability(),
             self.test_generation_compliance()
         ]
-        
+
         results = await asyncio.gather(*tests)
         self.test_results = results
-        
+
         # Save results
         self._save_results()
-        
+
     def _save_results(self) -> None:
         """Save test results to file"""
         output_path = Path(".github/copilot/telemetry_results.json")
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(output_path, 'w') as f:
             json.dump({
                 "version": self.prompt_version,
@@ -215,9 +215,9 @@ class MyPlugin:
                 "user": "yaboyshades",
                 "results": self.test_results
             }, f, indent=2)
-            
+
         self.logger.info(f"Results saved to {output_path}")
-        
+
     def generate_verification_report(self) -> str:
         """Generate human-readable verification report"""
         report = f"""
@@ -233,7 +233,7 @@ class MyPlugin:
 """
         for result in self.test_results:
             report += f"| {result['test']} | {result['status']} | {result['timestamp']} |\n"
-            
+
         report += """
 ## Manual Verification Checklist
 

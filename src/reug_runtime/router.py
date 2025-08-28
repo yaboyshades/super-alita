@@ -103,7 +103,7 @@ async def execute_turn(
     user_msg: str, session_id: str, event_bus: Any, registry: Any, kg: Any, model: Any
 ) -> AsyncGenerator[dict[str, Any], None]:
     correlation_id = f"{session_id}-{int(time.time()*1000)}"
-    
+
     # Optional message optimization/amplification
     if SETTINGS.message_optimizer_enabled:
         try:
@@ -127,7 +127,7 @@ async def execute_turn(
         if len(optimized) > SETTINGS.message_optimizer_max_len:
             optimized = optimized[: SETTINGS.message_optimizer_max_len]
         user_msg = optimized
-    
+
     orchestrator = Orchestrator(event_bus, registry, model, correlation_id)
 
     start_event = {"type": "TaskStarted", "correlation_id": correlation_id, "goal": user_msg}
