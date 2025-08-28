@@ -75,6 +75,8 @@ class SubproblemManager(PluginInterface):
     async def handle_feature_created(self, event: Dict[str, Any]):
         fid = event.get("feature_id")
         if not fid:
+            return  # Nothing to do if no feature ID
+    
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # type: ignore[override]
         await super().setup(event_bus, store, config)
         self.cfg.update(config or {})
