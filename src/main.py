@@ -193,6 +193,11 @@ class SimpleAbilityRegistry:
             "check_file_support",
             "get_supported_extensions",
             "understand_code_structure",
+            # Enhanced Copilot abilities
+            "analyze_and_suggest_repos",
+            "automated_problem_solver",
+            "repository_deep_analysis",
+            "enhanced_code_review",
         }
         self._contracts: dict[str, dict[str, Any]] = {
             "echo": {
@@ -418,6 +423,73 @@ class SimpleAbilityRegistry:
                 },
                 "output_schema": {"type": "object"},
             },
+            # Enhanced Copilot Tools
+            "analyze_and_suggest_repos": {
+                "tool_id": "analyze_and_suggest_repos",
+                "description": "Analyze code problems and suggest GitHub repositories that can help solve them",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["problem_description"],
+                    "properties": {
+                        "problem_description": {"type": "string"},
+                        "code_context": {"type": "string", "default": ""},
+                        "language_preference": {"type": "string", "default": "python"},
+                        "max_results": {"type": "integer", "default": 5}
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "automated_problem_solver": {
+                "tool_id": "automated_problem_solver",
+                "description": "End-to-end automated problem solver that finds repos, analyzes code, and provides implementation guidance",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["task_description"],
+                    "properties": {
+                        "task_description": {"type": "string"},
+                        "workspace_path": {"type": "string", "default": "."},
+                        "include_code_generation": {"type": "boolean", "default": True},
+                        "analyze_existing_code": {"type": "boolean", "default": True}
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "repository_deep_analysis": {
+                "tool_id": "repository_deep_analysis",
+                "description": "Perform deep analysis on a specific GitHub repository to understand its capabilities",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["repo_url"],
+                    "properties": {
+                        "repo_url": {"type": "string"},
+                        "analysis_focus": {
+                            "type": "string",
+                            "enum": ["architecture", "security", "performance", "usability", "all"],
+                            "default": "all"
+                        },
+                        "include_dependencies": {"type": "boolean", "default": True}
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "enhanced_code_review": {
+                "tool_id": "enhanced_code_review",
+                "description": "Comprehensive code review with GitHub repository context and DeepCode analysis",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["code_path"],
+                    "properties": {
+                        "code_path": {"type": "string"},
+                        "review_type": {
+                            "type": "string",
+                            "enum": ["security", "performance", "best_practices", "comprehensive"],
+                            "default": "comprehensive"
+                        },
+                        "suggest_improvements": {"type": "boolean", "default": True}
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
         }
 
     def get_available_tools_schema(self) -> list[dict[str, Any]]:
@@ -549,6 +621,13 @@ class SimpleAbilityRegistry:
         ]:
             return await self._execute_deepcode_tool(tool_name, args)
         
+        # Enhanced Copilot tool execution
+        if tool_name in [
+            "analyze_and_suggest_repos", "automated_problem_solver", 
+            "repository_deep_analysis", "enhanced_code_review"
+        ]:
+            return await self._execute_enhanced_copilot_tool(tool_name, args)
+        
         # Fallback generic - echo contract
         return {"ok": True, "tool": tool_name, "args": args}
 
@@ -576,6 +655,23 @@ class SimpleAbilityRegistry:
                 
         except Exception as e:
             logger.exception(f"DeepCode tool execution failed for {tool_name}: {e}")
+            return {"error": f"Tool execution failed: {str(e)}"}
+
+    async def _execute_enhanced_copilot_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+        """Execute enhanced copilot tools by delegating to the enhanced copilot ability"""
+        try:
+            # Import ability dynamically to avoid circular imports
+            from src.abilities.enhanced_copilot_ability import EnhancedCopilotAbility
+            
+            # Create and setup ability
+            ability = EnhancedCopilotAbility()
+            await ability.setup(None, None, {})
+            
+            # Execute the tool
+            return await ability._execute_tool(tool_name, args)
+                
+        except Exception as e:
+            logger.exception(f"Enhanced Copilot tool execution failed for {tool_name}: {e}")
             return {"error": f"Tool execution failed: {str(e)}"}
 
 
