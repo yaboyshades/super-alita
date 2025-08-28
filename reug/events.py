@@ -42,8 +42,12 @@ def _get_redis_client(url: str):
     try:
         return redis.Redis.from_url(url)
     except Exception:  # pragma: no cover - best effort
-        logger.exception("Failed to create Redis client from URL; falling back to JSONL")
+        logger.exception(
+            "Failed to create Redis client from URL; falling back to JSONL"
+        )
         return None
+
+
 def emit_redis(event: dict[str, Any]) -> None:
     """Publish event to Redis channel with fallback."""
     client = _get_redis_client(os.getenv("REUG_REDIS_URL", "redis://localhost:6379/0"))

@@ -1,4 +1,3 @@
-
 import asyncio
 
 from fastapi import FastAPI
@@ -18,7 +17,10 @@ class FlakyRegistry:
             {
                 "tool_id": "slow_echo",
                 "description": "Echo after delay",
-                "input_schema": {"type": "object", "properties": {"payload": {"type": "string"}}},
+                "input_schema": {
+                    "type": "object",
+                    "properties": {"payload": {"type": "string"}},
+                },
                 "output_schema": {"type": "object"},
             }
         ]
@@ -38,8 +40,13 @@ class FlakyRegistry:
 
 class RetryLLM:
     async def stream_chat(self, messages, timeout):
-        if not any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
-            yield {"content": '<tool_call>{"tool":"slow_echo","args":{"payload":"hi"}}</tool_call>'}
+        if not any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        ):
+            yield {
+                "content": '<tool_call>{"tool":"slow_echo","args":{"payload":"hi"}}</tool_call>'
+            }
         else:
             yield {
                 "content": '<final_answer>{"content":"ok after retry","citations":[]}</final_answer>'
@@ -76,9 +83,6 @@ def test_timeout_then_retry(monkeypatch):
     assert len(successes) == 1
 
 
-
-
-
 class FlakyRegistry:
     def __init__(self) -> None:
         self.calls = 0
@@ -88,7 +92,10 @@ class FlakyRegistry:
             {
                 "tool_id": "slow_echo",
                 "description": "Echo after delay",
-                "input_schema": {"type": "object", "properties": {"payload": {"type": "string"}}},
+                "input_schema": {
+                    "type": "object",
+                    "properties": {"payload": {"type": "string"}},
+                },
                 "output_schema": {"type": "object"},
             }
         ]
@@ -108,8 +115,13 @@ class FlakyRegistry:
 
 class RetryLLM:
     async def stream_chat(self, messages, timeout):
-        if not any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
-            yield {"content": '<tool_call>{"tool":"slow_echo","args":{"payload":"hi"}}</tool_call>'}
+        if not any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        ):
+            yield {
+                "content": '<tool_call>{"tool":"slow_echo","args":{"payload":"hi"}}</tool_call>'
+            }
         else:
             yield {
                 "content": '<final_answer>{"content":"ok after retry","citations":[]}</final_answer>'
@@ -142,4 +154,3 @@ def test_timeout_then_retry(monkeypatch):
     successes = [e for e in evts if e["type"] == "AbilitySucceeded"]
     assert len(failures) == 1
     assert len(successes) == 1
-

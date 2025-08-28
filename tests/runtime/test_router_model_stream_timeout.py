@@ -37,6 +37,7 @@ def test_model_stream_timeout() -> None:
     assert "[ERROR: model_stream_timeout]" in resp.text
     events = app.state.event_bus.events
     assert any(
-        e["type"] == "TaskFailed" and e.get("reason") == "tool_cap_or_abort" for e in events
+        e["type"] == "TaskFailed" and e.get("reason") == "tool_cap_or_abort"
+        for e in events
     )
     assert not any(e["type"] == "TaskSucceeded" for e in events)

@@ -1,8 +1,24 @@
 import asyncio
+import importlib
 import inspect
 import json
-from collections.abc import AsyncGenerator
+import os
+import pathlib
+import sys
+from collections.abc import AsyncGenerator, Iterable
+from concurrent import futures
+from contextlib import contextmanager
 from typing import Any
+
+import grpc
+from google.protobuf import empty_pb2, timestamp_pb2
+
+_MANGLE_DIR = pathlib.Path(__file__).resolve().parents[2] / "src" / "core" / "mangle"
+sys_path_added = str(_MANGLE_DIR)
+if sys_path_added not in sys.path:
+    sys.path.insert(0, sys_path_added)
+pb2 = importlib.import_module("super_alita_pb2")
+pb2_grpc = importlib.import_module("super_alita_pb2_grpc")
 
 
 class FakeEventBus:
@@ -20,6 +36,7 @@ class FakeAbilityRegistry:
     def __init__(self) -> None:
         self._known = {"echo"}
         self._calls: list[dict[str, Any]] = []
+
         class _EchoTool:
             async def aexecute(self, payload: str) -> dict[str, str]:
                 return {"echo": payload}
@@ -67,7 +84,9 @@ class FakeAbilityRegistry:
         fn = getattr(impl, "aexecute", None) or getattr(impl, "run", None) or impl
         sig = inspect.signature(fn)
         params = sig.parameters
-        accepts_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+        accepts_var_kw = any(
+            p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()
+        )
         unexpected = [k for k in args if k not in params] if not accepts_var_kw else []
         if unexpected:
             raise TypeError(
@@ -102,8 +121,12 @@ class FakeKG:
         self.atoms.append(atom)
         return atom
 
-    async def create_bond(self, bond_type: str, source_atom_id: str, target_atom_id: str) -> None:
-        self.bonds.append({"type": bond_type, "src": source_atom_id, "tgt": target_atom_id})
+    async def create_bond(
+        self, bond_type: str, source_atom_id: str, target_atom_id: str
+    ) -> None:
+        self.bonds.append(
+            {"type": bond_type, "src": source_atom_id, "tgt": target_atom_id}
+        )
 
 
 class FakeLLM:
@@ -116,7 +139,10 @@ class FakeLLM:
         self, messages: list[dict[str, str]], timeout: float
     ) -> AsyncGenerator[dict[str, str], None]:
         # detect if a tool_result was injected
-        if any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
+        if any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        ):
             self._phase = 2
         if self._phase == 1:
             # yield a bit of prose and a well-formed tool_call block
@@ -130,3 +156,74 @@ class FakeLLM:
             await asyncio.sleep(0)
             final = json.dumps({"content": "done: hi", "citations": []})
             yield {"content": f"<final_answer>{final}</final_answer>"}
+
+
+class _FakeGrpcServicer(pb2_grpc.SuperAlitaAgentServicer):
+    def __init__(self, fail: Iterable[str] | None = None) -> None:
+        self._fail = set(fail or [])
+
+    def GetHealth(
+        self, request: empty_pb2.Empty, context: grpc.ServicerContext
+    ) -> pb2.HealthResponse:
+        if "health" in self._fail:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("health fail")
+            return pb2.HealthResponse()
+        ts = timestamp_pb2.Timestamp()
+        ts.GetCurrentTime()
+        return pb2.HealthResponse(
+            status=pb2.HealthResponse.HEALTHY, message="ok", timestamp=ts
+        )
+
+    def GetStatus(
+        self, request: empty_pb2.Empty, context: grpc.ServicerContext
+    ) -> pb2.StatusResponse:
+        if "status" in self._fail:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("status fail")
+            return pb2.StatusResponse()
+        ts = timestamp_pb2.Timestamp()
+        ts.GetCurrentTime()
+        return pb2.StatusResponse(
+            version="1.0",
+            uptime=ts,
+            active_plugins=1,
+            total_tasks_processed=0,
+            total_events_emitted=0,
+            system_info={"ok": "true"},
+        )
+
+    def ProcessTask(
+        self, request: pb2.TaskRequest, context: grpc.ServicerContext
+    ) -> pb2.TaskResponse:
+        if "process" in self._fail:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("process fail")
+            return pb2.TaskResponse(
+                task_id=request.task_id, success=False, error_message="process fail"
+            )
+        return pb2.TaskResponse(task_id=request.task_id, result="done", success=True)
+
+    def QueryKnowledgeGraph(
+        self, request: pb2.QueryRequest, context: grpc.ServicerContext
+    ) -> pb2.QueryResponse:
+        if "kg" in self._fail:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("kg fail")
+            return pb2.QueryResponse()
+        return pb2.QueryResponse(nodes=[], edges=[], total_results=0)
+
+
+@contextmanager
+def fake_grpc_server(fail: Iterable[str] | None = None):
+    servicer = _FakeGrpcServicer(fail)
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
+    pb2_grpc.add_SuperAlitaAgentServicer_to_server(servicer, server)
+    port = server.add_insecure_port("127.0.0.1:0")
+    server.start()
+    os.environ["SUPER_ALITA_GRPC_HOST"] = "127.0.0.1"
+    os.environ["SUPER_ALITA_GRPC_PORT"] = str(port)
+    try:
+        yield server
+    finally:
+        server.stop(0)

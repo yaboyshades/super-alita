@@ -4,6 +4,7 @@ All plugins must implement this interface for hot-swappable modularity.
 """
 
 import asyncio
+import contextlib
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
@@ -99,10 +100,8 @@ class PluginInterface(ABC):
         for task in self._tasks:
             if not task.done():
                 task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await task
-                except asyncio.CancelledError:
-                    pass
 
         self._tasks.clear()
         await self.shutdown()
@@ -190,9 +189,16 @@ class PluginInterface(ABC):
 
             if hasattr(self.event_bus, "publish"):
                 event_object = create_event(event_type, **kwargs)
-                await self.event_bus.publish(event_object)
+                # Serialize the event object to dict for the event bus
+                if hasattr(event_object, 'model_dump'):
+                    event_dict = event_object.model_dump()
+                else:
+                    event_dict = event_object.__dict__
+                await self.event_bus.publish(event_dict)
             elif hasattr(self.event_bus, "emit"):
-                await self.event_bus.emit(event_type, **kwargs)
+                # For emit, we can pass the event as a dict directly
+                event_data = {"type": event_type, **kwargs}
+                await self.event_bus.emit(event_data)
             else:  # pragma: no cover
                 raise RuntimeError("Event bus has neither publish nor emit method")
 

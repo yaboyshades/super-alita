@@ -5,7 +5,9 @@ from typing import Any
 
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 HEX32PLUS = re.compile(r"\b[0-9a-fA-F]{32,}\b")
-KEYWORDS = re.compile(r"(api[_-]?key|secret|token|password)\s*[:=]\s*([^\s,;]+)", re.IGNORECASE)
+KEYWORDS = re.compile(
+    r"(api[_-]?key|secret|token|password)\s*[:=]\s*([^\s,;]+)", re.IGNORECASE
+)
 
 
 def _mask(s: str) -> str:
@@ -46,7 +48,9 @@ def _walk(obj):
     return obj
 
 
-def redact_prompt_and_context(prompt: str, context: dict[str, Any]) -> tuple[str, dict[str, Any], dict[str, Any]]:
+def redact_prompt_and_context(
+    prompt: str, context: dict[str, Any]
+) -> tuple[str, dict[str, Any], dict[str, Any]]:
     """Redact sensitive patterns. Returns (prompt_redacted, context_redacted, report)."""
     red_prompt, hits_p = _redact_str(prompt or "")
     red_ctx = _walk(context or {})

@@ -14,17 +14,27 @@ def test_policy_header_includes_versions():
 def test_schema_validation_ok_minimal():
     payload = {
         "alg_extraction_v1": {
-            "algorithms": [], "components": [], "hyperparameters": [],
-            "equations": [], "implementation_plan": [], "sources": []
+            "algorithms": [],
+            "components": [],
+            "hyperparameters": [],
+            "equations": [],
+            "implementation_plan": [],
+            "sources": [],
         },
         "validation_summary": {"missing_required_fields": [], "unknown_fields": []},
-        "telemetry": {"prompt_version": PROMPT_VERSION, "schema_version": SCHEMA_VERSION, "retrieval_mode":"segmented", "retrieval_rounds":1, "segments_used":0}
+        "telemetry": {
+            "prompt_version": PROMPT_VERSION,
+            "schema_version": SCHEMA_VERSION,
+            "retrieval_mode": "segmented",
+            "retrieval_rounds": 1,
+            "segments_used": 0,
+        },
     }
     ok, msg = validate_alg_extraction(payload)
     assert ok, msg
 
 
 def test_telem_footer():
-    t = telemetry_footer(2, 5, {"algorithms":1})
+    t = telemetry_footer(2, 5, {"algorithms": 1})
     assert t["telemetry"]["retrieval_rounds"] == 2
     assert t["telemetry"]["segments_used"] == 5

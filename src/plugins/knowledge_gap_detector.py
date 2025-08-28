@@ -1,4 +1,5 @@
 """Detects when the agent encounters knowledge gaps and needs cortex assistance."""
+
 from __future__ import annotations
 
 import uuid
@@ -9,8 +10,9 @@ from src.core.utils import CooldownLRU
 
 
 class CortexPolicy(Protocol):
-    async def should_use_cortex(self, confidence: float, context: dict[str, Any]) -> bool:
-        ...
+    async def should_use_cortex(
+        self, confidence: float, context: dict[str, Any]
+    ) -> bool: ...
 
 
 class KnowledgeGapDetector(PluginInterface):
@@ -38,9 +40,15 @@ class KnowledgeGapDetector(PluginInterface):
         self.policy = config.get("policy")
         cooldown_seconds = float(config.get("cooldown_seconds", 300.0))
         self.cooldown = CooldownLRU(ttl_seconds=cooldown_seconds)
-        await self.event_bus.subscribe("reasoning_complete", self.check_reasoning_confidence)
-        await self.event_bus.subscribe("navigation_complete", self.check_navigation_success)
-        await self.event_bus.subscribe("conversation_turn", self.detect_uncertainty_patterns)
+        await self.event_bus.subscribe(
+            "reasoning_complete", self.check_reasoning_confidence
+        )
+        await self.event_bus.subscribe(
+            "navigation_complete", self.check_navigation_success
+        )
+        await self.event_bus.subscribe(
+            "conversation_turn", self.detect_uncertainty_patterns
+        )
 
     async def start(self) -> None:  # type: ignore[override]
         self.is_running = True
@@ -77,8 +85,15 @@ class KnowledgeGapDetector(PluginInterface):
                 )
                 break
 
-    async def _maybe_publish_gap(self, *, gap_description: str, context: dict[str, Any], gap_type: str) -> None:
-        topic = context.get("topic_id") or context.get("prompt_hash") or context.get("goal") or gap_type
+    async def _maybe_publish_gap(
+        self, *, gap_description: str, context: dict[str, Any], gap_type: str
+    ) -> None:
+        topic = (
+            context.get("topic_id")
+            or context.get("prompt_hash")
+            or context.get("goal")
+            or gap_type
+        )
         if self.cooldown.hit(str(topic)):
             return
         hop_count = int(context.get("hop_count", 0))
@@ -98,6 +113,11 @@ class KnowledgeGapDetector(PluginInterface):
             event_version=1,
             source_plugin=self.name,
             gap_description=gap_description,
-            context={**context, "hop_count": hop_count + 1, "correlation_id": correlation_id, "trace_id": trace_id},
+            context={
+                **context,
+                "hop_count": hop_count + 1,
+                "correlation_id": correlation_id,
+                "trace_id": trace_id,
+            },
             gap_type=gap_type,
         )

@@ -180,7 +180,7 @@ class TestEnhancedLadderPlanner:
             ("Unknown task type", "default"),
         ]
 
-        for title, expected_strategy in test_cases:
+        for title, _expected_strategy in test_cases:
             user_event = type(
                 "UserEvent", (), {"payload": {"query": title, "context": ""}}
             )()
@@ -261,9 +261,7 @@ class TestEnhancedLadderPlanner:
         await planner._enhanced_execute(root_todo_shadow, children_shadow)
 
         # Verify shadow execution (should not call actual orchestrator)
-        shadow_executions = [
-            exec for exec in planner.orch.executions if exec[3] is True
-        ]
+        [exec for exec in planner.orch.executions if exec[3] is True]
         active_executions = [
             exec for exec in planner.orch.executions if exec[3] is False
         ]
@@ -333,7 +331,7 @@ class TestEnhancedLadderPlanner:
             (0.3, 0, True),  # Very low energy, no deps -> highest priority
         ]
 
-        for energy, unmet_deps, expect_higher in test_cases:
+        for energy, unmet_deps, _expect_higher in test_cases:
             priority = planner._calculate_priority(energy, unmet_deps)
             assert priority > 0
 
@@ -361,7 +359,7 @@ class TestEnhancedLadderPlanner:
         await planner._enhanced_execute(root_todo, children)
 
         # Verify that failed tasks are handled properly
-        failed_children = [
+        [
             child
             for child in children
             if planner.store.get(child.id).status == TodoStatus.PENDING
@@ -392,7 +390,7 @@ class TestEnhancedLadderPlanner:
     async def test_event_emission(self, planner, sample_user_event):
         """Test event emission during LADDER execution."""
         # Execute a complete plan
-        root_todo = await planner.plan_from_user_event(sample_user_event)
+        await planner.plan_from_user_event(sample_user_event)
 
         # Check that events were emitted
         events = planner.orch.event_bus.events
@@ -484,8 +482,10 @@ class TestEnhancedLadderPlanner:
         import importlib
 
         import cortex.config.flags as flag_module
+
         importlib.reload(flag_module)
         import cortex.planner.ladder_enhanced as le
+
         importlib.reload(le)
 
         planner = le.EnhancedLadderPlanner(

@@ -40,9 +40,11 @@ except ImportError:
     FASTAPI_AVAILABLE = False
 
 # Event bus imports (moved up to avoid E402)
-from reug_runtime.event_bus import BaseEventBus, FileEventBus, make_event_bus
-from reug_runtime.llm_client import LLMClient, get_llm_client
 from src.core.events import create_event
+from src.reug_runtime.event_bus import BaseEventBus, FileEventBus, make_event_bus
+from src.reug_runtime.llm_client import LLMClient, get_llm_client
+
+logger = logging.getLogger(__name__)
 
 
 class JsonFormatter(logging.Formatter):
@@ -183,6 +185,22 @@ class SimpleAbilityRegistry:
             "fetch_github_raw",
             "secure_scan_code",
             "full_cycle_prototype",
+            # DeepCode abilities
+            "analyze_code_file",
+            "analyze_code_directory",
+            "get_code_quality_score",
+            "detect_code_patterns",
+            "analyze_workspace_context",
+            "analyze_file_context",
+            "check_file_support",
+            "get_supported_extensions",
+            "understand_code_structure",
+            # Enhanced Copilot abilities
+            "analyze_and_suggest_repos",
+            "automated_problem_solver",
+            "repository_deep_analysis",
+            "enhanced_code_review",
+            "discover_github_upgrades",
         }
         self._contracts: dict[str, dict[str, Any]] = {
             "echo": {
@@ -272,6 +290,233 @@ class SimpleAbilityRegistry:
                         "owner": {"type": "string"},
                         "repo": {"type": "string"},
                         "path": {"type": "string"},
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            # DeepCode Analysis Tools
+            "analyze_code_file": {
+                "tool_id": "analyze_code_file",
+                "description": "Perform deep analysis on a single code file",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["file_path"],
+                    "properties": {
+                        "file_path": {"type": "string"},
+                        "analysis_level": {
+                            "type": "string",
+                            "enum": [
+                                "syntax",
+                                "semantic",
+                                "security",
+                                "performance",
+                                "architecture",
+                                "deep",
+                            ],
+                            "default": "semantic",
+                        },
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "analyze_code_directory": {
+                "tool_id": "analyze_code_directory",
+                "description": "Analyze all supported code files in a directory",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["directory_path"],
+                    "properties": {
+                        "directory_path": {"type": "string"},
+                        "analysis_level": {
+                            "type": "string",
+                            "enum": [
+                                "syntax",
+                                "semantic",
+                                "security",
+                                "performance",
+                                "architecture",
+                                "deep",
+                            ],
+                            "default": "semantic",
+                        },
+                        "generate_report": {"type": "boolean", "default": True},
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "get_code_quality_score": {
+                "tool_id": "get_code_quality_score",
+                "description": "Calculate quality score for code analysis results",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["target_path"],
+                    "properties": {
+                        "target_path": {"type": "string"},
+                        "include_metrics": {"type": "boolean", "default": False},
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "detect_code_patterns": {
+                "tool_id": "detect_code_patterns",
+                "description": "Detect specific patterns and anti-patterns in code",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["file_path"],
+                    "properties": {
+                        "file_path": {"type": "string"},
+                        "pattern_types": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "default": ["security", "performance"],
+                        },
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            # DeepCode Integration Tools
+            "analyze_workspace_context": {
+                "tool_id": "analyze_workspace_context",
+                "description": "Analyze workspace to understand project structure and context",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["workspace_path"],
+                    "properties": {
+                        "workspace_path": {"type": "string"},
+                        "max_files": {"type": "integer", "default": 20},
+                        "include_quality_metrics": {"type": "boolean", "default": True},
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "analyze_file_context": {
+                "tool_id": "analyze_file_context",
+                "description": "Analyze a specific file with full context understanding",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["file_path"],
+                    "properties": {
+                        "file_path": {"type": "string"},
+                        "include_suggestions": {"type": "boolean", "default": True},
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "check_file_support": {
+                "tool_id": "check_file_support",
+                "description": "Check if a file type is supported by deepcode analysis",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["file_path"],
+                    "properties": {"file_path": {"type": "string"}},
+                },
+                "output_schema": {"type": "object"},
+            },
+            "get_supported_extensions": {
+                "tool_id": "get_supported_extensions",
+                "description": "Get list of file extensions supported by deepcode",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                },
+                "output_schema": {"type": "object"},
+            },
+            "understand_code_structure": {
+                "tool_id": "understand_code_structure",
+                "description": "Analyze code structure and provide architectural insights",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["target_path"],
+                    "properties": {
+                        "target_path": {"type": "string"},
+                        "focus_area": {
+                            "type": "string",
+                            "enum": [
+                                "architecture",
+                                "dependencies",
+                                "complexity",
+                                "patterns",
+                            ],
+                            "default": "architecture",
+                        },
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            # Enhanced Copilot Tools
+            "analyze_and_suggest_repos": {
+                "tool_id": "analyze_and_suggest_repos",
+                "description": "Analyze code problems and suggest GitHub repositories that can help solve them",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["problem_description"],
+                    "properties": {
+                        "problem_description": {"type": "string"},
+                        "code_context": {"type": "string", "default": ""},
+                        "language_preference": {"type": "string", "default": "python"},
+                        "max_results": {"type": "integer", "default": 5},
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "automated_problem_solver": {
+                "tool_id": "automated_problem_solver",
+                "description": "End-to-end automated problem solver that finds repos, analyzes code, and provides implementation guidance",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["task_description"],
+                    "properties": {
+                        "task_description": {"type": "string"},
+                        "workspace_path": {"type": "string", "default": "."},
+                        "include_code_generation": {"type": "boolean", "default": True},
+                        "analyze_existing_code": {"type": "boolean", "default": True},
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "repository_deep_analysis": {
+                "tool_id": "repository_deep_analysis",
+                "description": "Perform deep analysis on a specific GitHub repository to understand its capabilities",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["repo_url"],
+                    "properties": {
+                        "repo_url": {"type": "string"},
+                        "analysis_focus": {
+                            "type": "string",
+                            "enum": [
+                                "architecture",
+                                "security",
+                                "performance",
+                                "usability",
+                                "all",
+                            ],
+                            "default": "all",
+                        },
+                        "include_dependencies": {"type": "boolean", "default": True},
+                    },
+                },
+                "output_schema": {"type": "object"},
+            },
+            "enhanced_code_review": {
+                "tool_id": "enhanced_code_review",
+                "description": "Comprehensive code review with GitHub repository context and DeepCode analysis",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["code_path"],
+                    "properties": {
+                        "code_path": {"type": "string"},
+                        "review_type": {
+                            "type": "string",
+                            "enum": [
+                                "security",
+                                "performance",
+                                "best_practices",
+                                "comprehensive",
+                            ],
+                            "default": "comprehensive",
+                        },
+                        "suggest_improvements": {"type": "boolean", "default": True},
                     },
                 },
                 "output_schema": {"type": "object"},
@@ -398,8 +643,95 @@ class SimpleAbilityRegistry:
                 "fetched": fetched,
                 "plan": run_instructions,
             }
+
+        # DeepCode tool execution
+        if tool_name in [
+            "analyze_code_file",
+            "analyze_code_directory",
+            "get_code_quality_score",
+            "detect_code_patterns",
+            "analyze_workspace_context",
+            "analyze_file_context",
+            "check_file_support",
+            "get_supported_extensions",
+            "understand_code_structure",
+        ]:
+            return await self._execute_deepcode_tool(tool_name, args)
+
+        # Enhanced Copilot tool execution
+        if tool_name in [
+            "analyze_and_suggest_repos",
+            "automated_problem_solver",
+            "repository_deep_analysis",
+            "enhanced_code_review",
+            "discover_github_upgrades",
+        ]:
+            return await self._execute_enhanced_copilot_tool(tool_name, args)
+
         # Fallback generic - echo contract
         return {"ok": True, "tool": tool_name, "args": args}
+
+    async def _execute_deepcode_tool(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Execute deepcode tools by delegating to the appropriate ability"""
+        try:
+            # Import abilities dynamically to avoid circular imports
+            from src.abilities.deepcode_analysis_ability import DeepCodeAnalysisAbility
+            from src.abilities.deepcode_integration_ability import (
+                DeepCodeIntegrationAbility,
+            )
+
+            # Determine which ability to use
+            analysis_tools = [
+                "analyze_code_file",
+                "analyze_code_directory",
+                "get_code_quality_score",
+                "detect_code_patterns",
+            ]
+            integration_tools = [
+                "analyze_workspace_context",
+                "analyze_file_context",
+                "check_file_support",
+                "get_supported_extensions",
+                "understand_code_structure",
+            ]
+
+            if tool_name in analysis_tools:
+                ability = DeepCodeAnalysisAbility()
+                await ability.setup(None, None, {})
+                return await ability._execute_tool(tool_name, args)
+            elif tool_name in integration_tools:
+                ability = DeepCodeIntegrationAbility()
+                await ability.setup(None, None, {})
+                return await ability._execute_tool(tool_name, args)
+            else:
+                return {"error": f"Unknown deepcode tool: {tool_name}"}
+
+        except Exception as e:
+            logger.exception(f"DeepCode tool execution failed for {tool_name}: {e}")
+            return {"error": f"Tool execution failed: {str(e)}"}
+
+    async def _execute_enhanced_copilot_tool(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Execute enhanced copilot tools by delegating to the enhanced copilot ability"""
+        try:
+            # Import ability dynamically to avoid circular imports
+            from src.abilities.enhanced_copilot_ability import EnhancedCopilotAbility
+
+            # Create and setup ability
+            ability = EnhancedCopilotAbility()
+            await ability.setup(None, None, {})
+
+            # Execute the tool
+            return await ability._execute_tool(tool_name, args)
+
+        except Exception as e:
+            logger.exception(
+                f"Enhanced Copilot tool execution failed for {tool_name}: {e}"
+            )
+            return {"error": f"Tool execution failed: {str(e)}"}
 
 
 # --- Knowledge graph (minimal; replace with your store/driver) ---
@@ -445,7 +777,101 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         return None
 
     _configure_logging()
-    app = FastAPI(title="REUG Runtime", version="0.2.0")  # type: ignore
+    
+    from contextlib import asynccontextmanager
+    
+    @asynccontextmanager
+    async def _lifespan(_: Any) -> AsyncGenerator[None, None]:  # type: ignore
+        # Startup: initialize plugins from manifest and emit runtime events
+        plugins_loaded = []
+        
+        # Load OaK integration plugins first
+        with contextlib.suppress(Exception):
+            from src.core.plugin_loader import discover_plugins, load_plugin_manifest
+            
+            try:
+                plugin_configs = load_plugin_manifest("plugins.yaml")
+                if plugin_configs:
+                    plugin_classes = discover_plugins(plugin_configs)
+                    
+                    # Initialize plugins in priority order
+                    for plugin_name, plugin_class in plugin_classes:
+                        try:
+                            # Find config for this plugin
+                            plugin_config = next(
+                                (p for p in plugin_configs if p["name"] == plugin_name), 
+                                {}
+                            )
+                            config = plugin_config.get("config", {})
+                            
+                            plugin_instance = plugin_class()
+                            await plugin_instance.setup(app.state.event_bus, store=None, config=config)  # type: ignore
+                            await plugin_instance.start()
+                            plugins_loaded.append(plugin_instance)
+                            logger.info(f"Loaded OaK plugin: {plugin_name}")
+                        except Exception as e:
+                            logger.warning(f"Failed to load plugin {plugin_name}: {e}")
+                            
+                    logger.info(f"Loaded {len(plugins_loaded)} OaK plugins from manifest")
+                else:
+                    logger.info("No plugins.yaml found, loading minimal plugins")
+            except Exception as e:
+                logger.warning(f"Plugin manifest loading failed: {e}")
+        
+        # Fallback: initialize optional DeepCode plugins if manifest loading failed
+        if not plugins_loaded:
+            with contextlib.suppress(Exception):
+                from src.plugins.deepcode_generator_plugin import (
+                    DeepCodeGeneratorBridgePlugin,
+                )
+                from src.plugins.deepcode_orchestrator_plugin import (
+                    DeepCodeOrchestratorPlugin,
+                )
+
+                gen = DeepCodeGeneratorBridgePlugin()
+                orch = DeepCodeOrchestratorPlugin()
+                await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
+                await orch.setup(app.state.event_bus, store=None, config={})  # type: ignore
+                await gen.start()
+                await orch.start()
+                plugins_loaded = [gen, orch]
+                
+        app.state.plugins = plugins_loaded  # type: ignore
+
+        # Emit startup events
+        try:
+            corr = str(uuid4())
+            logging.getLogger().info("runtime startup")
+            await app.state.event_bus.emit(  # type: ignore
+                {
+                    "type": "STATE_TRANSITION",
+                    "from": "BOOT",
+                    "to": "READY",
+                    "correlation_id": corr,
+                }
+            )
+            await app.state.event_bus.emit(  # type: ignore
+                {
+                    "type": "TaskStarted",
+                    "correlation_id": corr,
+                    "goal": "startup",
+                    "user_msg_hash": _hash_json("startup"),
+                }
+            )
+        except Exception:
+            pass  # best-effort; keep service up even if telemetry fails
+
+        yield
+
+        # Shutdown: stop plugins gracefully
+        with contextlib.suppress(Exception):
+            for p in getattr(app.state, "plugins", []):  # type: ignore
+                stop = getattr(p, "stop", None)
+                if callable(stop):
+                    await stop()
+    
+    # Create FastAPI app with lifespan handler
+    app = FastAPI(title="REUG Runtime", version="0.2.0", lifespan=_lifespan)  # type: ignore
 
     # CORS (tweak as needed)
     app.add_middleware(  # type: ignore
@@ -501,59 +927,6 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
     # Lifespan handler (replaces deprecated on_event startup/shutdown)
     app.state.plugins = []  # type: ignore
-
-    async def _lifespan(_: Any) -> AsyncGenerator[None, None]:  # type: ignore
-        # Startup: initialize optional DeepCode plugins and emit runtime events
-        with contextlib.suppress(Exception):
-            from src.plugins.deepcode_generator_plugin import (
-                DeepCodeGeneratorBridgePlugin,
-            )
-            from src.plugins.deepcode_orchestrator_plugin import (
-                DeepCodeOrchestratorPlugin,
-            )
-
-            gen = DeepCodeGeneratorBridgePlugin()
-            orch = DeepCodeOrchestratorPlugin()
-            await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await orch.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await gen.start()
-            await orch.start()
-            app.state.plugins = [gen, orch]  # type: ignore
-
-        # Emit startup events
-        try:
-            corr = str(uuid4())
-            logging.getLogger().info("runtime startup")
-            await app.state.event_bus.emit(  # type: ignore
-                {
-                    "type": "STATE_TRANSITION",
-                    "from": "BOOT",
-                    "to": "READY",
-                    "correlation_id": corr,
-                }
-            )
-            await app.state.event_bus.emit(  # type: ignore
-                {
-                    "type": "TaskStarted",
-                    "correlation_id": corr,
-                    "goal": "startup",
-                    "user_msg_hash": _hash_json("startup"),
-                }
-            )
-        except Exception:
-            pass  # best-effort; keep service up even if telemetry fails
-
-        yield
-
-        # Shutdown: stop plugins gracefully
-        with contextlib.suppress(Exception):
-            for p in getattr(app.state, "plugins", []):  # type: ignore
-                stop = getattr(p, "stop", None)
-                if callable(stop):
-                    await stop()
-
-    # Register lifespan context (Starlette/FastAPI)
-    app.router.lifespan_context = _lifespan  # type: ignore[attr-defined]
 
     # Mount routers
     prefix = SETTINGS.api_prefix
@@ -640,6 +1013,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
                             request = Request(request.scope, _receive)  # type: ignore
             return await call_next(request)
+
     else:
         app.include_router(agent_router)  # type: ignore
         app.include_router(tools_router)  # type: ignore

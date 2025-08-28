@@ -123,10 +123,7 @@ class NeuralAtom(ABC):
             )
 
         # Update success rate using exponential moving average
-        if success:
-            success_value = 1.0
-        else:
-            success_value = 0.0
+        success_value = 1.0 if success else 0.0
 
         if self.metadata.usage_count == 1:
             self.metadata.success_rate = success_value

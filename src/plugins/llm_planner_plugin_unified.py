@@ -1,6 +1,7 @@
 # Version: 3.0.0
 # Description: The agent's brain. Handles the PLANNING and SELECTION cognitive stages.
 
+import contextlib
 import json
 import logging
 import os
@@ -344,10 +345,8 @@ class LLMPlannerPlugin(PluginInterface):
                 for next_line in lines[lines.index(line) + 1 :]:
                     if next_line.strip().startswith("PARAMETERS:"):
                         param_text = next_line.split(":", 1)[1].strip()
-                        try:
+                        with contextlib.suppress(json.JSONDecodeError):
                             parameters = json.loads(param_text)
-                        except json.JSONDecodeError:
-                            pass
                     elif next_line.strip().startswith("REASONING:"):
                         reasoning = next_line.split(":", 1)[1].strip()
 

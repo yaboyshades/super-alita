@@ -22,12 +22,16 @@ class _DefaultOrchestrator:
         self.bandit = bandit
         self.event_bus = event_bus or _NoopEventBus()
 
-    async def execute_action(self, tool: str, todo, context: str, shadow: bool = True) -> str:
+    async def execute_action(
+        self, tool: str, todo, context: str, shadow: bool = True
+    ) -> str:
         # Replace with your tool runner; this is a placeholder
         return f"Simulated run of {tool} on {todo.title}"
 
 
-async def handle_user_event(kg, bandit, user_event, orchestrator=None) -> dict[str, Any]:
+async def handle_user_event(
+    kg, bandit, user_event, orchestrator=None
+) -> dict[str, Any]:
     """
     Drop-in function to route a user event into the LADDER planner.
     Returns minimal planning result (root id and child ids).

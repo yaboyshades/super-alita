@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from cortex.planner import parallel_wrapper as pw
@@ -91,6 +90,7 @@ def test_parallel_wrapper_returns_error_payload() -> None:
     assert result["bad"]["success"] is False
     assert result["bad"]["error"] == "boom"
 
+
 import pytest
 
 from cortex.planner import parallel_wrapper
@@ -155,4 +155,3 @@ async def test_emits_telemetry_sequential_failure(monkeypatch):
     assert event["steps"] == 2
     assert event["success"] is False
     assert event["duration"] >= 0
-

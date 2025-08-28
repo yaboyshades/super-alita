@@ -10,6 +10,7 @@ and subscriber intelligence, while Redis provides the distributed nervous system
 """
 
 import asyncio
+import contextlib
 import logging
 from collections import defaultdict
 from collections.abc import Callable
@@ -127,7 +128,7 @@ class RedisEventBus:
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super(RedisEventBus, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(
@@ -203,10 +204,8 @@ class RedisEventBus:
 
         if self._listener_task:
             self._listener_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._listener_task
-            except asyncio.CancelledError:
-                pass
 
         if self._pubsub:
             await self._pubsub.close()
@@ -422,7 +421,7 @@ class RedisEventBus:
             True if neural subscription was found and removed
         """
 
-        for event_type, subscription_list in self._subscriptions.items():
+        for _event_type, subscription_list in self._subscriptions.items():
             for i, sub in enumerate(subscription_list):
                 if sub.subscriber_id == subscription_id:
                     subscription_list.pop(i)

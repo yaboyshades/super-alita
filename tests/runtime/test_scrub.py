@@ -27,7 +27,12 @@ async def _run_pilot_decide(contract: str) -> str:
 
     async def fake_call(payload: dict):
         captured.update(payload)
-        return {"reasoning": "", "action": "publish_event", "parameters": {}, "schema_version": 1}
+        return {
+            "reasoning": "",
+            "action": "publish_event",
+            "parameters": {},
+            "schema_version": 1,
+        }
 
     client._call_gemini = fake_call  # type: ignore[assignment]
     try:

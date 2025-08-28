@@ -1,0 +1,50 @@
+name: Prompt & Strategy Regression
+on:
+  pull_request:
+    paths:
+      - 'prompts/**'
+      - 'config/strategies.json'
+      - 'evaluation/**'
+  workflow_dispatch:
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        model: [fast-model, quality-model]
+        prompt_style: [concise, cot]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt || true
+
+      - name: Run evaluation harness
+        env:
+          MODEL_ID: ${{ matrix.model }}
+          PROMPT_STYLE: ${{ matrix.prompt_style }}
+          API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          python evaluation/harness.py \
+            --model $MODEL_ID \
+            --prompt-style $PROMPT_STYLE \
+            --cases evaluation/test_cases \
+            --out evaluation/results/${{ matrix.model }}_${{ matrix.prompt_style }}.json
+
+      - name: Aggregate (only after matrix)
+        if: ${{ matrix.model == 'quality-model' && matrix.prompt_style == 'cot' }}
+        run: python evaluation/aggregate.py evaluation/results evaluation/summary.json
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: prompt-regression
+          path: |
+            evaluation/results
+            evaluation/summary.json

@@ -15,7 +15,7 @@ from .runtime import CortexContext, CortexRuntime, create_cortex_runtime
 
 __all__ = [
     "CortexRuntime",
-    "CortexContext", 
+    "CortexContext",
     "create_cortex_runtime",
     "PerceptionModule",
     "ReasoningModule",
@@ -25,5 +25,5 @@ __all__ = [
     "CortexEvent",
     "create_cortex_event",
     "CortexPhase",
-    "MarkerType"
+    "MarkerType",
 ]

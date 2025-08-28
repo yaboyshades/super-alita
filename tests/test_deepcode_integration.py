@@ -29,11 +29,13 @@ async def test_generation_event_bridges_to_deepcode_request(monkeypatch):
     plugin = P()
     await plugin.setup(event_bus=FakeBus(), store=None, config={})
     await plugin.start()
-    await plugin._handle_generation({
-        "prompt": "Create a FastAPI endpoint",
-        "repo_path": ".",
-        "conversation_id": "conv1",
-    })
+    await plugin._handle_generation(
+        {
+            "prompt": "Create a FastAPI endpoint",
+            "repo_path": ".",
+            "conversation_id": "conv1",
+        }
+    )
     await asyncio.sleep(0.01)
     kinds = [e["event_type"] for e in captured]
     assert "cognitive_turn" in kinds

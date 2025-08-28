@@ -7,7 +7,10 @@ DOC = Path(__file__).resolve().parents[2] / "docs" / "agents.md"
 def test_header_fields_clean():
     lines = DOC.read_text().splitlines()
     last = next(l for l in lines if l.startswith("- Last Updated:"))
-    assert re.fullmatch(r"- Last Updated: <!-- AGENTS:LAST_UPDATED -->\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", last)
+    assert re.fullmatch(
+        r"- Last Updated: <!-- AGENTS:LAST_UPDATED -->\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z",
+        last,
+    )
     release = next(l for l in lines if l.startswith("- Current Release:"))
     assert re.fullmatch(r"- Current Release: <!-- AGENTS:RELEASE -->[\w\.\-]+", release)
 

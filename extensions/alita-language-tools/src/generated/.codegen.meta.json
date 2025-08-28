@@ -1,7 +1,7 @@
 {
-  "mode": "stub",
+  "mode": "generated",
   "toolchain": {
-    "jco": false,
+    "jco": true,
     "wasmTools": false
   },
   "inputs": [
@@ -9,10 +9,19 @@
     "/home/runner/work/super-alita/super-alita/wasm/calculator/calculator.wit"
   ],
   "metrics": {
-    "lines": 5,
+    "lines": 41,
     "exports": [
-      "world"
+      "world",
+      "add",
+      "multiply",
+      "divide",
+      "getPerformanceStats",
+      "analyze",
+      "analyzeFile",
+      "detectSmells",
+      "predictIssues",
+      "getPerformanceStats"
     ]
   },
-  "ts": "2025-08-27T06:15:47.120Z"
+  "ts": "2025-08-27T23:42:44.067Z"
 }

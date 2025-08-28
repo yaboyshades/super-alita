@@ -34,8 +34,8 @@ PLUGIN_ORDER = [
     "memory_manager",  # Initialize memory first for other plugins
     "creator_plugin",  # Tool creation capability
     "planner_v2",  # OaK-integrated strategic planner
-    "oak_coordinator", # OaK Tactical Layer
-    "option_executor", # OaK option execution
+    "oak_coordinator",  # OaK Tactical Layer
+    "option_executor",  # OaK option execution
     "tool_executor",  # Tool execution capability
     "puter",  # Cloud environment integration
     "conversation",  # User interaction (legacy)
@@ -56,7 +56,11 @@ def _load_unified_plugins():
     plugin_specs = [
         # Unified cognitive plugins
         ("src.plugins.planner_plugin_v2", "PlannerPluginV2", "planner_v2"),
-        ("src.plugins.option_executor_plugin", "OptionExecutorPlugin", "option_executor"),
+        (
+            "src.plugins.option_executor_plugin",
+            "OptionExecutorPlugin",
+            "option_executor",
+        ),
         ("src.plugins.oak_core.coordinator", "OakCoordinator", "oak_coordinator"),
         ("src.plugins.creator_plugin_unified", "CreatorPlugin", "creator_plugin"),
         (
@@ -72,7 +76,11 @@ def _load_unified_plugins():
         # Cloud integration plugins
         ("src.plugins.puter_plugin", "PuterPlugin", "puter"),
         # AI-powered search plugin
-        ("src.plugins.perplexica_search_plugin", "PerplexicaSearchPlugin", "perplexica_search"),
+        (
+            "src.plugins.perplexica_search_plugin",
+            "PerplexicaSearchPlugin",
+            "perplexica_search",
+        ),
         # Legacy plugins (fallback compatibility)
         ("src.plugins.conversation_plugin", "ConversationPlugin", "conversation"),
         ("src.atoms.web_agent_atom", "WebAgentAtom", "web_agent"),
@@ -291,10 +299,11 @@ class UnifiedSuperAlita:
 
             # Merge environment variables for plugin-specific configuration
             final_config = plugin_config.copy()
-            
+
             # Special handling for Puter plugin - load from environment variables
             if plugin_name == "puter":
                 import os
+
                 env_config = {
                     "puter_base_url": os.getenv(
                         "PUTER_BASE_URL",
@@ -312,12 +321,14 @@ class UnifiedSuperAlita:
                 logger.info(
                     f"Puter plugin configured with base URL: {env_config['puter_base_url']}"
                 )
-            
+
             # Special handling for Perplexica plugin - provide WebAgent integration
             elif plugin_name == "perplexica_search":
                 if "web_agent" in self.plugins:
                     final_config["web_agent"] = self.plugins["web_agent"]
-                    logger.info("Perplexica plugin configured with WebAgent integration")
+                    logger.info(
+                        "Perplexica plugin configured with WebAgent integration"
+                    )
                 else:
                     logger.warning("WebAgent not available for Perplexica integration")
 

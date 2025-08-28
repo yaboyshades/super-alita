@@ -1,0 +1,71 @@
+plugins:
+  # Strategic Layer - Goal decomposition
+  - name: strategic_planner
+    module: src.plugins.strategic_planner_plugin:StrategicPlannerPlugin
+    enabled: true
+    priority: 10
+    description: "Decomposes high-level goals into manageable sub-goals"
+    category: "strategic"
+    config:
+      max_subgoals: 3
+      min_goal_length: 10
+
+  # Tactical Layer - OaK Core Components  
+  - name: oak_coordinator
+    module: src.plugins.oak_core.coordinator:OakCoordinator
+    enabled: true
+    priority: 20
+    description: "Main OaK coordinator that orchestrates all OaK components"
+    category: "tactical"
+    depends_on: ["strategic_planner"]
+    config:
+      interval_sec: 0.5
+      feature_discovery:
+        max_features: 100
+      option_trainer:
+        device: "cpu"
+        batch_size: 64
+        buffer_size: 10000
+      planning_engine:
+        bandit_algorithm: "thompson_sampling"
+        exploration_epsilon: 0.1
+
+  # Operational Layer - Tool execution bridge
+  - name: option_executor
+    module: src.plugins.option_executor_plugin:OptionExecutorPlugin
+    enabled: true
+    priority: 30
+    description: "Translates OaK options into concrete tool calls"
+    category: "operational"
+    depends_on: ["oak_coordinator"]
+    config:
+      option_mappings:
+        # Custom option mappings can be added here
+        option-custom-analysis:
+          tool_name: "analyze_workspace_context"
+          parameters:
+            workspace_path: "."
+            max_files: 20
+
+  # Optional Enhancement Plugins
+  - name: message_amplifier
+    module: src.plugins.message_amplifier_plugin:MessageAmplifierPlugin
+    enabled: false
+    priority: 5
+    description: "Enhances and optimizes user messages"
+    category: "enhancement"
+
+  - name: deepcode_orchestrator
+    module: src.plugins.deepcode_orchestrator_plugin:DeepCodeOrchestratorPlugin
+    enabled: false
+    priority: 40
+    description: "DeepCode analysis orchestration"
+    category: "analysis"
+
+  - name: deepcode_generator_bridge
+    module: src.plugins.deepcode_generator_plugin:DeepCodeGeneratorBridgePlugin
+    enabled: false
+    priority: 41
+    description: "DeepCode generation bridge"
+    category: "analysis"
+    depends_on: ["deepcode_orchestrator"]

@@ -390,7 +390,7 @@ class TestRaceSafeCircuitBreaker:
     def test_monotonic_clock_integration(self, config, event_bus):
         """Test integration with real monotonic clock"""
         real_clock = MonotonicClock()
-        breaker = RaceSafeCircuitBreaker("test", config, real_clock, event_bus)
+        RaceSafeCircuitBreaker("test", config, real_clock, event_bus)
 
         # Should work with real clock
         t1 = real_clock.now()

@@ -268,9 +268,11 @@ class CopilotTodosIntegration(PluginInterface):
                 task_updates = {
                     "title": todo.title,
                     "description": todo.description,
-                    "status": TaskStatus.COMPLETED
-                    if todo.completed
-                    else TaskStatus.NOT_STARTED,
+                    "status": (
+                        TaskStatus.COMPLETED
+                        if todo.completed
+                        else TaskStatus.NOT_STARTED
+                    ),
                     "priority": self._map_todo_priority_to_task(todo.priority),
                     "due_date": todo.due_date,
                     "tags": set(todo.tags),

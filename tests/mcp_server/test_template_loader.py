@@ -13,4 +13,3 @@ def test_copy_tool_template(tmp_path: Path) -> None:
     created = copy_tool_template("sample_tool", dest)
     assert created.exists()
     assert created.read_text().count("sample_tool") >= 2
-

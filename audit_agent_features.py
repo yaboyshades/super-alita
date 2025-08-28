@@ -61,7 +61,7 @@ async def comprehensive_agent_audit():
         # Test LeanRAG
         from cortex.kg.leanrag import LeanRAG
 
-        leanrag = LeanRAG()
+        LeanRAG()
         print("✅ LeanRAG: SUCCESS")
 
         # Test development insights

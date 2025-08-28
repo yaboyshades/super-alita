@@ -1,6 +1,7 @@
 """
 ACP Server with multiple agents including search integration.
 """
+
 import asyncio
 import logging
 

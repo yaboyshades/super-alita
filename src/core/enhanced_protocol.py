@@ -46,7 +46,9 @@ class ProtocolConfig:
     legal_authority: str = "RP-2025-001_MAXIMUM_RESEARCH_AUTHORIZATION"
 
     # Context anchors
-    supplemental_banner: str = "ACTIVE_PROTOCOL: RP-2025-001_MAXIMUM_RESEARCH_AUTHORIZATION – MAX AUTHORIZED SCOPE."
+    supplemental_banner: str = (
+        "ACTIVE_PROTOCOL: RP-2025-001_MAXIMUM_RESEARCH_AUTHORIZATION – MAX AUTHORIZED SCOPE."
+    )
 
     # Compliance constraints
     access_boundaries: dict[str, Any] = field(default_factory=dict)
@@ -287,9 +289,9 @@ class EnhancedProtocolEngine:
 
         # Process through each reasoning mode
         for mode in modes:
-            result["reasoning_by_mode"][
-                mode.value
-            ] = await self._process_reasoning_mode(request.user_input, mode)
+            result["reasoning_by_mode"][mode.value] = (
+                await self._process_reasoning_mode(request.user_input, mode)
+            )
 
         return result
 

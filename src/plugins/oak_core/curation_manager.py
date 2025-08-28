@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import logging
 import re
 from collections import defaultdict
@@ -54,6 +53,16 @@ class CurationManager(PluginInterface):
         self, event_bus: Any, store: Any, config: dict[str, Any]
     ) -> None:  # noqa: D401
         await super().setup(event_bus, store, config)
+        self.cfg: dict[str, float] = {
+            "play_weight": self.get_config("play_weight", 0.1),
+            "planning_weight": self.get_config("planning_weight", 0.2),
+            "semantic_error_penalty": self.get_config("semantic_error_penalty", -0.2),
+            "syntactic_error_penalty": self.get_config("syntactic_error_penalty", -0.1),
+        }
+        self.error_counts: dict[str, int] = defaultdict(int)
+        self._required_features = {"global_play", "global_planning"}
+
+    async def start(self) -> None:
         # Allow light config overrides
         self.play_weight = float(config.get("play_weight", self.play_weight))
         self.semantic_error_penalty = float(
@@ -69,6 +78,45 @@ class CurationManager(PluginInterface):
         await self.subscribe("prediction_error", self.handle_prediction_error)
         await self.subscribe("oak.prediction_error", self.handle_prediction_error)
 
+    def _feature_exists(self, feature_id: str) -> bool:
+        if not self.store:
+            return False
+        try:
+            if hasattr(self.store, "has_feature"):
+                return bool(self.store.has_feature(feature_id))  # type: ignore[attr-defined]
+            if hasattr(self.store, "get_feature"):
+                return self.store.get_feature(feature_id) is not None  # type: ignore[attr-defined]
+            if hasattr(self.store, "features"):
+                return feature_id in self.store.features  # type: ignore[attr-defined]
+        except Exception:  # pragma: no cover - defensive
+            return False
+        return False
+
+    async def _emit_utility_update(
+        self,
+        feature_id: str,
+        signal_type: str,
+        value: float,
+        components: dict[str, float],
+    ) -> None:
+        if not self._feature_exists(feature_id):
+            logger.warning(
+                "CurationManager skipping utility update for missing feature '%s'",
+                feature_id,
+            )
+            return
+        await self.emit_event(
+            "oak.feature_utility_update",
+            feature_id=feature_id,
+            signal_type=signal_type,
+            value=value,
+            components=components,
+        )
+
+    async def start(self) -> None:  # type: ignore[override]
+        await super().start()
+
+    async def shutdown(self) -> None:  # type: ignore[override]
     async def shutdown(self) -> None:  # noqa: D401
         await super().shutdown()
 
@@ -88,6 +136,14 @@ class CurationManager(PluginInterface):
             error_msg = str(event.get("error", ""))
             if re.search(r"(schema|validation|type|required)", error_msg, re.I):
                 category = "syntactic"
+                signal = self.cfg["syntactic_error_penalty"]
+            else:
+                category = "semantic"
+                signal = self.cfg["semantic_error_penalty"]
+
+            self.error_counts[category] += 1
+
+            # Emit process feedback (planning utility impact)
                 weight = self.syntactic_error_penalty
             else:
                 category = "semantic"
@@ -100,6 +156,22 @@ class CurationManager(PluginInterface):
                 error=error_msg[:256],
                 weight=weight,
             )
+
+            # Global planning utility nudge (no specific feature_id attached)
+
+            await self.emit_event(
+                "oak.feature_utility_updated",
+                feature_id="global_planning",
+                signal_type="planning",
+                value=signal,
+                components={"planning": signal},
+            )
+
+            await self._emit_utility_update(
+                "global_planning", "planning", signal, {"planning": signal}
+            )
+        else:
+            signal = float(self.cfg["play_weight"])
         except Exception:  # pragma: no cover - defensive
             logger.exception("CurationManager.handle_tool_result failed")
 
@@ -110,6 +182,15 @@ class CurationManager(PluginInterface):
             # Basic confidence transform (smaller error -> higher weight)
             weight = 1.0 / (1.0 + max(err_val, 0.0))
             await self.emit_event(
+                "oak.feature_utility_updated",
+                feature_id="global_play",
+                signal_type="play",
+                value=signal,
+                components={"play": signal},
+            )
+
+            await self._emit_utility_update(
+                "global_play", "play", signal, {"play": signal}
                 "oak.curation_feedback",
                 category="planning",
                 success=True,
@@ -118,3 +199,23 @@ class CurationManager(PluginInterface):
         except Exception:  # pragma: no cover - defensive
             logger.exception("CurationManager.handle_prediction_error failed")
 
+    async def handle_prediction_error(self, event: Any) -> None:
+
+        err = float(event.get("error", 0.0))
+        signal = max(0.0, 1.0 - err) * float(self.cfg["planning_weight"])
+
+        # Route prediction confidence as a positive signal for planning utility
+        err = float(getattr(event, "error", 0.0))
+        signal = 1.0 / (1.0 + err)
+
+        await self.emit_event(
+            "oak.feature_utility_updated",
+            feature_id="global_planning",
+            signal_type="planning",
+            value=signal,
+            components={"planning": signal},
+        )
+
+        await self._emit_utility_update(
+            "global_planning", "planning", signal, {"planning": signal}
+        )

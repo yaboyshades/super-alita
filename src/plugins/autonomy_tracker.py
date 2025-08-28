@@ -33,7 +33,9 @@ class AutonomyTracker(PluginInterface):
     async def start(self) -> None:  # type: ignore[override]
         self.is_running = True
 
-    async def record_metrics(self, tasks_completed: int, assistance_requests: int) -> None:
+    async def record_metrics(
+        self, tasks_completed: int, assistance_requests: int
+    ) -> None:
         metrics = AutonomyMetrics(tasks_completed, assistance_requests)
         self.metrics_history.append(metrics)
         await self.emit_event(
@@ -47,7 +49,9 @@ class AutonomyTracker(PluginInterface):
         )
 
     async def get_graduation_readiness(self) -> dict[str, Any]:
-        score = self.metrics_history[-1].autonomy_score() if self.metrics_history else 0.0
+        score = (
+            self.metrics_history[-1].autonomy_score() if self.metrics_history else 0.0
+        )
         ready = score > 0.8
         return {
             "ready": ready,

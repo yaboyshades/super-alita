@@ -46,7 +46,9 @@ class FakeOrchestrator:
     def __init__(self):
         self.event_bus = FakeEventBus()
 
-    async def execute_action(self, tool: str, todo, context: str, shadow: bool = True) -> str:
+    async def execute_action(
+        self, tool: str, todo, context: str, shadow: bool = True
+    ) -> str:
         return f"Ran {tool} on {todo.title} (shadow={shadow})"
 
 
@@ -63,7 +65,9 @@ async def test_ladder_planner_happy_path():
     orch = FakeOrchestrator()
 
     planner = LadderPlanner(kg=kg, bandit=bandit, store=store, orchestrator=orch)
-    evt = UserEvent(query="debug the API tests", context="previous conversation history...")
+    evt = UserEvent(
+        query="debug the API tests", context="previous conversation history..."
+    )
     root = await planner.plan_from_user_event(evt)
 
     # root created

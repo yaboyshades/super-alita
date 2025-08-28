@@ -25,14 +25,18 @@ async def echo_handler(params: dict[str, Any]) -> dict[str, Any]:
 
 
 @router.post("/ping")
-async def ping_handler(_: dict[str, Any] = {}) -> dict[str, Any]:
+async def ping_handler(_: dict[str, Any] = None) -> dict[str, Any]:
     """Health check ping."""
+    if _ is None:
+        _ = {}
     return {"result": "pong", "timestamp": time.time()}
 
 
 @router.post("/get_agent_status")
-async def get_agent_status_handler(_: dict[str, Any] = {}) -> dict[str, Any]:
+async def get_agent_status_handler(_: dict[str, Any] = None) -> dict[str, Any]:
     """Get current agent status and health."""
+    if _ is None:
+        _ = {}
     return {
         "result": {
             "status": "operational",
@@ -46,8 +50,10 @@ async def get_agent_status_handler(_: dict[str, Any] = {}) -> dict[str, Any]:
 
 
 @router.post("/get_agent_telemetry")
-async def get_agent_telemetry_handler(params: dict[str, Any] = {}) -> dict[str, Any]:
+async def get_agent_telemetry_handler(params: dict[str, Any] = None) -> dict[str, Any]:
     """Get real-time agent telemetry data and events."""
+    if params is None:
+        params = {}
     event_type = params.get("event_type")
     limit = params.get("limit", 50)
 
@@ -92,9 +98,11 @@ async def mem0_add_memory_handler(params: dict[str, Any]) -> dict[str, Any]:
 
 @router.post("/mem0_get_all_memories")
 async def mem0_get_all_memories_handler(
-    params: dict[str, Any] = {},
+    params: dict[str, Any] = None,
 ) -> dict[str, Any]:
     """Get all memories, optionally filtered by category."""
+    if params is None:
+        params = {}
     category = params.get("category")
     limit = params.get("limit", 100)
     if category:

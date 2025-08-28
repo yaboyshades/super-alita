@@ -66,6 +66,7 @@ async def test_mcp_server() -> dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e), "returncode": -1}
 
+
 async def main():
     """Main test function."""
     print("Testing MCP server connectivity...")
@@ -81,6 +82,7 @@ async def main():
             print(f"Stderr: {result['stderr'][:200]}...")
 
     return result
+
 
 if __name__ == "__main__":
     asyncio.run(main())

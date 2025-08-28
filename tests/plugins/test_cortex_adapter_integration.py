@@ -19,11 +19,16 @@ async def test_cortex_adapter_reasoning_flow():
     adapter = CortexAdapterPlugin(event_bus=bus, graph=g, navigator=nav)
     adapter.register_cortex("github_copilot", GitHubCopilotCortex())
 
-    await adapter.handle_reasoning_request({"data": {"prompt": "Implement a rate limiter", "context": {"user": "t"}}})
+    await adapter.handle_reasoning_request(
+        {"data": {"prompt": "Implement a rate limiter", "context": {"user": "t"}}}
+    )
     # event emitted
     assert bus.publish.called
     payloads = [c.args[0] for c in bus.publish.call_args_list]
-    assert any(getattr(p, "event_type", getattr(p, "type", None)) == "cortex_knowledge_learned" for p in payloads)
+    assert any(
+        getattr(p, "event_type", getattr(p, "type", None)) == "cortex_knowledge_learned"
+        for p in payloads
+    )
     # graph grew
     assert len(g.atoms) >= 2
 

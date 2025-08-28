@@ -7,19 +7,22 @@ import pytest
 from src.tools.core_utils import CoreUtils
 
 
-@pytest.mark.parametrize("expr,expected", [
-    ("1+2*3", 7.0),
-    ("(1+2)*3", 9.0),
-    ("-3 + 5", 2.0),
-    ("4 / 2", 2.0),
-    ("2 + (3 * (4 - 1))", 11.0),
-    ("10 + 5 * 2", 20.0),
-    ("(2+3)*4", 20.0),
-    ("-3.5 + 2", -1.5),
-    ("+5", 5.0),
-    ("--4", 4.0),
-    ("2.5 * 4", 10.0),
-])
+@pytest.mark.parametrize(
+    "expr,expected",
+    [
+        ("1+2*3", 7.0),
+        ("(1+2)*3", 9.0),
+        ("-3 + 5", 2.0),
+        ("4 / 2", 2.0),
+        ("2 + (3 * (4 - 1))", 11.0),
+        ("10 + 5 * 2", 20.0),
+        ("(2+3)*4", 20.0),
+        ("-3.5 + 2", -1.5),
+        ("+5", 5.0),
+        ("--4", 4.0),
+        ("2.5 * 4", 10.0),
+    ],
+)
 def test_calculate(expr, expected):
     """Test arithmetic calculation with various expressions."""
     assert CoreUtils.calculate(expr) == pytest.approx(expected)
@@ -55,14 +58,17 @@ def test_div_by_zero_complex():
         CoreUtils.calculate("5 + 1/(2-2)")
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("hello", "olleh"),
-    ("Super Alita", "atilA repuS"),
-    ("12345", "54321"),
-    ("", ""),
-    ("a", "a"),
-    ("race car", "rac ecar"),
-])
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("hello", "olleh"),
+        ("Super Alita", "atilA repuS"),
+        ("12345", "54321"),
+        ("", ""),
+        ("a", "a"),
+        ("race car", "rac ecar"),
+    ],
+)
 def test_reverse_string(text, expected):
     """Test string reversal with various inputs."""
     assert CoreUtils.reverse_string(text) == expected

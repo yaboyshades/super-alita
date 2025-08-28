@@ -47,7 +47,8 @@ def apply_all(message: str, ctx: MessageContext) -> tuple[str, list[dict[str, st
             out, m = fn(out, ctx)
             if m:
                 meta.append(m)
-        except Exception as e:  # keep robust; a faulty middleware should not break requests
+        except (
+            Exception
+        ) as e:  # keep robust; a faulty middleware should not break requests
             meta.append({"step": getattr(fn, "__name__", "unknown"), "error": str(e)})
     return out, meta
-

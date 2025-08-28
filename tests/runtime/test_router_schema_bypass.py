@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -10,12 +9,17 @@ from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG
 
 class BadArgLLM:
     async def stream_chat(self, messages, timeout):
-        if any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
+        if any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        ):
             yield {
                 "content": '<final_answer>{"content":"ok bad arg","citations":[]}</final_answer>'
             }
             return
-        yield {"content": '<tool_call>{"tool":"echo","args":{"payload":123}}</tool_call>'}
+        yield {
+            "content": '<tool_call>{"tool":"echo","args":{"payload":123}}</tool_call>'
+        }
 
 
 def _mk_app():
@@ -50,16 +54,19 @@ def test_schema_bypass(monkeypatch):
     assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls)
 
 
-
-
 class BadArgLLM:
     async def stream_chat(self, messages, timeout):
-        if any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
+        if any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        ):
             yield {
                 "content": '<final_answer>{"content":"ok bad arg","citations":[]}</final_answer>'
             }
             return
-        yield {"content": '<tool_call>{"tool":"echo","args":{"payload":123}}</tool_call>'}
+        yield {
+            "content": '<tool_call>{"tool":"echo","args":{"payload":123}}</tool_call>'
+        }
 
 
 def _mk_app():
@@ -90,4 +97,3 @@ def test_schema_bypass(monkeypatch):
     succ = {e["span_id"] for e in evts if e["type"] == "AbilitySucceeded"}
     fail = {e["span_id"] for e in evts if e["type"] == "AbilityFailed"}
     assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls)
-

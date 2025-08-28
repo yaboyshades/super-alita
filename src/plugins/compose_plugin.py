@@ -354,7 +354,7 @@ class ComposePlugin(PluginInterface):
                 memories = await self.store.attention(zero_vec, top_k=50)
 
                 atoms = []
-                for key, score in memories:
+                for key, _score in memories:
                     atom = self.store.get(key)
                     if atom and hasattr(atom, "value"):
                         try:
@@ -456,7 +456,6 @@ Do not include explanations or markdown formatting."""
         except Exception as e:
             logger.error(f"Error executing composed tool: {e}")
 
-
     async def _store_atom(self, memory_id: str, atom: DynamicAtom) -> None:
         """Store composed atom in semantic memory"""
         try:
@@ -485,7 +484,7 @@ Do not include explanations or markdown formatting."""
                 )
         except Exception as e:
             logger.error(f"Failed to store composed atom {memory_id}: {e}")
-    
+
     async def _call_gemini_async(self, prompt: str) -> str:
         """Async wrapper for Gemini API call"""
         loop = asyncio.get_event_loop()
@@ -493,7 +492,7 @@ Do not include explanations or markdown formatting."""
             None, lambda: self.llm_client.generate_content(prompt)
         )
         return response.text
-    
+
     async def get_stats(self) -> dict[str, Any]:
         """Get composition statistics"""
         return {

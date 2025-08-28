@@ -194,12 +194,14 @@ def build_hierarchy(
     agg = HierarchicalAggregator(
         embedder=embedder,
         max_depth=max_depth if max_depth is not None else LEANRAG.max_depth,
-        min_cluster_size=min_cluster_size
-        if min_cluster_size is not None
-        else LEANRAG.min_cluster_size,
+        min_cluster_size=(
+            min_cluster_size
+            if min_cluster_size is not None
+            else LEANRAG.min_cluster_size
+        ),
         gmm_k_init=gmm_k_init if gmm_k_init is not None else LEANRAG.gmm_k_init,
-        link_threshold=link_threshold
-        if link_threshold is not None
-        else LEANRAG.link_threshold,
+        link_threshold=(
+            link_threshold if link_threshold is not None else LEANRAG.link_threshold
+        ),
     )
     return agg.build(g)

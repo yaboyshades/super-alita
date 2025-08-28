@@ -4,6 +4,7 @@ Executes plans by running individual tool calls and actions
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import uuid
@@ -675,7 +676,7 @@ class ToolExecutorPlugin(PluginInterface):
             logger.error(f"Error executing dynamic tool: {e}")
 
             # Emit error result
-            try:
+            with contextlib.suppress(Exception):
                 await self.emit_event(
                     "tool_result",
                     source_plugin=self.name,
@@ -687,8 +688,6 @@ class ToolExecutorPlugin(PluginInterface):
                     result={"error": str(e)},
                     error=str(e),
                 )
-            except Exception:
-                pass
 
     async def _execute_dynamic_tool_code(
         self, tool_name: str, code: str, parameters: dict, event

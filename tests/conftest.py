@@ -59,6 +59,7 @@ for _mod in _CANDIDATE_MODULES:
     if _MR_CLASS or _MR_INSTANCE:
         break
 
+
 # --- Monkey-patch: add a reset() if missing on the class ---
 def _generic_reset(self):
     """
@@ -86,17 +87,16 @@ def _generic_reset(self):
                     pass
         else:
             # Fallbacks for common types
-            if isinstance(val, dict) or isinstance(val, list) or isinstance(val, set):
+            if isinstance(val, dict | list | set):
                 val.clear()
     # If the registry maintains counters/histograms as attributes like:
     # self.counters / self.histograms / self.gauges (dicts), they've been cleared above.
     return None
 
+
 if _MR_CLASS is not None and not hasattr(_MR_CLASS, "reset"):
-    try:
+    with contextlib.suppress(Exception):
         _MR_CLASS.reset = _generic_reset
-    except Exception:
-        pass
 
 # --- Ensure an instance exists so tests can call .reset() directly if they import it ---
 if _MR_INSTANCE is None and _MR_CLASS is not None:
@@ -105,22 +105,18 @@ if _MR_INSTANCE is None and _MR_CLASS is not None:
     except Exception:
         _MR_INSTANCE = None
 
+
 # --- Autouse: reset metrics between tests if we found a registry ---
 @pytest.fixture(autouse=True)
 def _reset_metrics_between_tests():
     if _MR_INSTANCE is not None and hasattr(_MR_INSTANCE, "reset"):
-        try:
+        with contextlib.suppress(Exception):
             _MR_INSTANCE.reset()
-        except Exception:
-            pass
     # Also attempt class-level reset for singleton-style registries
     if _MR_CLASS is not None and hasattr(_MR_CLASS, "reset"):
-        try:
+        with contextlib.suppress(Exception):
             _MR_CLASS.reset(_MR_CLASS)
-        except Exception:
-            pass
     yield
-
 
 
 # --------------------------------------------------------------------
@@ -143,13 +139,17 @@ def _attach_execution_flow_shims():
     try:
         from reug.events import EventEmitter
         from reug.services import PlanStep, create_services
-        emitter = EventEmitter(os.environ.get("REUG_EVENT_LOG_DIR") or "logs/events.jsonl")
+
+        emitter = EventEmitter(
+            os.environ.get("REUG_EVENT_LOG_DIR") or "logs/events.jsonl"
+        )
         services = create_services(emitter)
     except Exception:
         services = None
 
     # ---- Shim: find_applicable_tools(step) -> list[dict]
     if not hasattr(cef, "find_applicable_tools"):
+
         def find_applicable_tools(step):
             """Legacy shim that delegates to REUG or falls back."""
             kind = None
@@ -161,34 +161,44 @@ def _attach_execution_flow_shims():
                 kind = str(getattr(step, "kind", "")).upper()
                 args = dict(getattr(step, "args", {}) or {})
             if services:
-                ps = PlanStep(step_id=str(getattr(step, "step_id", "s1")), kind=kind or "COMPUTE", args=args)
+                ps = PlanStep(
+                    step_id=str(getattr(step, "step_id", "s1")),
+                    kind=kind or "COMPUTE",
+                    args=args,
+                )
                 import asyncio
+
                 async def _select():
                     return await services["select_tool"](ps, {"correlation_id": "test"})
+
                 res = asyncio.get_event_loop().run_until_complete(_select())
                 if res.get("status") == "FOUND":
                     return [res["tool"]]
             tool_id = {
-                "SEARCH":  "tool.search.basic",
+                "SEARCH": "tool.search.basic",
                 "COMPUTE": "tool.compute.python",
                 "ANALYZE": "tool.analyze.basic",
-                "GENERATE":"tool.generate.text",
-                "VALIDATE":"tool.validate.schema",
+                "GENERATE": "tool.generate.text",
+                "VALIDATE": "tool.validate.schema",
             }.get(kind or "COMPUTE", "tool.generic")
             return [{"tool_id": tool_id}]
+
         cef.find_applicable_tools = find_applicable_tools
 
     # ---- Shim: select_tool(step) -> dict with status/tool
     if not hasattr(cef, "select_tool"):
+
         def select_tool(step):
             tools = cef.find_applicable_tools(step)
             if tools:
                 return {"status": "FOUND", "tool": tools[0]}
             return {"status": "NOT_FOUND"}
+
         cef.select_tool = select_tool
 
     # ---- Shim: execute_step(tool, step) -> result dict
     if not hasattr(cef, "execute_step"):
+
         def execute_step(tool, step):
             """Legacy shim: executes via REUG services if available, else evaluates simple expressions."""
             if isinstance(step, dict):
@@ -200,8 +210,12 @@ def _attach_execution_flow_shims():
             args["_kind"] = kind
             if services:
                 import asyncio
+
                 async def _run():
-                    return await services["execute"](tool, args, {"correlation_id": "test", "step_index": 0})
+                    return await services["execute"](
+                        tool, args, {"correlation_id": "test", "step_index": 0}
+                    )
+
                 ex = asyncio.get_event_loop().run_until_complete(_run())
                 if ex.get("status") == "SUCCESS":
                     return ex.get("result") or {}
@@ -212,15 +226,19 @@ def _attach_execution_flow_shims():
             if kind == "GENERATE":
                 return {"text": args.get("text", "ok")}
             return {"ok": True}
+
         cef.execute_step = execute_step
 
     # ---- Shim: _execute_tools_with_comp_env(tools, ctx)
     if not hasattr(cef, "_execute_tools_with_comp_env"):
+
         async def _execute_tools_with_comp_env(*args, **kwargs):
             return []
+
         cef._execute_tools_with_comp_env = _execute_tools_with_comp_env
 
     cef._REUG_TEST_SHIMS_ATTACHED = True
+
 
 _attach_execution_flow_shims()
 
@@ -231,6 +249,7 @@ _attach_execution_flow_shims()
 # --------------------------------------------------------------------
 try:
     from core.states import TransitionTrigger as _TT
+
     if not hasattr(_TT, "TOOLS_SELECTED") and hasattr(_TT, "TOOLS_ROUTED"):
         _TT.TOOLS_SELECTED = _TT.TOOLS_ROUTED
 except Exception:
@@ -245,6 +264,7 @@ except Exception:
 try:
     from core.session import Session as _Session
     from core.states import StateMachine as _SM
+
     _orig_sm_init = _SM.__init__
 
     def _sm_init_compat(self, *args, **kwargs):
@@ -252,7 +272,9 @@ try:
         if (
             len(args) >= 2
             and isinstance(args[0], _Session)
-            and (_MR_CLASS and isinstance(args[1], _MR_CLASS) or args[1] is _MR_INSTANCE)
+            and (
+                _MR_CLASS and isinstance(args[1], _MR_CLASS) or args[1] is _MR_INSTANCE
+            )
         ):
             session, metrics = args[0], args[1]
             event_bus = kwargs.get("event_bus")
@@ -268,13 +290,16 @@ except Exception:
 # ---- Legacy _handle_generate_state signature accepting context ----
 try:
     from inspect import signature
+
     if "context" not in signature(_SM._handle_generate_state).parameters:
+
         async def _handle_generate_state(self, context=None):
             if context is not None:
                 self.context = context
             try:
                 if getattr(self.context, "tools_selected", []):
                     import core.execution_flow as cef
+
                     await cef._execute_tools_with_comp_env(
                         self.context.tools_selected, self.context
                     )
@@ -287,15 +312,14 @@ try:
                 return _TT.RESPONSE_READY
             except Exception:
                 if getattr(self, "metrics_registry", None):
-                    self.metrics_registry.increment_counter(
-                        "sa_fsm_errors_total"
-                    )
+                    self.metrics_registry.increment_counter("sa_fsm_errors_total")
                 self.context.response = "fallback response"
                 return _TT.RESPONSE_READY
 
         _SM._handle_generate_state = _handle_generate_state
 except Exception:
     pass
+
 
 @pytest.fixture(scope="session")
 def event_loop_policy():

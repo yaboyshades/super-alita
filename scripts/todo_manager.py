@@ -15,9 +15,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_TODO_FILE = (
-    Path(__file__).resolve().parent.parent / ".vscode" / "todos.json"
-)
+DEFAULT_TODO_FILE = Path(__file__).resolve().parent.parent / ".vscode" / "todos.json"
 
 
 def load_todos(todo_file: Path) -> list[dict[str, Any]]:
@@ -42,6 +40,7 @@ def save_todos(todo_file: Path, todos: list[dict[str, Any]]) -> None:
     }
     with open(todo_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+
 
 def initialize_default_todos() -> list[dict[str, Any]]:
     """Initialize with default todos for the Super Alita project."""
@@ -85,7 +84,9 @@ def main(todo_file: Path) -> None:
     else:
         logger.info("Loaded %d existing todos", len(existing_todos))
 
-    logger.info("Todo system ready! Use the manage_todo_list tool to interact with todos.")
+    logger.info(
+        "Todo system ready! Use the manage_todo_list tool to interact with todos."
+    )
     logger.info("Todos stored in: %s", todo_file)
 
 
@@ -104,4 +105,3 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = parse_args()
     main(args.todo_file)
-

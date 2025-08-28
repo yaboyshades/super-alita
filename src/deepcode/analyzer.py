@@ -295,10 +295,15 @@ class PythonDeepAnalyzer(CodeAnalyzer):
                 complexity = 1  # Base complexity
 
                 for child in ast.walk(node):
-                    if (
-                        isinstance(child, (ast.If, ast.While, ast.For, ast.AsyncFor))
-                        or isinstance(child, ast.ExceptHandler)
-                        or isinstance(child, (ast.And, ast.Or))
+                    if isinstance(
+                        child,
+                        ast.If
+                        | ast.While
+                        | ast.For
+                        | ast.AsyncFor
+                        | ast.ExceptHandler
+                        | ast.And
+                        | ast.Or,
                     ):
                         complexity += 1
 
@@ -476,7 +481,7 @@ class DeepCodeEngine:
 
     def get_analyzer(self, file_extension: str) -> CodeAnalyzer | None:
         """Get appropriate analyzer for file type"""
-        for name, analyzer in self.analyzers.items():
+        for _name, analyzer in self.analyzers.items():
             if file_extension in analyzer.get_supported_languages():
                 return analyzer
         return None
@@ -595,12 +600,12 @@ class DeepCodeEngine:
 
         category_counts = {}
 
-        for file_path, result in results.items():
+        for _file_path, result in results.items():
             all_issues.extend(result.issues)
 
             # Aggregate metrics
             for key, value in result.metrics.items():
-                if key in total_metrics and isinstance(value, (int, float)):
+                if key in total_metrics and isinstance(value, int | float):
                     total_metrics[key] += value
 
             # Count issues by severity and category

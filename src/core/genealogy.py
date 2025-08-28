@@ -985,7 +985,7 @@ class GenealogyTracer(PluginInterface):
         branches = []
 
         # Find nodes with multiple children (branch points)
-        for node_key, node in self.nodes.items():
+        for node_key, _node in self.nodes.items():
             children = [
                 edge.child_key for edge in self.edges if edge.parent_key == node_key
             ]

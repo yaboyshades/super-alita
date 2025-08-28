@@ -18,7 +18,7 @@ def test_mcp_server_import():
         spec = importlib.util.spec_from_file_location("mcp_wrapper", wrapper_path)
 
         if spec and spec.loader:
-            module = importlib.util.module_from_spec(spec)
+            importlib.util.module_from_spec(spec)
             # Don't execute the module (which would start the server)
             # Just check that it can be loaded
             return {"success": True, "message": "MCP wrapper can be imported"}

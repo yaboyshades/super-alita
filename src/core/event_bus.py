@@ -90,9 +90,9 @@ class EventBus:
             self._registered
         )  # Alias for compatibility
 
-        self._redis_subscribed: dict[
-            str, bool
-        ] = {}  # Track Redis channel subscriptions
+        self._redis_subscribed: dict[str, bool] = (
+            {}
+        )  # Track Redis channel subscriptions
         self._pubsub = None  # Redis pubsub object
 
         # Metrics tracking
@@ -393,9 +393,11 @@ class EventBus:
                     current_patterns: set[str] = set()
                     if hasattr(self._pubsub, "patterns") and self._pubsub.patterns:
                         current_patterns = {
-                            pattern.decode("utf-8")
-                            if isinstance(pattern, bytes)
-                            else str(pattern)
+                            (
+                                pattern.decode("utf-8")
+                                if isinstance(pattern, bytes)
+                                else str(pattern)
+                            )
                             for pattern in self._pubsub.patterns
                         }
 

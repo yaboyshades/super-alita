@@ -49,7 +49,9 @@ class _StubDeepCodeClient(DeepCodeClientInterface):
             "request": request,
         }
 
-    async def collect_references(self, plan: Mapping[str, Any]) -> Mapping[str, Any]:  # noqa: D401, ARG002
+    async def collect_references(
+        self, plan: Mapping[str, Any]
+    ) -> Mapping[str, Any]:  # noqa: D401, ARG002
         return {"snippets": [], "confidence": 0.78}
 
     async def generate_code(  # noqa: D401, ARG002
@@ -286,9 +288,7 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                 ext_factor = (
                     0.4
                     if ext in {".py", ".rs", ".ts"}
-                    else 0.2
-                    if ext in {".md", ".json"}
-                    else 0.3
+                    else 0.2 if ext in {".md", ".json"} else 0.3
                 )
                 critical_tokens = [
                     "eval(",

@@ -1,4 +1,5 @@
 """Settings for ACP server."""
+
 import os
 from dataclasses import dataclass
 

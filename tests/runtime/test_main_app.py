@@ -1,6 +1,4 @@
-
 """Smoke tests for the FastAPI app factory."""
-
 
 from fastapi.testclient import TestClient
 
@@ -38,10 +36,13 @@ def test_create_app_with_api_prefix(tmp_path, monkeypatch) -> None:
     try:
         app = main.create_app()
         client = TestClient(app)
-        resp = client.post("/api/v1/chat/stream", json={"message": "hello", "session_id": "s1"})
+        resp = client.post(
+            "/api/v1/chat/stream", json={"message": "hello", "session_id": "s1"}
+        )
         assert resp.status_code == 200
     finally:
         rc.SETTINGS.api_prefix = old_prefix
+
 
 """Smoke tests for the FastAPI app factory."""
 
@@ -66,4 +67,3 @@ def test_create_app_smoke(tmp_path, monkeypatch) -> None:
     log = tmp_path / "events.jsonl"
     assert log.exists()
     assert log.read_text().strip()
-

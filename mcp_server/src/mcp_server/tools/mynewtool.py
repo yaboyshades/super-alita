@@ -26,4 +26,3 @@ async def MyNewTool(text: str) -> dict[str, Any]:
     if not text.strip():
         return {"error": "text must be a non-empty string"}
     return {"original": text, "upper": text.upper(), "length": len(text)}
-

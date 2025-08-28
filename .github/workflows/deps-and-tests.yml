@@ -99,6 +99,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Install jco globally
+        run: npm install -g @bytecodealliance/jco
       - name: Codegen strict (REQUIRE_REAL_WIT=1)
         working-directory: extensions/alita-language-tools
         env:

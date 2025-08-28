@@ -42,7 +42,7 @@ function run(cmd, args, opts = {}) {
 }
 
 function writeAdapterIfNeeded() {
-  const files = fs.readdirSync(outDir).filter(f => f.endsWith('.ts'));
+  const files = fs.readdirSync(outDir).filter(f => f.endsWith('.ts') || f.endsWith('.d.ts'));
   let hasWorld = false;
   let candidate = null;
   for (const f of files) {
@@ -52,15 +52,23 @@ function writeAdapterIfNeeded() {
       hasWorld = true;
       break;
     }
-    const m = txt.match(/export\s+const\s+(\w+)\b/);
-    if (m) { candidate = { file: f.replace(/\.ts$/, ''), name: m[1] }; }
+    // Look for function exports or const exports as candidates for world
+    const constMatch = txt.match(/export\s+const\s+(\w+)\b/);
+    const funcMatch = txt.match(/export\s+function\s+(\w+)/);
+    if (constMatch) { 
+      candidate = { file: f.replace(/\.d?\.ts$/, ''), name: constMatch[1] }; 
+    } else if (funcMatch && !candidate) {
+      // Use first function export if no const found
+      candidate = { file: f.replace(/\.d?\.ts$/, ''), name: 'calculator', isNamespace: true };
+    }
   }
   if (hasWorld) return true;
   if (candidate) {
-    const adapter = `// AUTO-GENERATED ADAPTER: re-export generated symbol as 'world'\n` +
-      `export { ${candidate.name} as world } from './${candidate.file}';\n`;
+    const adapter = candidate.isNamespace 
+      ? `// AUTO-GENERATED ADAPTER: re-export entire module as 'world'\nexport * as world from './${candidate.file}';\n`
+      : `// AUTO-GENERATED ADAPTER: re-export generated symbol as 'world'\nexport { ${candidate.name} as world } from './${candidate.file}';\n`;
     fs.writeFileSync(path.join(outDir, 'alita-world.generated.ts'), adapter, 'utf8');
-    console.log('[codegen] wrote adapter to expose world from', candidate.file, 'as', candidate.name);
+    console.log('[codegen] wrote adapter to expose world from', candidate.file, candidate.isNamespace ? 'as namespace' : `as ${candidate.name}`);
     return true;
   }
   return false;
@@ -104,9 +112,18 @@ function summarizeGenerated() {
   for (const f of files) {
     const txt = fs.readFileSync(path.join(outDir, f), 'utf8');
     lines += txt.split(/\r?\n/).length;
-    const re = /export\s+const\s+(\w+)/g;
+    
+    // Look for various export patterns
+    const constRe = /export\s+const\s+(\w+)/g;
+    const funcRe = /export\s+function\s+(\w+)/g;
+    const starRe = /export\s+\*\s+as\s+(\w+)/g;
+    const defaultRe = /export\s+default\s+(\w+)/g;
+    
     let m;
-    while ((m = re.exec(txt))) exports.push(m[1]);
+    while ((m = constRe.exec(txt))) exports.push(m[1]);
+    while ((m = funcRe.exec(txt))) exports.push(m[1]);
+    while ((m = starRe.exec(txt))) exports.push(m[1]);
+    while ((m = defaultRe.exec(txt))) exports.push(m[1]);
   }
   return { lines, exports };
 }
@@ -137,7 +154,12 @@ function summarizeGenerated() {
   // Clean output directory except preserved files
   for (const f of fs.readdirSync(outDir)) {
     if (f.startsWith('.codegen')) continue;
-    fs.unlinkSync(path.join(outDir, f));
+    const fullPath = path.join(outDir, f);
+    if (fs.lstatSync(fullPath).isDirectory()) {
+      fs.rmSync(fullPath, { recursive: true, force: true });
+    } else {
+      fs.unlinkSync(fullPath);
+    }
   }
 
   let ok = false;
@@ -165,7 +187,7 @@ function summarizeGenerated() {
     ok = true;
     for (const inp of inputs) {
       console.log('[codegen] jco transpile', path.relative(repoRoot, inp));
-      const okOne = run('jco', ['transpile', inp, '--out', outDir], { cwd: extRoot });
+      const okOne = run('jco', ['transpile', inp, '-o', outDir, '--stub'], { cwd: extRoot });
       if (!okOne) { ok = false; break; }
     }
   } else {

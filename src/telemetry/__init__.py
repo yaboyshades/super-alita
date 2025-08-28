@@ -37,6 +37,7 @@ def build_copilot_context(user_message: str, session_id: str) -> str:
 
     return f"session={session_id} user={user_message}"
 
+
 __all__ = [
     "EventTypes",
     "MCPTelemetryBroadcaster",

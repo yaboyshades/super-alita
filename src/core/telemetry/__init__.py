@@ -8,7 +8,7 @@ from .streaming import WebSocketStreamer
 
 __all__ = [
     "TelemetryCollector",
-    "TelemetryEvent", 
+    "TelemetryEvent",
     "TelemetryDashboard",
-    "WebSocketStreamer"
+    "WebSocketStreamer",
 ]

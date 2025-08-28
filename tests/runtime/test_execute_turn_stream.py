@@ -26,8 +26,10 @@ async def test_execute_turn_stream_normal_flow() -> None:
     assert output.endswith("</final_answer>")
 
     event_types = [e["type"] for e in bus.events]
-    assert event_types.index("AbilityCalled") < event_types.index("AbilitySucceeded") < event_types.index(
-        "TaskSucceeded"
+    assert (
+        event_types.index("AbilityCalled")
+        < event_types.index("AbilitySucceeded")
+        < event_types.index("TaskSucceeded")
     )
 
     with pytest.raises(StopAsyncIteration):
@@ -68,8 +70,10 @@ async def test_execute_turn_stream_early_final_answer() -> None:
     assert model.calls == 1
 
     event_types = [e["type"] for e in bus.events]
-    assert event_types.index("AbilityCalled") < event_types.index("AbilitySucceeded") < event_types.index(
-        "TaskSucceeded"
+    assert (
+        event_types.index("AbilityCalled")
+        < event_types.index("AbilitySucceeded")
+        < event_types.index("TaskSucceeded")
     )
 
     with pytest.raises(StopAsyncIteration):

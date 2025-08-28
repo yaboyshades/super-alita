@@ -184,7 +184,9 @@ async def reug_stream_next(
     chunks: list[str] = []
     finished = False
     try:
-        chunk = await asyncio.wait_for(anext(it), timeout=SETTINGS.model_stream_timeout_s)
+        chunk = await asyncio.wait_for(
+            anext(it), timeout=SETTINGS.model_stream_timeout_s
+        )
         chunks.append(chunk)
         if "<final_answer>" in chunk:
             finished = True
