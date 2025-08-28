@@ -155,3 +155,7 @@ settings.local.*
 *.pyd
 .npm
 .next
+# Test artifacts and temporary files that shouldn't be committed
+data/test_*.json
+config/*_updated.json
+reports/test_*.md
