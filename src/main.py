@@ -141,30 +141,6 @@ except Exception as e:  # pragma: no cover
         SETTINGS = type("Settings", (), {"api_prefix": ""})()  # type: ignore
 
 
-# --- Resolve reug_runtime from local src if not installed ---
-ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "src"
-# Ensure the PROJECT ROOT (parent of 'src') is on sys.path so that
-# package imports like 'src.core.events' resolve. Previously we only
-# inserted the 'src' directory itself which makes top-level packages
-# (core, agents, etc.) importable, but breaks fully-qualified
-# 'src.*' imports used throughout the codebase.
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-# (Optionally also ensure direct 'src' path for simpler 'core.*' imports)
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-# REUG runtime routers (streaming agent + toolbox)
-try:
-    from reug_runtime.config import SETTINGS
-    from reug_runtime.router import router as agent_router
-    from reug_runtime.router_tools import tools as tools_router
-except Exception as e:  # pragma: no cover
-    # Fallback: minimal routers to allow boot/health during development
-    print("[WARN] reug_runtime import failed; falling back to minimal routers:", e)
-
-
 # --- Ability registry (minimal adapter; replace with your real one) ---
 class SimpleAbilityRegistry:
     """

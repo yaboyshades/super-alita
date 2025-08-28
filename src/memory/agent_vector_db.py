@@ -6,7 +6,7 @@ import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -20,20 +20,20 @@ class MemoryRecord:
     tier: str  # "short" | "long"
     task: str
     content: str
-    meta: Dict[str, Any] = field(default_factory=dict)
+    meta: dict[str, Any] = field(default_factory=dict)
 
 
 class AgentVectorDB:
-    def __init__(self, root: Optional[Path] = None, short_max: int = 50) -> None:
+    def __init__(self, root: Path | None = None, short_max: int = 50) -> None:
         self.root = root or Path(os.getenv("AGENT_MEMORY_DIR", "logs/agent_memory")).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         self.file = self.root / "memory.jsonl"
         self.short_max = int(os.getenv("AGENT_MEMORY_SHORT_MAX", short_max))
 
-    def _load_all(self) -> List[MemoryRecord]:
+    def _load_all(self) -> list[MemoryRecord]:
         if not self.file.exists():
             return []
-        out: List[MemoryRecord] = []
+        out: list[MemoryRecord] = []
         with self.file.open("r", encoding="utf-8") as fh:
             for line in fh:
                 line = line.strip()
@@ -57,10 +57,9 @@ class AgentVectorDB:
 
     def _append(self, rec: MemoryRecord) -> None:
         with self.file.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(asdict(rec), ensure_ascii=False) + "
-")
+            fh.write(json.dumps(asdict(rec), ensure_ascii=False) + "\n")
 
-    def add(self, *, task: str, content: str, meta: Dict[str, Any] | None = None, tier: str = "short") -> str:
+    def add(self, *, task: str, content: str, meta: dict[str, Any] | None = None, tier: str = "short") -> str:
         rec = MemoryRecord(id=uuid.uuid4().hex, ts=time.time(), tier=tier, task=task, content=content, meta=meta or {})
         self._append(rec)
         return rec.id
@@ -77,12 +76,11 @@ class AgentVectorDB:
             tmp = self.file.with_suffix(".tmp")
             with tmp.open("w", encoding="utf-8") as fh:
                 for r in items:
-                    fh.write(json.dumps(asdict(r), ensure_ascii=False) + "
-")
+                    fh.write(json.dumps(asdict(r), ensure_ascii=False) + "\n")
             tmp.replace(self.file)
         return changed
 
-    def prune_short(self, keep_last: Optional[int] = None) -> int:
+    def prune_short(self, keep_last: int | None = None) -> int:
         keep = int(keep_last) if keep_last is not None else self.short_max
         items = self._load_all()
         shorts = [r for r in items if r.tier == "short"]
@@ -92,12 +90,11 @@ class AgentVectorDB:
         tmp = self.file.with_suffix(".tmp")
         with tmp.open("w", encoding="utf-8") as fh:
             for r in sorted(new_items, key=lambda r: r.ts):
-                fh.write(json.dumps(asdict(r), ensure_ascii=False) + "
-")
+                fh.write(json.dumps(asdict(r), ensure_ascii=False) + "\n")
         tmp.replace(self.file)
         return max(0, len(shorts) - keep)
 
-    def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query: str, top_k: int = 5) -> list[dict[str, Any]]:
         items = self._load_all()
         if not items:
             return []
@@ -110,7 +107,7 @@ class AgentVectorDB:
         except Exception:
             return []
         idx = np.argsort(-sims)[: max(1, top_k)]
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         for i in idx:
             r = items[int(i)]
             results.append({
@@ -124,7 +121,7 @@ class AgentVectorDB:
             })
         return results
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         items = self._load_all()
         return {
             "total": len(items),
