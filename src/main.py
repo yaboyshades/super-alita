@@ -777,63 +777,10 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         return None
 
     _configure_logging()
-    app = FastAPI(title="REUG Runtime", version="0.2.0")  # type: ignore
-
-    # CORS (tweak as needed)
-    app.add_middleware(  # type: ignore
-        CORSMiddleware,  # type: ignore
-        allow_origins=os.getenv("CORS_ALLOW_ORIGINS", "*").split(","),
-        allow_methods=["*"],
-        allow_headers=["*"],
-        allow_credentials=True,
-    )
-
-    # Health for Dockerfile/compose
-    from reug_runtime.health import check_health
-
-    @app.get("/healthz")  # type: ignore
-    async def health_check() -> JSONResponse:  # type: ignore
-        status = await check_health(
-            app.state.event_bus,  # type: ignore
-            app.state.ability_registry,  # type: ignore
-            app.state.kg,  # type: ignore
-            app.state.llm_model,  # type: ignore
-        )
-        code = 200 if status["status"] == "healthy" else 503
-        return JSONResponse(status_code=code, content=status)  # type: ignore
-
-    # Alternative health endpoint
-    @app.get("/health")  # type: ignore
-    async def health_check_alt() -> JSONResponse:  # type: ignore
-        status = await check_health(
-            app.state.event_bus,  # type: ignore
-            app.state.ability_registry,  # type: ignore
-            app.state.kg,  # type: ignore
-            app.state.llm_model,  # type: ignore
-        )
-        code = 200 if status["status"] == "healthy" else 503
-        if (
-            isinstance(app.state.event_bus, FileEventBus)  # type: ignore
-            and isinstance(app.state.ability_registry, SimpleAbilityRegistry)  # type: ignore
-            and isinstance(app.state.kg, SimpleKG)  # type: ignore
-            and isinstance(app.state.llm_model, LLMClient)  # type: ignore
-        ):
-            minimal: dict[str, Any] = {
-                "status": status["status"],
-                "service": "super-alita",
-            }
-            return JSONResponse(status_code=code, content=minimal)  # type: ignore
-        return JSONResponse(status_code=code, content=status)  # type: ignore
-
-    # Inject dependencies for the REUG router
-    app.state.event_bus = event_bus if event_bus is not None else make_event_bus()  # type: ignore
-    app.state.ability_registry = SimpleAbilityRegistry()  # type: ignore
-    app.state.kg = SimpleKG()  # type: ignore
-    app.state.llm_model = get_llm_client(os.getenv("LLM_MODEL"))  # type: ignore
-
-    # Lifespan handler (replaces deprecated on_event startup/shutdown)
-    app.state.plugins = []  # type: ignore
-
+    
+    from contextlib import asynccontextmanager
+    
+    @asynccontextmanager
     async def _lifespan(_: Any) -> AsyncGenerator[None, None]:  # type: ignore
         # Startup: initialize plugins from manifest and emit runtime events
         plugins_loaded = []
@@ -922,9 +869,64 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 stop = getattr(p, "stop", None)
                 if callable(stop):
                     await stop()
+    
+    # Create FastAPI app with lifespan handler
+    app = FastAPI(title="REUG Runtime", version="0.2.0", lifespan=_lifespan)  # type: ignore
 
-    # Register lifespan context (Starlette/FastAPI)
-    app.router.lifespan_context = _lifespan  # type: ignore[attr-defined]
+    # CORS (tweak as needed)
+    app.add_middleware(  # type: ignore
+        CORSMiddleware,  # type: ignore
+        allow_origins=os.getenv("CORS_ALLOW_ORIGINS", "*").split(","),
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=True,
+    )
+
+    # Health for Dockerfile/compose
+    from reug_runtime.health import check_health
+
+    @app.get("/healthz")  # type: ignore
+    async def health_check() -> JSONResponse:  # type: ignore
+        status = await check_health(
+            app.state.event_bus,  # type: ignore
+            app.state.ability_registry,  # type: ignore
+            app.state.kg,  # type: ignore
+            app.state.llm_model,  # type: ignore
+        )
+        code = 200 if status["status"] == "healthy" else 503
+        return JSONResponse(status_code=code, content=status)  # type: ignore
+
+    # Alternative health endpoint
+    @app.get("/health")  # type: ignore
+    async def health_check_alt() -> JSONResponse:  # type: ignore
+        status = await check_health(
+            app.state.event_bus,  # type: ignore
+            app.state.ability_registry,  # type: ignore
+            app.state.kg,  # type: ignore
+            app.state.llm_model,  # type: ignore
+        )
+        code = 200 if status["status"] == "healthy" else 503
+        if (
+            isinstance(app.state.event_bus, FileEventBus)  # type: ignore
+            and isinstance(app.state.ability_registry, SimpleAbilityRegistry)  # type: ignore
+            and isinstance(app.state.kg, SimpleKG)  # type: ignore
+            and isinstance(app.state.llm_model, LLMClient)  # type: ignore
+        ):
+            minimal: dict[str, Any] = {
+                "status": status["status"],
+                "service": "super-alita",
+            }
+            return JSONResponse(status_code=code, content=minimal)  # type: ignore
+        return JSONResponse(status_code=code, content=status)  # type: ignore
+
+    # Inject dependencies for the REUG router
+    app.state.event_bus = event_bus if event_bus is not None else make_event_bus()  # type: ignore
+    app.state.ability_registry = SimpleAbilityRegistry()  # type: ignore
+    app.state.kg = SimpleKG()  # type: ignore
+    app.state.llm_model = get_llm_client(os.getenv("LLM_MODEL"))  # type: ignore
+
+    # Lifespan handler (replaces deprecated on_event startup/shutdown)
+    app.state.plugins = []  # type: ignore
 
     # Mount routers
     prefix = SETTINGS.api_prefix
