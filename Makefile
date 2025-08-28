@@ -46,7 +46,11 @@ run-skillset-backend: ## Start the backend skillset server
 env: ## Create .env from template
 	@if [ ! -f .env ]; then cp .env.example .env && echo "Created .env"; else echo ".env already exists"; fi
 
-clean: ## Remove caches and logs
+clean: ## Clean caches and temp files
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	rm -rf .pytest_cache .mypy_cache .coverage coverage.xml htmlcov build dist *.egg-info
 	rm -rf logs/*
+
+.PHONY: autogen-any
+autogen-any: ## Run autogen for specified capability (use DESC="description")
+	python scripts/run_autogen.py --desc "$(DESC)" --repo .

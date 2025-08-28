@@ -1,0 +1,58 @@
+{
+  "name": "super-alita",
+  "version": "1.0.0",
+  "description": "Super Alita - Event-driven AI agent system with MCP integration",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "setup": "npm run setup:env && npm run setup:deps",
+    "setup:env": "cross-env shx test -f .env || shx cp .env.example .env",
+    "setup:deps": "cross-env pip install -r requirements.txt -r requirements-test.txt",
+    "dev": "cross-env uvicorn app:app --reload --port 8080",
+    "validate": "cross-env python validate_deployment.py",
+    "health": "cross-env curl -s http://127.0.0.1:8080/healthz",
+    "tools": "cross-env curl -s http://127.0.0.1:8080/tools/catalog",
+    "lint": "npm run lint:python && npm run lint:shell",
+    "lint:python": "cross-env python -m ruff check .",
+    "lint:python:fix": "cross-env python -m ruff check --fix .",
+    "lint:shell": "shx find scripts -name '*.sh' -o -name '*.ps1' | xargs shellcheck || echo 'ShellCheck not available, skipping shell script linting'",
+    "format": "npm run format:python",
+    "format:python": "cross-env python -m black .",
+    "clean": "shx rm -rf __pycache__ && shx rm -rf .pytest_cache && shx rm -rf logs/*.log",
+    "test": "cross-env python -m pytest tests/ -v",
+    "test:runtime": "cross-env PYTHONPATH=./src python -m pytest tests/runtime/test_router_smoke.py -v",
+    "precommit": "lint-staged"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "cross-env": "^7.0.3",
+    "shx": "^0.3.4"
+  },
+  "lint-staged": {
+    "*.py": [
+      "python -m ruff check --fix",
+      "python -m black"
+    ],
+    "*.{sh,ps1}": [
+      "shellcheck"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "echo 'Checked:'"
+    ]
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "mcp",
+    "event-driven",
+    "python",
+    "fastapi",
+    "llm"
+  ],
+  "author": "Super Alita Development Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

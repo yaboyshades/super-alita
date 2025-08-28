@@ -17,6 +17,7 @@
     "editorconfig.editorconfig",
     "cschlosser.doxdocgen",
     "ms-vscode-remote.vscode-remote-extensionpack",
+    "timonwong.shellcheck",
     "super-alita.alita-lang-ext"
   ]
 }

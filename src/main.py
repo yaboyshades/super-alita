@@ -14,6 +14,7 @@ import re
 import sys
 import urllib.request
 from collections.abc import AsyncGenerator, Callable
+from contextlib import asynccontextmanager
 from logging.config import dictConfig
 from pathlib import Path
 from typing import Any
@@ -39,10 +40,29 @@ except ImportError:
     uvicorn = None  # type: ignore
     FASTAPI_AVAILABLE = False
 
-# Event bus imports (moved up to avoid E402)
-from reug_runtime.event_bus import BaseEventBus, FileEventBus, make_event_bus
-from reug_runtime.llm_client import LLMClient, get_llm_client
-from src.core.events import create_event
+# --- Resolve reug_runtime from local src if not installed ---
+ROOT = Path(__file__).resolve().parent.parent
+SRC = ROOT / "src"
+# Ensure the PROJECT ROOT (parent of 'src') is on sys.path so that
+# package imports like 'src.core.events' resolve. Previously we only
+# inserted the 'src' directory itself which makes top-level packages
+# (core, agents, etc.) importable, but breaks fully-qualified
+# 'src.*' imports used throughout the codebase.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+# (Optionally also ensure direct 'src' path for simpler 'core.*' imports)
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+# Event bus imports (moved after path setup to avoid import errors)
+from reug_runtime.event_bus import (  # noqa: E402
+    BaseEventBus,
+    FileEventBus,
+    make_event_bus,
+)
+from reug_runtime.llm_client import LLMClient, get_llm_client  # noqa: E402
+from src.core.events import create_event  # noqa: E402
+from src.telemetry.mcp_broadcaster import MCPTelemetryBroadcaster  # noqa: E402
 
 
 class JsonFormatter(logging.Formatter):
@@ -92,20 +112,6 @@ def _hash_json(obj: Any) -> str:
     return "na"
 
 
-# --- Resolve reug_runtime from local src if not installed ---
-ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "src"
-# Ensure the PROJECT ROOT (parent of 'src') is on sys.path so that
-# package imports like 'src.core.events' resolve. Previously we only
-# inserted the 'src' directory itself which makes top-level packages
-# (core, agents, etc.) importable, but breaks fully-qualified
-# 'src.*' imports used throughout the codebase.
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-# (Optionally also ensure direct 'src' path for simpler 'core.*' imports)
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
 # REUG runtime routers (streaming agent + toolbox)
 try:
     from reug_runtime.config import SETTINGS
@@ -136,6 +142,48 @@ except Exception as e:  # pragma: no cover
         @tools_router.get("/health")  # type: ignore
         async def tools_health() -> dict[str, str]:
             return {"status": "ok"}
+
+        # Autogen capability creation router
+        autogen_router = APIRouter(prefix="/autogen", tags=["autogen"])  # type: ignore
+
+        @autogen_router.post("/trigger")  # type: ignore
+        async def trigger_autogen(
+            description: str = Body(..., embed=True)  # type: ignore
+        ) -> dict[str, Any]:  # type: ignore
+            """Manually trigger autogen capability creation."""
+            try:
+                from src.pipelines.autogen_pipeline import autogen_any
+                result = autogen_any(description=description)
+                return {"status": "success", "result": result}
+            except Exception as e:
+                return {"status": "error", "error": str(e)}
+
+        @autogen_router.get("/capabilities")  # type: ignore
+        async def list_capabilities() -> dict[str, Any]:  # type: ignore
+            """List detected capability patterns."""
+            from src.policies.need_detector import NeedDetector
+            return {
+                "status": "success",
+                "capability_kinds": list(NeedDetector.KINDS.keys()),
+                "patterns": {
+                    kind: [p.pattern for p in patterns]
+                    for kind, patterns in NeedDetector.KINDS.items()
+                }
+            }
+
+        @autogen_router.post("/detect")  # type: ignore
+        async def detect_needs(
+            description: str = Body(..., embed=True)  # type: ignore
+        ) -> dict[str, Any]:  # type: ignore
+            """Detect capability needs from description."""
+            from src.policies.need_detector import NeedDetector
+            detector = NeedDetector()
+            needs = detector.detect(description)
+            return {
+                "status": "success",
+                "description": description,
+                "detected_needs": needs
+            }
 
         # Create minimal settings
         SETTINGS = type("Settings", (), {"api_prefix": ""})()  # type: ignore
@@ -477,10 +525,83 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
     # Lifespan handler (replaces deprecated on_event startup/shutdown)
     app.state.plugins = []  # type: ignore
+    app.state.mcp_broadcaster = None  # type: ignore
+    app.state._orig_emit = None  # type: ignore
 
+    @asynccontextmanager
     async def _lifespan(_: Any) -> AsyncGenerator[None, None]:  # type: ignore
+        # Optionally enable MCP telemetry broadcasting and wrap event bus emit
+        broadcaster: MCPTelemetryBroadcaster | None = None
+        mcp_enabled = os.getenv("MCP_BROADCAST_ENABLED", "").strip().lower()
+        if mcp_enabled in {"1", "true", "yes"}:
+            try:
+                broadcaster = MCPTelemetryBroadcaster()
+                await broadcaster.start()
+                app.state.mcp_broadcaster = broadcaster  # type: ignore
+
+                # Wrap event_bus.emit to fan-out to MCP after successful emit
+                orig_emit = app.state.event_bus.emit  # type: ignore[attr-defined]
+                app.state._orig_emit = orig_emit  # type: ignore
+
+                async def _emit_and_broadcast(event: dict[str, Any]) -> dict[str, Any]:
+                    result = await orig_emit(event)
+                    try:
+                        # Normalize event shape
+                        etype = (
+                            event.get("event_type")
+                            or event.get("type")
+                            or event.get("kind")
+                            or "event"
+                        )
+                        source = (
+                            event.get("source")
+                            or event.get("source_plugin")
+                            or event.get("plugin")
+                            or "runtime"
+                        )
+                        session_id = event.get("session_id")
+                        conversation_id = event.get("conversation_id")
+                        meta = event.get("metadata") or {}
+                        # Avoid duplicating top-level fields in data
+                        data = {
+                            k: v
+                            for k, v in event.items()
+                            if k
+                            not in {
+                                "event_type",
+                                "type",
+                                "kind",
+                                "source",
+                                "source_plugin",
+                                "plugin",
+                                "session_id",
+                                "conversation_id",
+                                "metadata",
+                            }
+                        }
+                        await broadcaster.broadcast_event(
+                            event_type=str(etype),
+                            source=str(source),
+                            data=data,  # type: ignore[arg-type]
+                            session_id=str(session_id) if session_id else None,
+                            conversation_id=str(conversation_id)
+                            if conversation_id
+                            else None,
+                            metadata=meta if isinstance(meta, dict) else None,
+                        )
+                    except Exception:
+                        # Never block event path due to telemetry issues
+                        pass
+                    return result
+
+                app.state.event_bus.emit = _emit_and_broadcast  # type: ignore[attr-defined]
+            except Exception:
+                # If broadcaster setup fails, continue without telemetry
+                app.state.mcp_broadcaster = None  # type: ignore
+                app.state._orig_emit = None  # type: ignore
         # Startup: initialize optional DeepCode plugins and emit runtime events
         with contextlib.suppress(Exception):
+            from src.plugins.autogen_creator_plugin import AutogenCreatorPlugin
             from src.plugins.deepcode_generator_plugin import (
                 DeepCodeGeneratorBridgePlugin,
             )
@@ -490,11 +611,17 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
             gen = DeepCodeGeneratorBridgePlugin()
             orch = DeepCodeOrchestratorPlugin()
+            autogen = AutogenCreatorPlugin()
+            
             await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
             await orch.setup(app.state.event_bus, store=None, config={})  # type: ignore
+            await autogen.setup(app.state.event_bus, store=None, config={})  # type: ignore
+            
             await gen.start()
             await orch.start()
-            app.state.plugins = [gen, orch]  # type: ignore
+            await autogen.start()
+            
+            app.state.plugins = [gen, orch, autogen]  # type: ignore
 
         # Emit startup events
         try:
@@ -528,6 +655,17 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 if callable(stop):
                     await stop()
 
+        # Restore original event bus emit and stop broadcaster
+        with contextlib.suppress(Exception):
+            if app.state._orig_emit is not None:  # type: ignore
+                app.state.event_bus.emit = app.state._orig_emit  # type: ignore[attr-defined]
+                app.state._orig_emit = None  # type: ignore
+        with contextlib.suppress(Exception):
+            bc = getattr(app.state, "mcp_broadcaster", None)  # type: ignore
+            if bc is not None:
+                await bc.stop()
+                app.state.mcp_broadcaster = None  # type: ignore
+
     # Register lifespan context (Starlette/FastAPI)
     app.router.lifespan_context = _lifespan  # type: ignore[attr-defined]
 
@@ -539,6 +677,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         prefix = prefix.rstrip("/")
         app.include_router(agent_router, prefix=prefix)  # type: ignore
         app.include_router(tools_router, prefix=prefix)  # type: ignore
+        app.include_router(autogen_router, prefix=prefix)  # type: ignore
 
         # Automatic message optimization middleware (HTTP level)
         @app.middleware("http")  # type: ignore
@@ -619,6 +758,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     else:
         app.include_router(agent_router)  # type: ignore
         app.include_router(tools_router)  # type: ignore
+        app.include_router(autogen_router)  # type: ignore
 
     # Startup events are handled via lifespan; on_event is deprecated
 

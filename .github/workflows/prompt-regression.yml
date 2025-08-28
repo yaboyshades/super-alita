@@ -1,0 +1,35 @@
+name: Prompt Regression (Latency/Cost)
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  prompt-perf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Measure prompt performance
+        env:
+          PROMPT_LATENCY_BUDGET: '2.0'
+          PROMPT_COST_BUDGET: '0.25'
+        run: |
+          python tools/ci/measure_prompt_perf.py | tee perf.json
+
+      - name: Upload perf artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prompt-perf
+          path: perf.json
+

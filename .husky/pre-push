@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Running pre-push validation..."
+
+# Ensure the system passes full validation before push
+echo "Running full deployment validation..."
+python validate_deployment.py || {
+    echo "❌ Deployment validation failed! Cannot push broken code."
+    echo "💡 Fix issues and try again."
+    exit 1
+}
+
+# Check for any remaining linting issues
+echo "Checking for linting issues..."
+python -m ruff check . || {
+    echo "❌ Linting issues found! Fix with: npm run lint:python:fix"
+    exit 1
+}
+
+# Check formatting
+echo "Checking code formatting..."
+python -m black . --check || {
+    echo "❌ Code formatting issues found! Fix with: npm run format:python"
+    exit 1
+}
+
+echo "✅ Pre-push validation passed! Safe to push."
