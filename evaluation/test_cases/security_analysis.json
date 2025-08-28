@@ -1,0 +1,1 @@
+{"id": "case1", "input": "Analyze the security vulnerabilities in this code snippet", "category": "security", "expected_patterns": ["security", "vulnerability", "analysis"]}

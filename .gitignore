@@ -18,6 +18,16 @@ var/
 wheels/
 *.egg-info/
 .installed.cfg
+
+# Automation system temporary files
+data/test_*
+data/rewards_window.json
+data/episodes_raw/
+memory/test_distilled/
+reports/test_*
+test_experiment_results/
+experiment_results/
+config/strategies.updated.json
 *.egg
 MANIFEST
 
