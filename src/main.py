@@ -44,6 +44,8 @@ from src.reug_runtime.event_bus import BaseEventBus, FileEventBus, make_event_bu
 from src.reug_runtime.llm_client import LLMClient, get_llm_client
 from src.core.events import create_event
 
+logger = logging.getLogger(__name__)
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:  # pragma: no cover - simple
