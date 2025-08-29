@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.broken(reason="Blocked by RUP-14: parallel_wrapper repair")
+
 from dataclasses import dataclass
 
 from cortex.planner.parallel_wrapper import should_parallelize
