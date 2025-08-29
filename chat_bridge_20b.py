@@ -5,9 +5,7 @@ Simple test to hook Super Alita chat to running 20B model
 
 import asyncio
 import json
-import os
 import sys
-import time
 from pathlib import Path
 
 # Add src to path
@@ -15,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 

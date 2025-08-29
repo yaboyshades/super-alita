@@ -1,6 +1,6 @@
 """Jules Repository Indexer - J2 Epic Implementation"""
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 from pathlib import Path
 import logging
 
