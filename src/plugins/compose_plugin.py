@@ -354,7 +354,7 @@ class ComposePlugin(PluginInterface):
                 memories = await self.store.attention(zero_vec, top_k=50)
 
                 atoms = []
-                for key, score in memories:
+                for key, _score in memories:
                     atom = self.store.get(key)
                     if atom and hasattr(atom, "value"):
                         try:

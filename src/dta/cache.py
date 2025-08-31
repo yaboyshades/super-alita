@@ -12,7 +12,7 @@ import hashlib
 import json
 import threading
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
@@ -630,10 +630,8 @@ class DTACache:
 
         # Also set in fallback cache for redundancy
         if self.fallback_cache:
-            try:
+            with suppress(Exception):
                 await self.fallback_cache.set(cache_key, value, ttl)
-            except Exception:
-                pass
 
         return success
 
@@ -654,10 +652,8 @@ class DTACache:
 
         # Delete from fallback cache
         if self.fallback_cache:
-            try:
+            with suppress(Exception):
                 await self.fallback_cache.delete(cache_key)
-            except Exception:
-                pass
 
         return success
 
@@ -701,10 +697,8 @@ class DTACache:
             pass
 
         if self.fallback_cache:
-            try:
+            with suppress(Exception):
                 await self.fallback_cache.clear()
-            except Exception:
-                pass
 
         return success
 

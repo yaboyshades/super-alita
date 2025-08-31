@@ -6,6 +6,7 @@ Integrates decision policies, reward tracking, and learning with the event syste
 """
 
 import asyncio
+import contextlib
 import time
 from typing import Any
 
@@ -79,10 +80,8 @@ class OptimizationPlugin(PluginInterface):
         """Shutdown the optimization plugin."""
         if self._optimization_task:
             self._optimization_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._optimization_task
-            except asyncio.CancelledError:
-                pass
         
         if self.event_bus:
             await self.event_bus.unsubscribe("cortex_cycle_complete", self._handle_cortex_cycle)

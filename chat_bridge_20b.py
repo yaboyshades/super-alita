@@ -5,19 +5,17 @@ Simple test to hook Super Alita chat to running 20B model
 
 import asyncio
 import json
-import os
 import sys
-import time
 from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import httpx
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Super Alita Chat Bridge")
 
@@ -29,7 +27,10 @@ async def ollama_chat_stream(prompt: str):
     """Stream chat from Ollama 20B model"""
     try:
         messages = [
-            {"role": "system", "content": "You are Super Alita, an AI assistant powered by GPT-OSS 20B. Be helpful and concise."},
+            {
+                "role": "system", 
+                "content": "You are Super Alita, an AI assistant powered by GPT-OSS 20B."
+            },
             {"role": "user", "content": prompt}
         ]
         

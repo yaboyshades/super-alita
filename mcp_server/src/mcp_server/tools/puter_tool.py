@@ -135,7 +135,7 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
                     new_lines = content.splitlines()
                     max_lines = 10
 
-                    for i, (old, new) in enumerate(zip(old_lines[:max_lines], new_lines[:max_lines], strict=False)):
+                    for _i, (old, new) in enumerate(zip(old_lines[:max_lines], new_lines[:max_lines], strict=False)):
                         if old != new:
                             diff_lines.append(f"-{old}")
                             diff_lines.append(f"+{new}")

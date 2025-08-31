@@ -268,7 +268,6 @@ class PlanningActionModule(ActionModule):
     async def process(self, input_data: ReasoningResult, context: dict[str, Any]) -> ModuleResult[ActionResult]:
         """Generate action plan from reasoning"""
         analysis = input_data.analysis
-        conclusions = input_data.conclusions
         
         actions = []
         priority_scores = {}

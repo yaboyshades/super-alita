@@ -34,10 +34,6 @@ class TestLLMClientBenchmarks:
 
         async def select_client():
             # Mock config to avoid real service calls
-            mock_config = {
-                "preferred_llm": "ollama",
-                "fallback_chain": ["ollama", "gpt-4o-mini"],
-            }
             return await get_llm_client(
                 preferred="ollama", fallback_chain=["ollama", "gpt-4o-mini"]
             )
@@ -72,7 +68,7 @@ class TestTelemetryBrokerBenchmarks:
                 }
             )
 
-        result = benchmark(ingest_event)
+        benchmark(ingest_event)
         assert broker.get_event_count() > 0
 
     @pytest.mark.benchmark
@@ -93,7 +89,7 @@ class TestTelemetryBrokerBenchmarks:
             for event in events:
                 broker.ingest(event)
 
-        result = benchmark(ingest_batch)
+        benchmark(ingest_batch)
         assert broker.get_event_count() >= 100
 
     @pytest.mark.benchmark

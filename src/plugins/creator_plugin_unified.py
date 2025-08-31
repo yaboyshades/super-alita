@@ -662,7 +662,7 @@ Respond with ONLY the JSON, no additional text:
 
             # Find the generated class
             atom_class = None
-            for name, obj in local_vars.items():
+            for _name, obj in local_vars.items():
                 if isinstance(obj, type) and issubclass(obj, NeuralAtom):
                     atom_class = obj
                     break
@@ -691,7 +691,7 @@ Respond with ONLY the JSON, no additional text:
                 request_id=request.request_id,
                 success=True,
                 neural_atom_id=atom.metadata.name,
-                stages_completed=[stage for stage in CREATORStage],
+                stages_completed=list(CREATORStage),
             )
 
             # Broadcast success

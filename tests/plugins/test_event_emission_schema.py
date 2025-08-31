@@ -88,7 +88,7 @@ async def test_planning_decision_event_schema():
         assert isinstance(payload["decision"], str)
         assert "Generated plan with" in payload["decision"]
 
-        assert isinstance(payload["confidence_score"], (int, float))
+        assert isinstance(payload["confidence_score"], int | float)
         assert 0.0 <= payload["confidence_score"] <= 1.0
 
         assert isinstance(payload["causal_factors"], list)

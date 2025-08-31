@@ -126,7 +126,6 @@ class PerformanceTracker:
         )
         self.markers.append(marker)
         
-        cycle_id = self.current_cycle_id
         self.current_cycle_id = None
         return marker.id
     

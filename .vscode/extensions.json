@@ -1,8 +1,38 @@
 {
   "recommendations": [
+    // Core Python Extensions
     "ms-python.python",
     "ms-python.vscode-pylance",
+    "donjayamanne.python-extension-pack",
+    "donjayamanne.python-environment-manager",
+    "ms-python.vscode-python-envs",
+    
+    // Python Code Quality & Formatting
+    "ms-python.black-formatter",
+    "ms-python.isort",
+    "ms-python.flake8",
+    "ms-python.pylint",
+    "ms-python.mypy-type-checker",
     "charliermarsh.ruff",
+    
+    // Python Development Tools
+    "ms-python.debugpy",
+    "kevinrose.vsc-python-indent",
+    "mgesbert.python-path",
+    
+    // Python Snippets & Productivity
+    "frhtylcn.pythonsnippets",
+    "ericsia.pythonsnippets3",
+    "tushortz.python-extended-snippets",
+    
+    // Jupyter & Data Science
+    "ms-toolsai.jupyter",
+    "ms-toolsai.jupyter-keymap",
+    "ms-toolsai.jupyter-renderers",
+    "ms-toolsai.vscode-jupyter-cell-tags",
+    "ms-toolsai.vscode-jupyter-slideshow",
+    
+    // General Development
     "eamodio.gitlens",
     "usernamehw.errorlens",
     "ryanluker.vscode-coverage-gutters",

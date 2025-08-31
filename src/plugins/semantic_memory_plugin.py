@@ -807,7 +807,7 @@ class SemanticMemoryPlugin(PluginInterface):
                 if id1 in to_remove:
                     continue
 
-                for j, (id2, vec2, content2) in enumerate(
+                for _j, (id2, vec2, content2) in enumerate(
                     memories_with_vectors[i + 1 :], i + 1
                 ):
                     if id2 in to_remove:
@@ -860,9 +860,9 @@ class SemanticMemoryPlugin(PluginInterface):
 
         # Add structured content
         for key, value in content.items():
-            if isinstance(value, (str, int, float, bool)):
+            if isinstance(value, str | int | float | bool):
                 text_parts.append(f"{key}: {value}")
-            elif isinstance(value, (list, dict)):
+            elif isinstance(value, list | dict):
                 text_parts.append(
                     f"{key}: {str(value)[:200]}"
                 )  # Truncate large structures
@@ -887,9 +887,9 @@ class SemanticMemoryPlugin(PluginInterface):
         """Flatten content for ChromaDB metadata storage."""
         flattened = {}
         for key, value in content.items():
-            if isinstance(value, (str, int, float, bool)):
+            if isinstance(value, str | int | float | bool):
                 flattened[key] = str(value)
-            elif isinstance(value, (list, dict)):
+            elif isinstance(value, list | dict):
                 flattened[key] = str(value)[:500]  # Truncate large structures
         return flattened
 
@@ -1020,7 +1020,7 @@ class SemanticMemoryPlugin(PluginInterface):
                 logger.info("Starting automatic memory consolidation...")
 
                 total_consolidated = 0
-                for hierarchy_path_str in self._memory_hierarchies.keys():
+                for hierarchy_path_str in self._memory_hierarchies:
                     hierarchy_path = hierarchy_path_str.split("::")
 
                     # Only consolidate hierarchies with many memories

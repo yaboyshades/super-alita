@@ -13,10 +13,7 @@ from src.core.proc import run as run_proc
 
 def _venv_python(venv_dir: Path) -> str:
     win = os.name == "nt"
-    if win:
-        cand = venv_dir / "Scripts" / "python.exe"
-    else:
-        cand = venv_dir / "bin" / "python"
+    cand = venv_dir / "Scripts" / "python.exe" if win else venv_dir / "bin" / "python"
     return str(cand)
 
 

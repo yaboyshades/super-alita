@@ -273,7 +273,7 @@ class TestCircuitBreaker:
         fsm = StateMachine(session, metrics)
         
         # Rapid fire transitions to exceed rate limit
-        for i in range(15):  # Exceed TRANSITION_RATE_LIMIT
+        for _i in range(15):  # Exceed TRANSITION_RATE_LIMIT
             await fsm.transition(TransitionTrigger.USER_INPUT_RECEIVED)
             # No delay - trying to exceed rate limit
         

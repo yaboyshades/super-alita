@@ -7,7 +7,6 @@ import argparse
 import asyncio
 import contextlib
 import hashlib
-import httpx
 import json
 import logging
 import os
@@ -22,12 +21,14 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+import httpx
+
 # Add conditional imports for FastAPI dependencies
 try:
     import uvicorn
-    from fastapi import APIRouter, Body, FastAPI, Request, Query
+    from fastapi import APIRouter, Body, FastAPI, Query, Request
     from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
+    from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
     from fastapi.staticfiles import StaticFiles
 
     FASTAPI_AVAILABLE = True
@@ -65,8 +66,8 @@ from reug_runtime.event_bus import (  # noqa: E402
 )
 from reug_runtime.llm_client import LLMClient, get_llm_client  # noqa: E402
 from src.core.events import create_event  # noqa: E402
-from src.telemetry.mcp_broadcaster import MCPTelemetryBroadcaster  # noqa: E402
 from src.gui.router import router as gui_router  # noqa: E402
+from src.telemetry.mcp_broadcaster import MCPTelemetryBroadcaster  # noqa: E402
 
 
 class JsonFormatter(logging.Formatter):
@@ -147,16 +148,38 @@ except Exception as e:  # pragma: no cover
                 session_id = body.get("session_id", "default")
                 
                 async def gen() -> AsyncGenerator[str, None]:
-                    # Send initial response
-                    yield f"data: {json.dumps({'type': 'start', 'content': ''})}\n\n"
+                    # Get model identity
+                    llm = getattr(
+                        globals().get("app", None), "state", object()
+                    ).__dict__.get("llm_model", None)
+                    model_identity = {"model": "unknown", "provider": "unknown"}
+                    if llm and hasattr(llm, "identify"):
+                        try:
+                            identity = await llm.identify()
+                            model_identity.update(identity)
+                        except Exception:
+                            pass
+                    
+                    # Send initial response with model identity
+                    start_data = json.dumps({
+                        'type': 'start', 
+                        'content': '', 
+                        'model': model_identity
+                    })
+                    yield f"data: {start_data}\n\n"
                     
                     # Process the message and generate response
                     response_content = await process_chat_message(message, session_id)
                     
                     # Stream the response in chunks
                     for chunk in response_content.split():
-                        yield f"data: {json.dumps({'type': 'content', 'content': chunk + ' '})}\n\n"
-                        await asyncio.sleep(0.05)  # Small delay for natural typing effect
+                        content_data = json.dumps({
+                            'type': 'content', 
+                            'content': chunk + ' '
+                        })
+                        yield f"data: {content_data}\n\n"
+                        # Small delay for natural typing effect
+                        await asyncio.sleep(0.05)
                     
                     # Send completion signal
                     yield f"data: {json.dumps({'type': 'done'})}\n\n"
@@ -836,11 +859,25 @@ if FASTAPI_AVAILABLE:
             ev_id = str(uuid4())
             last_heartbeat = time.time()
             sid = session or "default"
-            yield _sse_pack("start", {"id": ev_id, "session": sid}, ev_id)
             llm = getattr(chat_stream_endpoint, "_llm", None) or getattr(
                 chat_router, "app_llm", None
             ) or getattr(globals().get("app", None), "state", object()).__dict__.get(
                 "llm_model", None
+            )
+            
+            # Get model identity early
+            model_identity = {"model": "unknown", "provider": "unknown"}
+            if llm and hasattr(llm, "identify"):
+                try:
+                    identity = await llm.identify()
+                    model_identity.update(identity)
+                except Exception:
+                    pass
+            
+            yield _sse_pack(
+                "start", 
+                {"id": ev_id, "session": sid, "model": model_identity}, 
+                ev_id
             )
             async for chunk in generate_reply_chunks(q, sid, llm):
                 yield _sse_pack("content", {"content": chunk}, ev_id)
@@ -873,6 +910,16 @@ if FASTAPI_AVAILABLE:
         if not prompt:
             return JSONResponse({"error": "missing 'q' or 'message'"}, status_code=400)  # type: ignore
         llm = getattr(app, "state", object()).__dict__.get("llm_model", None)
+        
+        # Get model identity
+        model_identity = {"model": "unknown", "provider": "unknown"}
+        if llm and hasattr(llm, "identify"):
+            try:
+                identity = await llm.identify()
+                model_identity.update(identity)
+            except Exception:
+                pass
+        
         # Track user turn
         _get_session_messages(session_id).append({"role": "user", "content": prompt})
         full = "".join(
@@ -886,7 +933,12 @@ if FASTAPI_AVAILABLE:
         # Store assistant reply
         _get_session_messages(session_id).append({"role": "assistant", "content": full})
         return JSONResponse(
-            {"type": "message", "content": full, "session": session_id}
+            {
+                "type": "message", 
+                "content": full, 
+                "session": session_id,
+                "model": model_identity
+            }
         )  # type: ignore
 
 
@@ -1033,6 +1085,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 app.state._orig_emit = None  # type: ignore
         # Startup: initialize optional DeepCode plugins and emit runtime events
         with contextlib.suppress(Exception):
+            from src.core.copilot_snippet_optimizer import SnippetOptimizedCopilotPlugin
+            from src.core.plugin_registry import register_plugin
+            from src.native_deepcode_api import set_native_plugin
             from src.plugins.autogen_creator_plugin import AutogenCreatorPlugin
             from src.plugins.deepcode_generator_plugin import (
                 DeepCodeGeneratorBridgePlugin,
@@ -1040,12 +1095,10 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             from src.plugins.deepcode_orchestrator_plugin import (
                 DeepCodeOrchestratorPlugin,
             )
+            from src.plugins.mcp_adapter_plugin import MCPAdapterPlugin
             from src.plugins.native_deepcode_plugin import NativeDeepCodePlugin
             from src.plugins.native_perplexica_plugin import NativePerplexicaPlugin
             from src.plugins.telemetry_pipeline import TelemetryPipelinePlugin
-            from src.plugins.mcp_adapter_plugin import MCPAdapterPlugin
-            from src.native_deepcode_api import set_native_plugin
-            from src.core.plugin_registry import register_plugin
 
             gen = DeepCodeGeneratorBridgePlugin()
             orch = DeepCodeOrchestratorPlugin()
@@ -1054,6 +1107,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             native_perplexica = NativePerplexicaPlugin()
             telemetry_pipeline = TelemetryPipelinePlugin()
             mcp_adapter = MCPAdapterPlugin()
+            snippet_optimizer = SnippetOptimizedCopilotPlugin()
 
             await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
             await orch.setup(app.state.event_bus, store=None, config={})  # type: ignore
@@ -1062,6 +1116,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             await native_perplexica.setup(app.state.event_bus, store=None, config={})  # type: ignore
             await telemetry_pipeline.setup(app.state.event_bus, store=None, config={})  # type: ignore
             await mcp_adapter.setup(app.state.event_bus, store=None, config={})  # type: ignore
+            await snippet_optimizer.setup(app.state.event_bus, store=None, config={})  # type: ignore
 
             await gen.start()
             await orch.start()
@@ -1070,6 +1125,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             await native_perplexica.start()
             await telemetry_pipeline.start()
             await mcp_adapter.start()
+            await snippet_optimizer.start()
 
             # Wire the native plugin to the API and register globally
             set_native_plugin(native_deepcode)
@@ -1077,6 +1133,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             register_plugin("native_perplexica", native_perplexica)
             register_plugin("telemetry_pipeline", telemetry_pipeline)
             register_plugin("mcp_adapter", mcp_adapter)
+            register_plugin("snippet_optimizer", snippet_optimizer)
 
             app.state.plugins = [  # type: ignore
                 gen,
@@ -1086,6 +1143,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 native_perplexica,
                 telemetry_pipeline,
                 mcp_adapter,
+                snippet_optimizer,
             ]
 
             # Expose plugin tools to the ability registry (dynamic tools)

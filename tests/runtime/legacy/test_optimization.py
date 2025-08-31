@@ -73,7 +73,7 @@ class TestBanditAlgorithms:
         
         # First decisions should explore all arms
         decisions = []
-        for i in range(3):
+        for _i in range(3):
             decision = bandit.select_arm()
             decisions.append(decision)
             bandit.update_reward(decision.decision_id, 0.5)
@@ -98,7 +98,7 @@ class TestBanditAlgorithms:
         bandit.add_arm("bad", "Bad Option")
         
         # Train with known rewards
-        for i in range(10):
+        for _i in range(10):
             decision = bandit.select_arm()
             # Good arm gets high reward, bad arm gets low reward
             reward = 0.9 if decision.arm_id == "good" else 0.1
@@ -106,7 +106,7 @@ class TestBanditAlgorithms:
         
         # Test exploitation behavior
         exploit_decisions = []
-        for i in range(20):
+        for _i in range(20):
             decision = bandit.select_arm()
             exploit_decisions.append(decision)
             reward = 0.9 if decision.arm_id == "good" else 0.1
@@ -391,7 +391,7 @@ class TestOptimizationPlugin:
         
         # Create a policy for the plugin to use
         arms = [{"id": "auto_arm", "name": "Auto Arm"}]
-        policy_id = await plugin.create_policy(
+        await plugin.create_policy(
             name="Auto Policy",
             description="Automatic decision policy",
             algorithm_type="ucb1",
@@ -400,7 +400,7 @@ class TestOptimizationPlugin:
         
         # Simulate a task completion event for reward calculation
         from core.events import create_event
-        task_event = create_event(
+        create_event(
             "task_completed",
             source_plugin="TestPlugin",
             decision_id="test_decision_123",

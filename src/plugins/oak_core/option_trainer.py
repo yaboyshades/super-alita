@@ -173,7 +173,7 @@ class OptionTrainer(PluginInterface):
         i = 0
         for k, v in state.items():
             if i >= len(vec): break
-            if isinstance(v, (int, float, bool)):
+            if isinstance(v, int | float | bool):
                 vec[i] = float(v); i += 1
             elif k == "features" and isinstance(v, list):
                 for j in range(min(10, len(v))):

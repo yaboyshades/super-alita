@@ -6,6 +6,7 @@ activation, monitoring, deactivation, and cleanup with robust state transitions.
 """
 
 import asyncio
+import contextlib
 import logging
 import uuid
 from collections.abc import Callable
@@ -423,10 +424,8 @@ class ToolHealthMonitor:
         self._running = False
         if self._monitor_task:
             self._monitor_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitor_task
-            except asyncio.CancelledError:
-                pass
         self.logger.info("Tool health monitor stopped")
 
     def register_health_check(
@@ -743,7 +742,6 @@ class IntelligentToolSelector:
         """Select optimal tools for a user request"""
         context = context or {}
         # Use response router to get capability matches
-        routing_decision = None
         try:
             # This would be async in real implementation
             # routing_decision = await self.response_router.route_request(user_input, conversation_id)
@@ -997,10 +995,8 @@ class ToolLifecycleManager:
         # Stop cleanup task
         if self._cleanup_task:
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
         # Deactivate all tools
         await self._deactivate_all_tools()
         self.logger.info("Tool Lifecycle Manager stopped")

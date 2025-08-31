@@ -3,9 +3,10 @@
 Direct Ollama integration test - bypassing Super Alita's LLM client
 """
 
-import httpx
-import json
 import asyncio
+import json
+
+import httpx
 
 
 async def chat_with_ollama(message: str):
@@ -35,34 +36,33 @@ async def test_streaming_chat(message: str):
     """Test streaming chat with Ollama"""
     print(f"🔄 Streaming test: '{message}'")
     try:
-        async with httpx.AsyncClient() as client:
-            async with client.stream(
-                "POST",
-                "http://127.0.0.1:11434/api/chat",
-                json={
-                    "model": "gpt-oss:20b",
-                    "messages": [{"role": "user", "content": message}],
-                    "stream": True
-                },
-                timeout=30.0
-            ) as response:
-                
-                if response.status_code == 200:
-                    print("📡 Response: ", end="", flush=True)
-                    async for line in response.aiter_lines():
-                        if line.strip():
-                            try:
-                                data = json.loads(line)
-                                content = data.get("message", {}).get("content", "")
-                                if content:
-                                    print(content, end="", flush=True)
-                                if data.get("done"):
-                                    print("\n✅ Stream complete")
-                                    break
-                            except json.JSONDecodeError:
-                                continue
-                else:
-                    print(f"❌ Error: Status {response.status_code}")
+        async with httpx.AsyncClient() as client, client.stream(
+            "POST",
+            "http://127.0.0.1:11434/api/chat",
+            json={
+                "model": "gpt-oss:20b",
+                "messages": [{"role": "user", "content": message}],
+                "stream": True
+            },
+            timeout=30.0
+        ) as response:
+            
+            if response.status_code == 200:
+                print("📡 Response: ", end="", flush=True)
+                async for line in response.aiter_lines():
+                    if line.strip():
+                        try:
+                            data = json.loads(line)
+                            content = data.get("message", {}).get("content", "")
+                            if content:
+                                print(content, end="", flush=True)
+                            if data.get("done"):
+                                print("\n✅ Stream complete")
+                                break
+                        except json.JSONDecodeError:
+                            continue
+            else:
+                print(f"❌ Error: Status {response.status_code}")
                     
     except Exception as e:
         print(f"❌ Streaming error: {e}")

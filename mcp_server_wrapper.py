@@ -196,9 +196,17 @@ async def find_missing_docstrings_tool(
 
 
 def main() -> None:
-    transport = "stdio"  # VS Code launches this as a subprocess
+    transport = os.environ.get("MCP_TRANSPORT", "stdio")  # Support SSE via env var
+    
     logger.info("Starting MCP server (transport=%s)", transport)
-    app.run(transport=transport)
+    if transport == "sse":
+        host = os.environ.get("MCP_HOST", "127.0.0.1")
+        port = int(os.environ.get("MCP_PORT", "8001"))
+        logger.info("SSE server will be available at http://%s:%s", host, port)
+        # Note: FastMCP may use environment variables for SSE config
+        app.run(transport=transport)
+    else:
+        app.run(transport=transport)
 
 
 if __name__ == "__main__":

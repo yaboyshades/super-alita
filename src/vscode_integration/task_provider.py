@@ -12,6 +12,7 @@ Key Features:
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 from datetime import UTC, datetime
@@ -102,10 +103,8 @@ class VSCodeTaskProvider(PluginInterface):
         """Cleanup task provider."""
         if self._sync_task and not self._sync_task.done():
             self._sync_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._sync_task
-            except asyncio.CancelledError:
-                pass
 
         if self.enhanced_planner:
             await self.enhanced_planner.shutdown()

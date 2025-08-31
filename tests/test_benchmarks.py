@@ -214,7 +214,7 @@ class TestClockBenchmarks(BenchmarkFixtures):
         """Benchmark fake clock operations"""
 
         def fake_clock_ops():
-            current = clock.now()
+            clock.now()
             clock.tick(0.1)
             return clock.now()
 

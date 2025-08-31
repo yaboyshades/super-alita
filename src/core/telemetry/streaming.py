@@ -225,7 +225,5 @@ class WebSocketStreamer:
         """Get information about active connections"""
         return {
             "active_connections": self.get_connection_count(),
-            "clients": [
-                metadata for metadata in self.connection_manager.connection_metadata.values()
-            ]
+            "clients": list(self.connection_manager.connection_metadata.values())
         }

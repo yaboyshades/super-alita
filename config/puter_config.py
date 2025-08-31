@@ -28,10 +28,6 @@ PUTER_CONFIG = {
         "hmac_header": "x-reug-sig",
         "enabled": False,
     },
-
-    "auto_create_dirs": True,
-    "default_working_directory": "/",
-    "log_level": "INFO",
   
 }
 

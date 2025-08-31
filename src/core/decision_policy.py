@@ -263,7 +263,7 @@ class DecisionPolicyEngine:
         """Find candidate capabilities for the goal"""
         candidates = []
 
-        for cap_id, capability in self.capabilities.items():
+        for _cap_id, capability in self.capabilities.items():
             # Basic text matching (can be enhanced with embeddings)
             if self.text_similarity(goal.description, capability.description) > 0.3:
                 candidates.append(capability)
@@ -748,7 +748,7 @@ class PlanBuilder:
         input_schema = capability.schema.get("input_schema", {})
         properties = input_schema.get("properties", {})
 
-        for prop_name in properties.keys():
+        for prop_name in properties:
             if prop_name in goal.slots:
                 args[prop_name] = goal.slots[prop_name]
 

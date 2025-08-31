@@ -899,7 +899,7 @@ class SemanticFSMPlugin(PluginInterface):
             try:
                 await asyncio.sleep(10)  # Check every 10 seconds
 
-                for fsm_name, fsm in self.fsms.items():
+                for _fsm_name, fsm in self.fsms.items():
                     if not fsm.current_state:
                         continue
 

@@ -78,7 +78,7 @@ def draft_tool_spec(need_statement: str) -> ToolSpec:
 
 
 def write_tool_spec(spec: ToolSpec, root: str = ".") -> dict[str, str]:
-    ts = int(time.time())
+    int(time.time())
     md_path = Path(root) / "docs" / "tool_specs"
     json_path = Path(root) / "tools" / "specs"
     md_path.mkdir(parents=True, exist_ok=True)

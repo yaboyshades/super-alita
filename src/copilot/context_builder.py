@@ -86,7 +86,7 @@ def _extract_symbols(source: str) -> list[str]:
 
     symbols: list[str] = []
     for node in tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
             symbols.append(node.name)
     return symbols
 

@@ -82,7 +82,7 @@ class EnhancedDecisionTrials:
         # Enhanced scoring with keyword mappings
         enhanced_score = base_score
 
-        for category, keywords in self.keyword_mappings.items():
+        for _category, keywords in self.keyword_mappings.items():
             # Check if any keywords from this category appear in both texts
             text1_has_category = any(keyword in text1.lower() for keyword in keywords)
             text2_has_category = any(keyword in text2.lower() for keyword in keywords)

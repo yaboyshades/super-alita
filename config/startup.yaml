@@ -1,0 +1,46 @@
+# Super Alita Startup Configuration
+# This file controls how the startup scripts behave
+
+# Main server configuration
+main_server:
+  port: 8080
+  host: "127.0.0.1"
+  auto_reload: true
+
+# MCP server configuration
+mcp_server:
+  enabled: true
+  script: "mcp_server_wrapper.py"
+
+# Browser configuration
+browser:
+  auto_open: true
+  url_path: "/"
+  delay: 3  # seconds to wait before opening browser
+
+# Health check configuration
+health_check:
+  timeout: 30  # seconds to wait for services to be ready
+  interval: 1  # seconds between health check attempts
+  endpoints:
+    - "/health"
+    - "/healthz"
+
+# Startup behavior
+startup:
+  show_banner: true
+  verbose: true
+
+# Additional services (future expansion)
+services:
+  telemetry:
+    enabled: true
+  gui_server:
+    enabled: false
+    port: 8081
+  
+# Development options
+development:
+  auto_restart: true
+  debug_mode: false
+  log_level: "INFO"

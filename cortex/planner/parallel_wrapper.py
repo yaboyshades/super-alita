@@ -105,7 +105,7 @@ class ParallelLadderWrapper:
 
         tasks = [asyncio.create_task(run_one(name, r)) for name, r in self.steps]
         results = await asyncio.gather(*tasks)
-        return {name: payload for name, payload in results}
+        return dict(results)
 
 from __future__ import annotations
 

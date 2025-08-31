@@ -86,17 +86,15 @@ def _generic_reset(self):
                     pass
         else:
             # Fallbacks for common types
-            if isinstance(val, dict) or isinstance(val, list) or isinstance(val, set):
+            if isinstance(val, dict | list | set):
                 val.clear()
     # If the registry maintains counters/histograms as attributes like:
     # self.counters / self.histograms / self.gauges (dicts), they've been cleared above.
     return None
 
 if _MR_CLASS is not None and not hasattr(_MR_CLASS, "reset"):
-    try:
+    with contextlib.suppress(Exception):
         _MR_CLASS.reset = _generic_reset
-    except Exception:
-        pass
 
 # --- Ensure an instance exists so tests can call .reset() directly if they import it ---
 if _MR_INSTANCE is None and _MR_CLASS is not None:
@@ -109,16 +107,12 @@ if _MR_INSTANCE is None and _MR_CLASS is not None:
 @pytest.fixture(autouse=True)
 def _reset_metrics_between_tests():
     if _MR_INSTANCE is not None and hasattr(_MR_INSTANCE, "reset"):
-        try:
+        with contextlib.suppress(Exception):
             _MR_INSTANCE.reset()
-        except Exception:
-            pass
     # Also attempt class-level reset for singleton-style registries
     if _MR_CLASS is not None and hasattr(_MR_CLASS, "reset"):
-        try:
+        with contextlib.suppress(Exception):
             _MR_CLASS.reset(_MR_CLASS)
-        except Exception:
-            pass
     yield
 
 

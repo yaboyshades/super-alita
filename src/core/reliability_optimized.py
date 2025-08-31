@@ -93,7 +93,7 @@ class OptimizedIdempotentProcessor:
         timestamp = getattr(event, "timestamp", time.time())
         if hasattr(timestamp, "timestamp"):
             timestamp = timestamp.timestamp()  # type: ignore[attr-defined]
-        elif not isinstance(timestamp, (int, float)):
+        elif not isinstance(timestamp, int | float):
             timestamp = time.time()
 
         return f"{event.event_type}:{content_hash}:{int(timestamp)}"

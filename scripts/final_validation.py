@@ -191,8 +191,8 @@ def main():
     bridge_ok = validate_cortex_bridge()
     
     if telemetry_result["valid"] and telemetry_result["events"]:
-        event_types = validate_event_types(telemetry_result["events"])
-        markers = validate_telemetry_markers(telemetry_result["events"])
+        validate_event_types(telemetry_result["events"])
+        validate_telemetry_markers(telemetry_result["events"])
     
     # Overall status
     print("\n📊 VALIDATION RESULTS:")

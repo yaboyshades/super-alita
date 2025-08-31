@@ -329,7 +329,7 @@ class TestEndToEndMangleValidation:
         collector = PrometheusMetricsCollector(custom_registry)
         
         async def collect_metrics(session_id, count):
-            for i in range(count):
+            for _i in range(count):
                 collector.inc_cortex_cycles(session_id)
                 collector.inc_events_processed("test_event", "test_handler")
                 await asyncio.sleep(0.001)  # Small delay

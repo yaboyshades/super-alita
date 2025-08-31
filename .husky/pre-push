@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
 echo "🚀 Running pre-push validation..."
 
@@ -20,9 +19,9 @@ python -m ruff check . || {
 
 # Check formatting
 echo "Checking code formatting..."
-python -m black . --check || {
-    echo "❌ Code formatting issues found! Fix with: npm run format:python"
+python -m black --check . || {
+    echo "❌ Formatting issues found! Fix with: npm run format:python"
     exit 1
 }
 
-echo "✅ Pre-push validation passed! Safe to push."
+echo "✅ Pre-push checks passed!"

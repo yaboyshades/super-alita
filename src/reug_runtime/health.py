@@ -52,13 +52,25 @@ async def check_health(
 
     # LLM
     try:
-        stream = llm.stream_chat([{"role": "user", "content": "ping"}], timeout=1)
-        try:
-            await anext(stream)
-        finally:
-            with contextlib.suppress(Exception):
-                await stream.aclose()
-        components["llm"] = {"status": "ok"}
+        if hasattr(llm, "health"):
+            llm_health = await llm.health()
+            if llm_health.get("status") == "ok":
+                components["llm"] = {"status": "ok"}
+            else:
+                components["llm"] = {
+                    "status": "unhealthy", 
+                    "error": llm_health.get("error", "Unknown error")
+                }
+                overall = "unhealthy"
+        else:
+            # Fallback to old method for backwards compatibility
+            stream = llm.stream_chat([{"role": "user", "content": "ping"}], timeout=1)
+            try:
+                await anext(stream)
+            finally:
+                with contextlib.suppress(Exception):
+                    await stream.aclose()
+            components["llm"] = {"status": "ok"}
     except Exception as e:  # pragma: no cover
         components["llm"] = {"status": "unhealthy", "error": str(e)}
         overall = "unhealthy"

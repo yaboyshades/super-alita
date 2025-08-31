@@ -5,7 +5,6 @@ import time
 import uuid
 from typing import Any
 
-from src.clients.local_api import LocalAPI
 from src.contracts.gates.common_gates import (
     CombinedGate,
     PytestGate,
@@ -14,6 +13,7 @@ from src.contracts.gates.common_gates import (
 )
 from src.core.event_bus import EventBus
 from src.core.events import create_event
+from src.native_deepcode_api import NativeDeepCodeAPI, get_native_deepcode_api
 from src.policies.need_detector import NeedDetector
 
 # Capability templates: strictly ability-first, no domain specifics.
@@ -78,30 +78,100 @@ Task: {desc}
 Task: {desc}
 """,
     },
+    "paper2code": {
+        "task_kind": "paper2code",
+        "required_paths": [
+            re.compile(r"^src/abilities/.*paper.*code", re.I),
+            re.compile(r"^tests/abilities/.*paper.*code", re.I),
+        ],
+        "required_docs": [re.compile(r"^docs/.*paper.*code", re.I)],
+        "requirements": lambda desc: f"""Build a research paper implementation *ability*:
+- Extract algorithms and models from research papers
+- Generate production-ready PyTorch/TensorFlow implementations
+- Include comprehensive tests, documentation, and examples
+- Preserve mathematical accuracy and computational complexity
+- Support for attention mechanisms, transformers, neural networks
+- Safety: no eval/exec, proper tensor operations, memory management
+Task: {desc}
+""",
+    },
+    "ml_algorithm": {
+        "task_kind": "ml_algorithm", 
+        "required_paths": [
+            re.compile(r"^src/abilities/.*ml.*algo", re.I),
+            re.compile(r"^tests/abilities/.*ml.*algo", re.I),
+        ],
+        "required_docs": [re.compile(r"^docs/.*ml.*algo", re.I)],
+        "requirements": lambda desc: f"""Build a machine learning algorithm *ability*:
+- Implement core ML algorithms (classification, regression, clustering)
+- Include training loops, optimization, and evaluation metrics
+- Support for different backends (numpy, sklearn, pytorch)
+- Comprehensive tests with synthetic datasets
+- Documentation with mathematical background
+- Safety: validated inputs, numerical stability, memory efficiency
+Task: {desc}
+""",
+    },
+    "web_search": {
+        "task_kind": "web_search",
+        "required_paths": [
+            re.compile(r"^src/abilities/.*search", re.I),
+            re.compile(r"^tests/abilities/.*search", re.I),
+        ],
+        "required_docs": [re.compile(r"^docs/.*search", re.I)],
+        "requirements": lambda desc: f"""Build a web search *ability*:
+- Multi-mode search: web, academic, news, images, videos, reddit
+- AI-powered analysis with reasoning and summarization
+- Source citation and relevance scoring
+- Configurable result limits and search parameters
+- Include comprehensive tests, documentation, and examples
+- Safety: proper URL validation, rate limiting, error handling
+Task: {desc}
+""",
+    },
+    "research_assistant": {
+        "task_kind": "research_assistant",
+        "required_paths": [
+            re.compile(r"^src/abilities/.*research", re.I),
+            re.compile(r"^tests/abilities/.*research", re.I),
+        ],
+        "required_docs": [re.compile(r"^docs/.*research", re.I)],
+        "requirements": lambda desc: f"""Build a research assistant *ability*:
+- Academic paper search and analysis
+- Citation extraction and bibliography generation
+- Research topic exploration with follow-up questions
+- Multi-source knowledge synthesis
+- Include comprehensive tests, documentation, and examples
+- Safety: source verification, fact-checking, proper attribution
+Task: {desc}
+""",
+    },
+    "information_retrieval": {
+        "task_kind": "information_retrieval",
+        "required_paths": [
+            re.compile(r"^src/abilities/.*info.*retrieval", re.I),
+            re.compile(r"^tests/abilities/.*info.*retrieval", re.I),
+        ],
+        "required_docs": [re.compile(r"^docs/.*info.*retrieval", re.I)],
+        "requirements": lambda desc: f"""Build an information retrieval *ability*:
+- Multi-source search and aggregation
+- Intelligent ranking and relevance scoring
+- Context-aware result filtering and deduplication
+- Structured data extraction from search results
+- Include comprehensive tests, documentation, and examples
+- Safety: content validation, bias detection, source verification
+Task: {desc}
+""",
+    },
 }
 
 
-def _emit(bus: EventBus, topic: str, payload: dict[str, Any]) -> None:
+async def _emit(bus: EventBus, topic: str, payload: dict[str, Any]) -> None:
     """Emit event to EventBus."""
-    import asyncio
-
     # Add required source_plugin field
     payload_with_source = {"source_plugin": "autogen_pipeline", **payload}
-
     event = create_event(event_type=topic, **payload_with_source)
-
-    # Handle sync/async properly
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # We're in an async context, schedule the task
-            asyncio.create_task(bus.publish(event))
-        else:
-            # No running loop, run sync
-            loop.run_until_complete(bus.publish(event))
-    except RuntimeError:
-        # No event loop, create one
-        asyncio.run(bus.publish(event))
+    await bus.publish(event)
 
 
 def _refine_requirements(prev_reasons: list[str], base: str) -> str:
@@ -110,25 +180,29 @@ def _refine_requirements(prev_reasons: list[str], base: str) -> str:
     return base + "\n### Refinements required by gate:\n" + patch + "\n"
 
 
-def autogen_any(
+async def autogen_any(
     description: str,
     repo_path: str = ".",
     iterations: int = 5,
     event_bus: EventBus | None = None,
-    api: LocalAPI | None = None,
+    api: NativeDeepCodeAPI | None = None,
 ) -> dict[str, Any]:
     """
     Generic ability autogeneration:
-    Detect kinds -> choose template(s) -> DeepCode -> Gates -> Iterate -> Apply.
+    Detect kinds -> choose template(s) -> Native DeepCode -> Gates -> Iterate -> Apply.
     Emits telemetry + OaK and bandit signals.
+    
+    Now uses native DeepCode integration instead of external API.
     """
     bus = event_bus or EventBus()
-    api = api or LocalAPI()
+    api = api or get_native_deepcode_api()
     convo_id = f"autogen-{int(time.time())}-{uuid.uuid4().hex[:6]}"
     kinds = NeedDetector().detect(description)
 
     if not kinds:
-        _emit(bus, "autogen.skipped", {"reason": "no_signals", "desc": description})
+        await _emit(
+            bus, "autogen.skipped", {"reason": "no_signals", "desc": description}
+        )
         return {"status": "skipped", "reason": "no_signals"}
 
     results: dict[str, Any] = {"status": "complete", "applied": []}
@@ -136,11 +210,11 @@ def autogen_any(
     for kind in kinds:
         tpl = CAPABILITY_TEMPLATES.get(kind)
         if not tpl:
-            _emit(bus, "autogen.unknown_kind", {"kind": kind})
+            await _emit(bus, "autogen.unknown_kind", {"kind": kind})
             continue
 
         # Propose to OaK planning layer: this "option" (create ability) is available
-        _emit(
+        await _emit(
             bus,
             "oak.plan_proposed",
             {
@@ -150,14 +224,14 @@ def autogen_any(
                 "option": "autogen_create_ability",
             },
         )
-        _emit(
+        await _emit(
             bus,
             "autogen.started",
             {"kind": kind, "desc": description, "conversation_id": convo_id},
         )
 
         req = tpl["requirements"](description)
-        api.deepcode_request(
+        await api.deepcode_request(
             task_kind=tpl["task_kind"],
             requirements=req,
             repo_path=repo_path,
@@ -175,17 +249,17 @@ def autogen_any(
 
         passed = False
         for i in range(1, iterations + 1):
-            latest = api.deepcode_latest()
+            latest = await api.deepcode_latest()
             ok, info = gate.validate_latest(latest)
-            _emit(
+            await _emit(
                 bus,
                 "autogen.iteration_checked",
                 {"kind": kind, "iteration": i, "ok": ok, "gate": info},
             )
             if ok:
                 paths = info.get("paths") or []
-                apply_res = api.deepcode_apply(paths=paths if paths else None)
-                _emit(
+                apply_res = await api.deepcode_apply(paths=paths if paths else None)
+                await _emit(
                     bus,
                     "autogen.applied",
                     {
@@ -196,7 +270,7 @@ def autogen_any(
                     },
                 )
                 # Bandit reward: success
-                _emit(
+                await _emit(
                     bus,
                     "bandit.reward_event",
                     {
@@ -207,7 +281,7 @@ def autogen_any(
                     },
                 )
                 # OaK outcome feedback
-                _emit(
+                await _emit(
                     bus,
                     "oak.outcome_feedback",
                     {"kind": kind, "success": True, "paths": paths},
@@ -220,12 +294,12 @@ def autogen_any(
 
             # refine + request again
             req = _refine_requirements(info.get("reasons") or [], req)
-            _emit(
+            await _emit(
                 bus,
                 "autogen.refine",
                 {"kind": kind, "iteration": i, "reasons": info.get("reasons")},
             )
-            api.deepcode_request(
+            await api.deepcode_request(
                 task_kind=tpl["task_kind"],
                 requirements=req,
                 repo_path=repo_path,
@@ -233,13 +307,13 @@ def autogen_any(
             )
 
         if not passed:
-            _emit(
+            await _emit(
                 bus,
                 "autogen.failed",
                 {"kind": kind, "iterations": iterations, "desc": description},
             )
             # Bandit reward: failure (soft penalty)
-            _emit(
+            await _emit(
                 bus,
                 "bandit.reward_event",
                 {
@@ -249,7 +323,8 @@ def autogen_any(
                     "desc": description,
                 },
             )
-            _emit(bus, "oak.outcome_feedback", {"kind": kind, "success": False})
+            # OaK outcome feedback
+            await _emit(bus, "oak.outcome_feedback", {"kind": kind, "success": False})
             results.setdefault("failed", []).append(kind)
 
     return results

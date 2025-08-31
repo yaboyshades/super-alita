@@ -257,10 +257,10 @@ class FeatureDiscoveryEngine(PluginInterface):
     def _obs_to_vector(self, obs: dict[str, Any]) -> np.ndarray:
         vec = np.zeros(self.state_dim, dtype=np.float32)
         i = 0
-        for k, v in obs.items():
+        for _k, v in obs.items():
             if i >= self.state_dim:
                 break
-            if isinstance(v, (int, float, bool)):
+            if isinstance(v, int | float | bool):
                 vec[i] = float(v)
             else:
                 vec[i] = (hash(str(v)) % 1000) / 1000.0

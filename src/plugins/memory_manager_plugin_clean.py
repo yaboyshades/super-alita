@@ -156,7 +156,7 @@ class MemoryManagerPlugin(PluginInterface):
             elif action == "list":
                 # Simple list implementation
                 memory_count = len(
-                    [k for k in self.store._atoms.keys() if k.startswith("memory:")]
+                    [k for k in self.store._atoms if k.startswith("memory:")]
                 )
                 result = {
                     "success": True,

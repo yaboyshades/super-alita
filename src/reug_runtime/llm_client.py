@@ -34,6 +34,8 @@ class LLMClient:
     """Base class for streaming LLM providers."""
 
     model_name: str
+    provider: str = "unknown"
+    supports_tools: bool = False
 
     async def stream_chat(
         self,
@@ -50,6 +52,18 @@ class LLMClient:
             timeout: Optional override for the streaming timeout.
         """
         raise NotImplementedError
+
+    async def health(self) -> tuple[bool, str]:
+        """Light-weight readiness probe. Return (ok, reason)."""
+        return True, "ok"
+
+    async def identify(self) -> dict[str, Any]:
+        """Return stable identity for responses/metrics."""
+        return {
+            "provider": self.provider, 
+            "model": self.model_name, 
+            "supports_tools": self.supports_tools
+        }
 
 
 class GeminiClient(LLMClient):
@@ -215,6 +229,9 @@ class SuperAlitaFallbackClient(LLMClient):
     endpoints (OpenAI-compatible). It yields text deltas as {"content": str}.
     """
 
+    provider = "openai-compatible"
+    supports_tools = True
+
     def __init__(self, model_name: str | None = None) -> None:
         self.model_name = model_name or os.getenv(
             "SUPER_ALITA_MODEL", "gpt-oss-20b-4bit"
@@ -241,20 +258,44 @@ class SuperAlitaFallbackClient(LLMClient):
         except RuntimeError:  # no running loop at import/startup
             pass
 
+    async def health(self) -> tuple[bool, str]:
+        """HEAD /v1/chat/completions or tiny request."""
+        if self._client is None:  # pragma: no cover
+            return False, "httpx_not_available"
+        
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+        headers = {"Accept": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        
+        try:
+            async with asyncio.timeout(2.0):
+                resp = await self._client.head(url, headers=headers)
+            # Some gateways 405 on HEAD — treat 200/401/405 as "up"
+            return (resp.status_code in (200, 401, 405), f"openai_head:{resp.status_code}")
+        except Exception as e:
+            return (False, f"openai_ping_error:{type(e).__name__}")
+
     async def _stream_openai_style(
-        self, messages: list[dict[str, str]]
-    ) -> AsyncGenerator[str, None]:
+        self,
+        messages: list[dict[str, str]],
+        *,
+        tools: list[dict[str, Any]] | None = None,
+    ) -> AsyncGenerator[dict[str, Any], None]:
         if self._client is None:  # pragma: no cover
             raise RuntimeError("httpx not available for SuperAlitaFallbackClient")
         headers = {"Accept": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model_name,
             "messages": messages,
             "stream": True,
             "temperature": 0.2,
         }
+        if tools:
+            payload["tools"] = tools
+            payload["tool_choice"] = "auto"
         url_primary = f"{self.base_url.rstrip('/')}/v1/chat/completions"
         url_alt = f"{self.base_url.rstrip('/')}/v1/completions"
         # Try chat endpoint first
@@ -283,15 +324,18 @@ class SuperAlitaFallbackClient(LLMClient):
                             obj = json.loads(data_str)
                         except Exception:
                             continue
-                        # OpenAI style streaming: choices[].delta.content
+                        # OpenAI style streaming: choices[].delta.content / tool_calls
                         choice = None
                         if isinstance(obj, dict):
                             choice = obj.get("choices", [{}])[0]
                         if choice and isinstance(choice, dict):
                             delta = choice.get("delta") or choice.get("message") or {}
                             content = delta.get("content") or choice.get("text")
+                            tool_calls = delta.get("tool_calls") or []
+                            if tool_calls:
+                                yield {"type": "tool_calls", "tool_calls": tool_calls}
                             if content:
-                                yield content
+                                yield {"type": "content", "content": content}
                     return
             except Exception as e:  # pragma: no cover - network errors
                 last_error = e
@@ -300,15 +344,19 @@ class SuperAlitaFallbackClient(LLMClient):
             raise last_error
 
     async def stream_chat(
-        self, messages: list[dict[str, str]], timeout: float | None = None
-    ) -> AsyncGenerator[dict[str, str], None]:
+        self,
+        messages: list[dict[str, str]],
+        *,
+        tools: list[dict[str, Any]] | None = None,
+        timeout: float | None = None,
+    ) -> AsyncGenerator[dict[str, Any], None]:
         # Wrap streaming with timeout + telemetry events
         effective_timeout = timeout or SETTINGS.model_stream_timeout_s
         start = asyncio.get_event_loop().time()
         try:
             async with asyncio.timeout(effective_timeout):
-                async for text in self._stream_openai_style(messages):
-                    yield {"content": text}
+                async for ev in self._stream_openai_style(messages, tools=tools):
+                    yield ev
         finally:
             dur = asyncio.get_event_loop().time() - start
             with contextlib.suppress(Exception):  # pragma: no cover
@@ -443,10 +491,26 @@ __all__ = [
 class OllamaClient(LLMClient):
     """Client for local Ollama server (NDJSON streaming via /api/chat)."""
 
+    provider = "ollama"
+    supports_tools = False
+
     def __init__(self, model_name: str, host: str | None = None) -> None:
         self.model_name = model_name
         self.host = (host or os.getenv("OLLAMA_HOST") or "http://127.0.0.1:11434").rstrip("/")
         self._client = httpx.AsyncClient(timeout=None) if httpx else None
+
+    async def health(self) -> tuple[bool, str]:
+        """Fast ping that doesn't allocate a full generation."""
+        if self._client is None:  # pragma: no cover
+            return False, "httpx_not_available"
+        
+        url = f"{self.host}/api/tags"
+        try:
+            async with asyncio.timeout(2.0):
+                resp = await self._client.get(url)
+            return (resp.status_code == 200, f"tags:{resp.status_code}")
+        except Exception as e:
+            return (False, f"ollama_ping_error:{type(e).__name__}")
 
     async def stream_chat(
         self, messages: list[dict[str, str]], timeout: float | None = None

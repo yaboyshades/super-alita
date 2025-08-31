@@ -83,22 +83,21 @@ class SecureCodeExecutor:
             # Validate value types (only safe types allowed)
             if isinstance(value, int | float | str | bool | list | dict):
                 # For strings, check for potential code injection
-                if isinstance(value, str):
-                    if any(
-                        dangerous in value.lower()
-                        for dangerous in [
-                            "import",
-                            "exec",
-                            "eval",
-                            "open",
-                            "file",
-                            "__",
-                        ]
-                    ):
-                        logger.warning(
-                            f"Skipping potentially dangerous string parameter: {key}"
-                        )
-                        continue
+                if isinstance(value, str) and any(
+                    dangerous in value.lower()
+                    for dangerous in [
+                        "import",
+                        "exec",
+                        "eval",
+                        "open",
+                        "file",
+                        "__",
+                    ]
+                ):
+                    logger.warning(
+                        f"Skipping potentially dangerous string parameter: {key}"
+                    )
+                    continue
 
                 sanitized[key] = value
             else:
@@ -185,7 +184,7 @@ class SecureCodeExecutor:
             if len(callables) == 1:
                 return list(callables.values())[0]
             # Return the first non-builtin callable
-            for name, func in callables.items():
+            for _name, func in callables.items():
                 if not isinstance(func, types.BuiltinFunctionType):
                     return func
 

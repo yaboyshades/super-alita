@@ -119,7 +119,7 @@ class PredictionEngine(PluginInterface):
         for k, v in state.items():
             if i >= self.state_dim:
                 break
-            if isinstance(v, (int, float, bool)):
+            if isinstance(v, int | float | bool):
                 vec[i] = float(v); i += 1
             elif k == "features" and isinstance(v, list):
                 for j in range(min(10, len(v))):
@@ -159,7 +159,7 @@ class PredictionEngine(PluginInterface):
             ns_t = self._state_to_tensor(ns)
 
             with torch.no_grad():
-                v = net(s_t).squeeze()
+                net(s_t).squeeze()
                 v_next = net(ns_t).squeeze()
 
             c = self._cumulant(g, reward, ns)

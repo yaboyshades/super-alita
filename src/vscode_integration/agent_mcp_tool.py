@@ -7,6 +7,7 @@ and trigger specific agent operations.
 """
 
 import asyncio
+import contextlib
 import sys
 from pathlib import Path
 from typing import Any
@@ -122,10 +123,8 @@ class AgentCycleMCPTool:
                 self.enhanced_agent.cycle_running = False
                 self.cycle_task.cancel()
                 
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self.cycle_task
-                except asyncio.CancelledError:
-                    pass
                     
                 self.cycle_task = None
                 

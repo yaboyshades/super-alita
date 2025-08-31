@@ -272,7 +272,7 @@ class EventBus:
                 return True
 
         # Check event-specific subscriptions
-        for event_type, subscriptions in self._subscriptions.items():
+        for _event_type, subscriptions in self._subscriptions.items():
             for i, sub in enumerate(subscriptions):
                 if sub.id == subscription_id:
                     sub.deactivate()

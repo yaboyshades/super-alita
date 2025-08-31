@@ -39,7 +39,7 @@ async def test_mcp_server_creation():
         print("✅ MCP server imports successful")
 
         try:
-            server = create_mcp_server()
+            create_mcp_server()
             print("✅ MCP server creation successful (fallback mode)")
         except RuntimeError as e:
             if "MCP package not available" in str(e):
@@ -167,7 +167,7 @@ async def test_mcp_local_registry():
         print("✅ MCP local registry imports successful")
 
         # Test registry instantiation
-        registry = ToolRegistry()
+        ToolRegistry()
         print("✅ Tool registry created")
 
         return True

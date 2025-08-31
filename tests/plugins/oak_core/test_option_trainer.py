@@ -68,7 +68,7 @@ async def test_option_trainer_learns() -> None:
     orig_params = [p.clone().detach() for p in net.parameters()]
 
     # Simulate transitions
-    for i in range(4):
+    for _i in range(4):
         await trainer.handle_transition({"state": {}, "action": 0, "reward": 1.0, "next_state": {}, "done": False, "features": []})
 
     # Check if training happened

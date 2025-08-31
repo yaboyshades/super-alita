@@ -239,7 +239,7 @@ class BrainstormPlugin(PluginInterface):
                 memories = await self.store.attention(zero_vec, top_k=100)
 
                 atoms = []
-                for key, score in memories:
+                for key, _score in memories:
                     atom = self.store.get(key)
                     if atom and hasattr(atom, "value"):
                         try:

@@ -23,7 +23,7 @@ async def test_agent_request_handling():
         from main import create_app
         
         # Create the app
-        app = create_app()
+        create_app()
         print("  ✅ Agent app created")
         
         # Create decision policy engine
@@ -117,7 +117,7 @@ async def test_complete_workflow():
         from main import SimpleAbilityRegistry, create_app
         
         # 1. Initialize agent
-        app = create_app()
+        create_app()
         engine = DecisionPolicyEngine()
         registry = SimpleAbilityRegistry()
         print("  ✅ Agent components initialized")
@@ -127,7 +127,7 @@ async def test_complete_workflow():
         print(f"  📝 User request: {user_request}")
         
         # 3. Create request event
-        event = create_event(
+        create_event(
             "user_request",
             source_plugin="user_interface",
             message=user_request,
@@ -148,7 +148,7 @@ async def test_complete_workflow():
         print(f"  � Available tools: {len(available_tools)}")
         
         # 7. Generate response event with required fields
-        response_event = create_event(
+        create_event(
             "agent_response",
             source_plugin="decision_engine",
             session_id="test_session_123",

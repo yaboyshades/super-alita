@@ -1,0 +1,23 @@
+# Pipeline configuration
+pipeline:
+  stages:
+    - ingest_normalize
+    - relevance_gate
+    - rank
+    - cluster
+    - prune
+    - assemble
+  
+  defaults:
+    token_budget: 2000
+    top_n_items: 200
+    relevance_threshold: 0.5
+    cluster_similarity_threshold: 0.8
+  
+  evaluation:
+    golden_sets_path: "data/telemetry_golden_sets.json"
+    metrics_thresholds:
+      precision: 0.9
+      recall: 0.85
+      redundancy_rate: 0.1
+      token_efficiency: 0.7

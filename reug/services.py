@@ -201,7 +201,7 @@ def create_services(
                 try:
                     from .kg import store
                     for k, v in res.items():
-                        if isinstance(v, (str, int, float)):
+                        if isinstance(v, str | int | float):
                             store.add_triple(tool_id, k, str(v), src=evt["event_id"])
                             break
                 except Exception:

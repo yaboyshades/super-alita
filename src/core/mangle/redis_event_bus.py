@@ -6,6 +6,7 @@ Supports pub/sub, event persistence, and scalable event handling.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import time
@@ -102,10 +103,8 @@ class RedisEventBus:
             
             if self._subscription_task:
                 self._subscription_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self._subscription_task
-                except asyncio.CancelledError:
-                    pass
             
             if self._pubsub:
                 await self._pubsub.close()
@@ -279,7 +278,7 @@ class RedisEventBus:
             results = await self._redis.xrevrange(stream, max="+", min=start_id, count=limit)
             
             events = []
-            for stream_id, fields in results:
+            for _stream_id, fields in results:
                 try:
                     # Reconstruct event
                     event_data = {k.decode(): v.decode() for k, v in fields.items()}

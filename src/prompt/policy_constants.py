@@ -46,7 +46,8 @@ class ExecutionGuards:
     # Pagination/read ledger is always on to avoid skipping later chunks.
     track_read_ledger: bool = True
 
-BASE_POLICY_BLOCK = lambda: f"""
+def BASE_POLICY_BLOCK():
+    return f"""
 SYSTEM_POLICY:
   prompt_version: {PROMPT_VERSION}
   schema_version: {SCHEMA_VERSION}

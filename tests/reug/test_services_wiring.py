@@ -15,7 +15,7 @@ def test_services_end_to_end_fallback(tmp_path, monkeypatch):
     services = create_services(emitter)
 
     async def run():
-        flow = ExecutionFlow(services, lambda event: None)
+        ExecutionFlow(services, lambda event: None)
         ctx = FSMContext(raw_input={"sot": ["compute: 1+1", "analyze: 2*3", "generate: ok"]}, results=[])
         # Kick manually: decompose then iterate SELECT→EXECUTE→PROCESS until done
         ctx.plan = await services["decompose"](ctx.raw_input)

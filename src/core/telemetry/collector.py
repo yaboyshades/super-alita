@@ -3,6 +3,7 @@ Telemetry data collection and aggregation for Cortex runtime
 """
 
 import asyncio
+import contextlib
 import json
 import time
 from collections.abc import Callable
@@ -189,10 +190,8 @@ class TelemetryCollector:
         # Cancel auto-flush task
         if self._flush_task and not self._flush_task.done():
             self._flush_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._flush_task
-            except asyncio.CancelledError:
-                pass
         
         # Final flush
         await self.flush_to_disk()

@@ -1,0 +1,54 @@
+name: Chat Interface Tests
+
+on:
+  push:
+    paths:
+      - 'src/main.py'
+      - 'static/index.html'
+      - 'tests/test_chat_endpoints.py'
+      - '.github/workflows/chat-tests.yml'
+  pull_request:
+    paths:
+      - 'src/main.py'
+      - 'static/index.html'
+      - 'tests/test_chat_endpoints.py'
+
+jobs:
+  chat-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install deps (minimal)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Run chat tests only
+        env:
+          LLM_MODEL: mock
+        run: |
+          PYTHONPATH=./src pytest -q tests/test_chat_endpoints.py
+
+      - name: Upload pytest logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chat-pytest-logs
+          path: .

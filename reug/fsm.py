@@ -1,3 +1,4 @@
+import contextlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
@@ -55,14 +56,12 @@ class ExecutionFlow:
             payload={"tool_id": tool["tool_id"]},
             correlation_id=correlation_id,
         )
-        try:
+        with contextlib.suppress(Exception):
             await self.services["execute"](
                 tool,
                 {"_kind": "GENERATE", "text": "ping"},
                 {**ctx_dict, "step_index": ctx_dict["current_step"]},
             )
-        except Exception:
-            pass
         return tool
 
     async def run(self, user_input: dict[str, Any]) -> FSMContext:

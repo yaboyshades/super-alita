@@ -32,7 +32,7 @@ async def test_dashboard_api():
     print("Generating test telemetry data...")
     for i in range(3):
         context = runtime.create_context(f"test_session_{i}", "test_user")
-        result = await runtime.process_cycle(f"Test query {i}", context)
+        await runtime.process_cycle(f"Test query {i}", context)
         await asyncio.sleep(0.01)  # Small delay
     
     await runtime.shutdown()

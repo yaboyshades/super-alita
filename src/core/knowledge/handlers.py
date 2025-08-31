@@ -117,7 +117,7 @@ class KnowledgeGraphEventHandlers:
                 turn_data = getattr(event, 'turn_data', event.metadata.get('turn_data', {}))
                 
                 # Create atom for the cognitive turn
-                turn_atom = self.knowledge_store.create_atom(
+                self.knowledge_store.create_atom(
                     atom_type=AtomType.COGNITIVE_TURN,
                     content={
                         "turn_id": turn_data.get("turn_id", event.event_id),

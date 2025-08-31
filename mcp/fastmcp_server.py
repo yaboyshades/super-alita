@@ -13,8 +13,9 @@ import os
 import time
 from typing import Any
 
-from fastmcp import FastMCP
 from openai import OpenAI
+
+from mcp.server.fastmcp import FastMCP
 
 # --- Logging Configuration -----------------------------------------------------
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))

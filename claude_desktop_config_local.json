@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "super-alita": {
+      "command": "python",
+      "args": ["d:\\Coding_Projects\\super-alita-clean\\mcp_server_wrapper.py"],
+      "env": {
+        "PYTHONPATH": "d:\\Coding_Projects\\super-alita-clean\\src",
+        "SUPER_ALITA_TELEMETRY_FILE": "d:\\Coding_Projects\\super-alita-clean\\telemetry.jsonl"
+      }
+    }
+  }
+}

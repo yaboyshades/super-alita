@@ -175,7 +175,7 @@ async def test_plugin_integration():
         # Run some test cycles
         for i in range(2):
             context = runtime.create_context(f"test_session_{i}", "test_user")
-            result = await runtime.process_cycle(f"Test query {i}", context)
+            await runtime.process_cycle(f"Test query {i}", context)
             await asyncio.sleep(0.01)  # Small delay
         
         await runtime.shutdown()
@@ -254,7 +254,7 @@ async def test_full_integration():
         
         # Run a cognitive cycle
         context = runtime.create_context("integration_test", "test_user")
-        result = await runtime.process_cycle("Integrate knowledge graph with telemetry", context)
+        await runtime.process_cycle("Integrate knowledge graph with telemetry", context)
         
         await asyncio.sleep(0.1)  # Let events process
         

@@ -15,6 +15,57 @@
     "command": "workbench.action.tasks.runTask",
     "args": "alita:mcp:test"
   },
+  
+  // Snippet Optimization Shortcuts
+  {
+    "key": "ctrl+shift+alt+s",
+    "command": "editor.action.insertSnippet",
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+shift+alt+o",
+    "command": "workbench.action.tasks.runTask",
+    "args": "🎯 Snippet Optimization: Analyze Current File",
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+shift+alt+e",
+    "command": "workbench.action.tasks.runTask",
+    "args": "📈 Token Efficiency Report"
+  },
+  
+  // Quick snippet insertion
+  {
+    "key": "ctrl+alt+d",
+    "command": "editor.action.insertSnippet",
+    "args": {"name": "def-"},
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+alt+c",
+    "command": "editor.action.insertSnippet", 
+    "args": {"name": "class-"},
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+alt+m",
+    "command": "editor.action.insertSnippet",
+    "args": {"name": "main-"},
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+alt+f",
+    "command": "editor.action.insertSnippet",
+    "args": {"name": "for-"},
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+alt+t",
+    "command": "editor.action.insertSnippet",
+    "args": {"name": "try-"},
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  
   // Chemistry Plans
   {
     "key": "ctrl+alt+p",

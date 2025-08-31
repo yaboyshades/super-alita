@@ -269,7 +269,7 @@ class DecisionPolicyEngine:
             },
             "policies": {
                 policy_id: self.get_policy_statistics(policy_id)
-                for policy_id in self.policies.keys()
+                for policy_id in self.policies
             }
         }
     
