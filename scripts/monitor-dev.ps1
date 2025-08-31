@@ -17,7 +17,7 @@ function Test-ServerHealth {
     try {
         $response = Invoke-RestMethod -Uri "http://127.0.0.1:8080/healthz" -TimeoutSec 5
         $timestamp = Get-Date -Format "HH:mm:ss"
-        
+
         if ($response.status -eq "healthy") {
             if (!$Quiet) {
                 Write-Host "[$timestamp] ✅ Server healthy" -ForegroundColor Green
@@ -67,14 +67,14 @@ $consecutiveFailures = 0
 try {
     while ($true) {
         Start-Sleep -Seconds $IntervalSeconds
-        
+
         $isHealthy = Test-ServerHealth
-        
+
         if ($isHealthy) {
             $consecutiveFailures = 0
         } else {
             $consecutiveFailures++
-            
+
             if ($consecutiveFailures -eq 3) {
                 Write-Host ""
                 Write-Host "🚨 Server has been down for $($consecutiveFailures * $IntervalSeconds) seconds" -ForegroundColor Red
@@ -82,7 +82,7 @@ try {
                 Write-Host ""
             }
         }
-        
+
         # Show commands periodically
         if ((Get-Date).Minute % 5 -eq 0 -and (Get-Date).Second -lt $IntervalSeconds) {
             Show-QuickCommands

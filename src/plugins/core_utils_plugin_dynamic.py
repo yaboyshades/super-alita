@@ -78,7 +78,9 @@ class CoreUtilsPlugin(PluginInterface):
                 "discovered_dynamically": True,
             }
 
-        logger.info("🔍 Dynamically discovered %d capabilities:", len(self._capabilities))
+        logger.info(
+            "🔍 Dynamically discovered %d capabilities:", len(self._capabilities)
+        )
         for tool_name, metadata in self._capability_metadata.items():
             logger.debug(
                 "  • %s%s - %s...",

@@ -38,7 +38,7 @@ services:
   gui_server:
     enabled: false
     port: 8081
-  
+
 # Development options
 development:
   auto_restart: true

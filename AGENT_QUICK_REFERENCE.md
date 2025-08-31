@@ -107,11 +107,11 @@ class MyPlugin(PluginInterface):
     @property
     def name(self) -> str:
         return "my_plugin"
-    
+
     async def initialize(self) -> bool:
         self.event_bus = event_bus  # Register event bus
         return True
-    
+
     async def shutdown(self) -> None:
         # Cleanup logic
         pass
@@ -159,19 +159,19 @@ def my_mcp_tool(
     dry_run: bool = True  # Always default to dry_run
 ) -> Dict[str, Any]:
     """MCP tool following Super Alita patterns."""
-    
+
     try:
         # Validate workspace boundary
         target_path = Path(file_path).resolve()
         workspace_root = Path.cwd().resolve()
-        
+
         if not str(target_path).startswith(str(workspace_root)):
             return {
                 "success": False,
                 "result": "",
                 "error": "Path outside workspace boundary"
             }
-        
+
         if dry_run:
             # Return diff preview
             return {
@@ -179,14 +179,14 @@ def my_mcp_tool(
                 "result": "--- a/file.py\n+++ b/file.py\n...",
                 "error": ""
             }
-        
+
         # Implementation here
         return {
             "success": True,
             "result": "Operation completed",
             "error": ""
         }
-        
+
     except Exception as e:
         return {
             "success": False,
@@ -300,16 +300,16 @@ docs/
 
 Your development follows Super Alita patterns when:
 
-✅ All code passes `make lint` without warnings  
-✅ Tests achieve ≥70% coverage with `pytest --cov`  
-✅ Events use the `create_event()` pattern correctly  
-✅ Plugins inherit from `PluginInterface`  
-✅ MCP tools default to `dry_run=True`  
-✅ No raw `eval/exec` or unsafe subprocess calls  
-✅ Type hints are comprehensive and correct  
-✅ Async patterns are used for I/O operations  
-✅ Error handling is robust and informative  
-✅ Documentation is updated for new features  
+✅ All code passes `make lint` without warnings
+✅ Tests achieve ≥70% coverage with `pytest --cov`
+✅ Events use the `create_event()` pattern correctly
+✅ Plugins inherit from `PluginInterface`
+✅ MCP tools default to `dry_run=True`
+✅ No raw `eval/exec` or unsafe subprocess calls
+✅ Type hints are comprehensive and correct
+✅ Async patterns are used for I/O operations
+✅ Error handling is robust and informative
+✅ Documentation is updated for new features
 
 ---
 

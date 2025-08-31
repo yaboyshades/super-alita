@@ -19,18 +19,28 @@ class FailureEvent:
     context: dict[str, Any]
 
     def to_json(self) -> str:
-        return json.dumps({
-            "timestamp": self.timestamp,
-            "component": self.component,
-            "tool": self.tool,
-            "error": self.error,
-            "context": self.context,
-        })
+        return json.dumps(
+            {
+                "timestamp": self.timestamp,
+                "component": self.component,
+                "tool": self.tool,
+                "error": self.error,
+                "context": self.context,
+            }
+        )
 
 
-def record_failure(component: str, error: str, tool: str | None = None, **context: Any) -> None:
+def record_failure(
+    component: str, error: str, tool: str | None = None, **context: Any
+) -> None:
     LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    evt = FailureEvent(timestamp=time.time(), component=component, tool=tool, error=error.strip(), context=context)
+    evt = FailureEvent(
+        timestamp=time.time(),
+        component=component,
+        tool=tool,
+        error=error.strip(),
+        context=context,
+    )
     with LOG_FILE.open("a", encoding="utf-8") as f:
         f.write(evt.to_json() + "\n")
 
@@ -104,9 +114,14 @@ def write_patch_proposals(summary: dict[str, Any] | None = None) -> Path | None:
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
     out_file = out_dir / f"resilience_proposals_{ts}.md"
-    lines = ["# Automatic Resilience Patch Proposals", "", f"Generated: {ts}", "", "## Proposals:"]
+    lines = [
+        "# Automatic Resilience Patch Proposals",
+        "",
+        f"Generated: {ts}",
+        "",
+        "## Proposals:",
+    ]
     for p in proposals:
         lines.append(f"- {p}")
     out_file.write_text("\n".join(lines), encoding="utf-8")
     return out_file
-

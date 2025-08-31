@@ -1,4 +1,5 @@
 """Evaluation framework for telemetry pipeline."""
+
 from __future__ import annotations
 
 import json
@@ -62,18 +63,14 @@ class PipelineEvaluator:
                     facts.append(fact)
         return facts
 
-    def _calculate_precision(
-        self, extracted: list[str], golden: list[str]
-    ) -> float:
+    def _calculate_precision(self, extracted: list[str], golden: list[str]) -> float:
         """Calculate precision: correct facts / total extracted facts."""
         if not extracted:
             return 0.0
         correct = sum(1 for fact in extracted if any(g in fact for g in golden))
         return correct / len(extracted)
 
-    def _calculate_recall(
-        self, extracted: list[str], golden: list[str]
-    ) -> float:
+    def _calculate_recall(self, extracted: list[str], golden: list[str]) -> float:
         """Calculate recall: correct facts / total golden facts."""
         if not golden:
             return 1.0
@@ -87,9 +84,7 @@ class PipelineEvaluator:
         unique_facts = set(extracted)
         return 1.0 - (len(unique_facts) / len(extracted))
 
-    def _calculate_efficiency(
-        self, extracted: list[str], full_output: str
-    ) -> float:
+    def _calculate_efficiency(self, extracted: list[str], full_output: str) -> float:
         """Calculate token efficiency."""
         fact_tokens = sum(len(fact.split()) for fact in extracted)
         total_tokens = len(full_output.split())

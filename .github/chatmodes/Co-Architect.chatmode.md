@@ -48,14 +48,14 @@ await self.subscribe("tool_call", self._handle_tool_call)
 async def _handle_tool_call(self, ev):
     try:
         res = await self._execute_tool(ev)
-        await self.emit_event("tool_result", 
-            tool_call_id=ev.tool_call_id, 
-            success=True, 
+        await self.emit_event("tool_result",
+            tool_call_id=ev.tool_call_id,
+            success=True,
             result=res)
     except Exception as e:
         await self.emit_event("tool_result",
             tool_call_id=ev.tool_call_id,
-            success=False, 
+            success=False,
             error=str(e))
 ```
 
@@ -67,14 +67,14 @@ class TextualMemoryAtom(NeuralAtom):
         super().__init__(meta)
         self.key = meta.name  # REQUIRED for NeuralStore
         self.content = content
-    
-    async def execute(self, _=None): 
+
+    async def execute(self, _=None):
         return {"content": self.content}
-    
-    def get_embedding(self): 
+
+    def get_embedding(self):
         return [0.0]*384  # Replace with real embedding
-    
-    def can_handle(self, t): 
+
+    def can_handle(self, t):
         return 0.9 if "remember" in t.lower() else 0.0
 ```
 

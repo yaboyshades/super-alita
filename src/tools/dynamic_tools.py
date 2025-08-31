@@ -258,7 +258,7 @@ class ToolSchemaGenerator:
 
     def _extract_tool_name(self, description: str) -> str:
         """Extract tool name from description"""
-        # Simple extraction - would be enhanced with LLM processing
+        # Simple extraction; can be enhanced with LLM processing
         words = description.lower().split()
         if "called" in words:
             idx = words.index("called")
@@ -270,12 +270,12 @@ class ToolSchemaGenerator:
 
     def _extract_parameters(self, description: str) -> list[ToolParameter]:
         """Extract parameters from description"""
-        # Simple pattern matching - would be enhanced with LLM processing
+        # Simple pattern matching; can be enhanced with LLM processing
         parameters = []
 
         # Look for common parameter patterns
         if "takes" in description.lower() or "accepts" in description.lower():
-            # This would be much more sophisticated with LLM parsing
+            # More sophisticated parsing can be added with LLMs
             parameters.append(
                 ToolParameter(
                     name="input",

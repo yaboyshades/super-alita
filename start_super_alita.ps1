@@ -26,10 +26,10 @@ function Test-ServiceHealth {
         [string]$Url,
         [int]$TimeoutSeconds = 30
     )
-    
+
     $endpoints = @("/health", "/healthz")
     $startTime = Get-Date
-    
+
     while (((Get-Date) - $startTime).TotalSeconds -lt $TimeoutSeconds) {
         foreach ($endpoint in $endpoints) {
             try {
@@ -50,17 +50,17 @@ function Test-ServiceHealth {
 # Function to cleanup processes on exit
 function Stop-Services {
     Write-ColorOutput "🛑 Stopping all services..." "Yellow"
-    
+
     # Stop any uvicorn processes
-    Get-Process -Name "python" -ErrorAction SilentlyContinue | 
-        Where-Object { $_.CommandLine -like "*uvicorn*" } | 
+    Get-Process -Name "python" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like "*uvicorn*" } |
         Stop-Process -Force -ErrorAction SilentlyContinue
-    
+
     # Stop any MCP server processes
-    Get-Process -Name "python" -ErrorAction SilentlyContinue | 
-        Where-Object { $_.CommandLine -like "*mcp_server*" } | 
+    Get-Process -Name "python" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like "*mcp_server*" } |
         Stop-Process -Force -ErrorAction SilentlyContinue
-    
+
     Write-ColorOutput "✅ All services stopped. Goodbye! 👋" "Green"
 }
 
@@ -85,7 +85,7 @@ try {
 
     # Start main server
     Write-ColorOutput "Starting main server on ${Host}:${Port}..." "Yellow"
-    
+
     $serverJob = Start-Job -ScriptBlock {
         param($Host, $Port, $WorkingDir)
         Set-Location $WorkingDir
@@ -95,7 +95,7 @@ try {
     # Start MCP server if available
     if (Test-Path "mcp_server_wrapper.py") {
         Write-ColorOutput "Starting MCP server..." "Yellow"
-        
+
         $mcpJob = Start-Job -ScriptBlock {
             param($WorkingDir)
             Set-Location $WorkingDir
@@ -105,16 +105,16 @@ try {
 
     # Wait for services to be ready
     Write-ColorOutput "Waiting for services to be ready..." "Yellow"
-    
+
     $mainUrl = "http://${Host}:${Port}"
-    
+
     if (Test-ServiceHealth -Url $mainUrl -TimeoutSeconds 30) {
         Write-ColorOutput "✅ Main Server: $mainUrl (Ready)" "Green"
     }
     else {
         throw "❌ Main Server failed to start within timeout"
     }
-    
+
     if (Test-Path "mcp_server_wrapper.py") {
         Write-ColorOutput "✅ MCP Server: Running with stdio transport" "Green"
     }
@@ -154,10 +154,10 @@ try {
 
     # Keep running until Ctrl+C
     Write-ColorOutput "Super Alita is running. Press Ctrl+C to stop..." "Cyan"
-    
+
     while ($true) {
         Start-Sleep -Seconds 1
-        
+
         # Check if main server job is still running
         if ($serverJob.State -eq "Completed" -or $serverJob.State -eq "Failed") {
             $jobOutput = Receive-Job $serverJob

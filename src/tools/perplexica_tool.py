@@ -1,6 +1,7 @@
 """
 Perplexica-style AI-powered search with reasoning and citations.
 """
+
 import asyncio
 import hashlib
 import json
@@ -206,17 +207,19 @@ class PerplexicaSearchTool:
         if not results:
             return {
                 "summary": "No relevant results found.",
-                "reasoning": (
-                    "The search query did not return any matching results."
-                ),
+                "reasoning": ("The search query did not return any matching results."),
                 "confidence": 0.0,
                 "followup_questions": [
-                    f"Try searching for related terms to '{query}'" if query else "Try a more specific query",
+                    f"Try searching for related terms to '{query}'"
+                    if query
+                    else "Try a more specific query",
                     "Consider broadening your search criteria",
                 ],
             }
 
-        summary = f"Based on {len(results)} sources, here's what I found about '{query}':\n\n"
+        summary = (
+            f"Based on {len(results)} sources, here's what I found about '{query}':\n\n"
+        )
         summary += "• Key finding from search [1]\n"
         summary += "• Supporting evidence [2,3]\n"
         summary += "• Additional context [4]\n"
@@ -227,8 +230,12 @@ class PerplexicaSearchTool:
         confidence = min(0.95, 0.6 + (len(results) * 0.05))
 
         followups = [
-            f"What are the implications of {query}?" if query else "What are the key implications?",
-            f"How does {query} compare to alternatives?" if query else "How does this compare to alternatives?",
+            f"What are the implications of {query}?"
+            if query
+            else "What are the key implications?",
+            f"How does {query} compare to alternatives?"
+            if query
+            else "How does this compare to alternatives?",
         ]
 
         return {
@@ -244,7 +251,9 @@ class PerplexicaSearchTool:
 
         if self.events:
             self.events.emit(
-                "search.start", query=req.get("query", ""), mode=req.get("mode", self.config.default_mode)
+                "search.start",
+                query=req.get("query", ""),
+                mode=req.get("mode", self.config.default_mode),
             )
 
         try:

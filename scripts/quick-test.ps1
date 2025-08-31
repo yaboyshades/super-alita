@@ -17,7 +17,7 @@ function Invoke-WithExplanation {
         [string]$Description,
         [scriptblock]$Action
     )
-    
+
     if ($Explain) {
         Write-Host ""
         Write-Host "📖 Command explanation for: $Command" -ForegroundColor Yellow
@@ -25,7 +25,7 @@ function Invoke-WithExplanation {
         Write-Host "For detailed explanation, run: ghce '$Command'" -ForegroundColor Magenta
         return
     }
-    
+
     Write-Host ""
     Write-Host "🔧 Running: $Description" -ForegroundColor Blue
     try {

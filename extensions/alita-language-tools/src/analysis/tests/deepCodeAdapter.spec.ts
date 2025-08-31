@@ -15,4 +15,3 @@ describe('DeepCode adapter', () => {
     expect(emit).toHaveBeenCalledWith('deepcode_analysis', expect.objectContaining({ count: 2 }));
   });
 });
-

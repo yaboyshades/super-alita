@@ -85,10 +85,10 @@ class YourToolOutput(BaseModel):
 async def your_tool(input_data: YourToolInput) -> YourToolOutput:
     """
     Your tool description.
-    
+
     Args:
         input_data: Tool input parameters
-        
+
     Returns:
         Tool execution result
     """
@@ -99,15 +99,15 @@ async def your_tool(input_data: YourToolInput) -> YourToolOutput:
                 success=True,
                 result="Dry run: would perform operation X with parameter1=" + input_data.parameter1
             )
-        
+
         # Actual tool implementation
         result = perform_operation(input_data.parameter1, input_data.parameter2)
-        
+
         return YourToolOutput(
             success=True,
             result=f"Operation completed: {result}"
         )
-        
+
     except Exception as e:
         logger.error(f"Tool execution failed: {e}")
         return YourToolOutput(
@@ -152,23 +152,23 @@ server.register_tool(
 # Example: file_analyzer.py
 async def analyze_file(input_data: FileAnalysisInput) -> FileAnalysisOutput:
     """Analyze file content and structure"""
-    
+
     file_path = Path(input_data.file_path).resolve()
-    
+
     # Validate workspace boundaries
     workspace_root = Path(os.getenv("workspaceFolder", ".")).resolve()
     if not is_within_workspace(file_path, workspace_root):
         raise ValueError("File path outside workspace boundaries")
-    
+
     if input_data.dry_run:
         return FileAnalysisOutput(
             success=True,
             result=f"Would analyze file: {file_path}"
         )
-    
+
     # Safe file analysis
     analysis = perform_file_analysis(file_path)
-    
+
     return FileAnalysisOutput(
         success=True,
         result=analysis,
@@ -181,7 +181,7 @@ async def analyze_file(input_data: FileAnalysisInput) -> FileAnalysisOutput:
 # Example: code_generator.py
 async def generate_code(input_data: CodeGenerationInput) -> CodeGenerationOutput:
     """Generate code based on specifications"""
-    
+
     if input_data.dry_run:
         # Return unified diff preview
         diff = generate_code_diff(input_data.specification)
@@ -190,17 +190,17 @@ async def generate_code(input_data: CodeGenerationInput) -> CodeGenerationOutput
             result=f"Preview of changes:\n{diff}",
             dry_run=True
         )
-    
+
     # Generate and validate code
     generated_code = create_code_from_spec(input_data.specification)
     validation_result = validate_generated_code(generated_code)
-    
+
     if not validation_result.is_valid:
         return CodeGenerationOutput(
             success=False,
             error=f"Generated code validation failed: {validation_result.errors}"
         )
-    
+
     return CodeGenerationOutput(
         success=True,
         result=generated_code,
@@ -227,10 +227,10 @@ def validate_file_access(file_path: str) -> Path:
     """Validate and resolve file path safely"""
     path = Path(file_path).resolve()
     workspace_root = Path(os.getenv("workspaceFolder", ".")).resolve()
-    
+
     if not is_within_workspace(path, workspace_root):
         raise ValueError(f"File access denied: {file_path} is outside workspace")
-    
+
     return path
 ```
 
@@ -238,13 +238,13 @@ def validate_file_access(file_path: str) -> Path:
 ```python
 def validate_tool_input(input_data: BaseModel) -> None:
     """Validate tool input parameters"""
-    
+
     # Pydantic handles basic validation
     # Add custom validation for security
-    
+
     if hasattr(input_data, 'file_path'):
         validate_file_access(input_data.file_path)
-    
+
     if hasattr(input_data, 'command'):
         # Never allow arbitrary command execution
         if any(danger in input_data.command.lower() for danger in ['rm', 'del', 'format']):
@@ -256,18 +256,18 @@ def validate_tool_input(input_data: BaseModel) -> None:
 # Always default to dry_run=True
 class SafeToolInput(BaseModel):
     dry_run: bool = Field(default=True, description="Preview mode (safer)")
-    
+
 # Always validate file paths
 def safe_file_operation(file_path: str, operation: str) -> Dict:
     """Safely perform file operations"""
-    
+
     # Validate path
     validated_path = validate_file_access(file_path)
-    
+
     # Check if file exists
     if not validated_path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
-    
+
     # Perform operation with error handling
     try:
         result = perform_operation(validated_path, operation)
@@ -290,9 +290,9 @@ async def test_tool_dry_run():
         parameter1="test_value",
         dry_run=True
     )
-    
+
     result = await your_tool(input_data)
-    
+
     assert result.success
     assert "Dry run" in result.result
     assert result.error is None
@@ -304,9 +304,9 @@ async def test_tool_execution():
         parameter1="test_value",
         dry_run=False
     )
-    
+
     result = await your_tool(input_data)
-    
+
     assert result.success
     assert result.error is None
 
@@ -317,9 +317,9 @@ async def test_tool_error_handling():
         parameter1="invalid_value",
         dry_run=False
     )
-    
+
     result = await your_tool(input_data)
-    
+
     assert not result.success
     assert result.error is not None
 ```
@@ -330,16 +330,16 @@ async def test_tool_error_handling():
 async def test_mcp_server_tool_registration():
     """Test tool registration with MCP server"""
     from mcp_server.server import create_mcp_server
-    
+
     server = create_mcp_server()
-    
+
     # Verify tool is registered
     tools = server.list_tools()
     tool_names = [tool.name for tool in tools]
-    
+
     assert "your_tool" in tool_names
 
-@pytest.mark.integration  
+@pytest.mark.integration
 async def test_vs_code_integration():
     """Test VS Code integration end-to-end"""
     # This would test the full MCP protocol flow
@@ -356,16 +356,16 @@ import aiofiles
 
 async def process_multiple_files(file_paths: List[str]) -> List[Dict]:
     """Process multiple files concurrently"""
-    
+
     async def process_single_file(file_path: str) -> Dict:
         async with aiofiles.open(file_path, 'r') as f:
             content = await f.read()
             return {"file": file_path, "size": len(content)}
-    
+
     # Process files concurrently
     tasks = [process_single_file(path) for path in file_paths]
     results = await asyncio.gather(*tasks, return_exceptions=True)
-    
+
     # Handle any exceptions
     processed_results = []
     for result in results:
@@ -373,7 +373,7 @@ async def process_multiple_files(file_paths: List[str]) -> List[Dict]:
             processed_results.append({"error": str(result)})
         else:
             processed_results.append(result)
-    
+
     return processed_results
 ```
 
@@ -390,11 +390,11 @@ def cached_file_analysis(file_path: str, file_hash: str) -> Dict:
 
 async def analyze_file_with_cache(file_path: str) -> Dict:
     """Analyze file with caching"""
-    
+
     # Calculate file hash for cache key
     with open(file_path, 'rb') as f:
         file_hash = hashlib.md5(f.read()).hexdigest()
-    
+
     # Use cached result if available
     return cached_file_analysis(file_path, file_hash)
 ```
@@ -408,9 +408,9 @@ import sys
 
 def setup_mcp_logging(debug: bool = False) -> None:
     """Configure logging for MCP server"""
-    
+
     level = logging.DEBUG if debug else logging.INFO
-    
+
     logging.basicConfig(
         level=level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -419,7 +419,7 @@ def setup_mcp_logging(debug: bool = False) -> None:
             logging.FileHandler('mcp_server.log')
         ]
     )
-    
+
     # Reduce noise from external libraries
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     logging.getLogger('aiohttp').setLevel(logging.WARNING)
@@ -432,27 +432,27 @@ from functools import wraps
 
 def track_tool_metrics(func):
     """Decorator to track tool execution metrics"""
-    
+
     @wraps(func)
     async def wrapper(*args, **kwargs):
         start_time = time.time()
         tool_name = func.__name__
-        
+
         try:
             result = await func(*args, **kwargs)
-            
+
             # Log success metrics
             duration = time.time() - start_time
             logger.info(f"Tool {tool_name} completed in {duration:.2f}s")
-            
+
             return result
-            
+
         except Exception as e:
             # Log error metrics
             duration = time.time() - start_time
             logger.error(f"Tool {tool_name} failed after {duration:.2f}s: {e}")
             raise
-    
+
     return wrapper
 
 # Usage
@@ -504,7 +504,7 @@ class ProgressiveToolInput(BaseModel):
 
 async def progressive_tool(input_data: ProgressiveToolInput) -> StandardToolOutput:
     """Tool with progressive detail levels"""
-    
+
     if input_data.quick_mode:
         result = perform_quick_operation(input_data.operation)
     elif input_data.detailed:
@@ -513,7 +513,7 @@ async def progressive_tool(input_data: ProgressiveToolInput) -> StandardToolOutp
         result = perform_expert_operation(input_data.operation)
     else:
         result = perform_default_operation(input_data.operation)
-    
+
     return create_success_response(result)
 ```
 
@@ -524,13 +524,13 @@ from typing import Optional
 
 class MCPConfig:
     """MCP server configuration"""
-    
+
     def __init__(self):
         self.workspace_folder = os.getenv("workspaceFolder", ".")
         self.max_file_size = int(os.getenv("MCP_MAX_FILE_SIZE", "10485760"))  # 10MB
         self.enable_file_operations = os.getenv("MCP_ENABLE_FILE_OPS", "true").lower() == "true"
         self.debug_mode = os.getenv("MCP_DEBUG", "false").lower() == "true"
-    
+
     def validate_file_size(self, file_path: str) -> bool:
         """Check if file size is within limits"""
         try:

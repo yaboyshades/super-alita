@@ -104,11 +104,11 @@ class ToolError(Exception):
 
 class ToolConfig:
     """Configuration management for tools."""
-    
+
     def __init__(self, config_path: Optional[Path] = None):
         self.config_path = config_path
         self.config = self._load_config()
-    
+
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration from file or use defaults."""
         if self.config_path and self.config_path.exists():
@@ -116,7 +116,7 @@ class ToolConfig:
             import yaml
             return yaml.safe_load(self.config_path.read_text())
         return self._default_config()
-    
+
     def _default_config(self) -> Dict[str, Any]:
         """Default configuration values."""
         return {
@@ -127,27 +127,27 @@ class ToolConfig:
 
 class ToolRunner:
     """Main tool execution class."""
-    
+
     def __init__(self, config: ToolConfig, dry_run: bool = False):
         self.config = config
         self.dry_run = dry_run
         self.results = []
-    
+
     def execute(self) -> Dict[str, Any]:
         """Execute the main tool functionality."""
         logger.info("Starting tool execution")
-        
+
         try:
             if self.dry_run:
                 logger.info("Dry-run mode: showing what would be done")
                 return self._simulate_execution()
             else:
                 return self._perform_execution()
-                
+
         except Exception as e:
             logger.error(f"Tool execution failed: {e}")
             raise ToolError(f"Execution failed: {e}") from e
-    
+
     def _simulate_execution(self) -> Dict[str, Any]:
         """Simulate tool execution for dry-run mode."""
         return {
@@ -155,7 +155,7 @@ class ToolRunner:
             "actions": ["Action 1", "Action 2"],
             "dry_run": True
         }
-    
+
     def _perform_execution(self) -> Dict[str, Any]:
         """Perform actual tool execution."""
         # Implement tool-specific logic here
@@ -180,46 +180,46 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )
-    
+
     parser.add_argument(
         "--verbose", "-v",
         action="store_true",
         help="Enable verbose output"
     )
-    
+
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be done without making changes"
     )
-    
+
     parser.add_argument(
         "--config",
         type=Path,
         help="Configuration file path"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Setup logging
     setup_logging(args.verbose)
-    
+
     try:
         # Load configuration
         config = ToolConfig(args.config)
-        
+
         # Create and run tool
         runner = ToolRunner(config, args.dry_run)
         result = runner.execute()
-        
+
         # Output results
         if args.verbose:
             logger.info(f"Tool completed successfully: {result}")
         else:
             print(f"Status: {result['status']}")
-        
+
         return 0
-        
+
     except ToolError as e:
         logger.error(f"Tool error: {e}")
         return 1
@@ -242,12 +242,12 @@ Tools should support flexible configuration:
 tool:
   name: "example_tool"
   version: "1.0.0"
-  
+
 settings:
   timeout: 30
   retry_attempts: 3
   parallel_execution: true
-  
+
 output:
   format: "json"  # json, yaml, text
   file: "output.json"
@@ -314,19 +314,19 @@ from src.core.plugin_interface import PluginInterface
 
 class ToolPlugin(PluginInterface):
     """Plugin wrapper for a tool."""
-    
+
     def __init__(self, tool_class):
         self.tool_class = tool_class
-    
+
     @property
     def name(self) -> str:
         return f"tool_{self.tool_class.__name__.lower()}"
-    
+
     async def execute_tool(self, **kwargs):
         """Execute the wrapped tool."""
         tool = self.tool_class()
         return await tool.execute(**kwargs)
-    
+
     async def shutdown(self) -> None:
         """Cleanup when shutting down."""
         pass
@@ -343,9 +343,9 @@ def test_tool_execution():
     """Test basic tool execution."""
     config = ToolConfig()
     runner = ToolRunner(config, dry_run=True)
-    
+
     result = runner.execute()
-    
+
     assert result["status"] == "simulated"
     assert result["dry_run"] is True
 
@@ -354,9 +354,9 @@ async def test_async_tool():
     """Test asynchronous tool functionality."""
     config = ToolConfig()
     runner = AsyncToolRunner(config)
-    
+
     result = await runner.execute()
-    
+
     assert result["status"] == "completed"
 ```
 

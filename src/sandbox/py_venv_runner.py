@@ -36,7 +36,9 @@ def run_in_temp_venv(code: str, *, timeout: float = 10.0) -> dict[str, Any]:
     try:
         # Try to create a virtual environment
         try:
-            run_proc([sys.executable, "-m", "venv", str(tmpdir / "venv")], timeout=timeout)
+            run_proc(
+                [sys.executable, "-m", "venv", str(tmpdir / "venv")], timeout=timeout
+            )
             py = _venv_python(tmpdir / "venv")
             used_venv = True
         except Exception:
@@ -67,4 +69,3 @@ def run_in_temp_venv(code: str, *, timeout: float = 10.0) -> dict[str, Any]:
         # Best-effort cleanup
         with contextlib.suppress(Exception):  # type: ignore[name-defined]
             shutil.rmtree(tmpdir, ignore_errors=True)
-

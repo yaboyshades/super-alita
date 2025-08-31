@@ -21,14 +21,22 @@ class OptionNetwork(nn.Module):
     def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 128):
         super().__init__()
         self.trunk = nn.Sequential(
-            nn.Linear(state_dim, hidden_dim), nn.ReLU(), nn.LayerNorm(hidden_dim),
-            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(), nn.LayerNorm(hidden_dim),
+            nn.Linear(state_dim, hidden_dim),
+            nn.ReLU(),
+            nn.LayerNorm(hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.LayerNorm(hidden_dim),
         )
-        self.actor = nn.Sequential(nn.Linear(hidden_dim, action_dim), nn.Softmax(dim=-1))
+        self.actor = nn.Sequential(
+            nn.Linear(hidden_dim, action_dim), nn.Softmax(dim=-1)
+        )
         self.critic = nn.Linear(hidden_dim, 1)
         self.termination = nn.Sequential(nn.Linear(hidden_dim, 1), nn.Sigmoid())
 
-    def forward(self, state: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self, state: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         if state.dim() == 1:
             state = state.unsqueeze(0)
         h = self.trunk(state)
@@ -121,7 +129,7 @@ class OptionTrainer(PluginInterface):
         await self.subscribe("option_terminated", self.handle_option_end)
 
     def generate_option_id(self, subproblem_id: str) -> str:
-        ns = uuid.UUID('6ba7b812-9dad-11d1-80b4-00c04fd430c8')
+        ns = uuid.UUID("6ba7b812-9dad-11d1-80b4-00c04fd430c8")
         return str(uuid.uuid5(ns, f"option_{subproblem_id}"))
 
     async def create_option(self, event: dict[str, Any]):
@@ -131,7 +139,7 @@ class OptionTrainer(PluginInterface):
 
         feature_id = event.get("feature_id")
         kappa = event.get("kappa", 1.0)
-        
+
         opt_id = self.generate_option_id(sp_id)
         if opt_id in self.options:
             return
@@ -142,7 +150,9 @@ class OptionTrainer(PluginInterface):
             subproblem_id=sp_id,
             target_features=[feature_id] if feature_id else [],
         )
-        net = OptionNetwork(option.state_dim, option.action_dim, option.hidden_dim).to(self.device)
+        net = OptionNetwork(option.state_dim, option.action_dim, option.hidden_dim).to(
+            self.device
+        )
         optim = torch.optim.Adam(net.parameters(), lr=option.learning_rate)
 
         self.options[opt_id] = option
@@ -172,16 +182,21 @@ class OptionTrainer(PluginInterface):
         vec = np.zeros(100, dtype=np.float32)
         i = 0
         for k, v in state.items():
-            if i >= len(vec): break
+            if i >= len(vec):
+                break
             if isinstance(v, int | float | bool):
-                vec[i] = float(v); i += 1
+                vec[i] = float(v)
+                i += 1
             elif k == "features" and isinstance(v, list):
                 for j in range(min(10, len(v))):
-                    if i + j < len(vec): vec[i + j] = 1.0
+                    if i + j < len(vec):
+                        vec[i + j] = 1.0
                 i += 10
         return vec
 
-    def _intrinsic_reward(self, option: Option, features_achieved: list[str], next_state: dict[str, Any]) -> float:
+    def _intrinsic_reward(
+        self, option: Option, features_achieved: list[str], next_state: dict[str, Any]
+    ) -> float:
         for t in option.target_features:
             if t in features_achieved or t in (next_state.get("features") or []):
                 return 1.0
@@ -256,11 +271,13 @@ class OptionTrainer(PluginInterface):
             adv = torch.zeros_like(rewards)
             gae = 0.0
             for t in reversed(range(len(rewards))):
-                delta = rewards[t] + opt.gamma * next_vals[t] * (1 - dones[t]) - old_vals[t]
+                delta = (
+                    rewards[t] + opt.gamma * next_vals[t] * (1 - dones[t]) - old_vals[t]
+                )
                 gae = delta + opt.gamma * opt.gae_lambda * gae
                 adv[t] = gae
             adv = (adv - adv.mean()) / (adv.std() + 1e-8)
-            
+
             ret = adv + old_vals
 
         for _ in range(self.ppo_epochs):
@@ -276,14 +293,19 @@ class OptionTrainer(PluginInterface):
             value_loss = F.mse_loss(vals, ret)
             entropy = dist.entropy().mean()
 
-            term_targets = (torch.zeros_like(term.squeeze()))
+            term_targets = torch.zeros_like(term.squeeze())
             # simple termination shaping: if any feature attained in transition, encourage termination
             for i, tr in enumerate(batch):
                 if any(f in tr.features_achieved for f in opt.target_features):
                     term_targets[i] = 1.0
             term_loss = F.binary_cross_entropy(term.squeeze(), term_targets)
 
-            loss = policy_loss + opt.value_coef * value_loss + term_loss - opt.entropy_coef * entropy
+            loss = (
+                policy_loss
+                + opt.value_coef * value_loss
+                + term_loss
+                - opt.entropy_coef * entropy
+            )
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), opt.max_grad_norm)
@@ -308,8 +330,12 @@ class OptionTrainer(PluginInterface):
             return
         traj = exec_["trajectory"]
         alpha = 0.1
-        opt.success_rate = (1 - alpha) * opt.success_rate + alpha * (1.0 if success else 0.0)
-        opt.avg_episode_length = (1 - alpha) * opt.avg_episode_length + alpha * len(traj)
+        opt.success_rate = (1 - alpha) * opt.success_rate + alpha * (
+            1.0 if success else 0.0
+        )
+        opt.avg_episode_length = (1 - alpha) * opt.avg_episode_length + alpha * len(
+            traj
+        )
         tot_r = sum(t.reward for t in traj) if traj else 0.0
         opt.avg_reward = (1 - alpha) * opt.avg_reward + alpha * tot_r
         await self.emit_event(

@@ -23,7 +23,7 @@ Who are you and what architectural guidelines do you follow?
 class MyTool:
     def __init__(self):
         self.registry = {}  # Violation: Separate registry
-        
+
     def process(self):  # Violation: Not async
         time.sleep(1)  # Violation: Blocking call
 ```

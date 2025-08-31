@@ -1,4 +1,5 @@
 """Tests for telemetry pipeline."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -78,9 +79,7 @@ async def test_orchestrator_end_to_end(
     assert "Diagnose chat streaming latency" in result
 
 
-async def test_orchestrator_without_llm(
-    sample_telemetry: list[dict[str, Any]]
-) -> None:
+async def test_orchestrator_without_llm(sample_telemetry: list[dict[str, Any]]) -> None:
     """Test pipeline works without LLM provider."""
     orchestrator = TelemetryPipelineOrchestrator(None)
 

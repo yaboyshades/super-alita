@@ -36,13 +36,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
       - name: Check for existing baseline
         id: check_baseline
         run: |
           # Look for the most recent performance baseline
           BASELINE_COMMIT=$(git log --grep="perf: baseline" --pretty=format:"%H" -1 || echo "")
-          
+
           if [[ -n "$BASELINE_COMMIT" ]]; then
             echo "available=true" >> $GITHUB_OUTPUT
             echo "commit=$BASELINE_COMMIT" >> $GITHUB_OUTPUT
@@ -69,26 +69,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
-          
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-test.txt
           pip install pytest-benchmark memory-profiler psutil
-          
+
       - name: Run Python benchmarks
         env:
           REUG_EVENTBUS: redis
           PYTHONPATH: ./src
         run: |
           BENCHMARK_TYPE="${{ github.event.inputs.benchmark_type || 'full' }}"
-          
+
           case $BENCHMARK_TYPE in
             quick)
               echo "Running quick benchmarks..."
@@ -107,7 +107,7 @@ jobs:
               pytest tests/benchmarks/ -v --benchmark-only --benchmark-json=python-benchmarks.json --benchmark-compare --benchmark-compare-fail=min:5%
               ;;
           esac
-          
+
       - name: Memory profiling
         env:
           PYTHONPATH: ./src
@@ -119,35 +119,35 @@ jobs:
           import time
           from src.core.event_bus import InMemoryEventBus
           from src.core.neural_atom import create_atom
-          
+
           tracemalloc.start()
-          
+
           # Test event bus performance
           start_time = time.time()
           bus = InMemoryEventBus()
-          
+
           # Generate test events
           for i in range(1000):
               atom = create_atom(f'test content {i}', 'benchmark', f'Test {i}')
-              
+
           current, peak = tracemalloc.get_traced_memory()
           end_time = time.time()
           tracemalloc.stop()
-          
+
           results = {
               'memory_current_mb': current / 1024 / 1024,
               'memory_peak_mb': peak / 1024 / 1024,
               'execution_time_s': end_time - start_time,
               'events_per_second': 1000 / (end_time - start_time)
           }
-          
+
           with open('memory-profile.json', 'w') as f:
               json.dump(results, f, indent=2)
-              
+
           print(f'Memory usage: {current / 1024 / 1024:.2f} MB current, {peak / 1024 / 1024:.2f} MB peak')
           print(f'Performance: {1000 / (end_time - start_time):.0f} events/second')
           "
-          
+
       - name: Upload Python benchmark results
         uses: actions/upload-artifact@v4
         with:
@@ -162,25 +162,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: extensions/alita-language-tools/package-lock.json
-          
+
       - name: Install dependencies
         working-directory: extensions/alita-language-tools
         run: |
           npm ci
           npm install --save-dev benchmark
-          
+
       - name: Build extension
         working-directory: extensions/alita-language-tools
         run: |
           npm run compile
-          
+
       - name: Run extension benchmarks
         working-directory: extensions/alita-language-tools
         run: |
@@ -188,7 +188,7 @@ jobs:
           cat > benchmark.js << 'EOF'
           const Benchmark = require('benchmark');
           const fs = require('fs');
-          
+
           // Mock VS Code environment
           global.vscode = {
             window: {
@@ -205,9 +205,9 @@ jobs:
               })
             }
           };
-          
+
           const suite = new Benchmark.Suite();
-          
+
           // Import extension modules (adjust paths as needed)
           try {
             // Add benchmarks for key extension functions
@@ -235,7 +235,7 @@ jobs:
                   hz: test.hz,
                   stats: test.stats
                 }));
-                
+
                 fs.writeFileSync('extension-benchmarks.json', JSON.stringify(results, null, 2));
                 console.log('Fastest is ' + this.filter('fastest').map('name'));
               })
@@ -245,16 +245,16 @@ jobs:
             fs.writeFileSync('extension-benchmarks.json', JSON.stringify([], null, 2));
           }
           EOF
-          
+
           node benchmark.js || echo "Extension benchmarks completed with warnings"
-          
+
       - name: Bundle size analysis
         working-directory: extensions/alita-language-tools
         run: |
           echo "Analyzing bundle size..."
           BUNDLE_SIZE=$(du -sh out/ | cut -f1)
           FILE_COUNT=$(find out/ -type f | wc -l)
-          
+
           cat > bundle-analysis.json << EOF
           {
             "bundle_size": "$BUNDLE_SIZE",
@@ -263,9 +263,9 @@ jobs:
             "files": $(find out/ -type f -exec basename {} \; | sort | jq -R . | jq -s .)
           }
           EOF
-          
+
           echo "Bundle size: $BUNDLE_SIZE ($FILE_COUNT files)"
-          
+
       - name: Upload extension benchmark results
         uses: actions/upload-artifact@v4
         with:
@@ -280,16 +280,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-wasi
-          
+
       - name: Install WASM tools
         run: |
           cargo install wasm-tools wasmtime-cli || echo "WASM tools installation completed"
-          
+
       - name: Build WASM components
         run: |
           if [[ -d wasm/calculator ]]; then
@@ -304,32 +304,32 @@ jobs:
             echo '{"calculator": "skipped", "code_radar": "skipped"}' > wasm-benchmarks/wasm-benchmarks.json
             exit 0
           fi
-          
+
       - name: Benchmark WASM components
         run: |
           if [[ -f wasm/calculator/target/wasm32-wasi/release/calculator.wasm ]]; then
             echo "Benchmarking WASM components..."
-            
+
             mkdir -p wasm-benchmarks
-            
+
             # Benchmark calculator component
             echo "Testing calculator performance..."
             CALC_START=$(date +%s%N)
             wasmtime wasm/calculator/target/wasm32-wasi/release/calculator.wasm --invoke add 5 3 || echo "Calculator test completed"
             CALC_END=$(date +%s%N)
             CALC_TIME=$(( (CALC_END - CALC_START) / 1000000 ))  # Convert to milliseconds
-            
-            # Benchmark code radar component  
+
+            # Benchmark code radar component
             echo "Testing code radar performance..."
             RADAR_START=$(date +%s%N)
             wasmtime wasm/code_radar/target/wasm32-wasi/release/code_radar.wasm --invoke analyze "test code" || echo "Radar test completed"
             RADAR_END=$(date +%s%N)
             RADAR_TIME=$(( (RADAR_END - RADAR_START) / 1000000 ))
-            
+
             # Get component sizes
             CALC_SIZE=$(stat -f%z wasm/calculator/target/wasm32-wasi/release/calculator.wasm 2>/dev/null || stat -c%s wasm/calculator/target/wasm32-wasi/release/calculator.wasm 2>/dev/null || echo 0)
             RADAR_SIZE=$(stat -f%z wasm/code_radar/target/wasm32-wasi/release/code_radar.wasm 2>/dev/null || stat -c%s wasm/code_radar/target/wasm32-wasi/release/code_radar.wasm 2>/dev/null || echo 0)
-            
+
             cat > wasm-benchmarks/wasm-benchmarks.json << EOF
             {
               "calculator": {
@@ -344,7 +344,7 @@ jobs:
               }
             }
             EOF
-            
+
             echo "Calculator: ${CALC_TIME}ms, ${CALC_SIZE} bytes"
             echo "Code Radar: ${RADAR_TIME}ms, ${RADAR_SIZE} bytes"
           else
@@ -352,7 +352,7 @@ jobs:
             mkdir -p wasm-benchmarks
             echo '{"calculator": "not_built", "code_radar": "not_built"}' > wasm-benchmarks/wasm-benchmarks.json
           fi
-          
+
       - name: Upload WASM benchmark results
         uses: actions/upload-artifact@v4
         with:
@@ -367,21 +367,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Download all benchmark results
         uses: actions/download-artifact@v4
         with:
           path: ./benchmark-results
-          
+
       - name: Setup Python for analysis
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          
+
       - name: Install analysis tools
         run: |
           pip install pandas matplotlib seaborn
-          
+
       - name: Analyze performance trends
         run: |
           cat > analyze_performance.py << 'EOF'
@@ -389,16 +389,16 @@ jobs:
           import os
           from datetime import datetime
           import sys
-          
+
           def analyze_python_benchmarks():
               """Analyze Python benchmark results"""
               try:
                   with open('benchmark-results/python-benchmarks/python-benchmarks.json', 'r') as f:
                       data = json.load(f)
-                  
+
                   benchmarks = data.get('benchmarks', [])
                   print(f"🐍 Python Benchmarks: {len(benchmarks)} tests")
-                  
+
                   performance_issues = []
                   for benchmark in benchmarks:
                       name = benchmark.get('name', 'Unknown')
@@ -407,76 +407,76 @@ jobs:
                           performance_issues.append(f"  ⚠️ {name}: {mean:.3f}s (slow)")
                       else:
                           print(f"  ✅ {name}: {mean:.3f}s")
-                  
+
                   return performance_issues
               except Exception as e:
                   print(f"❌ Python benchmark analysis failed: {e}")
                   return []
-          
+
           def analyze_extension_benchmarks():
               """Analyze extension benchmark results"""
               try:
                   with open('benchmark-results/extension-benchmarks/bundle-analysis.json', 'r') as f:
                       data = json.load(f)
-                  
+
                   bundle_size = data.get('bundle_size', 'Unknown')
                   file_count = data.get('file_count', 0)
-                  
+
                   print(f"📦 Extension Bundle: {bundle_size} ({file_count} files)")
-                  
+
                   issues = []
                   # Check bundle size (rough heuristic)
                   if 'MB' in bundle_size:
                       size_mb = float(bundle_size.replace('MB', '').strip())
                       if size_mb > 10:
                           issues.append(f"  ⚠️ Large bundle size: {bundle_size}")
-                  
+
                   return issues
               except Exception as e:
                   print(f"❌ Extension analysis failed: {e}")
                   return []
-          
+
           def analyze_wasm_benchmarks():
               """Analyze WASM benchmark results"""
               try:
                   with open('benchmark-results/wasm-benchmarks/wasm-benchmarks.json', 'r') as f:
                       data = json.load(f)
-                  
+
                   print("🧮 WASM Components:")
                   issues = []
-                  
+
                   for component, metrics in data.items():
                       if isinstance(metrics, dict):
                           exec_time = metrics.get('execution_time_ms', 0)
                           binary_size = metrics.get('binary_size_bytes', 0)
-                          
+
                           if exec_time > 1000:  # Slower than 1 second
                               issues.append(f"  ⚠️ {component}: {exec_time}ms (slow)")
                           else:
                               print(f"  ✅ {component}: {exec_time}ms, {binary_size} bytes")
                       else:
                           print(f"  ℹ️ {component}: {metrics}")
-                  
+
                   return issues
               except Exception as e:
                   print(f"❌ WASM analysis failed: {e}")
                   return []
-          
+
           def main():
               print("🔍 Performance Analysis Report")
               print("=" * 40)
-              
+
               all_issues = []
               all_issues.extend(analyze_python_benchmarks())
               all_issues.extend(analyze_extension_benchmarks())
               all_issues.extend(analyze_wasm_benchmarks())
-              
+
               print("\n📊 Summary:")
               if all_issues:
                   print("⚠️ Performance issues detected:")
                   for issue in all_issues:
                       print(issue)
-                  
+
                   # Create summary file
                   with open('performance-summary.json', 'w') as f:
                       json.dump({
@@ -484,50 +484,50 @@ jobs:
                           'issues': all_issues,
                           'timestamp': datetime.now().isoformat()
                       }, f, indent=2)
-                  
+
                   sys.exit(1)  # Fail the workflow to flag performance issues
               else:
                   print("✅ All performance metrics within acceptable ranges")
-                  
+
                   with open('performance-summary.json', 'w') as f:
                       json.dump({
                           'status': 'healthy',
                           'issues': [],
                           'timestamp': datetime.now().isoformat()
                       }, f, indent=2)
-          
+
           if __name__ == '__main__':
               main()
           EOF
-          
+
           python analyze_performance.py
-          
+
       - name: Compare with baseline
         if: needs.setup-baseline.outputs.baseline_available == 'true'
         run: |
           echo "📈 Comparing with baseline commit: ${{ needs.setup-baseline.outputs.baseline_commit }}"
           echo "🔄 Baseline comparison would be implemented here"
           echo "📊 This would show performance trends over time"
-          
+
       - name: Upload performance analysis
         uses: actions/upload-artifact@v4
         with:
           name: performance-analysis
           path: |
             performance-summary.json
-            
+
       - name: Comment on PR with results
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            
+
             try {
               const summary = JSON.parse(fs.readFileSync('performance-summary.json', 'utf8'));
-              
+
               let comment = `## 🔍 Performance Analysis Results\n\n`;
-              
+
               if (summary.status === 'healthy') {
                 comment += `✅ **All performance metrics are within acceptable ranges**\n\n`;
               } else {
@@ -537,13 +537,13 @@ jobs:
                 });
                 comment += `\n`;
               }
-              
+
               comment += `📊 **Benchmark Artifacts:**\n`;
               comment += `- Python benchmarks: Available in workflow artifacts\n`;
               comment += `- Extension analysis: Available in workflow artifacts\n`;
               comment += `- WASM benchmarks: Available in workflow artifacts\n\n`;
               comment += `*Analysis completed at ${summary.timestamp}*`;
-              
+
               github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
@@ -566,22 +566,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Download performance results
         uses: actions/download-artifact@v4
         with:
           path: ./performance-baseline
-          
+
       - name: Commit new baseline
         run: |
           # Store performance baseline in repository
           mkdir -p .github/performance-baselines
           cp -r performance-baseline/* .github/performance-baselines/
-          
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/performance-baselines/
           git commit -m "perf: baseline update $(date -u +%Y-%m-%d)" || echo "No changes to commit"
           git push || echo "No changes to push"
-          
+
           echo "📊 Performance baseline updated for future comparisons"

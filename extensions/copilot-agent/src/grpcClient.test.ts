@@ -67,4 +67,3 @@ describe('gRPC client integration', () => {
     expect(res).toHaveProperty('success', true);
   });
 });
-

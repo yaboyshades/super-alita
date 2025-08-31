@@ -37,11 +37,11 @@ Write-Host "`n2. Configuring GPU settings..." -ForegroundColor Green
 $hasNvidia = Get-Command nvidia-smi -ErrorAction SilentlyContinue
 if ($hasNvidia) {
     Write-Host "   Found NVIDIA GPU, applying optimizations..." -ForegroundColor Yellow
-    
+
     # Display current GPU status
     Write-Host "   Current GPU status:" -ForegroundColor Cyan
     nvidia-smi --query-gpu=name,power.draw,power.limit,temperature.gpu,utilization.gpu,memory.used,memory.total --format=csv,noheader,nounits
-    
+
     # Try to set maximum power limit (requires admin)
     if ($isAdmin) {
         Write-Host "   Attempting to set maximum power limit..." -ForegroundColor Yellow
@@ -52,12 +52,12 @@ if ($hasNvidia) {
             Write-Host "   ✗ Could not set power limit (normal on some systems)" -ForegroundColor Yellow
         }
     }
-    
+
     # GPU memory optimization
     Write-Host "   ✓ GPU memory available: $(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits) MB" -ForegroundColor Green
 } else {
     Write-Host "   No NVIDIA GPU detected, checking for AMD..." -ForegroundColor Yellow
-    
+
     # AMD GPU check
     $amdGpu = Get-WmiObject -Class Win32_VideoController | Where-Object { $_.Name -like "*AMD*" -or $_.Name -like "*Radeon*" }
     if ($amdGpu) {
@@ -126,21 +126,21 @@ function Watch-GPUPerformance {
         Clear-Host
         Write-Host "=== Super Alita GPU Performance Monitor ===" -ForegroundColor Cyan
         Write-Host "Press Ctrl+C to stop monitoring`n" -ForegroundColor Yellow
-        
+
         if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
             nvidia-smi --query-gpu=timestamp,name,temperature.gpu,utilization.gpu,memory.used,memory.total,power.draw --format=csv
         } else {
             Write-Host "NVIDIA GPU monitoring not available" -ForegroundColor Yellow
             Get-Counter '\GPU Process Memory(*)\Local Usage' -ErrorAction SilentlyContinue
         }
-        
+
         Write-Host "`nCPU Usage:" -ForegroundColor Green
         Get-Counter '\Processor(_Total)\% Processor Time' | Select-Object -ExpandProperty CounterSamples | Select-Object InstanceName, CookedValue
-        
+
         Write-Host "`nMemory Usage:" -ForegroundColor Green
         `$mem = Get-Counter '\Memory\Available MBytes'
         Write-Host "Available Memory: `$([math]::Round(`$mem.CounterSamples.CookedValue / 1024, 2)) GB"
-        
+
         Start-Sleep -Seconds 5
     }
 }

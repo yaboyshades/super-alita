@@ -40,4 +40,3 @@ describe('HostTelemetryBridge', () => {
     expect(emit).not.toHaveBeenCalled();
   });
 });
-

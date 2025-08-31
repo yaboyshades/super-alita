@@ -18,4 +18,3 @@ describe('StatusController', () => {
     expect(setText).toHaveBeenCalledWith(expect.stringMatching(/WASM: Ready/));
   });
 });
-

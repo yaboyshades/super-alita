@@ -456,9 +456,19 @@ class KnowledgeGraphTaskManager(PluginInterface):
             logger.warning(f"Task {task_id} not found for decomposition")
             return []
 
-        # This would integrate with the LLM planner plugin
-        # For now, return a placeholder implementation
-        subtasks = []
+        # Basic decomposition: split prompt into at most two actionable subtasks
+        parts = [p.strip() for p in decomposition_prompt.split(".") if p.strip()]
+        subtasks: list[GraphTaskNode] = []
+        for idx, p in enumerate(parts[:2], start=1):
+            node = GraphTaskNode(
+                task_id=f"{task_id}_sub_{idx}",
+                title=p[:64],
+                description=p,
+                status=TaskStatus.NOT_STARTED,
+                task_type=TaskType.SUBTASK,
+                created_at=datetime.now(UTC).isoformat(),
+            )
+            subtasks.append(node)
 
         # Emit decomposition event for LLM processing
         await self.event_bus.emit_event(
@@ -802,15 +812,19 @@ class KnowledgeGraphTaskManager(PluginInterface):
                 logger.error(f"Error in periodic prioritization: {e}")
 
     async def _persist_state(self):
-        """Persist task manager state (placeholder for actual storage)."""
-
-        {
+        """Persist task manager state to JSON file."""
+        import json
+        from pathlib import Path
+        snapshot = {
             "tasks": {tid: task.dict() for tid, task in self.tasks.items()},
             "task_graphs": {
                 gid: graph.dict() for gid, graph in self.task_graphs.items()
             },
             "timestamp": datetime.now(UTC).isoformat(),
         }
+        path = Path("./data/task_manager.json")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
 
         # This would save to actual storage (file, database, etc.)
         logger.info(

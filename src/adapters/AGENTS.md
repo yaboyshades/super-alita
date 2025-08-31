@@ -22,21 +22,21 @@ from src.core.plugin_interface import PluginInterface
 
 class ServiceAdapter(ABC):
     """Base class for external service adapters"""
-    
+
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or {}
         self.client = None
-        
+
     @abstractmethod
     async def connect(self) -> bool:
         """Establish connection to external service"""
         pass
-        
+
     @abstractmethod
     async def disconnect(self) -> None:
         """Clean up connection resources"""
         pass
-        
+
     @abstractmethod
     async def execute_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """Execute request against external service"""
@@ -50,10 +50,10 @@ from langchain.callbacks.base import BaseCallbackHandler
 
 class SuperAlitaCallbackHandler(BaseCallbackHandler):
     """Custom callback handler for LangChain integration"""
-    
+
     def __init__(self, event_bus):
         self.event_bus = event_bus
-        
+
     def on_llm_start(self, serialized, prompts, **kwargs):
         """Handle LLM execution start"""
         event = create_event(
@@ -62,7 +62,7 @@ class SuperAlitaCallbackHandler(BaseCallbackHandler):
             metadata=kwargs
         )
         asyncio.create_task(self.event_bus.publish(event))
-        
+
     def on_llm_end(self, response, **kwargs):
         """Handle LLM execution completion"""
         event = create_event(
@@ -101,16 +101,16 @@ def get_secure_api_key(service_name: str) -> Optional[str]:
     """Securely retrieve API key for external service"""
     key_env = f"{service_name.upper()}_API_KEY"
     api_key = os.getenv(key_env)
-    
+
     if not api_key:
         logger.warning(f"No API key found for {service_name}")
         return None
-        
+
     # Validate key format if needed
     if len(api_key) < 10:
         logger.error(f"Invalid API key format for {service_name}")
         return None
-        
+
     return api_key
 ```
 
@@ -119,12 +119,12 @@ def get_secure_api_key(service_name: str) -> Optional[str]:
 def sanitize_adapter_input(data: Dict[str, Any]) -> Dict[str, Any]:
     """Sanitize input data for external service calls"""
     sanitized = {}
-    
+
     for key, value in data.items():
         # Remove potentially dangerous fields
         if key.startswith('_') or key in ['__class__', 'eval', 'exec']:
             continue
-            
+
         # Sanitize string values
         if isinstance(value, str):
             sanitized[key] = value.strip()[:1000]  # Limit length
@@ -132,7 +132,7 @@ def sanitize_adapter_input(data: Dict[str, Any]) -> Dict[str, Any]:
             sanitized[key] = value
         elif isinstance(value, dict):
             sanitized[key] = sanitize_adapter_input(value)
-            
+
     return sanitized
 ```
 
@@ -148,10 +148,10 @@ from src.adapters.your_adapter import YourAdapter
 async def test_adapter_connection():
     """Test adapter connection establishment"""
     adapter = YourAdapter({'api_key': 'test_key'})
-    
+
     with patch('aiohttp.ClientSession') as mock_session:
         mock_session.return_value.__aenter__.return_value.get.return_value.status = 200
-        
+
         result = await adapter.connect()
         assert result is True
 
@@ -159,10 +159,10 @@ async def test_adapter_connection():
 async def test_adapter_request_execution():
     """Test adapter request execution"""
     adapter = YourAdapter({'api_key': 'test_key'})
-    
+
     with patch.object(adapter, '_make_api_call') as mock_call:
         mock_call.return_value = {'result': 'success'}
-        
+
         response = await adapter.execute_request({'query': 'test'})
         assert response['result'] == 'success'
 
@@ -170,10 +170,10 @@ async def test_adapter_request_execution():
 async def test_adapter_error_handling():
     """Test adapter error handling"""
     adapter = YourAdapter({'api_key': 'test_key'})
-    
+
     with patch.object(adapter, '_make_api_call') as mock_call:
         mock_call.side_effect = Exception("API Error")
-        
+
         with pytest.raises(Exception):
             await adapter.execute_request({'query': 'test'})
 ```
@@ -195,14 +195,14 @@ class OptimizedAdapter:
     def __init__(self, config):
         self.config = config
         self._session = None
-        
+
     async def get_session(self):
         """Get or create HTTP session"""
         if self._session is None:
             timeout = aiohttp.ClientTimeout(total=self.config.get('timeout', 30))
             self._session = aiohttp.ClientSession(timeout=timeout)
         return self._session
-        
+
     async def cleanup(self):
         """Clean up resources"""
         if self._session:
@@ -225,17 +225,17 @@ def cache_adapter_response(ttl_seconds: int = 300):
             cache_key = hashlib.md5(
                 json.dumps(request_data, sort_keys=True).encode()
             ).hexdigest()
-            
+
             # Check cache first
             cached_result = await self._get_cached_response(cache_key)
             if cached_result:
                 return cached_result
-                
+
             # Execute request and cache result
             result = await func(self, request_data, *args, **kwargs)
             await self._cache_response(cache_key, result, ttl_seconds)
             return result
-            
+
         return wrapper
     return decorator
 ```
@@ -256,7 +256,7 @@ async def retry_adapter_call(
 ) -> Any:
     """Retry adapter calls with exponential backoff"""
     last_exception = None
-    
+
     for attempt in range(max_retries + 1):
         try:
             return await func(*args, **kwargs)
@@ -278,26 +278,26 @@ async def check_adapter_health(self) -> Dict[str, Any]:
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'checks': {}
     }
-    
+
     try:
         # Test connection
         connection_ok = await self._test_connection()
         health_status['checks']['connection'] = connection_ok
-        
+
         # Test authentication
         auth_ok = await self._test_authentication()
         health_status['checks']['authentication'] = auth_ok
-        
+
         # Overall status
         if all(health_status['checks'].values()):
             health_status['status'] = 'healthy'
         else:
             health_status['status'] = 'unhealthy'
-            
+
     except Exception as e:
         health_status['status'] = 'error'
         health_status['error'] = str(e)
-        
+
     return health_status
 ```
 

@@ -12,4 +12,3 @@ describe('componentization gates', () => {
     expect(() => validateRealWitOutputs({ components: [{ path: 'a.wasm' }] })).not.toThrow();
   });
 });
-

@@ -122,14 +122,14 @@ BLOCKED_OPERATIONS = {
 def register_safe_function(func_name: str, module: str = None):
     """Register a function as safe for sandbox execution"""
     registry = SecurityRegistry()
-    
+
     # Validate function safety
     if not validate_function_safety(func_name, module):
         raise SecurityError(f"Function {func_name} is not safe")
-    
+
     # Add to allowlist
     registry.allow_function(func_name, module)
-    
+
     # Log for audit
     logger.info(f"Registered safe function: {func_name}")
 ```
@@ -138,21 +138,21 @@ def register_safe_function(func_name: str, module: str = None):
 ```python
 class CustomSandboxPolicy:
     """Custom execution policy for specific use cases"""
-    
+
     def __init__(self):
         self.allowed_modules = set()
         self.blocked_functions = set()
         self.resource_limits = {}
-    
+
     def allow_module(self, module_name: str) -> None:
         """Allow specific module for execution"""
         if self.validate_module_safety(module_name):
             self.allowed_modules.add(module_name)
-    
+
     def block_function(self, func_name: str) -> None:
         """Block specific function"""
         self.blocked_functions.add(func_name)
-    
+
     def set_limit(self, resource: str, limit: int) -> None:
         """Set resource limit"""
         self.resource_limits[resource] = limit
@@ -168,7 +168,7 @@ from src.sandbox.exec_sandbox import execute_sandboxed_code
 @pytest.mark.asyncio
 async def test_sandbox_blocks_dangerous_code():
     """Test that dangerous operations are blocked"""
-    
+
     dangerous_codes = [
         "import os; os.system('rm -rf /')",  # System calls
         "open('/etc/passwd', 'r')",          # File access
@@ -176,7 +176,7 @@ async def test_sandbox_blocks_dangerous_code():
         "__import__('subprocess')",          # Import bypass
         "while True: pass",                  # Infinite loop
     ]
-    
+
     for code in dangerous_codes:
         result = await execute_sandboxed_code(code, timeout=5)
         assert not result.success, f"Dangerous code was allowed: {code}"
@@ -185,30 +185,30 @@ async def test_sandbox_blocks_dangerous_code():
 @pytest.mark.asyncio
 async def test_sandbox_allows_safe_code():
     """Test that safe operations work correctly"""
-    
+
     safe_code = """
 import math
 result = math.sqrt(16)
 print(f"Square root of 16 is {result}")
 """
-    
+
     result = await execute_sandboxed_code(safe_code)
     assert result.success
     assert "4.0" in result.output
 
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
 async def test_resource_limits():
     """Test that resource limits are enforced"""
-    
+
     # Memory exhaustion test
     memory_bomb = "data = 'x' * (1024 * 1024 * 1024)"  # 1GB string
     result = await execute_sandboxed_code(
-        memory_bomb, 
+        memory_bomb,
         memory_limit_mb=100
     )
     assert not result.success
     assert "MemoryError" in result.error_type
-    
+
     # Timeout test
     infinite_loop = "while True: pass"
     result = await execute_sandboxed_code(infinite_loop, timeout=1)
@@ -221,15 +221,15 @@ async def test_resource_limits():
 def test_security_registry():
     """Test security registry functionality"""
     registry = SecurityRegistry()
-    
+
     # Test allowlist
     registry.allow_function('math.sqrt')
     assert registry.is_allowed_function('math.sqrt')
-    
+
     # Test blocklist
     registry.block_function('os.system')
     assert not registry.is_allowed_function('os.system')
-    
+
     # Test module restrictions
     registry.allow_module('json')
     assert registry.is_allowed_module('json')
@@ -314,10 +314,10 @@ def alert_security_violation(code: str, violation_type: str):
         'code_hash': hashlib.sha256(code.encode()).hexdigest()[:16],
         'timestamp': datetime.now(timezone.utc)
     }
-    
+
     # Send to security monitoring
     send_security_alert(alert_data)
-    
+
     # Log for audit
     logger.warning(f"Security violation detected: {violation_type}")
 ```
@@ -328,7 +328,7 @@ def alert_security_violation(code: str, violation_type: str):
 ```python
 async def execute_tool_safely(tool_code: str, inputs: Dict) -> Dict:
     """Safely execute tool code with inputs"""
-    
+
     # Prepare execution environment
     execution_code = f"""
 # Tool inputs available as variables
@@ -340,7 +340,7 @@ async def execute_tool_safely(tool_code: str, inputs: Dict) -> Dict:
 # Return result
 result
 """
-    
+
     # Execute with appropriate limits
     result = await execute_sandboxed_code(
         execution_code,
@@ -348,7 +348,7 @@ result
         memory_limit_mb=128,
         allowed_imports=['math', 'json', 'datetime']
     )
-    
+
     if result.success:
         return {
             'success': True,
@@ -367,7 +367,7 @@ result
 ```python
 class ProgressivePermissions:
     """Grant permissions based on trust level"""
-    
+
     def __init__(self):
         self.trust_levels = {
             'untrusted': {
@@ -386,7 +386,7 @@ class ProgressivePermissions:
                 'allowed_modules': ['math', 'json', 'datetime', 'uuid']
             }
         }
-    
+
     def get_limits(self, trust_level: str) -> Dict:
         """Get execution limits for trust level"""
         return self.trust_levels.get(trust_level, self.trust_levels['untrusted'])

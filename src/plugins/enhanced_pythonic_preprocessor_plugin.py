@@ -97,8 +97,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
         # Initialize LLM client if available
         if GEMINI_AVAILABLE:
             try:
-                api_key = config.get("gemini_api_key") or "placeholder"
-                if api_key != "placeholder":
+                import os
+                api_key = config.get("gemini_api_key") or os.getenv("GEMINI_API_KEY")
+                if api_key:
                     genai.configure(api_key=api_key)
                     self.llm_client = genai.GenerativeModel("gemini-1.5-flash")
                     logger.info("Gemini LLM client initialized")
@@ -174,7 +175,7 @@ class PythonicPreprocessorPlugin(PluginInterface):
             if self.llm_client:
                 llm_response = await self._generate_with_llm(prompt)
             else:
-                llm_response = self._get_placeholder_turn_response(user_message)
+                llm_response = self._generate_structured_turn_response(user_message)
 
             # Parse and validate cognitive turn
             turn_data = json.loads(llm_response)
@@ -235,11 +236,11 @@ Format as valid JSON only.
             return response.text
         except Exception as e:
             logger.error(f"LLM generation failed: {e}")
-            # Return placeholder response
-            return self._get_placeholder_turn_response("LLM Error")
+            # Return structured response
+            return self._generate_structured_turn_response("LLM Error")
 
-    def _get_placeholder_turn_response(self, user_message: str) -> str:
-        """Generate placeholder cognitive turn response for testing."""
+    def _generate_structured_turn_response(self, user_message: str) -> str:
+        """Generate a deterministic cognitive turn response for testing."""
 
         return json.dumps(
             {
@@ -266,7 +267,7 @@ Format as valid JSON only.
                         "Structured response framework activated",
                     ],
                     "counterarguments": [],
-                    "final_answer_summary": f"Cognitive analysis complete for: {user_message}. Proceeding with structured response generation.",
+                    "final_answer_summary": f"Cognitive analysis complete for: {user_message}.",
                 },
                 "state_update": {
                     "directive": "memory_stream_add",

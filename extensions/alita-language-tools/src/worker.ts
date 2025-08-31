@@ -23,10 +23,10 @@ interface FileInfo {
 
 async function main(): Promise<void> {
   // Host services (typed): populate when bindings define host imports.
-  interface AlitaHost { 
+  interface AlitaHost {
     [k: string]: (...args: unknown[]) => unknown;
   }
-  
+
   const baseServices: Record<string, (...args: unknown[]) => unknown> = {
     // Telemetry interface implementation
     'telemetry#emit-metric': (metric: unknown) => {
@@ -44,10 +44,10 @@ async function main(): Promise<void> {
             wasmTimestamp: typedMetric.timestamp
           }
         };
-        
+
         // Log for debugging
         RAL().console.info(`[WASM Telemetry] ${typedMetric.operation}: ${typedMetric.durationMs}ms`);
-        
+
         // Post to extension host if available
         const canPost = typeof (globalThis as any).postMessage === 'function';
         if (canPost) {
@@ -74,7 +74,7 @@ async function main(): Promise<void> {
             requestId,
             path: typedPath
           };
-          
+
           // Set up response handler
           const handleResponse = (event: MessageEvent) => {
             if (event.data?.__alitaFileInfo?.requestId === requestId) {
@@ -83,7 +83,7 @@ async function main(): Promise<void> {
             }
           };
           self.addEventListener('message', handleResponse);
-          
+
           // Send request
           const canPost = typeof (globalThis as any).postMessage === 'function';
           if (canPost) {
@@ -91,7 +91,7 @@ async function main(): Promise<void> {
           } else {
             resolve({ error: 'No communication channel available' });
           }
-          
+
           // Timeout after 5 seconds
           setTimeout(() => {
             self.removeEventListener('message', handleResponse);
@@ -108,7 +108,7 @@ async function main(): Promise<void> {
         const typedPath = path as string;
         const typedStartLine = startLine as number;
         const typedEndLine = endLine as number;
-        
+
         // Request file content from extension host
         return new Promise((resolve) => {
           const requestId = Math.random().toString(36).substr(2, 9);
@@ -119,7 +119,7 @@ async function main(): Promise<void> {
             startLine: typedStartLine,
             endLine: typedEndLine
           };
-          
+
           // Set up response handler
           const handleResponse = (event: MessageEvent) => {
             if (event.data?.__alitaFileRead?.requestId === requestId) {
@@ -128,7 +128,7 @@ async function main(): Promise<void> {
             }
           };
           self.addEventListener('message', handleResponse);
-          
+
           // Send request
           const canPost = typeof (globalThis as any).postMessage === 'function';
           if (canPost) {
@@ -136,7 +136,7 @@ async function main(): Promise<void> {
           } else {
             resolve({ error: 'No communication channel available' });
           }
-          
+
           // Timeout after 10 seconds
           setTimeout(() => {
             self.removeEventListener('message', handleResponse);
@@ -153,7 +153,7 @@ async function main(): Promise<void> {
         const typedPath = path as string;
         const typedLine = line as number;
         const typedMessage = message as string;
-        
+
         const diagnostic = {
           type: 'wasm-diagnostic',
           timestamp: Date.now(),
@@ -161,9 +161,9 @@ async function main(): Promise<void> {
           line: typedLine,
           message: typedMessage
         };
-        
+
         RAL().console.info(`[WASM Diagnostic] ${typedPath}:${typedLine} - ${typedMessage}`);
-        
+
         // Post to extension host if available
         const canPost = typeof (globalThis as any).postMessage === 'function';
         if (canPost) {
@@ -185,7 +185,7 @@ async function main(): Promise<void> {
   // We do a feature-detect for postMessage to avoid crashes in non-worker test contexts.
   const maybeGlobal = globalThis as unknown as { postMessage?: (msg: unknown) => void };
   const canPost = typeof maybeGlobal.postMessage === 'function';
-  
+
   (Object.entries(baseServices) as Array<[string, (...a: unknown[]) => unknown]>).forEach(([name, fn]) => {
     if (typeof fn !== 'function') return;
     hostServices[name] = async (...args: unknown[]) => {

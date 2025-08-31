@@ -71,9 +71,12 @@ class MCPAdapterPlugin(PluginInterface):
             )
         return tools
 
-    def get_tool_executor(self, tool_name: str) -> Callable[[dict[str, Any]], Awaitable[Any]]:
+    def get_tool_executor(
+        self, tool_name: str
+    ) -> Callable[[dict[str, Any]], Awaitable[Any]]:
         """Return an async executor for a given tool name."""
         if not self._registry:
+
             async def _missing(_: dict[str, Any]) -> Any:
                 raise RuntimeError("MCP registry not available")
 
@@ -83,4 +86,3 @@ class MCPAdapterPlugin(PluginInterface):
             return await self._registry.ainvoke(tool_name, args)
 
         return _exec
-

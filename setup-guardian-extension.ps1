@@ -32,7 +32,7 @@ Write-Host ""
 
 function Test-Prerequisites {
     Write-Host "🔍 Checking prerequisites..." -ForegroundColor Blue
-    
+
     # Check Node.js
     try {
         $nodeVersion = node --version
@@ -42,7 +42,7 @@ function Test-Prerequisites {
         Write-Error "❌ Node.js not found. Please install Node.js 18+ first."
         exit 1
     }
-    
+
     # Check npm
     try {
         $npmVersion = npm --version
@@ -52,7 +52,7 @@ function Test-Prerequisites {
         Write-Error "❌ npm not found."
         exit 1
     }
-    
+
     # Check VS Code
     try {
         $codeVersion = code --version | Select-Object -First 1
@@ -61,7 +61,7 @@ function Test-Prerequisites {
     catch {
         Write-Warning "⚠️ VS Code CLI not found. Extension can still be built."
     }
-    
+
     # Check if vsce is available
     try {
         vsce --version | Out-Null
@@ -75,14 +75,14 @@ function Test-Prerequisites {
 
 function Install-Dependencies {
     Write-Host "📦 Installing extension dependencies..." -ForegroundColor Blue
-    
+
     Push-Location $ExtensionPath
-    
+
     try {
         # Install dependencies
         npm install
         Write-Host "✅ Dependencies installed" -ForegroundColor Green
-        
+
         # Install dev dependencies
         npm install --save-dev @types/vscode@^1.90.0 @types/node@^20.0.0 typescript@^5.0.0
         Write-Host "✅ Dev dependencies installed" -ForegroundColor Green
@@ -94,14 +94,14 @@ function Install-Dependencies {
 
 function Build-Extension {
     Write-Host "🔧 Building extension..." -ForegroundColor Blue
-    
+
     Push-Location $ExtensionPath
-    
+
     try {
         # Compile TypeScript
         npx tsc -p ./
         Write-Host "✅ TypeScript compiled successfully" -ForegroundColor Green
-        
+
         # Verify output
         if (Test-Path "out\extension.js") {
             Write-Host "✅ Extension compiled to out\extension.js" -ForegroundColor Green
@@ -116,13 +116,13 @@ function Build-Extension {
 
 function Package-Extension {
     Write-Host "📦 Packaging extension..." -ForegroundColor Blue
-    
+
     Push-Location $ExtensionPath
-    
+
     try {
         # Package extension
         vsce package
-        
+
         $vsixFile = Get-ChildItem -Filter "*.vsix" | Select-Object -First 1
         if ($vsixFile) {
             Write-Host "✅ Extension packaged: $($vsixFile.Name)" -ForegroundColor Green
@@ -138,9 +138,9 @@ function Package-Extension {
 
 function Install-Extension {
     param([string]$VsixPath)
-    
+
     Write-Host "🚀 Installing extension in VS Code..." -ForegroundColor Blue
-    
+
     try {
         if ($VsixPath) {
             code --install-extension $VsixPath
@@ -148,7 +148,7 @@ function Install-Extension {
             Write-Host "📂 Installing from source..." -ForegroundColor Yellow
             code --install-extension $ExtensionPath
         }
-        
+
         Write-Host "✅ Extension installed successfully" -ForegroundColor Green
         Write-Host "💡 Restart VS Code to activate the extension" -ForegroundColor Cyan
     }
@@ -159,14 +159,14 @@ function Install-Extension {
 
 function Start-DevMode {
     Write-Host "🔧 Starting development mode..." -ForegroundColor Blue
-    
+
     Push-Location $ExtensionPath
-    
+
     try {
         Write-Host "📝 Starting TypeScript watch mode..." -ForegroundColor Yellow
         Write-Host "💡 Press F5 in VS Code to launch Extension Development Host" -ForegroundColor Cyan
         Write-Host "💡 Press Ctrl+C to stop watch mode" -ForegroundColor Cyan
-        
+
         npx tsc -watch -p ./
     }
     finally {
@@ -176,20 +176,20 @@ function Start-DevMode {
 
 function Clean-Extension {
     Write-Host "🧹 Cleaning extension build artifacts..." -ForegroundColor Blue
-    
+
     Push-Location $ExtensionPath
-    
+
     try {
         # Remove build outputs
         if (Test-Path "out") {
             Remove-Item -Recurse -Force "out"
             Write-Host "✅ Removed out directory" -ForegroundColor Green
         }
-        
+
         # Remove VSIX files
         Get-ChildItem -Filter "*.vsix" | Remove-Item -Force
         Write-Host "✅ Removed VSIX files" -ForegroundColor Green
-        
+
         # Remove node_modules if requested
         $response = Read-Host "Remove node_modules? (y/N)"
         if ($response -eq 'y' -or $response -eq 'Y') {
@@ -224,7 +224,7 @@ function Show-Usage {
 # Main execution
 try {
     Test-Prerequisites
-    
+
     switch ($Mode) {
         'install' {
             Install-Dependencies
@@ -247,7 +247,7 @@ try {
             Clean-Extension
         }
     }
-    
+
     Write-Host ""
     Write-Host "🎉 Setup completed successfully!" -ForegroundColor Green
 }

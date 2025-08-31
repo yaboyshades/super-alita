@@ -461,7 +461,7 @@ class CapabilityCompositionEngine:
                     "meta_type": "frequent_success",
                     "avg_efficiency": avg_efficiency,
                     "frequency": len(compositions),
-                    "discovery_timestamp": logger.name,  # Placeholder
+                    "discovery_timestamp": __import__("time").time(),
                 }
 
         logger.info(f"🔗 Discovered {len(pattern_clusters)} meta-patterns")

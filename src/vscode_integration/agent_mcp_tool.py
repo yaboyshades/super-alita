@@ -26,13 +26,13 @@ except ImportError as e:
 
 class AgentCycleMCPTool:
     """MCP tool for enhanced agent cycle integration."""
-    
+
     def __init__(self):
         self.enhanced_agent: EnhancedAgentCycle | None = None
         self.base_agent: SuperAlitaAgent | None = None
         self.cycle_task: asyncio.Task | None = None
         self.workspace_folder = Path.cwd()
-        
+
     async def initialize_agent(self) -> dict[str, Any]:
         """Initialize the enhanced agent cycle."""
         try:
@@ -40,75 +40,69 @@ class AgentCycleMCPTool:
                 return {
                     "success": False,
                     "error": "Agent classes not available - import failed",
-                    "result": ""
+                    "result": "",
                 }
-                
+
             print("🚀 Initializing Enhanced Agent Cycle via MCP...")
-            
+
             # Initialize enhanced agent
             self.enhanced_agent = EnhancedAgentCycle(self.workspace_folder)
             success = await self.enhanced_agent.initialize()
-            
+
             if not success:
                 return {
                     "success": False,
                     "error": "Failed to initialize enhanced agent",
-                    "result": ""
+                    "result": "",
                 }
-                
+
             # Initialize base agent for commands
             self.base_agent = SuperAlitaAgent(self.workspace_folder)
             await self.base_agent.initialize()
-            
+
             return {
                 "success": True,
                 "error": "",
-                "result": "✅ Enhanced Agent Cycle initialized successfully via MCP"
+                "result": "✅ Enhanced Agent Cycle initialized successfully via MCP",
             }
-            
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
-    
-    async def start_continuous_cycle(self, interval_seconds: int = 30) -> dict[str, Any]:
+            return {"success": False, "error": str(e), "result": ""}
+
+    async def start_continuous_cycle(
+        self, interval_seconds: int = 30
+    ) -> dict[str, Any]:
         """Start the continuous agent cycle."""
         try:
             if not self.enhanced_agent:
                 init_result = await self.initialize_agent()
                 if not init_result["success"]:
                     return init_result
-                    
+
             if self.cycle_task and not self.cycle_task.done():
                 return {
                     "success": False,
                     "error": "Continuous cycle is already running",
-                    "result": ""
+                    "result": "",
                 }
-                
+
             # Set cycle interval
             self.enhanced_agent.cycle_interval = interval_seconds
-            
+
             # Start continuous cycle as background task
             self.cycle_task = asyncio.create_task(
                 self.enhanced_agent.start_continuous_cycle()
             )
-            
+
             return {
                 "success": True,
                 "error": "",
-                "result": f"🔄 Started continuous agent cycle (interval: {interval_seconds}s)"
+                "result": f"🔄 Started continuous agent cycle (interval: {interval_seconds}s)",
             }
-            
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
-    
+            return {"success": False, "error": str(e), "result": ""}
+
     async def stop_continuous_cycle(self) -> dict[str, Any]:
         """Stop the continuous agent cycle."""
         try:
@@ -116,37 +110,33 @@ class AgentCycleMCPTool:
                 return {
                     "success": False,
                     "error": "Enhanced agent not initialized",
-                    "result": ""
+                    "result": "",
                 }
-                
+
             if self.cycle_task and not self.cycle_task.done():
                 self.enhanced_agent.cycle_running = False
                 self.cycle_task.cancel()
-                
+
                 with contextlib.suppress(asyncio.CancelledError):
                     await self.cycle_task
-                    
+
                 self.cycle_task = None
-                
+
                 return {
                     "success": True,
                     "error": "",
-                    "result": "🛑 Stopped continuous agent cycle"
+                    "result": "🛑 Stopped continuous agent cycle",
                 }
             else:
                 return {
                     "success": False,
                     "error": "No continuous cycle is running",
-                    "result": ""
+                    "result": "",
                 }
-                
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
-    
+            return {"success": False, "error": str(e), "result": ""}
+
     async def execute_single_cycle(self) -> dict[str, Any]:
         """Execute a single agent cycle."""
         try:
@@ -154,33 +144,29 @@ class AgentCycleMCPTool:
                 init_result = await self.initialize_agent()
                 if not init_result["success"]:
                     return init_result
-                    
+
             print("🔄 Executing single agent cycle...")
             await self.enhanced_agent._execute_cycle()
-            
+
             # Get cycle metrics
             metrics = {
                 "cycle_count": self.enhanced_agent.cycle_count,
                 "tasks_completed": self.enhanced_agent.tasks_completed_this_session,
                 "recommendations_generated": self.enhanced_agent.recommendations_generated,
                 "code_improvements": self.enhanced_agent.code_improvements_made,
-                "last_cycle_time": self.enhanced_agent.last_cycle_time
+                "last_cycle_time": self.enhanced_agent.last_cycle_time,
             }
-            
+
             return {
                 "success": True,
                 "error": "",
                 "result": f"✅ Single cycle completed in {metrics['last_cycle_time']:.2f}s",
-                "metrics": metrics
+                "metrics": metrics,
             }
-            
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
-    
+            return {"success": False, "error": str(e), "result": ""}
+
     async def get_agent_status(self) -> dict[str, Any]:
         """Get comprehensive agent status."""
         try:
@@ -188,12 +174,12 @@ class AgentCycleMCPTool:
                 return {
                     "success": False,
                     "error": "Base agent not initialized",
-                    "result": ""
+                    "result": "",
                 }
-                
+
             # Get development status
             dev_status = await self.base_agent.get_development_status()
-            
+
             # Get agent metrics if enhanced agent is available
             agent_metrics = {}
             if self.enhanced_agent:
@@ -204,34 +190,28 @@ class AgentCycleMCPTool:
                     "recommendations_generated": self.enhanced_agent.recommendations_generated,
                     "code_improvements_made": self.enhanced_agent.code_improvements_made,
                     "last_cycle_time": self.enhanced_agent.last_cycle_time,
-                    "average_cycle_time": self.enhanced_agent.perf_monitor.average_cycle_time
+                    "average_cycle_time": self.enhanced_agent.perf_monitor.average_cycle_time,
                 }
-            
+
             status_report = {
                 "development_status": dev_status,
                 "agent_metrics": agent_metrics,
-                "continuous_cycle_active": self.cycle_task is not None and not self.cycle_task.done()
+                "continuous_cycle_active": self.cycle_task is not None
+                and not self.cycle_task.done(),
             }
-            
+
             return {
                 "success": True,
                 "error": "",
                 "result": "📊 Agent status retrieved",
-                "status": status_report
+                "status": status_report,
             }
-            
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
-    
+            return {"success": False, "error": str(e), "result": ""}
+
     async def create_development_task(
-        self, 
-        title: str, 
-        description: str, 
-        priority: str = "medium"
+        self, title: str, description: str, priority: str = "medium"
     ) -> dict[str, Any]:
         """Create a new development task via the agent."""
         try:
@@ -239,31 +219,23 @@ class AgentCycleMCPTool:
                 init_result = await self.initialize_agent()
                 if not init_result["success"]:
                     return init_result
-                    
+
             task = await self.base_agent.create_development_task(
-                title=title,
-                description=description,
-                priority=priority
+                title=title, description=description, priority=priority
             )
-            
+
             return {
                 "success": True,
                 "error": "",
                 "result": f"✅ Created task: {title}",
-                "task": task
+                "task": task,
             }
-            
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
-    
+            return {"success": False, "error": str(e), "result": ""}
+
     async def complete_development_task(
-        self, 
-        task_id: str, 
-        notes: str = ""
+        self, task_id: str, notes: str = ""
     ) -> dict[str, Any]:
         """Complete a development task via the agent."""
         try:
@@ -271,35 +243,30 @@ class AgentCycleMCPTool:
                 return {
                     "success": False,
                     "error": "Base agent not initialized",
-                    "result": ""
+                    "result": "",
                 }
-                
+
             completed_task = await self.base_agent.complete_development_task(
-                task_id=task_id,
-                notes=notes
+                task_id=task_id, notes=notes
             )
-            
+
             if completed_task:
                 return {
                     "success": True,
                     "error": "",
                     "result": f"✅ Completed task: {completed_task['title']}",
-                    "completed_task": completed_task
+                    "completed_task": completed_task,
                 }
             else:
                 return {
                     "success": False,
                     "error": f"Task {task_id} not found",
-                    "result": ""
+                    "result": "",
                 }
-                
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
-    
+            return {"success": False, "error": str(e), "result": ""}
+
     async def get_agent_recommendations(self) -> dict[str, Any]:
         """Get intelligent recommendations from the agent."""
         try:
@@ -307,25 +274,21 @@ class AgentCycleMCPTool:
                 return {
                     "success": False,
                     "error": "Base agent not initialized",
-                    "result": ""
+                    "result": "",
                 }
-                
+
             recommendations = await self.base_agent.get_agent_recommendations()
-            
+
             return {
                 "success": True,
                 "error": "",
                 "result": f"💡 Generated {len(recommendations)} recommendations",
-                "recommendations": recommendations
+                "recommendations": recommendations,
             }
-            
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
-    
+            return {"success": False, "error": str(e), "result": ""}
+
     async def trigger_code_analysis(self) -> dict[str, Any]:
         """Trigger code analysis via the enhanced agent."""
         try:
@@ -333,26 +296,22 @@ class AgentCycleMCPTool:
                 return {
                     "success": False,
                     "error": "Enhanced agent not initialized",
-                    "result": ""
+                    "result": "",
                 }
-                
+
             # Trigger code analysis
             await self.enhanced_agent._perform_code_analysis()
-            
+
             return {
                 "success": True,
                 "error": "",
                 "result": "🔍 Code analysis completed",
-                "improvements_made": self.enhanced_agent.code_improvements_made
+                "improvements_made": self.enhanced_agent.code_improvements_made,
             }
-            
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
-    
+            return {"success": False, "error": str(e), "result": ""}
+
     async def generate_documentation(self) -> dict[str, Any]:
         """Trigger documentation generation via the enhanced agent."""
         try:
@@ -360,51 +319,43 @@ class AgentCycleMCPTool:
                 return {
                     "success": False,
                     "error": "Enhanced agent not initialized",
-                    "result": ""
+                    "result": "",
                 }
-                
+
             # Trigger documentation generation
             await self.enhanced_agent._generate_documentation()
-            
+
             return {
                 "success": True,
                 "error": "",
-                "result": "📚 Documentation generation completed"
+                "result": "📚 Documentation generation completed",
             }
-            
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
-    
+            return {"success": False, "error": str(e), "result": ""}
+
     async def shutdown_agent(self) -> dict[str, Any]:
         """Shutdown the agent cycle."""
         try:
             # Stop continuous cycle if running
             if self.cycle_task and not self.cycle_task.done():
                 await self.stop_continuous_cycle()
-                
+
             # Shutdown agents
             if self.enhanced_agent:
                 await self.enhanced_agent.shutdown()
-                
+
             if self.base_agent:
                 await self.base_agent.shutdown()
-                
+
             return {
                 "success": True,
                 "error": "",
-                "result": "✅ Agent cycle shutdown complete"
+                "result": "✅ Agent cycle shutdown complete",
             }
-            
+
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "result": ""
-            }
+            return {"success": False, "error": str(e), "result": ""}
 
 
 # Global tool instance
@@ -437,9 +388,7 @@ async def mcp_agent_status() -> dict[str, Any]:
 
 
 async def mcp_agent_create_task(
-    title: str, 
-    description: str, 
-    priority: str = "medium"
+    title: str, description: str, priority: str = "medium"
 ) -> dict[str, Any]:
     """MCP command: Create development task."""
     return await agent_cycle_tool.create_development_task(title, description, priority)
@@ -474,12 +423,12 @@ async def demo_mcp_integration():
     """Demonstrate the MCP integration with enhanced agent cycle."""
     print("🔧 Enhanced Agent MCP Integration Demo")
     print("=" * 50)
-    
+
     # Initialize agent
     print("\n1. Initializing agent...")
     result = await mcp_agent_initialize()
     print(f"   Result: {result['result']}")
-    
+
     # Get status
     print("\n2. Getting agent status...")
     result = await mcp_agent_status()
@@ -489,15 +438,17 @@ async def demo_mcp_integration():
         print(f"   📁 Workspace: {dev_status['workspace']}")
         print(f"   📋 Tasks: {dev_status['task_summary']['total']} total")
         print(f"   🎯 Completion: {dev_status['completion_rate']:.1%}")
-    
+
     # Execute single cycle
     print("\n3. Executing single cycle...")
     result = await mcp_agent_execute_cycle()
     print(f"   Result: {result['result']}")
     if "metrics" in result:
         metrics = result["metrics"]
-        print(f"   📊 Metrics: {metrics['cycle_count']} cycles, {metrics['tasks_completed']} tasks completed")
-    
+        print(
+            f"   📊 Metrics: {metrics['cycle_count']} cycles, {metrics['tasks_completed']} tasks completed"
+        )
+
     # Get recommendations
     print("\n4. Getting recommendations...")
     result = await mcp_agent_recommendations()
@@ -506,21 +457,21 @@ async def demo_mcp_integration():
         print(f"   💡 Found {len(recommendations)} recommendations:")
         for i, rec in enumerate(recommendations[:3], 1):
             print(f"      {i}. {rec}")
-    
+
     # Create a test task
     print("\n5. Creating test task...")
     result = await mcp_agent_create_task(
         title="MCP Integration Test",
         description="Test task created via MCP integration",
-        priority="medium"
+        priority="medium",
     )
     print(f"   Result: {result['result']}")
-    
+
     # Trigger code analysis
     print("\n6. Triggering code analysis...")
     result = await mcp_agent_analyze_code()
     print(f"   Result: {result['result']}")
-    
+
     # Final status
     print("\n7. Final status check...")
     result = await mcp_agent_status()
@@ -528,12 +479,12 @@ async def demo_mcp_integration():
         status = result["status"]
         dev_status = status["development_status"]
         print(f"   📋 Final task count: {dev_status['task_summary']['total']}")
-    
+
     # Shutdown
     print("\n8. Shutting down...")
     result = await mcp_agent_shutdown()
     print(f"   Result: {result['result']}")
-    
+
     print("\n🎉 MCP Integration Demo Complete!")
     return True
 

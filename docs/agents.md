@@ -1,7 +1,15 @@
 # Super Alita – Agents Registry (Living Document)
 
 > Status: LIVING • Source of truth for agents, abilities, plugins, and session stitching.
-> Updated automatically by `.github/workflows/update-agents-md.yml` after each PR merge.
+> Updated automatically by `.githu---
+
+## 6. Session Ledger Details
+
+The updater maintains a session ledger for continuity across "AI sessions" and human sessions.
+
+**Ledger:** `.alita/sessions/ledger.json`
+
+```jsonws/update-agents-md.yml` after each PR merge.
 
 - Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-08-28T22:33:31Z
 - Current Release: <!-- AGENTS:RELEASE -->master
@@ -9,6 +17,7 @@
 ---
 
 ## 0. Quick Links
+
 - Health: `/healthz` • Telemetry: `/metrics` • Streaming: `${API_PREFIX}/v1/chat/stream`
 - EventBus: `file://` (dev) or `redis://` (prod)
 - Session Ledger: `.alita/sessions/ledger.json` (auto‑maintained)
@@ -31,6 +40,7 @@
 ---
 
 ## 2. Abilities
+
 > Contract‑first tools that the runtime can call (dynamic registry supported).
 
 <!-- ABILITIES:START -->
@@ -42,6 +52,7 @@
 ---
 
 ## 3. Plugins
+
 > Pluggable modules (planner, memory, search, MCP, etc.)
 
 <!-- PLUGINS:START -->
@@ -109,10 +120,68 @@
 ---
 
 ## 4. Runtime Surfaces
+
 - **HTTP**: FastAPI (`app.py` / `src/main.py`) — `/healthz`, `${API_PREFIX}/v1/chat/stream`
 - **Eventing**: EventBus (file/Redis), MCP telemetry broadcaster
 - **Sandbox**: `src/sandbox/exec_sandbox.py`
 - **VS Code** (optional): extension client (gRPC when wired)
+
+---
+
+## 4.1 GitHub Copilot Agent Mode Development Tools
+
+GitHub Copilot's Agent Mode leverages a comprehensive suite of development tools and VS Code extensions for enhanced code quality, testing, and productivity:
+
+### Code Quality & Formatting Tools
+
+- **Ruff**: Integrated fast Python linter for real-time code analysis and style enforcement
+- **Black**: Automated Python code formatting for consistent code styling
+- **isort**: Import statement organization and sorting
+- **Pylint**: Additional static code analysis for comprehensive error detection
+- **mypy**: Type checking for Python code quality assurance
+
+### Testing & Validation Framework
+
+- **pytest**: Primary testing framework with advanced plugin ecosystem
+- **pytest-cov**: Code coverage analysis and reporting
+- **pytest-asyncio**: Async/await testing support for modern Python applications
+- **pytest-xdist**: Parallel test execution for faster feedback loops
+- **unittest**: Built-in Python testing framework support
+
+### Essential VS Code Extensions
+
+- **Python Extension Pack**: Core Python development environment
+- **GitHub Copilot**: AI-powered code completion and suggestions
+- **GitHub Copilot Chat**: Interactive AI assistance for development tasks
+- **Python Docstring Generator**: Automated docstring creation with templates
+- **autoDocstring**: Enhanced documentation generation with multiple formats
+- **Error Lens**: Inline display of errors, warnings, and info messages
+- **GitLens**: Advanced Git integration with blame, history, and branch visualization
+- **Python Snippets**: Pre-built code snippets for rapid development
+- **Bracket Pair Colorizer**: Enhanced code readability with colored brackets
+- **indent-rainbow**: Visual indentation guides for Python code
+
+### Documentation & Productivity Extensions
+
+- **Markdown All in One**: Enhanced Markdown editing with preview and shortcuts
+- **TODO Highlight**: Task and comment highlighting for better code organization
+- **Thunder Client**: REST API testing directly within VS Code
+- **YAML**: Language support for configuration files
+- **Python Test Explorer**: Visual test discovery and execution interface
+- **Code Spell Checker**: Spell checking for comments and documentation
+
+### GitHub Copilot Agent Mode Integration
+
+The agent mode enhances development workflow through:
+
+- **Intelligent Tool Selection**: Automatically chooses appropriate linting and formatting tools based on project context
+- **Real-time Code Analysis**: Runs ruff and black formatting on code suggestions before presenting them
+- **Test-Driven Development**: Integrates pytest for automated test generation and validation
+- **Context-Aware Assistance**: Uses extension capabilities to provide more accurate code suggestions
+- **Documentation Generation**: Leverages docstring generators and snippet libraries for comprehensive code documentation
+- **Error Prevention**: Proactively suggests fixes using Error Lens and static analysis tools
+
+---
 
 ---
 
@@ -146,6 +215,11 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
+<<<<<<< Updated upstream
 - 2025-08-28T22:33:31Z #196 Merge pull request #196 from yaboyshades/copilot/fix-9f6a8ca7-66c6-41fc-ac37-b7a3b2dba781 (owner: @yaboyshades)
+=======
+- 2025-08-29T00:00:00Z Enhanced GitHub Copilot Agent Mode with comprehensive development tools integration (ruff, black, pytest, intelligent VS Code extensions)
+- 2025-08-26T04:06:01Z #146 Merge pull request #146 from yaboyshades/oak-core-integration (owner: @yaboyshades)
+>>>>>>> Stashed changes
 <!-- CHANGELOG:START -->
 - 2025-08-26T04:06:01Z #146 Merge pull request #146 from yaboyshades/oak-core-integration (owner: @yaboyshades)

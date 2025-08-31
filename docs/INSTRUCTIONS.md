@@ -133,7 +133,7 @@ sphinx-build -b html docs/ docs/_build/
 - Configuration examples
 - Usage tutorials
 
-### Developer Documentation  
+### Developer Documentation
 - Architecture overviews
 - API references
 - Development workflows

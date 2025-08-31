@@ -76,17 +76,25 @@ class StrategySelector:
 
         # Add arms
         for arm in spec.get("arms", []):
-            bandit.add_arm(arm_id=arm["id"], name=arm.get("name", arm["id"]), metadata=arm.get("metadata", {}))
+            bandit.add_arm(
+                arm_id=arm["id"],
+                name=arm.get("name", arm["id"]),
+                metadata=arm.get("metadata", {}),
+            )
 
         self._bandits[task_type] = bandit
         return bandit
 
-    def select(self, task_type: str, context: dict[str, Any] | None = None) -> StrategyDecision:
+    def select(
+        self, task_type: str, context: dict[str, Any] | None = None
+    ) -> StrategyDecision:
         bandit = self._get_algo(task_type)
         decision = bandit.select_arm(context=context or {"task_type": task_type})
 
         # Resolve metadata from config
-        arms = {arm["id"]: arm for arm in self._cfg["task_types"][task_type].get("arms", [])}
+        arms = {
+            arm["id"]: arm for arm in self._cfg["task_types"][task_type].get("arms", [])
+        }
         meta = arms.get(decision.arm_id, {}).get("metadata", {})
 
         return StrategyDecision(
@@ -109,4 +117,3 @@ class StrategySelector:
             self._cfg["task_types"][task_type]["stats"] = stats
             self._save()
         return ok
-

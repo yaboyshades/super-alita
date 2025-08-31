@@ -112,6 +112,7 @@
             border-radius: 18px;
             line-height: 1.4;
             word-wrap: break-word;
+            position: relative;
         }
 
         .message.user .message-content {
@@ -125,6 +126,152 @@
             color: #333;
             border: 1px solid #e1e5e9;
             border-bottom-left-radius: 4px;
+        }
+
+        .message.tool {
+            flex-direction: row;
+        }
+
+        .message.tool .message-avatar {
+            background: #ff9800;
+        }
+
+        .message.tool .message-content {
+            background: #fff3e0;
+            border: 1px solid #ffcc02;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+
+        .tool-header {
+            font-weight: 600;
+            color: #e65100;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #ffcc02;
+            border-top: 2px solid #e65100;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .tool-args, .tool-result {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px;
+            margin-top: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .consensus-result {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .confidence-score {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .confidence-low { background: #ff5722; }
+        .confidence-medium { background: #ff9800; }
+        .confidence-high { background: #4caf50; }
+
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            background: #e9ecef;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 12px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .code-block code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+        }
+
+        .inline-code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+            margin: 8px 0;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .tool-args, .tool-result {
+                font-size: 11px;
+            }
         }
 
         .message-time {
@@ -255,10 +402,77 @@
                 width: 100%;
                 height: 100vh;
                 border-radius: 0;
+                margin: 0;
             }
-            
+
+            .chat-header h1 {
+                font-size: 18px;
+            }
+
             .message-content {
                 max-width: 85%;
+            }
+
+            .chat-input-container {
+                padding: 15px;
+            }
+
+            #messageInput {
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+
+            .consensus-meta {
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+
+            .tool-args {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .message-avatar {
+                min-width: 32px;
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+
+            .code-block {
+                font-size: 12px;
+            }
+
+            .tool-message {
+                padding: 12px;
+            }
+
+            .consensus-header {
+                font-size: 14px;
+            }
+        }
+
+        /* Accessibility improvements */
+        .chat-input button:focus,
+        .chat-input input:focus {
+            outline: 2px solid #0066cc;
+            outline-offset: 2px;
+        }
+
+        /* Animation for smooth interactions */
+        .message {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
     </style>
@@ -269,7 +483,7 @@
             <h1>🤖 Super Alita</h1>
             <div class="status-indicator" id="statusIndicator"></div>
         </div>
-        
+
         <div class="chat-messages" id="chatMessages">
             <div class="message agent">
                 <div class="message-avatar">🤖</div>
@@ -279,7 +493,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="typing-indicator" id="typingIndicator">
             <div class="message-avatar">🤖</div>
             <div class="typing-dots">
@@ -288,7 +502,7 @@
                 <div class="typing-dot"></div>
             </div>
         </div>
-        
+
         <div class="capabilities-panel">
             <strong>Available Capabilities:</strong>
             <span class="capability-tag">Paper2Code</span>
@@ -298,12 +512,12 @@
             <span class="capability-tag">Multi-Armed Bandit</span>
             <span class="capability-tag">Plugin System</span>
         </div>
-        
+
         <div class="chat-input-container">
             <div class="chat-input-wrapper">
-                <textarea 
-                    class="chat-input" 
-                    id="chatInput" 
+                <textarea
+                    class="chat-input"
+                    id="chatInput"
                     placeholder="Type your message... (Shift+Enter for new line)"
                     rows="1"
                 ></textarea>
@@ -320,52 +534,104 @@
     <script>
     class SuperAlitaChat {
             constructor() {
-        // Derive API base dynamically (supports alternate port like 8081)
-        this.apiBase = window.location.origin.replace(/\/$/, '');
-                this.sessionId = this.generateSessionId();
+                // Derive API base dynamically (supports alternate port like 8081)
+                this.apiBase = window.location.origin.replace(/\/$/, '');
+                this.sessionId = this.getOrCreateSession();
                 this.isConnected = false;
-                
+
                 this.chatMessages = document.getElementById('chatMessages');
                 this.chatInput = document.getElementById('chatInput');
                 this.sendButton = document.getElementById('sendButton');
                 this.typingIndicator = document.getElementById('typingIndicator');
                 this.statusIndicator = document.getElementById('statusIndicator');
-                
+
                 this.initializeChat();
                 this.setupEventListeners();
                 this.checkConnection();
+                this.loadChatHistory();
+                this.showWelcomeMessage();
             }
-            
+
+            getOrCreateSession() {
+                let sessionId = localStorage.getItem('super-alita-session');
+                if (!sessionId) {
+                    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('super-alita-session', sessionId);
+                }
+                return sessionId;
+            }
+
+            loadChatHistory() {
+                const history = localStorage.getItem(`super-alita-history-${this.sessionId}`);
+                if (history) {
+                    try {
+                        const messages = JSON.parse(history);
+                        messages.forEach(msg => {
+                            if (msg.sender !== 'welcome') {
+                                this.addMessage(msg.content, msg.sender, false, false);
+                            }
+                        });
+                    } catch (e) {
+                        console.warn('Failed to load chat history:', e);
+                    }
+                }
+            }
+
+            saveChatHistory() {
+                const messages = Array.from(this.chatMessages.children).map(elem => {
+                    const isUser = elem.classList.contains('user');
+                    const isTool = elem.classList.contains('tool');
+                    const content = elem.querySelector('.message-content').textContent;
+                    return {
+                        sender: isUser ? 'user' : isTool ? 'tool' : 'agent',
+                        content: content,
+                        timestamp: Date.now()
+                    };
+                });
+                localStorage.setItem(`super-alita-history-${this.sessionId}`, JSON.stringify(messages.slice(-50))); // Keep last 50 messages
+            }
+
+            showWelcomeMessage() {
+                if (this.chatMessages.children.length === 0) {
+                    this.addMessage(
+                        "👋 **Welcome to Super Alita!**\n\nI'm an AI agent with enhanced consensus capabilities. I can help you with:\n\n• **Multi-perspective analysis** using consensus algorithms\n• **Complex problem solving** with tool execution\n• **Code assistance** and technical discussions\n\nTry asking me something like:\n- *\"Use consensus to analyze the pros and cons of microservices\"*\n- *\"What's the best approach for handling API errors?\"*\n- *\"Help me understand machine learning concepts\"*",
+                        'agent',
+                        false,
+                        false
+                    );
+                }
+            }
+
             generateSessionId() {
                 return 'chat_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
             }
-            
+
             initializeChat() {
                 // Set welcome message time
                 document.getElementById('welcomeTime').textContent = this.formatTime(new Date());
             }
-            
+
             setupEventListeners() {
                 this.sendButton.addEventListener('click', () => this.sendMessage());
-                
+
                 this.chatInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         this.sendMessage();
                     }
                 });
-                
+
                 this.chatInput.addEventListener('input', this.autoResize.bind(this));
             }
-            
+
             autoResize() {
                 this.chatInput.style.height = 'auto';
                 this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
             }
-            
+
             async checkConnection() {
                 try {
-                    const response = await fetch(`${this.apiBase}/healthz`);
+                    const response = await fetch(`${this.apiBase}/health/simple`);
                     if (response.ok) {
                         this.setConnectionStatus(true);
                     } else {
@@ -376,13 +642,13 @@
                     this.showError('Cannot connect to Super Alita agent. Please ensure the server is running on port 8080.');
                 }
             }
-            
+
             setConnectionStatus(connected) {
                 this.isConnected = connected;
                 this.statusIndicator.style.background = connected ? '#4CAF50' : '#f44336';
                 this.statusIndicator.title = connected ? 'Connected' : 'Disconnected';
             }
-            
+
             async sendMessage() {
                 const message = this.chatInput.value.trim();
                 if (!message || !this.isConnected) return;
@@ -405,9 +671,12 @@
                     const params = new URLSearchParams({ q: message, session: this.sessionId });
                     const es = new EventSource(`${this.apiBase}/v1/chat/stream?${params.toString()}`);
                     let elem = null;
+                    let currentToolMessage = null;
+
                     es.addEventListener('start', () => {
                         elem = this.addMessage('', 'agent', true);
                     });
+
                     es.addEventListener('content', (ev) => {
                         if (!elem) elem = this.addMessage('', 'agent', true);
                         try {
@@ -418,10 +687,57 @@
                             }
                         } catch {}
                     });
+
+                    es.addEventListener('tool_start', (ev) => {
+                        try {
+                            const data = JSON.parse(ev.data);
+                            const tool = data.tool || 'tool';
+                            const args = data.args ? JSON.stringify(data.args, null, 2) : '';
+                            currentToolMessage = this.addToolMessage(tool, args, 'running');
+                        } catch {}
+                    });
+
+                    es.addEventListener('tool_result', (ev) => {
+                        try {
+                            const data = JSON.parse(ev.data);
+                            const tool = data.tool || 'tool';
+                            const result = data.result;
+
+                            if (currentToolMessage) {
+                                this.updateToolMessage(currentToolMessage, tool, null, result, 'completed');
+                            } else {
+                                this.addToolMessage(tool, null, 'completed', result);
+                            }
+
+                            // Special handling for consensus results
+                            if (tool === 'deepconf_consensus' && result) {
+                                this.addConsensusResult(result);
+                            }
+
+                            currentToolMessage = null;
+                        } catch {}
+                    });
+
+                    es.addEventListener('tool_error', (ev) => {
+                        try {
+                            const data = JSON.parse(ev.data);
+                            const tool = data.tool || 'tool';
+                            const error = data.error || 'Unknown error';
+
+                            if (currentToolMessage) {
+                                this.updateToolMessage(currentToolMessage, tool, null, error, 'error');
+                            } else {
+                                this.addToolMessage(tool, null, 'error', error);
+                            }
+                            currentToolMessage = null;
+                        } catch {}
+                    });
+
                     es.addEventListener('done', () => {
                         es.close();
                         resolve();
                     });
+
                     es.onerror = (err) => {
                         es.close();
                         reject(err);
@@ -464,7 +780,7 @@
                 }
                 this.addMessage("I couldn't process that right now. Please try again shortly.", 'agent');
             }
-            
+
             formatAutogenResponse(data) {
                 if (data.status === 'completed') {
                     return `✅ **Capability Generated Successfully**\n\n${data.message || 'I\'ve generated the requested capability for you!'}\n\n*Files created: ${data.files_created || 'N/A'}*`;
@@ -474,78 +790,273 @@
                     return `🔄 **Processing**\n\n${data.message || 'I\'m working on your request...'}\n\n*Status: ${data.status || 'In progress'}*`;
                 }
             }
-            
-            addMessage(content, sender, isStreaming = false) {
+
+            addMessage(content, sender, isStreaming = false, shouldSave = true) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
-                
+
                 const avatar = document.createElement('div');
                 avatar.className = 'message-avatar';
                 avatar.textContent = sender === 'user' ? '👤' : '🤖';
-                
+
                 const messageContent = document.createElement('div');
                 messageContent.className = 'message-content';
-                
+
                 const messageText = document.createElement('div');
                 messageText.innerHTML = this.formatMessageContent(content);
-                
+
                 const messageTime = document.createElement('div');
                 messageTime.className = 'message-time';
                 messageTime.textContent = this.formatTime(new Date());
-                
+
                 messageContent.appendChild(messageText);
                 messageContent.appendChild(messageTime);
-                
+
                 messageDiv.appendChild(avatar);
                 messageDiv.appendChild(messageContent);
-                
+
                 this.chatMessages.appendChild(messageDiv);
                 this.scrollToBottom();
-                
+
+                if (shouldSave) {
+                    this.saveChatHistory();
+                }
+
                 return isStreaming ? messageText : messageDiv;
             }
-            
+
+            addToolMessage(toolName, args, status = 'running', result = null) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message tool';
+
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar';
+                avatar.textContent = '🔧';
+
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+
+                const toolHeader = document.createElement('div');
+                toolHeader.className = 'tool-header';
+
+                if (status === 'running') {
+                    const spinner = document.createElement('div');
+                    spinner.className = 'tool-spinner';
+                    toolHeader.appendChild(spinner);
+                    toolHeader.appendChild(document.createTextNode(`Running ${toolName}...`));
+                } else if (status === 'completed') {
+                    toolHeader.innerHTML = `✅ ${toolName} completed`;
+                } else if (status === 'error') {
+                    toolHeader.innerHTML = `❌ ${toolName} failed`;
+                }
+
+                messageContent.appendChild(toolHeader);
+
+                if (args) {
+                    const argsDiv = document.createElement('div');
+                    argsDiv.className = 'tool-args';
+                    argsDiv.textContent = args;
+                    messageContent.appendChild(argsDiv);
+                }
+
+                if (result) {
+                    const resultDiv = document.createElement('div');
+                    resultDiv.className = 'tool-result';
+                    if (typeof result === 'object') {
+                        resultDiv.textContent = JSON.stringify(result, null, 2);
+                    } else {
+                        resultDiv.textContent = result;
+                    }
+                    messageContent.appendChild(resultDiv);
+                }
+
+                const messageTime = document.createElement('div');
+                messageTime.className = 'message-time';
+                messageTime.textContent = this.formatTime(new Date());
+                messageContent.appendChild(messageTime);
+
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(messageContent);
+
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+
+                return messageDiv;
+            }
+
+            updateToolMessage(messageDiv, toolName, args, result, status) {
+                const toolHeader = messageDiv.querySelector('.tool-header');
+                if (status === 'completed') {
+                    toolHeader.innerHTML = `✅ ${toolName} completed`;
+                } else if (status === 'error') {
+                    toolHeader.innerHTML = `❌ ${toolName} failed`;
+                }
+
+                // Remove spinner
+                const spinner = toolHeader.querySelector('.tool-spinner');
+                if (spinner) spinner.remove();
+
+                if (result) {
+                    let resultDiv = messageDiv.querySelector('.tool-result');
+                    if (!resultDiv) {
+                        resultDiv = document.createElement('div');
+                        resultDiv.className = 'tool-result';
+                        messageDiv.querySelector('.message-content').appendChild(resultDiv);
+                    }
+
+                    if (typeof result === 'object') {
+                        resultDiv.textContent = JSON.stringify(result, null, 2);
+                    } else {
+                        resultDiv.textContent = result;
+                    }
+                }
+
+                this.scrollToBottom();
+            }
+
+            addConsensusResult(consensusData) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message agent';
+
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar';
+                avatar.textContent = '🧠';
+
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+
+                const consensusDiv = document.createElement('div');
+                consensusDiv.className = 'consensus-result';
+
+                const header = document.createElement('div');
+                header.innerHTML = `<strong>Consensus Analysis</strong>`;
+
+                const confidence = consensusData.consensus_confidence || 0;
+                const confidenceClass = confidence > 0.8 ? 'confidence-high' :
+                                      confidence > 0.5 ? 'confidence-medium' : 'confidence-low';
+                const confidenceSpan = document.createElement('span');
+                confidenceSpan.className = `confidence-score ${confidenceClass}`;
+                confidenceSpan.textContent = `${Math.round(confidence * 100)}%`;
+                header.appendChild(confidenceSpan);
+
+                const text = document.createElement('div');
+                text.innerHTML = this.formatMessageContent(consensusData.consensus_text || '');
+                text.style.marginTop = '8px';
+
+                const meta = document.createElement('div');
+                meta.style.fontSize = '11px';
+                meta.style.color = '#666';
+                meta.style.marginTop = '8px';
+                meta.innerHTML = `Method: ${consensusData.aggregation_method || 'unknown'} • Samples: ${(consensusData.individual_responses || []).length}`;
+
+                consensusDiv.appendChild(header);
+                consensusDiv.appendChild(text);
+                consensusDiv.appendChild(meta);
+
+                const messageTime = document.createElement('div');
+                messageTime.className = 'message-time';
+                messageTime.textContent = this.formatTime(new Date());
+
+                messageContent.appendChild(consensusDiv);
+                messageContent.appendChild(messageTime);
+
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(messageContent);
+
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+
+                return messageDiv;
+            }
+
             updateMessage(element, content) {
                 element.innerHTML = this.formatMessageContent(content);
                 this.scrollToBottom();
             }
-            
+
             formatMessageContent(content) {
-                // Simple markdown-like formatting
-                return content
+                if (!content) return '';
+
+                // Handle consensus result objects
+                if (typeof content === 'object' && content.type === 'consensus_result') {
+                    return this.formatConsensusResult(content);
+                }
+
+                // Enhanced markdown-like formatting
+                let formatted = content
+                    // Code blocks (```language\ncode\n```)
+                    .replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
+                        const language = lang || 'text';
+                        return `<div class="code-block"><div class="code-header">${language}</div><pre><code>${this.escapeHtml(code.trim())}</code></pre></div>`;
+                    })
+                    // Inline code
+                    .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+                    // Bold
                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    // Italic
                     .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                    .replace(/`(.*?)`/g, '<code style="background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">$1</code>')
+                    // Links
+                    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+                    // Line breaks
                     .replace(/\n/g, '<br>');
+
+                return formatted;
             }
-            
+
+            formatConsensusResult(result) {
+                const confidence = result.confidence ? (result.confidence * 100).toFixed(1) : 'N/A';
+                const method = result.method || 'weighted_vote';
+                const samples = result.samples ? result.samples.length : 0;
+
+                return `
+                    <div class="consensus-result">
+                        <div class="consensus-header">
+                            <span class="consensus-icon">🧠</span>
+                            <span class="consensus-title">Consensus Result</span>
+                        </div>
+                        <div class="consensus-meta">
+                            <span class="consensus-method">Method: <strong>${method}</strong></span>
+                            <span class="consensus-confidence">Confidence: <strong>${confidence}%</strong></span>
+                            ${samples > 0 ? `<span class="consensus-samples">Samples: <strong>${samples}</strong></span>` : ''}
+                        </div>
+                        <div class="consensus-content">${this.formatMessageContent(result.best_response || result.consensus_text || '')}</div>
+                    </div>
+                `;
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
             setLoading(loading) {
                 this.typingIndicator.style.display = loading ? 'flex' : 'none';
                 this.sendButton.disabled = loading;
                 if (loading) this.scrollToBottom();
             }
-            
+
             showError(message) {
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'error-message';
                 errorDiv.textContent = message;
                 this.chatMessages.appendChild(errorDiv);
                 this.scrollToBottom();
-                
+
                 setTimeout(() => {
                     errorDiv.remove();
                 }, 5000);
             }
-            
+
             scrollToBottom() {
                 this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
             }
-            
+
             formatTime(date) {
                 return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             }
         }
-        
+
         // Initialize chat when page loads
         document.addEventListener('DOMContentLoaded', () => {
             new SuperAlitaChat();

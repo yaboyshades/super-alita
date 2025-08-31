@@ -493,7 +493,9 @@ Use the `{snippet_trigger}` snippet for efficient {template_type} creation:
             "efficiency_rating": (
                 "high"
                 if savings_percent >= 0.7
-                else "medium" if savings_percent >= 0.5 else "low"
+                else "medium"
+                if savings_percent >= 0.5
+                else "low"
             ),
         }
 
@@ -668,7 +670,9 @@ class SnippetOptimizedCopilotPlugin(CopilotAgentPlugin):
                 else (
                     "good"
                     if avg_efficiency >= 0.5
-                    else "moderate" if avg_efficiency >= 0.3 else "low"
+                    else "moderate"
+                    if avg_efficiency >= 0.3
+                    else "low"
                 )
             ),
         }

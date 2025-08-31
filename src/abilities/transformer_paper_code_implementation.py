@@ -10,25 +10,24 @@ Architecture Type: transformer
 Detected Concepts: {'architectures': ['transformer', 'memory', 'fusion'], 'components': ['attention'], 'techniques': [], 'domains': ['computer_vision', 'multimodal'], 'keywords': []}
 """
 
-
 import torch
 import torch.nn as nn
 
 
 class TransformerModel(nn.Module):
     """Transformer implementation based on requirements"""
-    
+
     def __init__(self, d_model: int = 512, num_heads: int = 8, num_layers: int = 6):
         super().__init__()
-        self.layers = nn.ModuleList([
-            nn.TransformerEncoderLayer(d_model, num_heads) 
-            for _ in range(num_layers)
-        ])
-        
+        self.layers = nn.ModuleList(
+            [nn.TransformerEncoderLayer(d_model, num_heads) for _ in range(num_layers)]
+        )
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.layers:
             x = layer(x)
         return x
+
 
 def create_paper_code_implementation(**kwargs) -> nn.Module:
     return TransformerModel(**kwargs)

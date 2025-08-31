@@ -4,6 +4,7 @@ Composable, side‑effect free steps to transform raw telemetry into
 high‑signal prompt context. All abilities share a uniform async
 ``execute(*args, **kwargs)`` signature for flexibility.
 """
+
 from __future__ import annotations
 
 import json
@@ -26,9 +27,7 @@ class Ability:
     description: str
     category: str
 
-    def __init__(
-        self, name: str, description: str, category: str = "pipeline"
-    ) -> None:
+    def __init__(self, name: str, description: str, category: str = "pipeline") -> None:
         self.name = name
         self.description = description
         self.category = category
@@ -71,12 +70,8 @@ class IngestNormalizeAbility(Ability):
         )
 
     @tool
-    async def execute(
-        self, *args: Any, **kwargs: Any
-    ) -> list[dict[str, Any]]:
-        items: list[dict[str, Any]] = kwargs.get("items") or (
-            args[0] if args else []
-        )
+    async def execute(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = kwargs.get("items") or (args[0] if args else [])
         out: list[dict[str, Any]] = []
         for idx, item in enumerate(items):
             out.append(
@@ -85,9 +80,7 @@ class IngestNormalizeAbility(Ability):
                     "ts": item.get("timestamp", item.get("ts", "")),
                     "source": item.get("source", "unknown"),
                     "type": item.get("type", "event"),
-                    "text": item.get(
-                        "message", item.get("text", str(item))
-                    ),
+                    "text": item.get("message", item.get("text", str(item))),
                     "facets": {
                         "user": item.get("user_id"),
                         "session": item.get("session_id"),
@@ -120,9 +113,7 @@ class RelevanceGateAbility(Ability):
         )
 
     @tool
-    async def execute(
-        self, *args: Any, **kwargs: Any
-    ) -> list[dict[str, Any]]:
+    async def execute(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
         task: str = kwargs.get("task") or (args[0] if args else "")
         items: list[dict[str, Any]] = kwargs.get("items") or (
             args[1] if len(args) > 1 else []
@@ -139,8 +130,8 @@ class RelevanceGateAbility(Ability):
         prompt = (
             f"{self.template}\n\nTask: {task}\nItems:\n"
             + json.dumps(items, indent=2)
-            + "\n\nFormat: {\"id\":...,\"keep\":true,"
-            "\"relevance\":0.87,\"reason\":...}"
+            + '\n\nFormat: {"id":...,"keep":true,'
+            '"relevance":0.87,"reason":...}'
         )
         try:
             response = await cast(LLMProvider, llm_provider).generate(prompt)
@@ -158,9 +149,7 @@ class RelevanceGateAbility(Ability):
             except json.JSONDecodeError:
                 continue
             if obj.get("keep") and obj.get("id"):
-                target = next(
-                    (i for i in items if i["id"] == obj["id"]), None
-                )
+                target = next((i for i in items if i["id"] == obj["id"]), None)
                 if target:
                     target["relevance"] = float(obj.get("relevance", 0.5))
                     target["relevance_reason"] = obj.get("reason", "")
@@ -195,15 +184,11 @@ class RankAbility(Ability):
             return 0.5
 
     @tool
-    async def execute(
-        self, *args: Any, **kwargs: Any
-    ) -> list[dict[str, Any]]:
+    async def execute(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = kwargs.get("items") or (
             args[1] if len(args) > 1 else []
         )
-        top_n: int = int(
-            kwargs.get("top_n", (args[2] if len(args) > 2 else 200))
-        )
+        top_n: int = int(kwargs.get("top_n", (args[2] if len(args) > 2 else 200)))
         if not items:
             return []
         for it in items:
@@ -237,12 +222,8 @@ class ClusterAbility(Ability):
         )
 
     @tool
-    async def execute(
-        self, *args: Any, **kwargs: Any
-    ) -> list[dict[str, Any]]:
-        items: list[dict[str, Any]] = kwargs.get("items") or (
-            args[0] if args else []
-        )
+    async def execute(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = kwargs.get("items") or (args[0] if args else [])
         llm_provider = kwargs.get("llm_provider") or (
             args[1] if len(args) > 1 else None
         )
@@ -255,9 +236,7 @@ class ClusterAbility(Ability):
                     "topic": "aggregate",
                     "members": items,
                     "conflicts": [],
-                    "summary": ", ".join(
-                        it.get("text", "") for it in items
-                    )[:300],
+                    "summary": ", ".join(it.get("text", "") for it in items)[:300],
                 }
             ]
         prompt = f"{self.template}\nItems:\n" + json.dumps(items, indent=2)
@@ -287,9 +266,7 @@ class PruneAbility(Ability):
         )
 
     @tool
-    async def execute(
-        self, *args: Any, **kwargs: Any
-    ) -> list[dict[str, Any]]:
+    async def execute(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
         clusters: list[dict[str, Any]] = kwargs.get("clusters") or (
             args[0] if args else []
         )
@@ -353,11 +330,7 @@ class FinalPromptAssemblerAbility(Ability):
                 else "- No conflicts detected"
             )
             + "\n\n# Hard constraints\n"
-            + (
-                "\n".join(f"- {c}" for c in constraints)
-                if constraints
-                else "- None"
-            )
+            + ("\n".join(f"- {c}" for c in constraints) if constraints else "- None")
             + "\n\n# Your job\nAnalyze the above information and provide "
             "actionable recommendations.\n"
         )

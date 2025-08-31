@@ -14,4 +14,3 @@ export class StatusController {
     this.ui.setTooltip(`WASM analyzer is ${ready ? 'ready' : 'not ready'}`);
   }
 }
-

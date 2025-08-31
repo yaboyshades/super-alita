@@ -11,15 +11,9 @@ if __name__ == "__main__":
     print("📋 API documentation at: http://127.0.0.1:8080/docs")
     print("🔧 Health check at: http://127.0.0.1:8080/healthz")
     print()
-    
+
     try:
-        uvicorn.run(
-            app,
-            host="127.0.0.1",
-            port=8080,
-            log_level="info",
-            access_log=True
-        )
+        uvicorn.run(app, host="127.0.0.1", port=8080, log_level="info", access_log=True)
     except KeyboardInterrupt:
         print("\n👋 Super Alita chat interface stopped.")
     except Exception as e:

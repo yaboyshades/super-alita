@@ -5,6 +5,7 @@ Usage (PowerShell):
   set DEEPCODE_ANALYSIS_LEVEL=DEEP; \
     .\\.venv\\Scripts\\python.exe scripts\\deepcode_run_file.py path\\to\\file.py
 """
+
 from __future__ import annotations
 
 import asyncio

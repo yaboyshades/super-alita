@@ -23,7 +23,9 @@ def test_copilot_context_emits_events(monkeypatch) -> None:
     monkeypatch.setattr(config.SETTINGS, "copilot_context", True)
     with patch("reug_runtime.router.build_copilot_context", return_value="ctx"):
         client = TestClient(app)
-        resp = client.post("/v1/chat/stream", json={"message": "hi", "session_id": "s1"})
+        resp = client.post(
+            "/v1/chat/stream", json={"message": "hi", "session_id": "s1"}
+        )
         assert resp.status_code == 200
     events = app.state.event_bus.events
     kinds = [e["type"] for e in events if e.get("tool") == "build_copilot_context"]

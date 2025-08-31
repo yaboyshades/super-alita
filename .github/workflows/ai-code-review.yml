@@ -31,7 +31,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          
+
       - name: Get changed files
         id: changed_files
         run: |
@@ -44,51 +44,51 @@ jobs:
             # For PR events
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
           fi
-          
+
           echo "Changed files:"
           echo "$CHANGED_FILES"
-          
+
           # Store files in output
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          
+
           # Check file types
           HAS_PYTHON=$(echo "$CHANGED_FILES" | grep -E "\.(py)$" | wc -l)
           HAS_TYPESCRIPT=$(echo "$CHANGED_FILES" | grep -E "\.(ts|js|tsx|jsx)$" | wc -l)
           HAS_WASM=$(echo "$CHANGED_FILES" | grep -E "\.(rs|wit)$" | wc -l)
-          
+
           echo "has_python=$([[ $HAS_PYTHON -gt 0 ]] && echo true || echo false)" >> $GITHUB_OUTPUT
           echo "has_typescript=$([[ $HAS_TYPESCRIPT -gt 0 ]] && echo true || echo false)" >> $GITHUB_OUTPUT
           echo "has_wasm=$([[ $HAS_WASM -gt 0 ]] && echo true || echo false)" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Calculate change complexity
         id: complexity
         run: |
           CHANGED_FILES="${{ steps.changed_files.outputs.files }}"
-          
+
           # Simple complexity scoring based on:
           # - Number of files changed
           # - Lines added/removed
           # - File types affected
-          
+
           FILE_COUNT=$(echo "$CHANGED_FILES" | wc -l)
-          
+
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             PR_BASE=$(gh pr view ${{ github.event.inputs.pr_number }} --json baseRefOid --jq '.baseRefOid')
             DIFF_STATS=$(git diff --numstat $PR_BASE..HEAD)
           else
             DIFF_STATS=$(git diff --numstat ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
           fi
-          
+
           TOTAL_ADDITIONS=$(echo "$DIFF_STATS" | awk '{sum += $1} END {print sum+0}')
           TOTAL_DELETIONS=$(echo "$DIFF_STATS" | awk '{sum += $2} END {print sum+0}')
-          
+
           # Calculate complexity score (0-100)
           COMPLEXITY=0
-          
+
           # File count factor (max 30 points)
           if [[ $FILE_COUNT -le 3 ]]; then
             COMPLEXITY=$((COMPLEXITY + 5))
@@ -97,7 +97,7 @@ jobs:
           else
             COMPLEXITY=$((COMPLEXITY + 30))
           fi
-          
+
           # Lines changed factor (max 40 points)
           TOTAL_CHANGES=$((TOTAL_ADDITIONS + TOTAL_DELETIONS))
           if [[ $TOTAL_CHANGES -le 50 ]]; then
@@ -109,7 +109,7 @@ jobs:
           else
             COMPLEXITY=$((COMPLEXITY + 40))
           fi
-          
+
           # File type factor (max 30 points)
           if [[ "${{ steps.changed_files.outputs.has_wasm }}" == "true" ]]; then
             COMPLEXITY=$((COMPLEXITY + 15))
@@ -120,7 +120,7 @@ jobs:
           if [[ "${{ steps.changed_files.outputs.has_python }}" == "true" ]]; then
             COMPLEXITY=$((COMPLEXITY + 5))
           fi
-          
+
           echo "score=$COMPLEXITY" >> $GITHUB_OUTPUT
           echo "Complexity score: $COMPLEXITY/100"
           echo "Files: $FILE_COUNT, Additions: $TOTAL_ADDITIONS, Deletions: $TOTAL_DELETIONS"
@@ -147,18 +147,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
-          
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-test.txt
-          
+
       - name: Run DeepCode analysis on changed files
         env:
           REUG_EVENTBUS: redis
@@ -170,31 +170,31 @@ jobs:
           import sys
           from pathlib import Path
           from src.deepcode.analyzer_simple import create_deepcode_engine, AnalysisLevel
-          
+
           async def analyze_changed_files():
               """Analyze changed Python files with DeepCode"""
               changed_files = """${{ needs.analyze-changes.outputs.files }}""".strip().split('\n')
               python_files = [f for f in changed_files if f.endswith('.py') and Path(f).exists()]
-              
+
               if not python_files:
                   print("No Python files to analyze")
                   return
-              
+
               print(f"Analyzing {len(python_files)} Python files with DeepCode...")
-              
+
               engine = create_deepcode_engine(AnalysisLevel.DETAILED)
               all_results = {}
-              
+
               for file_path in python_files:
                   try:
                       print(f"Analyzing: {file_path}")
-                      
+
                       with open(file_path, 'r', encoding='utf-8') as f:
                           content = f.read()
-                      
+
                       results = await engine.analyze_code(content, file_path)
                       all_results[file_path] = results
-                      
+
                       # Print summary for this file
                       if results.get('issues'):
                           issue_count = len(results['issues'])
@@ -202,17 +202,17 @@ jobs:
                           print(f"  🔍 {issue_count} issues found (Quality: {quality_score})")
                       else:
                           print(f"  ✅ No issues found")
-                          
+
                   except Exception as e:
                       print(f"  ❌ Analysis failed: {e}")
                       all_results[file_path] = {"error": str(e)}
-              
+
               # Save results
               with open('deepcode-analysis.json', 'w') as f:
                   json.dump(all_results, f, indent=2)
-              
+
               return all_results
-          
+
           if __name__ == '__main__':
               try:
                   results = asyncio.run(analyze_changed_files())
@@ -221,9 +221,9 @@ jobs:
                   print(f"❌ DeepCode analysis failed: {e}")
                   sys.exit(1)
           EOF
-          
+
           python deepcode_pr_analysis.py
-          
+
       - name: Upload DeepCode results
         uses: actions/upload-artifact@v4
         with:
@@ -240,35 +240,35 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: extensions/alita-language-tools/package-lock.json
-          
+
       - name: Install dependencies
         working-directory: extensions/alita-language-tools
         run: |
           npm ci
           npm install --save-dev @typescript-eslint/parser @typescript-eslint/eslint-plugin
-          
+
       - name: Run TypeScript analysis
         working-directory: extensions/alita-language-tools
         run: |
           # Type checking
           echo "🔍 Running TypeScript type checking..."
           npx tsc --noEmit --strict --listFiles > ts-analysis.log 2>&1 || echo "Type check completed"
-          
+
           # ESLint analysis
           echo "🔍 Running ESLint analysis..."
           npx eslint src/ --format=json > eslint-results.json 2>/dev/null || echo "ESLint completed"
-          
+
           # Complexity analysis
           echo "🔍 Analyzing code complexity..."
           find src/ -name "*.ts" -exec wc -l {} + | sort -n > complexity.txt
-          
+
           # Create summary
           cat > typescript-analysis.json << EOF
           {
@@ -278,7 +278,7 @@ jobs:
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           }
           EOF
-          
+
       - name: Upload TypeScript analysis
         uses: actions/upload-artifact@v4
         with:
@@ -294,31 +294,31 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          
+
       - name: Install security tools
         run: |
           python -m pip install --upgrade pip
           pip install bandit semgrep safety
           pip install -r requirements.txt
-          
+
       - name: Run security analysis
         run: |
           echo "🔒 Running security analysis..."
-          
+
           # Bandit for Python security
           bandit -r src/ -f json -o bandit-results.json || echo "Bandit scan completed"
-          
+
           # Semgrep for broader security patterns
           semgrep --config=auto src/ --json --output=semgrep-results.json || echo "Semgrep scan completed"
-          
+
           # Safety for known vulnerabilities
           safety check -r requirements.txt --json > safety-results.json || echo "Safety check completed"
-          
+
           # Create security summary
           cat > security-analysis.json << EOF
           {
@@ -328,7 +328,7 @@ jobs:
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           }
           EOF
-          
+
       - name: Upload security analysis
         uses: actions/upload-artifact@v4
         with:
@@ -345,17 +345,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Download all analysis results
         uses: actions/download-artifact@v4
         with:
           path: ./analysis-results
-          
+
       - name: Setup Python for review generation
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          
+
       - name: Generate comprehensive review
         run: |
           cat > generate_review.py << 'EOF'
@@ -363,7 +363,7 @@ jobs:
           import os
           from datetime import datetime
           from pathlib import Path
-          
+
           def load_analysis_result(file_path):
               """Load analysis result if file exists"""
               if Path(file_path).exists():
@@ -373,24 +373,24 @@ jobs:
                   except Exception as e:
                       print(f"Error loading {file_path}: {e}")
               return None
-          
+
           def generate_review_comment():
               """Generate comprehensive AI review comment"""
-              
+
               # Load analysis results
               deepcode_results = load_analysis_result('analysis-results/deepcode-analysis/deepcode-analysis.json')
               typescript_results = load_analysis_result('analysis-results/typescript-analysis/typescript-analysis.json')
               security_results = load_analysis_result('analysis-results/security-analysis/security-analysis.json')
-              
+
               # Get change information
               complexity_score = int(os.environ.get('COMPLEXITY_SCORE', 0))
               has_python = os.environ.get('HAS_PYTHON', 'false') == 'true'
               has_typescript = os.environ.get('HAS_TYPESCRIPT', 'false') == 'true'
               has_wasm = os.environ.get('HAS_WASM', 'false') == 'true'
-              
+
               # Build review comment
               comment = "## 🤖 AI-Powered Code Review\n\n"
-              
+
               # Overall assessment
               if complexity_score < 30:
                   comment += "✅ **Low complexity change** - This appears to be a straightforward modification.\n\n"
@@ -398,17 +398,17 @@ jobs:
                   comment += "🔍 **Medium complexity change** - Please review carefully.\n\n"
               else:
                   comment += "⚠️ **High complexity change** - This requires thorough review and testing.\n\n"
-              
+
               # DeepCode Analysis
               if deepcode_results and has_python:
                   comment += "### 🧠 DeepCode Python Analysis\n\n"
-                  
+
                   total_issues = 0
                   for file_path, results in deepcode_results.items():
                       if isinstance(results, dict) and 'issues' in results:
                           issues = results.get('issues', [])
                           quality_score = results.get('quality_score', 'N/A')
-                          
+
                           if issues:
                               comment += f"**{file_path}** (Quality: {quality_score})\n"
                               for issue in issues[:3]:  # Show max 3 issues per file
@@ -424,14 +424,14 @@ jobs:
                               comment += f"✅ **{file_path}** - No issues found (Quality: {quality_score})\n\n"
                       elif isinstance(results, dict) and 'error' in results:
                           comment += f"❌ **{file_path}** - Analysis failed: {results['error']}\n\n"
-                  
+
                   if total_issues > 0:
                       comment += f"📊 **Total DeepCode issues found: {total_issues}**\n\n"
-              
+
               # TypeScript Analysis
               if typescript_results and has_typescript:
                   comment += "### 📝 TypeScript Analysis\n\n"
-                  
+
                   eslint_issues = typescript_results.get('eslint_issues', [])
                   if eslint_issues:
                       comment += f"🔍 **ESLint found {len(eslint_issues)} issues:**\n"
@@ -446,11 +446,11 @@ jobs:
                       comment += "\n"
                   else:
                       comment += "✅ No ESLint issues found\n\n"
-              
+
               # Security Analysis
               if security_results:
                   comment += "### 🔒 Security Analysis\n\n"
-                  
+
                   bandit_results = security_results.get('bandit_results', {})
                   if bandit_results.get('results'):
                       bandit_issues = bandit_results['results']
@@ -466,53 +466,53 @@ jobs:
                       comment += "\n"
                   else:
                       comment += "✅ No security issues found\n\n"
-              
+
               # Recommendations
               comment += "### 💡 Recommendations\n\n"
-              
+
               if complexity_score > 50:
                   comment += "🔄 Consider breaking this change into smaller, focused commits\n"
-              
+
               if has_wasm:
                   comment += "🧮 WASM changes detected - ensure proper testing of component interfaces\n"
-              
+
               if has_python and has_typescript:
                   comment += "🔗 Full-stack changes detected - verify end-to-end integration\n"
-              
+
               comment += "📋 Run the full test suite before merging\n"
               comment += "🔍 Consider adding tests for new functionality\n\n"
-              
+
               # Footer
               comment += f"---\n*AI review generated at {datetime.now().isoformat()}*\n"
               comment += f"*Complexity Score: {complexity_score}/100*"
-              
+
               return comment
-          
+
           if __name__ == '__main__':
               review = generate_review_comment()
               with open('ai-review.md', 'w') as f:
                   f.write(review)
               print("AI review generated successfully")
           EOF
-          
+
           python generate_review.py
         env:
           COMPLEXITY_SCORE: ${{ needs.analyze-changes.outputs.complexity_score }}
           HAS_PYTHON: ${{ needs.analyze-changes.outputs.has_python_changes }}
           HAS_TYPESCRIPT: ${{ needs.analyze-changes.outputs.has_typescript_changes }}
           HAS_WASM: ${{ needs.analyze-changes.outputs.has_wasm_changes }}
-          
+
       - name: Post AI review comment
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            
+
             try {
               const review = fs.readFileSync('ai-review.md', 'utf8');
-              
+
               const prNumber = context.payload.pull_request?.number || ${{ github.event.inputs.pr_number }};
-              
+
               if (prNumber) {
                 await github.rest.issues.createComment({
                   issue_number: prNumber,
@@ -520,7 +520,7 @@ jobs:
                   repo: context.repo.repo,
                   body: review
                 });
-                
+
                 console.log('✅ AI review posted successfully');
               } else {
                 console.log('❌ Could not determine PR number');
@@ -540,14 +540,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
       - name: Analyze code ownership and suggest reviewers
         run: |
           cat > suggest_reviewers.py << 'EOF'
           import os
           import subprocess
           from collections import defaultdict
-          
+
           def get_file_contributors(file_path, limit=5):
               """Get main contributors to a file based on git history"""
               try:
@@ -555,7 +555,7 @@ jobs:
                       ['git', 'shortlog', '-sn', '--', file_path],
                       capture_output=True, text=True
                   )
-                  
+
                   contributors = []
                   for line in result.stdout.strip().split('\n')[:limit]:
                       if line.strip():
@@ -563,34 +563,34 @@ jobs:
                           if len(parts) == 2:
                               count, name = parts
                               contributors.append((int(count), name))
-                  
+
                   return contributors
               except Exception:
                   return []
-          
+
           def suggest_reviewers():
               """Suggest reviewers based on changed files"""
               changed_files = """${{ needs.analyze-changes.outputs.files }}""".strip().split('\n')
-              
+
               contributor_scores = defaultdict(int)
               file_expertise = defaultdict(list)
-              
+
               for file_path in changed_files:
                   if file_path.strip() and os.path.exists(file_path):
                       contributors = get_file_contributors(file_path)
-                      
+
                       for commits, contributor in contributors:
                           # Weight by number of commits to this file
                           contributor_scores[contributor] += commits
                           file_expertise[contributor].append(file_path)
-              
+
               # Sort by expertise score
               suggested_reviewers = sorted(
                   contributor_scores.items(),
                   key=lambda x: x[1],
                   reverse=True
               )[:5]  # Top 5 suggestions
-              
+
               print("🎯 Suggested Reviewers:")
               suggestions = []
               for contributor, score in suggested_reviewers:
@@ -601,44 +601,44 @@ jobs:
                       'score': score,
                       'relevant_files': files[:3]  # Show top 3 files
                   })
-              
+
               return suggestions
-          
+
           if __name__ == '__main__':
               suggestions = suggest_reviewers()
-              
+
               # Create GitHub comment with suggestions
               if suggestions:
                   comment = "## 👥 Suggested Reviewers\n\n"
                   comment += "Based on git history and file expertise:\n\n"
-                  
+
                   for suggestion in suggestions:
                       comment += f"- **{suggestion['name']}** "
                       comment += f"(Score: {suggestion['score']}) - "
                       comment += f"Expert in: {', '.join([f'`{f}`' for f in suggestion['relevant_files']])}\n"
-                  
+
                   comment += "\n*Suggestions based on git commit history and file ownership*"
-                  
+
                   with open('reviewer-suggestions.md', 'w') as f:
                       f.write(comment)
               else:
                   print("No reviewer suggestions available")
           EOF
-          
+
           python suggest_reviewers.py
-          
+
       - name: Post reviewer suggestions
         if: hashFiles('reviewer-suggestions.md') != ''
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            
+
             try {
               const suggestions = fs.readFileSync('reviewer-suggestions.md', 'utf8');
-              
+
               const prNumber = context.payload.pull_request?.number;
-              
+
               if (prNumber) {
                 await github.rest.issues.createComment({
                   issue_number: prNumber,
@@ -646,7 +646,7 @@ jobs:
                   repo: context.repo.repo,
                   body: suggestions
                 });
-                
+
                 console.log('✅ Reviewer suggestions posted');
               }
             } catch (error) {

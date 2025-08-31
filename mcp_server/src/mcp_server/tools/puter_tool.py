@@ -73,7 +73,7 @@ async def puter_file_read(file_path: str, dry_run: bool = True) -> dict[str, Any
                 "error": f"File {file_path} does not exist",
             }
 
-        with open(target_path, encoding='utf-8') as f:
+        with open(target_path, encoding="utf-8") as f:
             content = f.read()
 
         return {
@@ -100,7 +100,9 @@ async def puter_file_read(file_path: str, dry_run: bool = True) -> dict[str, Any
     name="puter_file_write",
     description="Write content to a file in Puter cloud storage. Args: file_path (str), content (str), dry_run (bool, default=True). Returns write status or diff preview.",
 )
-async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -> dict[str, Any]:
+async def puter_file_write(
+    file_path: str, content: str, dry_run: bool = True
+) -> dict[str, Any]:
     """Write content to a file in Puter cloud storage with workspace boundary validation."""
     try:
         workspace_root = _get_workspace_root()
@@ -119,7 +121,7 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
             existing_content = ""
             if target_path.exists():
                 try:
-                    with open(target_path, encoding='utf-8') as f:
+                    with open(target_path, encoding="utf-8") as f:
                         existing_content = f.read()
                 except Exception:
                     existing_content = "<binary or unreadable file>"
@@ -135,7 +137,9 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
                     new_lines = content.splitlines()
                     max_lines = 10
 
-                    for _i, (old, new) in enumerate(zip(old_lines[:max_lines], new_lines[:max_lines], strict=False)):
+                    for _i, (old, new) in enumerate(
+                        zip(old_lines[:max_lines], new_lines[:max_lines], strict=False)
+                    ):
                         if old != new:
                             diff_lines.append(f"-{old}")
                             diff_lines.append(f"+{new}")
@@ -169,7 +173,7 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
         # Actual file write operation
         target_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(target_path, 'w', encoding='utf-8') as f:
+        with open(target_path, "w", encoding="utf-8") as f:
             f.write(content)
 
         return {
@@ -197,10 +201,7 @@ async def puter_file_write(file_path: str, content: str, dry_run: bool = True) -
     description="Execute a command in Puter cloud environment. Args: command (str), args (list), working_dir (str), dry_run (bool, default=True). Returns execution result or preview.",
 )
 async def puter_execute(
-    command: str,
-    args: list[str] = None,
-    working_dir: str = None,
-    dry_run: bool = True
+    command: str, args: list[str] = None, working_dir: str = None, dry_run: bool = True
 ) -> dict[str, Any]:
     """Execute a command in Puter cloud environment with security validation."""
     try:
@@ -220,7 +221,16 @@ async def puter_execute(
 
         # Security: Only allow safe commands in dry_run=False mode
         safe_commands = {
-            "echo", "cat", "ls", "pwd", "whoami", "date", "python", "node", "npm", "git"
+            "echo",
+            "cat",
+            "ls",
+            "pwd",
+            "whoami",
+            "date",
+            "python",
+            "node",
+            "npm",
+            "git",
         }
 
         if not dry_run and command not in safe_commands:
@@ -242,7 +252,7 @@ async def puter_execute(
                     "command": command,
                     "args": args,
                     "working_dir": str(work_path),
-                    "full_command": ' '.join(full_command),
+                    "full_command": " ".join(full_command),
                 },
             }
 
@@ -267,15 +277,21 @@ async def puter_execute(
 
         return {
             "success": proc.returncode == 0,
-            "result": stdout.decode('utf-8', errors='replace'),
-            "error": stderr.decode('utf-8', errors='replace') if proc.returncode != 0 else "",
+            "result": stdout.decode("utf-8", errors="replace"),
+            "error": stderr.decode("utf-8", errors="replace")
+            if proc.returncode != 0
+            else "",
             "execution_info": {
                 "command": command,
                 "args": args,
                 "working_dir": str(work_path),
                 "exit_code": proc.returncode,
-                "stdout_lines": len(stdout.decode('utf-8', errors='replace').splitlines()),
-                "stderr_lines": len(stderr.decode('utf-8', errors='replace').splitlines()),
+                "stdout_lines": len(
+                    stdout.decode("utf-8", errors="replace").splitlines()
+                ),
+                "stderr_lines": len(
+                    stderr.decode("utf-8", errors="replace").splitlines()
+                ),
             },
         }
 
@@ -296,7 +312,7 @@ async def puter_workspace_sync(
     sync_type: str = "bidirectional",
     local_path: str = ".",
     remote_path: str = "/workspace",
-    dry_run: bool = True
+    dry_run: bool = True,
 ) -> dict[str, Any]:
     """Sync workspace with Puter cloud storage with boundary validation."""
     try:
@@ -327,19 +343,23 @@ async def puter_workspace_sync(
                 for file_path in local_target.rglob("*"):
                     if file_path.is_file():
                         rel_path = file_path.relative_to(local_target)
-                        files_to_sync.append({
-                            "local_path": str(file_path),
-                            "remote_path": f"{remote_path}/{rel_path}",
-                            "size": file_path.stat().st_size,
-                            "action": sync_type,
-                        })
+                        files_to_sync.append(
+                            {
+                                "local_path": str(file_path),
+                                "remote_path": f"{remote_path}/{rel_path}",
+                                "size": file_path.stat().st_size,
+                                "action": sync_type,
+                            }
+                        )
             elif local_target.is_file():
-                files_to_sync.append({
-                    "local_path": str(local_target),
-                    "remote_path": f"{remote_path}/{local_target.name}",
-                    "size": local_target.stat().st_size,
-                    "action": sync_type,
-                })
+                files_to_sync.append(
+                    {
+                        "local_path": str(local_target),
+                        "remote_path": f"{remote_path}/{local_target.name}",
+                        "size": local_target.stat().st_size,
+                        "action": sync_type,
+                    }
+                )
 
             total_size = sum(f["size"] for f in files_to_sync)
 
@@ -405,9 +425,7 @@ async def puter_workspace_sync(
     description="List files in Puter cloud storage directory. Args: directory_path (str), pattern (str), dry_run (bool, default=True). Returns file listing.",
 )
 async def puter_list_files(
-    directory_path: str = ".",
-    pattern: str = "*",
-    dry_run: bool = True
+    directory_path: str = ".", pattern: str = "*", dry_run: bool = True
 ) -> dict[str, Any]:
     """List files in Puter cloud directory with workspace boundary validation."""
     try:

@@ -21,36 +21,36 @@ on:
 jobs:
   validate-capabilities:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Set up Python 3.13
       uses: actions/setup-python@v4
       with:
         python-version: '3.13'
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install pyyaml
-        
+
     - name: Validate capability metadata (scoped)
       run: |
         python scripts/validate_capabilities.py --paths src/plugins --output github --strict
-        
+
     - name: Generate validation report
       run: |
         python scripts/validate_capabilities.py --paths src/plugins --output text
-        
+
     - name: Upload validation results
       if: always()
       uses: actions/upload-artifact@v3
       with:
         name: capability-validation-results
         path: capability_validation.json
-        
+
     - name: Check validation status
       run: |
         exit_code=$(python scripts/validate_capabilities.py --paths src/plugins --strict --output text > /dev/null 2>&1; echo $?)

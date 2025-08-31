@@ -2,6 +2,7 @@
 REUG services wired to Script-of-Thought parsing and a computational environment executor.
 States remain thin: all compute/IO happens here; FSM only orchestrates + emits events.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -15,6 +16,7 @@ try:
     # Real SoT + executor (preferred if present in repo)
     from super_alita.computational_env.executor import Executor  # type: ignore
     from super_alita.script_of_thought.parser import ScriptParser  # type: ignore
+
     HAVE_REAL_IMPL = True
 except Exception:
     HAVE_REAL_IMPL = False
@@ -28,7 +30,8 @@ from .events import EventEmitter, hash_json, new_span_id
 
 ENFORCE_SCHEMA = os.getenv("REUG_SCHEMA_ENFORCE", "true").lower() == "true"
 
-StepKind = Literal["SEARCH","COMPUTE","ANALYZE","GENERATE","VALIDATE"]
+StepKind = Literal["SEARCH", "COMPUTE", "ANALYZE", "GENERATE", "VALIDATE"]
+
 
 @dataclass
 class PlanStep:
@@ -36,45 +39,62 @@ class PlanStep:
     kind: StepKind
     args: dict[str, Any]
 
+
 @dataclass
 class Plan:
     steps: list[PlanStep]
 
+
 # ---------- Fallbacks (keeps tests green without repo-local deps) ----------
 class _FallbackParser:
     """Very small SoT parser fallback: expects user_input['sot'] as a list[dict]."""
+
     def parse(self, user_input: dict[str, Any]) -> list[dict[str, Any]]:
         sot = user_input.get("sot")
         if isinstance(sot, str):
             # very simple "type: arg" lines format
             steps = []
-            for i, line in enumerate([l.strip() for l in sot.splitlines() if l.strip()]):
+            for i, line in enumerate(
+                [l.strip() for l in sot.splitlines() if l.strip()]
+            ):
                 if ":" in line:
-                    k, v = [x.strip() for x in line.split(":", 1)]
-                    steps.append({"id": f"step{i+1}", "kind": k.upper(), "args": {"expr": v}})
+                    k, v = (x.strip() for x in line.split(":", 1))
+                    steps.append(
+                        {"id": f"step{i+1}", "kind": k.upper(), "args": {"expr": v}}
+                    )
             return steps
         if isinstance(sot, list):
             steps = []
             for i, s in enumerate(sot):
                 if isinstance(s, dict):
-                    steps.append({
-                        "id": s.get("id", f"step{i+1}"),
-                        "kind": str(s.get("kind", "COMPUTE")).upper(),
-                        "args": dict(s.get("args", {})),
-                    })
+                    steps.append(
+                        {
+                            "id": s.get("id", f"step{i+1}"),
+                            "kind": str(s.get("kind", "COMPUTE")).upper(),
+                            "args": dict(s.get("args", {})),
+                        }
+                    )
                 elif isinstance(s, str) and ":" in s:
-                    k, v = [x.strip() for x in s.split(":", 1)]
-                    steps.append({"id": f"step{i+1}", "kind": k.upper(), "args": {"expr": v}})
+                    k, v = (x.strip() for x in s.split(":", 1))
+                    steps.append(
+                        {"id": f"step{i+1}", "kind": k.upper(), "args": {"expr": v}}
+                    )
                 else:
                     raise ValueError("Invalid SoT step format")
             return steps
-        raise ValueError("Fallback SoT parser requires user_input['sot'] as str or list")
+        raise ValueError(
+            "Fallback SoT parser requires user_input['sot'] as str or list"
+        )
+
 
 class _FallbackExecutor:
     """Extremely simple safe-ish executor for COMPUTE/ANALYZE/GENERATE kinds (tests only)."""
-    def run(self, tool_id: str, args: dict[str, Any], timeout_s: float = 5.0) -> dict[str, Any]:
+
+    def run(
+        self, tool_id: str, args: dict[str, Any], timeout_s: float = 5.0
+    ) -> dict[str, Any]:
         kind = args.get("_kind", "COMPUTE")
-        if kind in ("COMPUTE","ANALYZE"):
+        if kind in ("COMPUTE", "ANALYZE"):
             expr = args.get("expr") or args.get("code") or "None"
             # Very limited eval (no imports), only numeric/simple expressions
             allowed_names = {"__builtins__": {}}
@@ -83,22 +103,27 @@ class _FallbackExecutor:
             return {"text": args.get("text", "ok")}
         return {"ok": True}
 
+
 # ---------- Tool registry hook (optional) ----------
 ToolResolver = Callable[[PlanStep, dict[str, Any]], tuple[str, dict[str, Any]]]
 
-def default_tool_resolver(step: PlanStep, _ctx: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+
+def default_tool_resolver(
+    step: PlanStep, _ctx: dict[str, Any]
+) -> tuple[str, dict[str, Any]]:
     """
     Minimal resolver: map step.kind to pseudo-tool IDs and pass through args.
     Real systems can consult a registry by capability + schema.
     """
     tool_map = {
-        "SEARCH":  "tool.search.basic",
+        "SEARCH": "tool.search.basic",
         "COMPUTE": "tool.compute.python",
         "ANALYZE": "tool.analyze.basic",
-        "GENERATE":"tool.generate.text",
-        "VALIDATE":"tool.validate.schema",
+        "GENERATE": "tool.generate.text",
+        "VALIDATE": "tool.validate.schema",
     }
     return tool_map.get(step.kind, f"tool.{step.kind.lower()}.generic"), step.args
+
 
 # ---------- Validation helpers ----------
 def _validate(schema: dict[str, Any] | None, data: Any) -> str | None:
@@ -109,6 +134,7 @@ def _validate(schema: dict[str, Any] | None, data: Any) -> str | None:
         return None
     except Exception as e:
         return str(e)
+
 
 # ---------- Public service factory ----------
 def create_services(
@@ -126,9 +152,19 @@ def create_services(
       - execute(tool, args, ctx) -> {status, result?|error?}
       - process_result(ctx) -> {task_complete, more_steps_needed}
     """
-    per_tool_timeout_s = float(os.getenv("REUG_EXEC_TIMEOUT_S", per_tool_timeout_s or 20.0))
-    max_retries = int(os.getenv("REUG_EXEC_MAX_RETRIES", max_retries if max_retries is not None else 2))
-    retry_base_ms = int(os.getenv("REUG_RETRY_BASE_MS", retry_base_ms if retry_base_ms is not None else 100))
+    per_tool_timeout_s = float(
+        os.getenv("REUG_EXEC_TIMEOUT_S", per_tool_timeout_s or 20.0)
+    )
+    max_retries = int(
+        os.getenv(
+            "REUG_EXEC_MAX_RETRIES", max_retries if max_retries is not None else 2
+        )
+    )
+    retry_base_ms = int(
+        os.getenv(
+            "REUG_RETRY_BASE_MS", retry_base_ms if retry_base_ms is not None else 100
+        )
+    )
 
     parser = ScriptParser() if HAVE_REAL_IMPL else _FallbackParser()
     executor = Executor() if HAVE_REAL_IMPL else _FallbackExecutor()
@@ -153,20 +189,31 @@ def create_services(
         tool_id, tool_args = tool_resolver(step, ctx)
         if not tool_id:
             return {"status": "NOT_FOUND", "reason": "UNKNOWN_TOOL"}
-        tool = {"tool_id": tool_id, "input_schema": step.args.get("_input_schema"), "output_schema": step.args.get("_output_schema")}
+        tool = {
+            "tool_id": tool_id,
+            "input_schema": step.args.get("_input_schema"),
+            "output_schema": step.args.get("_output_schema"),
+        }
         # Input schema validation before we attempt execution
         err = _validate(tool.get("input_schema"), tool_args)
         if err:
             return {"status": "NOT_FOUND", "reason": f"INPUT_SCHEMA_VIOLATION: {err}"}
         return {"status": "FOUND", "tool": tool, "args": tool_args}
 
-    async def execute(tool: dict[str, Any], args: dict[str, Any], ctx: dict[str, Any]) -> dict[str, Any]:
+    async def execute(
+        tool: dict[str, Any], args: dict[str, Any], ctx: dict[str, Any]
+    ) -> dict[str, Any]:
         correlation_id = ctx.get("correlation_id")
         tool_id = tool["tool_id"]
         span_id = new_span_id()
         emitter.emit(
             event_type="TOOL_CALL_START",
-            payload={"tool_id": tool_id, "input_hash": hash_json(args), "step_id": ctx.get("step_index"), "args_preview": {k: args[k] for k in list(args)[:3]}},
+            payload={
+                "tool_id": tool_id,
+                "input_hash": hash_json(args),
+                "step_id": ctx.get("step_index"),
+                "args_preview": {k: args[k] for k in list(args)[:3]},
+            },
             correlation_id=correlation_id,
             span_id=span_id,
         )
@@ -200,6 +247,7 @@ def create_services(
                 )
                 try:
                     from .kg import store
+
                     for k, v in res.items():
                         if isinstance(v, str | int | float):
                             store.add_triple(tool_id, k, str(v), src=evt["event_id"])

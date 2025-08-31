@@ -35,4 +35,3 @@ async def test_mcp_broadcaster_wraps_event_bus(tmp_path):
     # Cleanup env to avoid leaking into other tests
     os.environ.pop("MCP_BROADCAST_ENABLED", None)
     os.environ.pop("MCP_EMIT_FILE", None)
-

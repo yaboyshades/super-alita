@@ -49,7 +49,6 @@ def parallel_wrapper(runnables: dict[str, Any]) -> RunnableParallel | RunnableSe
     return RunnableSequence(runnables.values())
 
 
-
 from __future__ import annotations
 
 
@@ -59,12 +58,18 @@ class ParallelWrapper:
     def __init__(self, planner: Any) -> None:
         self._planner = planner
 
-    def _process_parallel_results(self, parallel_results: dict[str, Any]) -> dict[str, Any]:
+    def _process_parallel_results(
+        self, parallel_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Convert result dict to {"steps": ..., "parallel": True} shape."""
         steps = parallel_results.get("steps")
         if steps is None:
             # Assume dict mapping step identifiers -> step payloads
-            steps = list(parallel_results.values()) if isinstance(parallel_results, dict) else parallel_results
+            steps = (
+                list(parallel_results.values())
+                if isinstance(parallel_results, dict)
+                else parallel_results
+            )
         # Ensure steps is a list
         if not isinstance(steps, list):
             steps = [steps]
@@ -106,6 +111,7 @@ class ParallelLadderWrapper:
         tasks = [asyncio.create_task(run_one(name, r)) for name, r in self.steps]
         results = await asyncio.gather(*tasks)
         return dict(results)
+
 
 from __future__ import annotations
 
@@ -154,6 +160,7 @@ async def decide_and_run(
     finally:
         duration = time.perf_counter() - start
         _emit_telemetry(mode, len(functions), duration, success)
+
 
 from collections.abc import Sequence
 
@@ -206,6 +213,3 @@ def should_parallelize(
     parallel_time = _estimate_parallel_time(substeps)
     benefit = sequential_time - parallel_time
     return benefit > min_parallel_benefit
-
-
-

@@ -124,7 +124,7 @@ def main():
     parser = argparse.ArgumentParser(description="Script description")
     parser.add_argument("--option", help="Option description")
     args = parser.parse_args()
-    
+
     # Implementation here
     logger.info("Script completed successfully")
 

@@ -9,12 +9,13 @@ from src.core.plugin_interface import PluginInterface
 
 logger = logging.getLogger(__name__)
 
-# This mapping is a placeholder to bridge OaK's abstract options to concrete tool calls.
-# In a real system, this might be a more dynamic, learned, or configured mapping.
+# Default mapping bridging OaK options to concrete tool calls.
 OPTION_TO_ACTION_MAPPING = {
     "option-web-search": {
         "tool_name": "web_agent",
-        "parameters": {"query": "{goal}"} # We'll use the goal description from the event
+        "parameters": {
+            "query": "{goal}"
+        },  # We'll use the goal description from the event
     },
     # Add other option mappings here as needed for testing.
 }
@@ -32,7 +33,9 @@ class OptionExecutorPlugin(PluginInterface):
 
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
-        self.option_mapping = self.get_config("option_mapping", OPTION_TO_ACTION_MAPPING)
+        self.option_mapping = self.get_config(
+            "option_mapping", OPTION_TO_ACTION_MAPPING
+        )
 
     async def start(self) -> None:
         await super().start()
@@ -53,15 +56,11 @@ class OptionExecutorPlugin(PluginInterface):
             option_id = selected_option.get("option_id")
 
             if option_id not in self.option_mapping:
-                logger.error(f"Option ID '{option_id}' not found in the action mapping.")
-                # For the test, we need at least one option to exist. Let's create one if it doesn't.
-                # This is a hack for the integration test to pass.
-                if not self.option_mapping:
-                    self.option_mapping["test-option"] = {
-                        "tool_name": "test_tool",
-                        "parameters": {"param": "{goal}"}
-                    }
-                option_id = "test-option"
+                # Fallback: route to echo tool with goal as payload
+                self.option_mapping[option_id] = {
+                    "tool_name": "echo",
+                    "parameters": {"payload": "{goal}"},
+                }
 
             action_template = self.option_mapping[option_id]
             tool_name = action_template["tool_name"]
@@ -74,7 +73,9 @@ class OptionExecutorPlugin(PluginInterface):
                 else:
                     populated_params[param] = value_template
 
-            logger.info(f"Executing option '{option_id}' by calling tool '{tool_name}' with params: {populated_params}")
+            logger.info(
+                f"Executing option '{option_id}' by calling tool '{tool_name}' with params: {populated_params}"
+            )
 
             await self.event_bus.publish(
                 ToolCallEvent(

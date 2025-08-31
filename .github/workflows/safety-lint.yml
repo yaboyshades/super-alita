@@ -43,4 +43,3 @@ jobs:
       - name: Gate
         run: |
           echo "Critical security findings block merge." && exit 0
-

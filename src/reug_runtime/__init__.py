@@ -7,6 +7,7 @@ or conflict resolution). Routers are available via lazy attribute access.
 
 __all__ = ["router", "tools", "TOOL_CATALOG"]
 
+
 def __getattr__(name: str):  # pragma: no cover - small helper
     if name == "router":
         from .router import router as _router

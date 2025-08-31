@@ -23,20 +23,20 @@ Set-Alias -Name ghce -Value Get-CommandExplanation
 function Start-SuperAlitaDev {
     Write-Host "🚀 Starting Super Alita development environment..." -ForegroundColor Green
     Write-Host "Tip: Use 'ghcs \"task description\"' for safe command suggestions" -ForegroundColor Yellow
-    
+
     # Check if .env exists
     if (!(Test-Path ".env")) {
         Write-Host "⚠️  Creating .env from .env.example..." -ForegroundColor Yellow
         Copy-Item ".env.example" ".env"
     }
-    
+
     # Start the enhanced task
     Write-Host "Starting multi-terminal environment..." -ForegroundColor Cyan
 }
 
 function Test-SuperAlitaHealth {
     Write-Host "🏥 Checking Super Alita health..." -ForegroundColor Blue
-    
+
     $healthUrl = "http://127.0.0.1:8080/healthz"
     try {
         $response = Invoke-RestMethod -Uri $healthUrl -TimeoutSec 5
@@ -51,7 +51,7 @@ function Test-SuperAlitaHealth {
 
 function Get-SuperAlitaTools {
     Write-Host "🛠️  Fetching Super Alita tools catalog..." -ForegroundColor Blue
-    
+
     $toolsUrl = "http://127.0.0.1:8080/tools/catalog"
     try {
         $response = Invoke-RestMethod -Uri $toolsUrl -TimeoutSec 5
@@ -70,7 +70,7 @@ Export-ModuleMember -Alias ghcs, ghce
 
 Write-Host "🎯 Copilot helpers loaded! Available commands:" -ForegroundColor Green
 Write-Host "  - ghcs 'task description' - Get safe command suggestions" -ForegroundColor Cyan
-Write-Host "  - ghce 'command' - Explain what a command does" -ForegroundColor Cyan  
+Write-Host "  - ghce 'command' - Explain what a command does" -ForegroundColor Cyan
 Write-Host "  - Start-SuperAlitaDev - Quick start development environment" -ForegroundColor Cyan
 Write-Host "  - Test-SuperAlitaHealth - Check server health" -ForegroundColor Cyan
 Write-Host "  - Get-SuperAlitaTools - List available tools" -ForegroundColor Cyan

@@ -17,23 +17,23 @@ async def test_plugin_setup():
     try:
         plugin = AutogenCreatorPlugin()
         bus = make_event_bus()
-        
+
         # Test setup
         await plugin.setup(bus, None, {})
         print("✓ Plugin setup successful")
-        
+
         # Test start
         await plugin.start()
         print("✓ Plugin start successful")
-        
+
         # Test that it's running
         assert plugin.is_running
         print("✓ Plugin is running")
-        
+
         # Test stop
         await plugin.stop()
         print("✓ Plugin stop successful")
-        
+
         return True
     except Exception as e:
         print(f"✗ Plugin test failed: {e}")

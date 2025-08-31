@@ -11,32 +11,36 @@ async def test():
     # Register plugin
     plugin = NativeDeepCodePlugin()
     await plugin.start()
-    register_plugin('native_deepcode', plugin)
-    
-    print(f'Registered plugin: {plugin}')
-    
+    register_plugin("native_deepcode", plugin)
+
+    print(f"Registered plugin: {plugin}")
+
     # First, make a request
-    result = await plugin.invoke_tool('deepcode_request', {
-        'task_kind': 'paper2code',
-        'requirements': 'Implement ResNet architecture from Deep Residual Learning for Image Recognition paper',
-        'repo_path': '.'
-    })
+    result = await plugin.invoke_tool(
+        "deepcode_request",
+        {
+            "task_kind": "paper2code",
+            "requirements": "Implement ResNet architecture from Deep Residual Learning for Image Recognition paper",
+            "repo_path": ".",
+        },
+    )
     print(f'Request result: {result.get("status")}')
-    
+
     # Get latest results
-    latest = await plugin.invoke_tool('deepcode_latest', {})
-    print(f'Latest result keys: {list(latest.keys())}')
-    
-    if 'diffs' in latest:
+    latest = await plugin.invoke_tool("deepcode_latest", {})
+    print(f"Latest result keys: {list(latest.keys())}")
+
+    if "diffs" in latest:
         print(f'Generated {len(latest["diffs"])} files:')
-        for diff in latest['diffs']:
+        for diff in latest["diffs"]:
             print(f'  - {diff["path"]} ({diff["change_type"]})')
-            if 'resnet' in diff['path'].lower():
-                print('    ✅ Found ResNet file!')
+            if "resnet" in diff["path"].lower():
+                print("    ✅ Found ResNet file!")
     else:
-        print('No diffs in latest results')
-    
+        print("No diffs in latest results")
+
     await plugin.stop()
+
 
 if __name__ == "__main__":
     asyncio.run(test())

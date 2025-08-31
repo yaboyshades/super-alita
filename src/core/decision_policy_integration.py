@@ -10,6 +10,7 @@ except Exception:  # pragma: no cover
     NeuralStore = object  # type: ignore
     NeuralAtom = object  # type: ignore
 
+
 class DecisionPolicyWithMemory:
     def __init__(self):
         self.engine = DecisionPolicyEngine()
@@ -37,4 +38,7 @@ class DecisionPolicyWithMemory:
         if not self.neural_store or not hasattr(self.neural_store, "similarity_search"):
             return {"memories": [], "memory_confidence": 0.0}
         memories = await self.neural_store.similarity_search(goal_desc, top_k=5)  # type: ignore[attr-defined]
-        return {"memories": memories, "memory_confidence": min(1.0, len(memories)/5.0)}
+        return {
+            "memories": memories,
+            "memory_confidence": min(1.0, len(memories) / 5.0),
+        }

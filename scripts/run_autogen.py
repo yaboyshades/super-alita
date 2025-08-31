@@ -24,7 +24,7 @@ def main():
         "--iterations", type=int, default=5, help="Max DeepCode iterations."
     )
     args = ap.parse_args()
-    
+
     res = autogen_any(
         description=args.desc, repo_path=args.repo, iterations=args.iterations
     )

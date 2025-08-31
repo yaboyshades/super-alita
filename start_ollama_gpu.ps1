@@ -39,19 +39,19 @@ Start-Sleep -Seconds 3
 try {
     $response = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/tags" -TimeoutSec 5
     Write-Host "✅ Ollama server started successfully!" -ForegroundColor Green
-    
+
     # Show available models
     Write-Host "`n📋 Available Models:" -ForegroundColor Yellow
     foreach ($model in $response.models) {
         $size = [math]::Round($model.size / 1GB, 1)
         Write-Host "   • $($model.name) ($size GB)" -ForegroundColor Cyan
     }
-    
+
     Write-Host "`n🎯 Recommended models for your RTX 3060:" -ForegroundColor Yellow
     Write-Host "   • llama3.2:3b (Balanced performance/quality)" -ForegroundColor Green
     Write-Host "   • llama3.2:1b (Fastest, good for development)" -ForegroundColor Green
     Write-Host "   • codellama:7b (Code-focused, if available)" -ForegroundColor Green
-    
+
 } catch {
     Write-Host "❌ Failed to connect to Ollama server" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red

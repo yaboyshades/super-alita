@@ -6,7 +6,7 @@ This extension integrates the Super Alita Architectural Guardian directly into V
 
 ### 🛡️ Chat Participant (@alita)
 - **Guardian Mode**: Architectural compliance checking and guidance
-- **Audit Mode**: Comprehensive workspace architectural review  
+- **Audit Mode**: Comprehensive workspace architectural review
 - **Refactor Mode**: Code transformation suggestions
 - **Generator Mode**: Create compliant architectural components
 

@@ -54,12 +54,31 @@ async def check_health(
     try:
         if hasattr(llm, "health"):
             llm_health = await llm.health()
-            if llm_health.get("status") == "ok":
-                components["llm"] = {"status": "ok"}
+            # LLM health returns tuple[bool, str] - (ok, reason)
+            if isinstance(llm_health, tuple) and len(llm_health) >= 2:
+                is_ok, reason = llm_health[0], llm_health[1]
+                if is_ok:
+                    components["llm"] = {"status": "ok"}
+                else:
+                    components["llm"] = {
+                        "status": "unhealthy",
+                        "error": reason,
+                    }
+                    overall = "unhealthy"
+            elif isinstance(llm_health, dict):
+                # Legacy dict format support
+                if llm_health.get("status") == "ok":
+                    components["llm"] = {"status": "ok"}
+                else:
+                    components["llm"] = {
+                        "status": "unhealthy",
+                        "error": llm_health.get("error", "Unknown error"),
+                    }
+                    overall = "unhealthy"
             else:
                 components["llm"] = {
-                    "status": "unhealthy", 
-                    "error": llm_health.get("error", "Unknown error")
+                    "status": "unhealthy",
+                    "error": f"Invalid health response format: {type(llm_health)}",
                 }
                 overall = "unhealthy"
         else:

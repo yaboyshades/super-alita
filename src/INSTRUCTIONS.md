@@ -7,7 +7,7 @@ This directory contains the main source code for Super Alita's event-driven AI a
 The src directory is organized into modular components following the event-driven architecture pattern:
 
 - **Core Components** (`core/`): Event bus, plugin interface, neural atoms
-- **Plugins** (`plugins/`): Modular plugin implementations  
+- **Plugins** (`plugins/`): Modular plugin implementations
 - **Abilities** (`abilities/`): Discrete capabilities and tools
 - **Integration** (`integration/`): External service integrations
 - **MCP** (`mcp_server/`, `mcp_local/`): Model Context Protocol implementations
@@ -72,7 +72,7 @@ class MyPlugin(PluginInterface):
     @property
     def name(self) -> str:
         return "my_plugin"
-    
+
     async def shutdown(self) -> None:
         # Cleanup logic
         pass

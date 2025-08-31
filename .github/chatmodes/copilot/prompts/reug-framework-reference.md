@@ -11,7 +11,7 @@
 #    - Understand requirements and constraints
 #    - Identify existing patterns and components
 #    - Map to Sacred Laws and architecture
-# 2. Design Phase  
+# 2. Design Phase
 #    - Choose cognitive pattern (analytical/creative/diagnostic/strategic/exploratory)
 #    - Plan event flows and plugin interactions
 #    - Consider DTA 2.0 cognitive turn integration
@@ -34,7 +34,7 @@
 # Step 1: Analyze the problem and identify key components
 problem_components = ["user_input", "cognitive_processing", "event_routing"]
 
-# Step 2: Design the solution architecture  
+# Step 2: Design the solution architecture
 def cognitive_solution_architecture():
     # Map inputs to cognitive patterns
     # Define event flow and plugin interactions
@@ -70,7 +70,7 @@ async def handle_tool_call(self, event: ToolCallEvent):
     try:
         # 2. Process the request
         result = await self.process_tool_request(event)
-        
+
         # 3. ALWAYS emit result event (Sacred Law #1)
         result_event = ToolResultEvent(
             source_plugin=self.name,
@@ -79,7 +79,7 @@ async def handle_tool_call(self, event: ToolCallEvent):
             session_id=event.session_id
         )
         await self.event_bus.publish(result_event)
-        
+
     except Exception as e:
         # 4. Emit error result for contract compliance
         error_event = ToolResultEvent(
@@ -100,7 +100,7 @@ async def handle_with_cognitive_turn(self, event: ConversationEvent):
         turn_record = await self._process_cognitive_turn(
             event.user_message, event.context, event.session_id
         )
-        
+
         # 2. Emit cognitive turn event
         if turn_record:
             cognitive_event = CognitiveTurnCompletedEvent(
@@ -109,7 +109,7 @@ async def handle_with_cognitive_turn(self, event: ConversationEvent):
                 session_id=event.session_id
             )
             await self.event_bus.publish(cognitive_event)
-    
+
     # 3. Continue with standard processing
     await self._process_standard_flow(event)
 ```

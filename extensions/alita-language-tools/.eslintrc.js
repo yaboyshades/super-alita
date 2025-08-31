@@ -32,7 +32,7 @@ module.exports = {
     '@typescript-eslint/prefer-optional-chain': 'error',
     '@typescript-eslint/no-floating-promises': 'error',
     '@typescript-eslint/await-thenable': 'error',
-    
+
     // Import rules
     'import/order': [
       'error',
@@ -50,7 +50,7 @@ module.exports = {
     ],
     'import/no-duplicates': 'error',
     'import/no-unresolved': 'error',
-    
+
     // Code quality rules
     'no-console': 'warn',
     'no-debugger': 'error',
@@ -64,7 +64,7 @@ module.exports = {
     'no-throw-literal': 'error',
     'no-void': 'error',
     'prefer-promise-reject-errors': 'error',
-    
+
     // Best practices
     'eqeqeq': ['error', 'always'],
     'curly': ['error', 'all'],
@@ -73,13 +73,13 @@ module.exports = {
     'prefer-arrow-callback': 'error',
     'prefer-template': 'error',
     'object-shorthand': 'error',
-    
+
     // Performance
     'no-extend-native': 'error',
     'no-global-assign': 'error',
     'no-implicit-globals': 'error',
     'no-loop-func': 'error',
-    
+
     // Security
     'no-buffer-constructor': 'error',
     'no-new-require': 'error',

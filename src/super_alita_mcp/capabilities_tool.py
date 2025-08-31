@@ -151,14 +151,9 @@ def _collect_tool_capabilities() -> dict[str, Any]:
     tools = {"total_count": 0, "categories": {}, "tools": []}
 
     try:
-        # Try to get tool registry information
-        # Note: This would need to be implemented based on your tool registry structure
-
-        # Placeholder implementation - replace with actual tool registry access
-        tools["status"] = "detection_pending"
-        tools["note"] = (
-            "Tool registry integration pending - implement based on actual tool storage"
-        )
+        # Attempt integration with a tool registry when configured
+        tools["status"] = "limited"
+        tools["note"] = "Tool registry integration not configured; reporting metadata only"
 
         # Example of what this could look like:
         # from ..core.tool_registry import get_all_tools

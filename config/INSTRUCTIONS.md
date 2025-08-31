@@ -70,12 +70,12 @@ llm_providers:
     api_key: "${GEMINI_API_KEY}"
     model: "gemini-1.5-pro"
     timeout: 30
-    
+
   openai:
     api_key: "${OPENAI_API_KEY}"
     model: "gpt-4"
     timeout: 30
-    
+
   anthropic:
     api_key: "${ANTHROPIC_API_KEY}"
     model: "claude-3-sonnet"
@@ -85,7 +85,7 @@ external_services:
   redis:
     url: "${REDIS_URL}"
     timeout: 5
-    
+
   puter:
     base_url: "${PUTER_BASE_URL}"
     api_key: "${PUTER_API_KEY}"
@@ -99,12 +99,12 @@ plugins:
     enabled: true
     storage_path: "./data/memory"
     max_entries: 10000
-    
+
   web_agent:
     enabled: true
     search_provider: "serpapi"
     api_key: "${SERPAPI_KEY}"
-    
+
   creator:
     enabled: true
     output_path: "./generated"
@@ -129,31 +129,31 @@ import os
 
 class ConfigManager:
     """Centralized configuration management."""
-    
+
     def __init__(self, config_dir: Path = Path("config")):
         self.config_dir = config_dir
         self.config = self._load_configuration()
-    
+
     def _load_configuration(self) -> dict:
         """Load configuration from multiple sources."""
         config = {}
-        
+
         # Load base configuration
         base_config = self.config_dir / "base.yaml"
         if base_config.exists():
             config.update(yaml.safe_load(base_config.read_text()))
-        
+
         # Load environment-specific configuration
         env = os.getenv("ENVIRONMENT", "development")
         env_config = self.config_dir / "environments" / f"{env}.yaml"
         if env_config.exists():
             config.update(yaml.safe_load(env_config.read_text()))
-        
+
         # Apply environment variable overrides
         config = self._apply_env_overrides(config)
-        
+
         return config
-    
+
     def _apply_env_overrides(self, config: dict) -> dict:
         """Apply environment variable overrides."""
         def replace_env_vars(value):
@@ -165,20 +165,20 @@ class ConfigManager:
             elif isinstance(value, list):
                 return [replace_env_vars(item) for item in value]
             return value
-        
+
         return replace_env_vars(config)
-    
+
     def get(self, key: str, default=None):
         """Get configuration value using dot notation."""
         keys = key.split(".")
         value = self.config
-        
+
         for k in keys:
             if isinstance(value, dict) and k in value:
                 value = value[k]
             else:
                 return default
-        
+
         return value
 ```
 
@@ -260,15 +260,15 @@ def validate_configuration(config_dict: dict) -> ApplicationConfig:
 def test_configuration():
     """Test configuration loading and validation."""
     config_manager = ConfigManager()
-    
+
     # Test required values are present
     assert config_manager.get("server.host") is not None
     assert config_manager.get("server.port") is not None
-    
+
     # Test environment-specific overrides
     env = config_manager.get("environment")
     assert env in ["development", "testing", "production"]
-    
+
     # Test LLM provider configuration
     providers = config_manager.get("llm_providers", {})
     assert len(providers) > 0, "At least one LLM provider must be configured"

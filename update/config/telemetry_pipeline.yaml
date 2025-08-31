@@ -7,13 +7,13 @@ pipeline:
     - cluster
     - prune
     - assemble
-  
+
   defaults:
     token_budget: 2000
     top_n_items: 200
     relevance_threshold: 0.5
     cluster_similarity_threshold: 0.8
-  
+
   evaluation:
     golden_sets_path: "data/telemetry_golden_sets.json"
     metrics_thresholds:

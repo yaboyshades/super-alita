@@ -27,4 +27,3 @@ async function fingerprint(s: string): Promise<string> {
   for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
   return (h >>> 0).toString(16);
 }
-

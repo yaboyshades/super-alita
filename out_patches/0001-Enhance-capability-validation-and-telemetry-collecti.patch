@@ -25,22 +25,22 @@ index 83cfc42..8767975 100644
 @@ -36,13 +36,13 @@ jobs:
          python -m pip install --upgrade pip
          pip install pyyaml
-         
+
 -    - name: Validate capability metadata
 +    - name: Validate capability metadata (scoped)
        run: |
 -        python scripts/validate_capabilities.py --strict --output json > capability_validation.json
 +        python scripts/validate_capabilities.py --paths src/plugins --output github --strict
-         
+
      - name: Generate validation report
        run: |
 -        python scripts/validate_capabilities.py --strict --output text
 +        python scripts/validate_capabilities.py --paths src/plugins --output text
-         
+
      - name: Upload validation results
        if: always()
 @@ -53,7 +53,7 @@ jobs:
-         
+
      - name: Check validation status
        run: |
 -        exit_code=$(python scripts/validate_capabilities.py --strict > /dev/null 2>&1; echo $?)
@@ -55,8 +55,8 @@ index 9b1c7e7..7fd0e42 100644
 @@ -46,178 +46,185 @@ REQUIRED_FIELDS = [
  DEFAULT_PATHS = ["src/plugins"]
  DEFAULT_EXCLUDES = [".venv", ".mypy_cache", ".git", "node_modules", "dist", "build", "__pycache__"]
- 
--@dataclass 
+
+-@dataclass
 -class ValidationResult:
 -    file_path: str
 -    capability_name: str
@@ -82,22 +82,22 @@ index 9b1c7e7..7fd0e42 100644
 +    """Yield dotted module names under src/plugins/** that end with _plugin.py"""
 +    if should_ignore(root, excludes):
 +        return []
-+    
++
 +    # Find the workspace root (where src folder is located)
 +    workspace_root = Path.cwd()
 +    src_root = workspace_root / "src"
-+    
++
 +    # Add the workspace root to sys.path so we can import src.plugins
 +    if str(workspace_root) not in sys.path:
 +        sys.path.insert(0, str(workspace_root))
-     
+
 -    def __init__(self, strict_mode: bool = False):
 -        self.strict_mode = strict_mode
 -        self.results: List[ValidationResult] = []
 +    plugins_pkg = src_root / "plugins"
 +    if not plugins_pkg.exists():
 +        return []
-         
+
 -    def validate_capability_file(self, file_path: Path) -> ValidationResult:
 -        """Validate a single capability metadata file"""
 +    try:
@@ -140,32 +140,32 @@ index 9b1c7e7..7fd0e42 100644
 -                issues=[f"Failed to parse file: {e}"],
 -                metadata={}
 -            )
--            
+-
 -        capability_name = metadata.get("name", file_path.stem)
 -        issues = []
--        
+-
 -        # Check required fields
 -        for field in REQUIRED_FIELDS:
 -            if field not in metadata:
 -                issues.append(f"Missing required field: {field}")
 -            elif not metadata[field]:
 -                issues.append(f"Empty required field: {field}")
--                
+-
 -        # Validate category
 -        category = metadata.get("category")
 -        if category and category not in VALID_CATEGORIES:
 -            issues.append(f"Invalid category '{category}'. Must be one of: {VALID_CATEGORIES}")
--            
+-
 -        # Validate complexity
--        complexity = metadata.get("complexity") 
+-        complexity = metadata.get("complexity")
 -        if complexity and complexity not in VALID_COMPLEXITY_LEVELS:
 -            issues.append(f"Invalid complexity '{complexity}'. Must be one of: {VALID_COMPLEXITY_LEVELS}")
--            
+-
 -        # Validate version format (semantic versioning)
 -        version = metadata.get("version")
 -        if version and not self._is_valid_semver(version):
 -            issues.append(f"Invalid version format '{version}'. Must follow semantic versioning (x.y.z)")
--            
+-
 -        # Check dependencies format
 -        deps = metadata.get("dependencies")
 -        if deps and not isinstance(deps, list):
@@ -174,12 +174,12 @@ index 9b1c7e7..7fd0e42 100644
 -            for dep in deps:
 -                if not isinstance(dep, str):
 -                    issues.append(f"Invalid dependency format: {dep}")
--                    
+-
 -        # Check integration requirements
--        integration_reqs = metadata.get("integration_requirements") 
+-        integration_reqs = metadata.get("integration_requirements")
 -        if integration_reqs and not isinstance(integration_reqs, dict):
 -            issues.append("Integration requirements must be an object/dict")
--            
+-
 -        # Determine status
 -        if issues:
 -            status = "fail" if self.strict_mode else "warn"
@@ -233,7 +233,7 @@ index 9b1c7e7..7fd0e42 100644
 +            modules.extend(list(iter_plugin_modules(root / "plugins", args.exclude)))
          else:
 -            status = "pass"
--            
+-
 -        return ValidationResult(
 -            file_path=str(file_path),
 -            capability_name=capability_name,
@@ -241,7 +241,7 @@ index 9b1c7e7..7fd0e42 100644
 -            issues=issues,
 -            metadata=metadata
 -        )
--        
+-
 -    def _is_valid_semver(self, version: str) -> bool:
 -        """Check if version follows semantic versioning pattern"""
 -        try:
@@ -253,58 +253,58 @@ index 9b1c7e7..7fd0e42 100644
 -            return True
 -        except (ValueError, AttributeError):
 -            return False
--            
+-
 -    def validate_directory(self, directory: Path) -> None:
 -        """Validate all capability files in a directory"""
 -        capability_files = []
--        
+-
 -        # Look for capability metadata files
 -        for pattern in ["*.json", "*.yaml", "*.yml"]:
 -            capability_files.extend(directory.glob(f"**/{pattern}"))
--            
+-
 -        # Filter for files that look like capability metadata
 -        capability_files = [
--            f for f in capability_files 
--            if any(keyword in f.name.lower() for keyword in 
+-            f for f in capability_files
+-            if any(keyword in f.name.lower() for keyword in
 -                  ["capability", "capabilities", "metadata", "spec"])
 -        ]
--        
+-
 -        if not capability_files:
 -            print(f"Warning: No capability metadata files found in {directory}")
 -            return
--            
+-
 -        for file_path in capability_files:
 -            result = self.validate_capability_file(file_path)
 -            self.results.append(result)
--            
+-
 -    def generate_report(self, output_format: str = "text") -> str:
 -        """Generate validation report in specified format"""
 -        if output_format == "json":
 -            return json.dumps([asdict(result) for result in self.results], indent=2)
--            
+-
 -        # Text format
 -        report_lines = []
 -        report_lines.append("🔍 Super Alita Capability Validation Report")
 -        report_lines.append("=" * 50)
--        
+-
 -        passed = sum(1 for r in self.results if r.status == "pass")
--        warned = sum(1 for r in self.results if r.status == "warn") 
+-        warned = sum(1 for r in self.results if r.status == "warn")
 -        failed = sum(1 for r in self.results if r.status == "fail")
--        
+-
 -        report_lines.append(f"📊 Summary: {passed} passed, {warned} warnings, {failed} failed")
 -        report_lines.append("")
--        
+-
 -        for result in self.results:
 -            status_icon = {"pass": "✅", "warn": "⚠️", "fail": "❌"}[result.status]
 -            report_lines.append(f"{status_icon} {result.capability_name} ({result.file_path})")
--            
+-
 -            if result.issues:
 -                for issue in result.issues:
 -                    report_lines.append(f"   • {issue}")
 -                report_lines.append("")
--                
+-
 -        return "\n".join(report_lines)
--        
+-
 -    def exit_code(self) -> int:
 -        """Return appropriate exit code based on validation results"""
 -        if any(r.status == "fail" for r in self.results):
@@ -327,24 +327,24 @@ index 9b1c7e7..7fd0e42 100644
 +        else:
 +            print("🔍 Super Alita Capability Validation Report\n(no plugin modules discovered)\n")
          return 0
- 
+
 -def main():
 -    parser = argparse.ArgumentParser(description="Validate Super Alita capability metadata")
--    parser.add_argument("--strict", action="store_true", 
+-    parser.add_argument("--strict", action="store_true",
 -                       help="Treat warnings as failures")
 -    parser.add_argument("--output", choices=["text", "json"], default="text",
 -                       help="Output format")
 -    parser.add_argument("--directory", type=Path, default=Path("."),
 -                       help="Directory to scan for capability files")
--    
+-
 -    args = parser.parse_args()
--    
+-
 -    validator = CapabilityValidator(strict_mode=args.strict)
 -    validator.validate_directory(args.directory)
--    
+-
 -    report = validator.generate_report(args.output)
 -    print(report)
--    
+-
 -    sys.exit(validator.exit_code())
 +    for mod_name in modules:
 +        tools, errs = collect_tools_from_module(mod_name)
@@ -400,7 +400,7 @@ index 9b1c7e7..7fd0e42 100644
 +        print(format_text_report(passed, warnings, failures))
 +
 +    return 2 if failures or strict_fail else 0
- 
+
  if __name__ == "__main__":
 -    main()
 \ No newline at end of file
@@ -418,13 +418,13 @@ index d29d395..3815302 100644
  from typing import Dict, List, Any, Optional, Callable
  from dataclasses import dataclass, asdict
  from pathlib import Path
- 
+
 -from ..cortex.markers import PerformanceMarker, CortexPhase, MarkerType
 -from ..events import BaseEvent
 +from src.cortex.markers import PerformanceMarker
 +from src.events import BaseEvent
- 
- 
+
+
  @dataclass
 -class TelemetryEvent:
 -    """Individual telemetry event"""
@@ -439,19 +439,19 @@ index d29d395..3815302 100644
 -    cycle_id: Optional[str] = None
 -    markers: List[Dict[str, Any]] = None
 -    metadata: Dict[str, Any] = None
--    
+-
 -    def __post_init__(self):
 -        if self.markers is None:
 -            self.markers = []
 -        if self.metadata is None:
 -            self.metadata = {}
--    
+-
 -    def to_dict(self) -> Dict[str, Any]:
 -        """Convert to dictionary for serialization"""
 -        return asdict(self)
 -
 -
--@dataclass 
+-@dataclass
 -class TelemetryMetrics:
 -    """Aggregated telemetry metrics"""
 -    total_cycles: int = 0
@@ -463,7 +463,7 @@ index d29d395..3815302 100644
 -    success_rate: float = 0.0
 -    error_count: int = 0
 -    active_cycles: int = 0
--    
+-
 -    def to_dict(self) -> Dict[str, Any]:
 -        """Convert to dictionary for API responses"""
 -        return asdict(self)
@@ -472,14 +472,14 @@ index d29d395..3815302 100644
 +    markers: List[Dict[str, Any]]
 +    events: List[Dict[str, Any]]
 +    system_metrics: Dict[str, Any]
- 
- 
+
+
  class TelemetryCollector:
 -    """
 -    Collects and aggregates telemetry data from Cortex runtime
 -    """
 +    """Collects and aggregates telemetry data from Cortex runtime"""
-     
+
 -    def __init__(self, output_file: Optional[Path] = None):
 -        self.output_file = output_file or Path("telemetry.jsonl")
 -        self.events: List[TelemetryEvent] = []
@@ -487,7 +487,7 @@ index d29d395..3815302 100644
 -        self.active_cycles: Dict[str, float] = {}
 -        self.phase_durations: Dict[str, List[float]] = {
 -            "perception": [],
--            "reasoning": [], 
+-            "reasoning": [],
 -            "action": []
 -        }
 -        self.subscribers: List[Callable[[TelemetryEvent], None]] = []
@@ -495,7 +495,7 @@ index d29d395..3815302 100644
 +    def __init__(self, output_dir: Optional[Path] = None) -> None:
 +        self.output_dir = output_dir or Path("telemetry")
 +        self.output_dir.mkdir(exist_ok=True)
-         
+
 -    async def collect_event(self, event: BaseEvent) -> None:
 -        """Collect a telemetry event from the event bus"""
 -        async with self._lock:
@@ -506,19 +506,19 @@ index d29d395..3815302 100644
 -                source=event.source_plugin,
 -                metadata=event.metadata
 -            )
--            
+-
 -            # Extract Cortex-specific data
 -            if hasattr(event, 'cycle_id'):
 -                telemetry_event.cycle_id = event.cycle_id
--            
+-
 -            if hasattr(event, 'phase'):
 -                telemetry_event.phase = event.phase.value if event.phase else None
--                
+-
 -            if hasattr(event, 'markers'):
 -                telemetry_event.markers = [
 -                    marker.to_dict() for marker in (event.markers or [])
 -                ]
--                
+-
 -            self.events.append(telemetry_event)
 -            await self._update_metrics(telemetry_event)
 -            await self._persist_event(telemetry_event)
@@ -528,16 +528,16 @@ index d29d395..3815302 100644
 +        self.collection_enabled = True
 +        self.buffer_size = 1000
 +        self.auto_flush_interval = 60.0  # seconds
-+        
++
 +        # Start auto-flush task
 +        self._flush_task: Optional[asyncio.Task] = None
 +        self._start_auto_flush()
-+    
++
 +    def _start_auto_flush(self) -> None:
 +        """Start the auto-flush background task"""
 +        if self._flush_task is None or self._flush_task.done():
 +            self._flush_task = asyncio.create_task(self._auto_flush_loop())
-+    
++
 +    async def _auto_flush_loop(self) -> None:
 +        """Background task to periodically flush telemetry data"""
 +        while self.collection_enabled:
@@ -549,32 +549,32 @@ index d29d395..3815302 100644
 +                break
 +            except Exception as e:
 +                print(f"Error in telemetry auto-flush: {e}")
-+    
++
 +    def add_event_handler(self, handler: Callable[[BaseEvent], None]) -> None:
 +        """Add an event handler for telemetry processing"""
 +        self.event_handlers.append(handler)
-+    
++
 +    def record_marker(self, marker: PerformanceMarker) -> None:
 +        """Record a performance marker"""
 +        if not self.collection_enabled:
 +            return
-+        
++
 +        try:
 +            marker_id = f"{marker.cycle_id}_{marker.phase}_{marker.marker_type}"
 +            self.active_markers[marker_id] = marker
 +        except Exception as e:
 +            print(f"Error recording marker: {e}")
-+    
++
 +    def record_event(self, event: BaseEvent) -> None:
 +        """Record an event for telemetry"""
 +        if not self.collection_enabled:
 +            return
-+        
++
 +        try:
 +            # Process with registered handlers
 +            for handler in self.event_handlers:
 +                handler(event)
-             
+
 -            # Notify subscribers
 -            for subscriber in self.subscribers:
 -                try:
@@ -586,7 +586,7 @@ index d29d395..3815302 100644
 +                self._create_snapshot_for_event(event)
 +        except Exception as e:
 +            print(f"Error recording event: {e}")
-     
+
 -    async def collect_marker(self, marker: PerformanceMarker) -> None:
 -        """Collect a performance marker directly"""
 -        async with self._lock:
@@ -608,7 +608,7 @@ index d29d395..3815302 100644
 +                for marker in event.markers:
 +                    if hasattr(marker, 'to_dict'):
 +                        cycle_markers.append(marker.to_dict())
-+            
++
 +            # Create snapshot
 +            snapshot = TelemetrySnapshot(
 +                timestamp=time.time(),
@@ -618,12 +618,12 @@ index d29d395..3815302 100644
 +                events=[self._event_to_dict(event)],
 +                system_metrics=self._collect_system_metrics()
              )
-             
+
 -            self.events.append(telemetry_event)
 -            await self._update_metrics(telemetry_event)
 -            await self._persist_event(telemetry_event)
 +            self.snapshots.append(snapshot)
-             
+
 -            # Notify subscribers
 -            for subscriber in self.subscribers:
 -                try:
@@ -633,14 +633,14 @@ index d29d395..3815302 100644
 +            # Auto-flush if buffer is full
 +            if len(self.snapshots) >= self.buffer_size:
 +                asyncio.create_task(self.flush_to_disk())
-+                
++
 +        except Exception as e:
 +            print(f"Error creating snapshot: {e}")
-     
+
 -    async def _update_metrics(self, event: TelemetryEvent) -> None:
 -        """Update aggregated metrics"""
 -        self.metrics.total_events += 1
--        
+-
 -        # Track cycle lifecycle
 -        if event.event_type == "cognitive_cycle":
 -            if event.cycle_id:
@@ -653,7 +653,7 @@ index d29d395..3815302 100644
 -                        cycle_duration = (event.timestamp - start_time) * 1000
 -                        self._update_cycle_metrics(cycle_duration)
 -                        self.metrics.active_cycles = len(self.active_cycles)
--        
+-
 -        # Track phase durations from markers
 -        if event.phase and event.duration_ms:
 -            phase_key = event.phase.lower()
@@ -666,7 +666,7 @@ index d29d395..3815302 100644
 +            'type': type(event).__name__,
 +            'timestamp': time.time(),
 +        }
-         
+
 -        # Track errors
 -        if "error" in event.event_type.lower() or event.metadata.get("success") is False:
 -            self.metrics.error_count += 1
@@ -676,23 +676,23 @@ index d29d395..3815302 100644
 +                value = getattr(event, attr)
 +                if value is not None:
 +                    event_dict[attr] = value
-         
+
 -        # Calculate success rate
 -        if self.metrics.total_cycles > 0:
 -            self.metrics.success_rate = max(0, 1.0 - (self.metrics.error_count / self.metrics.total_cycles))
 +        return event_dict
-     
+
 -    def _update_cycle_metrics(self, duration_ms: float) -> None:
 -        """Update cycle-related metrics"""
 -        self.metrics.total_cycles += 1
--        
+-
 -        # Calculate running average for cycle duration
 -        if self.metrics.total_cycles == 1:
 -            self.metrics.avg_cycle_duration_ms = duration_ms
 -        else:
 -            alpha = 2.0 / (self.metrics.total_cycles + 1)  # Exponential moving average
 -            self.metrics.avg_cycle_duration_ms = (
--                alpha * duration_ms + 
+-                alpha * duration_ms +
 -                (1 - alpha) * self.metrics.avg_cycle_duration_ms
 -            )
 +    def _collect_system_metrics(self) -> Dict[str, Any]:
@@ -702,22 +702,22 @@ index d29d395..3815302 100644
 +            'active_markers_count': len(self.active_markers),
 +            'snapshots_count': len(self.snapshots),
 +        }
-     
+
 -    def _recalculate_phase_averages(self) -> None:
 -        """Recalculate phase duration averages"""
 -        if self.phase_durations["perception"]:
 -            self.metrics.avg_perception_duration_ms = sum(self.phase_durations["perception"]) / len(self.phase_durations["perception"])
--        
+-
 -        if self.phase_durations["reasoning"]:
 -            self.metrics.avg_reasoning_duration_ms = sum(self.phase_durations["reasoning"]) / len(self.phase_durations["reasoning"])
 +    async def flush_to_disk(self) -> None:
 +        """Flush collected telemetry data to disk"""
 +        if not self.snapshots:
 +            return
-         
+
 -        if self.phase_durations["action"]:
 -            self.metrics.avg_action_duration_ms = sum(self.phase_durations["action"]) / len(self.phase_durations["action"])
--    
+-
 -    async def _persist_event(self, event: TelemetryEvent) -> None:
 -        """Persist event to JSONL file"""
          try:
@@ -726,7 +726,7 @@ index d29d395..3815302 100644
 +            timestamp = int(time.time())
 +            filename = f"telemetry_{timestamp}.json"
 +            filepath = self.output_dir / filename
-+            
++
 +            # Convert snapshots to serializable format
 +            data = {
 +                'snapshots': [asdict(snapshot) for snapshot in self.snapshots],
@@ -735,48 +735,48 @@ index d29d395..3815302 100644
 +                    'total_snapshots': len(self.snapshots),
 +                }
 +            }
-+            
++
 +            # Write to file
 +            with open(filepath, 'w', encoding='utf-8') as f:
 +                json.dump(data, f, indent=2, default=str)
-+            
++
 +            # Clear snapshots after successful write
 +            self.snapshots.clear()
-+            
++
          except Exception as e:
 -            print(f"Error persisting telemetry event: {e}")
--    
+-
 -    def subscribe(self, callback: Callable[[TelemetryEvent], None]) -> None:
 -        """Subscribe to telemetry events"""
 -        self.subscribers.append(callback)
--    
+-
 -    def unsubscribe(self, callback: Callable[[TelemetryEvent], None]) -> None:
 -        """Unsubscribe from telemetry events"""
 -        if callback in self.subscribers:
 -            self.subscribers.remove(callback)
--    
+-
 -    def get_metrics(self) -> TelemetryMetrics:
 -        """Get current aggregated metrics"""
 -        return self.metrics
--    
+-
 -    def get_recent_events(self, limit: int = 100) -> List[TelemetryEvent]:
 -        """Get recent telemetry events"""
 -        return self.events[-limit:] if len(self.events) > limit else self.events
 +            print(f"Error flushing telemetry to disk: {e}")
-     
+
 -    def get_events_by_cycle(self, cycle_id: str) -> List[TelemetryEvent]:
 -        """Get all events for a specific cycle"""
 -        return [event for event in self.events if event.cycle_id == cycle_id]
--    
+-
 -    def get_phase_statistics(self, phase: str) -> Dict[str, float]:
 -        """Get statistics for a specific phase"""
 -        if phase.lower() not in self.phase_durations:
 -            return {}
--        
+-
 -        durations = self.phase_durations[phase.lower()]
 -        if not durations:
 -            return {}
--        
+-
 +    def get_summary(self) -> Dict[str, Any]:
 +        """Get a summary of collected telemetry data"""
          return {
@@ -790,7 +790,7 @@ index d29d395..3815302 100644
 +            'collection_enabled': self.collection_enabled,
 +            'output_directory': str(self.output_dir),
          }
-     
+
 -    async def clear_old_events(self, keep_last: int = 10000) -> None:
 -        """Clear old events to prevent memory growth"""
 -        async with self._lock:
@@ -801,7 +801,7 @@ index d29d395..3815302 100644
 +    async def shutdown(self) -> None:
 +        """Shutdown the telemetry collector"""
 +        self.collection_enabled = False
-+        
++
 +        # Cancel auto-flush task
 +        if self._flush_task and not self._flush_task.done():
 +            self._flush_task.cancel()
@@ -809,7 +809,7 @@ index d29d395..3815302 100644
 +                await self._flush_task
 +            except asyncio.CancelledError:
 +                pass
-+        
++
 +        # Final flush
 +        await self.flush_to_disk()
 \ No newline at end of file
@@ -819,16 +819,16 @@ index a5c8c91..5a08c9a 100644
 +++ b/src/plugins/calculator_plugin.py
 @@ -59,13 +59,44 @@ class CalculatorPlugin(PluginInterface):
          logger.info("CalculatorPlugin setup complete")
- 
+
      async def start(self) -> None:
 -        """Start the calculator plugin."""
 -        await super().start()
 +        """Start the calculator plugin by subscribing to tool call events."""
 +        logger.info("CalculatorPlugin started and ready for tool calls")
-+        
++
 +        # Subscribe to tool call events for our specific tool
 +        await self.event_bus.subscribe("tool_call", self._handle_tool_call)
- 
+
 -        # Subscribe to tool_call events for calculator
 -        await self.subscribe("tool_call", self._handle_tool_call)
 -
@@ -844,7 +844,7 @@ index a5c8c91..5a08c9a 100644
 +                "type": "object",
 +                "properties": {
 +                    "expression": {
-+                        "type": "string", 
++                        "type": "string",
 +                        "description": "Mathematical expression to evaluate (e.g., '2 + 3 * 4', 'abs(-5)', 'round(3.14159, 2)')"
 +                    }
 +                },
@@ -853,7 +853,7 @@ index a5c8c91..5a08c9a 100644
 +            },
 +            # Metadata for validator
 +            "cost_hint": "low",
-+            "latency_hint": "low", 
++            "latency_hint": "low",
 +            "safety_level": "high",  # AST-based parsing prevents injection
 +            "test_reference": "tests/plugins/test_calculator_plugin.py::test_basic_arithmetic",
 +            "category": "utility",
@@ -865,7 +865,7 @@ index a5c8c91..5a08c9a 100644
 +                "permissions": "none - read-only calculations"
 +            }
 +        }]
- 
+
      async def _handle_tool_call(self, event: ToolCallEvent) -> None:
          """Handle calculator tool calls."""
 diff --git a/tools/__init__.py b/tools/__init__.py
@@ -897,7 +897,7 @@ index 0000000..0037fb4
 +
 +Examples:
 +    python -m tools.list                               # List all tools
-+    python -m tools.list --format json                 # JSON output  
++    python -m tools.list --format json                 # JSON output
 +    python -m tools.list --category utility            # Filter by category
 +    python -m tools.list --complexity low              # Filter by complexity
 +"""
@@ -913,17 +913,17 @@ index 0000000..0037fb4
 +def discover_tools() -> List[Dict[str, Any]]:
 +    """Discover all available tools from plugins"""
 +    tools = []
-+    
++
 +    # Ensure src is in path
 +    workspace_root = Path.cwd()
 +    if str(workspace_root) not in sys.path:
 +        sys.path.insert(0, str(workspace_root))
-+    
++
 +    src_root = workspace_root / "src"
 +    plugins_pkg = src_root / "plugins"
 +    if not plugins_pkg.exists():
 +        return tools
-+    
++
 +    try:
 +        pkg = importlib.import_module("src.plugins")
 +        for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
@@ -948,32 +948,32 @@ index 0000000..0037fb4
 +                    continue
 +    except ImportError:
 +        return tools
-+    
++
 +    return tools
 +
-+def filter_tools(tools: List[Dict[str, Any]], category: Optional[str] = None, 
++def filter_tools(tools: List[Dict[str, Any]], category: Optional[str] = None,
 +                complexity: Optional[str] = None) -> List[Dict[str, Any]]:
 +    """Filter tools by category and/or complexity"""
 +    filtered = tools
-+    
++
 +    if category:
 +        filtered = [t for t in filtered if t.get("category") == category]
-+    
++
 +    if complexity:
 +        filtered = [t for t in filtered if t.get("complexity") == complexity]
-+    
++
 +    return filtered
 +
 +def format_text_output(tools: List[Dict[str, Any]]) -> str:
 +    """Format tools as human-readable text"""
 +    if not tools:
 +        return "No tools found matching criteria.\n"
-+    
++
 +    lines = []
 +    lines.append("🔧 Super Alita Available Tools")
 +    lines.append("=" * 40)
 +    lines.append(f"📊 Found {len(tools)} tools\n")
-+    
++
 +    # Group by category
 +    by_category = {}
 +    for tool in tools:
@@ -981,22 +981,22 @@ index 0000000..0037fb4
 +        if cat not in by_category:
 +            by_category[cat] = []
 +        by_category[cat].append(tool)
-+    
++
 +    for category, cat_tools in sorted(by_category.items()):
 +        lines.append(f"📂 {category.title()} ({len(cat_tools)} tools)")
 +        lines.append("-" * 30)
-+        
++
 +        for tool in sorted(cat_tools, key=lambda x: x.get("name", "")):
 +            name = tool.get("name", "unknown")
 +            desc = tool.get("description", "No description")
 +            complexity = tool.get("complexity", "unknown")
 +            version = tool.get("version", "unknown")
 +            source = tool.get("source_plugin", "unknown")
-+            
++
 +            lines.append(f"🛠️  {name} (v{version})")
 +            lines.append(f"   📝 {desc}")
 +            lines.append(f"   🔧 Complexity: {complexity} | Source: {source}")
-+            
++
 +            # Show parameters if available
 +            params = tool.get("parameters", {})
 +            if isinstance(params, dict) and "properties" in params:
@@ -1011,11 +1011,11 @@ index 0000000..0037fb4
 +                        else:
 +                            param_summary.append(p)
 +                    lines.append(f"   📋 Parameters: {', '.join(param_summary)}")
-+            
++
 +            lines.append("")
-+        
++
 +        lines.append("")
-+    
++
 +    return "\n".join(lines)
 +
 +def format_json_output(tools: List[Dict[str, Any]]) -> str:
@@ -1032,15 +1032,15 @@ index 0000000..0037fb4
 +    parser.add_argument("--category", help="Filter by category")
 +    parser.add_argument("--complexity", choices=["low", "medium", "high", "critical"],
 +                       help="Filter by complexity level")
-+    
++
 +    args = parser.parse_args()
-+    
++
 +    # Discover all available tools
 +    tools = discover_tools()
-+    
++
 +    # Apply filters
 +    filtered_tools = filter_tools(tools, args.category, args.complexity)
-+    
++
 +    # Output in requested format
 +    if args.format == "json":
 +        print(format_json_output(filtered_tools))
@@ -1050,6 +1050,5 @@ index 0000000..0037fb4
 +if __name__ == "__main__":
 +    main()
 \ No newline at end of file
--- 
+--
 2.43.0
-

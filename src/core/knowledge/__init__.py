@@ -8,10 +8,10 @@ from .store import Atom, AtomType, Bond, BondType, KnowledgeStore
 
 __all__ = [
     "KnowledgeStore",
-    "Atom", 
+    "Atom",
     "Bond",
     "AtomType",
     "BondType",
     "KnowledgeGraphEventHandlers",
-    "KnowledgeGraphPlugin"
+    "KnowledgeGraphPlugin",
 ]

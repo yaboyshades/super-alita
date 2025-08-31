@@ -6,6 +6,7 @@ This module provides a way to register and access plugin instances
 across different parts of the application, including when running
 pipelines independently of the FastAPI app.
 """
+
 from __future__ import annotations
 
 import logging

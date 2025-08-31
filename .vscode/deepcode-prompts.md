@@ -79,18 +79,18 @@ Map out the ENTIRE paper structure and identify ALL components that need impleme
 ```yaml
 method_decomposition:
   method_name: "[Full name and acronym]"
-  
+
   core_components:  # Break down into implementable pieces
     component_1:
       name: "[e.g., State Importance Estimator]"
       purpose: "[Why this component exists]"
       paper_section: "[Where it's described]"
-    
+
     component_2:
       name: "[e.g., Policy Refinement Module]"
       purpose: "[Its role in the system]"
       paper_section: "[Where it's described]"
-  
+
   component_interactions:
     - "[How component 1 feeds into component 2]"
     - "[Data flow between components]"

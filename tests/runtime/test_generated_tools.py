@@ -30,7 +30,6 @@ def test_generated_tool(tmp_path, monkeypatch) -> None:
     telemetry_file = tmp_path / "telemetry.jsonl"
     monkeypatch.setenv("SUPER_ALITA_TELEMETRY_FILE", str(telemetry_file))
     try:
-
         sys.path.insert(0, str(Path("mcp_server/src").resolve()))
         importlib.invalidate_caches()
         module = importlib.import_module("mcp_server.tools.generated_tool")

@@ -7,4 +7,3 @@ async def cancel_and_await(task):
         task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
-

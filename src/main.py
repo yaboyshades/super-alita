@@ -26,10 +26,20 @@ import httpx
 # Add conditional imports for FastAPI dependencies
 try:
     import uvicorn
-    from fastapi import APIRouter, Body, FastAPI, Query, Request
+    from fastapi import (
+        APIRouter,
+        Body,
+        Depends,
+        FastAPI,
+        HTTPException,
+        Query,
+        Request,
+        Response,
+    )
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
     from fastapi.staticfiles import StaticFiles
+    from pydantic import BaseModel
 
     FASTAPI_AVAILABLE = True
 except ImportError:
@@ -43,6 +53,7 @@ except ImportError:
     StreamingResponse = None  # type: ignore
     uvicorn = None  # type: ignore
     FASTAPI_AVAILABLE = False
+    BaseModel = object  # type: ignore
 
 # --- Resolve reug_runtime from local src if not installed ---
 ROOT = Path(__file__).resolve().parent.parent
@@ -67,7 +78,226 @@ from reug_runtime.event_bus import (  # noqa: E402
 from reug_runtime.llm_client import LLMClient, get_llm_client  # noqa: E402
 from src.core.events import create_event  # noqa: E402
 from src.gui.router import router as gui_router  # noqa: E402
+from src.security.api_key_store import APIKeyStore  # noqa: E402
 from src.telemetry.mcp_broadcaster import MCPTelemetryBroadcaster  # noqa: E402
+
+try:
+    from src.security.unified_security import RateLimiter  # type: ignore
+except Exception:
+    # Lightweight fallback to avoid optional deps at import time
+    class RateLimiter:  # type: ignore
+        def __init__(self, redis_client: None = None) -> None:
+            self.local_cache: dict[str, list[float]] = {}
+
+        async def is_allowed(self, identifier: str, limit: int, window: int):
+            now = time.time()
+            bucket = self.local_cache.setdefault(identifier, [])
+            # Drop old entries
+            cutoff = now - window
+            bucket[:] = [t for t in bucket if t >= cutoff]
+            allowed = len(bucket) < limit
+            if allowed:
+                bucket.append(now)
+            info = {
+                "remaining": max(0, limit - len(bucket)),
+                "reset_in": max(
+                    0, int(window - (now - bucket[0]) if bucket else window)
+                ),
+            }
+            return allowed, info
+
+
+# ---------------- Minimal API Key Auth (opt-in) ---------------- #
+if FASTAPI_AVAILABLE:
+
+    class _APISettings:
+        """Read simple API key config from env.
+
+        - ALITA_REQUIRE_API_KEY: 'true'/'false' (default 'false')
+        - ALITA_API_KEY: single key value
+        - ALITA_API_KEYS: comma-separated list of keys
+        - ALITA_API_HEADER: header name to read (default 'Authorization')
+        - ALITA_API_QUERY_PARAM: query param name (default 'api_key')
+        """
+
+        def __init__(self) -> None:
+            self.require: bool = os.getenv(
+                "ALITA_REQUIRE_API_KEY", "false"
+            ).lower() in {
+                "1",
+                "true",
+                "yes",
+                "on",
+            }
+            keys: list[str] = []
+            k1 = os.getenv("ALITA_API_KEY", "").strip()
+            if k1:
+                keys.append(k1)
+            k_many = os.getenv("ALITA_API_KEYS", "")
+            if k_many:
+                keys.extend([x.strip() for x in k_many.split(",") if x.strip()])
+            self.keys: set[str] = set(keys)
+            self.header_name: str = os.getenv("ALITA_API_HEADER", "Authorization")
+            self.query_param: str = os.getenv("ALITA_API_QUERY_PARAM", "api_key")
+
+    _api_settings = _APISettings()
+    _admin_key = os.getenv("ALITA_ADMIN_KEY", "").strip()
+
+    def _get_api_store() -> APIKeyStore:
+        store = getattr(globals().get("app", None), "state", object()).__dict__.get(
+            "api_key_store", None
+        )
+        if store is None:
+            store = APIKeyStore.from_env()
+            with contextlib.suppress(Exception):
+                app.state.api_key_store = store  # type: ignore[attr-defined]
+        return store
+
+    _rl_enabled = os.getenv("ALITA_RATE_LIMIT_ENABLED", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    _rl_default_limit = int(os.getenv("ALITA_RATE_LIMIT", "60") or 60)
+    _rl_default_window = int(os.getenv("ALITA_RATE_WINDOW", "60") or 60)
+    _redis_url = os.getenv("ALITA_REDIS_URL", "").strip()
+
+    def _get_rate_limiter() -> RateLimiter:
+        rl = getattr(globals().get("app", None), "state", object()).__dict__.get(
+            "rate_limiter", None
+        )
+        if rl is None:
+            if _redis_url:
+                with contextlib.suppress(Exception):
+                    from redis import asyncio as redis  # type: ignore
+
+                    from src.security.rate_limit_redis import (
+                        RedisRateLimiter,  # type: ignore
+                    )
+
+                    client = redis.from_url(_redis_url)
+                    rl = RedisRateLimiter(client)  # type: ignore[assignment]
+            if rl is None:
+                rl = RateLimiter()
+            with contextlib.suppress(Exception):
+                app.state.rate_limiter = rl  # type: ignore[attr-defined]
+        return rl
+
+    async def require_api_key(request: Request) -> None:  # type: ignore
+        """FastAPI dependency enforcing API key if enabled.
+
+        Accepts one of:
+        - Authorization: Bearer <key>
+        - X-API-Key: <key> (if ALITA_API_HEADER is set to X-API-Key)
+        - Query parameter ?api_key=<key> (configurable)
+        """
+        if not _api_settings.require:
+            return None
+        # Accept header
+        key: str | None = None
+        hdr_val = request.headers.get(_api_settings.header_name)
+        if hdr_val:
+            # Support Bearer and raw key
+            if hdr_val.lower().startswith("bearer "):
+                key = hdr_val[7:].strip()
+            else:
+                key = hdr_val.strip()
+        # Fallback to query param
+        if not key:
+            key = request.query_params.get(_api_settings.query_param)  # type: ignore
+
+        if not key:
+            raise HTTPException(status_code=401, detail="Valid API key required")
+
+        # Accept if env whitelist contains key
+        if _api_settings.keys and key in _api_settings.keys:
+            return None
+        # Otherwise check persistent store
+        with contextlib.suppress(Exception):
+            store = _get_api_store()
+            if store.verify(key):
+                return None
+        raise HTTPException(status_code=401, detail="Invalid API key")
+        return None
+
+    _open_reg = os.getenv("ALITA_AUTH_OPEN_REG", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+    async def require_admin(request: Request) -> None:  # type: ignore
+        hdr = request.headers.get(_api_settings.header_name, "").strip()
+        candidate = hdr[7:].strip() if hdr.lower().startswith("bearer ") else hdr
+        if _admin_key and candidate == _admin_key:
+            return None
+        if _open_reg:
+            # Allow when open registration explicitly enabled
+            return None
+        raise HTTPException(status_code=403, detail="admin required")
+
+    async def enforce_rate_limit(request: Request, response: Response) -> None:  # type: ignore
+        if not _rl_enabled:
+            return None
+        rl = _get_rate_limiter()
+        # Identify by API key when present, else by IP
+        hdr_val = request.headers.get(_api_settings.header_name, "")
+        ident: str | None = None
+        if hdr_val:
+            tok = (
+                hdr_val[7:].strip()
+                if hdr_val.lower().startswith("bearer ")
+                else hdr_val.strip()
+            )
+            if tok:
+                ident = f"key:{tok[:8]}"
+        if not ident:
+            ip = (
+                (
+                    request.headers.get("x-forwarded-for")
+                    or (request.client.host if request.client else "unknown")
+                )
+                .split(",")[0]
+                .strip()
+            )
+            ident = f"ip:{ip}"
+        allowed, info = await rl.is_allowed(
+            ident, _rl_default_limit, _rl_default_window
+        )
+        # Surface rate window to request for downstream emitters (SSE/JSON)
+        try:
+            request.state.rate_limit_info = {**info, "limit": _rl_default_limit}
+        except Exception:
+            pass
+        # Add rate limit headers if response is available (non-SSE endpoints)
+        try:
+            if response is not None and hasattr(response, "headers"):
+                response.headers["X-RateLimit-Limit"] = str(_rl_default_limit)
+                response.headers["X-RateLimit-Remaining"] = str(
+                    max(0, info.get("remaining", 0))
+                )
+                if "reset_in" in info:
+                    response.headers["X-RateLimit-Reset-In"] = str(info["reset_in"])
+        except Exception:
+            pass
+        if not allowed:
+            raise HTTPException(
+                status_code=429,
+                detail={"error": "rate_limited", **info},
+                headers={
+                    "Retry-After": str(
+                        max(1, int(info.get("reset_in", _rl_default_window)))
+                    ),
+                    "X-RateLimit-Limit": str(_rl_default_limit),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset-In": str(
+                        info.get("reset_in", _rl_default_window)
+                    ),
+                },
+            )
+        return None
 
 
 class JsonFormatter(logging.Formatter):
@@ -127,7 +357,7 @@ else:
 try:
     from reug_runtime.config import SETTINGS
     from reug_runtime.router import router as agent_router
-    from reug_runtime.router_tools import tools as tools_router
+    from reug_runtime.router_tools import tools as tools_router, ability as ability_router
 except Exception as e:  # pragma: no cover
     # Fallback: minimal routers to allow boot/health during development
     print("[WARN] reug_runtime import failed; falling back to minimal routers:", e)
@@ -146,7 +376,7 @@ except Exception as e:  # pragma: no cover
                 body = await request.json()
                 message = body.get("message", "")
                 session_id = body.get("session_id", "default")
-                
+
                 async def gen() -> AsyncGenerator[str, None]:
                     # Get model identity
                     llm = getattr(
@@ -159,38 +389,37 @@ except Exception as e:  # pragma: no cover
                             model_identity.update(identity)
                         except Exception:
                             pass
-                    
+
                     # Send initial response with model identity
-                    start_data = json.dumps({
-                        'type': 'start', 
-                        'content': '', 
-                        'model': model_identity
-                    })
+                    start_data = json.dumps(
+                        {"type": "start", "content": "", "model": model_identity}
+                    )
                     yield f"data: {start_data}\n\n"
-                    
+
                     # Process the message and generate response
                     response_content = await process_chat_message(message, session_id)
-                    
+
                     # Stream the response in chunks
                     for chunk in response_content.split():
-                        content_data = json.dumps({
-                            'type': 'content', 
-                            'content': chunk + ' '
-                        })
+                        content_data = json.dumps(
+                            {"type": "content", "content": chunk + " "}
+                        )
                         yield f"data: {content_data}\n\n"
                         # Small delay for natural typing effect
                         await asyncio.sleep(0.05)
-                    
+
                     # Send completion signal
                     yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
                 return StreamingResponse(gen(), media_type="text/plain")  # type: ignore
-            except Exception as ex:
+            except Exception:
+
                 async def error_gen() -> AsyncGenerator[str, None]:
                     error_msg = f"Sorry, I encountered an error: {str(ex)}"
-                    error_data = json.dumps({'type': 'content', 'content': error_msg})
+                    error_data = json.dumps({"type": "content", "content": error_msg})
                     yield f"data: {error_data}\n\n"
                     yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
                 return StreamingResponse(error_gen(), media_type="text/plain")  # type: ignore
 
         tools_router = APIRouter(prefix="/tools", tags=["tools"])  # type: ignore
@@ -207,7 +436,7 @@ if FASTAPI_AVAILABLE and autogen_router is not None:
 
     @autogen_router.post("/trigger")  # type: ignore
     async def trigger_autogen(
-        description: str = Body(..., embed=True)  # type: ignore
+        description: str = Body(..., embed=True),  # type: ignore
     ) -> dict[str, Any]:  # type: ignore
         """Manually trigger autogen capability creation."""
         try:
@@ -234,7 +463,7 @@ if FASTAPI_AVAILABLE and autogen_router is not None:
 
     @autogen_router.post("/detect")  # type: ignore
     async def detect_needs(
-        description: str = Body(..., embed=True)  # type: ignore
+        description: str = Body(..., embed=True),  # type: ignore
     ) -> dict[str, Any]:  # type: ignore
         """Detect capability needs from description."""
         from src.policies.need_detector import NeedDetector
@@ -636,6 +865,25 @@ if FASTAPI_AVAILABLE:
     def _get_session_messages(session_id: str) -> list[dict[str, str]]:
         return _CHAT_SESSIONS.setdefault(session_id, [])
 
+    @chat_router.get("/history")  # type: ignore
+    async def get_history(
+        session: str | None = Query(None),
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> JSONResponse:  # type: ignore
+        sid = session or "default"
+        return JSONResponse({"session": sid, "messages": _get_session_messages(sid)})  # type: ignore
+
+    @chat_router.delete("/history")  # type: ignore
+    async def clear_history(
+        session: str | None = Query(None),
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> JSONResponse:  # type: ignore
+        sid = session or "default"
+        _CHAT_SESSIONS[sid] = []
+        return JSONResponse({"session": sid, "cleared": True})  # type: ignore
+
     async def generate_reply_chunks(prompt: str, session_id: str, llm: Any):  # type: ignore
         """Stream tokens from the configured llm_model.
 
@@ -644,14 +892,16 @@ if FASTAPI_AVAILABLE:
         """
         history = _get_session_messages(session_id)
         # Build messages list (system + history + new user)
-        messages: list[dict[str, str]] = [
-            {
-                "role": "system",
-                "content": "You are Super Alita. Be concise and helpful.",
-            }
-        ] + history + [
-            {"role": "user", "content": prompt}
-        ]
+        messages: list[dict[str, str]] = (
+            [
+                {
+                    "role": "system",
+                    "content": "You are Super Alita. Be concise and helpful.",
+                }
+            ]
+            + history
+            + [{"role": "user", "content": prompt}]
+        )
 
         # Build tool schemas for LLMs that support tool calls (e.g., OpenAI)
         def _openai_tools_from_registry(reg: Any) -> list[dict[str, Any]]:
@@ -663,10 +913,14 @@ if FASTAPI_AVAILABLE:
                     if not name:
                         continue
                     desc = c.get("description") or ""
-                    params = c.get("input_schema") or c.get("parameters") or {
-                        "type": "object",
-                        "additionalProperties": True,
-                    }
+                    params = (
+                        c.get("input_schema")
+                        or c.get("parameters")
+                        or {
+                            "type": "object",
+                            "additionalProperties": True,
+                        }
+                    )
                     tools.append(
                         {
                             "type": "function",
@@ -681,34 +935,32 @@ if FASTAPI_AVAILABLE:
                 return []
             return tools
 
-        ability_reg = (
-            getattr(globals().get("app", None), "state", object()).__dict__.get(
-                "ability_registry", None
-            )
-        )
+        ability_reg = getattr(
+            globals().get("app", None), "state", object()
+        ).__dict__.get("ability_registry", None)
         llm_tools = _openai_tools_from_registry(ability_reg)
 
         # Try direct Ollama connection first for gpt-oss:20b model
         try:
             ollama_host = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
             llm_model = os.getenv("LLM_MODEL", "")
-            
+
             # Check if we're configured for Ollama
             if llm_model.startswith("ollama:") or "gpt-oss" in llm_model:
                 ollama_model = llm_model.replace("ollama:", "")
                 if not ollama_model:
                     ollama_model = "gpt-oss:20b"  # default fallback
-                
+
                 print(f"🔄 Using Ollama: {ollama_model} at {ollama_host}")
-                
+
                 async with httpx.AsyncClient(timeout=60) as client:
                     # Use Ollama chat API for better conversation handling
                     payload = {
                         "model": ollama_model,
                         "messages": messages,
-                        "stream": True
+                        "stream": True,
                     }
-                    
+
                     async with client.stream(
                         "POST", f"{ollama_host}/api/chat", json=payload
                     ) as response:
@@ -732,7 +984,7 @@ if FASTAPI_AVAILABLE:
                                     continue
                         else:
                             print(f"❌ Ollama HTTP error: {response.status_code}")
-                            
+
         except Exception as e:
             print(f"❌ Ollama connection failed: {e}")
             # Continue to other methods...
@@ -750,7 +1002,8 @@ if FASTAPI_AVAILABLE:
                     if chunk.get("type") == "content":
                         token = chunk.get("content", "")
                         if token:
-                            yield token
+                            # Yield typed content event for SSE routing
+                            yield {"type": "content", "content": token}
                     # Handle tool calls: execute and then ask for a follow-up
                     if chunk.get("type") == "tool_calls":
                         tool_calls = chunk.get("tool_calls") or []
@@ -765,15 +1018,31 @@ if FASTAPI_AVAILABLE:
                                     args = json.loads(arg_str)
                                 except Exception:
                                     args = {}
+                                # Emit a tool start hint for UI
+                                if tname:
+                                    yield {
+                                        "type": "tool_start",
+                                        "tool": tname,
+                                        "args": args,
+                                    }
                                 if ability_reg and tname:
                                     result = await ability_reg.execute(tname, args)  # type: ignore
                                 else:
                                     result = {"error": "no_ability_registry"}
+                                # Emit tool result for UI
+                                if tname:
+                                    yield {
+                                        "type": "tool_result",
+                                        "tool": tname,
+                                        "result": result,
+                                    }
                                 # Append tool result for a follow-up completion
                                 messages.append(
                                     {
                                         "role": "tool",
-                                        "content": json.dumps(result, ensure_ascii=False),
+                                        "content": json.dumps(
+                                            result, ensure_ascii=False
+                                        ),
                                         "tool_call_id": call.get("id"),
                                     }
                                 )
@@ -790,19 +1059,19 @@ if FASTAPI_AVAILABLE:
                             if chunk2.get("type") == "content":
                                 token2 = chunk2.get("content", "")
                                 if token2:
-                                    yield token2
+                                    yield {"type": "content", "content": token2}
                         return
                 return
             except Exception:
                 # Fall back to naive tokenization on error
                 pass
-        
+
         # Fallback: conversational responses when LLM is unavailable
         greeting_patterns = ["hi", "hello", "hey", "greetings"]
         help_patterns = ["help", "what can you do", "capabilities", "abilities"]
-        
+
         prompt_lower = prompt.lower().strip()
-        
+
         # Check for greetings
         if any(pattern in prompt_lower for pattern in greeting_patterns):
             response = (
@@ -834,13 +1103,13 @@ if FASTAPI_AVAILABLE:
                 "still try to help - could you provide more details about "
                 "what you need?"
             )
-        
+
         # Stream the response token by token
         words = response.split()
         for i, word in enumerate(words):
             token = word + (" " if i < len(words) - 1 else "")
             await asyncio.sleep(0.03)
-            yield token
+            yield {"type": "content", "content": token}
 
     def _sse_pack(event_type: str, payload: dict, ev_id: str | None = None) -> str:
         parts: list[str] = []
@@ -853,18 +1122,25 @@ if FASTAPI_AVAILABLE:
 
     @chat_router.get("/stream")  # type: ignore
     async def chat_stream_endpoint(
-        q: str = Query(...), session: str | None = Query(None)
+        req: Request,  # type: ignore
+        q: str = Query(...),
+        session: str | None = Query(None),
+        _auth: None = Depends(require_api_key),
+        _rl: None = Depends(enforce_rate_limit),
     ):  # type: ignore
         async def event_source():  # type: ignore
             ev_id = str(uuid4())
             last_heartbeat = time.time()
             sid = session or "default"
-            llm = getattr(chat_stream_endpoint, "_llm", None) or getattr(
-                chat_router, "app_llm", None
-            ) or getattr(globals().get("app", None), "state", object()).__dict__.get(
-                "llm_model", None
+            llm = (
+                getattr(chat_stream_endpoint, "_llm", None)
+                or getattr(chat_router, "app_llm", None)
+                or getattr(globals().get("app", None), "state", object()).__dict__.get(
+                    "llm_model", None
+                )
             )
-            
+            accumulated: list[str] = []
+
             # Get model identity early
             model_identity = {"model": "unknown", "provider": "unknown"}
             if llm and hasattr(llm, "identify"):
@@ -873,14 +1149,36 @@ if FASTAPI_AVAILABLE:
                     model_identity.update(identity)
                 except Exception:
                     pass
-            
-            yield _sse_pack(
-                "start", 
-                {"id": ev_id, "session": sid, "model": model_identity}, 
-                ev_id
-            )
+
+            start_payload = {"id": ev_id, "session": sid, "model": model_identity}
+            rl_info = getattr(req.state, "rate_limit_info", None)
+            if isinstance(rl_info, dict):
+                start_payload["rate_limit"] = rl_info
+            yield _sse_pack("start", start_payload, ev_id)
+            # Track user turn in history (streaming mode)
+            try:
+                _get_session_messages(sid).append({"role": "user", "content": q})
+            except Exception:
+                pass
             async for chunk in generate_reply_chunks(q, sid, llm):
-                yield _sse_pack("content", {"content": chunk}, ev_id)
+                # Support both legacy string tokens and typed dict events
+                if isinstance(chunk, str):
+                    accumulated.append(chunk)
+                    yield _sse_pack("content", {"content": chunk}, ev_id)
+                elif isinstance(chunk, dict):
+                    et = chunk.get("type") or "content"
+                    # Normalize content payload
+                    if et == "content":
+                        tok = chunk.get("content", "")
+                        if isinstance(tok, str) and tok:
+                            accumulated.append(tok)
+                        payload = {"content": tok}
+                    else:
+                        payload = {k: v for k, v in chunk.items() if k != "type"}
+                    yield _sse_pack(str(et), payload, ev_id)
+                else:
+                    # Fallback: stringify unknown chunks
+                    yield _sse_pack("content", {"content": str(chunk)}, ev_id)
                 now = time.time()
                 if now - last_heartbeat > 15:
                     # Heartbeat comment frame to keep connection alive behind proxies
@@ -888,8 +1186,13 @@ if FASTAPI_AVAILABLE:
                     last_heartbeat = now
             # Append assistant message to session history
             history = _get_session_messages(sid)
-            # Append placeholder acknowledging completion (tokens not buffered)
-            history.append({"role": "assistant", "content": "(response streamed)"})
+            try:
+                full = "".join(accumulated)
+                history.append(
+                    {"role": "assistant", "content": full or "(response streamed)"}
+                )
+            except Exception:
+                history.append({"role": "assistant", "content": "(response streamed)"})
             yield _sse_pack("done", {"reason": "complete"}, ev_id)
 
         return StreamingResponse(  # type: ignore
@@ -903,14 +1206,14 @@ if FASTAPI_AVAILABLE:
         )
 
     @chat_router.post("")  # type: ignore
-    async def chat_fallback(req: Request):  # type: ignore
+    async def chat_fallback(req: Request, _auth: None = Depends(require_api_key), _rl: None = Depends(enforce_rate_limit)):  # type: ignore
         body = await req.json()
         prompt = (body.get("q") or body.get("message") or "").strip()
         session_id = body.get("session") or "default"
         if not prompt:
             return JSONResponse({"error": "missing 'q' or 'message'"}, status_code=400)  # type: ignore
         llm = getattr(app, "state", object()).__dict__.get("llm_model", None)
-        
+
         # Get model identity
         model_identity = {"model": "unknown", "provider": "unknown"}
         if llm and hasattr(llm, "identify"):
@@ -919,27 +1222,170 @@ if FASTAPI_AVAILABLE:
                 model_identity.update(identity)
             except Exception:
                 pass
-        
+
         # Track user turn
         _get_session_messages(session_id).append({"role": "user", "content": prompt})
         full = "".join(
-            [
-                chunk
-                async for chunk in generate_reply_chunks(
-                    prompt, session_id, llm
-                )
-            ]
+            [chunk async for chunk in generate_reply_chunks(prompt, session_id, llm)]
         )
         # Store assistant reply
         _get_session_messages(session_id).append({"role": "assistant", "content": full})
         return JSONResponse(
             {
-                "type": "message", 
-                "content": full, 
+                "type": "message",
+                "content": full,
                 "session": session_id,
-                "model": model_identity
+                "model": model_identity,
             }
         )  # type: ignore
+
+    # --------------- Unified API Gateway (minimal) --------------- #
+    api_router = APIRouter(prefix="/api/v1", tags=["api"])  # type: ignore
+
+    class QueryRequest(BaseModel):  # type: ignore[misc,valid-type]
+        prompt: str
+        mode: str = "hybrid"  # accepted but not enforced in this minimal gateway
+        session: str | None = None
+        stream: bool = False
+        max_tokens: int | None = None
+
+    @api_router.get("/health")  # type: ignore
+    async def api_health() -> dict[str, str]:  # type: ignore
+        return {"status": "ok"}
+
+    @api_router.post("/query")  # type: ignore
+    async def api_query(
+        req: QueryRequest,  # type: ignore
+        request: Request,  # type: ignore
+        response: Response,  # type: ignore
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> Any:  # type: ignore
+        """Unified non-breaking query endpoint.
+
+        Streams via SSE when stream=True, or returns a JSON payload otherwise.
+        Delegates to the existing chat generation logic to avoid duplication.
+        """
+        sid = req.session or "default"
+        llm = getattr(app, "state", object()).__dict__.get("llm_model", None)
+
+        # Identify model used
+        model_identity = {"model": "unknown", "provider": "unknown"}
+        if llm and hasattr(llm, "identify"):
+            try:
+                identity = await llm.identify()
+                model_identity.update(identity)
+            except Exception:
+                pass
+
+        if req.stream:
+
+            async def event_source() -> AsyncGenerator[str, None]:  # type: ignore
+                ev_id = str(uuid4())
+                start_payload = {"id": ev_id, "session": sid, "model": model_identity}
+                rl_info = getattr(request.state, "rate_limit_info", None)
+                if isinstance(rl_info, dict):
+                    start_payload["rate_limit"] = rl_info
+                yield _sse_pack("start", start_payload, ev_id)
+                async for chunk in generate_reply_chunks(req.prompt, sid, llm):
+                    yield _sse_pack("content", {"content": chunk}, ev_id)
+                yield _sse_pack("done", {"reason": "complete"}, ev_id)
+
+            return StreamingResponse(  # type: ignore[return-value]
+                event_source(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache, no-transform",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",
+                },
+            )
+
+        # Non-streaming path: join chunks
+        full = "".join(
+            [chunk async for chunk in generate_reply_chunks(req.prompt, sid, llm)]
+        )
+        _get_session_messages(sid).append({"role": "user", "content": req.prompt})
+        _get_session_messages(sid).append({"role": "assistant", "content": full})
+        payload = {
+            "answer": full,
+            "session": sid,
+            "mode": req.mode,
+            "model": model_identity,
+        }
+        rl_info = getattr(request.state, "rate_limit_info", None)
+        if isinstance(rl_info, dict):
+            payload["rate_limit"] = rl_info
+        return payload
+
+    # ---------------------- Auth management ---------------------- #
+    auth_router = APIRouter(prefix="/api/v1/auth", tags=["auth"])  # type: ignore
+
+    class KeyCreateRequest(BaseModel):  # type: ignore[misc,valid-type]
+        owner: str
+        metadata: dict[str, Any] | None = None
+        ttl_hours: int | None = None
+
+    @auth_router.post("/keys")  # type: ignore
+    async def create_key(
+        req: KeyCreateRequest,  # type: ignore
+        _admin: None = Depends(require_admin),  # type: ignore
+    ) -> Any:  # type: ignore
+        store = _get_api_store()
+        result = store.add(req.owner, req.metadata or {}, req.ttl_hours)
+        return {"status": "created", **result}
+
+    @auth_router.post("/keys/rotate")  # type: ignore
+    async def rotate_key(request: Request) -> Any:  # type: ignore
+        # Requires presenting a valid existing key in Authorization header
+        hdr = request.headers.get(_api_settings.header_name, "")
+        key = hdr[7:].strip() if hdr.lower().startswith("bearer ") else hdr.strip()
+        if not key:
+            raise HTTPException(status_code=401, detail="present API key to rotate")
+        store = _get_api_store()
+        if not store.verify(key):
+            raise HTTPException(status_code=401, detail="invalid API key")
+        rotated = store.rotate(key)
+        if not rotated:
+            raise HTTPException(status_code=400, detail="rotation failed")
+        return {"status": "rotated", **rotated}
+
+    class KeyRevokeRequest(BaseModel):  # type: ignore[misc,valid-type]
+        key: str | None = None
+        key_id: str | None = None
+
+    @auth_router.post("/keys/revoke")  # type: ignore
+    async def revoke_key(
+        body: KeyRevokeRequest,  # type: ignore
+        _admin: None = Depends(require_admin),  # type: ignore
+    ) -> Any:  # type: ignore
+        store = _get_api_store()
+        if body.key:
+            ok = store.revoke(body.key)
+        elif body.key_id:
+            ok = store.revoke_by_id(body.key_id)
+        else:
+            raise HTTPException(status_code=400, detail="key or key_id required")
+        return {"status": "revoked" if ok else "noop"}
+
+    @auth_router.get("/keys/me")  # type: ignore
+    async def whoami(request: Request) -> Any:  # type: ignore
+        hdr = request.headers.get(_api_settings.header_name, "")
+        key = hdr[7:].strip() if hdr.lower().startswith("bearer ") else hdr.strip()
+        if not key:
+            raise HTTPException(status_code=401, detail="present API key")
+        store = _get_api_store()
+        rec = store.get_by_raw(key)
+        if not rec or rec.revoked_at:
+            raise HTTPException(status_code=401, detail="invalid API key")
+        pub = rec.to_public()
+        pub["key_id"] = rec.key_id
+        return pub
+
+    @auth_router.get("/keys")  # type: ignore
+    async def list_keys(_admin: None = Depends(require_admin)) -> Any:  # type: ignore
+        store = _get_api_store()
+        return {"keys": store.list_public()}
 
 
 # --- FastAPI factory ---
@@ -1083,106 +1529,149 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 # If broadcaster setup fails, continue without telemetry
                 app.state.mcp_broadcaster = None  # type: ignore
                 app.state._orig_emit = None  # type: ignore
-        # Startup: initialize optional DeepCode plugins and emit runtime events
+        # Startup: initialize enhanced plugin system with YAML configuration
         with contextlib.suppress(Exception):
-            from src.core.copilot_snippet_optimizer import SnippetOptimizedCopilotPlugin
-            from src.core.plugin_registry import register_plugin
-            from src.native_deepcode_api import set_native_plugin
-            from src.plugins.autogen_creator_plugin import AutogenCreatorPlugin
-            from src.plugins.deepcode_generator_plugin import (
-                DeepCodeGeneratorBridgePlugin,
+            from src.core.enhanced_plugin_system import (
+                initialize_enhanced_plugin_system,
             )
-            from src.plugins.deepcode_orchestrator_plugin import (
-                DeepCodeOrchestratorPlugin,
+
+            # Initialize enhanced plugin system
+            loaded_plugins = await initialize_enhanced_plugin_system(app)
+
+            # Log plugin initialization results
+            plugin_count = len(loaded_plugins)
+            plugin_names = list(loaded_plugins.keys())
+            print(f"🔌 Enhanced plugin system: {plugin_count} plugins loaded")
+            if plugin_names:
+                print(f"   Loaded: {', '.join(plugin_names[:5])}")
+                if len(plugin_names) > 5:
+                    print(f"   ... and {len(plugin_names) - 5} more")
+
+        # Register Enhanced Consensus sampling tool with multiple algorithms
+        try:
+            from src.abilities.enhanced_consensus_ability import (
+                EnhancedConsensusProvider,
             )
-            from src.plugins.mcp_adapter_plugin import MCPAdapterPlugin
-            from src.plugins.native_deepcode_plugin import NativeDeepCodePlugin
-            from src.plugins.native_perplexica_plugin import NativePerplexicaPlugin
-            from src.plugins.telemetry_pipeline import TelemetryPipelinePlugin
 
-            gen = DeepCodeGeneratorBridgePlugin()
-            orch = DeepCodeOrchestratorPlugin()
-            autogen = AutogenCreatorPlugin()
-            native_deepcode = NativeDeepCodePlugin()
-            native_perplexica = NativePerplexicaPlugin()
-            telemetry_pipeline = TelemetryPipelinePlugin()
-            mcp_adapter = MCPAdapterPlugin()
-            snippet_optimizer = SnippetOptimizedCopilotPlugin()
+            print("🔧 DEBUG: Starting enhanced consensus tool registration...")
 
-            await gen.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await orch.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await autogen.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await native_deepcode.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await native_perplexica.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await telemetry_pipeline.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await mcp_adapter.setup(app.state.event_bus, store=None, config={})  # type: ignore
-            await snippet_optimizer.setup(app.state.event_bus, store=None, config={})  # type: ignore
+            ability_reg = app.state.ability_registry  # type: ignore
+            print(f"🔧 DEBUG: ability_reg = {ability_reg}")
 
-            await gen.start()
-            await orch.start()
-            await autogen.start()
-            await native_deepcode.start()
-            await native_perplexica.start()
-            await telemetry_pipeline.start()
-            await mcp_adapter.start()
-            await snippet_optimizer.start()
+            # Create the enhanced consensus provider instance
+            consensus_provider = EnhancedConsensusProvider(
+                {
+                    "base_url": "http://localhost:11434/v1",
+                    "model_name": "gpt-oss:20b",
+                    "timeout": 60.0,
+                }
+            )
+            await consensus_provider.initialize()
+            print("🔧 DEBUG: Created enhanced consensus provider")
 
-            # Wire the native plugin to the API and register globally
-            set_native_plugin(native_deepcode)
-            register_plugin("native_deepcode", native_deepcode)
-            register_plugin("native_perplexica", native_perplexica)
-            register_plugin("telemetry_pipeline", telemetry_pipeline)
-            register_plugin("mcp_adapter", mcp_adapter)
-            register_plugin("snippet_optimizer", snippet_optimizer)
+            # Define the enhanced consensus sampling tool contract
+            consensus_contract = {
+                "tool_id": "deepconf_consensus",
+                "description": "Enhanced consensus sampling with multiple aggregation methods",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["prompt"],
+                    "properties": {
+                        "prompt": {"type": "string"},
+                        "num_samples": {"type": "integer", "default": 3},
+                        "temperature": {"type": "number", "default": 0.7},
+                        "max_tokens": {"type": "integer", "default": 512},
+                        "method": {
+                            "type": "string",
+                            "default": "weighted_vote",
+                            "enum": [
+                                "simple_vote",
+                                "weighted_vote",
+                                "confidence_based",
+                                "semantic_similarity",
+                                "ensemble_ranking",
+                            ],
+                        },
+                        "confidence_threshold": {"type": "number", "default": 0.7},
+                        "temperature_range": {"type": "number", "default": 0.2},
+                    },
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {
+                        "consensus_text": {"type": "string"},
+                        "consensus_confidence": {"type": "number"},
+                        "aggregation_method": {"type": "string"},
+                        "individual_responses": {"type": "array"},
+                        "confidence_scores": {"type": "array"},
+                        "metadata": {"type": "object"},
+                    },
+                },
+            }
+            print("🔧 DEBUG: Created enhanced consensus contract")
 
-            app.state.plugins = [  # type: ignore
-                gen,
-                orch,
-                autogen,
-                native_deepcode,
-                native_perplexica,
-                telemetry_pipeline,
-                mcp_adapter,
-                snippet_optimizer,
-            ]
+            # Define the executor function
+            async def consensus_executor(args: dict[str, Any]) -> dict[str, Any]:
+                print(f"🔧 DEBUG: enhanced_consensus_executor called with args: {args}")
+                return await consensus_provider.consensus_sampling(
+                    prompt=args["prompt"],
+                    num_samples=args.get("num_samples", 3),
+                    temperature=args.get("temperature", 0.7),
+                    max_tokens=args.get("max_tokens", 512),
+                    method=args.get("method", "weighted_vote"),
+                    confidence_threshold=args.get("confidence_threshold", 0.7),
+                    temperature_range=args.get("temperature_range", 0.2),
+                )
 
-            # Expose plugin tools to the ability registry (dynamic tools)
-            try:
-                ability_reg = app.state.ability_registry  # type: ignore[attr-defined]
-                for plugin in app.state.plugins:  # type: ignore[attr-defined]
-                    get_tools = getattr(plugin, "get_tools", None)
-                    if not callable(get_tools):
-                        continue
-                    tools = get_tools() or []
-                    for t in tools:
-                        tname = t.get("name")
-                        if not tname:
-                            continue
-                        # Build a namespaced tool id to avoid collisions
-                        tool_id = f"{plugin.name}.{tname}"
-                        contract = {
-                            "tool_id": tool_id,
-                            "description": t.get("description", ""),
-                            "input_schema": t.get("parameters")
-                            or {"type": "object", "additionalProperties": True},
-                            "output_schema": {"type": "object"},
-                        }
-                        # Resolve an executor: plugin-specific factory or attribute
-                        exec_factory = getattr(plugin, "get_tool_executor", None)
-                        if callable(exec_factory):
-                            executor = exec_factory(tname)  # type: ignore
-                        else:
-                            method = getattr(plugin, tname, None)
-                            if not callable(method):
-                                continue
-                            async def _exec_wrapper(args: dict[str, Any], _m=method):  # type: ignore
-                                return await _m(**args)
-                            executor = _exec_wrapper
+            print("🔧 DEBUG: Registering enhanced consensus tool...")
+            ability_reg.register_tool(
+                contract=consensus_contract, executor=consensus_executor
+            )
+            print("✅ DEBUG: Enhanced consensus tool registered successfully!")
 
-                        ability_reg.register_tool(contract=contract, executor=executor)
-            except Exception:
-                # Keep runtime resilient even if tool registration fails
-                pass
+        except Exception as e:
+            print(f"❌ DEBUG: Failed to register enhanced consensus tool: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # Register Mangle integration
+        try:
+            from src.abilities.mangle.register import register_mangle_abilities, register_mangle_plugin
+
+            print("🔧 DEBUG: Starting Mangle integration registration...")
+
+            # Register Mangle abilities
+            mangle_config = {
+                "mangle": {
+                    "binary_path": os.getenv("MANGLE_BIN_PATH", "mangle"),
+                    "timeout": 30,
+                    "knowledge_base_dir": "./data/mangle"
+                }
+            }
+
+            register_mangle_abilities(app.state.ability_registry, mangle_config)  # type: ignore
+            register_mangle_plugin(None, mangle_config)  # plugin_registry not needed
+            print("✅ DEBUG: Mangle integration registered successfully!")
+
+        except Exception as e:
+            print(f"❌ DEBUG: Failed to register Mangle integration: {e}")
+            import traceback
+            traceback.print_exc()
+
+        # Optional ability auto-discovery (best-effort)
+        try:
+            if os.getenv("ALITA_AUTO_DISCOVER_ABILITIES", "false").lower() in {
+                "1",
+                "true",
+                "yes",
+                "on",
+            }:
+                from src.abilities.registry_auto import auto_register_abilities
+
+                await auto_register_abilities(app.state.ability_registry)  # type: ignore
+        except Exception:
+            pass
 
         # Emit startup events
         try:
@@ -1238,10 +1727,18 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         prefix = prefix.rstrip("/")
         app.include_router(agent_router, prefix=prefix)  # type: ignore
         app.include_router(tools_router, prefix=prefix)  # type: ignore
+        with contextlib.suppress(Exception):
+            app.include_router(ability_router, prefix=prefix)  # type: ignore
         app.include_router(autogen_router, prefix=prefix)  # type: ignore
         # Register chat router (SSE + JSON) under API prefix (best-effort)
         with contextlib.suppress(Exception):
             app.include_router(chat_router, prefix=prefix)  # type: ignore
+        # Register unified API gateway
+        with contextlib.suppress(Exception):
+            app.include_router(api_router, prefix=prefix)  # type: ignore
+        # Register auth router
+        with contextlib.suppress(Exception):
+            app.include_router(auth_router, prefix=prefix)  # type: ignore
         # GUI router under prefix
         with contextlib.suppress(Exception):
             app.include_router(gui_router, prefix=prefix)  # type: ignore
@@ -1326,10 +1823,18 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     else:
         app.include_router(agent_router)  # type: ignore
         app.include_router(tools_router)  # type: ignore
+        with contextlib.suppress(Exception):
+            app.include_router(ability_router)  # type: ignore
         app.include_router(autogen_router)  # type: ignore
         # Register chat router (SSE + JSON) without prefix (best-effort)
         with contextlib.suppress(Exception):
             app.include_router(chat_router)  # type: ignore
+        # Register unified API gateway without prefix
+        with contextlib.suppress(Exception):
+            app.include_router(api_router)  # type: ignore
+        # Register auth router without prefix
+        with contextlib.suppress(Exception):
+            app.include_router(auth_router)  # type: ignore
         # GUI router without prefix
         with contextlib.suppress(Exception):
             app.include_router(gui_router)  # type: ignore
@@ -1339,7 +1844,11 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     # DeepCode trigger endpoint (fire-and-forget). Accept generic JSON to
     # reduce tight coupling / avoid Pydantic forward issues across versions.
     @app.post("/deepcode/request")  # type: ignore
-    async def deepcode_request(req: Request) -> dict[str, Any]:  # type: ignore
+    async def deepcode_request(
+        req: Request,  # type: ignore
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> dict[str, Any]:  # type: ignore
         body = {}  # type: ignore[var-annotated]
         with contextlib.suppress(Exception):
             body = await req.json()  # type: ignore
@@ -1359,23 +1868,45 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         return {"status": "accepted", "request": payload}
 
     # Generic ability execution endpoint (internal tools registry exposure)
+    _abilities_admin_only = os.getenv(
+        "ALITA_ABILITIES_ADMIN_ONLY", "false"
+    ).lower() in {"1", "true", "yes", "on"}
+    _ability_whitelist: set[str] = set(
+        [
+            x.strip()
+            for x in (os.getenv("ALITA_ABILITY_WHITELIST", "") or "").split(",")
+            if x.strip()
+        ]
+    )
+
     @app.post("/ability/execute/{tool_id}")  # type: ignore
-    async def execute_ability(tool_id: str, req: Request) -> JSONResponse:  # type: ignore
+    async def execute_ability(
+        tool_id: str,
+        req: Request,  # type: ignore
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> JSONResponse:  # type: ignore
+        from src.core.api_models import api_error
+
         args: dict[str, Any] = {}
         with contextlib.suppress(Exception):
             parsed = await req.json()  # type: ignore
             if isinstance(parsed, dict):
                 args = parsed
         registry: SimpleAbilityRegistry = app.state.ability_registry  # type: ignore
+        # Policy enforcement
+        if _abilities_admin_only:
+            # Require admin token
+            try:
+                await require_admin(req)  # type: ignore
+            except Exception as e:  # pragma: no cover - simple mapping
+                return JSONResponse(status_code=403, content=api_error("admin_required", "ADMIN", {"detail": str(e)}))  # type: ignore
+        elif _ability_whitelist and tool_id not in _ability_whitelist:
+            return JSONResponse(status_code=403, content=api_error("ability_not_allowed", "ABILITY", {"tool": tool_id}))  # type: ignore
         if not registry.knows(tool_id):
-            return JSONResponse(
-                status_code=404, content={"error": "unknown_tool", "tool": tool_id}
-            )  # type: ignore
+            return JSONResponse(status_code=404, content=api_error("unknown_tool", "ABILITY", {"tool": tool_id}))  # type: ignore
         if not registry.validate_args(tool_id, args):
-            return JSONResponse(
-                status_code=400,
-                content={"error": "invalid_args", "tool": tool_id, "args": args},
-            )  # type: ignore
+            return JSONResponse(status_code=400, content=api_error("invalid_args", "ABILITY", {"tool": tool_id, "args": args}))  # type: ignore
         result = await registry.execute(tool_id, args)
         return JSONResponse(  # type: ignore
             status_code=200,
@@ -1401,7 +1932,10 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
     # DeepCode latest retrieval
     @app.get("/deepcode/latest")  # type: ignore
-    async def deepcode_latest() -> JSONResponse:  # type: ignore
+    async def deepcode_latest(
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> JSONResponse:  # type: ignore
         plugin = None
         for p in getattr(app.state, "plugins", []):  # type: ignore
             if getattr(p, "name", None) == "deepcode_orchestrator":
@@ -1443,7 +1977,11 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
     # DeepCode apply endpoint (delegates to orchestrator; guardian applies elsewhere)
     @app.post("/deepcode/apply")  # type: ignore
-    async def deepcode_apply(req: Request) -> JSONResponse:  # type: ignore
+    async def deepcode_apply(
+        req: Request,  # type: ignore
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> JSONResponse:  # type: ignore
         raw = await req.json()  # type: ignore
         body = raw if isinstance(raw, dict) else {}
         filter_paths = (
@@ -1461,10 +1999,28 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         result = await plugin.apply_latest(filter_paths)  # type: ignore
         return JSONResponse(status_code=200, content=result)  # type: ignore
 
+    # Serve static chat UI if available
+    try:
+        static_dir = ROOT / "static"
+        if static_dir.exists():
+            app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")  # type: ignore
+
+            @app.get("/")  # type: ignore
+            async def index() -> Any:  # type: ignore
+                index_path = static_dir / "index.html"
+                if index_path.exists():
+                    return FileResponse(str(index_path))  # type: ignore
+                return JSONResponse({"status": "ok", "message": "Super Alita runtime"})  # type: ignore
+
+    except Exception:
+        # Static serving is optional; ignore errors to keep runtime resilient
+        pass
+
     # Simplified minimal health (no deep dependency checks)
     @app.get("/health/simple")  # type: ignore
-    async def health_simple() -> dict[str, str]:  # type: ignore
-        return {"status": "ok"}
+    async def health_simple() -> dict[str, object]:  # type: ignore
+        # minimal health with a timestamp for clients/tests
+        return {"status": "ok", "timestamp": int(time.time())}
 
     # Route enumeration (debug only)
     @app.get("/routes")  # type: ignore
@@ -1521,11 +2077,27 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             "timestamp": int(time.time()),
         }
 
+    # Plugin system health endpoint
+    @app.get("/plugins/health")  # type: ignore
+    async def plugin_health() -> dict[str, object]:  # type: ignore
+        """Get health status of all loaded plugins."""
+        try:
+            from src.core.enhanced_plugin_system import get_plugin_health_status
+
+            return get_plugin_health_status(app)
+        except Exception as e:
+            return {
+                "plugin_count": 0,
+                "plugins": {},
+                "status": "error",
+                "error": str(e),
+            }
+
     # Mount static files for chat interface
     static_dir = ROOT / "static"
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")  # type: ignore
-        
+
         # Serve chat interface at root
         @app.get("/")  # type: ignore
         async def serve_chat():  # type: ignore

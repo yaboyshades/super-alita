@@ -48,6 +48,11 @@ class MemoryManagerPlugin(PluginInterface):
     def __init__(self):
         super().__init__()
         self.workspace: GlobalWorkspace | None = None
+
+    @property
+    def name(self) -> str:
+        """Return the unique name identifier for this plugin."""
+        return "memory_manager"
         self.store: NeuralStore | None = None
 
         # Memory storage components

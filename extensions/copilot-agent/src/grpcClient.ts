@@ -145,12 +145,12 @@ export async function getStatus(): Promise<StatusResponse> {
 export async function processTask(request: TaskRequest): Promise<TaskResponse> {
   try {
     const startTime = Date.now();
-    
+
     // TODO: Replace with actual gRPC call when protobuf issues are resolved
     // Simulate processing based on task content
     let result: any;
     const content = request.content.toLowerCase();
-    
+
     if (content.includes('analyze')) {
       result = {
         analysis: "Content analyzed using Cortex perception-reasoning-action cycle",
@@ -170,9 +170,9 @@ export async function processTask(request: TaskRequest): Promise<TaskResponse> {
         processing_notes: "Full perception-reasoning-action cycle completed"
       };
     }
-    
+
     const executionTime = Date.now() - startTime;
-    
+
     return {
       task_id: request.task_id,
       status: "completed",
@@ -195,12 +195,12 @@ export async function kgQuery(request: KGQueryRequest): Promise<KGQueryResponse>
         data: { name: "Machine Learning", domain: "AI" }
       },
       {
-        id: "atom_002", 
+        id: "atom_002",
         type: "process",
         data: { name: "Neural Processing", stage: "reasoning" }
       }
     ];
-    
+
     const mockBonds = [
       {
         id: "bond_001",
@@ -209,7 +209,7 @@ export async function kgQuery(request: KGQueryRequest): Promise<KGQueryResponse>
         relation_type: "implements"
       }
     ];
-    
+
     return {
       atoms: mockAtoms.slice(0, request.limit),
       bonds: mockBonds,
@@ -225,10 +225,10 @@ export async function banditDecide(request: BanditDecisionRequest): Promise<Band
     // TODO: Replace with actual gRPC call when protobuf issues are resolved
     const algorithms = ['thompson_sampling', 'ucb1', 'epsilon_greedy'];
     const actions = ['explore', 'exploit', 'random'];
-    
+
     const algorithm = algorithms[Math.floor(Math.random() * algorithms.length)];
     const action = actions[Math.floor(Math.random() * actions.length)];
-    
+
     return {
       decision_id: `decision_${Date.now()}`,
       algorithm,

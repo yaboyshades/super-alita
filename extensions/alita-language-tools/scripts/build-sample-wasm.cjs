@@ -39,4 +39,3 @@ if (!fs.existsSync(wasm) || fs.statSync(wasm).size === 0) {
   process.exit(2);
 }
 console.log('[build-sample-wasm] wrote', wasm);
-

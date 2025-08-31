@@ -5,7 +5,7 @@ Requirements: Build a generic, spec-driven web scraping *ability*:
 - Accept runtime selectors/regex/attrs (no site hardcoding).
 - Output CSV+JSON; headers: url, sku, title, price, currency.
 - Include tests (no network), docs, and Makefile target.
-- Safety: no eval/os.system/subprocess(..., shell=True). 
+- Safety: no eval/os.system/subprocess(..., shell=True).
   Retries, timeouts, UA, polite delays.
 Task: Build a web scraper for extracting product data from e-commerce sites
 
@@ -22,48 +22,48 @@ logger = logging.getLogger(__name__)
 
 class WebScraper:
     """Web scraper for extracting data from websites"""
-    
+
     def __init__(self, base_url: str = None):
         self.base_url = base_url
         self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (compatible; WebScraper/1.0)'
-        })
-    
+        self.session.headers.update(
+            {"User-Agent": "Mozilla/5.0 (compatible; WebScraper/1.0)"}
+        )
+
     def scrape_page(self, url: str) -> dict[str, Any]:
         """Scrape a single page and extract data"""
         try:
             response = self.session.get(url)
             response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
+
+            soup = BeautifulSoup(response.content, "html.parser")
+
             # Extract common data patterns
             data = {
-                'title': soup.find('title').text if soup.find('title') else '',
-                'headings': [h.text.strip() for h in soup.find_all(['h1', 'h2', 'h3'])],
-                'links': [a.get('href') for a in soup.find_all('a', href=True)],
-                'text_content': soup.get_text().strip(),
-                'meta_description': '',
+                "title": soup.find("title").text if soup.find("title") else "",
+                "headings": [h.text.strip() for h in soup.find_all(["h1", "h2", "h3"])],
+                "links": [a.get("href") for a in soup.find_all("a", href=True)],
+                "text_content": soup.get_text().strip(),
+                "meta_description": "",
             }
-            
+
             # Extract meta description
-            meta_desc = soup.find('meta', attrs={'name': 'description'})
+            meta_desc = soup.find("meta", attrs={"name": "description"})
             if meta_desc:
-                data['meta_description'] = meta_desc.get('content', '')
-                
+                data["meta_description"] = meta_desc.get("content", "")
+
             return data
-            
+
         except Exception as e:
             logger.error(f"Error scraping {url}: {e}")
-            return {'error': str(e)}
-    
+            return {"error": str(e)}
+
     def scrape_multiple(self, urls: list[str]) -> list[dict[str, Any]]:
         """Scrape multiple URLs"""
         results = []
         for url in urls:
             result = self.scrape_page(url)
-            result['url'] = url
+            result["url"] = url
             results.append(result)
         return results
 

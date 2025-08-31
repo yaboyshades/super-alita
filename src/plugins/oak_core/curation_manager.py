@@ -50,9 +50,7 @@ class CurationManager(PluginInterface):
     def name(self) -> str:  # pragma: no cover - trivial
         return "oak_curation_manager"
 
-    async def setup(
-        self, event_bus: Any, store: Any, config: dict[str, Any]
-    ) -> None:  # noqa: D401
+    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # noqa: D401
         await super().setup(event_bus, store, config)
         # Allow light config overrides
         self.play_weight = float(config.get("play_weight", self.play_weight))
@@ -117,4 +115,3 @@ class CurationManager(PluginInterface):
             )
         except Exception:  # pragma: no cover - defensive
             logger.exception("CurationManager.handle_prediction_error failed")
-

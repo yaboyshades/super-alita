@@ -38,7 +38,7 @@ import subprocess
 
 class AutomationComponent:
     """Base class for Cortex automation components."""
-    
+
     def execute_task(self, task_config: Dict[str, Any]) -> Dict[str, Any]:
         """Execute an automation task."""
         return {
@@ -181,11 +181,11 @@ from cortex.automation import AutomationEngine
 class CortexPlugin(PluginInterface):
     def __init__(self):
         self.automation = AutomationEngine()
-    
+
     @property
     def name(self) -> str:
         return "cortex_automation"
-    
+
     async def shutdown(self) -> None:
         await self.automation.shutdown()
 ```
@@ -218,7 +218,7 @@ Test automation workflows:
 @pytest.mark.asyncio
 async def test_git_automation():
     git_auto = GitAutomation()
-    
+
     # Test branch creation
     result = git_auto.create_feature_branch("test-feature")
     assert result["success"] is True

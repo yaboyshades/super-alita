@@ -1,4 +1,5 @@
 """Search agent integrating with Perplexica tool."""
+
 from collections.abc import AsyncGenerator
 
 from acp_sdk import Message, MessagePart
@@ -40,7 +41,9 @@ class SearchAgent:
                 followups=2,
             )
 
-            yield Message(parts=[MessagePart(text=f"## Search Results\n\n{result['summary']}")])
+            yield Message(
+                parts=[MessagePart(text=f"## Search Results\n\n{result['summary']}")]
+            )
 
             if result.get("reasoning"):
                 yield Message(

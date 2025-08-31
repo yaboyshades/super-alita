@@ -25,14 +25,20 @@ logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 VECTOR_STORE_ID = os.environ.get("VECTOR_STORE_ID", "")
 ALLOW_NO_AUTH = os.environ.get("MCP_ALLOW_NO_AUTH", "false").lower() == "true"
-ALLOWLIST = {s.strip() for s in os.environ.get("MCP_ALLOWLIST", "").split(",") if s.strip()}
+ALLOWLIST = {
+    s.strip() for s in os.environ.get("MCP_ALLOWLIST", "").split(",") if s.strip()
+}
 HOST = os.environ.get("MCP_HOST", "0.0.0.0")
 PORT = int(os.environ.get("MCP_PORT", "8000"))
-TRANSPORT = os.environ.get("MCP_TRANSPORT", "sse")  # SSE is recommended for remote servers
+TRANSPORT = os.environ.get(
+    "MCP_TRANSPORT", "sse"
+)  # SSE is recommended for remote servers
 SERVER_NAME = os.environ.get("MCP_SERVER_NAME", "Sample MCP Server")
 
 # --- OpenAI Client Initialization ----------------------------------------------
 _openai_client: OpenAI | None = None
+
+
 def get_openai_client() -> OpenAI:
     """Initializes and returns a singleton OpenAI client."""
     global _openai_client
@@ -41,6 +47,7 @@ def get_openai_client() -> OpenAI:
             raise RuntimeError("OPENAI_API_KEY environment variable is not set.")
         _openai_client = OpenAI(api_key=OPENAI_API_KEY)
     return _openai_client
+
 
 # --- Authentication Hook -------------------------------------------------------
 def _check_auth(headers: dict[str, str]) -> None:
@@ -56,21 +63,25 @@ def _check_auth(headers: dict[str, str]) -> None:
     if ALLOWLIST and token not in ALLOWLIST:
         raise PermissionError("Provided token is not in the allowlist.")
 
+
 # --- Server Instructions -------------------------------------------------------
 server_instructions = """
 This MCP server provides search and document retrieval capabilities for chat and deep research.
 Use the `search` tool to find relevant documents, then `fetch` to retrieve full text for citation.
 """
 
+
 def create_server() -> FastMCP:
     """Creates and configures the FastMCP server with search and fetch tools."""
     mcp = FastMCP(name=SERVER_NAME, instructions=server_instructions)
 
     @mcp.tool()
-    async def search(query: str, __headers: dict[str, str] | None = None) -> dict[str, list[dict[str, Any]]]:
+    async def search(
+        query: str, __headers: dict[str, str] | None = None
+    ) -> dict[str, list[dict[str, Any]]]:
         """
         Search for documents using OpenAI Vector Store search.
-        
+
         Args:
             query: Natural language search query string.
             __headers: Request headers for authentication.
@@ -87,7 +98,9 @@ def create_server() -> FastMCP:
             return {"results": []}
 
         client = get_openai_client()
-        response = client.vector_stores.search(vector_store_id=VECTOR_STORE_ID, query=query)
+        response = client.vector_stores.search(
+            vector_store_id=VECTOR_STORE_ID, query=query
+        )
 
         results: list[dict[str, Any]] = []
         if hasattr(response, "data"):
@@ -95,26 +108,34 @@ def create_server() -> FastMCP:
                 file_id = getattr(item, "file_id", f"unknown_{i}")
                 filename = getattr(item, "filename", f"Document {i+1}")
                 content_list = getattr(item, "content", [])
-                
+
                 text_content = ""
                 if content_list:
                     first_content = content_list[0]
-                    if hasattr(first_content, 'text'):
+                    if hasattr(first_content, "text"):
                         text_content = first_content.text
                     elif isinstance(first_content, dict):
-                        text_content = first_content.get('text', '')
+                        text_content = first_content.get("text", "")
 
-                snippet = (text_content[:200] + "...") if len(text_content) > 200 else text_content
-                
-                results.append({
-                    "id": file_id,
-                    "title": filename,
-                    "text": snippet or "No content available",
-                    "url": f"https://platform.openai.com/storage/files/{file_id}",
-                })
+                snippet = (
+                    (text_content[:200] + "...")
+                    if len(text_content) > 200
+                    else text_content
+                )
+
+                results.append(
+                    {
+                        "id": file_id,
+                        "title": filename,
+                        "text": snippet or "No content available",
+                        "url": f"https://platform.openai.com/storage/files/{file_id}",
+                    }
+                )
 
         latency_ms = int((time.time() - t0) * 1000)
-        logger.info(f"Search completed in {latency_ms}ms, found {len(results)} results.")
+        logger.info(
+            f"Search completed in {latency_ms}ms, found {len(results)} results."
+        )
         return {"results": results}
 
     @mcp.tool()
@@ -137,17 +158,23 @@ def create_server() -> FastMCP:
             raise ValueError("Document ID is required.")
 
         client = get_openai_client()
-        
-        content_response = client.vector_stores.files.content(vector_store_id=VECTOR_STORE_ID, file_id=id)
-        file_info = client.vector_stores.files.retrieve(vector_store_id=VECTOR_STORE_ID, file_id=id)
-        
+
+        content_response = client.vector_stores.files.content(
+            vector_store_id=VECTOR_STORE_ID, file_id=id
+        )
+        file_info = client.vector_stores.files.retrieve(
+            vector_store_id=VECTOR_STORE_ID, file_id=id
+        )
+
         content_parts: list[str] = []
         if hasattr(content_response, "data"):
             for chunk in content_response.data:
                 if hasattr(chunk, "text") and chunk.text:
                     content_parts.append(chunk.text)
-        
-        full_text = "\n".join(content_parts) if content_parts else "No content available"
+
+        full_text = (
+            "\n".join(content_parts) if content_parts else "No content available"
+        )
         title = getattr(file_info, "filename", f"Document {id}")
 
         result: dict[str, Any] = {
@@ -157,7 +184,7 @@ def create_server() -> FastMCP:
             "url": f"https://platform.openai.com/storage/files/{id}",
             "metadata": None,
         }
-        
+
         if hasattr(file_info, "attributes") and file_info.attributes:
             result["metadata"] = file_info.attributes
 
@@ -166,6 +193,7 @@ def create_server() -> FastMCP:
         return result
 
     return mcp
+
 
 def main():
     """Main function to configure and start the MCP server."""
@@ -176,8 +204,10 @@ def main():
         logger.warning("VECTOR_STORE_ID environment variable not set.")
 
     server = create_server()
-    logger.info(f"Starting MCP server '{SERVER_NAME}' on {HOST}:{PORT} via {TRANSPORT} transport.")
-    
+    logger.info(
+        f"Starting MCP server '{SERVER_NAME}' on {HOST}:{PORT} via {TRANSPORT} transport."
+    )
+
     try:
         server.run(transport=TRANSPORT, host=HOST, port=PORT)
     except KeyboardInterrupt:
@@ -185,6 +215,7 @@ def main():
     except Exception as e:
         logger.error(f"Server error: {e}", exc_info=True)
         raise
+
 
 if __name__ == "__main__":
     main()

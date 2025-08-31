@@ -15,11 +15,12 @@ from src.neural.atom import Atom
 
 class Subproblem(BaseModel):
     """κ-weighted reward-respecting objective."""
+
     id: str
     feature_id: str
     name: str
 
-    kappa: float = Field(default=1.0, ge=0.0, le=10.0)           # Intrinsic attainment weight
+    kappa: float = Field(default=1.0, ge=0.0, le=10.0)  # Intrinsic attainment weight
     extrinsic_weight: float = Field(default=1.0, ge=0.0, le=1.0)
 
     termination_features: list[str] = Field(default_factory=list)
@@ -35,7 +36,9 @@ class Subproblem(BaseModel):
     avg_reward: float = 0.0
     total_attempts: int = 0
 
-    def compute_reward(self, extrinsic: float, feature_achieved: bool, terminal_value: float) -> float:
+    def compute_reward(
+        self, extrinsic: float, feature_achieved: bool, terminal_value: float
+    ) -> float:
         intrinsic = self.kappa * float(feature_achieved)
         return self.extrinsic_weight * extrinsic + intrinsic + terminal_value
 
@@ -58,17 +61,17 @@ class SubproblemManager(PluginInterface):
         await super().setup(event_bus, store, config)
         self.subproblems: dict[str, Subproblem] = {}
         self.feature_to_subproblems: dict[str, list[str]] = {}
-        
+
         # Legacy config approach using get_config
         self.min_utility_threshold = self.get_config("min_utility_threshold", 0.2)
         self.kappa_range = self.get_config("kappa_range", (0.1, 5.0))
         self.kappa_values = self.get_config("kappa_values", [0.5, 1.0, 2.0])
-        
+
         # Modern config approach using self.cfg
         self.cfg.update(config or {})
         self.cfg.setdefault("min_utility_threshold", 0.2)
         self.cfg.setdefault("max_per_feature", 5)
-        
+
         # Subscribe to both legacy and modern event patterns
         await self.subscribe("feature_utility_update", self.handle_utility_update)
         await self.subscribe("option_created", self.link_option_to_subproblem)
@@ -83,7 +86,7 @@ class SubproblemManager(PluginInterface):
         await super().shutdown()
 
     def generate_subproblem_id(self, feature_id: str, kappa: float) -> str:
-        ns = uuid.UUID('6ba7b811-9dad-11d1-80b4-00c04fd430c8')
+        ns = uuid.UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8")
         return str(uuid.uuid5(ns, f"subproblem_{feature_id}_k{kappa:.2f}"))
 
     async def handle_option_completed(self, event: Any) -> None:
@@ -96,7 +99,9 @@ class SubproblemManager(PluginInterface):
         if not feature_id:
             return
         existing = self.feature_to_sub.get(feature_id, [])
-        if utility < float(self.cfg["min_utility_threshold"]) or len(existing) >= int(self.cfg["max_per_feature"]):
+        if utility < float(self.cfg["min_utility_threshold"]) or len(existing) >= int(
+            self.cfg["max_per_feature"]
+        ):
             return
         for k in self.kappa_values:
             sp = await self._create_subproblem(feature_id, k)
@@ -114,7 +119,11 @@ class SubproblemManager(PluginInterface):
         utility = float(event.get("value", 0.0))
         if not fid or utility <= self.min_utility_threshold:
             return
-        existing = {self.subproblems[s].kappa for s in self.feature_to_subproblems.get(fid, []) if s in self.subproblems}
+        existing = {
+            self.subproblems[s].kappa
+            for s in self.feature_to_subproblems.get(fid, [])
+            if s in self.subproblems
+        }
         if utility > 0.7 and len(existing) < 5:
             new_k = min(self.kappa_range[1], (max(existing) * 1.5) if existing else 3.0)
             if new_k not in existing:
@@ -128,7 +137,9 @@ class SubproblemManager(PluginInterface):
                         timestamp=datetime.now(UTC),
                     )
 
-    async def _create_subproblem(self, feature_id: str, kappa: float) -> Subproblem | None:
+    async def _create_subproblem(
+        self, feature_id: str, kappa: float
+    ) -> Subproblem | None:
         sp_id = self.generate_subproblem_id(feature_id, kappa)
         if sp_id in self.subproblems:
             return None
@@ -148,12 +159,9 @@ class SubproblemManager(PluginInterface):
             atom_type="subproblem",
             title=sp.name,
             content=json.dumps(sp_dict),
-            meta={"feature_id": feature_id, "kappa": kappa}
+            meta={"feature_id": feature_id, "kappa": kappa},
         )
-        await self.store.persist(
-            event_type="atom_created",
-            payload=new_atom.to_dict()
-        )
+        await self.store.persist(event_type="atom_created", payload=new_atom.to_dict())
         return sp
 
     async def link_option_to_subproblem(self, event: dict[str, Any]):
@@ -164,16 +172,19 @@ class SubproblemManager(PluginInterface):
             return
         if opt_id not in sp.linked_options:
             sp.linked_options.append(opt_id)
-            content_dict = {"source": sp_id, "target": opt_id, "type": "defines_objective_for"}
+            content_dict = {
+                "source": sp_id,
+                "target": opt_id,
+                "type": "defines_objective_for",
+            }
             new_atom = Atom(
                 atom_type="bond",
                 title=f"subproblem_option_link_{sp_id}_{opt_id}",
                 content=json.dumps(content_dict),
-                meta={"subtype": "subproblem_option"}
+                meta={"subtype": "subproblem_option"},
             )
             await self.store.persist(
-                event_type="atom_created",
-                payload=new_atom.to_dict()
+                event_type="atom_created", payload=new_atom.to_dict()
             )
             await self.emit_event(
                 "subproblem_option_linked",
@@ -192,9 +203,13 @@ class SubproblemManager(PluginInterface):
             return
         alpha = 0.1
         sp.total_attempts += 1
-        sp.success_rate = (1 - alpha) * sp.success_rate + alpha * (1.0 if success else 0.0)
+        sp.success_rate = (1 - alpha) * sp.success_rate + alpha * (
+            1.0 if success else 0.0
+        )
         if steps > 0:
-            sp.avg_steps_to_termination = (1 - alpha) * sp.avg_steps_to_termination + alpha * steps
+            sp.avg_steps_to_termination = (
+                1 - alpha
+            ) * sp.avg_steps_to_termination + alpha * steps
         sp.avg_reward = (1 - alpha) * sp.avg_reward + alpha * reward
         if sp.total_attempts % 10 == 0:
             await self._adapt_kappa(sp)

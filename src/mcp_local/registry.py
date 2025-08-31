@@ -11,6 +11,7 @@ from typing import Any
 try:  # pragma: no cover - telemetry optional
     from cortex import telemetry  # type: ignore
 except Exception:  # pragma: no cover - fallback when cortex not installed
+
     class _Telemetry:
         @staticmethod
         def emit(*args: Any, **kwargs: Any) -> None:
@@ -40,22 +41,37 @@ class ToolRegistry:
         self._tools[name] = fn
 
     def register_from_code(self, name: str, code: str) -> None:
-        """Persist tool code and register it.
+        """Persist tool code and register it securely.
 
-        The code string must define a coroutine function with the given ``name``.
+        The code string must define a function named ``name``. We evaluate it
+        via the secure executor to avoid raw ``exec`` and capture an audit log.
 
         Args:
             name: Tool name and function identifier.
             code: Python source implementing the tool.
         """
 
+        from src.core.secure_executor import get_secure_executor
+
         module_path = self.path / f"{name}.py"
         module_path.write_text(code)
-        namespace: dict[str, Any] = {}
-        exec(code, namespace)
-        fn = namespace.get(name)
-        if not callable(fn):  # pragma: no cover - safety check
+
+        # Use the secure executor to construct the callable
+        executor = get_secure_executor()
+        try:
+            fn, _audit = executor.execute_with_audit(
+                code=code,
+                params={},
+                user_id="mcp_local",
+                context_id=f"register:{name}",
+                function_name=name,
+            )
+        except Exception as e:  # pragma: no cover - safety path
+            raise ValueError(f"Failed to register '{name}': {e}") from e
+
+        if not callable(fn):  # pragma: no cover - double safety check
             raise ValueError(f"No callable '{name}' found in provided code")
+
         self.register(name, fn)  # type: ignore[arg-type]
 
     async def _timed_invoke(self, name: str, args: dict[str, Any]) -> Any:

@@ -29,4 +29,3 @@ def test_dynamic_tool_and_kg(tmp_path, monkeypatch):
     ok_event = next(e for e in events if e["event_type"] == "TOOL_CALL_OK")
     triples = kg_store.query()
     assert triples and triples[0]["source_event_id"] == ok_event["event_id"]
-

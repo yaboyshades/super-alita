@@ -233,8 +233,14 @@ class PythonDeepAnalyzer(CodeAnalyzer):
                 complexity = 1  # Base complexity
 
                 for child in ast.walk(node):
-                    if (
-                        isinstance(child, ast.If | ast.While | ast.For | ast.AsyncFor | ast.ExceptHandler | (ast.And | ast.Or))
+                    if isinstance(
+                        child,
+                        ast.If
+                        | ast.While
+                        | ast.For
+                        | ast.AsyncFor
+                        | ast.ExceptHandler
+                        | (ast.And | ast.Or),
                     ):
                         complexity += 1
 

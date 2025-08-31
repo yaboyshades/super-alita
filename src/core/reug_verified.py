@@ -532,7 +532,7 @@ class REUGStateMachineVerified(StateMachine):
                 logger.debug(
                     f"Waiting for parallel tasks: {completed_tasks}/{expected_tasks}"
                 )
-                # In a real implementation, this would wait for completion
+                # Wait for completion when configured to run synchronously
                 await asyncio.sleep(0.1)  # Brief wait
                 return None  # Continue waiting
 

@@ -47,7 +47,7 @@ All events include metadata for Cortex's meta-policy bandit:
 ```typescript
 "meta": {
   "PROMPT_VERSION": "2.0.0",
-  "ARCHITECTURE_HASH": "sha256:a3f4b5c6d7e8", 
+  "ARCHITECTURE_HASH": "sha256:a3f4b5c6d7e8",
   "VERIFICATION_MODE": "ACTIVE",
   "extension_version": "2.0.0",
   "vscode_version": "1.103.0"
@@ -79,7 +79,7 @@ Get-Content "$env:USERPROFILE\.super-alita\telemetry.jsonl" | ConvertFrom-Json
 
 ### **4. Architecture Compliance Workflow**
 1. **Write Code** → `IDE_INTERACTION` events emitted
-2. **Use @alita** → `COPILOT_QUERY` events emitted  
+2. **Use @alita** → `COPILOT_QUERY` events emitted
 3. **Guardian Analysis** → `TOOL_RUN` / `ARCHITECTURAL_AUDIT` events emitted
 4. **Rate Response** → `USER_FEEDBACK` events emitted
 5. **Cortex Learning** → Bandit optimizes based on telemetry markers
@@ -97,7 +97,7 @@ Get-Content "$env:USERPROFILE\.super-alita\telemetry.jsonl" | ConvertFrom-Json
 ```
 📝 Emitting 5 test events to C:\Users\leama\.super-alita\telemetry.jsonl
   ✅ Event 1: COPILOT_QUERY from user
-  ✅ Event 2: TOOL_RUN from agent  
+  ✅ Event 2: TOOL_RUN from agent
   ✅ Event 3: IDE_INTERACTION from user
   ✅ Event 4: ARCHITECTURAL_AUDIT from agent
   ✅ Event 5: USER_FEEDBACK from user
@@ -114,7 +114,7 @@ Get-Content "$env:USERPROFILE\.super-alita\telemetry.jsonl" | ConvertFrom-Json
 ## 🎯 **NEXT STEPS**
 
 1. **Full Cortex Integration**: Replace mock orchestrator with actual Cortex components
-2. **Real-time Dashboard**: Build web dashboard consuming telemetry events  
+2. **Real-time Dashboard**: Build web dashboard consuming telemetry events
 3. **Bandit Optimization**: Use telemetry markers to optimize prompt strategies
 4. **Atom/Bond Events**: Add structured KG events for deterministic storage
 

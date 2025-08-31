@@ -17,4 +17,3 @@ Each tool invocation records the following events:
 
 These events help verify tool behaviour during tests and can be inspected by
 reading the `telemetry.jsonl` file.
-

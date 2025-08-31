@@ -29,7 +29,7 @@ The system recognizes these capability kinds:
 Patterns: "scrape", "extract price/product", "e-commerce", "price tracker"
 Generates: Generic web scraping ability with configurable selectors
 
-### etl_task  
+### etl_task
 Patterns: "ETL", "data pipeline", "data ingestion", "normalize"
 Generates: Configurable data transformation pipeline
 
@@ -61,7 +61,7 @@ All generated code must pass:
 ### Telemetry Events
 - `autogen.started`: Beginning capability generation
 - `autogen.iteration_checked`: Gate validation result
-- `autogen.refine`: Adding requirements based on gate failures  
+- `autogen.refine`: Adding requirements based on gate failures
 - `autogen.applied`: Successfully applied generated capability
 - `autogen.failed`: Could not satisfy gates within iteration limit
 - `autogen.skipped`: No recognizable capability patterns found
@@ -87,7 +87,7 @@ result = autogen_any("need to generate reports from sales data")
 # With custom settings
 result = autogen_any(
     description="create api client for payment processing",
-    repo_path="/path/to/project", 
+    repo_path="/path/to/project",
     iterations=3,
     event_bus=my_event_bus,
     api=my_local_api

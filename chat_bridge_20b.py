@@ -23,24 +23,21 @@ app = FastAPI(title="Super Alita Chat Bridge")
 if Path("static").exists():
     app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
+
 async def ollama_chat_stream(prompt: str):
     """Stream chat from Ollama 20B model"""
     try:
         messages = [
             {
-                "role": "system", 
-                "content": "You are Super Alita, an AI assistant powered by GPT-OSS 20B."
+                "role": "system",
+                "content": "You are Super Alita, an AI assistant powered by GPT-OSS 20B.",
             },
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": prompt},
         ]
-        
+
         async with httpx.AsyncClient(timeout=60) as client:
-            payload = {
-                "model": "gpt-oss:20b",
-                "messages": messages,
-                "stream": True
-            }
-            
+            payload = {"model": "gpt-oss:20b", "messages": messages, "stream": True}
+
             async with client.stream(
                 "POST", "http://127.0.0.1:11434/api/chat", json=payload
             ) as response:
@@ -59,31 +56,35 @@ async def ollama_chat_stream(prompt: str):
                             continue
                 else:
                     yield f"Error: Ollama returned status {response.status_code}"
-                    
+
     except Exception as e:
         yield f"Connection error: {e}"
+
 
 @app.post("/v1/chat")
 async def chat_endpoint(request: Request):
     """Chat endpoint that connects to 20B model"""
     body = await request.json()
     prompt = body.get("message", "").strip()
-    
+
     if not prompt:
         return JSONResponse({"error": "No message provided"}, status_code=400)
-    
+
     # Collect streaming response
     response_parts = []
     async for chunk in ollama_chat_stream(prompt):
         response_parts.append(chunk)
-    
+
     full_response = "".join(response_parts)
-    return JSONResponse({
-        "type": "message",
-        "content": full_response,
-        "model": "gpt-oss:20b",
-        "session": "default"
-    })
+    return JSONResponse(
+        {
+            "type": "message",
+            "content": full_response,
+            "model": "gpt-oss:20b",
+            "session": "default",
+        }
+    )
+
 
 @app.get("/health")
 async def health_check():
@@ -99,25 +100,22 @@ async def health_check():
                     "status": "healthy",
                     "ollama": "connected",
                     "gpt_oss_20b": "loaded" if gpt_oss_loaded else "not_loaded",
-                    "models": len(models)
+                    "models": len(models),
                 }
             else:
                 return {
-                    "status": "degraded", 
+                    "status": "degraded",
                     "ollama": "error",
-                    "error": f"Status {response.status_code}"
+                    "error": f"Status {response.status_code}",
                 }
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "ollama": "disconnected", 
-            "error": str(e)
-        }
+        return {"status": "unhealthy", "ollama": "disconnected", "error": str(e)}
+
 
 if __name__ == "__main__":
     print("🚀 Starting Super Alita Chat Bridge for 20B Model")
     print("🔗 Connecting to existing Ollama instance...")
-    
+
     # Quick test
     async def test_connection():
         try:
@@ -132,7 +130,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"❌ Connection failed: {e}")
             return False
-    
+
     if asyncio.run(test_connection()):
         print("🌐 Starting server on http://127.0.0.1:8081")
         print("💬 Chat interface: http://127.0.0.1:8081")

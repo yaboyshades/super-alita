@@ -33,7 +33,9 @@ class _TestOptionTrainer(OptionTrainer):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("ppo_epochs,expected_steps", [(1, 2), (3, 6)])
-async def test_ppo_epochs_controls_iterations(ppo_epochs: int, expected_steps: int) -> None:
+async def test_ppo_epochs_controls_iterations(
+    ppo_epochs: int, expected_steps: int
+) -> None:
     bus = Bus()
     trainer = _TestOptionTrainer()
     await trainer.setup(
@@ -53,6 +55,7 @@ async def test_ppo_epochs_controls_iterations(ppo_epochs: int, expected_steps: i
         torch.nn.init.constant_(p, 0.0)
 
     for i in range(4):
+
         class StepEvent:
             pass
 

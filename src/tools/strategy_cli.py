@@ -26,7 +26,11 @@ def cmd_select(args: argparse.Namespace) -> int:
 
 def cmd_feedback(args: argparse.Namespace) -> int:
     ss = StrategySelector(config_path=args.config)
-    if ss.feedback(task_type=args.task_type, decision_id=args.decision_id, reward=float(args.reward)):
+    if ss.feedback(
+        task_type=args.task_type,
+        decision_id=args.decision_id,
+        reward=float(args.reward),
+    ):
         print("ok")
         return 0
     print("not-found", file=sys.stderr)
@@ -34,7 +38,9 @@ def cmd_feedback(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Strategy selection CLI (A/B for reasoning styles)")
+    p = argparse.ArgumentParser(
+        description="Strategy selection CLI (A/B for reasoning styles)"
+    )
     p.add_argument("command", choices=["select", "feedback"])
     p.add_argument("task_type", help="Task type key in config/strategies.json")
     p.add_argument("--config", default="config/strategies.json")
@@ -54,4 +60,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -1,6 +1,7 @@
 """
 Unified Capability Registry wrapper across normal, MCP, neural, and dynamic tools.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ class Capability:
     description: str
     registry_type: str
     spec: dict[str, Any]
+
 
 class UnifiedCapabilityRegistry:
     def __init__(self):

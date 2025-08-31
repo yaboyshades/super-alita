@@ -978,7 +978,9 @@ class EnhancedLadderPlanner:
                 {"stage": stage.value, "free_energy": fe, "energy": new_energy},
             )
         else:
-            updated_t = t.model_copy(update={"stage": stage, "updated_at": datetime.now()})
+            updated_t = t.model_copy(
+                update={"stage": stage, "updated_at": datetime.now()}
+            )
             self.store.upsert(updated_t)
             self._emit_sync("todo.stage_advanced", t.id, {"stage": stage.value})
 

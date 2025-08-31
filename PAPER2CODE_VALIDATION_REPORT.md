@@ -8,7 +8,7 @@ Successfully validated the enhanced Paper2Code pipeline within Super Alita's nat
 ### Test Case 1: Transformer Architecture Implementation
 **Input Request:**
 ```
-I need to implement the core Transformer architecture from the 'Attention Is All You Need' paper by Vaswani et al. 
+I need to implement the core Transformer architecture from the 'Attention Is All You Need' paper by Vaswani et al.
 This should include:
 - Multi-head self-attention mechanism
 - Positional encoding
@@ -38,7 +38,7 @@ This should include forward pass, backward pass, and weight updates.
 ### 1. Enhanced Need Detector
 - **File:** `src/policies/need_detector.py`
 - **Changes:** Added Paper2Code and ML algorithm pattern detection
-- **New Patterns:** 
+- **New Patterns:**
   - "implement.*paper"
   - "attention.*all.*need"
   - "transformer.*architecture"

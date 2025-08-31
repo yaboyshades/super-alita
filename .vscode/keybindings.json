@@ -15,7 +15,7 @@
     "command": "workbench.action.tasks.runTask",
     "args": "alita:mcp:test"
   },
-  
+
   // Snippet Optimization Shortcuts
   {
     "key": "ctrl+shift+alt+s",
@@ -33,7 +33,7 @@
     "command": "workbench.action.tasks.runTask",
     "args": "📈 Token Efficiency Report"
   },
-  
+
   // Quick snippet insertion
   {
     "key": "ctrl+alt+d",
@@ -43,7 +43,7 @@
   },
   {
     "key": "ctrl+alt+c",
-    "command": "editor.action.insertSnippet", 
+    "command": "editor.action.insertSnippet",
     "args": {"name": "class-"},
     "when": "editorTextFocus && resourceExtname == '.py'"
   },
@@ -65,7 +65,7 @@
     "args": {"name": "try-"},
     "when": "editorTextFocus && resourceExtname == '.py'"
   },
-  
+
   // Chemistry Plans
   {
     "key": "ctrl+alt+p",

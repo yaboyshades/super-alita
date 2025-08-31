@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Simple MCP server test to verify API usage"""
+
 import pytest
 
 pytest.skip("legacy test", allow_module_level=True)
@@ -20,6 +21,7 @@ async def main():
 
     print("✅ Server created successfully")
     print(f"Server name: {server.name}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

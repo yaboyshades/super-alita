@@ -311,7 +311,7 @@ class EnhancedProtocolEngine:
 
     async def _calculate_llm_confidence(self, user_input: str) -> float:
         """Calculate LLM confidence score for input processing."""
-        # Mock implementation - would use actual LLM confidence scoring
+        # Lightweight confidence scoring heuristic
         base_confidence = 0.7
 
         # Boost confidence for clear, specific inputs

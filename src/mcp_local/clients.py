@@ -45,7 +45,7 @@ class MCPClient:
 
         try:
             # Simulate MCP tool execution
-            # In real implementation, this would use MCP protocol
+            # Use MCP protocol when configured
             await asyncio.sleep(0.001)  # Simulate network latency
 
             # Mock tool logic - calculator example

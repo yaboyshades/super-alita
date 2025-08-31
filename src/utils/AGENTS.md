@@ -3,7 +3,7 @@
 ## Overview
 The `src/utils/` directory contains reusable utility functions and components:
 - **Event Builders** - Helper functions for creating standardized events
-- **Guardrails** - Security and safety validation utilities  
+- **Guardrails** - Security and safety validation utilities
 - **Schema Validation** - Data validation and schema enforcement
 - **Telemetry** - System monitoring and metrics collection
 - **Terminal Animation** - CLI/terminal interface utilities
@@ -71,7 +71,7 @@ from typing import List, Set, Dict, Any
 
 class SecurityGuardrails:
     """Security validation and safety checks"""
-    
+
     def __init__(self):
         self.allowed_file_extensions = {'.py', '.md', '.txt', '.json', '.yaml', '.yml'}
         self.blocked_patterns = [
@@ -82,28 +82,28 @@ class SecurityGuardrails:
             r'os\.system',
             r'shell=True'
         ]
-        
+
     def validate_file_access(self, file_path: str, workspace_root: str) -> bool:
         """Validate file access is within workspace boundaries"""
         try:
             abs_path = Path(file_path).resolve()
             workspace_path = Path(workspace_root).resolve()
-            
+
             # Check if path is within workspace
             return abs_path.is_relative_to(workspace_path)
         except (ValueError, OSError):
             return False
-            
+
     def scan_code_for_dangers(self, code: str) -> List[str]:
         """Scan code for dangerous patterns"""
         violations = []
-        
+
         for pattern in self.blocked_patterns:
             if re.search(pattern, code, re.IGNORECASE):
                 violations.append(f"Dangerous pattern detected: {pattern}")
-                
+
         return violations
-        
+
     def validate_input_size(self, data: Any, max_size_mb: int = 10) -> bool:
         """Validate input data size"""
         try:
@@ -117,19 +117,19 @@ class SecurityGuardrails:
 def hash_top_files(directory: str, max_files: int = 100) -> str:
     """Generate hash of top files for integrity checking"""
     file_hashes = []
-    
+
     try:
         dir_path = Path(directory)
         if not dir_path.exists():
             return ""
-            
+
         # Get top files by modification time
         files = sorted(
             [f for f in dir_path.rglob('*') if f.is_file()],
             key=lambda x: x.stat().st_mtime,
             reverse=True
         )[:max_files]
-        
+
         for file_path in files:
             try:
                 with open(file_path, 'rb') as f:
@@ -137,11 +137,11 @@ def hash_top_files(directory: str, max_files: int = 100) -> str:
                     file_hashes.append(f"{file_path.name}:{file_hash}")
             except (IOError, OSError):
                 continue
-                
+
         # Generate combined hash
         combined = "|".join(sorted(file_hashes))
         return hashlib.sha256(combined.encode()).hexdigest()
-        
+
     except Exception:
         return ""
 
@@ -151,13 +151,13 @@ def repo_download_integrity(repo_path: str, expected_files: List[str]) -> bool:
         repo_dir = Path(repo_path)
         if not repo_dir.exists():
             return False
-            
+
         # Check required files exist
         for file_name in expected_files:
             file_path = repo_dir / file_name
             if not file_path.exists():
                 return False
-                
+
         return True
     except Exception:
         return False
@@ -175,7 +175,7 @@ class EventSchema(BaseModel):
     source: str
     correlation_id: Optional[str] = None
     data: Dict[str, Any] = {}
-    
+
     @validator('event_type')
     def validate_event_type(cls, v):
         allowed_types = [
@@ -192,7 +192,7 @@ class ConfigSchema(BaseModel):
     enabled: bool = True
     config: Dict[str, Any] = {}
     dependencies: List[str] = []
-    
+
     @validator('plugin_name')
     def validate_plugin_name(cls, v):
         if not re.match(r'^[a-zA-Z][a-zA-Z0-9_]*$', v):
@@ -226,11 +226,11 @@ class TelemetryEvent:
 
 class ReadLedger:
     """Telemetry collection and reporting"""
-    
+
     def __init__(self):
         self.events: List[TelemetryEvent] = []
         self.active_timers: Dict[str, float] = {}
-        
+
     def log_event(self, event_name: str, metadata: Dict[str, Any] = None, tags: Dict[str, str] = None):
         """Log a telemetry event"""
         event = TelemetryEvent(
@@ -240,7 +240,7 @@ class ReadLedger:
             tags=tags or {}
         )
         self.events.append(event)
-        
+
     @contextmanager
     def timer(self, operation_name: str):
         """Context manager for timing operations"""
@@ -253,7 +253,7 @@ class ReadLedger:
                 f"{operation_name}_duration",
                 metadata={"duration_seconds": duration}
             )
-            
+
     def log_ability_execution(self, ability_name: str, result: Dict[str, Any]):
         """Log ability execution telemetry"""
         self.log_event(
@@ -265,7 +265,7 @@ class ReadLedger:
             },
             tags={"component": "abilities"}
         )
-        
+
     async def commit(self):
         """Commit telemetry data (placeholder for actual implementation)"""
         # In real implementation, this would send data to telemetry service
@@ -300,24 +300,24 @@ from src.utils.guardrails import SecurityGuardrails, hash_top_files
 def test_security_guardrails():
     """Test security validation"""
     guardrails = SecurityGuardrails()
-    
+
     # Test safe code
     safe_code = "def hello(): return 'world'"
     violations = guardrails.scan_code_for_dangers(safe_code)
     assert len(violations) == 0
-    
+
     # Test dangerous code
     dangerous_code = "eval('malicious code')"
     violations = guardrails.scan_code_for_dangers(dangerous_code)
     assert len(violations) > 0
-    
+
 def test_file_access_validation():
     """Test file access validation"""
     guardrails = SecurityGuardrails()
-    
+
     # Test valid access
     assert guardrails.validate_file_access("/workspace/file.txt", "/workspace")
-    
+
     # Test invalid access (path traversal)
     assert not guardrails.validate_file_access("/workspace/../etc/passwd", "/workspace")
 
@@ -325,15 +325,15 @@ def test_file_access_validation():
 async def test_telemetry_collection():
     """Test telemetry event collection"""
     ledger = ReadLedger()
-    
+
     # Log test event
     ledger.log_event("test_event", {"key": "value"})
     assert len(ledger.events) == 1
-    
+
     # Test timer context manager
     with ledger.timer("test_operation"):
         await asyncio.sleep(0.01)  # Small delay
-        
+
     duration_events = [e for e in ledger.events if "duration" in e.event_name]
     assert len(duration_events) == 1
 ```
@@ -349,7 +349,7 @@ def test_hash_performance():
     start_time = time.time()
     hash_result = hash_top_files("./src", max_files=50)
     duration = time.time() - start_time
-    
+
     assert hash_result != ""
     assert duration < 1.0  # Should complete within 1 second
 
@@ -357,14 +357,14 @@ def test_hash_performance():
 def test_schema_validation_performance(benchmark):
     """Benchmark schema validation performance"""
     from src.utils.schema_validator import EventSchema
-    
+
     test_data = {
         "event_type": "tool_call",
         "timestamp": datetime.now(),
         "source": "test",
         "data": {"key": "value"}
     }
-    
+
     result = benchmark(validate_json_schema, test_data, EventSchema)
     assert result is True
 ```
@@ -380,20 +380,20 @@ def memoize_with_ttl(ttl_seconds: int = 300):
     """Memoization decorator with TTL"""
     def decorator(func: Callable) -> Callable:
         cache = {}
-        
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             key = str(args) + str(sorted(kwargs.items()))
             current_time = time.time()
-            
+
             if key in cache:
                 value, timestamp = cache[key]
                 if current_time - timestamp < ttl_seconds:
                     return value
-                    
+
             result = func(*args, **kwargs)
             cache[key] = (result, current_time)
-            
+
             # Clean up old entries
             expired_keys = [
                 k for k, (_, ts) in cache.items()
@@ -401,7 +401,7 @@ def memoize_with_ttl(ttl_seconds: int = 300):
             ]
             for k in expired_keys:
                 del cache[k]
-                
+
             return result
         return wrapper
     return decorator
@@ -448,18 +448,18 @@ async def retry_with_backoff(
 ) -> Any:
     """Retry function with exponential backoff"""
     last_exception = None
-    
+
     for attempt in range(max_retries + 1):
         try:
             return await func()
         except Exception as e:
             last_exception = e
-            
+
             if attempt < max_retries:
                 delay = min(base_delay * (2 ** attempt), max_delay)
                 if jitter:
                     delay *= (0.5 + random.random())  # Add jitter
-                    
+
                 await asyncio.sleep(delay)
             else:
                 raise last_exception
@@ -472,29 +472,29 @@ from typing import Dict, Any, Optional
 
 class ConfigManager:
     """Centralized configuration management"""
-    
+
     def __init__(self):
         self._config_cache: Dict[str, Any] = {}
-        
+
     def get_config(self, key: str, default: Any = None) -> Any:
         """Get configuration value with caching"""
         if key in self._config_cache:
             return self._config_cache[key]
-            
+
         # Try environment variable first
         env_value = os.getenv(key.upper())
         if env_value is not None:
             self._config_cache[key] = env_value
             return env_value
-            
+
         # Fallback to default
         self._config_cache[key] = default
         return default
-        
+
     def set_config(self, key: str, value: Any):
         """Set configuration value"""
         self._config_cache[key] = value
-        
+
     def clear_cache(self):
         """Clear configuration cache"""
         self._config_cache.clear()

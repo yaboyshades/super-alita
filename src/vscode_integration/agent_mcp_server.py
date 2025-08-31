@@ -28,6 +28,8 @@ import os
 import sys
 from pathlib import Path
 
+from openai.types.responses.tool import InitializationOptions
+
 
 # --- Make stdout/stderr UTF-8 & resilient on Windows ---
 def _force_utf8_stdio():
@@ -264,6 +266,33 @@ class SuperAlitaMcpServer:
                         "required": ["task_description"],
                     },
                 ),
+                Tool(
+                    name="deepconf_consensus",
+                    description="Run enhanced consensus sampling (weighted_vote, simple_vote, etc.)",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "prompt": {"type": "string"},
+                            "num_samples": {"type": "integer", "default": 3},
+                            "temperature": {"type": "number", "default": 0.7},
+                            "max_tokens": {"type": "integer", "default": 512},
+                            "method": {
+                                "type": "string",
+                                "enum": [
+                                    "simple_vote",
+                                    "weighted_vote",
+                                    "confidence_based",
+                                    "semantic_similarity",
+                                    "ensemble_ranking",
+                                ],
+                                "default": "weighted_vote",
+                            },
+                            "confidence_threshold": {"type": "number", "default": 0.7},
+                            "temperature_range": {"type": "number", "default": 0.2},
+                        },
+                        "required": ["prompt"],
+                    },
+                ),
             ]
 
         @server.call_tool()
@@ -317,6 +346,22 @@ class SuperAlitaMcpServer:
                 elif name == "plan_development_task":
                     task_description = arguments.get("task_description", "")
                     result = await self.agent.plan_development_task(task_description)
+
+                elif name == "deepconf_consensus":
+                    # Delegate to runtime's ability execution endpoint
+                    base = os.getenv("MCP_RUNTIME_BASE", "http://127.0.0.1:8080").rstrip("/")
+                    try:
+                        import httpx  # type: ignore
+                        async with httpx.AsyncClient(timeout=30.0) as client:
+                            resp = await client.post(
+                                f"{base}/ability/execute/deepconf_consensus",
+                                json=arguments,
+                                headers={"Accept": "application/json"},
+                            )
+                            data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {"status": resp.status_code, "text": await resp.aread()}
+                            result = data
+                    except Exception as e:
+                        result = {"error": f"consensus_call_failed: {type(e).__name__}", "detail": str(e)}
 
                 else:
                     result = {"error": f"Unknown tool: {name}"}

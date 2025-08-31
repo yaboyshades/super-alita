@@ -35,21 +35,21 @@ class DispatchRequest:
 
 class TaskDispatcher(PluginInterface):
     """Central task dispatcher for system orchestration"""
-    
+
     def __init__(self, event_bus, config=None):
         super().__init__(event_bus, config)
         self.name = "task_dispatcher"
         self.active_tasks: Dict[str, DispatchRequest] = {}
         self.worker_pools: Dict[str, List[str]] = {}
-        
+
     async def dispatch_task(self, request: DispatchRequest) -> str:
         """Dispatch task to appropriate worker"""
         # Find best worker for task
         worker_id = await self._select_worker(request.request_type)
-        
+
         # Register active task
         self.active_tasks[request.request_id] = request
-        
+
         # Emit dispatch event
         event = create_event(
             "task_dispatched",
@@ -59,7 +59,7 @@ class TaskDispatcher(PluginInterface):
             source_plugin=self.name
         )
         await self.event_bus.publish(event)
-        
+
         return worker_id
 ```
 
@@ -76,19 +76,19 @@ class RoutingStrategy(Enum):
 
 class IntelligentRouter:
     """Intelligent routing for requests and events"""
-    
+
     def __init__(self, strategy: RoutingStrategy = RoutingStrategy.CAPABILITY_MATCH):
         self.strategy = strategy
         self.route_table: Dict[str, List[str]] = {}
         self.load_metrics: Dict[str, float] = {}
-        
+
     async def route_request(self, request_type: str, payload: Dict[str, Any]) -> str:
         """Route request to best available handler"""
         available_handlers = self.route_table.get(request_type, [])
-        
+
         if not available_handlers:
             raise ValueError(f"No handlers available for request type: {request_type}")
-            
+
         if self.strategy == RoutingStrategy.ROUND_ROBIN:
             return self._round_robin_select(available_handlers)
         elif self.strategy == RoutingStrategy.LEAST_LOADED:
@@ -106,17 +106,17 @@ import asyncio
 
 class CortexWeaningManager:
     """Manages transition away from Cortex dependencies"""
-    
+
     def __init__(self, transition_timeline: int = 30):  # days
         self.transition_timeline = transition_timeline
         self.cortex_endpoints: Dict[str, bool] = {}
         self.fallback_handlers: Dict[str, Callable] = {}
-        
+
     async def register_cortex_endpoint(self, endpoint: str, fallback_handler: Callable):
         """Register Cortex endpoint with fallback handler"""
         self.cortex_endpoints[endpoint] = True
         self.fallback_handlers[endpoint] = fallback_handler
-        
+
     async def execute_with_fallback(self, endpoint: str, *args, **kwargs) -> Any:
         """Execute request with Cortex fallback to local handler"""
         if self.cortex_endpoints.get(endpoint, False):
@@ -146,7 +146,7 @@ class SecureDispatchRequest(BaseModel):
     payload: Dict[str, Any]
     source_id: str
     timestamp: datetime
-    
+
     @validator('request_type')
     def validate_request_type(cls, v):
         allowed_types = [
@@ -156,7 +156,7 @@ class SecureDispatchRequest(BaseModel):
         if v not in allowed_types:
             raise ValueError(f"Invalid request type: {v}")
         return v
-        
+
     @validator('payload')
     def validate_payload_size(cls, v):
         # Limit payload size to prevent DoS
@@ -176,10 +176,10 @@ def require_authorization(allowed_roles: List[str]):
             # Extract authorization from request
             auth_token = request.payload.get('auth_token')
             user_role = await self._validate_auth_token(auth_token)
-            
+
             if user_role not in allowed_roles:
                 raise PermissionError(f"Insufficient permissions for {func.__name__}")
-                
+
             return await func(self, request, *args, **kwargs)
         return wrapper
     return decorator
@@ -198,22 +198,22 @@ async def test_task_dispatching():
     """Test task dispatching functionality"""
     event_bus = AsyncMock()
     dispatcher = TaskDispatcher(event_bus)
-    
+
     # Create test request
     request = DispatchRequest(
         request_id="test_123",
         request_type="data_processing",
         payload={"data": "test"}
     )
-    
+
     # Mock worker selection
     dispatcher._select_worker = AsyncMock(return_value="worker_1")
-    
+
     # Test dispatch
     worker_id = await dispatcher.dispatch_task(request)
     assert worker_id == "worker_1"
     assert request.request_id in dispatcher.active_tasks
-    
+
     # Verify event emission
     event_bus.publish.assert_called_once()
 
@@ -221,16 +221,16 @@ async def test_task_dispatching():
 async def test_routing_strategies():
     """Test different routing strategies"""
     router = IntelligentRouter(RoutingStrategy.ROUND_ROBIN)
-    
+
     # Setup route table
     router.route_table["test_type"] = ["handler_1", "handler_2", "handler_3"]
-    
+
     # Test round robin
     results = []
     for _ in range(6):
         handler = await router.route_request("test_type", {})
         results.append(handler)
-    
+
     # Should cycle through handlers
     assert results == ["handler_1", "handler_2", "handler_3"] * 2
 ```
@@ -252,31 +252,31 @@ async def parallel_orchestration(tasks: List[Coroutine]) -> List[Any]:
     """Execute multiple tasks in parallel"""
     # Use semaphore to limit concurrency
     semaphore = asyncio.Semaphore(10)
-    
+
     async def limited_task(coro):
         async with semaphore:
             return await coro
-    
+
     # Execute all tasks with concurrency limit
     return await asyncio.gather(*[limited_task(task) for task in tasks])
 
 class PerformanceTracker:
     """Track orchestration performance metrics"""
-    
+
     def __init__(self):
         self.metrics: Dict[str, List[float]] = {}
-        
+
     async def track_execution_time(self, operation_name: str, coro: Coroutine):
         """Track execution time for operations"""
         start_time = time.time()
         try:
             result = await coro
             execution_time = time.time() - start_time
-            
+
             if operation_name not in self.metrics:
                 self.metrics[operation_name] = []
             self.metrics[operation_name].append(execution_time)
-            
+
             return result
         except Exception as e:
             logger.error(f"Operation {operation_name} failed after {time.time() - start_time:.2f}s: {e}")
@@ -292,19 +292,19 @@ import time
 
 class CircuitState(Enum):
     CLOSED = "closed"
-    OPEN = "open" 
+    OPEN = "open"
     HALF_OPEN = "half_open"
 
 class CircuitBreaker:
     """Circuit breaker for external service calls"""
-    
+
     def __init__(self, failure_threshold: int = 5, timeout: int = 60):
         self.failure_threshold = failure_threshold
         self.timeout = timeout
         self.failure_count = 0
         self.last_failure_time = None
         self.state = CircuitState.CLOSED
-        
+
     async def call(self, func: Callable, *args, **kwargs):
         """Execute function with circuit breaker protection"""
         if self.state == CircuitState.OPEN:
@@ -312,7 +312,7 @@ class CircuitBreaker:
                 self.state = CircuitState.HALF_OPEN
             else:
                 raise Exception("Circuit breaker is OPEN")
-                
+
         try:
             result = await func(*args, **kwargs)
             self._on_success()
@@ -320,17 +320,17 @@ class CircuitBreaker:
         except Exception as e:
             self._on_failure()
             raise
-            
+
     def _on_success(self):
         """Handle successful call"""
         self.failure_count = 0
         self.state = CircuitState.CLOSED
-        
+
     def _on_failure(self):
         """Handle failed call"""
         self.failure_count += 1
         self.last_failure_time = time.time()
-        
+
         if self.failure_count >= self.failure_threshold:
             self.state = CircuitState.OPEN
 ```
@@ -353,20 +353,20 @@ class OrchestrationEvent:
 
 class EventStore:
     """Store orchestration events for replay and audit"""
-    
+
     def __init__(self):
         self.events: List[OrchestrationEvent] = []
-        
+
     async def append_event(self, event: OrchestrationEvent):
         """Append event to store"""
         event.timestamp = datetime.now(timezone.utc)
         event.version = len([e for e in self.events if e.aggregate_id == event.aggregate_id]) + 1
         self.events.append(event)
-        
+
     async def get_events(self, aggregate_id: str) -> List[OrchestrationEvent]:
         """Get events for specific aggregate"""
         return [e for e in self.events if e.aggregate_id == aggregate_id]
-        
+
     async def replay_events(self, aggregate_id: str, handler: Callable):
         """Replay events for aggregate reconstruction"""
         events = await self.get_events(aggregate_id)

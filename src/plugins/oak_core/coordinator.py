@@ -34,14 +34,24 @@ class OakCoordinator(PluginInterface):
     async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
         await super().setup(event_bus, store, config)
         cfg = config or {}
-        await self.feature_engine.setup(event_bus, store, cfg.get("feature_discovery", {}))
-        await self.subproblem_manager.setup(event_bus, store, cfg.get("subproblem_manager", {}))
+        await self.feature_engine.setup(
+            event_bus, store, cfg.get("feature_discovery", {})
+        )
+        await self.subproblem_manager.setup(
+            event_bus, store, cfg.get("subproblem_manager", {})
+        )
         await self.option_trainer.setup(event_bus, store, cfg.get("option_trainer", {}))
-        await self.prediction_engine.setup(event_bus, store, cfg.get("prediction_engine", {}))
+        await self.prediction_engine.setup(
+            event_bus, store, cfg.get("prediction_engine", {})
+        )
         # ensure planning engine sees the trained options
         self.planning_engine.option_source = self.option_trainer
-        await self.planning_engine.setup(event_bus, store, cfg.get("planning_engine", {}))
-        await self.curation_manager.setup(event_bus, store, cfg.get("curation_manager", {}))
+        await self.planning_engine.setup(
+            event_bus, store, cfg.get("planning_engine", {})
+        )
+        await self.curation_manager.setup(
+            event_bus, store, cfg.get("curation_manager", {})
+        )
         self.interval_sec = self.get_config("interval_sec", 0.5)
 
     async def start(self) -> None:
@@ -63,8 +73,8 @@ class OakCoordinator(PluginInterface):
             while self.is_running:
                 await self.emit_event("deliberation_tick")
                 await asyncio.sleep(self.interval_sec)
-        self._task = self.add_task(_ticker())
 
+        self._task = self.add_task(_ticker())
 
     async def shutdown(self) -> None:
         for component in (
@@ -82,7 +92,9 @@ class OakCoordinator(PluginInterface):
 
     async def _handle_subgoal(self, event: Any) -> None:
         """Handles a subgoal_defined event by triggering the OaK planning engine."""
-        self.logger.info(f"OaK Coordinator received subgoal: {event.subgoal.description}")
+        self.logger.info(
+            f"OaK Coordinator received subgoal: {event.subgoal.description}"
+        )
         # The planning engine expects a 'goal' in the event. We'll pass the subgoal description.
         goal_event_data = {
             "goal": event.subgoal.description,

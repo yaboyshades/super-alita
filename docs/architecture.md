@@ -28,4 +28,3 @@ sequenceDiagram
 - [Refactoring Guide](./02_refactoring_guide.md)
 - [Agentic Workflows](./03_agentic_workflows.md)
 - [Advanced Development Patterns](./04_advanced_patterns.md)
-

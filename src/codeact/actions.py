@@ -31,7 +31,7 @@ class FileEdit:
 
 @dataclass(slots=True)
 class BrowseInteractive:
-    """Placeholder for interactive browsing."""
+    """Interactive browsing action."""
 
     url: str
     query: str | None = None

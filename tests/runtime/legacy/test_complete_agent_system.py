@@ -16,6 +16,7 @@ Key Features Tested:
 Usage:
     python test_complete_agent_system.py
 """
+
 import pytest
 
 pytest.skip("legacy test", allow_module_level=True)
@@ -28,6 +29,7 @@ from pathlib import Path
 
 print("🎯 Super Alita Agent - Complete System Validation")
 print("=" * 60)
+
 
 async def test_mcp_server_creation():
     """Test MCP server creation and import fixes."""
@@ -53,6 +55,7 @@ async def test_mcp_server_creation():
     except Exception as e:
         print(f"❌ MCP server test failed: {e}")
         return False
+
 
 async def test_agent_integration():
     """Test agent integration with VS Code systems."""
@@ -89,6 +92,7 @@ async def test_agent_integration():
     except Exception as e:
         print(f"❌ Agent integration test failed: {e}")
         return False
+
 
 async def test_leanrag_integration():
     """Test LeanRAG integration."""
@@ -133,6 +137,7 @@ async def test_leanrag_integration():
         print(f"❌ LeanRAG integration test failed: {e}")
         return False
 
+
 async def test_event_system():
     """Test event-driven architecture."""
     print("\n📡 Testing Event System...")
@@ -157,6 +162,7 @@ async def test_event_system():
         print(f"❌ Event system test failed: {e}")
         return False
 
+
 async def test_mcp_local_registry():
     """Test MCP local registry (renamed from src/mcp)."""
     print("\n🔧 Testing MCP Local Registry...")
@@ -175,6 +181,7 @@ async def test_mcp_local_registry():
     except Exception as e:
         print(f"❌ MCP local registry test failed: {e}")
         return False
+
 
 async def run_complete_system_test():
     """Run the complete system test suite."""
@@ -226,6 +233,7 @@ async def run_complete_system_test():
 
     return passed == total
 
+
 async def main():
     """Main entry point."""
     try:
@@ -234,6 +242,7 @@ async def main():
     except Exception as e:
         print(f"❌ Fatal error during system validation: {e}")
         return 1
+
 
 if __name__ == "__main__":
     try:

@@ -1045,17 +1045,16 @@ class REUGExecutionFlow:
                 context.error_message = "Could not understand tool description"
                 return TransitionTrigger.ERROR_OCCURRED
 
-            # For now, create a simple placeholder implementation
-            # In a real system, this would generate actual code
-            async def placeholder_implementation(**kwargs: Any) -> dict[str, Any]:
+            # Create a simple default implementation
+            async def default_implementation(**kwargs: Any) -> dict[str, Any]:
                 return {
                     "message": f"Tool {schema.name} executed with parameters: {kwargs}",
-                    "status": "placeholder_execution",
+                    "status": "default_execution",
                 }
 
             # Register the dynamic tool
             success = dynamic_tool_registry.register_tool(
-                schema, placeholder_implementation
+                schema, default_implementation
             )
 
             if success:

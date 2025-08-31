@@ -15,6 +15,7 @@ MCP server:
 
 ``python backend/mcp_server.py``
 """
+
 from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP

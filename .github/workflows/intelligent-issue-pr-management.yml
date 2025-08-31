@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Analyze issue content and apply labels
         uses: actions/github-script@v7
         with:
@@ -33,9 +33,9 @@ jobs:
             const title = issue.title.toLowerCase();
             const body = (issue.body || '').toLowerCase();
             const content = title + ' ' + body;
-            
+
             const labels = [];
-            
+
             // Priority detection
             if (content.includes('urgent') || content.includes('critical') || content.includes('blocking')) {
               labels.push('priority: high');
@@ -44,7 +44,7 @@ jobs:
             } else {
               labels.push('priority: medium');
             }
-            
+
             // Type detection
             if (content.includes('bug') || content.includes('error') || content.includes('broken') || content.includes('issue')) {
               labels.push('type: bug');
@@ -55,7 +55,7 @@ jobs:
             } else if (content.includes('documentation') || content.includes('docs') || content.includes('readme')) {
               labels.push('type: documentation');
             }
-            
+
             // Component detection
             if (content.includes('deepcode') || content.includes('ai') || content.includes('analysis')) {
               labels.push('component: deepcode');
@@ -68,7 +68,7 @@ jobs:
             } else if (content.includes('automation') || content.includes('workflow') || content.includes('ci')) {
               labels.push('component: automation');
             }
-            
+
             // Difficulty estimation
             if (content.includes('simple') || content.includes('easy') || content.includes('quick')) {
               labels.push('difficulty: easy');
@@ -77,16 +77,16 @@ jobs:
             } else {
               labels.push('difficulty: medium');
             }
-            
+
             // Good first issue detection
-            if (content.includes('good first issue') || 
-                (labels.includes('difficulty: easy') && 
+            if (content.includes('good first issue') ||
+                (labels.includes('difficulty: easy') &&
                  (labels.includes('type: documentation') || content.includes('typo')))) {
               labels.push('good first issue');
             }
-            
+
             console.log(`Applying labels: ${labels.join(', ')}`);
-            
+
             // Apply labels
             if (labels.length > 0) {
               await github.rest.issues.addLabels({
@@ -106,7 +106,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Assign based on component and availability
         uses: actions/github-script@v7
         with:
@@ -115,7 +115,7 @@ jobs:
             const title = issue.title.toLowerCase();
             const body = (issue.body || '').toLowerCase();
             const content = title + ' ' + body;
-            
+
             // Component-based assignment (customize these mappings)
             const componentExperts = {
               'deepcode': ['yaboyshades'],  // AI/DeepCode expert
@@ -124,9 +124,9 @@ jobs:
               'automation': ['yaboyshades'], // Automation expert
               'core': ['yaboyshades']       // Core system expert
             };
-            
+
             let assignee = null;
-            
+
             // Check for component mentions
             for (const [component, experts] of Object.entries(componentExperts)) {
               if (content.includes(component)) {
@@ -134,7 +134,7 @@ jobs:
                 break;
               }
             }
-            
+
             // Check for specific expertise keywords
             if (!assignee) {
               if (content.includes('ai') || content.includes('machine learning') || content.includes('analysis')) {
@@ -143,10 +143,10 @@ jobs:
                 assignee = 'yaboyshades';
               }
             }
-            
+
             if (assignee) {
               console.log(`Assigning issue to: ${assignee}`);
-              
+
               try {
                 await github.rest.issues.addAssignees({
                   owner: context.repo.owner,
@@ -154,7 +154,7 @@ jobs:
                   issue_number: issue.number,
                   assignees: [assignee]
                 });
-                
+
                 // Add a comment explaining the assignment
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
@@ -179,7 +179,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
-          
+
       - name: Analyze PR and apply labels
         uses: actions/github-script@v7
         with:
@@ -187,17 +187,17 @@ jobs:
             const pr = context.payload.pull_request;
             const title = pr.title.toLowerCase();
             const body = (pr.body || '').toLowerCase();
-            
+
             // Get changed files
             const { data: files } = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pr.number
             });
-            
+
             const changedFiles = files.map(f => f.filename);
             const labels = [];
-            
+
             // Size labels based on changes
             const totalChanges = files.reduce((sum, file) => sum + file.changes, 0);
             if (totalChanges < 50) {
@@ -207,7 +207,7 @@ jobs:
             } else {
               labels.push('size: large');
             }
-            
+
             // Type detection from title/body
             if (title.startsWith('feat') || title.startsWith('feature') || body.includes('feature')) {
               labels.push('type: feature');
@@ -222,7 +222,7 @@ jobs:
             } else if (title.startsWith('test') || body.includes('test')) {
               labels.push('type: tests');
             }
-            
+
             // Component detection based on changed files
             const hasWorkflowFiles = changedFiles.some(f => f.startsWith('.github/workflows/'));
             const hasPythonFiles = changedFiles.some(f => f.endsWith('.py'));
@@ -230,14 +230,14 @@ jobs:
             const hasWasmFiles = changedFiles.some(f => f.match(/\.(rs|wit)$/));
             const hasDocFiles = changedFiles.some(f => f.match(/\.(md|rst|txt)$/));
             const hasTestFiles = changedFiles.some(f => f.includes('/test') || f.startsWith('test'));
-            
+
             if (hasWorkflowFiles) labels.push('component: ci/cd');
             if (hasPythonFiles) labels.push('component: python');
             if (hasTypeScriptFiles) labels.push('component: typescript');
             if (hasWasmFiles) labels.push('component: wasm');
             if (hasDocFiles) labels.push('component: documentation');
             if (hasTestFiles) labels.push('component: tests');
-            
+
             // Check for specific paths
             if (changedFiles.some(f => f.includes('deepcode'))) {
               labels.push('component: deepcode');
@@ -248,21 +248,21 @@ jobs:
             if (changedFiles.some(f => f.includes('automation'))) {
               labels.push('component: automation');
             }
-            
+
             // Breaking change detection
             if (title.includes('BREAKING') || title.includes('!:') || body.includes('breaking change')) {
               labels.push('breaking change');
             }
-            
+
             // Draft status
             if (pr.draft) {
               labels.push('status: work in progress');
             } else {
               labels.push('status: ready for review');
             }
-            
+
             console.log(`Applying labels to PR #${pr.number}: ${labels.join(', ')}`);
-            
+
             // Apply labels
             if (labels.length > 0) {
               await github.rest.issues.addLabels({
@@ -285,7 +285,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          
+
       - name: Validate PR requirements
         uses: actions/github-script@v7
         with:
@@ -293,61 +293,61 @@ jobs:
             const pr = context.payload.pull_request;
             const title = pr.title;
             const body = pr.body || '';
-            
+
             const issues = [];
             const warnings = [];
-            
+
             // Check title format (conventional commits)
             const conventionalCommitPattern = /^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+/;
             if (!conventionalCommitPattern.test(title)) {
               warnings.push('Title should follow conventional commit format (feat/fix/docs/etc: description)');
             }
-            
+
             // Check description length
             if (body.length < 50) {
               issues.push('PR description is too short. Please provide more details about the changes.');
             }
-            
+
             // Check for linked issues
             const issuePattern = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#\d+/i;
             if (!issuePattern.test(body) && !body.includes('Fixes #') && !body.includes('Closes #')) {
               warnings.push('Consider linking related issues using "Fixes #123" or "Closes #123"');
             }
-            
+
             // Check for breaking changes
             if (title.includes('BREAKING') || title.includes('!:')) {
               if (!body.toLowerCase().includes('breaking change')) {
                 issues.push('Breaking changes must be documented in the PR description');
               }
             }
-            
+
             // Check for test mentions (for code changes)
             const { data: files } = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pr.number
             });
-            
-            const hasCodeChanges = files.some(f => 
-              f.filename.match(/\.(py|ts|js|rs)$/) && 
-              !f.filename.includes('/test') && 
+
+            const hasCodeChanges = files.some(f =>
+              f.filename.match(/\.(py|ts|js|rs)$/) &&
+              !f.filename.includes('/test') &&
               !f.filename.startsWith('test')
             );
-            
-            const hasTestChanges = files.some(f => 
-              f.filename.includes('/test') || 
+
+            const hasTestChanges = files.some(f =>
+              f.filename.includes('/test') ||
               f.filename.startsWith('test') ||
               f.filename.includes('.test.') ||
               f.filename.includes('.spec.')
             );
-            
+
             if (hasCodeChanges && !hasTestChanges && !body.toLowerCase().includes('test')) {
               warnings.push('Consider adding or updating tests for your code changes');
             }
-            
+
             // Generate validation report
             let report = '## 🔍 PR Validation Report\n\n';
-            
+
             if (issues.length === 0) {
               report += '✅ **All requirements met!**\n\n';
             } else {
@@ -357,7 +357,7 @@ jobs:
               });
               report += '\n';
             }
-            
+
             if (warnings.length > 0) {
               report += '⚠️ **Suggestions for improvement:**\n\n';
               warnings.forEach(warning => {
@@ -365,9 +365,9 @@ jobs:
               });
               report += '\n';
             }
-            
+
             report += '---\n*This validation was performed automatically. Please address any issues before requesting review.*';
-            
+
             // Post validation comment
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -375,14 +375,14 @@ jobs:
               issue_number: pr.number,
               body: report
             });
-            
+
             // Create check run
             const checkName = 'PR Validation';
             const conclusion = issues.length > 0 ? 'failure' : 'success';
-            const summary = issues.length > 0 
+            const summary = issues.length > 0
               ? `${issues.length} issue(s) found that need to be addressed`
               : 'All PR requirements met';
-            
+
             await github.rest.checks.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -413,10 +413,10 @@ jobs:
             const daysBeforeClose = 7;
             const staleDate = new Date();
             staleDate.setDate(staleDate.getDate() - daysStale);
-            
+
             const closeDate = new Date();
             closeDate.setDate(closeDate.getDate() - (daysStale + daysBeforeClose));
-            
+
             // Get all open issues
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -426,24 +426,24 @@ jobs:
               direction: 'asc',
               per_page: 100
             });
-            
+
             let staleCount = 0;
             let closedCount = 0;
-            
+
             for (const issue of issues) {
               // Skip pull requests
               if (issue.pull_request) continue;
-              
+
               // Skip issues with certain labels
               const labels = issue.labels.map(l => l.name);
-              if (labels.includes('pinned') || 
-                  labels.includes('priority: high') || 
+              if (labels.includes('pinned') ||
+                  labels.includes('priority: high') ||
                   labels.includes('good first issue')) {
                 continue;
               }
-              
+
               const updatedAt = new Date(issue.updated_at);
-              
+
               // Check if issue should be closed (was marked stale and still no activity)
               if (labels.includes('stale') && updatedAt < closeDate) {
                 await github.rest.issues.createComment({
@@ -452,7 +452,7 @@ jobs:
                   issue_number: issue.number,
                   body: '🔒 **Auto-closing stale issue**\n\nThis issue has been automatically closed due to inactivity. If this issue is still relevant, please reopen it or create a new issue with updated information.\n\nThank you for your contribution!'
                 });
-                
+
                 await github.rest.issues.update({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -460,7 +460,7 @@ jobs:
                   state: 'closed',
                   state_reason: 'not_planned'
                 });
-                
+
                 closedCount++;
                 console.log(`Closed stale issue #${issue.number}: ${issue.title}`);
               }
@@ -472,19 +472,19 @@ jobs:
                   issue_number: issue.number,
                   labels: ['stale']
                 });
-                
+
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: issue.number,
                   body: `⏰ **Stale Issue Notification**\n\nThis issue has been automatically marked as stale because it has not had recent activity. It will be closed in ${daysBeforeClose} days if no further activity occurs.\n\nTo keep this issue active:\n- Add a comment with updates\n- Add relevant labels\n- Reference it in a PR\n\nThank you for your contribution!`
                 });
-                
+
                 staleCount++;
                 console.log(`Marked issue #${issue.number} as stale: ${issue.title}`);
               }
             }
-            
+
             console.log(`Stale management summary: ${staleCount} marked stale, ${closedCount} closed`);
 
   generate-weekly-report:
@@ -501,7 +501,7 @@ jobs:
             const oneWeekAgo = new Date();
             oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
             const isoDate = oneWeekAgo.toISOString();
-            
+
             // Get activity from the last week
             const { data: recentIssues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -510,7 +510,7 @@ jobs:
               since: isoDate,
               per_page: 100
             });
-            
+
             const { data: recentPRs } = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -519,32 +519,32 @@ jobs:
               direction: 'desc',
               per_page: 50
             });
-            
+
             // Filter PRs to last week
-            const weeklyPRs = recentPRs.filter(pr => 
+            const weeklyPRs = recentPRs.filter(pr =>
               new Date(pr.updated_at) >= oneWeekAgo
             );
-            
+
             // Categorize issues and PRs
-            const newIssues = recentIssues.filter(i => 
+            const newIssues = recentIssues.filter(i =>
               !i.pull_request && new Date(i.created_at) >= oneWeekAgo
             );
-            const closedIssues = recentIssues.filter(i => 
+            const closedIssues = recentIssues.filter(i =>
               !i.pull_request && i.state === 'closed' && new Date(i.closed_at) >= oneWeekAgo
             );
             const newPRs = weeklyPRs.filter(pr => new Date(pr.created_at) >= oneWeekAgo);
             const mergedPRs = weeklyPRs.filter(pr => pr.merged_at && new Date(pr.merged_at) >= oneWeekAgo);
-            
+
             // Generate report
             let report = `# 📊 Weekly Activity Report\n\n`;
             report += `**Report Period:** ${oneWeekAgo.toDateString()} - ${new Date().toDateString()}\n\n`;
-            
+
             report += `## 📈 Summary\n\n`;
             report += `- 🆕 **${newIssues.length}** new issues opened\n`;
             report += `- ✅ **${closedIssues.length}** issues closed\n`;
             report += `- 🔄 **${newPRs.length}** new pull requests\n`;
             report += `- 🎉 **${mergedPRs.length}** pull requests merged\n\n`;
-            
+
             if (newIssues.length > 0) {
               report += `## 🆕 New Issues\n\n`;
               newIssues.slice(0, 5).forEach(issue => {
@@ -558,7 +558,7 @@ jobs:
               }
               report += `\n`;
             }
-            
+
             if (mergedPRs.length > 0) {
               report += `## 🎉 Merged Pull Requests\n\n`;
               mergedPRs.slice(0, 5).forEach(pr => {
@@ -569,9 +569,9 @@ jobs:
               }
               report += `\n`;
             }
-            
+
             report += `---\n*This report was generated automatically by the Intelligent Issue & PR Management workflow.*`;
-            
+
             // Create an issue for the weekly report
             await github.rest.issues.create({
               owner: context.repo.owner,
@@ -580,5 +580,5 @@ jobs:
               body: report,
               labels: ['weekly-report', 'automated']
             });
-            
+
             console.log('Weekly report generated and posted as an issue');

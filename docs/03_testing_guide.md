@@ -49,4 +49,3 @@ Then iteratively request only the missing test cases.
 ## Next Steps
 
 Integrate test generation into CI by adding a lint stage that fails if newly added public functions lack corresponding tests (heuristic name matching), or explore adding an agentic test suggestion tool via the existing MCP server.
-

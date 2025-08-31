@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Bridge DeepCode outputs to Puter file writes."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -15,7 +16,9 @@ class DeepCodePuterBridgePlugin(PluginInterface):
     def name(self) -> str:  # pragma: no cover - trivial
         return "deepcode_puter_bridge"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:  # pragma: no cover - simple
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:  # pragma: no cover - simple
         await super().setup(event_bus, store, config)
 
     async def start(self) -> None:

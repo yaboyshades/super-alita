@@ -394,6 +394,23 @@ class SemanticQuery(BaseModel):
     )
 
 
+class WorkingMemoryUpdate(BaseModel):
+    """Schema for working memory updates."""
+
+    memory_id: str = Field(..., description="Working memory identifier")
+    content: Any = Field(..., description="Memory content to update")
+    operation: str = Field(
+        default="update", description="Operation type (update, delete, add)"
+    )
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Update timestamp"
+    )
+    priority: int = Field(default=5, ge=1, le=10, description="Update priority")
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
+
+
 class ExecutionStatus(str, Enum):
     """Status of tool execution."""
 

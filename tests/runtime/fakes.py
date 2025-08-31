@@ -20,6 +20,7 @@ class FakeAbilityRegistry:
     def __init__(self) -> None:
         self._known = {"echo"}
         self._calls: list[dict[str, Any]] = []
+
         class _EchoTool:
             async def aexecute(self, payload: str) -> dict[str, str]:
                 return {"echo": payload}
@@ -67,7 +68,9 @@ class FakeAbilityRegistry:
         fn = getattr(impl, "aexecute", None) or getattr(impl, "run", None) or impl
         sig = inspect.signature(fn)
         params = sig.parameters
-        accepts_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+        accepts_var_kw = any(
+            p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()
+        )
         unexpected = [k for k in args if k not in params] if not accepts_var_kw else []
         if unexpected:
             raise TypeError(
@@ -102,8 +105,12 @@ class FakeKG:
         self.atoms.append(atom)
         return atom
 
-    async def create_bond(self, bond_type: str, source_atom_id: str, target_atom_id: str) -> None:
-        self.bonds.append({"type": bond_type, "src": source_atom_id, "tgt": target_atom_id})
+    async def create_bond(
+        self, bond_type: str, source_atom_id: str, target_atom_id: str
+    ) -> None:
+        self.bonds.append(
+            {"type": bond_type, "src": source_atom_id, "tgt": target_atom_id}
+        )
 
 
 class FakeLLM:
@@ -116,7 +123,10 @@ class FakeLLM:
         self, messages: list[dict[str, str]], timeout: float
     ) -> AsyncGenerator[dict[str, str], None]:
         # detect if a tool_result was injected
-        if any(m["role"] == "assistant" and "<tool_result" in m["content"] for m in messages):
+        if any(
+            m["role"] == "assistant" and "<tool_result" in m["content"]
+            for m in messages
+        ):
             self._phase = 2
         if self._phase == 1:
             # yield a bit of prose and a well-formed tool_call block

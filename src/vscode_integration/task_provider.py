@@ -488,7 +488,7 @@ class LadderTaskProvider implements vscode.TaskProvider {
     async provideTasks(): Promise<vscode.Task[]> {
         // Get tasks from Python task provider
         const tasks = await this.getTasksFromPython();
-        
+
         return tasks.map(task => {
             const definition: vscode.TaskDefinition = {
                 type: 'ladder',
@@ -506,7 +506,7 @@ class LadderTaskProvider implements vscode.TaskProvider {
 
             taskItem.detail = task.description;
             taskItem.group = vscode.TaskGroup.Build;
-            
+
             return taskItem;
         });
     }
@@ -521,11 +521,11 @@ class LadderTaskProvider implements vscode.TaskProvider {
             // Call Python task provider via MCP or direct communication
             const pythonPath = path.join(this.workspaceFolder.uri.fsPath, '.venv', 'Scripts', 'python.exe');
             const scriptPath = path.join(this.workspaceFolder.uri.fsPath, 'src', 'vscode_integration', 'task_provider.py');
-            
+
             // This would use the MCP server or direct Python execution
             // For now, read from todos.json as fallback
             const todosPath = path.join(this.workspaceFolder.uri.fsPath, '.vscode', 'todos.json');
-            
+
             if (fs.existsSync(todosPath)) {
                 const todosData = JSON.parse(fs.readFileSync(todosPath, 'utf8'));
                 return todosData.todoList?.map((todo: any) => ({
@@ -540,7 +540,7 @@ class LadderTaskProvider implements vscode.TaskProvider {
                     context: {}
                 })) || [];
             }
-            
+
             return [];
         } catch (error) {
             console.error('Error getting tasks from Python:', error);
@@ -564,13 +564,13 @@ export function activate(context: vscode.ExtensionContext) {
             prompt: 'Enter task title',
             placeHolder: 'Task title'
         });
-        
+
         if (title) {
             const description = await vscode.window.showInputBox({
                 prompt: 'Enter task description',
                 placeHolder: 'Task description'
             });
-            
+
             // Create task via Python task provider
             // This would communicate with the Python backend
             vscode.window.showInformationMessage(`Created task: ${title}`);

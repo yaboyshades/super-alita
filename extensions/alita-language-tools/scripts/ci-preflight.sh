@@ -13,4 +13,3 @@ if [[ "${REQUIRE_REAL_WIT:-0}" == "1" ]]; then
 fi
 
 echo "CI preflight OK"
-

@@ -152,22 +152,22 @@ class MyPlugin(PluginInterface):
         super().__init__()
         self.event_bus = event_bus
         self.config = config
-        
+
     @property
     def name(self) -> str:
         """Unique plugin identifier."""
         return "my_plugin"
-    
+
     async def initialize(self) -> bool:
         """Initialize plugin resources."""
         # Setup logic here
         return True
-    
+
     async def shutdown(self) -> None:
         """Clean up plugin resources."""
         # Cleanup logic here
         pass
-    
+
     async def handle_event(self, event: BaseEvent) -> None:
         """Handle incoming events."""
         if event.event_type == "my_event_type":
@@ -191,13 +191,13 @@ async def test_event_flow():
     # Setup
     mock_bus = AsyncMock()
     plugin = MyPlugin(mock_bus, {})
-    
+
     # Test
     await plugin.handle_event(test_event)
-    
+
     # Verify
     mock_bus.emit.assert_called_once()
-    
+
 # Use fixtures from conftest.py
 def test_with_mock_metrics(mock_metrics_registry):
     """Test using shared fixtures."""
@@ -219,12 +219,12 @@ def my_tool(
 ) -> Dict[str, Any]:
     """
     My custom tool implementation.
-    
+
     Args:
         file_path: Path to target file
         operation: Operation to perform
         dry_run: Return diff preview instead of executing
-        
+
     Returns:
         Structured result with success, result, and error fields
     """
@@ -232,28 +232,28 @@ def my_tool(
         # Validate workspace boundary
         target_path = Path(file_path).resolve()
         workspace_root = Path.cwd().resolve()
-        
+
         if not str(target_path).startswith(str(workspace_root)):
             return {
                 "success": False,
                 "result": "",
                 "error": "Path outside workspace boundary"
             }
-        
+
         if dry_run:
             return {
                 "success": True,
                 "result": "--- a/file.py\n+++ b/file.py\n@@ -1,3 +1,4 @@\n...",
                 "error": ""
             }
-        
+
         # Actual implementation here
         return {
             "success": True,
             "result": "Operation completed successfully",
             "error": ""
         }
-        
+
     except Exception as e:
         return {
             "success": False,
@@ -304,17 +304,17 @@ from src.core.events import create_event
 
 class TestMyComponent:
     """Test class following naming conventions."""
-    
+
     @pytest.mark.asyncio
     async def test_async_operation(self):
         """Test async operations."""
         pass
-    
+
     @pytest.mark.integration_redis
     async def test_redis_integration(self):
         """Test requiring Redis."""
         pass
-    
+
     @pytest.mark.parametrize("input_val,expected", [
         ("test1", "result1"),
         ("test2", "result2"),

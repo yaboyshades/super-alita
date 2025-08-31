@@ -156,4 +156,3 @@ the listed scopes.
     }
 }
 ```
-

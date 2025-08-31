@@ -19,7 +19,11 @@ import json
 import time
 import uuid
 from collections.abc import AsyncGenerator
+import os
 from typing import Any
+from pathlib import Path
+import urllib.request
+import re
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -36,14 +40,227 @@ class Orchestrator:
         self.registry = registry
         self.model = model
         self.correlation_id = correlation_id
+        self._mcp_box_dir = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
+
+    def _persist_mcp_spec(self, spec: dict[str, Any]) -> None:
+        try:
+            self._mcp_box_dir.mkdir(parents=True, exist_ok=True)
+            tid = spec.get("tool_id") or spec.get("name") or "unnamed_tool"
+            path = self._mcp_box_dir / f"{tid}.json"
+            path.write_text(json.dumps(spec, indent=2), encoding="utf-8")
+        except Exception:
+            # Persistence is best-effort; never break the run
+            pass
+
+    async def _ensure_tool(self, tool_name: str, tool_args: dict[str, Any]) -> bool:
+        """Auto self-evolve: if a requested tool is unknown, register a minimal one.
+
+        Heuristics:
+          - GitHub-related: proxy to existing fetch_github_raw executor
+          - URL-related: minimal URL text fetcher
+          - Fallback: echo_plan that returns 3 planning steps
+        """
+        try:
+            # Prefer canonical tool_id from MCP index if available
+            try:
+                from pathlib import Path
+                import json as _json
+                idx_path = Path(os.getenv("MCP_BOX_DIR", ".mcp_box")) / "index.json"
+                if idx_path.exists():
+                    index = _json.loads(idx_path.read_text(encoding="utf-8"))
+                    aliases = index.get("aliases", {}) or {}
+                    # Build alias->canonical map
+                    alias_to_canonical: dict[str, str] = {}
+                    for canonical, alias_list in aliases.items():
+                        for a in alias_list:
+                            alias_to_canonical[a] = canonical
+                    canon = alias_to_canonical.get(tool_name)
+                    if canon:
+                        tool_name = canon
+            except Exception:
+                pass
+            if getattr(self.registry, "knows", lambda *_: True)(tool_name):
+                return True
+
+            # GitHub proxy
+            if (
+                any(k in tool_args for k in ("owner", "repo", "path"))
+                or "github" in tool_name.lower()
+            ):
+                contract = {
+                    "tool_id": tool_name,
+                    "description": "Proxy to fetch a raw file from GitHub",
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["owner", "repo", "path"],
+                        "properties": {
+                            "owner": {"type": "string"},
+                            "repo": {"type": "string"},
+                            "path": {"type": "string"},
+                            "ref": {"type": "string"},
+                        },
+                    },
+                    "output_schema": {
+                        "type": "object",
+                        "properties": {
+                            "content": {"type": "string"},
+                            "url": {"type": "string"},
+                            "truncated": {"type": "boolean"},
+                            "error": {"type": "string"},
+                        },
+                    },
+                }
+
+                async def _exec(a: dict[str, Any]) -> dict[str, Any]:  # proxy
+                    return await self.registry.execute(  # type: ignore[return-value]
+                        "fetch_github_raw",
+                        {
+                            "owner": a.get("owner"),
+                            "repo": a.get("repo"),
+                            "path": a.get("path"),
+                            **({"ref": a.get("ref")} if a.get("ref") else {}),
+                        },
+                    )
+
+                self.registry.register_tool(contract=contract, executor=_exec)
+                # Persist spec for reuse
+                self._persist_mcp_spec({
+                    "tool_id": tool_name,
+                    "description": contract["description"],
+                    "action": "fetch_github_raw",
+                    "input_schema": contract["input_schema"],
+                    "output_schema": contract["output_schema"],
+                })
+                return True
+
+            # URL fetcher
+            if ("url" in {k.lower() for k in tool_args.keys()}) or (
+                any(x in tool_name.lower() for x in ("url", "http", "fetch"))
+            ):
+                contract = {
+                    "tool_id": tool_name,
+                    "description": "Fetch a URL and return UTF-8 text (best-effort)",
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["url"],
+                        "properties": {
+                            "url": {"type": "string"},
+                            "truncate": {"type": "integer"},
+                        },
+                    },
+                    "output_schema": {
+                        "type": "object",
+                        "properties": {
+                            "content": {"type": "string"},
+                            "truncated": {"type": "boolean"},
+                            "error": {"type": "string"},
+                        },
+                    },
+                }
+
+                async def _exec(a: dict[str, Any]) -> dict[str, Any]:  # url fetch
+                    url = a.get("url")
+                    if not isinstance(url, str) or not url:
+                        return {"error": "missing url"}
+                    truncate = int(a.get("truncate") or 4000)
+
+                    def _do_fetch() -> dict[str, Any]:
+                        try:
+                            with urllib.request.urlopen(url, timeout=8) as resp:  # nosec B310
+                                raw = resp.read()
+                            text = raw.decode("utf-8", errors="replace")
+                            truncated = False
+                            if len(text) > truncate:
+                                text = text[:truncate]
+                                truncated = True
+                            return {"content": text, "truncated": truncated}
+                        except Exception as e:  # pragma: no cover - network variability
+                            return {"content": "", "truncated": False, "error": str(e)}
+
+                    return await asyncio.to_thread(_do_fetch)
+
+                self.registry.register_tool(contract=contract, executor=_exec)
+                # Persist spec for reuse
+                self._persist_mcp_spec({
+                    "tool_id": tool_name,
+                    "description": contract["description"],
+                    "action": "fetch_url_text",
+                    "input_schema": contract["input_schema"],
+                    "output_schema": contract["output_schema"],
+                })
+                return True
+
+            # Fallback planning tool
+            contract = {
+                "tool_id": tool_name,
+                "description": "Echo a minimal plan for the task",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {"task": {"type": "string"}},
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {"steps": {"type": "array", "items": {"type": "string"}}},
+                },
+            }
+
+            async def _exec(a: dict[str, Any]) -> dict[str, Any]:
+                t = (a.get("task") or "unknown task").strip()
+                return {
+                    "steps": [
+                        f"Understand: {t}",
+                        "Identify resources",
+                        "Execute and verify",
+                    ]
+                }
+
+            self.registry.register_tool(contract=contract, executor=_exec)
+            # Persist spec for reuse
+            self._persist_mcp_spec({
+                "tool_id": tool_name,
+                "description": contract["description"],
+                "action": "echo_plan",
+                "input_schema": contract["input_schema"],
+                "output_schema": contract["output_schema"],
+            })
+            return True
+        except Exception:
+            return False
 
     async def _reasoning_step(
         self, messages: list[dict[str, Any]], tool_schemas: list[dict[str, Any]]
     ) -> AsyncGenerator[dict[str, Any], None]:
         llm_response_content = ""
         tool_calls = []
-        async for chunk in self.model.stream_chat(messages, tools=tool_schemas):
-            if chunk.get("type") == "content":
+        # Call model.stream_chat with best-effort compatibility across providers
+        async def _stream() -> AsyncGenerator[dict[str, Any], None]:
+            try:
+                # Preferred: pass tools and timeout if supported
+                async for ch in self.model.stream_chat(
+                    messages,
+                    tools=tool_schemas,  # type: ignore[call-arg]
+                    timeout=SETTINGS.model_stream_timeout_s,  # type: ignore[arg-type]
+                ):
+                    yield ch
+                return
+            except TypeError:
+                pass
+            try:
+                # Fallback: pass only timeout
+                async for ch in self.model.stream_chat(
+                    messages,
+                    timeout=SETTINGS.model_stream_timeout_s,  # type: ignore[arg-type]
+                ):
+                    yield ch
+                return
+            except TypeError:
+                pass
+            # Last-resort: messages only
+            async for ch in self.model.stream_chat(messages):
+                yield ch
+
+        async for chunk in _stream():
+            if "content" in chunk:
                 text = chunk.get("content", "")
                 llm_response_content += text
                 yield {"type": "LLMChunk", "data": {"text": text}}
@@ -57,44 +274,93 @@ class Orchestrator:
     ) -> AsyncGenerator[dict[str, Any], None]:
         tool_messages = []
         for tool_call in tool_calls:
-            tool_name = tool_call.function.name
-            tool_args = json.loads(tool_call.function.arguments)
-            tool_call_id = tool_call.id
+            # Support both OpenAI SDK objects and plain dicts
+            if hasattr(tool_call, "function"):
+                fn = getattr(tool_call, "function")
+                tool_name = getattr(fn, "name", None)
+                tool_args_raw = getattr(fn, "arguments", "{}")
+                tool_call_id = getattr(tool_call, "id", str(uuid.uuid4()))
+            elif isinstance(tool_call, dict):
+                fn = tool_call.get("function", {})
+                if isinstance(fn, dict):
+                    tool_name = fn.get("name") or tool_call.get("name") or tool_call.get("tool")
+                    tool_args_raw = fn.get("arguments", "{}")
+                else:
+                    tool_name = tool_call.get("name") or tool_call.get("tool")
+                    tool_args_raw = tool_call.get("arguments", "{}")
+                tool_call_id = tool_call.get("id", str(uuid.uuid4()))
+            else:  # best-effort fallback
+                tool_name = getattr(tool_call, "name", None)
+                tool_args_raw = getattr(tool_call, "arguments", "{}")
+                tool_call_id = getattr(tool_call, "id", str(uuid.uuid4()))
+
+            if not tool_name:
+                # Skip malformed tool call
+                continue
+
+            try:
+                tool_args = json.loads(tool_args_raw) if isinstance(tool_args_raw, str) else (tool_args_raw or {})
+            except Exception:
+                tool_args = {}
             span_id = str(uuid.uuid4())
 
             ability_called_event = {
-                "type": "AbilityCalled", "tool": tool_name,
-                "correlation_id": self.correlation_id, "span_id": span_id
+                "type": "AbilityCalled",
+                "tool": tool_name,
+                "correlation_id": self.correlation_id,
+                "span_id": span_id,
             }
+            # include args for UI visibility
+            try:
+                ability_called_event["args"] = json.loads(tool_args if isinstance(tool_args, str) else json.dumps(tool_args))
+            except Exception:
+                ability_called_event["args"] = tool_args
             await self.event_bus.emit(ability_called_event)
             yield ability_called_event
+
+            # Self-evolution: auto-register unknown tools on demand
+            await self._ensure_tool(tool_name or "", tool_args)
 
             try:
                 result = await asyncio.wait_for(
                     self.registry.execute(tool_name, tool_args),
-                    timeout=SETTINGS.tool_timeout_s
+                    timeout=SETTINGS.tool_timeout_s,
                 )
                 ability_succeeded_event = {
-                    "type": "AbilitySucceeded", "tool": tool_name,
-                    "correlation_id": self.correlation_id, "span_id": span_id, "result": result
+                    "type": "AbilitySucceeded",
+                    "tool": tool_name,
+                    "correlation_id": self.correlation_id,
+                    "span_id": span_id,
+                    "result": result,
                 }
                 await self.event_bus.emit(ability_succeeded_event)
                 yield ability_succeeded_event
-                tool_messages.append({
-                    "role": "tool", "tool_call_id": tool_call_id,
-                    "name": tool_name, "content": json.dumps(result)
-                })
+                tool_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "name": tool_name,
+                        "content": json.dumps(result),
+                    }
+                )
             except Exception as e:
                 ability_failed_event = {
-                    "type": "AbilityFailed", "tool": tool_name,
-                    "correlation_id": self.correlation_id, "span_id": span_id, "error": str(e)
+                    "type": "AbilityFailed",
+                    "tool": tool_name,
+                    "correlation_id": self.correlation_id,
+                    "span_id": span_id,
+                    "error": str(e),
                 }
                 await self.event_bus.emit(ability_failed_event)
                 yield ability_failed_event
-                tool_messages.append({
-                    "role": "tool", "tool_call_id": tool_call_id, "name": tool_name,
-                    "content": f'{{"error": "Tool execution failed: {e}"}}'
-                })
+                tool_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "name": tool_name,
+                        "content": f'{{"error": "Tool execution failed: {e}"}}',
+                    }
+                )
         # Store the return values for later retrieval
         self._last_acting_result = tool_messages
 
@@ -103,7 +369,7 @@ async def execute_turn(
     user_msg: str, session_id: str, event_bus: Any, registry: Any, kg: Any, model: Any
 ) -> AsyncGenerator[dict[str, Any], None]:
     correlation_id = f"{session_id}-{int(time.time()*1000)}"
-    
+
     # Optional message optimization/amplification
     if SETTINGS.message_optimizer_enabled:
         try:
@@ -127,19 +393,73 @@ async def execute_turn(
         if len(optimized) > SETTINGS.message_optimizer_max_len:
             optimized = optimized[: SETTINGS.message_optimizer_max_len]
         user_msg = optimized
-    
+
     orchestrator = Orchestrator(event_bus, registry, model, correlation_id)
 
-    start_event = {"type": "TaskStarted", "correlation_id": correlation_id, "goal": user_msg}
+    start_event = {
+        "type": "TaskStarted",
+        "correlation_id": correlation_id,
+        "goal": user_msg,
+        "session_id": session_id,
+    }
     await event_bus.emit(start_event)
     yield start_event
 
+    # Build system prompt with optional output contract
+    base_system = "You are a helpful assistant. Use tools when necessary."
+    if os.getenv("ALITA_FORMAT_CONTRACT", "false").lower() in {"1", "true", "yes", "on"}:
+        contract = (
+            "\n\nOutput Contract:\n"
+            "- Always wrap multi-line code in fenced markdown with a language, e.g. ```python ...```.\n"
+            "- Use inline backticks for short code.\n"
+            "- Use only ASCII operators (*, /, <=, !=) and quotes; avoid typographic symbols.\n"
+            "- Never omit the multiplication operator; write 5 * x * x (not 5x² or 5 x x).\n"
+            "- Provide complete, runnable snippets with imports when including code.\n"
+            "- Brief explanation first, then exactly one fenced code block unless no code is needed.\n"
+            "- Self-check and regenerate if rules are violated."
+        )
+        system_content = base_system + contract
+    else:
+        system_content = base_system
+
     messages: list[dict[str, Any]] = [
-        {"role": "system", "content": "You are a helpful assistant. Use tools when necessary."},
+        {"role": "system", "content": system_content},
         {"role": "user", "content": user_msg},
     ]
 
     llm_response_content = ""
+    
+    def _parse_tool_calls(text: str) -> list[dict[str, Any]]:
+        calls: list[dict[str, Any]] = []
+        try:
+            for m in re.finditer(r"<tool_call>(.*?)</tool_call>", text, re.DOTALL):
+                inner = m.group(1)
+                payload = json.loads(inner)
+                name = payload.get("tool")
+                args = payload.get("args", {})
+                if not name:
+                    continue
+                # Minimal adapter object with .function.name/.function.arguments
+                class _Fn:
+                    def __init__(self, n: str, a: str) -> None:
+                        self.name = n
+                        self.arguments = a
+
+                class _Call:
+                    def __init__(self, i: str, fn: _Fn) -> None:
+                        self.id = i
+                        self.function = fn
+
+                calls.append(
+                    _Call(
+                        i=str(uuid.uuid4()),
+                        fn=_Fn(name, json.dumps(args)),
+                    )
+                )
+        except Exception:
+            # best-effort parsing only
+            pass
+        return calls
     for _ in range(SETTINGS.max_tool_calls):
         tool_schemas = registry.get_available_tools_schema()
 
@@ -147,6 +467,9 @@ async def execute_turn(
         async for event in orchestrator._reasoning_step(messages, tool_schemas):
             yield event
         llm_response_content, tool_calls = orchestrator._last_reasoning_result
+        # Fallback: derive tool calls by parsing streamed content blocks
+        if not tool_calls and "<tool_call>" in llm_response_content:
+            tool_calls = _parse_tool_calls(llm_response_content)
 
         assistant_message = {"role": "assistant", "content": llm_response_content}
         if tool_calls:
@@ -161,20 +484,192 @@ async def execute_turn(
             yield event
         tool_messages = orchestrator._last_acting_result
         messages.extend(tool_messages)
+        # Inject assistant-visible tool_result blocks to advance FakeLLM phase
+        for tm in tool_messages:
+            try:
+                tname = tm.get("name")
+                tcontent = tm.get("content", "")
+                if tname and isinstance(tcontent, str):
+                    messages.append(
+                        {
+                            "role": "assistant",
+                            "content": f"<tool_result tool=\"{tname}\">{tcontent}</tool_result>",
+                        }
+                    )
+            except Exception:
+                pass
 
-    final_answer = {"content": llm_response_content or "Task complete.", "citations": []}
-    task_succeeded_event = {"type": "TaskSucceeded", "correlation_id": correlation_id, "data": final_answer}
+    def _enforce_output_contract_on_text(text: str) -> str:
+        """Optionally normalize text to reduce formatting issues.
+
+        - Replace common unicode operators with ASCII inside fenced blocks.
+        - Leave content unchanged when enforcement is disabled.
+        """
+        # Quick exit if nothing to do
+        if "```" not in text:
+            return text
+        # Process fenced blocks only
+        parts: list[str] = []
+        i = 0
+        lines = text.split("\n")
+        in_fence = False
+        fence_lang = ""
+        buf: list[str] = []
+        def norm_line(s: str) -> str:
+            s = s.replace("×", " * ").replace("·", " * ")
+            s = s.replace("−", "-").replace("–", "-").replace("—", "-")
+            s = s.replace("“", '"').replace("”", '"').replace("’", "'")
+            return s
+        for line in lines:
+            if line.startswith("```"):
+                if in_fence:
+                    # close fence: flush normalized buffer
+                    parts.append("\n".join(buf))
+                    buf = []
+                    in_fence = False
+                    fence_lang = ""
+                    parts.append(line)
+                else:
+                    in_fence = True
+                    fence_lang = line[3:].strip()
+                    parts.append(line)
+                continue
+            if in_fence:
+                buf.append(norm_line(line))
+            else:
+                parts.append(line)
+        # If fence left open, append remaining
+        if buf:
+            parts.append("\n".join(buf))
+        return "\n".join(parts)
+
+    def _normalize_code_blocks(text: str) -> str:
+        if "```" not in text:
+            return text
+        parts: list[str] = []
+        lines = text.split("\n")
+        in_fence = False
+        buf: list[str] = []
+        def norm_line(s: str) -> str:
+            s = s.replace("×", " * ").replace("·", " * ")
+            s = s.replace("−", "-").replace("–", "-").replace("—", "-")
+            s = s.replace("“", '"').replace("”", '"').replace("’", "'")
+            return s
+        for line in lines:
+            if line.startswith("```"):
+                if in_fence:
+                    parts.append("\n".join(buf))
+                    buf = []
+                    in_fence = False
+                    parts.append(line)
+                else:
+                    in_fence = True
+                    parts.append(line)
+                continue
+            if in_fence:
+                buf.append(norm_line(line))
+            else:
+                parts.append(line)
+        if buf:
+            parts.append("\n".join(buf))
+        return "\n".join(parts)
+
+    content_out = llm_response_content or "Task complete."
+    if os.getenv("ALITA_FORMAT_ENFORCE", "false").lower() in {"1", "true", "yes", "on"}:
+        with contextlib.suppress(Exception):
+            content_out = _normalize_code_blocks(content_out)
+
+    final_answer = {
+        "content": content_out,
+        "citations": [],
+    }
+    task_succeeded_event = {
+        "type": "TaskSucceeded",
+        "correlation_id": correlation_id,
+        "data": final_answer,
+        "session_id": session_id,
+    }
     await event_bus.emit(task_succeeded_event)
     yield task_succeeded_event
 
 
-async def sse_transformer(event_generator: AsyncGenerator[dict[str, Any], None]) -> AsyncGenerator[str, None]:
-    async for event in event_generator:
-        yield f"data: {json.dumps(event)}\n\n"
+async def sse_transformer(
+    event_generator: AsyncGenerator[dict[str, Any], None],
+) -> AsyncGenerator[str, None]:
+    """Transform internal events into SSE frames (with optional heartbeats)."""
+    name_map = {
+        "TaskStarted": "start",
+        "LLMChunk": "content",
+        "AbilityCalled": "tool_start",
+        "AbilitySucceeded": "tool_result",
+        "AbilityFailed": "tool_error",
+        "TaskSucceeded": "done",
+    }
+    use_hb = os.getenv("ALITA_SSE_HEARTBEAT", "false").lower() in {"1", "true", "yes", "on"}
+    hb_interval = int(os.getenv("ALITA_SSE_HEARTBEAT_INTERVAL", "15") or 15)
+
+    queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+
+    async def _pump():
+        try:
+            async for ev in event_generator:
+                await queue.put(ev)
+        finally:
+            await queue.put(None)
+
+    async def _pings():
+        if not use_hb:
+            return
+        try:
+            while True:
+                await asyncio.sleep(max(1, hb_interval))
+                await queue.put({"type": "__ping__"})
+        except asyncio.CancelledError:
+            return
+
+    t1 = asyncio.create_task(_pump())
+    t2 = asyncio.create_task(_pings()) if use_hb else None
+    try:
+        while True:
+            ev = await queue.get()
+            if ev is None:
+                break
+            et = ev.get("type", "message")
+            if et == "__ping__":
+                yield "event: ping\n"
+                yield f"data: {json.dumps({'ts': int(time.time())})}\n\n"
+                continue
+            sse_name = name_map.get(et, "message")
+            yield f"event: {sse_name}\n"
+            if et == "LLMChunk":
+                text = ev.get("data", {}).get("text", "")
+                yield f"data: {json.dumps({'content': text})}\n\n"
+            else:
+                yield f"data: {json.dumps(ev)}\n\n"
+    finally:
+        t1.cancel()
+        if t2:
+            t2.cancel()
 
 
 @router.post("/chat/stream")
 async def chat_stream(request: Request):
+    # Rate limit pre-check (optional)
+    try:
+        if os.getenv("ALITA_RATE_LIMIT_ENABLED", "false").lower() in {"1","true","yes","on"}:
+            rl = getattr(request.app.state, "rate_limiter", None)
+            if rl is not None:
+                limit = int(os.getenv("ALITA_RATE_LIMIT", "60") or 60)
+                window = int(os.getenv("ALITA_RATE_WINDOW", "60") or 60)
+                hdr = request.headers.get(os.getenv("ALITA_API_HEADER", "Authorization"), "")
+                tok = hdr[7:].strip() if hdr.lower().startswith("bearer ") else hdr.strip()
+                ident = f"key:{tok[:8]}" if tok else f"ip:{(request.client.host if request.client else 'unknown')}"
+                allowed, _ = await rl.is_allowed(ident, limit, window)
+                if not allowed:
+                    from fastapi.responses import JSONResponse
+                    return JSONResponse(status_code=429, content={"error": "rate_limited"})
+    except Exception:
+        pass
     body = await request.json()
     user_msg = body.get("message", "")
     session_id = body.get("session_id", "default")
@@ -190,4 +685,39 @@ async def chat_stream(request: Request):
 
     sse_gen = sse_transformer(event_gen)
 
-    return StreamingResponse(sse_gen, media_type="text/event-stream")
+    return StreamingResponse(
+        sse_gen,
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+    )
+
+
+@router.get("/chat/stream")
+async def chat_stream_get(request: Request):
+    """
+    GET variant to support browsers using EventSource.
+
+    Accepts query params:
+      - q or message
+      - session or session_id
+    """
+    qp = request.query_params  # type: ignore[attr-defined]
+    user_msg = qp.get("q") or qp.get("message") or ""
+    session_id = qp.get("session") or qp.get("session_id") or "default"
+
+    event_gen = execute_turn(
+        user_msg,
+        session_id,
+        request.app.state.event_bus,
+        request.app.state.ability_registry,
+        request.app.state.kg,
+        request.app.state.llm_model,
+    )
+
+    sse_gen = sse_transformer(event_gen)
+
+    return StreamingResponse(
+        sse_gen,
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+    )

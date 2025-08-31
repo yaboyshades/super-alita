@@ -116,10 +116,11 @@ class AtomToolsPlugin(PluginInterface):
                 tool_instance = tool_class()
                 self._tools_cache[tool_key] = tool_instance
 
-                # Create embedding for tool (would use real embedding service)
-                embedding = np.random.rand(EMBEDDING_DIM).astype(
-                    np.float32
-                )  # Mock embedding
+                # Create deterministic embedding for tool using hash seeding
+                import hashlib
+                seed = int(hashlib.md5(tool_key.encode()).hexdigest()[:8], 16)
+                rng = np.random.default_rng(seed)
+                embedding = rng.random(EMBEDDING_DIM, dtype=np.float32)
 
                 # Create memory atom
                 atom = create_memory_atom(
@@ -151,8 +152,11 @@ class AtomToolsPlugin(PluginInterface):
             List of (tool_key, similarity_score, tool_instance) tuples
         """
         try:
-            # Create query embedding (would use real embedding service)
-            query_embedding = np.random.rand(EMBEDDING_DIM).astype(np.float32)  # Mock
+            # Create deterministic query embedding from text
+            import hashlib
+            seed = int(hashlib.md5(query.encode()).hexdigest()[:8], 16)
+            rng = np.random.default_rng(seed)
+            query_embedding = rng.random(EMBEDDING_DIM, dtype=np.float32)
 
             # Search for tool atoms
             attention_results = await self.store.attention(query_embedding, top_k=top_k)

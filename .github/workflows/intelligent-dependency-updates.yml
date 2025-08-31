@@ -12,7 +12,7 @@ on:
         type: choice
         options:
           - security      # Security updates only
-          - patch         # Patch updates only  
+          - patch         # Patch updates only
           - minor         # Minor updates only
           - all           # All available updates
       test_level:
@@ -40,22 +40,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          
+
       - name: Install analysis tools
         run: |
           python -m pip install --upgrade pip pip-audit safety
           npm install -g npm-check-updates audit-ci
-          
+
       - name: Check Python dependencies
         id: python_check
         run: |
@@ -64,37 +64,37 @@ jobs:
           OUTDATED=$(pip list --outdated --format=json || echo "[]")
           echo "Python outdated packages:"
           echo "$OUTDATED" | jq '.'
-          
+
           # Count updates by type
           SECURITY_COUNT=$(pip-audit -r requirements.txt --format=json 2>/dev/null | jq '.vulnerabilities | length' || echo 0)
           TOTAL_COUNT=$(echo "$OUTDATED" | jq 'length')
-          
+
           echo "updates={\"total\": $TOTAL_COUNT, \"security\": $SECURITY_COUNT}" >> $GITHUB_OUTPUT
-          
+
       - name: Check Node.js dependencies
         id: node_check
         working-directory: extensions/alita-language-tools
         run: |
           npm ci
-          
+
           # Check for outdated packages
           OUTDATED=$(npm outdated --json || echo "{}")
           echo "Node.js outdated packages:"
           echo "$OUTDATED" | jq '.'
-          
+
           # Security audit
           AUDIT_RESULT=$(npm audit --json || echo '{"metadata":{"vulnerabilities":{"total":0}}}')
           SECURITY_COUNT=$(echo "$AUDIT_RESULT" | jq '.metadata.vulnerabilities.total')
           TOTAL_COUNT=$(echo "$OUTDATED" | jq 'keys | length')
-          
+
           echo "updates={\"total\": $TOTAL_COUNT, \"security\": $SECURITY_COUNT}" >> $GITHUB_OUTPUT
-          
+
       - name: Overall security check
         id: security_check
         run: |
           PYTHON_SECURITY=$(echo '${{ steps.python_check.outputs.updates }}' | jq '.security')
           NODE_SECURITY=$(echo '${{ steps.node_check.outputs.updates }}' | jq '.security')
-          
+
           if [[ $PYTHON_SECURITY -gt 0 || $NODE_SECURITY -gt 0 ]]; then
             echo "has_security=true" >> $GITHUB_OUTPUT
           else
@@ -109,25 +109,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          
+
       - name: Install tools
         run: |
           python -m pip install --upgrade pip pip-tools safety pip-audit
-          
+
       - name: Backup current requirements
         run: |
           cp requirements.txt requirements.txt.backup
           cp requirements-test.txt requirements-test.txt.backup
-          
+
       - name: Update dependencies based on type
         run: |
           UPDATE_TYPE="${{ github.event.inputs.update_type || 'security' }}"
-          
+
           case $UPDATE_TYPE in
             security)
               echo "Updating only security-critical packages..."
@@ -152,12 +152,12 @@ jobs:
               pip-compile --upgrade requirements-test.in
               ;;
           esac
-          
+
       - name: Regenerate requirements
         run: |
           # Use existing requirements generation tool
           python tools/gen_requirements.py --src src reug --tests tests --write
-          
+
       - name: Check for changes
         id: check_changes
         run: |
@@ -168,7 +168,7 @@ jobs:
             echo "Python dependency changes detected:"
             git diff requirements.txt requirements-test.txt
           fi
-          
+
       - name: Upload updated requirements
         if: steps.check_changes.outputs.has_changes == 'true'
         uses: actions/upload-artifact@v4
@@ -179,30 +179,30 @@ jobs:
             requirements-test.txt
 
   update-node-dependencies:
-    name: Update Node.js Dependencies  
+    name: Update Node.js Dependencies
     needs: analyze-dependencies
     if: needs.analyze-dependencies.outputs.node_updates != '{"total": 0, "security": 0}'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          
+
       - name: Backup package files
         working-directory: extensions/alita-language-tools
         run: |
           cp package.json package.json.backup
           cp package-lock.json package-lock.json.backup
-          
+
       - name: Update dependencies based on type
         working-directory: extensions/alita-language-tools
         run: |
           UPDATE_TYPE="${{ github.event.inputs.update_type || 'security' }}"
-          
+
           case $UPDATE_TYPE in
             security)
               echo "Fixing security vulnerabilities..."
@@ -224,7 +224,7 @@ jobs:
               npm install
               ;;
           esac
-          
+
       - name: Check for changes
         id: check_changes
         working-directory: extensions/alita-language-tools
@@ -236,7 +236,7 @@ jobs:
             echo "Node.js dependency changes detected:"
             git diff package.json package-lock.json
           fi
-          
+
       - name: Upload updated package files
         if: steps.check_changes.outputs.has_changes == 'true'
         uses: actions/upload-artifact@v4
@@ -264,49 +264,49 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Download updated Python requirements
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: updated-python-requirements
           path: .
-          
+
       - name: Download updated Node.js packages
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: updated-node-packages
           path: .
-          
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          
+
       - name: Install updated Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-test.txt
-          
+
       - name: Install updated Node.js dependencies
         working-directory: extensions/alita-language-tools
         run: |
           npm ci
-          
+
       - name: Run test level based on input
         env:
           REUG_EVENTBUS: redis
           PYTHONPATH: ./src
         run: |
           TEST_LEVEL="${{ github.event.inputs.test_level || 'full' }}"
-          
+
           case $TEST_LEVEL in
             basic)
               echo "Running basic tests..."
@@ -324,13 +324,13 @@ jobs:
               python validate_agent_systems.py
               ;;
           esac
-          
+
       - name: Test Node.js/Extension
         working-directory: extensions/alita-language-tools
         run: |
           npm run compile
           npm run test || echo "Extension tests completed with warnings"
-          
+
       - name: Security audit final check
         run: |
           echo "Final security audit..."
@@ -348,12 +348,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
-          
+
       - name: Apply updates
         run: |
           # Apply Python updates if they exist
@@ -361,20 +361,20 @@ jobs:
             cp artifacts/updated-python-requirements/requirements.txt .
             cp artifacts/updated-python-requirements/requirements-test.txt .
           fi
-          
-          # Apply Node.js updates if they exist  
+
+          # Apply Node.js updates if they exist
           if [[ -f artifacts/updated-node-packages/extensions/alita-language-tools/package.json ]]; then
             cp artifacts/updated-node-packages/extensions/alita-language-tools/package.json extensions/alita-language-tools/
             cp artifacts/updated-node-packages/extensions/alita-language-tools/package-lock.json extensions/alita-language-tools/
           fi
-          
+
       - name: Generate update summary
         id: summary
         run: |
           SUMMARY="## 🔄 Automated Dependency Updates\n\n"
           SUMMARY="${SUMMARY}**Update Type:** ${{ github.event.inputs.update_type || 'security' }}\n"
           SUMMARY="${SUMMARY}**Test Level:** ${{ github.event.inputs.test_level || 'full' }}\n\n"
-          
+
           # Python changes
           if git diff --quiet requirements.txt requirements-test.txt; then
             SUMMARY="${SUMMARY}### Python Dependencies\nNo changes\n\n"
@@ -382,7 +382,7 @@ jobs:
             SUMMARY="${SUMMARY}### Python Dependencies\n\`\`\`diff\n"
             SUMMARY="${SUMMARY}$(git diff requirements.txt requirements-test.txt)\n\`\`\`\n\n"
           fi
-          
+
           # Node.js changes
           if git diff --quiet extensions/alita-language-tools/package.json; then
             SUMMARY="${SUMMARY}### Node.js Dependencies\nNo changes\n\n"
@@ -390,24 +390,24 @@ jobs:
             SUMMARY="${SUMMARY}### Node.js Dependencies\n\`\`\`diff\n"
             SUMMARY="${SUMMARY}$(git diff extensions/alita-language-tools/package.json)\n\`\`\`\n\n"
           fi
-          
+
           SUMMARY="${SUMMARY}### Security Status\n"
           if [[ "${{ needs.analyze-dependencies.outputs.has_security_updates }}" == "true" ]]; then
             SUMMARY="${SUMMARY}✅ Security vulnerabilities addressed\n\n"
           else
             SUMMARY="${SUMMARY}ℹ️ No security vulnerabilities found\n\n"
           fi
-          
+
           SUMMARY="${SUMMARY}### Testing\n"
           SUMMARY="${SUMMARY}✅ All tests passed with updated dependencies\n"
           SUMMARY="${SUMMARY}✅ Security audit completed successfully\n\n"
-          
+
           SUMMARY="${SUMMARY}---\n*This PR was automatically created by the Intelligent Dependency Updates workflow*"
-          
+
           echo "summary<<EOF" >> $GITHUB_OUTPUT
           echo -e "$SUMMARY" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
@@ -436,12 +436,12 @@ jobs:
         run: |
           UPDATE_TYPE="${{ github.event.inputs.update_type || 'security' }}"
           HAS_SECURITY="${{ needs.analyze-dependencies.outputs.has_security_updates }}"
-          
+
           # Auto-merge criteria:
           # 1. Security updates are always safe to merge
           # 2. Patch updates are generally safe
           # 3. Minor/major updates require manual review
-          
+
           if [[ "$HAS_SECURITY" == "true" || "$UPDATE_TYPE" == "security" || "$UPDATE_TYPE" == "patch" ]]; then
             echo "safe_to_merge=true" >> $GITHUB_OUTPUT
             echo "🟢 Updates are safe for auto-merge"
@@ -449,14 +449,14 @@ jobs:
             echo "safe_to_merge=false" >> $GITHUB_OUTPUT
             echo "🟡 Updates require manual review"
           fi
-          
+
       - name: Enable auto-merge
         if: steps.merge_check.outputs.safe_to_merge == 'true'
         run: |
           echo "🤖 Auto-merge would be enabled here for security/patch updates"
           echo "🔄 PR will be merged automatically after required checks pass"
           # Note: Actual auto-merge would require repository settings configuration
-          
+
       - name: Notify for manual review
         if: steps.merge_check.outputs.safe_to_merge == 'false'
         run: |

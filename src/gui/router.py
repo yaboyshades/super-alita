@@ -22,8 +22,8 @@ _BASE_CSS = (
     ".badge-error{background:#c43;}"
     ".panel{background:#1b1f27;border:1px solid #2a303b;border-radius:8px;"
     "margin-bottom:1rem;box-shadow:0 2px 4px rgba(0,0,0,.4);}"
-  ".panel-header{font-weight:600;padding:.75rem 1rem;"
-  "border-bottom:1px solid #2a303b;}"
+    ".panel-header{font-weight:600;padding:.75rem 1rem;"
+    "border-bottom:1px solid #2a303b;}"
     ".panel-body{padding:.75rem 1rem;}"
     ".grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));}"
     "a{color:#4da3ff;text-decoration:none;}a:hover{text-decoration:underline;}"
@@ -62,7 +62,7 @@ def _layout(title: str, body: str) -> str:
 <body>
   <div class='gui-container'>
     {body}
-    <div class='footer'>Super Alita GUI • Components: 
+    <div class='footer'>Super Alita GUI • Components:
   {', '.join(gui_registry.list_components())}
     </div>
   </div>
@@ -83,10 +83,9 @@ async def gui_index() -> HTMLResponse:
     {items}
     </ul>
   """.replace(
-  "{items}", "\n".join(
-    f"<li><code>{c}</code></li>" for c in gui_registry.list_components()
-  )
-  )
+        "{items}",
+        "\n".join(f"<li><code>{c}</code></li>" for c in gui_registry.list_components()),
+    )
     return HTMLResponse(_layout("Super Alita GUI", body))
 
 

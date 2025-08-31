@@ -18,11 +18,13 @@ class TraceEntry:
     details: dict[str, Any]
     duration_ms: float | None = None
 
+
 class TurnTracer:
     """
     Per-turn trace logger with standardized format:
     timestamp, correlation_id, turn_index, event_type, component, details, duration_ms (optional)
     """
+
     def __init__(self):
         self.traces: list[TraceEntry] = []
         self.current_turn = 0
@@ -30,8 +32,13 @@ class TurnTracer:
     def new_turn(self):
         self.current_turn += 1
 
-    def log(self, event_type: str, component: str, details: dict[str, Any] | None = None, 
-            duration_ms: float | None = None):
+    def log(
+        self,
+        event_type: str,
+        component: str,
+        details: dict[str, Any] | None = None,
+        duration_ms: float | None = None,
+    ):
         entry = TraceEntry(
             timestamp=datetime.now(UTC),
             correlation_id=get_correlation_id(),
@@ -39,7 +46,7 @@ class TurnTracer:
             event_type=event_type,
             component=component,
             details=details or {},
-            duration_ms=duration_ms
+            duration_ms=duration_ms,
         )
         self.traces.append(entry)
 
@@ -49,14 +56,18 @@ class TurnTracer:
     def get_latest_traces(self, limit: int = 10) -> list[TraceEntry]:
         return self.traces[-limit:] if limit > 0 else self.traces[:]
 
+
 # Global tracer instance
 _tracer = TurnTracer()
+
 
 def get_tracer() -> TurnTracer:
     return _tracer
 
+
 def trace_component_call(component: str):
     """Decorator to automatically trace component function calls with timing"""
+
     def decorator(func):
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
@@ -65,16 +76,24 @@ def trace_component_call(component: str):
                 result = await func(*args, **kwargs)
                 end = datetime.now(UTC)
                 duration_ms = (end - start).total_seconds() * 1000
-                _tracer.log("component_call", component, 
-                           {"function": func.__name__, "success": True}, duration_ms)
+                _tracer.log(
+                    "component_call",
+                    component,
+                    {"function": func.__name__, "success": True},
+                    duration_ms,
+                )
                 return result
             except Exception as e:
                 end = datetime.now(UTC)
                 duration_ms = (end - start).total_seconds() * 1000
-                _tracer.log("component_call", component, 
-                           {"function": func.__name__, "success": False, "error": str(e)}, duration_ms)
+                _tracer.log(
+                    "component_call",
+                    component,
+                    {"function": func.__name__, "success": False, "error": str(e)},
+                    duration_ms,
+                )
                 raise
-        
+
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
             start = datetime.now(UTC)
@@ -82,20 +101,30 @@ def trace_component_call(component: str):
                 result = func(*args, **kwargs)
                 end = datetime.now(UTC)
                 duration_ms = (end - start).total_seconds() * 1000
-                _tracer.log("component_call", component, 
-                           {"function": func.__name__, "success": True}, duration_ms)
+                _tracer.log(
+                    "component_call",
+                    component,
+                    {"function": func.__name__, "success": True},
+                    duration_ms,
+                )
                 return result
             except Exception as e:
                 end = datetime.now(UTC)
                 duration_ms = (end - start).total_seconds() * 1000
-                _tracer.log("component_call", component, 
-                           {"function": func.__name__, "success": False, "error": str(e)}, duration_ms)
+                _tracer.log(
+                    "component_call",
+                    component,
+                    {"function": func.__name__, "success": False, "error": str(e)},
+                    duration_ms,
+                )
                 raise
-        
+
         # Return appropriate wrapper based on whether function is async
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
+
     return decorator

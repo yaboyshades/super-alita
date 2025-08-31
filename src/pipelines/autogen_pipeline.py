@@ -30,7 +30,7 @@ CAPABILITY_TEMPLATES: dict[str, dict[str, Any]] = {
 - Accept runtime selectors/regex/attrs (no site hardcoding).
 - Output CSV+JSON; headers: url, sku, title, price, currency.
 - Include tests (no network), docs, and Makefile target.
-- Safety: no eval/os.system/subprocess(..., shell=True). 
+- Safety: no eval/os.system/subprocess(..., shell=True).
   Retries, timeouts, UA, polite delays.
 Task: {desc}
 """
@@ -58,7 +58,7 @@ Task: {desc}
         ],
         "required_docs": [re.compile(r"^docs/.*api", re.I)],
         "requirements": lambda desc: f"""Build a typed API client *ability*:
-- Declarative endpoints spec; retries/backoff; timeout; auth hooks; 
+- Declarative endpoints spec; retries/backoff; timeout; auth hooks;
   tests; docs; Makefile target.
 - No secrets in code; safety enforced.
 Task: {desc}
@@ -72,7 +72,7 @@ Task: {desc}
         ],
         "required_docs": [re.compile(r"^docs/.*report", re.I)],
         "requirements": lambda desc: f"""Build a report generator *ability*:
-- Input data (csv/json) -> templated summary -> csv/xlsx/pdf; 
+- Input data (csv/json) -> templated summary -> csv/xlsx/pdf;
   tests; docs; Makefile target.
 - Deterministic outputs; safety enforced.
 Task: {desc}
@@ -96,7 +96,7 @@ Task: {desc}
 """,
     },
     "ml_algorithm": {
-        "task_kind": "ml_algorithm", 
+        "task_kind": "ml_algorithm",
         "required_paths": [
             re.compile(r"^src/abilities/.*ml.*algo", re.I),
             re.compile(r"^tests/abilities/.*ml.*algo", re.I),
@@ -191,7 +191,7 @@ async def autogen_any(
     Generic ability autogeneration:
     Detect kinds -> choose template(s) -> Native DeepCode -> Gates -> Iterate -> Apply.
     Emits telemetry + OaK and bandit signals.
-    
+
     Now uses native DeepCode integration instead of external API.
     """
     bus = event_bus or EventBus()

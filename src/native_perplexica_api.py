@@ -150,9 +150,12 @@ class NativePerplexicaAPI:
 
         # Generate AI analysis if requested
         if include_reasoning and self.llm_client:
-            summary, reasoning, citations, follow_ups = (
-                await self._generate_ai_analysis(query, search_results, search_mode)
-            )
+            (
+                summary,
+                reasoning,
+                citations,
+                follow_ups,
+            ) = await self._generate_ai_analysis(query, search_results, search_mode)
         else:
             summary = self._generate_simple_summary(query, search_results)
             reasoning = (
@@ -160,8 +163,7 @@ class NativePerplexicaAPI:
                 f"using {search_mode} search."
             )
             citations = [
-                f"[{i+1}] {r.title} - {r.url}"
-                for i, r in enumerate(search_results[:5])
+                f"[{i+1}] {r.title} - {r.url}" for i, r in enumerate(search_results[:5])
             ]
             follow_ups = []
 

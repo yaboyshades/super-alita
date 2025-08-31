@@ -36,7 +36,9 @@ async def test_plugin_events_include_telemetry_fields(monkeypatch) -> None:
         async def read_file(self, path: str) -> str:
             return "dummy"
 
-        async def write_file(self, path: str, content: str, create_dirs: bool = True) -> bool:
+        async def write_file(
+            self, path: str, content: str, create_dirs: bool = True
+        ) -> bool:
             return True
 
         async def delete_file(self, path: str) -> bool:  # pragma: no cover - unused
@@ -46,7 +48,11 @@ async def test_plugin_events_include_telemetry_fields(monkeypatch) -> None:
             return []
 
         async def execute_command(
-            self, command: str, args: list[str] | None = None, cwd: str | None = None, env: dict[str, str] | None = None
+            self,
+            command: str,
+            args: list[str] | None = None,
+            cwd: str | None = None,
+            env: dict[str, str] | None = None,
         ) -> dict[str, Any]:  # pragma: no cover - unused
             return {"stdout": "", "stderr": "", "exit_code": 0, "execution_time": 0}
 
@@ -64,7 +70,9 @@ async def test_plugin_events_include_telemetry_fields(monkeypatch) -> None:
     puter_event.metadata = {"operation": "read", "file_path": "/tmp/test.txt"}
     await puter._handle_file_operation(puter_event)
     assert bus.events, "Puter plugin did not publish events"
-    puter_out = next(e for e in bus.events if e.event_type == "puter_operation_completed")
+    puter_out = next(
+        e for e in bus.events if e.event_type == "puter_operation_completed"
+    )
     assert puter_out.source_plugin == "puter"
     assert puter_out.conversation_id == "session_a"
     assert puter_out.correlation_id
@@ -75,7 +83,9 @@ async def test_plugin_events_include_telemetry_fields(monkeypatch) -> None:
     perplex = PerplexicaSearchPlugin()
     await perplex.setup(bus, None, {})
 
-    async def fake_search(*args: Any, **kwargs: Any) -> PerplexicaResponse:  # pragma: no cover - simple stub
+    async def fake_search(
+        *args: Any, **kwargs: Any
+    ) -> PerplexicaResponse:  # pragma: no cover - simple stub
         return PerplexicaResponse(
             query="hi",
             search_mode=SearchMode.WEB,

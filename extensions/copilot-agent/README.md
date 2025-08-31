@@ -14,7 +14,7 @@ A GitHub Copilot Agent that provides SSE streaming interface to the Super Alita 
 ## Event Types Supported
 
 - `copilot_confirmation` - Interactive confirmation dialogs
-- `copilot_errors` - Error reporting with proper categorization  
+- `copilot_errors` - Error reporting with proper categorization
 - `copilot_references` - Code/content references with metadata
 - Default SSE - Standard text streaming
 
@@ -73,7 +73,7 @@ npm test
 GitHub Copilot ──SSE──> Agent Server ──gRPC──> Super Alita Backend
                            │
                            ├── Health/Status
-                           ├── Cortex Processing  
+                           ├── Cortex Processing
                            ├── Knowledge Graph
                            └── Optimization Engine
 ```

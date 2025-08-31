@@ -13,7 +13,7 @@ VS Code has native MCP (Model Context Protocol) support through:
 
 ### ✅ What's Working
 
-1. **Super Alita Agent Integration** 
+1. **Super Alita Agent Integration**
    - 🎯 Task completion: 80% (4/5 tasks completed)
    - ✅ VS Code todos integration via SimpleTodoManager
    - ✅ Agent commands and recommendations system
@@ -49,7 +49,7 @@ VS Code has native MCP (Model Context Protocol) support through:
 
 **Advantages:**
 - ✅ Native VS Code integration
-- ✅ Better performance (no stdio overhead)  
+- ✅ Better performance (no stdio overhead)
 - ✅ Automatic server discovery
 - ✅ Managed by VS Code extension lifecycle
 - ✅ Better security context
@@ -95,7 +95,7 @@ code --install-extension super-alita-builtin-mcp-1.0.0.vsix
 2. **Test built-in MCP provider** - Compile and install extension
 3. **Complete remaining todo** - "Router Logic Implementation"
 
-### Medium Priority  
+### Medium Priority
 1. **Optimize performance** - Switch to built-in provider
 2. **Enhanced integration** - Use VS Code experimental todos API
 3. **Documentation** - Complete setup guides

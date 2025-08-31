@@ -22,11 +22,11 @@ from src.utils.telemetry import ReadLedger, start_timer, end_timer
 
 class YourAbility(PluginInterface):
     """Custom ability implementation"""
-    
+
     def __init__(self, event_bus, config=None):
         super().__init__(event_bus, config)
         self.name = "your_ability"
-        
+
     async def execute_ability(self, request_data):
         """Execute the core ability logic"""
         timer = start_timer("ability_execution")
@@ -79,11 +79,11 @@ async def test_ability_execution():
     """Test ability execution flow"""
     event_bus = AsyncMock()
     ability = YourAbility(event_bus)
-    
+
     # Test successful execution
     result = await ability.execute_ability({"input": "test"})
     assert result["success"] is True
-    
+
     # Verify event emission
     event_bus.publish.assert_called()
 
@@ -92,7 +92,7 @@ async def test_ability_error_handling():
     """Test ability error handling"""
     event_bus = AsyncMock()
     ability = YourAbility(event_bus)
-    
+
     # Test error scenarios
     with pytest.raises(ValueError):
         await ability.execute_ability({"invalid": "input"})

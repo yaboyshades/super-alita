@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Simple working MCP server test for Super Alita Agent"""
+
 from __future__ import annotations
 
 import pytest
@@ -35,6 +36,7 @@ try:
 except ImportError as e:
     print(f"⚠️ Agent import failed: {e}")
     AGENT_AVAILABLE = False
+
 
 class SimpleAgentMcpServer:
     """Simplified version of the agent MCP server for testing"""
@@ -104,6 +106,7 @@ class SimpleAgentMcpServer:
 
         return server
 
+
 async def main():
     """Main entry point for the simple MCP server"""
     print("🚀 Simple Agent MCP Server Starting...")
@@ -134,6 +137,7 @@ async def main():
     print(f"Result: {result}")
 
     print("\n✅ Simple MCP server test complete!")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

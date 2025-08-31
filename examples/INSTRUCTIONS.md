@@ -96,12 +96,12 @@ logger = logging.getLogger(__name__)
 async def main():
     """Main example execution."""
     logger.info("Starting example: [Example Name]")
-    
+
     try:
         # Example implementation
         result = await demonstrate_feature()
         logger.info(f"Example completed successfully: {result}")
-        
+
     except Exception as e:
         logger.error(f"Example failed: {e}")
         raise
@@ -174,11 +174,11 @@ logger = logging.getLogger(__name__)
 
 class ExamplePlugin(PluginInterface):
     """Example plugin implementation."""
-    
+
     @property
     def name(self) -> str:
         return "example_plugin"
-    
+
     async def shutdown(self) -> None:
         logger.info("Example plugin shutting down")
 
@@ -186,10 +186,10 @@ async def demonstrate_feature():
     """Demonstrate the main feature."""
     # Your implementation here
     plugin = ExamplePlugin()
-    
+
     # Create and emit an event
     event = create_event("example_event", data={"message": "Hello World"})
-    
+
     return {"status": "success", "plugin": plugin.name}
 
 async def main():
@@ -197,18 +197,18 @@ async def main():
     parser = argparse.ArgumentParser(description="Example description")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
-    
+
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-    
+
     logger.info("Starting example")
-    
+
     try:
         result = await demonstrate_feature()
         logger.info(f"Example completed: {result}")
-        
+
     except Exception as e:
         logger.error(f"Example failed: {e}")
         raise

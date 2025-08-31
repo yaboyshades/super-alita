@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -37,6 +36,7 @@ def test_streaming_single_turn_smoke() -> None:
     assert "AbilitySucceeded" in kinds
     assert "TaskSucceeded" in kinds
 
+
 from fastapi import FastAPI
 
 
@@ -67,4 +67,3 @@ def test_streaming_single_turn_smoke() -> None:
     assert "AbilityCalled" in kinds
     assert "AbilitySucceeded" in kinds
     assert "TaskSucceeded" in kinds
-

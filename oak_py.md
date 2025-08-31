@@ -90,13 +90,13 @@ class FeatureDiscoveryEngine(PluginInterface):
             'min_novelty_threshold': 0.3,
             'novelty_threshold': 0.1
         }
-        
+
         self.features: Dict[str, Feature] = {}
         self.feature_utility_emas: Dict[str, Dict[str, float]] = {} # feature_id -> {signal_type -> ema}
         self.recent_observations = deque(maxlen=100)
         self.last_tick_time = 0.0
         self.feature_bank: Dict[str, Callable] = {}  # φᵢ(s) evaluators
-        
+
         # Register event handlers
         self.on('observation', self.handle_observation)
         self.on('deliberation_tick', self.handle_tick)
@@ -113,7 +113,7 @@ class FeatureDiscoveryEngine(PluginInterface):
         """Process new observations for feature generation."""
         observation = event.payload
         self.recent_observations.append(observation)
-        
+
         # Generate primitive features from observation
         primitive_features = self._generate_primitive_features(observation)
         await self._process_feature_candidates(primitive_features)
@@ -125,7 +125,7 @@ class FeatureDiscoveryEngine(PluginInterface):
         for i, value in enumerate(observation.get('sensors', [])):
             feature_id = self.generate_feature_id('primitive', [f'sensor_{i}'])
             evaluator = lambda s, idx=i: s.get('sensors', [])[idx] if idx < len(s.get('sensors', [])) else 0.0
-            
+
             features.append(Feature(
                 id=feature_id,
                 base_ids=[f'sensor_{i}'],
@@ -137,7 +137,7 @@ class FeatureDiscoveryEngine(PluginInterface):
     async def handle_tick(self, event: Event):
         """Process deliberation tick for feature discovery."""
         current_time = event.payload.get('timestamp', 0.0)
-        
+
         # Rate-limited feature generation
         if len(self.features) < self.config['max_features']:
             candidates = await self._generate_feature_candidates()
@@ -146,44 +146,44 @@ class FeatureDiscoveryEngine(PluginInterface):
     async def _generate_feature_candidates(self) -> List[Feature]:
         """Generate candidate features."""
         candidates = []
-        
+
         # Conjunction generator
         candidates.extend(self._generate_conjunctions())
-        
+
         # TODO: Sequence generator (sliding windows)
         # candidates.extend(self._generate_sequences())
-        
+
         # TODO: Contrast generator
         # candidates.extend(self._generate_contrasts())
-        
+
         return candidates
 
     def _generate_conjunctions(self) -> List[Feature]:
         """Generate feature conjunctions."""
         conjunctions = []
         existing_features = list(self.features.values())
-        
+
         for i, feat1 in enumerate(existing_features):
             for feat2 in existing_features[i+1:]:
-                if (len(feat1.base_ids) + len(feat2.base_ids) <= 5 and 
+                if (len(feat1.base_ids) + len(feat2.base_ids) <= 5 and
                     self._evaluate_novelty([feat1, feat2])):
-                    
+
                     base_ids = sorted(set(feat1.base_ids + feat2.base_ids))
                     feature_id = self.generate_feature_id('conjunction', base_ids)
-                    
+
                     # Create evaluator for the conjunction
                     def make_conjunction_evaluator(f1, f2):
                         return lambda s: min(f1.evaluator(s), f2.evaluator(s)) if f1.evaluator and f2.evaluator else 0.0
-                    
+
                     evaluator = make_conjunction_evaluator(feat1, feat2)
-                    
+
                     conjunctions.append(Feature(
                         id=feature_id,
                         base_ids=base_ids,
                         feature_type='conjunction',
                         evaluator=evaluator
                     ))
-        
+
         return conjunctions
 
     def _generate_sequences(self) -> List[Feature]:
@@ -200,7 +200,7 @@ class FeatureDiscoveryEngine(PluginInterface):
         """Evaluate novelty of feature combination."""
         if not features:
             return False
-            
+
         # Calculate similarity to existing features
         feature_vectors = []
         for feat in features:
@@ -208,10 +208,10 @@ class FeatureDiscoveryEngine(PluginInterface):
                 # Create a test vector by evaluating on recent observations
                 test_vector = [feat.evaluator(obs) for obs in self.recent_observations]
                 feature_vectors.append(test_vector)
-        
+
         if not feature_vectors:
             return False
-            
+
         # Compare with existing features
         for existing_id, existing_feat in self.features.items():
             if existing_feat.evaluator:
@@ -224,10 +224,10 @@ class FeatureDiscoveryEngine(PluginInterface):
                 except ValueError:
                     # If vectors are incompatible, consider it novel
                     continue
-                
+
                 if similarity > self.config['min_novelty_threshold']:
                     return False
-        
+
         return True
 
     def evaluate_feature(self, feature_id: str, state) -> float:
@@ -241,12 +241,12 @@ class FeatureDiscoveryEngine(PluginInterface):
         new_features = []
         current_time = time.time() # Note: time import needed
         novelty_scores = []
-        
+
         for candidate in candidates:
             if candidate.id not in self.features:
                 self.features[candidate.id] = candidate
                 new_features.append(candidate)
-                
+
                 # Persist to knowledge graph
                 self.feature_bank[candidate.id] = candidate.evaluator
                 atom = NeuralAtom(
@@ -261,18 +261,18 @@ class FeatureDiscoveryEngine(PluginInterface):
                     }
                 )
                 # await self.neural_store.store(atom)  # Assuming neural_store available
-                
+
                 # Calculate initial novelty score
                 novelty = await self._calculate_novelty_score(candidate)
                 novelty_scores.append(novelty)
-                
+
                 await self.emit('feature_created', {
                     'feature_id': candidate.id,
                     'base_ids': candidate.base_ids,
                     'feature_type': candidate.feature_type,
                     'novelty': novelty
                 })
-        
+
         # Update novelty utilities
         for feature, novelty in zip(new_features, novelty_scores):
             await self.emit('oak.feature_utility_updated', {
@@ -286,12 +286,12 @@ class FeatureDiscoveryEngine(PluginInterface):
         """Calculate novelty score for a feature."""
         if not feature.evaluator:
             return 0.0
-            
+
         # Evaluate on recent observations
         values = [feature.evaluator(obs) for obs in self.recent_observations]
         if not values:
             return 1.0  # Maximum novelty if no observations
-            
+
         # Compare with existing features
         min_similarity = 1.0
         for existing_id, existing_feat in self.features.items():
@@ -304,7 +304,7 @@ class FeatureDiscoveryEngine(PluginInterface):
                     except ValueError:
                         # If vectors are incompatible, skip comparison
                         pass
-        
+
         return max(0.0, 1.0 - min_similarity)
 
     async def handle_utility_update(self, event: Event):
@@ -313,32 +313,32 @@ class FeatureDiscoveryEngine(PluginInterface):
         signal_type = event.payload['signal_type']
         value = event.payload['value']
         components = event.payload.get('components', {})
-        
+
         if feature_id in self.features:
             feature = self.features[feature_id]
-            
+
             # Update EMA for this signal type
             if feature_id not in self.feature_utility_emas:
                 self.feature_utility_emas[feature_id] = {'play': 0.0, 'prediction': 0.0, 'planning': 0.0, 'novelty': 0.0}
-            
+
             # Update individual component EMAs
             for comp_name, comp_value in components.items():
                 current_ema = self.feature_utility_emas[feature_id].get(comp_name, comp_value)
                 new_ema = self.config['utility_ema_decay'] * current_ema + (1 - self.config['utility_ema_decay']) * comp_value
                 self.feature_utility_emas[feature_id][comp_name] = new_ema
-            
+
             # IDBD-style meta-learning update for step size
             self._update_idbd_step_size(feature, value)
-            
+
             # Fuse utilities from different sources
             combined_utility = self._fuse_utilities(feature_id)
-            
+
             # Update feature utility using IDBD step size
             old_utility = feature.utility
             feature.utility = old_utility + feature.alpha * (combined_utility - old_utility)
-            
+
             feature.usage_count += 1
-            
+
             # Emit utility update
             await self.emit('oak.feature_utility_updated', {
                 'feature_id': feature_id,
@@ -351,15 +351,15 @@ class FeatureDiscoveryEngine(PluginInterface):
         # Simplified IDBD implementation
         prediction = feature.utility
         error = target - prediction
-        
+
         # Update gradient and Hessian traces
         feature.gradient_trace = self.config['utility_ema_decay'] * feature.gradient_trace + error
         feature.hessian_trace = self.config['utility_ema_decay'] * feature.hessian_trace + error ** 2
-        
+
         # Update step size (alpha)
         if feature.hessian_trace > 1e-8:
-            feature.alpha = max(1e-6, min(0.1, 
-                feature.alpha + self.config['idbd_meta_rate'] * 
+            feature.alpha = max(1e-6, min(0.1,
+                feature.alpha + self.config['idbd_meta_rate'] *
                 feature.gradient_trace * error / feature.hessian_trace))
 
     def _fuse_utilities(self, feature_id: str) -> float:
@@ -367,12 +367,12 @@ class FeatureDiscoveryEngine(PluginInterface):
         emas = self.feature_utility_emas.get(feature_id, {
             'play': 0.0, 'prediction': 0.0, 'planning': 0.0, 'novelty': 0.0
         })
-        
+
         play_utility = emas['play']
         prediction_utility = emas['prediction']
         planning_utility = emas['planning']
         novelty = emas.get('novelty', 0.0)
-        
+
         # Simple weighted combination - can be refined
         return 0.3 * play_utility + 0.3 * prediction_utility + 0.3 * planning_utility + 0.1 * novelty
 
@@ -417,10 +417,10 @@ class SubproblemManager(PluginInterface):
             'min_kappa': 0.1,
             'max_kappa': 10.0
         }
-        
+
         self.subproblems: Dict[str, Subproblem] = {}
         self.feature_subproblems: Dict[str, List[str]] = {}  # feature_id -> [subproblem_id, ...]
-        
+
         # Register event handlers
         self.on('feature_created', self.handle_feature_created)
         self.on('option_completed', self.handle_option_completed)
@@ -435,13 +435,13 @@ class SubproblemManager(PluginInterface):
         """Create initial subproblem for new feature."""
         feature_id = event.payload['feature_id']
         novelty = event.payload.get('novelty', 0.5)  # Default if not provided
-        
+
         # Set initial kappa based on novelty
         initial_kappa = self.config['initial_kappa'] * (1.0 + novelty)
         initial_kappa = max(self.config['min_kappa'], min(self.config['max_kappa'], initial_kappa))
-        
+
         subproblem_id = self.generate_subproblem_id(feature_id, initial_kappa)
-        
+
         if subproblem_id not in self.subproblems:
             subproblem = Subproblem(
                 id=subproblem_id,
@@ -451,7 +451,7 @@ class SubproblemManager(PluginInterface):
             )
             self.subproblems[subproblem_id] = subproblem
             self.feature_subproblems.setdefault(feature_id, []).append(subproblem_id)
-            
+
             # Persist to knowledge graph
             atom = NeuralAtom(
                 content={
@@ -466,7 +466,7 @@ class SubproblemManager(PluginInterface):
                 }
             )
             # await self.neural_store.store(atom)
-            
+
             await self.emit('subproblem_defined', {
                 'subproblem_id': subproblem_id,
                 'feature_id': feature_id,
@@ -478,7 +478,7 @@ class SubproblemManager(PluginInterface):
         option_id = event.payload['option_id']
         success = event.payload['success']
         cost = event.payload.get('cost', 0.0)
-        
+
         # Find subproblem associated with this option
         # (Assumes option_id encodes subproblem info or a mapping exists)
         # For simplicity, assume option_id format is 'option_subproblem_id_suffix'
@@ -490,20 +490,20 @@ class SubproblemManager(PluginInterface):
             parts = option_id.split('_')
             if len(parts) > 1:
                 subproblem_id = '_'.join(parts[:2]) # Assumes subproblem_id is prefix
-        
+
         if subproblem_id and subproblem_id in self.subproblems:
             subproblem = self.subproblems[subproblem_id]
-            
+
             # Update stats
             subproblem.attempt_count += 1
             if success:
                 subproblem.success_count += 1
             subproblem.avg_cost = (subproblem.avg_cost * (subproblem.attempt_count - 1) + cost) / subproblem.attempt_count
-            
+
             # Adapt kappa based on performance
             success_rate = subproblem.success_count / subproblem.attempt_count if subproblem.attempt_count > 0 else 0
             efficiency = 1.0 / (1.0 + subproblem.avg_cost) if subproblem.avg_cost > 0 else 1.0
-            
+
             if success_rate > 0.7 and efficiency > 0.5:
                 # Increase kappa for more ambitious subproblems
                 new_kappa = subproblem.kappa * (1 + self.config['kappa_adaptation_rate'])
@@ -512,9 +512,9 @@ class SubproblemManager(PluginInterface):
                 new_kappa = subproblem.kappa * (1 - self.config['kappa_adaptation_rate'])
             else:
                 new_kappa = subproblem.kappa
-            
+
             new_kappa = max(self.config['min_kappa'], min(self.config['max_kappa'], new_kappa))
-            
+
             if abs(new_kappa - subproblem.kappa) > 0.01:
                 subproblem.kappa = new_kappa
                 # Emit update event
@@ -527,21 +527,21 @@ class SubproblemManager(PluginInterface):
         """Calculate shaped reward for subproblem."""
         if subproblem_id not in self.subproblems:
             return external_reward
-            
+
         subproblem = self.subproblems[subproblem_id]
-        
+
         # Bonus for feature presence (assumes access to feature engine)
         # feature_value = self.feature_engine.evaluate_feature(subproblem.feature_id, current_state)
         # feature_bonus = feature_value * 0.1 # Configurable weight
-        
+
         # Placeholder for feature bonus
         feature_bonus = 0.0
-        
+
         # Bonus for value improvement (requires access to value predictor)
         # value_bonus = self._calculate_value_improvement(subproblem_id, current_state)
         # Placeholder for value bonus
         value_bonus = 0.0
-        
+
         return external_reward + feature_bonus + value_bonus
 
     def _calculate_value_improvement(self, subproblem_id: str, state) -> float:
@@ -613,13 +613,13 @@ class OptionTrainer(PluginInterface):
             'max_replay_size': 10000,
             'training_interval': 10
         }
-        
+
         self.options: Dict[str, OptionNetwork] = {}
         self.optimizers: Dict[str, optim.Optimizer] = {}
         self.replay_buffers: Dict[str, deque] = {}
         self.option_states: Dict[str, dict] = {} # Tracks current trajectory, step count
         self.step_count = 0
-        
+
         # Register event handlers
         self.on('subproblem_defined', self.handle_subproblem_defined)
         self.on('state_transition', self.handle_state_transition)
@@ -632,13 +632,13 @@ class OptionTrainer(PluginInterface):
         # Assume state_dim and action_dim are available from environment or config
         state_dim = self.config.get('state_dim', 10) # Should come from environment
         action_dim = self.config.get('action_dim', 4) # Should come from environment
-        
+
         option_id = f"option_{subproblem_id}"
-        
+
         if option_id not in self.options:
             network = OptionNetwork(state_dim, action_dim)
             optimizer = optim.Adam(network.parameters(), lr=self.config['learning_rate'])
-            
+
             self.options[option_id] = network
             self.optimizers[option_id] = optimizer
             self.replay_buffers[option_id] = deque(maxlen=self.config['max_replay_size'])
@@ -646,7 +646,7 @@ class OptionTrainer(PluginInterface):
                 'current_trajectory': [],
                 'step_count': 0
             }
-            
+
             await self.emit('option_created', {
                 'option_id': option_id,
                 'subproblem_id': subproblem_id
@@ -656,7 +656,7 @@ class OptionTrainer(PluginInterface):
         """Handle option initiation."""
         option_id = event.payload['option_id']
         state = event.payload['state']
-        
+
         if option_id in self.options:
             self.option_states[option_id]['current_trajectory'] = []
 
@@ -665,18 +665,18 @@ class OptionTrainer(PluginInterface):
         option_id = event.payload.get('option_id')
         if not option_id or option_id not in self.options:
             return
-            
+
         state = event.payload['state']
         action = event.payload['action']
         reward = event.payload['reward']
         next_state = event.payload['next_state']
         done = event.payload.get('done', False)
         log_prob = event.payload.get('log_prob', 0.0) # Get log_prob from action selection
-        
+
         # Store transition in buffer
         transition = Transition(state, action, log_prob, reward, next_state, done)
         self.replay_buffers[option_id].append(transition)
-        
+
         # Update trajectory for advantage calculation
         self.option_states[option_id]['current_trajectory'].append(transition)
         self.option_states[option_id]['step_count'] += 1
@@ -692,11 +692,11 @@ class OptionTrainer(PluginInterface):
         """Train option using PPO-style updates."""
         if option_id not in self.options:
             return
-            
+
         network = self.options[option_id]
         optimizer = self.optimizers[option_id]
         buffer = list(self.replay_buffers[option_id])
-        
+
         if len(buffer) < self.config['batch_size']:
             return
 
@@ -718,7 +718,7 @@ class OptionTrainer(PluginInterface):
             _, next_values, _ = network(next_states)
             values = values.squeeze()
             next_values = next_values.squeeze()
-            
+
             # GAE
             deltas = rewards + self.config['gamma'] * next_values * (~dones) - values
             advantages = torch.zeros_like(rewards)
@@ -840,10 +840,10 @@ class PredictionEngine(PluginInterface):
             'emphasis_decay': 0.99,
             'state_dim': 10 # Should come from environment
         }
-        
+
         self.gvfs: Dict[str, GVF] = {}
         self.option_gvfs: Dict[str, List[str]] = {} # option_id -> [gvf_id, ...]
-        
+
         # Register event handlers
         self.on('option_created', self.handle_option_created)
         self.on('state_transition', self.handle_state_transition)
@@ -852,12 +852,12 @@ class PredictionEngine(PluginInterface):
     async def handle_option_created(self, event: Event):
         """Create GVFs for a new option."""
         option_id = event.payload['option_id']
-        
+
         # Example GVFs for an option
         gvf_types = ['duration', 'feature_attainment'] # Add more as needed
         gamma = 0.9
         lambda_ = 0.8
-        
+
         for gvf_type in gvf_types:
             gvf_id = f"gvf_{option_id}_{gvf_type}"
             if gvf_id not in self.gvfs:
@@ -867,10 +867,10 @@ class PredictionEngine(PluginInterface):
                                                 lr=self.config['learning_rate'])
                 # Initialize eligibility trace
                 gvf.eligibility_trace = torch.zeros(self.config['state_dim'])
-                
+
                 self.gvfs[gvf_id] = gvf
                 self.option_gvfs.setdefault(option_id, []).append(gvf_id)
-                
+
                 await self.emit('gvf_created', {
                     'gvf_id': gvf_id,
                     'option_id': option_id,
@@ -891,11 +891,11 @@ class PredictionEngine(PluginInterface):
             gvf.optimizer = torch.optim.Adam(gvf.network.parameters(),
                                             lr=self.config['learning_rate'])
             gvf.eligibility_trace = torch.zeros(self.config['state_dim'])
-            
+
             self.gvfs[gvf_id] = gvf
             # Note: global GVFs might not be tied to a specific option's list
             # self.option_gvfs.setdefault("global", []).append(gvf_id)
-            
+
             await self.emit('gvf_created', {
                 'gvf_id': gvf_id,
                 'option_id': "global", # Or omit
@@ -907,30 +907,30 @@ class PredictionEngine(PluginInterface):
         option_id = event.payload.get('option_id')
         if not option_id:
             return
-            
+
         state = event.payload['state']
         next_state = event.payload['next_state']
         reward = event.payload['reward']
         done = event.payload.get('done', False)
-        
+
         # Get GVFs associated with this option
         gvf_ids = self.option_gvfs.get(option_id, [])
-        
+
         for gvf_id in gvf_ids:
             if gvf_id not in self.gvfs:
                 continue
             gvf = self.gvfs[gvf_id]
-            
+
             state_tensor = torch.FloatTensor(state)
             next_state_tensor = torch.FloatTensor(next_state)
             reward_tensor = torch.FloatTensor([reward])
             done_tensor = torch.BoolTensor([done])
-            
+
             # Get predictions
             with torch.no_grad():
                 pred_now = gvf.network(state_tensor.unsqueeze(0)).squeeze()
                 pred_next = gvf.network(next_state_tensor.unsqueeze(0)).squeeze()
-            
+
             # Calculate TD error
             # Note: Cumulant `C` needs to be defined based on `gvf.prediction_type`
             if gvf.prediction_type == 'duration':
@@ -947,18 +947,18 @@ class PredictionEngine(PluginInterface):
             # Importance sampling ratio (rho)
             # For simplicity, assume rho=1.0 (on-policy) or get from option policy
             rho = 1.0 # Placeholder
-            
+
             # Clip rho
             rho = min(rho, self.config['rho_clip'])
-            
+
             # Calculate TD error (delta)
             gamma_next = gvf.gamma if not done else 0.0
             delta = C + gamma_next * pred_next.item() - pred_now.item()
-            
+
             # Update eligibility trace
             gvf.eligibility_trace = (gvf.gamma * gvf.lambda_ * rho *
                                    gvf.eligibility_trace + gvf.emphasis * state_tensor)
-            
+
             # Update GVF emphasis for ETD(λ)
             gvf.emphasis = self.config['emphasis_decay'] * gvf.emphasis + 1.0
 
@@ -967,7 +967,7 @@ class PredictionEngine(PluginInterface):
             loss = 0.5 * (delta ** 2)
             gvf.optimizer.zero_grad()
             loss.backward()
-            
+
             # Apply eligibility trace to gradients (ETD part)
             # Multiply each gradient by the corresponding eligibility trace element
             # This is a simplified version; a more precise version would apply
@@ -976,19 +976,19 @@ class PredictionEngine(PluginInterface):
                 if param.grad is not None:
                     # Element-wise multiplication
                     param.grad *= gvf.eligibility_trace
-            
+
             gvf.optimizer.step()
 
             # Record prediction error
             gvf.prediction_errors.append(abs(delta))
-            
+
             await self.emit('prediction_error', {
                 'gvf_id': gvf_id,
                 'error': abs(delta),
                 'option_id': option_id, # Include option_id
                 'prediction_type': gvf.prediction_type
             })
-            
+
             # Feed back to feature utility
             if gvf.prediction_type == 'feature_attainment':
                 # Determine the actual feature ID this GVF is for
@@ -999,7 +999,7 @@ class PredictionEngine(PluginInterface):
                 else:
                     # Handle option-specific feature GVFs if they exist
                     feature_id = "some_feature_id" # Placeholder
-                
+
                 await self.emit('oak.feature_utility_updated', {
                     'feature_id': feature_id, # Should be actual feature ID
                     'signal_type': 'prediction',
@@ -1050,12 +1050,12 @@ class PlanningEngine(PluginInterface):
             'model_confidence_decay': 0.9,
             'priority_exponent': 0.6
         }
-        
+
         self.backup_queue: List[BackupItem] = []
         heapq.heapify(self.backup_queue)
         self.model_confidence = 1.0
         self.last_backup_time = 0.0
-        
+
         # Register event handlers
         self.on('deliberation_tick', self.handle_tick)
         self.on('prediction_error', self.handle_prediction_error)
@@ -1064,10 +1064,10 @@ class PlanningEngine(PluginInterface):
     async def handle_tick(self, event: Event):
         """Perform planning backups."""
         current_time = event.payload.get('timestamp', 0.0)
-        
+
         # Decay model confidence over time
         self.model_confidence *= self.config['model_confidence_decay']
-        
+
         # Perform backups
         for _ in range(self.config['backups_per_tick']):
             if self.backup_queue:
@@ -1110,7 +1110,7 @@ class PlanningEngine(PluginInterface):
         # 3. Updating the value of `state` based on the best option
         # 4. Possibly propagating changes backwards (as in backward induction)
         # 5. Emitting planning events like `plan_proposed` or `plan_selected`
-        
+
         # Placeholder: just print or log
         print(f"Performing backup from state {state}")
         # Emit event if a plan/decision is made
@@ -1159,7 +1159,7 @@ class SurvivalScore:
     usage: float = 0.0
     age: float = 0.0
     size: float = 1.0
-    
+
     def total(self) -> float:
         """Calculate total survival score."""
         # Simple weighted sum - can be refined
@@ -1179,7 +1179,7 @@ class CurationManager(PluginInterface):
             'age_weight': 0.1,
             'size_weight': 0.05
         }
-        
+
         self.survival_scores: Dict[str, SurvivalScore] = {}
         self.usage_stats: Dict[str, float] = defaultdict(float)
         self.creation_times: Dict[str, float] = {}
@@ -1187,7 +1187,7 @@ class CurationManager(PluginInterface):
         self.item_types: Dict[str, str] = {} # Track item types for pruning
         self.last_curation_time = 0.0
         self.curation_count = 0
-        
+
         # Register event handlers
         self.on('feature_created', self.handle_item_creation)
         self.on('subproblem_defined', self.handle_item_creation)
@@ -1202,7 +1202,7 @@ class CurationManager(PluginInterface):
                   event.payload.get('subproblem_id') or
                   event.payload.get('option_id') or
                   event.payload.get('gvf_id'))
-        
+
         if item_id:
             self.creation_times[item_id] = time.time()
             self.usage_stats[item_id] = 0.0
@@ -1226,7 +1226,7 @@ class CurationManager(PluginInterface):
         item_id = (event.payload.get('feature_id') or
                   event.payload.get('option_id') or
                   event.payload.get('gvf_id'))
-        
+
         if item_id and item_id in self.survival_scores:
             utility = event.payload.get('utility', 0.0)
             self.survival_scores[item_id].combined_utility = utility
@@ -1255,11 +1255,11 @@ class CurationManager(PluginInterface):
         # Sort items by survival score
         sorted_items = sorted(self.survival_scores.items(),
                             key=lambda x: x[1].total(), reverse=True)
-        
+
         # Prune items below the threshold
         num_to_prune = total_items - self.config['max_items']
         items_to_prune = sorted_items[-num_to_prune:]
-        
+
         for item_id, _ in items_to_prune:
             await self._prune_item(item_id)
 
@@ -1275,7 +1275,7 @@ class CurationManager(PluginInterface):
             await self.emit('option_pruned', {'option_id': item_id})
         elif item_type == 'gvf':
             await self.emit('gvf_pruned', {'gvf_id': item_id})
-        
+
         # Clean up internal state
         for d in (self.survival_scores, self.usage_stats,
                   self.creation_times, self.item_sizes, self.item_types):
@@ -1340,7 +1340,7 @@ class OakCoordinator(PluginInterface):
             'thompson_beta': 1.0,
             'exploration_epsilon': 0.1
         }
-        
+
         # Initialize components
         self.feature_engine = FeatureDiscoveryEngine(event_bus)
         self.subproblem_manager = SubproblemManager(event_bus)
@@ -1348,11 +1348,11 @@ class OakCoordinator(PluginInterface):
         self.prediction_engine = PredictionEngine(event_bus)
         self.planning_engine = PlanningEngine(event_bus)
         self.curation_manager = CurationManager(event_bus)
-        
+
         self.active_options: Dict[str, dict] = {}
         self.option_success_stats: Dict[str, List[bool]] = defaultdict(list)
         self.option_rewards: Dict[str, List[float]] = defaultdict(list)
-        
+
         # Register event handlers
         self.on('deliberation_tick', self.handle_tick)
         self.on('option_completed', self.handle_option_completed)
@@ -1368,10 +1368,10 @@ class OakCoordinator(PluginInterface):
         option_id = event.payload['option_id']
         success = event.payload['success']
         reward = event.payload.get('reward', 0.0)
-        
+
         self.option_success_stats[option_id].append(success)
         self.option_rewards[option_id].append(reward)
-        
+
         # Keep stats bounded
         if len(self.option_success_stats[option_id]) > 100:
             self.option_success_stats[option_id].pop(0)
@@ -1394,7 +1394,7 @@ class OakCoordinator(PluginInterface):
             # Sample from Beta distribution
             sampled_value = np.random.beta(alpha, beta)
             sampled_values.append(sampled_value)
-        
+
         # Epsilon-greedy exploration
         if np.random.rand() < self.config['exploration_epsilon']:
             np.random.shuffle(available_options)
@@ -1404,7 +1404,7 @@ class OakCoordinator(PluginInterface):
             sorted_pairs = sorted(zip(available_options, sampled_values),
                                 key=lambda x: x[1], reverse=True)
             selected = [opt_id for opt_id, _ in sorted_pairs[:self.config['max_concurrent_options']]]
-        
+
         return selected
 
     def _update_metrics(self):
@@ -1413,14 +1413,14 @@ class OakCoordinator(PluginInterface):
         SUBPROBLEM_COUNT.set(len(self.subproblem_manager.subproblems))
         OPTION_COUNT.set(len(self.option_trainer.options))
         GVF_COUNT.set(len(self.prediction_engine.gvfs))
-        
+
         # Calculate average success rate
         all_successes = []
         for successes in self.option_success_stats.values():
             all_successes.extend(successes)
         if all_successes:
             SUCCESS_RATE.set(np.mean(all_successes))
-        
+
         # Placeholder for average loss
         AVG_LOSS.set(0.0) # Would track actual losses from training
 
@@ -1652,7 +1652,7 @@ chat = openai.ChatCompletion.create(
     max_tokens=48,
     temperature=0.2,
 )
-print(chat.choices[0].message["content"]) 
+print(chat.choices[0].message["content"])
 ```
 
 ## 10. Integration with Super Alita / OaK

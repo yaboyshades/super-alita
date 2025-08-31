@@ -155,7 +155,7 @@ class TelemetryBroker:
 
     # ---------------------------- Utilities -------------------------------
     def _redact(self, message: str) -> str:
-        # Placeholder for PII / secret redaction; integrate utils.redaction later
+        # Redaction hook; extend via utils.redaction when configured
         return message
 
     def _hash_envelope(self, envelope: dict[str, Any]) -> str:

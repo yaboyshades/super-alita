@@ -1,6 +1,7 @@
 """
 Cortex Adapter Plugin - Interface to external AI systems for bootstrapping.
 """
+
 from __future__ import annotations
 
 import time
@@ -25,14 +26,11 @@ from src.core.utils import (
 class ExternalCortex(Protocol):
     """Protocol for external AI systems."""
 
-    async def reason(self, prompt: str, context: dict[str, Any]) -> dict[str, Any]:
-        ...
+    async def reason(self, prompt: str, context: dict[str, Any]) -> dict[str, Any]: ...
 
-    async def analyze_problem(self, problem: str) -> list[dict[str, Any]]:
-        ...
+    async def analyze_problem(self, problem: str) -> list[dict[str, Any]]: ...
 
-    async def suggest_tools(self, intent: str) -> list[str]:
-        ...
+    async def suggest_tools(self, intent: str) -> list[str]: ...
 
 
 @dataclass
@@ -103,7 +101,9 @@ class CortexAdapterPlugin(PluginInterface):
         await super().setup(event_bus, store, config)
         self.graph = config.get("graph", self.graph)
         self.navigator = config.get("navigator", self.navigator)
-        await self.event_bus.subscribe("reasoning_request", self.handle_reasoning_request)
+        await self.event_bus.subscribe(
+            "reasoning_request", self.handle_reasoning_request
+        )
         await self.event_bus.subscribe("knowledge_gap", self.handle_knowledge_gap)
 
     async def start(self) -> None:  # type: ignore[override]
@@ -232,7 +232,9 @@ class CortexAdapterPlugin(PluginInterface):
             ],
             "graph_stats": {
                 "total_atoms": len(self.graph.atoms),
-                "connection_count": sum(len(a.bonds_out()) for a in self.graph.atoms.values()),
+                "connection_count": sum(
+                    len(a.bonds_out()) for a in self.graph.atoms.values()
+                ),
             },
         }
 
@@ -303,13 +305,17 @@ class CortexAdapterPlugin(PluginInterface):
             }
         )
 
-    async def _create_or_get_atom(self, content: str, atom_type: str, metadata: dict[str, Any]) -> NeuralAtom:
+    async def _create_or_get_atom(
+        self, content: str, atom_type: str, metadata: dict[str, Any]
+    ) -> NeuralAtom:
         key_norm = normalize_text(content or "")
         key = blake2b_hexdigest(f"{atom_type}|{key_norm}")
         existing_uuid = self._dedup_index.get(key)
         if existing_uuid:
             return self.graph.atoms[existing_uuid]
-        atom = self.graph.create_atom(content=content, atom_type=atom_type, metadata=metadata)
+        atom = self.graph.create_atom(
+            content=content, atom_type=atom_type, metadata=metadata
+        )
         self._dedup_index[key] = atom.uuid
         return atom
 
@@ -335,5 +341,5 @@ class CortexAdapterPlugin(PluginInterface):
     def maintenance_tick(self, now: Optional[float] = None) -> int:
         now = now or time.time()
         removed = 0
-        # Placeholder for future quarantine GC
+        # Quarantine GC hook
         return removed

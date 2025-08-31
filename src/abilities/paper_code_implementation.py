@@ -8,9 +8,9 @@ Requirements: Build a research paper implementation *ability*:
 - Preserve mathematical accuracy and computational complexity
 - Support for attention mechanisms, transformers, neural networks
 - Safety: no eval/exec, proper tensor operations, memory management
-Task: 
+Task:
     Implement the ResNet architecture from 'Deep Residual Learning for Image Recognition' by He et al.
-    
+
     Key requirements:
     - Implement residual blocks with skip connections (identity mapping)
     - Support both basic blocks (for ResNet-18/34) and bottleneck blocks (for ResNet-50/101/152)
@@ -19,10 +19,10 @@ Task:
     - Add proper weight initialization (Kaiming initialization)
     - Include downsampling layers for feature map size reduction
     - Support different input sizes and number of classes
-    
+
     The core innovation is the residual connection: F(x) + x where F(x) is the residual mapping.
     This solves the degradation problem in very deep networks.
-    
+
 
 """
 
@@ -35,145 +35,155 @@ import torch.nn.functional as F
 
 class MultiHeadAttention(nn.Module):
     """Multi-head attention mechanism from 'Attention is All You Need'"""
-    
+
     def __init__(self, d_model: int, num_heads: int, dropout: float = 0.1):
         super().__init__()
         assert d_model % num_heads == 0
-        
+
         self.d_model = d_model
         self.num_heads = num_heads
         self.d_k = d_model // num_heads
-        
+
         self.w_q = nn.Linear(d_model, d_model)
         self.w_k = nn.Linear(d_model, d_model)
         self.w_v = nn.Linear(d_model, d_model)
         self.w_o = nn.Linear(d_model, d_model)
-        
+
         self.dropout = nn.Dropout(dropout)
-        
+
     def scaled_dot_product_attention(
-        self, 
-        query: torch.Tensor, 
-        key: torch.Tensor, 
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
         value: torch.Tensor,
-        mask: torch.Tensor | None = None
+        mask: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute scaled dot-product attention"""
-        
+
         # Compute attention scores
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(self.d_k)
-        
+
         # Apply mask if provided
         if mask is not None:
             scores = scores.masked_fill(mask == 0, -1e9)
-        
+
         # Apply softmax
         attention_weights = F.softmax(scores, dim=-1)
         attention_weights = self.dropout(attention_weights)
-        
+
         # Apply attention to values
         output = torch.matmul(attention_weights, value)
-        
+
         return output, attention_weights
-    
+
     def forward(
-        self, 
-        query: torch.Tensor, 
-        key: torch.Tensor, 
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
         value: torch.Tensor,
-        mask: torch.Tensor | None = None
+        mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Forward pass through multi-head attention"""
-        
+
         batch_size, seq_len, _ = query.size()
-        
+
         # Linear transformations and reshape for multi-head attention
-        Q = self.w_q(query).view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
-        K = self.w_k(key).view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
-        V = self.w_v(value).view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
-        
+        Q = (
+            self.w_q(query)
+            .view(batch_size, seq_len, self.num_heads, self.d_k)
+            .transpose(1, 2)
+        )
+        K = (
+            self.w_k(key)
+            .view(batch_size, seq_len, self.num_heads, self.d_k)
+            .transpose(1, 2)
+        )
+        V = (
+            self.w_v(value)
+            .view(batch_size, seq_len, self.num_heads, self.d_k)
+            .transpose(1, 2)
+        )
+
         # Apply attention
         attention_output, _ = self.scaled_dot_product_attention(Q, K, V, mask)
-        
+
         # Concatenate heads
-        attention_output = attention_output.transpose(1, 2).contiguous().view(
-            batch_size, seq_len, self.d_model
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .view(batch_size, seq_len, self.d_model)
         )
-        
+
         # Final linear transformation
         output = self.w_o(attention_output)
-        
+
         return output
 
 
 class TransformerBlock(nn.Module):
     """Single transformer block with attention and feed-forward layers"""
-    
+
     def __init__(self, d_model: int, num_heads: int, d_ff: int, dropout: float = 0.1):
         super().__init__()
-        
+
         self.attention = MultiHeadAttention(d_model, num_heads, dropout)
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
-        
+
         self.feed_forward = nn.Sequential(
             nn.Linear(d_model, d_ff),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(d_ff, d_model),
-            nn.Dropout(dropout)
+            nn.Dropout(dropout),
         )
-        
+
     def forward(
-        self, 
-        x: torch.Tensor, 
-        mask: torch.Tensor | None = None
+        self, x: torch.Tensor, mask: torch.Tensor | None = None
     ) -> torch.Tensor:
         """Forward pass through transformer block"""
-        
+
         # Self-attention with residual connection and layer norm
         attn_output = self.attention(x, x, x, mask)
         x = self.norm1(x + attn_output)
-        
+
         # Feed-forward with residual connection and layer norm
         ff_output = self.feed_forward(x)
         x = self.norm2(x + ff_output)
-        
+
         return x
 
 
 def create_paper_code_implementation(
-    d_model: int = 512, 
-    num_heads: int = 8, 
-    num_layers: int = 6,
-    d_ff: int = 2048
+    d_model: int = 512, num_heads: int = 8, num_layers: int = 6, d_ff: int = 2048
 ) -> nn.Module:
     """Factory function to create paper implementation"""
-    
+
     class TransformerModel(nn.Module):
         def __init__(self):
             super().__init__()
-            self.layers = nn.ModuleList([
-                TransformerBlock(d_model, num_heads, d_ff) 
-                for _ in range(num_layers)
-            ])
-            
-        def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
+            self.layers = nn.ModuleList(
+                [TransformerBlock(d_model, num_heads, d_ff) for _ in range(num_layers)]
+            )
+
+        def forward(
+            self, x: torch.Tensor, mask: torch.Tensor | None = None
+        ) -> torch.Tensor:
             for layer in self.layers:
                 x = layer(x, mask)
             return x
-    
+
     return TransformerModel()
 
 
 if __name__ == "__main__":
     # Example usage
     model = create_paper_code_implementation()
-    
+
     # Test with random input
     batch_size, seq_len, d_model = 2, 10, 512
     x = torch.randn(batch_size, seq_len, d_model)
-    
+
     output = model(x)
     print(f"Input shape: {x.shape}")
     print(f"Output shape: {output.shape}")

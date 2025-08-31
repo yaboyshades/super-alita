@@ -36,12 +36,12 @@ foreach ($model in $testModels) {
         # Quick test with very short prompt
         $testPrompt = "Hi"
         $startTime = Get-Date
-        
+
         $result = & ollama run $model $testPrompt
-        
+
         $endTime = Get-Date
         $duration = ($endTime - $startTime).TotalSeconds
-        
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host "   ✅ $model works! (${duration}s)" -ForegroundColor Green
             $workingModels += $model
@@ -58,15 +58,15 @@ if ($workingModels.Count -gt 0) {
     Write-Host "`n4️⃣ Performance benchmark..." -ForegroundColor Yellow
     $bestModel = $workingModels[0]
     Write-Host "   Using: $bestModel" -ForegroundColor Cyan
-    
+
     $prompt = "Write a Python function to reverse a string"
     Write-Host "   Prompt: $prompt" -ForegroundColor Gray
-    
+
     $startTime = Get-Date
     $result = & ollama run $bestModel $prompt
     $endTime = Get-Date
     $duration = ($endTime - $startTime).TotalSeconds
-    
+
     Write-Host "   ✅ Completed in ${duration} seconds" -ForegroundColor Green
     Write-Host "   📝 Response: $($result.Substring(0, [Math]::Min(100, $result.Length)))..." -ForegroundColor Gray
 }

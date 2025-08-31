@@ -48,7 +48,7 @@ Write-Host "Demonstrating safe command generation..." -ForegroundColor Gray
 Write-Host "`nExplaining a common command:" -ForegroundColor Cyan
 Write-Host "gh copilot explain 'curl http://127.0.0.1:8080/healthz'" -ForegroundColor White
 
-Write-Host "`nFor command suggestions, use:" -ForegroundColor Cyan  
+Write-Host "`nFor command suggestions, use:" -ForegroundColor Cyan
 Write-Host "gh copilot suggest 'check Super Alita server status'" -ForegroundColor White
 
 # Demo 4: Available scripts and tasks

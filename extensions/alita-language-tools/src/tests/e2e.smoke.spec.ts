@@ -12,4 +12,3 @@ describe('E2E smoke', () => {
     expect(text).toMatch(/WASM: Ready/);
   });
 });
-

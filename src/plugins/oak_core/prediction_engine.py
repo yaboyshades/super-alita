@@ -37,8 +37,10 @@ class GVFNetwork(nn.Module):
     def __init__(self, input_dim: int, hidden: int = 64):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
+            nn.Linear(input_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
             nn.Linear(hidden, 1),
         )
 
@@ -77,14 +79,14 @@ class PredictionEngine(PluginInterface):
         await self.subscribe("state_transition", self.update_predictions)
 
     def _gvf_id(self, option_id: str, kind: str) -> str:
-        ns = uuid.UUID('6ba7b813-9dad-11d1-80b4-00c04fd430c8')
+        ns = uuid.UUID("6ba7b813-9dad-11d1-80b4-00c04fd430c8")
         return str(uuid.uuid5(ns, f"gvf_{option_id}_{kind}"))
 
     async def create_gvfs_for_option(self, event: dict[str, Any]):
         opt_id = event.get("option_id")
         if not opt_id:
             return
-        
+
         for kind in ("duration", "attainment"):
             gid = self._gvf_id(opt_id, kind)
             if gid in self.gvfs:
@@ -120,10 +122,12 @@ class PredictionEngine(PluginInterface):
             if i >= self.state_dim:
                 break
             if isinstance(v, int | float | bool):
-                vec[i] = float(v); i += 1
+                vec[i] = float(v)
+                i += 1
             elif k == "features" and isinstance(v, list):
                 for j in range(min(10, len(v))):
-                    if i + j < self.state_dim: vec[i + j] = 1.0
+                    if i + j < self.state_dim:
+                        vec[i + j] = 1.0
                 i += 10
         return vec.to(self.device)
 
@@ -164,7 +168,9 @@ class PredictionEngine(PluginInterface):
 
             c = self._cumulant(g, reward, ns)
             gamma = 0.0 if done else g.discount
-            target = torch.tensor(c + gamma * float(v_next), dtype=torch.float32, device=self.device)
+            target = torch.tensor(
+                c + gamma * float(v_next), dtype=torch.float32, device=self.device
+            )
             pred = net(s_t).squeeze()
 
             # ETD-style emphasis update (very lightweight)

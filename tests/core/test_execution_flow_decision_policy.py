@@ -12,9 +12,11 @@ class StubPlan:
         self.strategy = "SINGLE_BEST"
         self.confidence = 0.9
 
+
 class StubPolicy:
     async def decide_and_plan(self, _message, _ctx, _budget=None):
         return StubPlan()
+
 
 @pytest.mark.asyncio
 async def test_execution_flow_uses_decision_policy():

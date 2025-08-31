@@ -22,4 +22,3 @@ export async function runDeepCodeAnalysis(opts: {
   emit('deepcode_analysis', { count: findings.length, path });
   return { findings, metrics };
 }
-

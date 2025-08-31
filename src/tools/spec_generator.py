@@ -18,13 +18,16 @@ class ToolSpec:
     examples: list[dict[str, Any]]
 
     def to_json(self) -> str:
-        return json.dumps({
-            "name": self.name,
-            "description": self.description,
-            "inputs": self.inputs,
-            "outputs": self.outputs,
-            "examples": self.examples,
-        }, indent=2)
+        return json.dumps(
+            {
+                "name": self.name,
+                "description": self.description,
+                "inputs": self.inputs,
+                "outputs": self.outputs,
+                "examples": self.examples,
+            },
+            indent=2,
+        )
 
     def to_markdown(self) -> str:
         return textwrap.dedent(f"""
@@ -49,7 +52,9 @@ def draft_tool_spec(need_statement: str) -> ToolSpec:
 
     Heuristics only; developer is expected to refine as needed.
     """
-    name = sanitize_slug(need_statement.replace("I need", "").replace("to", "").strip() or "new_tool")
+    name = sanitize_slug(
+        need_statement.replace("I need", "").replace("to", "").strip() or "new_tool"
+    )
     if not name:
         name = "new_tool"
     name = name.replace("-", "_")
@@ -72,9 +77,18 @@ def draft_tool_spec(need_statement: str) -> ToolSpec:
         "required": ["result"],
     }
     examples = [
-        {"inputs": {"source": "PATH_OR_URL", "options": {}}, "outputs": {"result": "...", "metadata": {}}}
+        {
+            "inputs": {"source": "PATH_OR_URL", "options": {}},
+            "outputs": {"result": "...", "metadata": {}},
+        }
     ]
-    return ToolSpec(name=name, description=need_statement.strip(), inputs=inputs, outputs=outputs, examples=examples)
+    return ToolSpec(
+        name=name,
+        description=need_statement.strip(),
+        inputs=inputs,
+        outputs=outputs,
+        examples=examples,
+    )
 
 
 def write_tool_spec(spec: ToolSpec, root: str = ".") -> dict[str, str]:
@@ -118,8 +132,12 @@ if __name__ == "__main__":
     # Simple CLI usage
     import argparse
 
-    ap = argparse.ArgumentParser(description="Draft a tool spec and optional issue body")
-    ap.add_argument("need", help="Need statement, e.g., 'Convert a PDF to text'", nargs="+")
+    ap = argparse.ArgumentParser(
+        description="Draft a tool spec and optional issue body"
+    )
+    ap.add_argument(
+        "need", help="Need statement, e.g., 'Convert a PDF to text'", nargs="+"
+    )
     ap.add_argument("--root", default=".")
     ap.add_argument("--print-issue", action="store_true")
     args = ap.parse_args()
@@ -130,4 +148,3 @@ if __name__ == "__main__":
     if args.print_issue:
         print("\n\n--- ISSUE BODY ---\n")
         print(render_issue_body(spec))
-

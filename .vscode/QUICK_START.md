@@ -125,11 +125,11 @@ class ExampleAtom(NeuralAtom):
     async def execute(self, input_data: Any) -> Any:
         # Implementation
         pass
-    
+
     def get_embedding(self) -> List[float]:
         # Semantic embedding
         pass
-    
+
     def can_handle(self, task: str) -> float:
         # Confidence score 0-1
         pass

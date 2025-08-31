@@ -20,7 +20,6 @@ from tests.runtime.puter_fakes import FakePuterServer
 
 class TestPuterPlugin(AioHTTPTestCase):
     async def get_application(self) -> web.Application:  # type: ignore[override]
-
         self.fake_server = FakePuterServer()
         return self.fake_server.create_app()
 
@@ -80,7 +79,6 @@ class TestPuterPlugin(AioHTTPTestCase):
         with pytest.raises(PuterAPIError):
             await self.plugin.read_file("/nonexistent/file.txt")
 
-
     @unittest_run_loop
     async def test_delete_file_no_content(self) -> None:
         result = await self.plugin.delete_file("/test/file.txt")
@@ -91,6 +89,7 @@ class TestPuterPlugin(AioHTTPTestCase):
         result = await self.plugin._make_request("GET", "/api/flaky")
         assert result["status"] == "ok"
         assert self.fake_server.flaky_calls == 3
+
 
 class TestPuterTool(AioHTTPTestCase):
     async def get_application(self) -> web.Application:  # type: ignore[override]
@@ -116,7 +115,9 @@ class TestPuterTool(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_execute_command_with_events(self) -> None:
-        with patch.object(self.tool, "_emit_event", new_callable=AsyncMock) as mock_emit:
+        with patch.object(
+            self.tool, "_emit_event", new_callable=AsyncMock
+        ) as mock_emit:
             result = await self.tool.execute_command("echo", ["test"])
             assert result["exit_code"] == 0
             mock_emit.assert_called_once_with(
@@ -131,10 +132,13 @@ class TestPuterTool(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_file_operations_with_events(self) -> None:
-        with patch.object(self.tool, "_emit_event", new_callable=AsyncMock) as mock_emit:
+        with patch.object(
+            self.tool, "_emit_event", new_callable=AsyncMock
+        ) as mock_emit:
             await self.tool.write_file("/test/file.txt", "content")
             mock_emit.assert_called_with(
-                "file_written", {"path": "/test/file.txt", "size": 7, "created_dirs": True}
+                "file_written",
+                {"path": "/test/file.txt", "size": 7, "created_dirs": True},
             )
             mock_emit.reset_mock()
             content = await self.tool.read_file("/test/file.txt")
@@ -160,7 +164,11 @@ async def test_plugin_registry_integration() -> None:
 
 @pytest.mark.asyncio
 async def test_error_handling_and_retries() -> None:
-    config = {"base_url": "http://unreachable-server", "api_key": "test-key", "max_retries": 2}
+    config = {
+        "base_url": "http://unreachable-server",
+        "api_key": "test-key",
+        "max_retries": 2,
+    }
     plugin = PuterPlugin(config)
 
     class FailingSession:
@@ -184,7 +192,6 @@ async def test_error_handling_and_retries() -> None:
     with pytest.raises(PuterAPIError):
         await plugin._make_request("GET", "/api/test")
     assert session.request_call_count == 3
-
 
 
 @pytest.mark.asyncio
@@ -227,4 +234,3 @@ async def test_worker_hmac_signing() -> None:
     result = await plugin._make_request("POST", "/api/test", data={"foo": "bar"})
     assert result == {"ok": True}
     await plugin.cleanup()
-

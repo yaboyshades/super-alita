@@ -67,14 +67,14 @@ plugins:
     max_episode_length: 50
     chroma_persist_dir: "./data/chroma_memory"
     embedding_model: "text-embedding-3-small"
-    
+
   # Tool Executor Plugin (Core)
   tool_executor:
     enabled: true
     max_concurrent_execution: 10
     execution_timeout: 30.0
     tool_cache_ttl: 300
-    
+
   # Creator Plugin (CREATOR Framework)
   creator_plugin:
     enabled: true
@@ -82,7 +82,7 @@ plugins:
     max_rectification_attempts: 3
     sandbox_timeout: 30.0
     validation_strictness: "high"
-    
+
   # LLM Planner Plugin (Core)
   llm_planner:
     enabled: true
@@ -90,13 +90,13 @@ plugins:
     temperature: 0.1
     max_tokens: 2048
     timeout: 30.0
-    
+
   # Legacy plugins (for backward compatibility)
   conversation:
     enabled: false
     context_window: 512
     response_streaming: true
-    
+
   web_agent:
     enabled: false
     searxng_url: "http://localhost:4000"

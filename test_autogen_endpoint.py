@@ -11,13 +11,13 @@ import aiohttp
 async def test_autogen_endpoint():
     """Test the /autogen/trigger endpoint."""
     print("Testing FastAPI autogen endpoint...")
-    
+
     async with aiohttp.ClientSession() as session:
         try:
             # Test the autogen trigger endpoint
             async with session.post(
                 "http://localhost:8000/autogen/trigger",
-                json={"description": "Create an API client for REST calls"}
+                json={"description": "Create an API client for REST calls"},
             ) as response:
                 if response.status == 200:
                     result = await response.json()

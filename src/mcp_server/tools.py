@@ -34,7 +34,11 @@ async def refactor_to_result(
         return {"applied": False, "diff": "", "error": str(exc)}
 
     if rewritten is None:
-        return {"applied": False, "diff": "", "error": diff_or_error or "Transform failed."}
+        return {
+            "applied": False,
+            "diff": "",
+            "error": diff_or_error or "Transform failed.",
+        }
 
     diff = diff_or_error or ""
 

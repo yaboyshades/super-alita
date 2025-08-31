@@ -104,7 +104,9 @@ class Settings:
     copilot_context: bool = _getenv_bool("REUG_COPILOT_CONTEXT", True)
 
     # Message optimizer (intercept/optimize/amplify)
-    message_optimizer_enabled: bool = _getenv_bool("REUG_MESSAGE_OPTIMIZER_ENABLED", True)
+    message_optimizer_enabled: bool = _getenv_bool(
+        "REUG_MESSAGE_OPTIMIZER_ENABLED", True
+    )
     message_optimizer_max_len: int = _getenv_int("REUG_MESSAGE_OPTIMIZER_MAX_LEN", 6000)
     message_optimizer_emit_telemetry: bool = _getenv_bool(
         "REUG_MESSAGE_OPTIMIZER_TELEMETRY", True
@@ -116,6 +118,9 @@ class Settings:
 
     # HTTP server
     api_prefix: str = _getenv("API_PREFIX", "/")
+
+    # Generation controls
+    default_temperature: float = _getenv_float("REUG_DEFAULT_TEMPERATURE", 0.2)
 
 
 SETTINGS = Settings()

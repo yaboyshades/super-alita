@@ -13,7 +13,7 @@ AGENT DEV MODE (Copilot read this):
 import logging
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any, NamedTuple
 
 import numpy as np
@@ -342,36 +342,59 @@ class PredictiveWorldModel:
     async def _load_persistent_data(self) -> None:
         """Load persistent learning data if available"""
         try:
+            import json
+            from pathlib import Path
+            path = Path("./data/world_model.json")
+            if path.exists():
+                data = json.loads(path.read_text(encoding="utf-8"))
+                count = int(data.get("transition_count", 0))
+                self.state_transitions = deque(maxlen=self.max_history)
+                logger.info(
+                    "Loaded predictive world model state from %s (transition_count=%d)",
+                    path,
+                    count,
+                )
             # Implementation would load from configured storage
             # For now, just log
-            logger.info("🔮 Loading persistent data (placeholder)")
+            
         except Exception as e:
             logger.error(f"❌ Failed to load persistent data: {e}")
 
     async def _save_persistent_data(self) -> None:
         """Save learning data for persistence"""
         try:
-            # Implementation would save to configured storage
-            # For now, just log
-            logger.info("🔮 Saving persistent data (placeholder)")
+            import json
+            from pathlib import Path
+            path = Path("./data/world_model.json")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            snapshot = {
+                "transition_count": len(self.state_transitions),
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+            path.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+            logger.info(
+                "Saved predictive world model state to %s (transition_count=%d)",
+                path,
+                snapshot["transition_count"],
+            )
         except Exception as e:
             logger.error(f"❌ Failed to save persistent data: {e}")
 
     async def _start_background_processes(self) -> None:
         """Start any background processes"""
-        # Placeholder for background tasks
+        # No background processes by default
 
     async def _stop_background_processes(self) -> None:
         """Stop background processes"""
-        # Placeholder for cleanup
+        # No cleanup required by default
 
     async def _register_with_system(self) -> None:
         """Register with other system components"""
-        # Placeholder for system registration
+        # No cross-registration required by default
 
     async def _unregister_from_system(self) -> None:
         """Unregister from system components"""
-        # Placeholder for system cleanup
+        # No cross-unregistration required by default
 
     def get_startup_status(self) -> dict[str, Any]:
         """Get detailed startup status"""

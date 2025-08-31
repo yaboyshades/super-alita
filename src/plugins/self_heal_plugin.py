@@ -71,8 +71,12 @@ class SelfHealPlugin(PluginInterface):
         self._health = None
         self._pilot = None  # Will be initialized in setup
         self._event_trace: deque[str] = deque(maxlen=50)
-        self._causal_graph: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-        self._outcome_history: dict[str, dict[Action, int]] = defaultdict(lambda: defaultdict(int))
+        self._causal_graph: dict[str, dict[str, int]] = defaultdict(
+            lambda: defaultdict(int)
+        )
+        self._outcome_history: dict[str, dict[Action, int]] = defaultdict(
+            lambda: defaultdict(int)
+        )
 
     @property
     def name(self) -> str:

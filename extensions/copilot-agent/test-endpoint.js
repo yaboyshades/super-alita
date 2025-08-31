@@ -9,7 +9,7 @@ const http = require('http');
 
 const testCommands = [
   'health',
-  'status', 
+  'status',
   'help',
   'kg machine learning',
   'decide exploration',
@@ -51,11 +51,11 @@ async function testCommand(command) {
 
     const req = http.request(options, (res) => {
       let response = '';
-      
+
       res.on('data', (chunk) => {
         response += chunk;
       });
-      
+
       res.on('end', () => {
         resolve({
           command,
@@ -77,7 +77,7 @@ async function testCommand(command) {
 
 async function runTests() {
   console.log('🧪 Testing Super Alita Copilot Agent...\n');
-  
+
   // Test health endpoint first
   try {
     const healthResponse = await new Promise((resolve, reject) => {
@@ -94,24 +94,24 @@ async function runTests() {
       req.on('error', reject);
       req.end();
     });
-    
+
     console.log(`✅ Health check: ${healthResponse.statusCode} - ${healthResponse.body}`);
   } catch (error) {
     console.log(`❌ Health check failed: ${error.message}`);
     console.log('💡 Make sure the server is running: npm start');
     return;
   }
-  
+
   console.log('\n📋 Testing Copilot commands...\n');
-  
+
   for (const command of testCommands) {
     try {
       console.log(`🔄 Testing: "${command}"`);
       const result = await testCommand(command);
-      
+
       console.log(`   Status: ${result.statusCode}`);
       console.log(`   Content-Type: ${result.headers['content-type']}`);
-      
+
       if (result.body.includes('event:') || result.body.includes('data:')) {
         console.log('   ✅ SSE format detected');
         const lines = result.body.split('\n').filter(line => line.trim());
@@ -119,13 +119,13 @@ async function runTests() {
       } else {
         console.log('   ⚠️  No SSE format detected');
       }
-      
+
       console.log('');
     } catch (error) {
       console.log(`   ❌ Failed: ${error.message}\n`);
     }
   }
-  
+
   console.log('🎉 Test suite completed!');
   console.log('\n💡 To see full responses, check server logs or use:');
   console.log('   curl -N -X POST http://localhost:8787/copilot -H "Content-Type: application/json" -d \'{"messages":[{"role":"user","content":"health"}]}\'');

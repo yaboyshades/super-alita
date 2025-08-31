@@ -15,9 +15,10 @@ def main():
     # Add the current directory (and any bundled libs) to the Python path
     here = pathlib.Path(__file__).parent
     sys.path.insert(0, str(here))
-    
+
     # Run the lsp_server module as the main entry point
     runpy.run_module("lsp_server", run_name="__main__")
+
 
 if __name__ == "__main__":
     main()

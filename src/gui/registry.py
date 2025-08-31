@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Callable, MutableMapping
 from typing import Any
+from pathlib import Path
+import os
 
 StateMap = MutableMapping[str, Any]
 ComponentFunc = Callable[[dict[str, Any]], str]
@@ -175,3 +177,127 @@ __all__ = [
     "gui_registry",
     "register_component",
 ]
+
+
+@register_component("mcp_index")
+def _mcp_index(props: dict[str, Any]) -> str:
+    """List persisted MCP-like specs from the MCP Box.
+
+    Reads JSON spec filenames from MCP_BOX_DIR (default ./.mcp_box).
+    """
+    box_dir = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
+    items: list[str] = []
+    if box_dir.exists():
+        for p in sorted(box_dir.glob("*.json")):
+            items.append(p.name)
+    body = ["<div class='panel'>",
+            "<div class='panel-header'>MCP Box</div>",
+            "<div class='panel-body'>"]
+    if items:
+        body.append("<ul>")
+        for name in items[:200]:
+            body.append(f"<li><code>{name}</code></li>")
+        body.append("</ul>")
+    else:
+        body.append("<em>No MCP specs found.</em>")
+    body.append("</div></div>")
+    return "".join(body)
+
+
+@register_component("mcp_console")
+def _mcp_console(props: dict[str, Any]) -> str:
+    """Interactive MCP console: brainstorm → register → execute.
+
+    Provides a minimal UI to drive the self-evolution loop without predefined tools.
+    """
+    return (
+        "<div class='panel'>"
+        "<div class='panel-header'>MCP Console</div>"
+        "<div class='panel-body'>"
+        "<style>.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}</style>"
+        "<div><label>Task:</label><br/>"
+        "<input id='mcp_task' type='text' style='width:100%'"
+        " placeholder='Describe the capability you need...'/></div>"
+        "<button id='mcp_btn_bs'>Brainstorm</button>"
+        "<div id='mcp_bs' class='mono' style='white-space:pre-wrap;margin-top:8px'></div>"
+        "<hr/>"
+        "<div><label>Register Proposal (index):</label> "
+        "<input id='mcp_idx' type='number' min='0' style='width:5em'/>"
+        " <button id='mcp_btn_reg'>Register</button></div>"
+        "<div id='mcp_reg' class='mono' style='white-space:pre-wrap;margin-top:8px'></div>"
+        "<hr/>"
+        "<div><label>Execute Registered Tool:</label><br/>"
+        "<input id='mcp_tool' type='text' placeholder='tool_id' style='width:60%'/>"
+        "<br/><textarea id='mcp_args' class='mono' style='width:100%;height:100px'"
+        " placeholder='{""arg"": ""value""}'></textarea><br/>"
+        "<button id='mcp_btn_exec'>Execute</button></div>"
+        "<div id='mcp_exec' class='mono' style='white-space:pre-wrap;margin-top:8px'></div>"
+        "</div>"
+        "</div>"
+        "<script>(function(){\n"
+        "const el=(id)=>document.getElementById(id); let props=[];\n"
+        "el('mcp_btn_bs').onclick=async()=>{\n"
+        "  const task=el('mcp_task').value||'';\n"
+        "  el('mcp_bs').textContent='… brainstorming …';\n"
+        "  try{\n"
+        "    const r=await fetch('/tools/mcp/brainstorm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task})});\n"
+        "    const j=await r.json(); props=j.proposals||[];\n"
+        "    el('mcp_bs').textContent=JSON.stringify(props,null,2);\n"
+        "  }catch(e){ el('mcp_bs').textContent=String(e); }\n"
+        "};\n"
+        "el('mcp_btn_reg').onclick=async()=>{\n"
+        "  const i=parseInt(el('mcp_idx').value||'0'); const spec=props[i];\n"
+        "  if(!spec){ el('mcp_reg').textContent='No proposal at index'; return;}\n"
+        "  el('mcp_reg').textContent='… registering …';\n"
+        "  try{\n"
+        "    const r=await fetch('/tools/mcp/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(spec)});\n"
+        "    const j=await r.json(); el('mcp_reg').textContent=JSON.stringify(j,null,2);\n"
+        "    if(j && j.registered){ el('mcp_tool').value=j.registered; }\n"
+        "  }catch(e){ el('mcp_reg').textContent=String(e);}\n"
+        "};\n"
+        "el('mcp_btn_exec').onclick=async()=>{\n"
+        "  const tid=el('mcp_tool').value||'';\n"
+        "  let args={}; try{ args=JSON.parse(el('mcp_args').value||'{}'); }catch(e){ args={}; }\n"
+        "  el('mcp_exec').textContent='… executing …';\n"
+        "  try{\n"
+        "    const r=await fetch('/tools/execute/'+encodeURIComponent(tid),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({args})});\n"
+        "    const j=await r.json(); el('mcp_exec').textContent=JSON.stringify(j,null,2);\n"
+        "  }catch(e){ el('mcp_exec').textContent=String(e);}\n"
+        "};\n"
+        "})();</script>"
+    )
+
+
+@register_component("mcp_index_abstracted")
+def _mcp_index_abstracted(props: dict[str, Any]) -> str:
+    """Render the abstracted MCP index (index.json) from the MCP Box."""
+    from pathlib import Path
+    import json
+
+    box_dir = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
+    index_path = box_dir / "index.json"
+    if index_path.exists():
+        try:
+            data = json.loads(index_path.read_text(encoding="utf-8"))
+        except Exception:
+            data = None
+    else:
+        data = None
+
+    body = ["<div class='panel'>",
+            "<div class='panel-header'>MCP Box (Abstracted Index)</div>",
+            "<div class='panel-body'>"]
+    if data:
+        tools = data.get("tools", [])
+        body.append(f"<p><strong>Canonical tools:</strong> {len(tools)}</p>")
+        body.append("<ul>")
+        for t in tools[:200]:
+            tid = t.get("tool_id")
+            act = t.get("action")
+            props_l = ", ".join(t.get("properties", []))
+            body.append(f"<li><code>{tid}</code> &mdash; action: <code>{act}</code>; props: {props_l}</li>")
+        body.append("</ul>")
+    else:
+        body.append("<em>No index.json found. Use /tools/mcp/abstract to generate.</em>")
+    body.append("</div></div>")
+    return "".join(body)

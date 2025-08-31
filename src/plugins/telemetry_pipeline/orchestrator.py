@@ -1,4 +1,5 @@
 """Orchestrator for the telemetry pipeline."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -45,19 +46,13 @@ class TelemetryPipelineOrchestrator:
         )
 
         # Stage 3: Rank
-        ranked = await self.rank.execute(
-            task=task, items=relevant, top_n=200
-        )
+        ranked = await self.rank.execute(task=task, items=relevant, top_n=200)
 
         # Stage 4: Cluster
-        clusters = await self.cluster.execute(
-            items=ranked, llm_provider=self.llm
-        )
+        clusters = await self.cluster.execute(items=ranked, llm_provider=self.llm)
 
         # Stage 5: Prune
-        pruned = await self.prune.execute(
-            clusters=clusters, token_budget=token_budget
-        )
+        pruned = await self.prune.execute(clusters=clusters, token_budget=token_budget)
 
         # Stage 6: Assemble Final Prompt
         conflicts: list[dict[str, Any]] = []  # Extract from clusters if needed

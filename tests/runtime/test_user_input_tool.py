@@ -31,4 +31,3 @@ def test_user_input_tool(monkeypatch):
     assert ctx.results[0]["response"] == "hello"
     tool_ok = [e for e in events if e.get("event_type") == "TOOL_CALL_OK"]
     assert tool_ok and tool_ok[0]["payload"]["tool_id"] == "tool.user_input"
-

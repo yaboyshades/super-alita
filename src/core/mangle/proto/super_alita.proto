@@ -10,22 +10,22 @@ service SuperAlitaAgent {
     // Health and Status
     rpc GetHealth(google.protobuf.Empty) returns (HealthResponse);
     rpc GetStatus(google.protobuf.Empty) returns (StatusResponse);
-    
+
     // Cortex Operations
     rpc ProcessTask(TaskRequest) returns (TaskResponse);
     rpc GetCortexStatus(google.protobuf.Empty) returns (CortexStatusResponse);
-    
+
     // Telemetry Operations
     rpc GetMetrics(google.protobuf.Empty) returns (MetricsResponse);
     rpc GetEvents(EventsRequest) returns (EventsResponse);
     rpc StreamEvents(EventsRequest) returns (stream EventStreamResponse);
-    
+
     // Knowledge Graph Operations
     rpc CreateConcept(CreateConceptRequest) returns (CreateConceptResponse);
     rpc CreateRelationship(CreateRelationshipRequest) returns (CreateRelationshipResponse);
     rpc QueryKnowledgeGraph(QueryRequest) returns (QueryResponse);
     rpc GetKnowledgeGraphStats(google.protobuf.Empty) returns (KnowledgeGraphStatsResponse);
-    
+
     // Optimization Operations
     rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse);
     rpc MakeDecision(DecisionRequest) returns (DecisionResponse);

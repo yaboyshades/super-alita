@@ -8,9 +8,9 @@ Requirements: Build a research paper implementation *ability*:
 - Preserve mathematical accuracy and computational complexity
 - Support for attention mechanisms, transformers, neural networks
 - Safety: no eval/exec, proper tensor operations, memory management
-Task: 
+Task:
     Implement the ResNet architecture from 'Deep Residual Learning for Image Recognition' by He et al.
-    
+
     Key requirements:
     - Implement residual blocks with skip connections (identity mapping)
     - Support both basic blocks (for ResNet-18/34) and bottleneck blocks (for ResNet-50/101/152)
@@ -19,13 +19,12 @@ Task:
     - Add proper weight initialization (Kaiming initialization)
     - Include downsampling layers for feature map size reduction
     - Support different input sizes and number of classes
-    
+
     The core innovation is the residual connection: F(x) + x where F(x) is the residual mapping.
     This solves the degradation problem in very deep networks.
-    
+
 
 """
-
 
 import torch
 import torch.nn as nn
@@ -33,186 +32,191 @@ import torch.nn as nn
 
 class BasicBlock(nn.Module):
     """Basic residual block for ResNet-18/34"""
+
     expansion = 1
-    
+
     def __init__(
-        self, 
-        in_channels: int, 
-        out_channels: int, 
-        stride: int = 1, 
-        downsample: nn.Module | None = None
+        self,
+        in_channels: int,
+        out_channels: int,
+        stride: int = 1,
+        downsample: nn.Module | None = None,
     ):
         super().__init__()
-        
+
         self.conv1 = nn.Conv2d(
-            in_channels, out_channels, kernel_size=3, 
-            stride=stride, padding=1, bias=False
+            in_channels,
+            out_channels,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            bias=False,
         )
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(
-            out_channels, out_channels, kernel_size=3, 
-            stride=1, padding=1, bias=False
+            out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False
         )
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass with residual connection F(x) + x"""
         identity = x
-        
+
         # First conv-bn-relu
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
-        
+
         # Second conv-bn (no relu yet)
         out = self.conv2(out)
         out = self.bn2(out)
-        
+
         # Downsample identity if needed
         if self.downsample is not None:
             identity = self.downsample(x)
-        
+
         # Residual connection: F(x) + x
         out += identity
         out = self.relu(out)
-        
+
         return out
 
 
 class BottleneckBlock(nn.Module):
     """Bottleneck residual block for ResNet-50/101/152"""
+
     expansion = 4
-    
+
     def __init__(
-        self, 
-        in_channels: int, 
-        out_channels: int, 
-        stride: int = 1, 
-        downsample: nn.Module | None = None
+        self,
+        in_channels: int,
+        out_channels: int,
+        stride: int = 1,
+        downsample: nn.Module | None = None,
     ):
         super().__init__()
-        
+
         # Bottleneck design: 1x1 -> 3x3 -> 1x1
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(
-            out_channels, out_channels, kernel_size=3, 
-            stride=stride, padding=1, bias=False
+            out_channels,
+            out_channels,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            bias=False,
         )
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.conv3 = nn.Conv2d(
-            out_channels, out_channels * self.expansion, 
-            kernel_size=1, bias=False
+            out_channels, out_channels * self.expansion, kernel_size=1, bias=False
         )
         self.bn3 = nn.BatchNorm2d(out_channels * self.expansion)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass with residual connection"""
         identity = x
-        
+
         # 1x1 conv
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
-        
+
         # 3x3 conv
         out = self.conv2(out)
         out = self.bn2(out)
         out = self.relu(out)
-        
+
         # 1x1 conv (expansion)
         out = self.conv3(out)
         out = self.bn3(out)
-        
+
         # Downsample identity if needed
         if self.downsample is not None:
             identity = self.downsample(x)
-        
+
         # Residual connection
         out += identity
         out = self.relu(out)
-        
+
         return out
 
 
 class ResNet(nn.Module):
     """ResNet architecture implementation"""
-    
+
     def __init__(
-        self, 
-        block: type[nn.Module], 
-        layers: list[int], 
+        self,
+        block: type[nn.Module],
+        layers: list[int],
         num_classes: int = 1000,
-        zero_init_residual: bool = False
+        zero_init_residual: bool = False,
     ):
         super().__init__()
-        
+
         self.in_channels = 64
-        
+
         # Initial convolution layer
-        self.conv1 = nn.Conv2d(
-            3, 64, kernel_size=7, stride=2, padding=3, bias=False
-        )
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        
+
         # Residual layers
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        
+
         # Classification head
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
-        
+
         # Initialize weights (Kaiming initialization)
         self._initialize_weights(zero_init_residual)
-    
+
     def _make_layer(
-        self, 
-        block: type[nn.Module], 
-        out_channels: int, 
-        blocks: int, 
-        stride: int = 1
+        self, block: type[nn.Module], out_channels: int, blocks: int, stride: int = 1
     ) -> nn.Sequential:
         """Create a layer with multiple residual blocks"""
         downsample = None
-        
+
         # Need downsampling if stride != 1 or channel dimensions change
         if stride != 1 or self.in_channels != out_channels * block.expansion:
             downsample = nn.Sequential(
                 nn.Conv2d(
-                    self.in_channels, out_channels * block.expansion, 
-                    kernel_size=1, stride=stride, bias=False
+                    self.in_channels,
+                    out_channels * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
                 ),
-                nn.BatchNorm2d(out_channels * block.expansion)
+                nn.BatchNorm2d(out_channels * block.expansion),
             )
-        
+
         layers = []
         layers.append(block(self.in_channels, out_channels, stride, downsample))
         self.in_channels = out_channels * block.expansion
-        
+
         # Add remaining blocks
         for _ in range(1, blocks):
             layers.append(block(self.in_channels, out_channels))
-        
+
         return nn.Sequential(*layers)
-    
+
     def _initialize_weights(self, zero_init_residual: bool = False):
         """Initialize weights using Kaiming initialization"""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
-        
+
         # Zero-initialize the last BN in each residual branch for better training
         if zero_init_residual:
             for m in self.modules():
@@ -220,7 +224,7 @@ class ResNet(nn.Module):
                     nn.init.constant_(m.bn3.weight, 0)
                 elif isinstance(m, BasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through ResNet"""
         # Initial convolution and pooling
@@ -228,18 +232,18 @@ class ResNet(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
-        
+
         # Residual layers
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
-        
+
         # Global average pooling and classification
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
-        
+
         return x
 
 
@@ -269,11 +273,10 @@ def create_resnet152(num_classes: int = 1000) -> ResNet:
 
 
 def create_paper_code_implementation(
-    architecture: str = "resnet50", 
-    num_classes: int = 1000
+    architecture: str = "resnet50", num_classes: int = 1000
 ) -> nn.Module:
     """Factory function to create ResNet implementation based on paper"""
-    
+
     if architecture == "resnet18":
         return create_resnet18(num_classes)
     elif architecture == "resnet34":
@@ -292,14 +295,14 @@ def create_paper_code_implementation(
 if __name__ == "__main__":
     # Example usage
     model = create_paper_code_implementation("resnet50")
-    
+
     # Test with random input (ImageNet size)
     batch_size = 2
     x = torch.randn(batch_size, 3, 224, 224)
-    
+
     with torch.no_grad():
         output = model(x)
-    
+
     print(f"Input shape: {x.shape}")
     print(f"Output shape: {output.shape}")
     print(f"Number of parameters: {sum(p.numel() for p in model.parameters()):,}")

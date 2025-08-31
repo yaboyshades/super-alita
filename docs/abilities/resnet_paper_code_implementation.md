@@ -7,9 +7,9 @@ Generated from: Build a research paper implementation *ability*:
 - Preserve mathematical accuracy and computational complexity
 - Support for attention mechanisms, transformers, neural networks
 - Safety: no eval/exec, proper tensor operations, memory management
-Task: 
+Task:
     Implement the ResNet architecture from 'Deep Residual Learning for Image Recognition' by He et al.
-    
+
     Key requirements:
     - Implement residual blocks with skip connections (identity mapping)
     - Support both basic blocks (for ResNet-18/34) and bottleneck blocks (for ResNet-50/101/152)
@@ -18,10 +18,10 @@ Task:
     - Add proper weight initialization (Kaiming initialization)
     - Include downsampling layers for feature map size reduction
     - Support different input sizes and number of classes
-    
+
     The core innovation is the residual connection: F(x) + x where F(x) is the residual mapping.
     This solves the degradation problem in very deep networks.
-    
+
 
 
 ## Architecture Overview

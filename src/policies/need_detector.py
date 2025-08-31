@@ -11,15 +11,11 @@ class NeedDetector:
         "web_scraper": [
             re.compile(r"\b(scrap(?:e|er|ing)|crawl(?:er|ing)?)\b", re.I),
             re.compile(r"\bextract (?:price|product|listing|sku|catalog)\b", re.I),
-            re.compile(
-                r"\be-?commerce|price\s*(?:tracker|fetch|pull|harvest)\b", re.I
-            ),
+            re.compile(r"\be-?commerce|price\s*(?:tracker|fetch|pull|harvest)\b", re.I),
         ],
         "etl_task": [
             re.compile(r"\bETL\b|\bextract-?transform-?load\b", re.I),
-            re.compile(
-                r"\bdata (?:pipeline|ingestion|normaliz(?:e|ation))\b", re.I
-            ),
+            re.compile(r"\bdata (?:pipeline|ingestion|normaliz(?:e|ation))\b", re.I),
         ],
         "api_client": [
             re.compile(
@@ -38,7 +34,9 @@ class NeedDetector:
             re.compile(r"\b(pytorch|tensorflow|numpy|sklearn)\b", re.I),
         ],
         "ml_algorithm": [
-            re.compile(r"\b(classification|regression|clustering|optimization)\b", re.I),
+            re.compile(
+                r"\b(classification|regression|clustering|optimization)\b", re.I
+            ),
             re.compile(r"\b(gradient|backprop|training|learning)\b", re.I),
             re.compile(r"\b(embedding|encoder|decoder|layer)\b", re.I),
         ],

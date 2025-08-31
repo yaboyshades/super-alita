@@ -1,6 +1,6 @@
 # Super Alita Workspace Instructions
 
-Welcome to the Super Alita project!  
+Welcome to the Super Alita project!
 This workspace runs in a dev container on **Ubuntu 24.04.2 LTS**.
 
 ## Overview
@@ -105,7 +105,7 @@ Set `LLM_MODEL=auto` to enable automatic provider selection.
 
 Environment variables:
 - `GEMINI_API_KEY` or `GOOGLE_API_KEY` - For Gemini provider
-- `OPENAI_API_KEY` - For OpenAI provider  
+- `OPENAI_API_KEY` - For OpenAI provider
 - `ANTHROPIC_API_KEY` - For Claude provider
 - `SUPER_ALITA_BASE_URL` - Local adapter URL (default: http://127.0.0.1:8080)
 
@@ -122,6 +122,6 @@ For questions, open an issue or contact the maintainer.
 
 ---
 
-**System Status**: PRODUCTION-READY  
-**Architecture**: Event-driven AI agent system  
+**System Status**: PRODUCTION-READY
+**Architecture**: Event-driven AI agent system
 **Integration**: MCP + VS Code ready

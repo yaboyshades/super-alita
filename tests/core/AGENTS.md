@@ -41,17 +41,17 @@ async def test_event_publishing():
     """Test event publishing functionality"""
     event_bus = EventBus()
     await event_bus.initialize()
-    
+
     # Create test event
     event = create_event(
         "test_event",
         data={"key": "value"},
         source="test_publisher"
     )
-    
+
     # Test event publishing
     await event_bus.publish(event)
-    
+
     # Verify event was published
     # Add assertions based on implementation
     await event_bus.cleanup()
@@ -61,26 +61,26 @@ async def test_event_subscription():
     """Test event subscription and handling"""
     event_bus = EventBus()
     await event_bus.initialize()
-    
+
     received_events = []
-    
+
     async def test_handler(event):
         received_events.append(event)
-        
+
     # Subscribe to events
     await event_bus.subscribe("test_event", test_handler)
-    
+
     # Publish test event
     event = create_event("test_event", data={"test": True})
     await event_bus.publish(event)
-    
+
     # Wait for processing
     await asyncio.sleep(0.1)
-    
+
     # Verify event was received
     assert len(received_events) == 1
     assert received_events[0]["type"] == "test_event"
-    
+
     await event_bus.cleanup()
 
 @pytest.mark.integration_redis
@@ -92,18 +92,18 @@ async def test_redis_event_bus_integration():
         "port": 6379,
         "db": 15  # Use test database
     }
-    
+
     event_bus = EventBus(config=redis_config)
     await event_bus.initialize()
-    
+
     try:
         # Test Redis connectivity
         await event_bus.health_check()
-        
+
         # Test event flow through Redis
         event = create_event("integration_test", data={"redis": True})
         await event_bus.publish(event)
-        
+
     finally:
         await event_bus.cleanup()
 ```
@@ -117,11 +117,11 @@ from src.neural.atom import AtomType
 def test_deterministic_atom_creation():
     """Test deterministic UUID generation for atoms"""
     content = "test content"
-    
+
     # Create same atom twice
     atom1 = create_atom(content, AtomType.TOOL_OUTPUT, "Test Title")
     atom2 = create_atom(content, AtomType.TOOL_OUTPUT, "Test Title")
-    
+
     # Should have same UUID (deterministic)
     assert atom1.uuid == atom2.uuid
     assert atom1.content == atom2.content
@@ -130,7 +130,7 @@ def test_atom_different_content():
     """Test different content produces different UUIDs"""
     atom1 = create_atom("content1", AtomType.TOOL_OUTPUT, "Title1")
     atom2 = create_atom("content2", AtomType.TOOL_OUTPUT, "Title2")
-    
+
     # Should have different UUIDs
     assert atom1.uuid != atom2.uuid
 
@@ -139,17 +139,17 @@ async def test_atom_persistence():
     """Test neural atom persistence and retrieval"""
     # Mock storage backend
     storage_mock = AsyncMock()
-    
+
     atom = create_atom("test content", AtomType.MEMORY, "Test Memory")
-    
+
     # Test storage
     await storage_mock.store_atom(atom)
     storage_mock.store_atom.assert_called_once_with(atom)
-    
+
     # Test retrieval
     storage_mock.get_atom.return_value = atom
     retrieved = await storage_mock.get_atom(atom.uuid)
-    
+
     assert retrieved.uuid == atom.uuid
     assert retrieved.content == atom.content
 ```
@@ -162,15 +162,15 @@ from src.core.plugin_interface import PluginInterface
 
 class TestPlugin(PluginInterface):
     """Test plugin implementation"""
-    
+
     def __init__(self, event_bus, config=None):
         super().__init__(event_bus, config)
         self.name = "test_plugin"
         self.initialized = False
-        
+
     async def initialize(self):
         self.initialized = True
-        
+
     async def shutdown(self):
         self.initialized = False
 
@@ -179,11 +179,11 @@ async def test_plugin_lifecycle():
     """Test plugin lifecycle management"""
     event_bus = AsyncMock()
     plugin = TestPlugin(event_bus)
-    
+
     # Test initialization
     await plugin.initialize()
     assert plugin.initialized is True
-    
+
     # Test shutdown
     await plugin.shutdown()
     assert plugin.initialized is False
@@ -193,10 +193,10 @@ async def test_plugin_event_handling():
     """Test plugin event handling"""
     event_bus = AsyncMock()
     plugin = TestPlugin(event_bus)
-    
+
     # Test event emission
     await plugin.emit_event("test_event", {"data": "value"})
-    
+
     # Verify event bus was called
     event_bus.publish.assert_called_once()
 
@@ -204,9 +204,9 @@ def test_plugin_configuration():
     """Test plugin configuration handling"""
     config = {"setting1": "value1", "setting2": 42}
     event_bus = AsyncMock()
-    
+
     plugin = TestPlugin(event_bus, config)
-    
+
     assert plugin.config == config
     assert plugin.get_config("setting1") == "value1"
     assert plugin.get_config("setting2") == 42
@@ -223,17 +223,17 @@ from src.core.memory import MemoryManager
 async def test_memory_storage():
     """Test memory storage functionality"""
     memory_manager = MemoryManager()
-    
+
     # Test storing memory
     memory_data = {
         "key": "test_memory",
         "content": "This is a test memory",
         "tags": ["test", "memory"]
     }
-    
+
     memory_id = await memory_manager.store(memory_data)
     assert memory_id is not None
-    
+
     # Test retrieving memory
     retrieved = await memory_manager.retrieve(memory_id)
     assert retrieved["content"] == memory_data["content"]
@@ -243,21 +243,21 @@ async def test_memory_storage():
 async def test_memory_search():
     """Test memory search functionality"""
     memory_manager = MemoryManager()
-    
+
     # Store test memories
     memories = [
         {"content": "Python programming", "tags": ["coding", "python"]},
         {"content": "JavaScript development", "tags": ["coding", "javascript"]},
         {"content": "Database design", "tags": ["database", "sql"]}
     ]
-    
+
     for memory in memories:
         await memory_manager.store(memory)
-    
+
     # Test tag-based search
     coding_memories = await memory_manager.search(tags=["coding"])
     assert len(coding_memories) == 2
-    
+
     # Test content search
     python_memories = await memory_manager.search(content_query="Python")
     assert len(python_memories) == 1
@@ -273,13 +273,13 @@ from src.sandbox.registry import SecurityRegistry
 async def test_secure_code_execution():
     """Test secure code execution"""
     executor = SecureExecutor()
-    
+
     # Test safe code execution
     safe_code = """
 result = 2 + 2
 print(f"Result: {result}")
 """
-    
+
     result = await executor.execute(safe_code)
     assert result["success"] is True
     assert "Result: 4" in result["output"]
@@ -288,25 +288,25 @@ print(f"Result: {result}")
 async def test_dangerous_code_blocking():
     """Test blocking of dangerous code"""
     executor = SecureExecutor()
-    
+
     # Test dangerous code is blocked
     dangerous_code = """
 import os
 os.system("rm -rf /")
 """
-    
+
     with pytest.raises(SecurityError):
         await executor.execute(dangerous_code)
 
 def test_security_registry():
     """Test security registry functionality"""
     registry = SecurityRegistry()
-    
+
     # Test allowlist
     registry.add_allowed_function("math.sqrt")
     assert registry.is_allowed("math.sqrt") is True
     assert registry.is_allowed("os.system") is False
-    
+
     # Test blocklist
     registry.add_blocked_pattern(r"eval\s*\(")
     assert registry.is_blocked("eval('malicious')") is True
@@ -327,48 +327,48 @@ async def test_event_bus_throughput():
     """Test event bus throughput under load"""
     event_bus = EventBus()
     await event_bus.initialize()
-    
+
     event_count = 1000
     start_time = time.time()
-    
+
     # Publish events concurrently
     tasks = []
     for i in range(event_count):
         event = create_event("load_test", data={"index": i})
         tasks.append(event_bus.publish(event))
-    
+
     await asyncio.gather(*tasks)
-    
+
     end_time = time.time()
     duration = end_time - start_time
     throughput = event_count / duration
-    
+
     # Should handle at least 100 events per second
     assert throughput > 100
-    
+
     await event_bus.cleanup()
 
 @pytest.mark.performance
 async def test_memory_retrieval_performance():
     """Test memory retrieval performance"""
     memory_manager = MemoryManager()
-    
+
     # Store many memories
     memory_ids = []
     for i in range(100):
         memory_data = {"content": f"Memory {i}", "index": i}
         memory_id = await memory_manager.store(memory_data)
         memory_ids.append(memory_id)
-    
+
     # Test bulk retrieval performance
     start_time = time.time()
-    
+
     tasks = [memory_manager.retrieve(mid) for mid in memory_ids]
     results = await asyncio.gather(*tasks)
-    
+
     end_time = time.time()
     duration = end_time - start_time
-    
+
     # Should retrieve 100 memories in under 1 second
     assert duration < 1.0
     assert len(results) == 100
@@ -385,31 +385,31 @@ async def test_full_core_system_integration():
     event_bus = EventBus()
     memory_manager = MemoryManager(event_bus)
     plugin_loader = PluginLoader(event_bus)
-    
+
     await event_bus.initialize()
     await memory_manager.initialize()
-    
+
     try:
         # Load test plugin
         test_plugin = await plugin_loader.load_plugin("test_plugin")
-        
+
         # Test event flow
         event = create_event("integration_test", data={"test": True})
         await event_bus.publish(event)
-        
+
         # Wait for processing
         await asyncio.sleep(0.5)
-        
+
         # Verify system state
         assert test_plugin.initialized is True
-        
+
         # Test memory integration
         memory_data = {"content": "Integration test memory"}
         memory_id = await memory_manager.store(memory_data)
         retrieved = await memory_manager.retrieve(memory_id)
-        
+
         assert retrieved["content"] == memory_data["content"]
-        
+
     finally:
         await plugin_loader.shutdown_all()
         await memory_manager.shutdown()
@@ -466,7 +466,7 @@ SAMPLE_EVENTS = [
         "parameters": {"operation": "add", "a": 2, "b": 3}
     },
     {
-        "type": "user_input", 
+        "type": "user_input",
         "message": "Hello, how are you?",
         "session_id": "test_session"
     },
@@ -485,7 +485,7 @@ SAMPLE_NEURAL_ATOMS = [
     },
     {
         "content": "Tool execution result",
-        "atom_type": "tool_output", 
+        "atom_type": "tool_output",
         "title": "Calculator Result"
     }
 ]
@@ -513,18 +513,18 @@ async def debug_event_flow(event_bus, event):
     """Debug event publishing and subscription"""
     published = False
     received = False
-    
+
     async def debug_handler(received_event):
         nonlocal received
         received = True
         logger.debug(f"Received event: {received_event}")
-    
+
     await event_bus.subscribe(event["type"], debug_handler)
     await event_bus.publish(event)
     published = True
-    
+
     await asyncio.sleep(0.1)  # Wait for processing
-    
+
     logger.debug(f"Event flow: published={published}, received={received}")
     return published and received
 ```

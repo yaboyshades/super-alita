@@ -15,6 +15,7 @@ class Bus:
     async def subscribe(self, event_type, handler) -> None:  # pragma: no cover
         pass
 
+
 spec = importlib.util.spec_from_file_location(
     "curation_manager", Path("src/plugins/oak_core/curation_manager.py")
 )
@@ -24,9 +25,11 @@ assert spec.loader is not None
 spec.loader.exec_module(curation_manager_mod)
 CurationManager = curation_manager_mod.CurationManager
 
+
 class _TestCurationManager(CurationManager):
     async def start(self) -> None:  # pragma: no cover
         pass
+
 
 @pytest.mark.asyncio
 async def test_emits_feature_utility_updated() -> None:
@@ -39,4 +42,6 @@ async def test_emits_feature_utility_updated() -> None:
         error = ""
 
     await mgr.handle_tool_result(ResultEvent())
-    assert any(evt.get("event_type") == "oak.feature_utility_updated" for evt in bus.events)
+    assert any(
+        evt.get("event_type") == "oak.feature_utility_updated" for evt in bus.events
+    )

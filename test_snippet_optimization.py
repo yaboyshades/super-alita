@@ -2,9 +2,10 @@
 """Test script for snippet optimization system."""
 
 import asyncio
+
 from src.core.copilot_snippet_optimizer import (
-    SnippetIntelligenceAtom,
     NeuralAtomMetadata,
+    SnippetIntelligenceAtom,
 )
 
 

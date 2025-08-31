@@ -46,7 +46,7 @@ class LadderTaskProvider implements vscode.TaskProvider {
     async provideTasks(): Promise<vscode.Task[]> {
         // Get tasks from Python task provider
         await this.refreshTasks();
-        
+
         return this.tasks.map(task => {
             const definition: vscode.TaskDefinition = {
                 type: 'ladder',
@@ -65,13 +65,13 @@ class LadderTaskProvider implements vscode.TaskProvider {
 
             taskItem.detail = task.description;
             taskItem.group = task.completed ? vscode.TaskGroup.Test : vscode.TaskGroup.Build;
-            
+
             // Add task context
             taskItem.source = 'ladder';
             if (task.priority) {
                 taskItem.detail += ` [Priority: ${task.priority}]`;
             }
-            
+
             return taskItem;
         });
     }
@@ -83,15 +83,15 @@ class LadderTaskProvider implements vscode.TaskProvider {
             const taskData = this.tasks.find(t => t.id === definition.task);
             if (taskData) {
                 // Create enhanced execution for the task
-                const pythonPath = vscode.workspace.getConfiguration('ladder').get<string>('pythonPath') 
+                const pythonPath = vscode.workspace.getConfiguration('ladder').get<string>('pythonPath')
                     || path.join(this.workspaceFolder.uri.fsPath, '.venv', 'Scripts', 'python.exe');
-                
+
                 const execution = new vscode.ShellExecution(pythonPath, [
                     path.join(this.workspaceFolder.uri.fsPath, 'src', 'vscode_integration', 'task_runner.py'),
                     '--task-id', definition.task,
                     '--action', 'execute'
                 ]);
-                
+
                 task.execution = execution;
                 task.detail = `${taskData.description} [Stage: ${taskData.ladder_stage || 'not_started'}]`;
             }
@@ -112,25 +112,25 @@ class LadderTaskProvider implements vscode.TaskProvider {
     private async getTasksFromPython(): Promise<LadderTask[]> {
         try {
             // First, try to get tasks from the Python task provider
-            const pythonPath = vscode.workspace.getConfiguration('ladder').get<string>('pythonPath') 
+            const pythonPath = vscode.workspace.getConfiguration('ladder').get<string>('pythonPath')
                 || path.join(this.workspaceFolder.uri.fsPath, '.venv', 'Scripts', 'python.exe');
-            
+
             const taskProviderScript = path.join(
-                this.workspaceFolder.uri.fsPath, 
-                'src', 
-                'vscode_integration', 
+                this.workspaceFolder.uri.fsPath,
+                'src',
+                'vscode_integration',
                 'task_provider_cli.py'
             );
-            
+
             if (fs.existsSync(taskProviderScript)) {
                 const { stdout } = await execAsync(`"${pythonPath}" "${taskProviderScript}" --action get_tasks`);
                 const pythonTasks = JSON.parse(stdout.trim());
                 return pythonTasks;
             }
-            
+
             // Fallback: read from todos.json
             return await this.getTasksFromTodos();
-            
+
         } catch (error) {
             console.warn('Error getting tasks from Python, falling back to todos.json:', error);
             return await this.getTasksFromTodos();
@@ -139,7 +139,7 @@ class LadderTaskProvider implements vscode.TaskProvider {
 
     private async getTasksFromTodos(): Promise<LadderTask[]> {
         const todosPath = path.join(this.workspaceFolder.uri.fsPath, '.vscode', 'todos.json');
-        
+
         if (!fs.existsSync(todosPath)) {
             return [];
         }
@@ -188,10 +188,10 @@ class LadderTaskTreeDataProvider implements vscode.TreeDataProvider<LadderTask> 
 
     getTreeItem(element: LadderTask): vscode.TreeItem {
         const item = new vscode.TreeItem(element.title, vscode.TreeItemCollapsibleState.None);
-        
+
         item.description = element.ladder_stage || 'not_started';
         item.tooltip = `${element.title}\n${element.description}\nStage: ${element.ladder_stage || 'not_started'}`;
-        
+
         // Set icon based on completion status and stage
         if (element.completed) {
             item.iconPath = new vscode.ThemeIcon('pass', new vscode.ThemeColor('testing.iconPassed'));
@@ -260,7 +260,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize tree view
     const treeDataProvider = new LadderTaskTreeDataProvider(taskProvider);
-    const treeView = vscode.window.createTreeView('ladderTasks', { 
+    const treeView = vscode.window.createTreeView('ladderTasks', {
         treeDataProvider,
         showCollapseAll: true
     });
@@ -275,7 +275,7 @@ export function activate(context: vscode.ExtensionContext) {
                 return value.trim().length === 0 ? 'Task title cannot be empty' : null;
             }
         });
-        
+
         if (!title) return;
 
         const description = await vscode.window.showInputBox({
@@ -290,13 +290,13 @@ export function activate(context: vscode.ExtensionContext) {
 
         try {
             // Create task via Python task provider
-            const pythonPath = vscode.workspace.getConfiguration('ladder').get<string>('pythonPath') 
+            const pythonPath = vscode.workspace.getConfiguration('ladder').get<string>('pythonPath')
                 || path.join(workspaceFolder.uri.fsPath, '.venv', 'Scripts', 'python.exe');
-            
+
             const createTaskScript = path.join(
-                workspaceFolder.uri.fsPath, 
-                'src', 
-                'vscode_integration', 
+                workspaceFolder.uri.fsPath,
+                'src',
+                'vscode_integration',
                 'task_provider_cli.py'
             );
 
@@ -308,7 +308,7 @@ export function activate(context: vscode.ExtensionContext) {
                 });
 
                 await execAsync(`"${pythonPath}" "${createTaskScript}" --action create_task --data '${taskData}'`);
-                
+
                 vscode.window.showInformationMessage(`Created LADDER task: ${title}`);
                 await taskProvider.refreshTasks();
             } else {
@@ -326,20 +326,20 @@ export function activate(context: vscode.ExtensionContext) {
 
     const showPlannerStatusCommand = vscode.commands.registerCommand('ladder.showPlannerStatus', async () => {
         try {
-            const pythonPath = vscode.workspace.getConfiguration('ladder').get<string>('pythonPath') 
+            const pythonPath = vscode.workspace.getConfiguration('ladder').get<string>('pythonPath')
                 || path.join(workspaceFolder.uri.fsPath, '.venv', 'Scripts', 'python.exe');
-            
+
             const statusScript = path.join(
-                workspaceFolder.uri.fsPath, 
-                'src', 
-                'vscode_integration', 
+                workspaceFolder.uri.fsPath,
+                'src',
+                'vscode_integration',
                 'task_provider_cli.py'
             );
 
             if (fs.existsSync(statusScript)) {
                 const { stdout } = await execAsync(`"${pythonPath}" "${statusScript}" --action get_status`);
                 const status = JSON.parse(stdout.trim());
-                
+
                 const message = `LADDER Planner Status:
 • Tasks: ${status.task_count || 0}
 • Active Planner: ${status.planner_active ? 'Yes' : 'No'}

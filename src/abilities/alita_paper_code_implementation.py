@@ -18,63 +18,66 @@ import torch.nn as nn
 
 class MultiModalFusion(nn.Module):
     """Multi-modal fusion for text, image, and structured data"""
-    
-    def __init__(self, text_dim: int = 512, image_dim: int = 512, hidden_dim: int = 512):
+
+    def __init__(
+        self, text_dim: int = 512, image_dim: int = 512, hidden_dim: int = 512
+    ):
         super().__init__()
         self.text_projection = nn.Linear(text_dim, hidden_dim)
         self.image_projection = nn.Linear(image_dim, hidden_dim)
         self.cross_attention = nn.MultiheadAttention(hidden_dim, num_heads=8)
         self.fusion_gate = nn.Sequential(
-            nn.Linear(hidden_dim * 2, hidden_dim),
-            nn.Sigmoid()
+            nn.Linear(hidden_dim * 2, hidden_dim), nn.Sigmoid()
         )
-        
-    def forward(self, text_features: torch.Tensor, image_features: torch.Tensor) -> torch.Tensor:
+
+    def forward(
+        self, text_features: torch.Tensor, image_features: torch.Tensor
+    ) -> torch.Tensor:
         """Fuse text and image features with cross-attention"""
         text_proj = self.text_projection(text_features)
         image_proj = self.image_projection(image_features)
-        
+
         # Cross-attention between modalities
         fused_features, _ = self.cross_attention(text_proj, image_proj, image_proj)
-        
+
         # Adaptive gating
         concat_features = torch.cat([text_proj, fused_features], dim=-1)
         gate = self.fusion_gate(concat_features)
-        
+
         return gate * fused_features + (1 - gate) * text_proj
 
 
 class ConversationalMemory(nn.Module):
     """Memory system for conversational context management"""
-    
+
     def __init__(self, memory_size: int = 1024, hidden_dim: int = 512):
         super().__init__()
         self.memory_size = memory_size
         self.hidden_dim = hidden_dim
-        
+
         # Episodic memory
         self.episodic_memory = nn.Parameter(torch.randn(memory_size, hidden_dim))
         self.memory_attention = nn.MultiheadAttention(hidden_dim, num_heads=8)
-        
+
         # Working memory
         self.working_memory = nn.GRU(hidden_dim, hidden_dim, batch_first=True)
-        
+
     def forward(self, query: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
         """Retrieve and update memory based on query and context"""
         # Retrieve from episodic memory
         retrieved_memory, _ = self.memory_attention(
             query, self.episodic_memory, self.episodic_memory
         )
-        
+
         # Update working memory
         working_output, _ = self.working_memory(context)
-        
+
         return retrieved_memory + working_output
 
 
 class InformationSeekingEngine(nn.Module):
     """Engine for information seeking and retrieval"""
-    
+
     def __init__(self, query_dim: int = 512, doc_dim: int = 512):
         super().__init__()
         self.query_encoder = nn.TransformerEncoder(
@@ -84,22 +87,22 @@ class InformationSeekingEngine(nn.Module):
             nn.TransformerEncoderLayer(doc_dim, nhead=8), num_layers=6
         )
         self.relevance_scorer = nn.Linear(query_dim + doc_dim, 1)
-        
+
     def forward(self, query: torch.Tensor, documents: torch.Tensor) -> torch.Tensor:
         """Score document relevance for query"""
         query_encoded = self.query_encoder(query)
         docs_encoded = self.document_encoder(documents)
-        
+
         # Compute relevance scores
         combined = torch.cat([query_encoded, docs_encoded], dim=-1)
         scores = self.relevance_scorer(combined)
-        
+
         return torch.sigmoid(scores)
 
 
 class AdversarialTraining(nn.Module):
     """Adversarial training for response quality"""
-    
+
     def __init__(self, input_dim: int = 512):
         super().__init__()
         self.discriminator = nn.Sequential(
@@ -109,9 +112,9 @@ class AdversarialTraining(nn.Module):
             nn.Linear(256, 128),
             nn.ReLU(),
             nn.Linear(128, 1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
-        
+
     def forward(self, response: torch.Tensor) -> torch.Tensor:
         """Discriminate between high and low quality responses"""
         return self.discriminator(response)
@@ -119,75 +122,78 @@ class AdversarialTraining(nn.Module):
 
 class AlitaArchitecture(nn.Module):
     """Complete Alita conversational AI architecture"""
-    
+
     def __init__(
-        self, 
+        self,
         vocab_size: int = 50000,
         hidden_dim: int = 512,
         num_layers: int = 12,
-        num_heads: int = 8
+        num_heads: int = 8,
     ):
         super().__init__()
-        
+
         # Core components
         self.embedding = nn.Embedding(vocab_size, hidden_dim)
         self.positional_encoding = self._create_positional_encoding(hidden_dim)
-        
+
         # Alita-specific modules
         self.multimodal_fusion = MultiModalFusion(hidden_dim, hidden_dim, hidden_dim)
         self.conversational_memory = ConversationalMemory(1024, hidden_dim)
         self.information_seeking = InformationSeekingEngine(hidden_dim, hidden_dim)
         self.adversarial_training = AdversarialTraining(hidden_dim)
-        
+
         # Transformer backbone
         self.transformer = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(hidden_dim, num_heads), num_layers
         )
-        
+
         # Output projection
         self.output_projection = nn.Linear(hidden_dim, vocab_size)
-        
-    def _create_positional_encoding(self, hidden_dim: int, max_length: int = 5000) -> torch.Tensor:
+
+    def _create_positional_encoding(
+        self, hidden_dim: int, max_length: int = 5000
+    ) -> torch.Tensor:
         """Create sinusoidal positional encoding"""
         pe = torch.zeros(max_length, hidden_dim)
         position = torch.arange(0, max_length).unsqueeze(1).float()
-        
-        div_term = torch.exp(torch.arange(0, hidden_dim, 2).float() * 
-                           -(math.log(10000.0) / hidden_dim))
-        
+
+        div_term = torch.exp(
+            torch.arange(0, hidden_dim, 2).float() * -(math.log(10000.0) / hidden_dim)
+        )
+
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
-        
+
         return pe.unsqueeze(0)
-    
+
     def forward(
-        self, 
+        self,
         input_ids: torch.Tensor,
         image_features: torch.Tensor | None = None,
-        context: torch.Tensor | None = None
+        context: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Forward pass through Alita architecture"""
-        
+
         # Embedding and positional encoding
         embeddings = self.embedding(input_ids)
         seq_len = embeddings.size(1)
         embeddings += self.positional_encoding[:, :seq_len, :]
-        
+
         # Multi-modal fusion if image features provided
         if image_features is not None:
             embeddings = self.multimodal_fusion(embeddings, image_features)
-        
+
         # Conversational memory integration
         if context is not None:
             memory_output = self.conversational_memory(embeddings, context)
             embeddings = embeddings + memory_output
-        
+
         # Transformer processing
         transformer_output = self.transformer(embeddings)
-        
+
         # Output projection
         logits = self.output_projection(transformer_output)
-        
+
         return logits
 
 
@@ -195,7 +201,7 @@ def create_paper_code_implementation(
     vocab_size: int = 50000,
     hidden_dim: int = 512,
     num_layers: int = 12,
-    num_heads: int = 8
+    num_heads: int = 8,
 ) -> nn.Module:
     """Factory function to create Alita implementation"""
     return AlitaArchitecture(vocab_size, hidden_dim, num_layers, num_heads)
@@ -204,16 +210,16 @@ def create_paper_code_implementation(
 if __name__ == "__main__":
     # Example usage
     model = create_paper_code_implementation()
-    
+
     # Test input
     batch_size, seq_len = 2, 100
     input_ids = torch.randint(0, 50000, (batch_size, seq_len))
     image_features = torch.randn(batch_size, seq_len, 512)
     context = torch.randn(batch_size, 50, 512)
-    
+
     # Forward pass
     output = model(input_ids, image_features, context)
-    
+
     print(f"Input shape: {input_ids.shape}")
     print(f"Output shape: {output.shape}")
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")

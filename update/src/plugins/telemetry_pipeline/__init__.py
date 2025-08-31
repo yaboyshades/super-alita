@@ -1,4 +1,5 @@
 """Telemetry Pipeline Plugin for Super Alita"""
+
 from typing import Any, Dict
 
 from src.core.abilities import AbilityRegistry
@@ -19,12 +20,12 @@ from .abilities import (
 
 class TelemetryPipelinePlugin(PluginBase):
     """Plugin for processing telemetry into high-signal prompts"""
-    
+
     def __init__(self):
         super().__init__()
         self.name = "telemetry_pipeline"
         self.version = "1.0.0"
-    
+
     def register_abilities(self, registry: AbilityRegistry):
         """Register all pipeline abilities"""
         abilities = [
@@ -36,8 +37,8 @@ class TelemetryPipelinePlugin(PluginBase):
             PruneAbility(),
             ConflictResolverAbility(),
             CompressorAbility(),
-            FinalPromptAssemblerAbility()
+            FinalPromptAssemblerAbility(),
         ]
-        
+
         for ability in abilities:
             registry.register(ability)

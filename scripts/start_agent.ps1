@@ -28,4 +28,3 @@ if ($Dev) {
   Write-Host "[agent] Running server..."
   node .\dist\server.js
 }
-

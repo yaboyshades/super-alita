@@ -34,4 +34,3 @@ describe('prefetchUsingWasmAnalysis', () => {
     expect(emit).toHaveBeenCalledWith('predictive_wasm_analysis', expect.objectContaining({ ok: false }));
   });
 });
-

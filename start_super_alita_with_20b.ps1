@@ -23,7 +23,7 @@ Write-Host "`n🔍 Checking Ollama status..." -ForegroundColor Yellow
 try {
     $ollamaStatus = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/tags" -TimeoutSec 5
     $models = $ollamaStatus.models | Where-Object { $_.name -like "*gpt-oss:20b*" }
-    
+
     if ($models) {
         Write-Host "✅ GPT-OSS 20B model is loaded and ready" -ForegroundColor Green
         Write-Host "  Model: $($models[0].name)"

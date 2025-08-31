@@ -35,7 +35,7 @@ class AutogenCreatorPlugin(PluginInterface):
         self.event_bus = event_bus
         self.store = store
         self.config = cfg or {}
-        
+
         # Subscribe to gap events
         if self.event_bus:
             for topic in self.topics:
@@ -51,23 +51,20 @@ class AutogenCreatorPlugin(PluginInterface):
         """Handle gap events by invoking autogen pipeline."""
         if not self._is_running:
             return
-            
+
         # Extract description from various event formats
         data = event.get("data", {}) if isinstance(event, dict) else {}
-        
+
         # Try different attribute access patterns
-        if hasattr(event, 'payload') and not isinstance(event, dict):
-            data = getattr(event, 'payload', {})
-        elif hasattr(event, 'data') and not isinstance(event, dict):
-            data = getattr(event, 'data', {})
-            
+        if hasattr(event, "payload") and not isinstance(event, dict):
+            data = getattr(event, "payload", {})
+        elif hasattr(event, "data") and not isinstance(event, dict):
+            data = getattr(event, "data", {})
+
         desc = str(
-            data.get("description")
-            or data.get("task") 
-            or data.get("message")
-            or ""
+            data.get("description") or data.get("task") or data.get("message") or ""
         ).strip()
-        
+
         if not desc:
             return
 
@@ -80,3 +77,6 @@ class AutogenCreatorPlugin(PluginInterface):
         # Execute in thread pool to avoid blocking
         with ThreadPoolExecutor(max_workers=1) as executor:
             await loop.run_in_executor(executor, _run)
+
+# Backwards-compatible alias for configs referencing 'AutoGenCreatorPlugin'
+AutoGenCreatorPlugin = AutogenCreatorPlugin

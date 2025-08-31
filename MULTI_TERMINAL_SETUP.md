@@ -31,7 +31,7 @@ This document describes the comprehensive multi-terminal orchestration and comma
   - `terminal:interactive-shell` - Development commands with Copilot CLI
 
 ### Command Safety with GitHub Copilot CLI
-- **Safe command generation**: `ghcs "task description"` 
+- **Safe command generation**: `ghcs "task description"`
 - **Command explanation**: `ghce "command"` explains before execution
 - **Confirmation required** for all generated commands
 - **Super Alita specific helpers** for common development tasks

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 from collections.abc import Mapping, Sequence
+import asyncio
 
 
 class ProcError(RuntimeError):
@@ -43,6 +44,36 @@ def run(
         timeout=timeout,
         env=dict(env) if env else None,
     )
+    if p.returncode != 0:
+        raise ProcError(argv, p.returncode, p.stdout, p.stderr)
+    return p.stdout
+
+
+async def arun(
+    cmd: Sequence[str],
+    *,
+    timeout: float | None = None,
+    env: Mapping[str, str] | None = None,
+) -> str:
+    """
+    Async counterpart to run(). Executes subprocess.run in a thread so existing
+    monkeypatching of subprocess.run in tests still applies. Returns stdout.
+    Raises ProcError on non-zero exit.
+    """
+    argv = _sanitize_args(cmd)
+
+    def _call() -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            argv,
+            shell=False,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=dict(env) if env else None,
+        )
+
+    p: subprocess.CompletedProcess[str] = await asyncio.to_thread(_call)
     if p.returncode != 0:
         raise ProcError(argv, p.returncode, p.stdout, p.stderr)
     return p.stdout

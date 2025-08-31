@@ -1,4 +1,4 @@
-.PHONY: run test test-smoke lint deps env clean help ollama-smoke ollama-run
+.PHONY: run test test-smoke lint deps env clean help ollama-smoke ollama-run mcp-export mcp-abstract mcp-abstract-consolidated
 
 ifneq (,$(wildcard ./.env))
 include .env
@@ -54,3 +54,12 @@ clean: ## Clean caches and temp files
 .PHONY: autogen-any
 autogen-any: ## Run autogen for specified capability (use DESC="description")
 	python scripts/run_autogen.py --desc "$(DESC)" --repo .
+
+mcp-export: ## Export Mangle tools to MCP-Box and rebuild catalog
+	python examples/mangle_export_to_mcp.py
+
+mcp-abstract: ## Rebuild MCP-Box index and catalog
+	python -c "from src.reug_runtime.mcp_abstractor import abstract_mcp_box; abstract_mcp_box('.mcp_box')"
+
+mcp-abstract-consolidated: ## Rebuild MCP-Box with consolidated catalog
+	python -c "from src.reug_runtime.mcp_abstractor import abstract_mcp_box; abstract_mcp_box('.mcp_box', consolidate_catalog=True)"

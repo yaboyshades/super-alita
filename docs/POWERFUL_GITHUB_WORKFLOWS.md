@@ -204,7 +204,7 @@ benchmark_type: [quick, full, stress, comparison]
    Status: status: work in progress, status: ready for review
    ```
 
-3. **Test Workflows**: 
+3. **Test Workflows**:
    - Create a test PR to verify AI code review
    - Check the automation dashboard issue
    - Monitor workflow health in Actions tab

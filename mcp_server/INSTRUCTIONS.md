@@ -82,17 +82,17 @@ class ToolOutput(BaseModel):
 async def execute_tool(input_data: ToolInput) -> ToolOutput:
     """
     Execute the tool with validated input.
-    
+
     Args:
         input_data: Validated input parameters
-        
+
     Returns:
         Structured output with results
     """
     try:
         # Tool implementation
         result = process_input(input_data.parameter)
-        
+
         return ToolOutput(
             success=True,
             result=result,
@@ -232,7 +232,7 @@ from mcp_server.tools.my_tool import execute_tool, ToolInput
 async def test_tool_execution():
     input_data = ToolInput(parameter="test_value")
     result = await execute_tool(input_data)
-    
+
     assert result.success is True
     assert "test_value" in result.result
 ```

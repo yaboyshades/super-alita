@@ -12,15 +12,15 @@ sys.path.insert(0, str(src_path))
 # Use environment variable override to avoid import conflicts
 import os
 
-original_pythonpath = os.environ.get('PYTHONPATH', '')
-os.environ['PYTHONPATH'] = ''
+original_pythonpath = os.environ.get("PYTHONPATH", "")
+os.environ["PYTHONPATH"] = ""
 # Remove any ATLAI paths that might cause conflicts
-sys.path = [p for p in sys.path if 'ATLAI' not in p]
+sys.path = [p for p in sys.path if "ATLAI" not in p]
 
 from mcp.server.fastmcp import FastMCP
 
 # Restore environment after import
-os.environ['PYTHONPATH'] = original_pythonpath
+os.environ["PYTHONPATH"] = original_pythonpath
 
 from mcp_server.tools import (
     find_missing_docstrings,

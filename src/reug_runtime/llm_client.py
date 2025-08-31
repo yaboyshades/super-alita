@@ -60,9 +60,9 @@ class LLMClient:
     async def identify(self) -> dict[str, Any]:
         """Return stable identity for responses/metrics."""
         return {
-            "provider": self.provider, 
-            "model": self.model_name, 
-            "supports_tools": self.supports_tools
+            "provider": self.provider,
+            "model": self.model_name,
+            "supports_tools": self.supports_tools,
         }
 
 
@@ -262,17 +262,20 @@ class SuperAlitaFallbackClient(LLMClient):
         """HEAD /v1/chat/completions or tiny request."""
         if self._client is None:  # pragma: no cover
             return False, "httpx_not_available"
-        
+
         url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
         headers = {"Accept": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
-        
+
         try:
             async with asyncio.timeout(2.0):
                 resp = await self._client.head(url, headers=headers)
             # Some gateways 405 on HEAD — treat 200/401/405 as "up"
-            return (resp.status_code in (200, 401, 405), f"openai_head:{resp.status_code}")
+            return (
+                resp.status_code in (200, 401, 405),
+                f"openai_head:{resp.status_code}",
+            )
         except Exception as e:
             return (False, f"openai_ping_error:{type(e).__name__}")
 
@@ -291,7 +294,7 @@ class SuperAlitaFallbackClient(LLMClient):
             "model": self.model_name,
             "messages": messages,
             "stream": True,
-            "temperature": 0.2,
+            "temperature": SETTINGS.default_temperature,
         }
         if tools:
             payload["tools"] = tools
@@ -496,14 +499,16 @@ class OllamaClient(LLMClient):
 
     def __init__(self, model_name: str, host: str | None = None) -> None:
         self.model_name = model_name
-        self.host = (host or os.getenv("OLLAMA_HOST") or "http://127.0.0.1:11434").rstrip("/")
+        self.host = (
+            host or os.getenv("OLLAMA_HOST") or "http://127.0.0.1:11434"
+        ).rstrip("/")
         self._client = httpx.AsyncClient(timeout=None) if httpx else None
 
     async def health(self) -> tuple[bool, str]:
         """Fast ping that doesn't allocate a full generation."""
         if self._client is None:  # pragma: no cover
             return False, "httpx_not_available"
-        
+
         url = f"{self.host}/api/tags"
         try:
             async with asyncio.timeout(2.0):

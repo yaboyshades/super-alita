@@ -25,4 +25,3 @@ def test_compute_reward_from_result_success_latency_cost() -> None:
     }
     r3 = compute_reward_from_result(fail)
     assert 0.0 <= r3 < 0.5
-

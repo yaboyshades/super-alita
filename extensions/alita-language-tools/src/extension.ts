@@ -204,13 +204,13 @@ export async function activate(ctx: vscode.ExtensionContext) {
   // Predictive + feedback managers (clairvoyant scaffolding)
   const predictive = new PredictiveManager(telemetry ?? undefined);
   const feedback = new FeedbackManager();
-  
+
   // Initialize WASM analyzer
   const wasmAnalyzer = new WasmPredictiveAnalyzer(ctx);
   wasmAnalyzer.initialize().catch((err: unknown) => {
     console.warn('Failed to initialize WASM analyzer:', err);
   });
-  
+
   disposables.push(predictive, feedback, wasmAnalyzer);
 
   // Bridge worker host-call telemetry: listen for posted messages tagged __alitaHost

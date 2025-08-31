@@ -261,9 +261,7 @@ class TestEnhancedLadderPlanner:
         await planner._enhanced_execute(root_todo_shadow, children_shadow)
 
         # Verify shadow execution (should not call actual orchestrator)
-        [
-            exec for exec in planner.orch.executions if exec[3] is True
-        ]
+        [exec for exec in planner.orch.executions if exec[3] is True]
         active_executions = [
             exec for exec in planner.orch.executions if exec[3] is False
         ]
@@ -484,8 +482,10 @@ class TestEnhancedLadderPlanner:
         import importlib
 
         import cortex.config.flags as flag_module
+
         importlib.reload(flag_module)
         import cortex.planner.ladder_enhanced as le
+
         importlib.reload(le)
 
         planner = le.EnhancedLadderPlanner(

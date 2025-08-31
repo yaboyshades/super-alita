@@ -19,9 +19,12 @@ from src.neural.atom import Atom
 
 class Feature(BaseModel):
     """Feature with IDBD adaptive learning rates and multi-source utility."""
+
     id: str
     name: str
-    composition_type: str  # 'primitive', 'conjunction', 'sequence', 'function', 'contrast'
+    composition_type: (
+        str  # 'primitive', 'conjunction', 'sequence', 'function', 'contrast'
+    )
     base_features: list[str] = Field(default_factory=list)
 
     # IDBD parameters
@@ -46,21 +49,27 @@ class Feature(BaseModel):
     def compute_combined_utility(self) -> float:
         weights = {"play": 0.4, "prediction": 0.3, "planning": 0.2, "novelty": 0.1}
         return (
-            weights["play"] * self.play_utility +
-            weights["prediction"] * self.prediction_utility +
-            weights["planning"] * self.planning_utility +
-            weights["novelty"] * self.novelty_score
+            weights["play"] * self.play_utility
+            + weights["prediction"] * self.prediction_utility
+            + weights["planning"] * self.planning_utility
+            + weights["novelty"] * self.novelty_score
         )
 
 
 class FeatureExtractor(nn.Module):
     """Neural feature extractor for function-based features."""
+
     def __init__(self, input_dim: int, hidden_dim: int = 64, output_dim: int = 32):
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim), nn.ReLU(), nn.LayerNorm(hidden_dim),
-            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(), nn.LayerNorm(hidden_dim),
-            nn.Linear(hidden_dim, output_dim), nn.Tanh()
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.LayerNorm(hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.LayerNorm(hidden_dim),
+            nn.Linear(hidden_dim, output_dim),
+            nn.Tanh(),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -77,7 +86,7 @@ class FeatureDiscoveryEngine(PluginInterface):
     Subscribes:
       - deliberation_tick
       - oak.feature_utility_updated
-    
+
     Continual feature discovery with IDBD adaptive meta-learning.
     Generates features via primitives, conjunctions, sequences, contrasts, and NN functions.
     """
@@ -100,7 +109,9 @@ class FeatureDiscoveryEngine(PluginInterface):
         self.feature_graph: dict[str, set[str]] = {}
 
         self.feature_extractor = FeatureExtractor(self.state_dim, 64, 32)
-        self.extractor_optimizer = torch.optim.Adam(self.feature_extractor.parameters(), lr=1e-3)
+        self.extractor_optimizer = torch.optim.Adam(
+            self.feature_extractor.parameters(), lr=1e-3
+        )
         self.cfg.update(config or {})
         await self.subscribe("deliberation_tick", self.handle_tick)
         await self.subscribe("oak.feature_utility_updated", self.handle_utility_update)
@@ -115,7 +126,7 @@ class FeatureDiscoveryEngine(PluginInterface):
         await self.subscribe("planning_usage", self.handle_planning_feedback)
 
     def generate_feature_id(self, composition: list[str], type_: str) -> str:
-        ns = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+        ns = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
         return str(uuid.uuid5(ns, f"{type_}:{'_'.join(sorted(composition))}"))
 
     async def handle_observation(self, event: dict[str, Any]):
@@ -153,7 +164,7 @@ class FeatureDiscoveryEngine(PluginInterface):
                     id=fid,
                     name=f"prim_{key}",
                     composition_type="primitive",
-                    evaluator=f"lambda s: s.get('{key}', 0.0)"
+                    evaluator=f"lambda s: s.get('{key}', 0.0)",
                 )
                 self.features[fid] = f
                 f_dict = f.model_dump()
@@ -161,11 +172,10 @@ class FeatureDiscoveryEngine(PluginInterface):
                     atom_type="feature",
                     title=f.name,
                     content=json.dumps(f_dict),
-                    meta={"subtype": "primitive"}
+                    meta={"subtype": "primitive"},
                 )
                 await self.store.persist(
-                    event_type="atom_created",
-                    payload=new_atom.to_dict()
+                    event_type="atom_created", payload=new_atom.to_dict()
                 )
                 await self.emit_event(
                     "feature_created",
@@ -180,18 +190,20 @@ class FeatureDiscoveryEngine(PluginInterface):
         out: list[Feature] = []
         tops = sorted(features, key=lambda x: x.combined_utility, reverse=True)[:8]
         for i, a in enumerate(tops):
-            for b in tops[i+1:]:
+            for b in tops[i + 1 :]:
                 comp = [a.id, b.id]
                 fid = self.generate_feature_id(comp, "conjunction")
                 if fid in self.features:
                     continue
-                out.append(Feature(
-                    id=fid,
-                    name=f"conj_{a.name}_{b.name}",
-                    composition_type="conjunction",
-                    base_features=comp,
-                    evaluator=f"lambda s: min({a.evaluator}, {b.evaluator})",
-                ))
+                out.append(
+                    Feature(
+                        id=fid,
+                        name=f"conj_{a.name}_{b.name}",
+                        composition_type="conjunction",
+                        base_features=comp,
+                        evaluator=f"lambda s: min({a.evaluator}, {b.evaluator})",
+                    )
+                )
         return out
 
     def _generate_sequences(self) -> list[Feature]:
@@ -204,20 +216,26 @@ class FeatureDiscoveryEngine(PluginInterface):
         if seq:
             fid = self.generate_feature_id(seq, "sequence")
             if fid not in self.features:
-                out.append(Feature(
-                    id=fid,
-                    name=f"seq_{len(seq)}",
-                    composition_type="sequence",
-                    base_features=seq[:6],
-                    evaluator="lambda s: 1.0",
-                ))
+                out.append(
+                    Feature(
+                        id=fid,
+                        name=f"seq_{len(seq)}",
+                        composition_type="sequence",
+                        base_features=seq[:6],
+                        evaluator="lambda s: 1.0",
+                    )
+                )
         return out
 
     def _generate_functions(self, obs: dict[str, Any]) -> list[Feature]:
         out: list[Feature] = []
         vec = self._obs_to_vector(obs)
         with torch.no_grad():
-            feats = self.feature_extractor(torch.FloatTensor(vec).unsqueeze(0)).squeeze().numpy()
+            feats = (
+                self.feature_extractor(torch.FloatTensor(vec).unsqueeze(0))
+                .squeeze()
+                .numpy()
+            )
         top = np.argsort(np.abs(feats))[-3:]
         for idx in top:
             val = float(feats[idx])
@@ -226,32 +244,38 @@ class FeatureDiscoveryEngine(PluginInterface):
             fid = self.generate_feature_id([f"func_{idx}_{val:.3f}"], "function")
             if fid in self.features:
                 continue
-            out.append(Feature(
-                id=fid,
-                name=f"func_{idx}",
-                composition_type="function",
-                evaluator=f"lambda s: {val}",
-            ))
+            out.append(
+                Feature(
+                    id=fid,
+                    name=f"func_{idx}",
+                    composition_type="function",
+                    evaluator=f"lambda s: {val}",
+                )
+            )
         return out
 
     def _generate_contrasts(self, feats: list[Feature]) -> list[Feature]:
         out: list[Feature] = []
         if len(feats) < 2:
             return out
-        pairs = min(3, len(feats)//2)
-        idxs = np.random.choice(len(feats), size=2*pairs, replace=False).reshape(pairs, 2)
+        pairs = min(3, len(feats) // 2)
+        idxs = np.random.choice(len(feats), size=2 * pairs, replace=False).reshape(
+            pairs, 2
+        )
         for i, j in idxs:
             a, b = feats[i], feats[j]
             fid = self.generate_feature_id([a.id, b.id], "contrast")
             if fid in self.features:
                 continue
-            out.append(Feature(
-                id=fid,
-                name=f"contrast_{a.name}_{b.name}",
-                composition_type="contrast",
-                base_features=[a.id, b.id],
-                evaluator=f"lambda s: abs({a.evaluator} - {b.evaluator})",
-            ))
+            out.append(
+                Feature(
+                    id=fid,
+                    name=f"contrast_{a.name}_{b.name}",
+                    composition_type="contrast",
+                    base_features=[a.id, b.id],
+                    evaluator=f"lambda s: abs({a.evaluator} - {b.evaluator})",
+                )
+            )
         return out
 
     def _obs_to_vector(self, obs: dict[str, Any]) -> np.ndarray:
@@ -284,12 +308,9 @@ class FeatureDiscoveryEngine(PluginInterface):
             atom_type="feature",
             title=f.name,
             content=json.dumps(f_dict),
-            meta={"subtype": f.composition_type}
+            meta={"subtype": f.composition_type},
         )
-        await self.store.persist(
-            event_type="atom_created",
-            payload=new_atom.to_dict()
-        )
+        await self.store.persist(event_type="atom_created", payload=new_atom.to_dict())
         await self.emit_event(
             "feature_created",
             feature_id=f.id,
@@ -307,7 +328,9 @@ class FeatureDiscoveryEngine(PluginInterface):
                 continue
             if not f.base_features:
                 continue
-            if len(set(f.base_features) & set(e.base_features)) > 0.5 * len(f.base_features):
+            if len(set(f.base_features) & set(e.base_features)) > 0.5 * len(
+                f.base_features
+            ):
                 similar += 1
         return 1.0 / (1.0 + similar)
 
@@ -335,7 +358,9 @@ class FeatureDiscoveryEngine(PluginInterface):
                 continue
             tgt = 1.0 if success else 0.0
             delta = tgt - f.play_utility
-            f.play_utility = float(np.clip(f.play_utility + f.learning_rate * delta, 0.0, 1.0))
+            f.play_utility = float(
+                np.clip(f.play_utility + f.learning_rate * delta, 0.0, 1.0)
+            )
             f.activation_count += 1
             f.last_activated = datetime.now(UTC)
             await self.emit_event(
@@ -361,7 +386,9 @@ class FeatureDiscoveryEngine(PluginInterface):
                 continue
             tgt = 1.0 - min(1.0, error)
             delta = tgt - f.prediction_utility
-            f.prediction_utility = float(np.clip(f.prediction_utility + f.learning_rate * delta, 0.0, 1.0))
+            f.prediction_utility = float(
+                np.clip(f.prediction_utility + f.learning_rate * delta, 0.0, 1.0)
+            )
             await self.emit_event(
                 "feature_utility_update",
                 feature_id=fid,
@@ -385,7 +412,9 @@ class FeatureDiscoveryEngine(PluginInterface):
             if not f:
                 continue
             delta = tgt - f.planning_utility
-            f.planning_utility = float(np.clip(f.planning_utility + f.learning_rate * delta, 0.0, 1.0))
+            f.planning_utility = float(
+                np.clip(f.planning_utility + f.learning_rate * delta, 0.0, 1.0)
+            )
             await self.emit_event(
                 "feature_utility_update",
                 feature_id=fid,

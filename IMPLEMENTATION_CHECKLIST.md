@@ -12,7 +12,7 @@
 - [ ] Calculate initial compliance score
 - [ ] Identify any missing guideline coverage
 
-## Monitoring Phase  
+## Monitoring Phase
 - [ ] Track daily compliance scores
 - [ ] Monitor guideline reference frequency
 - [ ] Analyze mode usage patterns

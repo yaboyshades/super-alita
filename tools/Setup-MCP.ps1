@@ -57,4 +57,3 @@ $config.servers | Add-Member -NotePropertyName $AddTool -NotePropertyValue $serv
 $config | ConvertTo-Json -Depth 5 | Set-Content -Path $ConfigPath
 
 Write-Host "Added MCP server '$AddTool' to $ConfigPath" -ForegroundColor Green
-

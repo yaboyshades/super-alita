@@ -55,8 +55,8 @@ async def handle_event(self, event: Dict[str, Any]) -> None:
     except Exception as e:
         self.logger.error(f"Event handling failed: {e}")
         # Emit error event for monitoring
-        error_event = create_event("plugin_error", 
-                                  error=str(e), 
+        error_event = create_event("plugin_error",
+                                  error=str(e),
                                   source_plugin=self.name)
         await self.event_bus.publish(error_event)
 ```
@@ -68,7 +68,7 @@ from src.core.neural_atom import create_atom
 # Create atoms with proper metadata
 atom = create_atom(
     content=result_data,
-    atom_type="tool_output", 
+    atom_type="tool_output",
     title="Descriptive Title",
     metadata={
         "source": self.name,
@@ -89,11 +89,11 @@ class YourPlugin(PluginInterface):
     def __init__(self, event_bus, config=None):
         super().__init__(event_bus, config)
         self.name = "your_plugin"
-        
+
     async def shutdown(self) -> None:
         """Required cleanup method"""
         await self.cleanup_resources()
-        
+
     async def handle_event(self, event: Dict[str, Any]) -> None:
         """Event handler implementation"""
         pass
@@ -107,10 +107,10 @@ class YourPlugin(PluginInterface):
 async def test_event_flow(mock_event_bus):
     # Use provided fixtures
     plugin = YourPlugin(mock_event_bus)
-    
+
     # Test event emission
     await plugin.emit_test_event()
-    
+
     # Verify event was published
     assert mock_event_bus.publish.called
     published_event = mock_event_bus.publish.call_args[0][0]
@@ -124,7 +124,7 @@ def test_neural_atom_deterministic():
     content = {"key": "value"}
     atom1 = create_atom(content, "test_type", "Test")
     atom2 = create_atom(content, "test_type", "Test")
-    
+
     assert atom1.uuid == atom2.uuid  # Same content = same UUID
 ```
 
@@ -168,7 +168,7 @@ from src.core.metrics import MetricsCollector
 
 with MetricsCollector.timer("operation_duration"):
     result = await self.timed_operation()
-    
+
 MetricsCollector.increment("operation_count")
 MetricsCollector.gauge("memory_usage", get_memory_usage())
 ```

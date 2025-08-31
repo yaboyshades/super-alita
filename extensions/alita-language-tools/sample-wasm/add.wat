@@ -5,4 +5,3 @@
     local.get 1
     i32.add)
 )
-

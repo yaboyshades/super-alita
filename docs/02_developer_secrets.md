@@ -41,46 +41,46 @@ Telemetry event `llm_fallback` is emitted with fields: `attempt_order`, `chosen`
 
 ## Secure Local Development Workflow
 
-1. Copy `.env.example` to `.env` (never commit secrets).  
-2. Populate only the providers you actively use (principle of least privilege).  
-3. Prefer local models (Ollama or transformers) for routine dev to minimize API exposure.  
-4. Use a per-developer API key with minimum scopes & rotation schedule.  
-5. Validate secrets load early: run `python -m src.main --dry-run` or backend health endpoint.  
+1. Copy `.env.example` to `.env` (never commit secrets).
+2. Populate only the providers you actively use (principle of least privilege).
+3. Prefer local models (Ollama or transformers) for routine dev to minimize API exposure.
+4. Use a per-developer API key with minimum scopes & rotation schedule.
+5. Validate secrets load early: run `python -m src.main --dry-run` or backend health endpoint.
 6. Enable telemetry locally only if anonymized & compliant.
 
 ## Secrets Handling Best Practices
 
-- Never echo secrets in terminals with screen sharing.  
-- Use OS keychain / secret manager for long-lived keys (e.g., Windows Credential Manager, 1Password).  
-- Avoid storing API keys in shell history: prefix with space in PowerShell (` SPACED=...`).  
-- Rotate keys regularly (30/60/90 day cadence).  
-- Restrict network egress of dev environments if possible.  
-- Review dependency chain for unintended exfiltration (disable auto update telemetry unless required).  
+- Never echo secrets in terminals with screen sharing.
+- Use OS keychain / secret manager for long-lived keys (e.g., Windows Credential Manager, 1Password).
+- Avoid storing API keys in shell history: prefix with space in PowerShell (` SPACED=...`).
+- Rotate keys regularly (30/60/90 day cadence).
+- Restrict network egress of dev environments if possible.
+- Review dependency chain for unintended exfiltration (disable auto update telemetry unless required).
 
 ## Ollama Integration
 
-- Install Ollama: https://ollama.com/download  
-- Pull a model: `ollama pull llama3.1:8b`  
-- (Optional) Create a custom Modelfile for quantization / system prompts.  
-- Ensure the daemon is running (default port 11434).  
-- Set `OLLAMA_HOST` if non-default.  
-- Set `OLLAMA_MODEL` or allow extension command prompt to choose.  
-- Backend & extension both call `POST /api/chat` with messages array; streaming uses newline-delimited JSON.  
+- Install Ollama: https://ollama.com/download
+- Pull a model: `ollama pull llama3.1:8b`
+- (Optional) Create a custom Modelfile for quantization / system prompts.
+- Ensure the daemon is running (default port 11434).
+- Set `OLLAMA_HOST` if non-default.
+- Set `OLLAMA_MODEL` or allow extension command prompt to choose.
+- Backend & extension both call `POST /api/chat` with messages array; streaming uses newline-delimited JSON.
 
 ## Local HF Model Workflow
 
-Use provided script:  
-`python scripts/download_model.py --model meta-llama/Meta-Llama-3-8B-Instruct --output models/Meta-Llama-3-8B-Instruct`  
-Then launch adapter:  
-`python src/local_adapter_server.py --model-path models/Meta-Llama-3-8B-Instruct --device cuda`  
+Use provided script:
+`python scripts/download_model.py --model meta-llama/Meta-Llama-3-8B-Instruct --output models/Meta-Llama-3-8B-Instruct`
+Then launch adapter:
+`python src/local_adapter_server.py --model-path models/Meta-Llama-3-8B-Instruct --device cuda`
 Set `LLM_PROVIDER=auto` & `LLM_MODEL=auto`.
 
 ## Telemetry Considerations
 
 Telemetry is opt-in. Ensure:
-- No raw prompt/user PII.  
-- Hash or bucket latencies.  
-- Fallback events include reason categories only (timeout, auth_error, rate_limit, provider_down).  
+- No raw prompt/user PII.
+- Hash or bucket latencies.
+- Fallback events include reason categories only (timeout, auth_error, rate_limit, provider_down).
 
 ## Testing Secrets Loading
 
@@ -101,9 +101,9 @@ def test_provider_env(provider, required):
 
 ## Rotation & Incident Response
 
-- Maintain an internal runbook listing contact for each provider.  
-- On leak: revoke key, rotate, audit logs, invalidate sessions, add detection rule.  
-- Record timeline & remediation in `SECURITY_INCIDENTS.md` (private).  
+- Maintain an internal runbook listing contact for each provider.
+- On leak: revoke key, rotate, audit logs, invalidate sessions, add detection rule.
+- Record timeline & remediation in `SECURITY_INCIDENTS.md` (private).
 
 ## Appendix: Minimal .env Example
 

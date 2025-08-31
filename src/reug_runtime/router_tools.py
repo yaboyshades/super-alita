@@ -1,10 +1,20 @@
-"""FastAPI routes exposing tool-style endpoints for the REUG runtime."""
+"""FastAPI routes exposing tool-style endpoints for the REUG runtime.
+
+Alignment additions (ALITA minimal predefinition + maximal self‑evolution):
+- /tools/mcp/brainstorm: propose lightweight MCP-like tool specs for a task
+- /tools/mcp/register: persist and dynamically register a new tool spec
+
+These endpoints allow the runtime to evolve capabilities at runtime without
+predefining large toolsets. Generated specs are persisted under ./.mcp_box.
+"""
 
 from __future__ import annotations
 
 import asyncio
 import sys
 from pathlib import Path
+import os
+import json
 from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Request
@@ -12,6 +22,7 @@ from fastapi.responses import JSONResponse
 
 from .config import SETTINGS
 from .router import execute_turn
+from .mcp_abstractor import abstract_mcp_box
 
 TOOL_CATALOG = [
     {
@@ -122,18 +133,111 @@ TOOL_CATALOG = [
             "required": ["ok"],
         },
     },
+    {
+        "name": "deepconf_consensus",
+        "description": "Perform consensus sampling using multiple LLM calls",
+        "input_schema": {
+            "type": "object",
+            "required": ["prompt"],
+            "properties": {
+                "prompt": {"type": "string"},
+                "num_samples": {"type": "integer", "default": 3},
+                "temperature": {"type": "number", "default": 0.7},
+                "max_tokens": {"type": "integer", "default": 512},
+            },
+        },
+        "output_schema": {
+            "type": "object",
+            "properties": {
+                "consensus_text": {"type": "string"},
+                "consensus_confidence": {"type": "number"},
+                "aggregation_method": {"type": "string"},
+                "individual_responses": {"type": "array"},
+                "metadata": {"type": "object"},
+            },
+        },
+    },
 ]
 
 
 tools = APIRouter(prefix="/tools", tags=["tools"])
 
+# Optional ability execution router (compat alias for external scripts)
+ability = APIRouter(prefix="/ability", tags=["ability"])
+
 _STREAMS: dict[str, Any] = {}
 
 
 @tools.get("/catalog")
-async def get_catalog() -> JSONResponse:
-    """Return the static tool catalog."""
-    return JSONResponse(TOOL_CATALOG)
+async def get_catalog(request: Request) -> JSONResponse:
+    """Return the tool catalog including both static and dynamic tools."""
+    print("🔍 DEBUG: Catalog endpoint called")
+
+    # Start with the static tool catalog
+    catalog = list(TOOL_CATALOG)
+    print(f"🔍 DEBUG: Static catalog has {len(catalog)} tools")
+
+    # Add dynamic tools from the ability registry
+    try:
+        app = request.app
+        print(f"🔍 DEBUG: Got app: {type(app)}")
+
+        if hasattr(app.state, "ability_registry"):
+            registry = app.state.ability_registry
+            print(f"🔍 DEBUG: Got registry: {type(registry)}")
+
+            if hasattr(registry, "get_available_tools_schema"):
+                dynamic_tools = registry.get_available_tools_schema()
+                print(f"🔍 DEBUG: Got {len(dynamic_tools)} dynamic tools")
+
+                # Try to load tools from catalog.json
+                try:
+                    box_dir = os.getenv("MCP_BOX_DIR", ".mcp_box")
+                    catalog_path = Path(box_dir) / "catalog.json"
+                    if catalog_path.exists():
+                        mcp_catalog_tools = json.loads(
+                            catalog_path.read_text(encoding="utf-8")
+                        )
+                        print(f"🔍 DEBUG: Found {len(mcp_catalog_tools)} tools in catalog.json")
+
+                        # Add tools from catalog.json (if not already in the static catalog)
+                        for tool in mcp_catalog_tools:
+                            tool_name = tool.get("name")
+                            if tool_name and not any(t["name"] == tool_name for t in catalog):
+                                catalog.append(tool)
+                                print(f"🔍 DEBUG: Added catalog tool: {tool_name}")
+                except Exception as e:
+                    print(f"⚠️  Warning: Failed to load MCP catalog: {e}")
+
+                # Convert dynamic tool contracts to catalog format
+                for tool_contract in dynamic_tools:
+                    # Only add if it's not already in the static catalog
+                    tool_name = tool_contract.get("tool_id") or tool_contract.get(
+                        "name"
+                    )
+                    if tool_name and not any(t["name"] == tool_name for t in catalog):
+                        catalog_entry = {
+                            "name": tool_name,
+                            "description": tool_contract.get("description", ""),
+                            "input_schema": tool_contract.get("input_schema", {}),
+                            "output_schema": tool_contract.get("output_schema", {}),
+                        }
+                        catalog.append(catalog_entry)
+                        print(f"🔍 DEBUG: Added dynamic tool: {tool_name}")
+
+                print(f"🔍 DEBUG: Final catalog has {len(catalog)} tools")
+            else:
+                print("🔍 DEBUG: Registry has no get_available_tools_schema method")
+        else:
+            print("🔍 DEBUG: App state has no ability_registry")
+    except Exception as e:
+        # If there's any error accessing dynamic tools, just return static catalog
+        print(f"⚠️  Warning: Failed to load dynamic tools: {e}")
+        import traceback
+
+        traceback.print_exc()
+
+    return JSONResponse(catalog)
 
 
 @tools.post("/reug_start_turn")
@@ -184,7 +288,9 @@ async def reug_stream_next(
     chunks: list[str] = []
     finished = False
     try:
-        chunk = await asyncio.wait_for(anext(it), timeout=SETTINGS.model_stream_timeout_s)
+        chunk = await asyncio.wait_for(
+            anext(it), timeout=SETTINGS.model_stream_timeout_s
+        )
         chunks.append(chunk)
         if "<final_answer>" in chunk:
             finished = True
@@ -299,3 +405,341 @@ async def git_apply_patch(
         "stdout": stdout.decode(),
         "stderr": stderr.decode(),
     }
+
+
+@tools.post("/execute")
+async def execute_tool(
+    request: Request,
+    body: dict[str, Any] = Body(...),  # noqa: B008
+) -> dict[str, Any]:
+    """Execute a tool via the ability registry.
+
+    Body should be an object with:
+      - tool_id: string identifier
+      - args: dict of arguments for the tool
+    """
+    tid = (body.get("tool_id") or body.get("name") or "").strip()
+    if not tid:
+        raise HTTPException(status_code=400, detail="missing tool_id")
+    args = body.get("args") or {}
+    if not isinstance(args, dict):
+        raise HTTPException(status_code=400, detail="args must be an object")
+
+    registry = request.app.state.ability_registry  # type: ignore[attr-defined]
+    # Allow longer time for heavier tools (e.g., consensus)
+    _timeout = SETTINGS.tool_timeout_s
+    if tid == "deepconf_consensus":
+        # Scale timeout with requested workload to avoid premature 504s.
+        ns = 0
+        mt = 0
+        try:
+            ns = int(args.get("num_samples", 1) or 1)
+        except Exception:
+            ns = 1
+        try:
+            mt = int(args.get("max_tokens", 256) or 256)
+        except Exception:
+            mt = 256
+        # Base 60s + 60s per sample, cap additional by token budget
+        scaled = 60.0 + 60.0 * max(1, ns)
+        scaled += min(120.0, mt / 2.0)
+        _timeout = max(_timeout, 90.0, scaled)
+    try:
+        result = await asyncio.wait_for(
+            registry.execute(tid, args),
+            timeout=_timeout,
+        )
+        return {"ok": True, "tool": tid, "result": result}
+    except asyncio.TimeoutError as e:
+        raise HTTPException(
+            status_code=504,
+            detail={"error": "tool_timeout", "tool": tid, "timeout": _timeout},
+        ) from e
+    except Exception as e:  # pragma: no cover - runtime errors
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@tools.post("/execute/{tool_id}")
+async def execute_tool_path(
+    request: Request,
+    tool_id: str,
+    body: dict[str, Any] = Body(default={}),  # noqa: B008
+) -> dict[str, Any]:
+    args = body.get("args") if isinstance(body, dict) else None
+    if args is None:
+        args = body
+    if args is None:
+        args = {}
+    if not isinstance(args, dict):
+        raise HTTPException(status_code=400, detail="args must be an object")
+    registry = request.app.state.ability_registry  # type: ignore[attr-defined]
+    _timeout = SETTINGS.tool_timeout_s
+    if tool_id == "deepconf_consensus":
+        ns = 0
+        mt = 0
+        try:
+            ns = int(args.get("num_samples", 1) or 1)
+        except Exception:
+            ns = 1
+        try:
+            mt = int(args.get("max_tokens", 256) or 256)
+        except Exception:
+            mt = 256
+        scaled = 60.0 + 60.0 * max(1, ns)
+        scaled += min(120.0, mt / 2.0)
+        _timeout = max(_timeout, 90.0, scaled)
+    try:
+        result = await asyncio.wait_for(
+            registry.execute(tool_id, args),
+            timeout=_timeout,
+        )
+        return {"ok": True, "tool": tool_id, "result": result}
+    except asyncio.TimeoutError as e:
+        raise HTTPException(
+            status_code=504,
+            detail={"error": "tool_timeout", "tool": tool_id, "timeout": _timeout},
+        ) from e
+    except Exception as e:  # pragma: no cover
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+# Compatibility alias: /ability/execute/{tool_id}
+@ability.post("/execute/{tool_id}")
+async def ability_execute(
+    request: Request,
+    tool_id: str,
+    body: dict[str, Any] = Body(default={}),  # noqa: B008
+) -> dict[str, Any]:
+    return await execute_tool_path(request, tool_id, body)
+
+
+# --------- MCP self-evolution helpers (brainstorm + dynamic registration) ---------
+_MCP_BOX = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
+
+
+def _ensure_mcp_box() -> Path:
+    _MCP_BOX.mkdir(parents=True, exist_ok=True)
+    return _MCP_BOX
+
+
+def _persist_spec(spec: dict[str, Any]) -> str:
+    box = _ensure_mcp_box()
+    tid = spec.get("tool_id") or spec.get("name") or f"mcp_{len(list(box.glob('*.json')))}"
+    spec = {"tool_id": tid, **spec}
+    path = box / f"{tid}.json"
+    path.write_text(json.dumps(spec, indent=2), encoding="utf-8")
+    return tid
+
+
+@tools.post("/mcp/brainstorm")
+async def mcp_brainstorm(body: dict[str, Any] = Body(...)) -> JSONResponse:  # noqa: B008
+    """Propose lightweight MCP-like tool specs for a given task description.
+
+    Input: {"task": str}
+    Output: {"proposals": [spec, ...]}
+    """
+    task = (body.get("task") or "").lower()
+    proposals: list[dict[str, Any]] = []
+
+    # Heuristic proposals to keep predefinition minimal
+    if any(k in task for k in ("url", "web", "http")):
+        proposals.append(
+            {
+                "tool_id": "url_text_extractor",
+                "description": "Fetch a URL and return UTF-8 text (best-effort).",
+                "action": "fetch_url_text",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["url"],
+                    "properties": {"url": {"type": "string"}, "truncate": {"type": "integer"}},
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {"content": {"type": "string"}, "truncated": {"type": "boolean"}},
+                },
+            }
+        )
+    if any(k in task for k in ("github", "readme", "repo")):
+        proposals.append(
+            {
+                "tool_id": "github_file_fetch",
+                "description": "Fetch a raw file from GitHub by owner/repo/path.",
+                "action": "fetch_github_raw",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["owner", "repo", "path"],
+                    "properties": {
+                        "owner": {"type": "string"},
+                        "repo": {"type": "string"},
+                        "path": {"type": "string"},
+                        "ref": {"type": "string"},
+                    },
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {
+                        "content": {"type": "string"},
+                        "url": {"type": "string"},
+                        "truncated": {"type": "boolean"},
+                        "error": {"type": "string"},
+                    },
+                },
+            }
+        )
+    if not proposals:
+        # Fallback generic executor
+        proposals.append(
+            {
+                "tool_id": "echo_plan",
+                "description": "Echo a plan for the task in a structured list.",
+                "action": "echo_plan",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["task"],
+                    "properties": {"task": {"type": "string"}},
+                },
+                "output_schema": {"type": "object", "properties": {"steps": {"type": "array"}}},
+            }
+        )
+
+    return JSONResponse({"proposals": proposals})
+
+
+@tools.post("/mcp/register")
+async def mcp_register(
+    request: Request, spec: dict[str, Any] = Body(...)
+) -> JSONResponse:  # noqa: B008
+    """Persist and register a dynamic tool spec with a minimal executor.
+
+    Supported actions:
+      - fetch_url_text: GET the URL and return text (urllib)
+      - fetch_github_raw: reuse the existing dynamic executor via registry
+      - echo_plan: split task into 3 bullet steps
+    """
+    action = spec.get("action") or ""
+    box_dir = os.getenv("MCP_BOX_DIR", ".mcp_box")
+
+    # Check if a canonical tool already exists for this action and schema
+    # First, run the abstractor to ensure index.json is up to date
+    abstract_mcp_box(box_dir)
+
+    # Load the index to check for canonical tools
+    index_path = Path(box_dir) / "index.json"
+    canonical_tool_id = None
+
+    try:
+        if index_path.exists():
+            index_data = json.loads(index_path.read_text(encoding="utf-8"))
+
+            # Get signature for this spec
+            from .mcp_abstractor import _normalize_spec, _compute_signature
+            norm_spec = _normalize_spec(spec)
+            sig = _compute_signature(norm_spec)
+
+            # Check if there's an existing canonical tool with this signature
+            for tool in index_data.get("tools", []):
+                if tool.get("signature") == sig:
+                    canonical_tool_id = tool.get("tool_id")
+                    print(f"🔍 DEBUG: Found canonical tool {canonical_tool_id} for signature {sig}")
+                    break
+    except Exception as e:
+        print(f"⚠️  Warning: Error checking canonical tools: {e}")
+
+    # Use canonical tool_id if found, otherwise persist as new spec
+    if canonical_tool_id:
+        tool_id = canonical_tool_id
+        print(f"🔍 DEBUG: Using existing canonical tool_id: {tool_id}")
+    else:
+        tool_id = _persist_spec(spec)
+        print(f"🔍 DEBUG: Persisted new tool spec: {tool_id}")
+
+    registry = request.app.state.ability_registry  # type: ignore[attr-defined]
+
+    async def _exec(args: dict[str, Any]) -> dict[str, Any]:
+        if action == "fetch_url_text":
+            import urllib.request
+
+            url = args.get("url")
+            if not isinstance(url, str) or not url:
+                return {"error": "missing url"}
+            truncate = int(args.get("truncate") or 4000)
+            try:
+                with urllib.request.urlopen(url, timeout=8) as resp:  # nosec B310
+                    raw = resp.read()
+                text = raw.decode("utf-8", errors="replace")
+                truncated = False
+                if len(text) > truncate:
+                    text = text[:truncate]
+                    truncated = True
+                return {"content": text, "truncated": truncated}
+            except Exception as e:  # pragma: no cover - network variability
+                return {"content": "", "truncated": False, "error": str(e)}
+        if action == "fetch_github_raw":
+            # Delegate to the built-in dynamic executor registered in SimpleAbilityRegistry
+            return await registry.execute(
+                "fetch_github_raw",
+                {
+                    "owner": args.get("owner"),
+                    "repo": args.get("repo"),
+                    "path": args.get("path"),
+                    **({"ref": args.get("ref")} if args.get("ref") else {}),
+                },
+            )
+        if action == "echo_plan":
+            task = (args.get("task") or "").strip()
+            steps = [f"Understand: {task}", "Identify resources", "Execute and verify"]
+            return {"steps": steps}
+        # Unknown action fallback
+        return {"ok": True, "args": args}
+
+    contract = {
+        "tool_id": tool_id,
+        "description": spec.get("description", "runtime-registered tool"),
+        "input_schema": spec.get("input_schema", {"type": "object"}),
+        "output_schema": spec.get("output_schema", {"type": "object"}),
+    }
+
+    registry.register_tool(contract=contract, executor=_exec)
+    # Include both "registered" and "tool_id" for compatibility with callers
+    return JSONResponse({
+        "ok": True,
+        "registered": tool_id,
+        "tool_id": tool_id,
+        "action": action,
+    })
+
+
+@tools.post("/mcp/abstract")
+async def mcp_abstract(body: dict[str, Any] = Body(default={})) -> JSONResponse:  # noqa: B008
+    """Normalize, deduplicate and index specs in MCP Box.
+
+    Input (optional): {"mcp_box_dir": ".mcp_box"}
+    Output: index summary (as written to index.json)
+    """
+    box_dir = body.get("mcp_box_dir") or os.getenv("MCP_BOX_DIR", ".mcp_box")
+    result = abstract_mcp_box(box_dir)
+    return JSONResponse(result)
+
+
+@tools.get("/mcp/catalog")
+async def mcp_catalog() -> JSONResponse:
+    """Get the tool catalog from the MCP Box.
+
+    Returns the lightweight catalog.json for direct tool loading.
+    If catalog.json doesn't exist, automatically abstracts and generates it.
+    """
+    box_dir = os.getenv("MCP_BOX_DIR", ".mcp_box")
+    catalog_path = Path(box_dir) / "catalog.json"
+
+    if not catalog_path.exists():
+        # Generate catalog by running abstractor
+        abstract_mcp_box(box_dir)
+
+    try:
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        return JSONResponse(catalog)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to read catalog: {str(e)}"}
+        )

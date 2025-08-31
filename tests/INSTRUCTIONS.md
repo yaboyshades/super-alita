@@ -7,7 +7,7 @@ This directory contains unit and integration tests for the Super Alita system.
 The test directory mirrors the source code structure with comprehensive coverage:
 
 - **Core Tests** (`core/`): Event bus, plugin interface, neural atom tests
-- **Plugin Tests** (`plugins/`): Individual plugin validation  
+- **Plugin Tests** (`plugins/`): Individual plugin validation
 - **Integration Tests** (`integration/`): End-to-end workflow testing
 - **MCP Tests** (`mcp/`): Model Context Protocol testing
 - **Performance Tests**: Load testing and concurrency validation
@@ -93,10 +93,10 @@ from src.core.events import create_event
 async def test_event_flow():
     # Use timezone-aware timestamps
     timestamp = datetime.now(timezone.utc)
-    
+
     # Create events with keyword args
     event = create_event("test_event", data={"key": "value"})
-    
+
     # Assert expectations
     assert event.event_type == "test_event"
     assert event.data["key"] == "value"
@@ -122,7 +122,7 @@ def test_multiple_scenarios(input_data, expected):
 - Mock external dependencies
 - Focus on business logic validation
 
-### Integration Tests  
+### Integration Tests
 - Test component interactions
 - Use real event bus when possible
 - Validate end-to-end workflows

@@ -55,7 +55,9 @@ def test_scrubbing_normalizes_memory_hits():
 
     cleaned = ContextAssembler._normalize_memory_hits(raw_hits)
 
-    assert cleaned == [{"atom_id": "a1", "score": 0.85, "truncated_content_hash": "abcd1234"}]
+    assert cleaned == [
+        {"atom_id": "a1", "score": 0.85, "truncated_content_hash": "abcd1234"}
+    ]
 
 
 def test_hash_stability_across_normalization():

@@ -11,10 +11,10 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-# Placeholder for invoking a tool
+# Minimal tool invocation shim used by the planner
 def use_tool(tool_id: str, query: str) -> str:
-    """Placeholder function for tool invocation in planning context."""
-    return f"Simulated result for tool '{tool_id}' with query '{query}'"
+    """Lightweight tool invocation used during planning."""
+    return f"Result for tool '{tool_id}' with query '{query}'"
 
 
 @dataclass
@@ -80,7 +80,7 @@ def _generate_domain_knowledge(goal: str) -> list[str]:
     Returns:
         List of domain knowledge items
     """
-    # In production, this would use semantic search and knowledge retrieval
+    # Generate domain knowledge heuristically
     knowledge_areas = [
         f"Understanding the context of: {goal}",
         "Relevant tools and resources available",

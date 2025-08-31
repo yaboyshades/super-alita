@@ -35,4 +35,3 @@ def test_strategy_selector_select_and_feedback(tmp_path: Path) -> None:
     assert ok
     updated = json.loads(cfg.read_text(encoding="utf-8"))
     assert "stats" in updated["task_types"]["code_review"]
-

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class NativePerplexicaPlugin(PluginInterface):
     """
     Native Perplexica plugin that provides AI-powered search capabilities.
-    
+
     Similar to NativeDeepCodePlugin, this plugin uses direct function calls
     instead of events for better performance and reliability.
     """
@@ -38,10 +38,10 @@ class NativePerplexicaPlugin(PluginInterface):
         self.event_bus = event_bus
         self.store = store
         self.config = config or {}
-        
+
         # Initialize the native API
         await self.api.initialize_llm()
-        
+
         logger.info("✅ Native Perplexica plugin setup complete")
 
     async def start(self):
@@ -61,18 +61,15 @@ class NativePerplexicaPlugin(PluginInterface):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "Search query"
-                        },
+                        "query": {"type": "string", "description": "Search query"},
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of results",
-                            "default": 10
-                        }
+                            "default": 10,
+                        },
                     },
-                    "required": ["query"]
-                }
+                    "required": ["query"],
+                },
             },
             {
                 "name": "search_academic",
@@ -85,16 +82,16 @@ class NativePerplexicaPlugin(PluginInterface):
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "Academic search query"
+                            "description": "Academic search query",
                         },
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of results",
-                            "default": 10
-                        }
+                            "default": 10,
+                        },
                     },
-                    "required": ["query"]
-                }
+                    "required": ["query"],
+                },
             },
             {
                 "name": "search_news",
@@ -102,18 +99,15 @@ class NativePerplexicaPlugin(PluginInterface):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "News search query"
-                        },
+                        "query": {"type": "string", "description": "News search query"},
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of results",
-                            "default": 10
-                        }
+                            "default": 10,
+                        },
                     },
-                    "required": ["query"]
-                }
+                    "required": ["query"],
+                },
             },
             {
                 "name": "search_reddit",
@@ -123,16 +117,16 @@ class NativePerplexicaPlugin(PluginInterface):
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "Reddit search query"
+                            "description": "Reddit search query",
                         },
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of results",
-                            "default": 10
-                        }
+                            "default": 10,
+                        },
                     },
-                    "required": ["query"]
-                }
+                    "required": ["query"],
+                },
             },
             {
                 "name": "search_images",
@@ -142,16 +136,16 @@ class NativePerplexicaPlugin(PluginInterface):
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "Image search query"
+                            "description": "Image search query",
                         },
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of results",
-                            "default": 10
-                        }
+                            "default": 10,
+                        },
                     },
-                    "required": ["query"]
-                }
+                    "required": ["query"],
+                },
             },
             {
                 "name": "search_videos",
@@ -161,16 +155,16 @@ class NativePerplexicaPlugin(PluginInterface):
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "Video search query"
+                            "description": "Video search query",
                         },
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of results",
-                            "default": 10
-                        }
+                            "default": 10,
+                        },
                     },
-                    "required": ["query"]
-                }
+                    "required": ["query"],
+                },
             },
             {
                 "name": "search_perplexica",
@@ -181,33 +175,36 @@ class NativePerplexicaPlugin(PluginInterface):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "Search query"
-                        },
+                        "query": {"type": "string", "description": "Search query"},
                         "search_mode": {
                             "type": "string",
                             "description": "Search mode",
                             "enum": [
-                                "web", "academic", "video", "news", 
-                                "images", "reddit", "shopping", "wolfram"
+                                "web",
+                                "academic",
+                                "video",
+                                "news",
+                                "images",
+                                "reddit",
+                                "shopping",
+                                "wolfram",
                             ],
-                            "default": "web"
+                            "default": "web",
                         },
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of results",
-                            "default": 10
+                            "default": 10,
                         },
                         "include_reasoning": {
                             "type": "boolean",
                             "description": "Include AI reasoning and analysis",
-                            "default": True
-                        }
+                            "default": True,
+                        },
                     },
-                    "required": ["query"]
-                }
-            }
+                    "required": ["query"],
+                },
+            },
         ]
 
     def get_tool_executor(self, tool_name: str):
@@ -227,9 +224,7 @@ class NativePerplexicaPlugin(PluginInterface):
         """Search the web for information."""
         try:
             response = await self.api.search(
-                query=query,
-                search_mode=SearchMode.WEB,
-                max_results=max_results
+                query=query, search_mode=SearchMode.WEB, max_results=max_results
             )
             return self._format_response(response)
         except Exception as e:
@@ -242,9 +237,7 @@ class NativePerplexicaPlugin(PluginInterface):
         """Search academic sources."""
         try:
             response = await self.api.search(
-                query=query,
-                search_mode=SearchMode.ACADEMIC,
-                max_results=max_results
+                query=query, search_mode=SearchMode.ACADEMIC, max_results=max_results
             )
             return self._format_response(response)
         except Exception as e:
@@ -255,9 +248,7 @@ class NativePerplexicaPlugin(PluginInterface):
         """Search news sources."""
         try:
             response = await self.api.search(
-                query=query,
-                search_mode=SearchMode.NEWS,
-                max_results=max_results
+                query=query, search_mode=SearchMode.NEWS, max_results=max_results
             )
             return self._format_response(response)
         except Exception as e:
@@ -268,9 +259,7 @@ class NativePerplexicaPlugin(PluginInterface):
         """Search Reddit discussions."""
         try:
             response = await self.api.search(
-                query=query,
-                search_mode=SearchMode.REDDIT,
-                max_results=max_results
+                query=query, search_mode=SearchMode.REDDIT, max_results=max_results
             )
             return self._format_response(response)
         except Exception as e:
@@ -281,9 +270,7 @@ class NativePerplexicaPlugin(PluginInterface):
         """Search for images."""
         try:
             response = await self.api.search(
-                query=query,
-                search_mode=SearchMode.IMAGES,
-                max_results=max_results
+                query=query, search_mode=SearchMode.IMAGES, max_results=max_results
             )
             return self._format_response(response)
         except Exception as e:
@@ -294,9 +281,7 @@ class NativePerplexicaPlugin(PluginInterface):
         """Search for videos."""
         try:
             response = await self.api.search(
-                query=query,
-                search_mode=SearchMode.VIDEO,
-                max_results=max_results
+                query=query, search_mode=SearchMode.VIDEO, max_results=max_results
             )
             return self._format_response(response)
         except Exception as e:
@@ -308,18 +293,18 @@ class NativePerplexicaPlugin(PluginInterface):
         query: str,
         search_mode: str = "web",
         max_results: int = 10,
-        include_reasoning: bool = True
+        include_reasoning: bool = True,
     ) -> dict[str, Any]:
         """General AI-powered search with multiple modes."""
         try:
             # Convert string mode to enum
             mode = SearchMode(search_mode.lower())
-            
+
             response = await self.api.search(
                 query=query,
                 search_mode=mode,
                 max_results=max_results,
-                include_reasoning=include_reasoning
+                include_reasoning=include_reasoning,
             )
             return self._format_response(response)
         except Exception as e:
@@ -341,7 +326,7 @@ class NativePerplexicaPlugin(PluginInterface):
                     "source": source.source,
                     "relevance_score": source.relevance_score,
                     "timestamp": source.timestamp,
-                    "metadata": source.metadata
+                    "metadata": source.metadata,
                 }
                 for source in response.sources
             ],
@@ -349,24 +334,16 @@ class NativePerplexicaPlugin(PluginInterface):
             "follow_up_questions": response.follow_up_questions,
             "confidence_score": response.confidence_score,
             "total_results": response.total_results,
-            "processing_time": response.processing_time
+            "processing_time": response.processing_time,
         }
 
     async def health_check(self) -> dict[str, Any]:
         """Check the health of the plugin."""
         try:
             health = await self.api.health_check()
-            return {
-                "status": "healthy",
-                "plugin": self.name,
-                "api_health": health
-            }
+            return {"status": "healthy", "plugin": self.name, "api_health": health}
         except Exception as e:
-            return {
-                "status": "unhealthy",
-                "plugin": self.name,
-                "error": str(e)
-            }
+            return {"status": "unhealthy", "plugin": self.name, "error": str(e)}
 
     async def get_search_history(self) -> list[dict[str, Any]]:
         """Get the search history."""

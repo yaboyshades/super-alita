@@ -66,6 +66,12 @@ make run
 python -m uvicorn src.main:app --reload --port 8080
 ```
 
+User/API guide and deployment:
+
+- User Guide: see `docs/USER_GUIDE.md` for the unified API (`/api/v1/query`), auth, rate limits, and CLI usage.
+- Production Deployment: see `PRODUCTION_DEPLOYMENT_GUIDE.md` for environment hardening and Redis-backed rate limiting.
+- Chat UI: open `http://localhost:8080/` to use the built-in chat interface. See `docs/CHAT_UI.md` for SSE details and endpoints.
+
 ### 4. Run tests
 
 Super Alita provides comprehensive Jest-equivalent testing using pytest and related packages:

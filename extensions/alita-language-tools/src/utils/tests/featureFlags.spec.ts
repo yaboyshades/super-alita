@@ -9,4 +9,3 @@ describe('feature flags', () => {
     expect(isEnabled('alita.predictive.wasm.enabled')).toBe(false);
   });
 });
-

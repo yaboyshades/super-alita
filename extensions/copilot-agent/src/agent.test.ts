@@ -70,7 +70,7 @@ describe('gRPC Client Mock Functions', () => {
   test('getHealth returns valid health response', async () => {
     const { getHealth } = require('../src/grpcClient');
     const health = await getHealth();
-    
+
     expect(health).toHaveProperty('status');
     expect(health).toHaveProperty('message');
     expect(health).toHaveProperty('timestamp');
@@ -81,12 +81,12 @@ describe('gRPC Client Mock Functions', () => {
   test('getStatus returns system status', async () => {
     const { getStatus } = require('../src/grpcClient');
     const status = await getStatus();
-    
+
     expect(status).toHaveProperty('cortex');
     expect(status).toHaveProperty('knowledge_graph');
     expect(status).toHaveProperty('optimization');
     expect(status).toHaveProperty('system');
-    
+
     expect(status.cortex).toHaveProperty('active_sessions');
     expect(status.knowledge_graph).toHaveProperty('total_atoms');
     expect(status.optimization).toHaveProperty('active_policies');
@@ -103,7 +103,7 @@ describe('gRPC Client Mock Functions', () => {
       workspace: 'workspace_abc',
       metadata: { source: 'test' }
     });
-    
+
     expect(result).toHaveProperty('task_id', 'test_123');
     expect(result).toHaveProperty('status', 'completed');
     expect(result).toHaveProperty('result');
@@ -114,7 +114,7 @@ describe('gRPC Client Mock Functions', () => {
   test('kgQuery returns knowledge graph results', async () => {
     const { kgQuery } = require('../src/grpcClient');
     const result = await kgQuery({ query: 'machine learning', limit: 10 });
-    
+
     expect(result).toHaveProperty('atoms');
     expect(result).toHaveProperty('bonds');
     expect(result).toHaveProperty('total_found');
@@ -125,7 +125,7 @@ describe('gRPC Client Mock Functions', () => {
   test('banditDecide returns decision', async () => {
     const { banditDecide } = require('../src/grpcClient');
     const result = await banditDecide({ policy_id: 'exploration' });
-    
+
     expect(result).toHaveProperty('decision_id');
     expect(result).toHaveProperty('algorithm');
     expect(result).toHaveProperty('action');
@@ -143,7 +143,7 @@ describe('gRPC Client Mock Functions', () => {
       reward: 0.8,
       source: 'test'
     });
-    
+
     expect(result).toHaveProperty('success', true);
     expect(result).toHaveProperty('updated_policy');
     expect(result).toHaveProperty('new_confidence');

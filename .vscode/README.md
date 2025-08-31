@@ -49,7 +49,7 @@ For team sharing:
 - `Ctrl+Shift+Alt+H` - System health check
 - `Ctrl+Shift+Alt+Q` - Full quality pipeline
 
-### MCP Operations  
+### MCP Operations
 
 - `Ctrl+Alt+M` - Start MCP server
 - `Ctrl+Alt+Shift+M` - Stop MCP server
@@ -69,7 +69,7 @@ For team sharing:
 Enhanced architectural guidance with:
 
 - Event contract enforcement
-- Neural atom patterns  
+- Neural atom patterns
 - Cognitive loop optimization
 - Batch processing patterns
 - Deterministic testing guidance
@@ -133,11 +133,11 @@ class ExampleAtom(NeuralAtom):
     async def execute(self, input_data: Any) -> Any:
         # Core functionality
         pass
-    
+
     def get_embedding(self) -> List[float]:
         # Semantic representation
         pass
-    
+
     def can_handle(self, task: str) -> float:
         # Confidence score 0-1
         pass

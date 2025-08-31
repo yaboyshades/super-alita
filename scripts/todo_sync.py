@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Todo Integration Script - Syncs active todos with persistent storage."""
+
 from __future__ import annotations
 
 import argparse
@@ -11,9 +12,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TODO_FILE = (
-    Path(__file__).resolve().parent.parent / ".vscode" / "todos.json"
-)
+DEFAULT_TODO_FILE = Path(__file__).resolve().parent.parent / ".vscode" / "todos.json"
 
 
 def update_persistent_todos(todo_file: Path, new_todos: list[Any]) -> None:
@@ -65,4 +64,3 @@ def main() -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     main()
-

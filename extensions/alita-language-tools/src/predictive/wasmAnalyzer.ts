@@ -36,13 +36,13 @@ export class WasmPredictiveAnalyzer implements vscode.Disposable {
   async initialize(): Promise<void> {
     // Set up telemetry listener for WASM components
     this.setupTelemetryListener();
-    
+
     // Register analysis commands
     this.disposables.push(
       vscode.commands.registerCommand('alita.analyzePredictive', this.analyzeCurrentFile.bind(this)),
       vscode.commands.registerCommand('alita.showPredictiveDashboard', this.showDashboard.bind(this))
     );
-    
+
     this.context.subscriptions.push(...this.disposables);
   }
 
@@ -97,21 +97,21 @@ export class WasmPredictiveAnalyzer implements vscode.Disposable {
 
   private async performAnalysis(document: vscode.TextDocument): Promise<void> {
     const start = Date.now();
-    
+
     try {
       // Get current source
       const source = document.getText();
       const filePath = document.uri.fsPath;
-      
+
       // Get historical analysis for this file
       const history = this.analysisHistory.get(filePath) || [];
-      
+
       // Perform basic smell analysis (simulated WASM call)
       const smellAnalysis = await this.analyzeSmells(source);
-      
+
       // Get predictive insights using Ollama
       const predictions = await this.getPredictiveInsights(source, history, smellAnalysis);
-      
+
       // Store analysis in history
       const analysisRecord: AnalysisHistory = {
         filePath,
@@ -119,13 +119,13 @@ export class WasmPredictiveAnalyzer implements vscode.Disposable {
         analysis: smellAnalysis,
         sourceSnapshot: source.substring(0, 500) // Store first 500 chars for trend analysis
       };
-      
+
       history.push(analysisRecord);
       if (history.length > this.historyLimit) {
         history.shift();
       }
       this.analysisHistory.set(filePath, history);
-      
+
       // Record telemetry
       const duration = Date.now() - start;
       this.recordTelemetry({
@@ -136,7 +136,7 @@ export class WasmPredictiveAnalyzer implements vscode.Disposable {
         prediction: predictions.summary,
         confidence: predictions.confidence
       });
-      
+
       // Show predictions in status bar or notification
       if (predictions.priority === 'high') {
         vscode.window.showWarningMessage(
@@ -148,7 +148,7 @@ export class WasmPredictiveAnalyzer implements vscode.Disposable {
           }
         });
       }
-      
+
     } catch (error) {
       console.error('Predictive analysis failed:', error);
     }
@@ -159,7 +159,7 @@ export class WasmPredictiveAnalyzer implements vscode.Disposable {
     // In real implementation, this would call the WASM component
     const lines = source.split('\n').length;
     const complexity = this.calculateBasicComplexity(source);
-    
+
     return {
       complexityScore: complexity,
       maintainabilityIndex: Math.max(100 - complexity * 2, 0),
@@ -174,36 +174,36 @@ export class WasmPredictiveAnalyzer implements vscode.Disposable {
       /\bif\b/g, /\belse\b/g, /\bfor\b/g, /\bwhile\b/g,
       /\bswitch\b/g, /\bcatch\b/g, /\bmatch\b/g
     ];
-    
+
     for (const pattern of complexityPatterns) {
       const matches = source.match(pattern);
       if (matches) {
         complexity += matches.length;
       }
     }
-    
+
     return complexity;
   }
 
   private detectBasicSmells(source: string): string[] {
     const smells: string[] = [];
     const lines = source.split('\n');
-    
+
     if (lines.length > 500) smells.push('Large File');
     if (source.length / lines.length > 120) smells.push('Long Lines');
-    
+
     const duplicateLines = new Set(lines).size;
     if (duplicateLines < lines.length * 0.8) smells.push('Duplication');
-    
+
     return smells;
   }
 
   private async getPredictiveInsights(
-    source: string, 
-    history: AnalysisHistory[], 
+    source: string,
+    history: AnalysisHistory[],
     currentAnalysis: SmellAnalysis
   ): Promise<{summary: string, confidence: number, priority: string, details: string[]}> {
-    
+
     if (history.length < 2) {
       return {
         summary: 'Insufficient history for predictions',
@@ -216,15 +216,15 @@ export class WasmPredictiveAnalyzer implements vscode.Disposable {
     // Analyze trends
     const complexityTrend = this.analyzeTrend(history.map(h => h.analysis.complexityScore));
     const maintainabilityTrend = this.analyzeTrend(history.map(h => h.analysis.maintainabilityIndex));
-    
+
     // Create prompt for Ollama
     const prompt = this.buildAnalysisPrompt(source, currentAnalysis, complexityTrend, maintainabilityTrend);
-    
+
     try {
       // Get AI-powered insights
       const ollamaResponse = await this.invokeOllama(prompt);
       const insights = this.parseOllamaResponse(ollamaResponse);
-      
+
       return {
         summary: insights.summary || 'Code quality analysis completed',
         confidence: insights.confidence || 0.7,
@@ -233,20 +233,20 @@ export class WasmPredictiveAnalyzer implements vscode.Disposable {
       };
     } catch (error) {
       console.error('Ollama analysis failed:', error);
-      
+
       // Fallback to rule-based predictions
       return this.getFallbackPredictions(currentAnalysis, complexityTrend, maintainabilityTrend);
     }
   }
 
   private buildAnalysisPrompt(
-    source: string, 
-    analysis: SmellAnalysis, 
+    source: string,
+    analysis: SmellAnalysis,
     complexityTrend: 'increasing' | 'decreasing' | 'stable',
     maintainabilityTrend: 'increasing' | 'decreasing' | 'stable'
   ): string {
     const codeSnippet = source.substring(0, 1000);
-    
+
     return `Analyze this code for quality issues and predict future problems:
 
 CODE SNIPPET:
@@ -287,7 +287,7 @@ Respond in JSON format:
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
-      
+
       // Fallback parsing
       return {
         summary: response.substring(0, 100),
@@ -311,28 +311,28 @@ Respond in JSON format:
     complexityTrend: string,
     maintainabilityTrend: string
   ): {summary: string, confidence: number, priority: string, details: string[]} {
-    
+
     const details: string[] = [];
     let priority = 'low';
-    
+
     if (analysis.complexityScore > 15) {
       details.push('High complexity detected - consider refactoring');
       priority = 'high';
     }
-    
+
     if (analysis.maintainabilityIndex < 50) {
       details.push('Low maintainability - code may be hard to modify');
       priority = priority === 'high' ? 'high' : 'medium';
     }
-    
+
     if (complexityTrend === 'increasing') {
       details.push('Complexity trend is increasing - watch for maintenance issues');
     }
-    
+
     if (maintainabilityTrend === 'decreasing') {
       details.push('Maintainability is declining - consider technical debt reduction');
     }
-    
+
     return {
       summary: `Found ${analysis.smellTypes.length} code smells, complexity ${analysis.complexityScore}`,
       confidence: 0.8,
@@ -343,11 +343,11 @@ Respond in JSON format:
 
   private analyzeTrend(values: number[]): 'increasing' | 'decreasing' | 'stable' {
     if (values.length < 3) return 'stable';
-    
+
     const recent = values.slice(-3);
     const avg1 = recent[0];
     const avg2 = (recent[1] + recent[2]) / 2;
-    
+
     const threshold = 0.1;
     if (avg2 > avg1 * (1 + threshold)) return 'increasing';
     if (avg2 < avg1 * (1 - threshold)) return 'decreasing';
@@ -356,12 +356,12 @@ Respond in JSON format:
 
   private recordTelemetry(metric: PredictiveMetric) {
     this.telemetryBuffer.push(metric);
-    
+
     // Keep buffer size manageable
     if (this.telemetryBuffer.length > 100) {
       this.telemetryBuffer.shift();
     }
-    
+
     // Log to console for debugging
     console.log(`[Predictive] ${metric.operation}: ${metric.duration}ms, confidence: ${metric.confidence}`);
   }
@@ -372,7 +372,7 @@ Respond in JSON format:
       vscode.window.showWarningMessage('No active file to analyze');
       return;
     }
-    
+
     await this.performAnalysis(editor.document);
   }
 
@@ -395,7 +395,7 @@ Respond in JSON format:
 
   private getDashboardHtml(): string {
     const metrics = this.telemetryBuffer.slice(-10);
-    
+
     return `<!DOCTYPE html>
     <html>
     <head>
@@ -412,7 +412,7 @@ Respond in JSON format:
     </head>
     <body>
         <h1>🔮 Alita Predictive Analysis Dashboard</h1>
-        
+
         <div class="summary">
             <h2>Recent Analysis</h2>
             <p>Analyzed ${this.analysisHistory.size} files with ${this.telemetryBuffer.length} total operations</p>
@@ -426,7 +426,7 @@ Respond in JSON format:
                 ${m.confidence ? `<br>🎯 Confidence: ${(m.confidence * 100).toFixed(1)}%` : ''}
             </div>
         `).join('')}
-        
+
         <h2>🚀 WASM-Powered Features</h2>
         <ul>
             <li>✅ Real-time code smell detection</li>

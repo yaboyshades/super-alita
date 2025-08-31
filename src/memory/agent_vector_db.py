@@ -25,7 +25,9 @@ class MemoryRecord:
 
 class AgentVectorDB:
     def __init__(self, root: Path | None = None, short_max: int = 50) -> None:
-        self.root = root or Path(os.getenv("AGENT_MEMORY_DIR", "logs/agent_memory")).resolve()
+        self.root = (
+            root or Path(os.getenv("AGENT_MEMORY_DIR", "logs/agent_memory")).resolve()
+        )
         self.root.mkdir(parents=True, exist_ok=True)
         self.file = self.root / "memory.jsonl"
         self.short_max = int(os.getenv("AGENT_MEMORY_SHORT_MAX", short_max))
@@ -59,8 +61,22 @@ class AgentVectorDB:
         with self.file.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(asdict(rec), ensure_ascii=False) + "\n")
 
-    def add(self, *, task: str, content: str, meta: dict[str, Any] | None = None, tier: str = "short") -> str:
-        rec = MemoryRecord(id=uuid.uuid4().hex, ts=time.time(), tier=tier, task=task, content=content, meta=meta or {})
+    def add(
+        self,
+        *,
+        task: str,
+        content: str,
+        meta: dict[str, Any] | None = None,
+        tier: str = "short",
+    ) -> str:
+        rec = MemoryRecord(
+            id=uuid.uuid4().hex,
+            ts=time.time(),
+            tier=tier,
+            task=task,
+            content=content,
+            meta=meta or {},
+        )
         self._append(rec)
         return rec.id
 
@@ -110,15 +126,17 @@ class AgentVectorDB:
         results: list[dict[str, Any]] = []
         for i in idx:
             r = items[int(i)]
-            results.append({
-                "id": r.id,
-                "score": float(sims[int(i)]),
-                "task": r.task,
-                "tier": r.tier,
-                "ts": r.ts,
-                "meta": r.meta,
-                "snippet": r.content[:5000],
-            })
+            results.append(
+                {
+                    "id": r.id,
+                    "score": float(sims[int(i)]),
+                    "task": r.task,
+                    "tier": r.tier,
+                    "ts": r.ts,
+                    "meta": r.meta,
+                    "snippet": r.content[:5000],
+                }
+            )
         return results
 
     def summary(self) -> dict[str, Any]:

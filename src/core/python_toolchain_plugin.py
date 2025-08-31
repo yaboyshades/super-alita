@@ -90,9 +90,7 @@ class PythonToolchainIntelligence:
             if "import pytest" in content or "def test_" in content:
                 recommendations["debug_config"] = "python_pytest"
             if "if __name__" in content:
-                recommendations["breakpoint_suggestions"].append(
-                    "main execution block"
-                )
+                recommendations["breakpoint_suggestions"].append("main execution block")
             if "try:" in content:
                 recommendations["breakpoint_suggestions"].append(
                     "exception handling blocks"
@@ -165,15 +163,11 @@ class PythonToolchainPlugin:
             await event_bus.subscribe(
                 "environment_change", self._handle_environment_change
             )
-            await event_bus.subscribe(
-                "debug_request", self._handle_debug_request
-            )
+            await event_bus.subscribe("debug_request", self._handle_debug_request)
             await event_bus.subscribe(
                 "jupyter_operation", self._handle_jupyter_operation
             )
-            await event_bus.subscribe(
-                "code_quality_check", self._handle_code_quality
-            )
+            await event_bus.subscribe("code_quality_check", self._handle_code_quality)
 
     async def start(self):
         """Start the plugin and initialize toolchain."""
@@ -237,9 +231,7 @@ class PythonToolchainPlugin:
                                 timeout=5,
                             )
                             if result.returncode == 0:
-                                env_info["python_version"] = (
-                                    result.stdout.strip()
-                                )
+                                env_info["python_version"] = result.stdout.strip()
 
                     except Exception:
                         pass
@@ -313,9 +305,7 @@ class PythonToolchainPlugin:
                 )
                 if kernel_result.returncode == 0:
                     kernels = json.loads(kernel_result.stdout)
-                    self.intelligence.jupyter_kernels = kernels.get(
-                        "kernelspecs", {}
-                    )
+                    self.intelligence.jupyter_kernels = kernels.get("kernelspecs", {})
 
         except Exception as e:
             print(f"⚠️ Jupyter setup warning: {e}")
@@ -348,9 +338,7 @@ class PythonToolchainPlugin:
         debug_type = event.get("debug_type", "python_file")
 
         if file_path:
-            recommendations = self.intelligence.get_debugging_recommendations(
-                file_path
-            )
+            recommendations = self.intelligence.get_debugging_recommendations(file_path)
             session_id = f"debug_{int(time.time())}"
 
             self.intelligence.debugging_sessions[session_id] = {
@@ -378,9 +366,7 @@ class PythonToolchainPlugin:
         notebook_path = event.get("notebook_path")
 
         if operation == "optimize" and notebook_path:
-            optimization = self.intelligence.optimize_jupyter_workflow(
-                notebook_path
-            )
+            optimization = self.intelligence.optimize_jupyter_workflow(notebook_path)
 
             # Emit optimization recommendations
             if self.event_bus:
@@ -399,10 +385,7 @@ class PythonToolchainPlugin:
 
         results = {}
         for tool in tools:
-            if (
-                tool in self.quality_tools
-                and self.quality_tools[tool]["available"]
-            ):
+            if tool in self.quality_tools and self.quality_tools[tool]["available"]:
                 try:
                     result = await self._run_quality_tool(tool, file_path)
                     results[tool] = result
@@ -421,9 +404,7 @@ class PythonToolchainPlugin:
                 }
             )
 
-    async def _run_quality_tool(
-        self, tool: str, file_path: str
-    ) -> dict[str, Any]:
+    async def _run_quality_tool(self, tool: str, file_path: str) -> dict[str, Any]:
         """Run a specific code quality tool."""
         try:
             if tool == "black":
@@ -564,16 +545,12 @@ class PythonToolchainPlugin:
             },
         ]
 
-    async def analyze_python_environment(
-        self, project_path: str
-    ) -> dict[str, Any]:
+    async def analyze_python_environment(self, project_path: str) -> dict[str, Any]:
         """Analyze Python environment for a project."""
         analysis = self.intelligence.analyze_environment_needs(project_path)
         analysis["available_environments"] = self.active_environments
         analysis["quality_tools"] = self.quality_tools
-        analysis["jupyter_available"] = getattr(
-            self, "jupyter_available", False
-        )
+        analysis["jupyter_available"] = getattr(self, "jupyter_available", False)
         return analysis
 
     async def start_debug_session(
@@ -597,13 +574,9 @@ class PythonToolchainPlugin:
             "status": "started",
         }
 
-    async def optimize_jupyter_notebook(
-        self, notebook_path: str
-    ) -> dict[str, Any]:
+    async def optimize_jupyter_notebook(self, notebook_path: str) -> dict[str, Any]:
         """Optimize a Jupyter notebook."""
-        optimization = self.intelligence.optimize_jupyter_workflow(
-            notebook_path
-        )
+        optimization = self.intelligence.optimize_jupyter_workflow(notebook_path)
 
         await self._handle_jupyter_operation(
             {"operation": "optimize", "notebook_path": notebook_path}
@@ -622,9 +595,7 @@ class PythonToolchainPlugin:
         if tools is None:
             tools = ["black", "ruff", "mypy"]
 
-        await self._handle_code_quality(
-            {"file_path": file_path, "tools": tools}
-        )
+        await self._handle_code_quality({"file_path": file_path, "tools": tools})
 
         # Return immediate status; actual results come via events
         return {

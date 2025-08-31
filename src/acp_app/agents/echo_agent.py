@@ -1,4 +1,5 @@
 """Echo agent that mirrors input."""
+
 from collections.abc import AsyncGenerator
 
 from acp_sdk import Message, MessagePart

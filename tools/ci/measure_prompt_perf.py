@@ -25,14 +25,19 @@ def main() -> int:
     max_cost = float(os.getenv("PROMPT_COST_BUDGET", "0.25"))
 
     if result["latency_seconds"] > max_latency:
-        print(f"Latency {result['latency_seconds']:.3f}s exceeds budget {max_latency}s", flush=True)
+        print(
+            f"Latency {result['latency_seconds']:.3f}s exceeds budget {max_latency}s",
+            flush=True,
+        )
         return 2
     if result["estimated_cost_usd"] > max_cost:
-        print(f"Cost ${result['estimated_cost_usd']:.3f} exceeds budget ${max_cost}", flush=True)
+        print(
+            f"Cost ${result['estimated_cost_usd']:.3f} exceeds budget ${max_cost}",
+            flush=True,
+        )
         return 3
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

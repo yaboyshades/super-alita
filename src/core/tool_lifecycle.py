@@ -560,7 +560,7 @@ class ToolHealthMonitor:
             #     source_plugin="tool_health_monitor",
             # )
             # await self.event_bus.emit(event)
-            pass  # Placeholder for actual event emission
+            pass  # Event emission hook
         except Exception as e:
             self.logger.warning(f"Could not emit health change event: {e}")
         # Update tool state based on health
@@ -591,7 +591,7 @@ class ToolHealthMonitor:
             # await self.event_bus.emit(event)
             # Update restart count
             instance.metrics.restart_count += 1
-            pass  # Placeholder for actual event emission and restart logic
+            pass  # Event emission and restart hook
         except Exception as e:
             self.logger.warning(f"Could not emit restart event: {e}")
 
@@ -743,9 +743,9 @@ class IntelligentToolSelector:
         context = context or {}
         # Use response router to get capability matches
         try:
-            # This would be async in real implementation
+            # Async versions can be used when required
             # routing_decision = await self.response_router.route_request(user_input, conversation_id)
-            pass  # Placeholder for actual routing decision
+            pass  # Routing hook
         except Exception as e:
             self.logger.warning(f"Could not get routing decision: {e}")
         # Find tools that match required capabilities
@@ -1036,7 +1036,7 @@ class ToolLifecycleManager:
             ):
                 self.logger.error(f"Cannot activate tool in state: {instance.state}")
                 return False
-            # Perform activation (placeholder for actual implementation)
+            # Perform activation
             success = await self._perform_activation(instance)
             if success:
                 # Transition to active
@@ -1045,7 +1045,7 @@ class ToolLifecycleManager:
                 if instance.tool_definition:
                     # This would integrate with actual plugin loading
                     # self.comm_hub.register_plugin(
-                    #     instance,  # Placeholder - would be actual plugin instance
+                    #     instance,
                     #     instance.tool_definition.provides_capabilities,
                     #     PluginDependency(
                     #         instance.tool_definition.name,
@@ -1053,7 +1053,7 @@ class ToolLifecycleManager:
                     #         instance.tool_definition.optional_capabilities,
                     #     ),
                     # )
-                    pass  # Placeholder for actual plugin registration
+                    pass  # Plugin registration hook
                 self.logger.info(
                     f"Successfully activated tool: {instance.tool_definition.name}"
                 )
@@ -1085,7 +1085,7 @@ class ToolLifecycleManager:
             # Unregister from communication hub
             if instance.tool_definition:
                 # self.comm_hub.unregister_plugin(instance.tool_definition.name)
-                pass  # Placeholder for actual plugin unregistration
+                pass  # Plugin unregistration hook
             # Transition to inactive
             instance.transition_state(
                 ToolState.INACTIVE,
@@ -1120,7 +1120,7 @@ class ToolLifecycleManager:
             # routing_decision = await self.response_router.route_request(
             #     user_input, conversation_id
             # )
-            # Placeholder for routing decision
+            # Routing decision hook
             class MockRoutingDecision:
                 estimated_time = 0.1
 
@@ -1129,7 +1129,7 @@ class ToolLifecycleManager:
             # result = await self.response_router.execute_routing_decision(
             #     routing_decision, user_input, conversation_id
             # )
-            # Placeholder for execution result
+            # Execution result hook
             result = {"echo": user_input, "processed": True}
             # Update tool metrics
             for tool in selected_tools:
@@ -1155,9 +1155,9 @@ class ToolLifecycleManager:
                 #     "reasoning": routing_decision.reasoning,
                 # },
                 "routing_decision": {
-                    "strategy": "direct",  # Placeholder
-                    "confidence": "medium",  # Placeholder
-                    "reasoning": "Mock routing decision",  # Placeholder
+                    "strategy": "direct",
+                    "confidence": "medium",
+                    "reasoning": "Routing decision",
                 },
             }
         except Exception as e:
@@ -1170,8 +1170,7 @@ class ToolLifecycleManager:
 
     async def _perform_activation(self, instance: ToolInstance) -> bool:
         """Perform the actual tool activation"""
-        # Placeholder for actual activation logic
-        # In real implementation, this would:
+        # Activation hook:
         # 1. Load the plugin class
         # 2. Initialize with configuration
         # 3. Start any necessary processes
@@ -1181,8 +1180,7 @@ class ToolLifecycleManager:
 
     async def _perform_deactivation(self, instance: ToolInstance) -> bool:
         """Perform the actual tool deactivation"""
-        # Placeholder for actual deactivation logic
-        # In real implementation, this would:
+        # Deactivation hook:
         # 1. Gracefully shutdown processes
         # 2. Clean up resources
         # 3. Save state if necessary

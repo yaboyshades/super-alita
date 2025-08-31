@@ -4,4 +4,3 @@ export function validateRealWitOutputs(meta: { components: Array<{ path: string 
     throw new Error('REQUIRE_REAL_WIT=1 but meta shows 0 components');
   }
 }
-

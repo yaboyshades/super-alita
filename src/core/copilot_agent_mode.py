@@ -533,8 +533,8 @@ async def enable_agent_mode(event_bus: Any, session_id: str = "default") -> bool
 
 async def summarize_conversation_history(
     event_bus: Any, messages: list[dict[str, Any]], session_id: str = "default"
-) -> ConversationSummary | None:
-    """Summarize conversation history for context continuity."""
+) -> dict[str, Any] | None:
+    """Summarize conversation history for context continuity (lightweight)."""
     try:
         event = AgentModeEvent(
             source_plugin="copilot_agent",
@@ -545,17 +545,24 @@ async def summarize_conversation_history(
         if event_bus:
             await event_bus.publish(event)
 
-        # Note: In a real implementation, you'd wait for the result event
-        # For now, return a placeholder
-        return ConversationSummary(
-            timestamp=time.time(),
-            session_id=session_id,
-            user_intent="context_continuity",
-            technical_context="conversation_summarization",
-            progress_status="in_progress",
-            key_decisions=["Implement conversation summarization"],
-            next_actions=["Wait for summary result"],
-        )
+        # Minimal, synchronous summary: take the last few user/assistant turns
+        try:
+            snippets: list[str] = []
+            for m in messages[-5:]:
+                role = m.get("role", "")
+                content = (m.get("content", "") or "").strip()
+                if content:
+                    snippets.append(f"{role}: {content[:120]}")
+            summary = " | ".join(snippets)
+        except Exception:
+            summary = ""
+
+        return {
+            "timestamp": time.time(),
+            "session_id": session_id,
+            "summary": summary,
+            "items": max(0, len(messages)),
+        }
 
     except Exception as e:
         logger.error(f"Failed to summarize conversation: {e}")

@@ -1,6 +1,6 @@
 /**
  * Built-in MCP Server Provider for Super Alita Agent
- * 
+ *
  * This extension leverages VS Code's built-in MCP support instead of external servers.
  * It registers the super-alita agent as a native MCP server definition provider
  * that VS Code can automatically discover and use.
@@ -142,7 +142,7 @@ export class SuperAlitaBuiltinExtension {
                     const servers = await this.mcpProvider.provideMcpServerDefinitions(
                         new vscode.CancellationTokenSource().token
                     );
-                    
+
                     if (servers.length > 0) {
                         vscode.window.showInformationMessage(
                             `Super Alita Agent MCP server is available (${servers[0].label})`

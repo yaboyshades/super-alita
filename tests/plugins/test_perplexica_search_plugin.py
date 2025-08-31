@@ -1,4 +1,5 @@
 """Tests for Perplexica search plugin."""
+
 import pytest
 
 from src.tools.perplexica_tool import PerplexicaConfig, PerplexicaSearchTool

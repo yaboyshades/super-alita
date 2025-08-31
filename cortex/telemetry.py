@@ -63,4 +63,3 @@ def emit(payload: dict[str, Any]) -> None:
         _post_http(http_url, payload)
     if sink_file:
         _append_jsonl(sink_file, payload)
-

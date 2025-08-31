@@ -12,6 +12,7 @@ except Exception:
 
 SCHEMA_PATH = Path("schema/alg_extraction_v1_2.json")
 
+
 def validate_alg_extraction(payload: dict[str, Any]) -> tuple[bool, str]:
     if not jsonschema:
         return True, "jsonschema not installed; skipped"

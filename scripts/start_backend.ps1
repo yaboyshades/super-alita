@@ -9,4 +9,3 @@ Set-Location -Path (Join-Path $PSScriptRoot "..")
 
 # Prefer uvicorn with explicit host/port to avoid port 8080 conflicts
 python -m uvicorn app:app --host 127.0.0.1 --port $Port
-

@@ -10,6 +10,7 @@ def test_model_creation():
     model = create_paper_code_implementation()
     assert model is not None
 
+
 def test_forward_pass():
     model = create_paper_code_implementation()
     # Create appropriate test input based on detected concepts

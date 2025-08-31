@@ -2,6 +2,7 @@
 """
 Test the Decision Policy v1 implementation with various scenarios.
 """
+
 import pytest
 
 pytest.skip("legacy test", allow_module_level=True)
@@ -51,6 +52,7 @@ async def test_bootstrap_scenario():
         print(f"  {i}. {step}")
     print()
 
+
 async def test_query_scenario():
     """Test a query scenario"""
     print("=== Testing Query Scenario ===")
@@ -70,6 +72,7 @@ async def test_query_scenario():
     print(f"Confidence: {plan.confidence:.2f}")
     print(f"Plan: {json.dumps(plan.plan, indent=2)}")
     print()
+
 
 async def test_intent_classification():
     """Test intent classification on various messages"""
@@ -94,6 +97,7 @@ async def test_intent_classification():
         intent = classifier.classify(msg)
         print(f"'{msg}' -> {intent.name}")
     print()
+
 
 async def test_capability_matching():
     """Test capability matching logic"""
@@ -124,6 +128,7 @@ async def test_capability_matching():
         print(f"  - {candidate.name}: match={match_score:.2f}, utility={utility:.2f}")
     print()
 
+
 async def test_bandit_learning():
     """Test multi-armed bandit learning updates"""
     print("=== Testing Bandit Learning ===")
@@ -147,6 +152,7 @@ async def test_bandit_learning():
     print(f"Average Reward: {stats['avg_reward']:.3f}")
     print()
 
+
 async def main():
     """Run all tests"""
     await test_intent_classification()
@@ -156,6 +162,7 @@ async def main():
     await test_bandit_learning()
 
     print("=== Decision Policy v1 Testing Complete ===")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

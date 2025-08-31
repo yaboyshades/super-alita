@@ -8,4 +8,5 @@ Provides:
 Goal: allow rapid assembly of small dashboards and interactive panels
 without pulling heavy frontend frameworks.
 """
+
 from .registry import gui_registry, register_component  # noqa: F401

@@ -15,6 +15,7 @@ from src.main import create_app
 try:
     from mcp.server import StdIOServer
 except Exception:  # pragma: no cover - library not available
+
     class StdIOServer:  # type: ignore[override]
         """Fallback stub when anthropic/mcp StdIOServer is unavailable."""
 

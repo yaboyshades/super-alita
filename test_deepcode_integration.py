@@ -17,7 +17,7 @@ def bad_function():
     result = eval("1 + 1")  # Security issue
     for i in range(len([1, 2, 3])):  # Performance issue
         print(i)
-    
+
     # Complex function
     if True:
         if True:
@@ -25,7 +25,7 @@ def bad_function():
                 if True:
                     if True:
                         pass
-    
+
     return result
 
 class VeryLongClassNameThatDoesWayTooManyThings:

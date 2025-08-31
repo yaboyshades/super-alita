@@ -42,4 +42,3 @@ if (which('wasm-tools')) {
 }
 
 process.exit(0);
-

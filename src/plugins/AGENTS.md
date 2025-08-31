@@ -24,12 +24,12 @@ class YourPlugin(PluginInterface):
     def __init__(self, event_bus, config=None):
         super().__init__(event_bus, config)
         self.name = "unique_plugin_name"  # Required
-        
+
     @property
     def name(self) -> str:
         """Unique plugin identifier"""
         return self._name
-        
+
     async def shutdown(self) -> None:
         """Required cleanup method"""
         await self.cleanup_resources()
@@ -44,7 +44,7 @@ class YourPlugin(PluginInterface):
 - **Events**: Handles `user_input`, emits `tool_call` events
 - **Safety**: Must validate all tool calls before execution
 
-#### Memory Manager Plugin (`memory_manager_plugin.py`)  
+#### Memory Manager Plugin (`memory_manager_plugin.py`)
 - **Role**: Persistent memory and state management
 - **Events**: Handles `memory_store`, `memory_retrieve`
 - **Storage**: Neural atoms in graph database
@@ -104,32 +104,32 @@ from src.core.events import create_event
 
 class YourFeaturePlugin(PluginInterface):
     """Plugin for [describe capability]"""
-    
+
     def __init__(self, event_bus, config: Optional[Dict] = None):
         super().__init__(event_bus, config)
         self.name = "your_feature"
         self.logger = logging.getLogger(self.name)
-        
+
         # Subscribe to relevant events
         self.event_bus.subscribe("your_event_type", self.handle_event)
-        
+
     async def handle_event(self, event: Dict[str, Any]) -> None:
         """Handle incoming events"""
         try:
             event_type = event.get("type")
-            
+
             if event_type == "your_event_type":
                 await self.process_your_event(event)
-                
+
         except Exception as e:
             self.logger.error(f"Event handling failed: {e}")
             await self.emit_error_event(e, event)
-            
+
     async def process_your_event(self, event: Dict[str, Any]) -> None:
         """Process specific event type"""
         # Your implementation here
         result = await self.do_work(event["data"])
-        
+
         # Emit result event
         result_event = create_event(
             "your_result_type",
@@ -138,7 +138,7 @@ class YourFeaturePlugin(PluginInterface):
             correlation_id=event.get("correlation_id")
         )
         await self.event_bus.publish(result_event)
-        
+
     async def shutdown(self) -> None:
         """Clean up resources"""
         # Close connections, save state, etc.
@@ -149,22 +149,22 @@ class YourFeaturePlugin(PluginInterface):
 ```python
 async def handle_event(self, event: Dict[str, Any]) -> None:
     """Robust event handling pattern"""
-    
+
     # 1. Validate event structure
     if not self.validate_event(event):
         self.logger.warning(f"Invalid event: {event}")
         return
-        
+
     # 2. Extract correlation ID for tracing
     correlation_id = event.get("correlation_id")
-    
+
     # 3. Process with error handling
     try:
         result = await self.process_event(event)
-        
+
         # 4. Emit success event
         await self.emit_result(result, correlation_id)
-        
+
     except Exception as e:
         # 5. Emit error event for monitoring
         await self.emit_error(e, correlation_id)
@@ -183,27 +183,27 @@ async def test_plugin_handles_event():
     # Setup
     mock_event_bus = MagicMock()
     plugin = YourFeaturePlugin(mock_event_bus)
-    
+
     # Test event
     test_event = {
         "type": "your_event_type",
         "data": {"test": "data"},
         "correlation_id": "test-123"
     }
-    
+
     # Execute
     await plugin.handle_event(test_event)
-    
+
     # Verify
     assert mock_event_bus.publish.called
     published_event = mock_event_bus.publish.call_args[0][0]
     assert published_event["type"] == "your_result_type"
 
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
 async def test_plugin_shutdown():
     mock_event_bus = MagicMock()
     plugin = YourFeaturePlugin(mock_event_bus)
-    
+
     # Should not raise exception
     await plugin.shutdown()
 ```
@@ -214,14 +214,14 @@ async def test_plugin_shutdown():
 async def test_plugin_integration(event_bus_fixture):
     """Test plugin with real event bus"""
     plugin = YourFeaturePlugin(event_bus_fixture)
-    
+
     # Send real event through system
     test_event = create_event("your_event_type", data={"test": True})
     await event_bus_fixture.publish(test_event)
-    
+
     # Wait for processing
     await asyncio.sleep(0.1)
-    
+
     # Verify side effects
     assert plugin.state_changed
 ```
@@ -233,15 +233,15 @@ async def test_plugin_integration(event_bus_fixture):
 def validate_event(self, event: Dict[str, Any]) -> bool:
     """Validate event structure and content"""
     required_fields = ["type", "data"]
-    
+
     # Check required fields
     if not all(field in event for field in required_fields):
         return False
-        
+
     # Validate data types
     if not isinstance(event["data"], dict):
         return False
-        
+
     # Additional validation logic
     return True
 ```
@@ -255,7 +255,7 @@ from src.core.reliability import with_retry
 async def call_external_api(self, data: Dict) -> Dict:
     """Safely call external API with retries"""
     timeout = aiohttp.ClientTimeout(total=30)
-    
+
     async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(self.api_url, json=data) as response:
             response.raise_for_status()
@@ -271,7 +271,7 @@ class StatefulPlugin(PluginInterface):
         super().__init__(event_bus, config)
         self.state = {}
         self.lock = asyncio.Lock()
-        
+
     async def update_state(self, key: str, value: Any) -> None:
         async with self.lock:
             self.state[key] = value
@@ -282,12 +282,12 @@ class StatefulPlugin(PluginInterface):
 class ConfigurablePlugin(PluginInterface):
     def __init__(self, event_bus, config=None):
         super().__init__(event_bus, config)
-        
+
         # Load plugin-specific config
         self.api_key = config.get("api_key") if config else None
         self.timeout = config.get("timeout", 30)
         self.enabled = config.get("enabled", True)
-        
+
         if not self.api_key:
             self.logger.warning("No API key configured")
 ```
@@ -303,12 +303,12 @@ class RateLimitedPlugin(PluginInterface):
             max_requests=100,
             time_window=60  # 100 requests per minute
         )
-        
+
     async def handle_event(self, event: Dict[str, Any]) -> None:
         if not await self.rate_limiter.acquire():
             self.logger.warning("Rate limit exceeded")
             return
-            
+
         await self.process_event(event)
 ```
 

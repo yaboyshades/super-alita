@@ -1,7 +1,7 @@
 # AGENTS.md (REUG Runtime Agent)
 
 ## Overview
-This folder hosts the **deployable runtime agent**.  
+This folder hosts the **deployable runtime agent**.
 Use this file for agent-specific commands and safety rules.
 
 ## Setup
@@ -34,4 +34,3 @@ pytest -q reug_runtime tests -k "runtime or sandbox"
 
 ## Notes
 - Prefer `shadow` mode for dry runs; use `act` for tool execution once tests pass.
-

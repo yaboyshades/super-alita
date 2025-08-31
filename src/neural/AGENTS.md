@@ -37,7 +37,7 @@ from src.core.neural_atom import create_atom
 # UUIDs are deterministic based on content
 atom1 = create_atom(
     content={"key": "value"},
-    atom_type="tool_output", 
+    atom_type="tool_output",
     title="Example Atom"
 )
 
@@ -54,7 +54,7 @@ assert atom1.uuid == atom2.uuid  # Same UUID for same content
 ```python
 def normalize_content(content: Any) -> str:
     """Normalize content for deterministic UUID generation"""
-    
+
     if isinstance(content, dict):
         # Sort keys for consistency
         normalized = json.dumps(content, sort_keys=True, default=str)
@@ -64,14 +64,14 @@ def normalize_content(content: Any) -> str:
     else:
         # Convert to string representation
         normalized = str(content)
-    
+
     return normalized
 
 def generate_atom_uuid(content: Any, atom_type: str, title: str) -> str:
     """Generate deterministic UUID for atom"""
     normalized_content = normalize_content(content)
     seed_string = f"{normalized_content}|{atom_type}|{title}"
-    
+
     # Use UUIDv5 with namespace for determinism
     return str(uuid.uuid5(NEURAL_NAMESPACE, seed_string))
 ```
@@ -173,7 +173,7 @@ def create_tool_output_atom(
     execution_context: Dict
 ) -> NeuralAtom:
     """Create atom for tool execution output"""
-    
+
     content = {
         "tool_name": tool_name,
         "input": input_data,
@@ -181,9 +181,9 @@ def create_tool_output_atom(
         "execution_time": execution_context.get("duration"),
         "success": execution_context.get("success", True)
     }
-    
+
     title = f"{tool_name} execution result"
-    
+
     metadata = {
         "provenance": {
             "source": "tool_executor",
@@ -192,7 +192,7 @@ def create_tool_output_atom(
             "context": execution_context
         }
     }
-    
+
     return create_atom(
         content=content,
         atom_type="tool_output",
@@ -210,9 +210,9 @@ async def create_tool_chain_bonds(
     output_atom: NeuralAtom
 ) -> List[Bond]:
     """Create bonds representing tool execution chain"""
-    
+
     bonds = []
-    
+
     # Input caused first tool
     bonds.append(create_bond(
         source_atom=input_atom,
@@ -220,7 +220,7 @@ async def create_tool_chain_bonds(
         bond_type=BondType.CAUSAL,
         strength=1.0
     ))
-    
+
     # Chain tool executions
     for i in range(len(tool_atoms) - 1):
         bonds.append(create_bond(
@@ -229,7 +229,7 @@ async def create_tool_chain_bonds(
             bond_type=BondType.TEMPORAL,
             strength=1.0
         ))
-    
+
     # Last tool caused output
     bonds.append(create_bond(
         source_atom=tool_atoms[-1],
@@ -237,7 +237,7 @@ async def create_tool_chain_bonds(
         bond_type=BondType.DERIVATION,
         strength=1.0
     ))
-    
+
     return bonds
 ```
 
@@ -248,25 +248,25 @@ async def create_tool_chain_bonds(
 # The neural system exposes MCP tools for external access
 class NeuralMCPServer:
     """MCP server for neural operations"""
-    
+
     def __init__(self, store: NeuralStore):
         self.store = store
-        
+
     async def create_atom_tool(self, content: Dict, atom_type: str, title: str) -> Dict:
         """MCP tool for creating atoms"""
         atom = create_atom(content, atom_type, title)
         await self.store.store_atom(atom)
-        
+
         return {
             "success": True,
             "atom_uuid": atom.uuid,
             "message": f"Created atom: {title}"
         }
-    
+
     async def query_atoms_tool(self, query_params: Dict) -> Dict:
         """MCP tool for querying atoms"""
         atoms = await self.store.query_atoms(**query_params)
-        
+
         return {
             "success": True,
             "atoms": [atom.to_dict() for atom in atoms],
@@ -285,27 +285,27 @@ from src.core.neural_atom import create_atom
 def test_atom_deterministic_uuid():
     """Test that atoms have deterministic UUIDs"""
     content = {"test": "data"}
-    
+
     atom1 = create_atom(content, "test_type", "Test Atom")
     atom2 = create_atom(content, "test_type", "Test Atom")
-    
+
     assert atom1.uuid == atom2.uuid
-    
+
 def test_atom_different_content_different_uuid():
     """Test that different content produces different UUIDs"""
     atom1 = create_atom({"test": "data1"}, "test_type", "Test")
     atom2 = create_atom({"test": "data2"}, "test_type", "Test")
-    
+
     assert atom1.uuid != atom2.uuid
 
 @pytest.mark.asyncio
 async def test_atom_storage_retrieval():
     """Test storing and retrieving atoms"""
     store = NeuralStore()
-    
+
     atom = create_atom({"test": "data"}, "test_type", "Test Atom")
     await store.store_atom(atom)
-    
+
     retrieved = await store.get_atom(atom.uuid)
     assert retrieved.uuid == atom.uuid
     assert retrieved.content == atom.content
@@ -319,14 +319,14 @@ def test_bond_creation():
     """Test creating bonds between atoms"""
     atom1 = create_atom({"input": "data"}, "input", "Input")
     atom2 = create_atom({"output": "result"}, "output", "Output")
-    
+
     bond = create_bond(
         source_atom=atom1,
         target_atom=atom2,
         bond_type=BondType.CAUSAL,
         strength=0.9
     )
-    
+
     assert bond.source_uuid == atom1.uuid
     assert bond.target_uuid == atom2.uuid
     assert bond.bond_type == BondType.CAUSAL
@@ -336,20 +336,20 @@ def test_bond_creation():
 async def test_graph_traversal():
     """Test graph traversal operations"""
     store = NeuralStore()
-    
+
     # Create connected atoms
     atom1 = create_atom({"step": 1}, "process", "Step 1")
-    atom2 = create_atom({"step": 2}, "process", "Step 2") 
+    atom2 = create_atom({"step": 2}, "process", "Step 2")
     atom3 = create_atom({"step": 3}, "process", "Step 3")
-    
+
     bond1 = create_bond(atom1, atom2, BondType.TEMPORAL, 1.0)
     bond2 = create_bond(atom2, atom3, BondType.TEMPORAL, 1.0)
-    
+
     # Store in graph
     await store.store_atom_with_bonds(atom1, [bond1])
     await store.store_atom_with_bonds(atom2, [bond2])
     await store.store_atom(atom3)
-    
+
     # Test path finding
     path = await store.find_path(atom1.uuid, atom3.uuid)
     assert len(path) == 3
@@ -366,22 +366,22 @@ async def store_tool_execution_atoms(
     executions: List[ToolExecution]
 ) -> None:
     """Efficiently store multiple tool executions"""
-    
+
     atoms = []
     bonds = []
-    
+
     for execution in executions:
         atom = create_tool_output_atom(execution)
         atoms.append(atom)
-        
+
         # Create bonds to previous executions
         if len(atoms) > 1:
             bond = create_bond(
-                atoms[-2], atoms[-1], 
+                atoms[-2], atoms[-1],
                 BondType.TEMPORAL, 1.0
             )
             bonds.append(bond)
-    
+
     # Batch store everything
     await store.store_atoms_batch(atoms)
     await store.store_bonds_batch(bonds)
@@ -394,24 +394,24 @@ from src.core.cache import TTLCache
 
 class CachedNeuralStore:
     """Neural store with caching for performance"""
-    
+
     def __init__(self, store: NeuralStore):
         self.store = store
         self.atom_cache = TTLCache(maxsize=1000, ttl=300)  # 5 min TTL
-        
+
     async def get_atom(self, uuid: str) -> NeuralAtom:
         """Get atom with caching"""
         if uuid in self.atom_cache:
             return self.atom_cache[uuid]
-            
+
         atom = await self.store.get_atom(uuid)
         self.atom_cache[uuid] = atom
         return atom
-    
+
     @lru_cache(maxsize=100)
     def get_similar_atoms_cached(
-        self, 
-        content_hash: str, 
+        self,
+        content_hash: str,
         threshold: float
     ) -> List[NeuralAtom]:
         """Cache similarity queries"""
@@ -425,7 +425,7 @@ class CachedNeuralStore:
 ```python
 class AtomLineage:
     """Track atom creation and derivation lineage"""
-    
+
     @staticmethod
     async def create_derived_atom(
         source_atoms: List[NeuralAtom],
@@ -434,7 +434,7 @@ class AtomLineage:
         result_title: str
     ) -> NeuralAtom:
         """Create atom derived from other atoms"""
-        
+
         # Create result atom
         result_atom = create_atom(
             content=result_content,
@@ -445,7 +445,7 @@ class AtomLineage:
                 "source_uuids": [atom.uuid for atom in source_atoms]
             }
         )
-        
+
         # Create derivation bonds
         bonds = [
             create_bond(
@@ -456,10 +456,10 @@ class AtomLineage:
             )
             for source_atom in source_atoms
         ]
-        
+
         # Store with lineage
         await store.store_atom_with_bonds(result_atom, bonds)
-        
+
         return result_atom
 ```
 
@@ -470,28 +470,28 @@ async def cluster_atoms_by_similarity(
     similarity_threshold: float = 0.8
 ) -> List[List[NeuralAtom]]:
     """Cluster atoms by semantic similarity"""
-    
+
     clusters = []
     processed = set()
-    
+
     for atom in atoms:
         if atom.uuid in processed:
             continue
-            
+
         # Find similar atoms
         similar = await store.find_similar_atoms(
             reference_atom=atom,
             similarity_threshold=similarity_threshold
         )
-        
+
         # Create cluster
         cluster = [atom] + [a for a in similar if a.uuid not in processed]
         clusters.append(cluster)
-        
+
         # Mark as processed
         for cluster_atom in cluster:
             processed.add(cluster_atom.uuid)
-    
+
     return clusters
 ```
 
@@ -501,32 +501,32 @@ async def cluster_atoms_by_similarity(
 ```python
 async def check_neural_system_health() -> Dict:
     """Check health of neural system components"""
-    
+
     health = {
         "store_accessible": False,
         "atom_count": 0,
         "bond_count": 0,
         "recent_activity": False
     }
-    
+
     try:
         # Test store access
         await store.ping()
         health["store_accessible"] = True
-        
+
         # Get counts
         health["atom_count"] = await store.count_atoms()
         health["bond_count"] = await store.count_bonds()
-        
+
         # Check recent activity
         recent_atoms = await store.query_atoms(
             created_after=datetime.now(timezone.utc) - timedelta(hours=1)
         )
         health["recent_activity"] = len(recent_atoms) > 0
-        
+
     except Exception as e:
         health["error"] = str(e)
-    
+
     return health
 ```
 

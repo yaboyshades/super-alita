@@ -79,14 +79,14 @@ The plugin responds to events on the event bus:
 
 ```python
 # File operation event
-await event_bus.emit("puter_file_operation", 
+await event_bus.emit("puter_file_operation",
     operation="write",
     file_path="/workspace/test.txt",
     content="Hello Puter World!",
     conversation_id="session_123"
 )
 
-# Process execution event  
+# Process execution event
 await event_bus.emit("puter_process_execution",
     command="python",
     args=["--version"],
@@ -96,7 +96,7 @@ await event_bus.emit("puter_process_execution",
 
 # Workspace sync event
 await event_bus.emit("puter_workspace_sync",
-    sync_type="bidirectional", 
+    sync_type="bidirectional",
     local_path="/local/workspace",
     remote_path="/remote/workspace",
     conversation_id="session_123"
@@ -112,7 +112,7 @@ From VS Code or MCP clients:
 result = await puter_file_read("test.txt", dry_run=True)
 
 # Write a file with preview
-result = await puter_file_write("test.txt", "content", dry_run=True) 
+result = await puter_file_write("test.txt", "content", dry_run=True)
 print(result["diff_preview"])  # Shows unified diff
 
 # Execute command safely
@@ -140,7 +140,7 @@ All Puter operations create neural atoms with deterministic UUIDs:
 # Each operation creates a PuterOperationAtom
 operation_data = {
     "operation": "file_write",
-    "file_path": "/test/file.txt", 
+    "file_path": "/test/file.txt",
     "timestamp": "2024-01-01T00:00:00Z",
     "description": "File write operation on /test/file.txt"
 }
@@ -184,7 +184,7 @@ Process execution is restricted to safe commands:
 
 ```python
 safe_commands = {
-    "echo", "cat", "ls", "pwd", "whoami", "date", 
+    "echo", "cat", "ls", "pwd", "whoami", "date",
     "python", "node", "npm", "git"
 }
 ```
@@ -237,7 +237,7 @@ The Puter plugin integrates seamlessly with Super Alita's architecture:
 ## Future Enhancements
 
 1. **Real API Integration**: Replace simulation with actual Puter API calls
-2. **Authentication**: OAuth/JWT token management for Puter services  
+2. **Authentication**: OAuth/JWT token management for Puter services
 3. **Advanced Sync**: Conflict resolution, incremental sync, compression
 4. **Performance Optimization**: Caching, batch operations, connection pooling
 5. **Enhanced Security**: Role-based access, audit logging, encryption
@@ -261,7 +261,7 @@ python -c "from src.plugins.puter_plugin import PuterPlugin; print('✅ Plugin l
 # Test MCP tools
 PYTHONPATH=./mcp_server/src python -c "from mcp_server.tools.puter_tool import puter_file_read; print('✅ MCP tools load')"
 
-# Verify unified system integration  
+# Verify unified system integration
 python -c "from src.main_unified import _load_unified_plugins, AVAILABLE_PLUGINS; _load_unified_plugins(); print('✅ Unified integration' if 'puter' in AVAILABLE_PLUGINS else '❌ Not found')"
 ```
 

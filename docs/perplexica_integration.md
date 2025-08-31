@@ -61,7 +61,7 @@ print(f"Citations: {response.citations}")
 await plugin.subscribe("perplexica_search", handle_search_results)
 
 # Emit search request
-await event_bus.emit("perplexica_search", 
+await event_bus.emit("perplexica_search",
     query="machine learning frameworks",
     search_mode="academic",
     session_id="user_session_123"
@@ -231,15 +231,15 @@ async def setup_agent():
     # Create plugins
     web_agent = WebAgentAtom()
     perplexica = PerplexicaSearchPlugin()
-    
+
     # Setup
     await web_agent.setup(event_bus, store, {})
     await perplexica.setup(event_bus, store, {"web_agent": web_agent})
-    
+
     # Start
     await web_agent.start()
     await perplexica.start()
-    
+
     return [web_agent, perplexica]
 ```
 
