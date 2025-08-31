@@ -2,7 +2,7 @@
 """Test ChromaDB integration with Super Alita memory system."""
 
 import sys
-import os
+
 sys.path.insert(0, './src')
 
 print('=== ChromaDB Memory Integration Test ===')
@@ -59,7 +59,7 @@ try:
         n_results=1
     )
 
-    print(f'✅ Memory persistence test successful!')
+    print('✅ Memory persistence test successful!')
     print(f'📝 Stored memory: {test_memory_doc[:50]}...')
     print(f'🔍 Query results: {len(results["documents"][0])} matches found')
     print(f'📈 Semantic collection now has {semantic_collection.count()} documents')
@@ -84,7 +84,7 @@ try:
         metadatas=[episode_metadata]
     )
 
-    print(f'✅ Episodic memory test successful!')
+    print('✅ Episodic memory test successful!')
     print(f'📚 Episodic collection now has {episodic_collection.count()} documents')
 
     # Summary

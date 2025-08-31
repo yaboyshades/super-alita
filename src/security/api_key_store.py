@@ -3,8 +3,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
-import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -49,7 +48,7 @@ class APIKeyStore:
         self._loaded = False
 
     @classmethod
-    def from_env(cls) -> "APIKeyStore":
+    def from_env(cls) -> APIKeyStore:
         path = os.getenv("ALITA_API_KEY_STORE", str(Path("config") / "api_keys.json"))
         return cls(path)
 

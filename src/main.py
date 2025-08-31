@@ -357,7 +357,8 @@ else:
 try:
     from reug_runtime.config import SETTINGS
     from reug_runtime.router import router as agent_router
-    from reug_runtime.router_tools import tools as tools_router, ability as ability_router
+    from reug_runtime.router_tools import ability as ability_router
+    from reug_runtime.router_tools import tools as tools_router
 except Exception as e:  # pragma: no cover
     # Fallback: minimal routers to allow boot/health during development
     print("[WARN] reug_runtime import failed; falling back to minimal routers:", e)
@@ -1637,7 +1638,10 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
         # Register Mangle integration
         try:
-            from src.abilities.mangle.register import register_mangle_abilities, register_mangle_plugin
+            from src.abilities.mangle.register import (
+                register_mangle_abilities,
+                register_mangle_plugin,
+            )
 
             print("🔧 DEBUG: Starting Mangle integration registration...")
 
@@ -1646,7 +1650,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 "mangle": {
                     "binary_path": os.getenv("MANGLE_BIN_PATH", "mangle"),
                     "timeout": 30,
-                    "knowledge_base_dir": "./data/mangle"
+                    "knowledge_base_dir": "./data/mangle",
                 }
             }
 
@@ -1657,6 +1661,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         except Exception as e:
             print(f"❌ DEBUG: Failed to register Mangle integration: {e}")
             import traceback
+
             traceback.print_exc()
 
         # Optional ability auto-discovery (best-effort)

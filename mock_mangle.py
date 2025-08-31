@@ -15,10 +15,10 @@ import argparse
 import json
 import re
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 
-def parse_mangle_file(file_path: str) -> Dict[str, Any]:
+def parse_mangle_file(file_path: str) -> dict[str, Any]:
     """Parse a Mangle file and extract facts, rules, and queries.
 
     Args:
@@ -27,7 +27,7 @@ def parse_mangle_file(file_path: str) -> Dict[str, Any]:
     Returns:
         Dictionary with parsed facts, rules, and queries
     """
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         content = f.read()
 
     facts = []
@@ -54,8 +54,8 @@ def parse_mangle_file(file_path: str) -> Dict[str, Any]:
 
 
 def process_query(
-    query: str, parsed_data: Dict[str, Any]
-) -> List[Dict[str, Any]]:
+    query: str, parsed_data: dict[str, Any]
+) -> list[dict[str, Any]]:
     """Process a Mangle query and return mock results.
 
     Args:
@@ -118,7 +118,7 @@ def process_query(
     ]
 
 
-def handle_explain(query: str) -> Dict[str, Any]:
+def handle_explain(query: str) -> dict[str, Any]:
     """Generate a mock explanation for a query.
 
     Args:

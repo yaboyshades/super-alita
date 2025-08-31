@@ -12,15 +12,14 @@ Env vars:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
-from typing import Any, Iterator
-
-import json
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import requests
-
 
 CONFIG_PATH = Path(os.getenv("ALITA_CONFIG_FILE", Path.home() / ".alita" / "config.json"))
 

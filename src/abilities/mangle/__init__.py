@@ -7,7 +7,10 @@ security analysis, and knowledge graph capabilities.
 """
 
 from src.abilities.mangle.mangle_ability import MangleAbility, ManglePluginInterface
-from src.abilities.mangle.register import register_mangle_abilities, register_mangle_plugin
+from src.abilities.mangle.register import (
+    register_mangle_abilities,
+    register_mangle_plugin,
+)
 
 __all__ = [
     "MangleAbility",

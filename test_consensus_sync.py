@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Simple sync test for consensus functionality."""
 
-import requests
 import time
+
+import requests
 
 
 def test_simple_consensus_sync():
@@ -86,7 +87,7 @@ def test_simple_consensus_sync():
         },
     }
 
-    print(f"🎯 Consensus Results:")
+    print("🎯 Consensus Results:")
     print(f"  Text: {consensus_text}")
     print(f"  Confidence: {consensus_confidence:.2f}")
     print(f"  Unique responses: {len(response_counts)}")

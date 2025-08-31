@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Simple test of enhanced consensus functionality."""
 
+
 import requests
-import json
 
 
 def test_simple_consensus():

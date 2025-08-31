@@ -4,7 +4,6 @@ Fix streaming timeout issues following Super Alita patterns.
 Apply configuration fixes to resolve connection drops.
 """
 
-import asyncio
 import json
 from pathlib import Path
 

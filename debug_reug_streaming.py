@@ -5,10 +5,9 @@ Focus on the specific "incomplete chunked read" error.
 """
 
 import asyncio
-import httpx
-import json
 import time
-from typing import Optional
+
+import httpx
 
 
 class REUGStreamingDebugger:
@@ -83,7 +82,7 @@ class REUGStreamingDebugger:
                 return False
 
         except httpx.ReadTimeout:
-            print(f"⚠️  Stream timeout (expected for some messages)")
+            print("⚠️  Stream timeout (expected for some messages)")
             return True  # Timeout might be normal
         except httpx.RemoteProtocolError as e:
             print(f"❌ Protocol error: {e}")
@@ -157,10 +156,10 @@ class REUGStreamingDebugger:
                                 "consensus" in chunk_str.lower()
                                 or "deepconf" in chunk_str.lower()
                             ):
-                                print(f"🎯 Consensus activity detected!")
+                                print("🎯 Consensus activity detected!")
 
                     if finished:
-                        print(f"✅ Stream completed successfully")
+                        print("✅ Stream completed successfully")
                         return True
 
                     # Small delay before next attempt
@@ -179,7 +178,7 @@ class REUGStreamingDebugger:
             except httpx.RemoteProtocolError as e:
                 print(f"⚠️  Protocol error on attempt {attempt + 1}: {e}")
                 if attempt == max_retries - 1:
-                    print(f"❌ All retry attempts failed")
+                    print("❌ All retry attempts failed")
                     return False
                 await asyncio.sleep(2.0)  # Longer delay for protocol errors
             except Exception as e:
@@ -220,7 +219,7 @@ class REUGStreamingDebugger:
                         print(f"❌ {endpoint}: {response.status_code}")
                         return False
 
-                print(f"✅ All streaming endpoints responsive")
+                print("✅ All streaming endpoints responsive")
                 return True
 
             except Exception as e:

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Test predictive world model persistence mechanism."""
 
-import sys
 import asyncio
 import json
+import sys
 from pathlib import Path
 
 sys.path.insert(0, './src')
@@ -42,7 +42,7 @@ async def test_persistence():
     if path.exists():
         print(f'✅ World model saved successfully: {path}')
         data = json.loads(path.read_text(encoding='utf-8'))
-        print(f'📊 Data snapshot:')
+        print('📊 Data snapshot:')
         print(f'  - Transitions: {len(data.get("state_transitions", []))}')
         print(f'  - Patterns: {len(data.get("learned_patterns", {}))}')
         print(f'  - Timestamp: {data.get("timestamp", "N/A")}')
@@ -57,7 +57,7 @@ async def test_persistence():
     # Verify data loaded
     transitions = getattr(new_model, 'state_transitions', [])
     patterns = getattr(new_model, 'learned_patterns', {})
-    print(f'📥 Loaded data:')
+    print('📥 Loaded data:')
     print(f'  - Transitions: {len(transitions)}')
     print(f'  - Patterns: {len(patterns)}')
 

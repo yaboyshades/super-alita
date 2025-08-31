@@ -6,9 +6,7 @@ This script tests the Mangle integration with Super Alita by making API calls
 to add facts, rules, and execute queries.
 """
 
-import json
 import requests
-import time
 
 
 def test_mangle_api():

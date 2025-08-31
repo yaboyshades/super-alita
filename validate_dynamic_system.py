@@ -4,10 +4,11 @@ Super Alita Dynamic System Validation Script
 Tests all dynamic components and provides comprehensive status
 """
 
-import json
-import requests
 import sys
-from typing import Dict, Any
+from typing import Any
+
+import requests
+
 
 def test_health() -> bool:
     """Test basic health endpoint"""
@@ -24,7 +25,7 @@ def test_health() -> bool:
         print(f"❌ Health Check Error: {e}")
         return False
 
-def test_tools_catalog() -> Dict[str, Any]:
+def test_tools_catalog() -> dict[str, Any]:
     """Test dynamic tools catalog"""
     try:
         response = requests.get("http://127.0.0.1:8080/tools/catalog", timeout=5)
@@ -65,7 +66,7 @@ def test_consensus_ability() -> bool:
             consensus_text = result.get('result', {}).get('consensus_text', '')
             confidence = result.get('result', {}).get('consensus_confidence', 0)
 
-            print(f"✅ Consensus Ability Working!")
+            print("✅ Consensus Ability Working!")
             print(f"   🎯 Confidence: {confidence:.2f}")
             print(f"   📝 Response: {consensus_text[:100]}{'...' if len(consensus_text) > 100 else ''}")
             return True

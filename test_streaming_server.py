@@ -3,11 +3,12 @@
 Simple streaming test server to validate connection handling.
 """
 
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
 import asyncio
 import json
 import time
+
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 
 app = FastAPI(title="Streaming Test Server")
 

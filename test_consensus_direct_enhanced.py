@@ -2,8 +2,8 @@
 """Direct test of enhanced consensus algorithms."""
 
 import asyncio
-import sys
 import os
+import sys
 
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
@@ -56,7 +56,7 @@ async def test_enhanced_consensus_direct():
                 temperature_range=0.2,
             )
 
-            print(f"✅ Success!")
+            print("✅ Success!")
             print(f"📝 Consensus: {result['consensus_text'][:80]}...")
             print(f"📊 Confidence: {result['consensus_confidence']:.3f}")
             print(f"🔢 Responses: {len(result['individual_responses'])}")
@@ -96,7 +96,7 @@ async def test_enhanced_consensus_direct():
             results[method] = {"success": False, "error": str(e)}
 
     # Summary
-    print(f"\n📊 SUMMARY")
+    print("\n📊 SUMMARY")
     print("=" * 60)
     successful = sum(1 for r in results.values() if r["success"])
     total = len(results)
@@ -108,7 +108,7 @@ async def test_enhanced_consensus_direct():
         print(f"{status} {method}")
 
     if successful == total:
-        print(f"\n🎉 ALL ENHANCED CONSENSUS ALGORITHMS WORKING!")
+        print("\n🎉 ALL ENHANCED CONSENSUS ALGORITHMS WORKING!")
         print("✅ Ready for production deployment!")
     else:
         print(f"\n⚠️ {total - successful} algorithm(s) need attention")

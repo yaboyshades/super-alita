@@ -11,18 +11,18 @@ predefining large toolsets. Generated specs are persisted under ./.mcp_box.
 from __future__ import annotations
 
 import asyncio
+import json
+import os
 import sys
 from pathlib import Path
-import os
-import json
 from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from .config import SETTINGS
-from .router import execute_turn
 from .mcp_abstractor import abstract_mcp_box
+from .router import execute_turn
 
 TOOL_CATALOG = [
     {
@@ -450,7 +450,7 @@ async def execute_tool(
             timeout=_timeout,
         )
         return {"ok": True, "tool": tid, "result": result}
-    except asyncio.TimeoutError as e:
+    except TimeoutError as e:
         raise HTTPException(
             status_code=504,
             detail={"error": "tool_timeout", "tool": tid, "timeout": _timeout},
@@ -494,7 +494,7 @@ async def execute_tool_path(
             timeout=_timeout,
         )
         return {"ok": True, "tool": tool_id, "result": result}
-    except asyncio.TimeoutError as e:
+    except TimeoutError as e:
         raise HTTPException(
             status_code=504,
             detail={"error": "tool_timeout", "tool": tool_id, "timeout": _timeout},
@@ -632,7 +632,7 @@ async def mcp_register(
             index_data = json.loads(index_path.read_text(encoding="utf-8"))
 
             # Get signature for this spec
-            from .mcp_abstractor import _normalize_spec, _compute_signature
+            from .mcp_abstractor import _compute_signature, _normalize_spec
             norm_spec = _normalize_spec(spec)
             sig = _compute_signature(norm_spec)
 

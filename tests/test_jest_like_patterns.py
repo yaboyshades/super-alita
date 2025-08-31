@@ -17,11 +17,10 @@ Jest Feature Mapping:
 
 import asyncio
 import time
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-
 
 # ===== Sample Functions to Test (Jest equivalents) =====
 
@@ -40,33 +39,33 @@ class Calculator:
     """Sample class for testing mocking patterns."""
 
     def __init__(self):
-        self.history: List[str] = []
+        self.history: list[str] = []
 
     def add(self, a: int, b: int) -> int:
         result = a + b
         self.history.append(f"{a} + {b} = {result}")
         return result
 
-    def get_history(self) -> List[str]:
+    def get_history(self) -> list[str]:
         return self.history.copy()
 
 
 class ApiService:
     """Sample service for testing async mocking patterns."""
 
-    async def fetch_user(self, user_id: int) -> Dict[str, Any]:
+    async def fetch_user(self, user_id: int) -> dict[str, Any]:
         """Simulates an API call."""
         # In real implementation, this would make an HTTP request
         await asyncio.sleep(0.1)  # Simulate network delay
         return {"id": user_id, "name": f"User {user_id}", "active": True}
 
-    async def update_user(self, user_id: int, data: Dict[str, Any]) -> bool:
+    async def update_user(self, user_id: int, data: dict[str, Any]) -> bool:
         """Simulates updating a user."""
         await asyncio.sleep(0.05)
         return True
 
 
-def build_user_payload(user_id: int, name: str) -> Dict[str, Any]:
+def build_user_payload(user_id: int, name: str) -> dict[str, Any]:
     """Sample function for snapshot testing."""
     return {
         "version": 1,

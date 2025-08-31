@@ -7,10 +7,9 @@ by testing basic functionality.
 """
 
 import asyncio
-import json
-import os
 import sys
 from pathlib import Path
+
 import requests
 
 # Add the project root to the Python path

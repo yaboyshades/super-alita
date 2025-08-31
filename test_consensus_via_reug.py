@@ -2,8 +2,9 @@
 """Test enhanced consensus via REUG streaming system."""
 
 import asyncio
-import httpx
 import json
+
+import httpx
 
 
 async def test_consensus_via_reug():

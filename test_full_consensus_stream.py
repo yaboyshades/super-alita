@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Test full consensus streaming response."""
 
-import requests
 import time
-import json
+
+import requests
 
 
 def test_full_consensus_stream():
@@ -79,7 +79,7 @@ def test_full_consensus_stream():
                 print(f"❌ Stream error: {e}")
                 break
 
-        print(f"\n📊 Summary:")
+        print("\n📊 Summary:")
         print(f"   Total chunks: {len(all_chunks)}")
         print(f"   Iterations: {iteration}")
         print(f"   Finished: {finished}")

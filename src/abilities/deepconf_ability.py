@@ -6,14 +6,12 @@ sampling using the DeepConf methodology with multiple consensus modes.
 """
 
 import asyncio
-import httpx
-import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
-from src.plugins.plugin_interface import PluginInterface
 from src.abilities.mangle.mangle_ability import MangleAbility
+from src.plugins.plugin_interface import PluginInterface
 
 
 class ConsensusMode(Enum):

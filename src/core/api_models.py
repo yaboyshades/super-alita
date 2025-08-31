@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -8,7 +8,7 @@ def api_error(error: str, code: str, details: dict[str, Any] | None = None) -> d
     return {
         "error": error,
         "code": code,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         **({"details": details} if details else {}),
     }
 

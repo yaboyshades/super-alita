@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Callable, MutableMapping
-from typing import Any
-from pathlib import Path
 import os
+from collections.abc import Callable, MutableMapping
+from pathlib import Path
+from typing import Any
 
 StateMap = MutableMapping[str, Any]
 ComponentFunc = Callable[[dict[str, Any]], str]
@@ -271,8 +271,8 @@ def _mcp_console(props: dict[str, Any]) -> str:
 @register_component("mcp_index_abstracted")
 def _mcp_index_abstracted(props: dict[str, Any]) -> str:
     """Render the abstracted MCP index (index.json) from the MCP Box."""
-    from pathlib import Path
     import json
+    from pathlib import Path
 
     box_dir = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
     index_path = box_dir / "index.json"

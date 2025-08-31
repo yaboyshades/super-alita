@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Test endpoint to check ability registry status."""
 
+
 import requests
-import json
 
 
 def test_server_status():

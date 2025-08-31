@@ -2,10 +2,10 @@
 """Comprehensive test for all enhanced consensus algorithms."""
 
 import asyncio
-import json
-import requests
 import time
-from typing import Dict, Any, List
+from typing import Any
+
+import requests
 
 
 class EnhancedConsensusValidator:
@@ -103,7 +103,7 @@ class EnhancedConsensusValidator:
             print(f"❌ Tools catalog error: {e}")
             return False
 
-    def test_consensus_method(self, method: str, prompt: str) -> Dict[str, Any]:
+    def test_consensus_method(self, method: str, prompt: str) -> dict[str, Any]:
         """Test a specific consensus method."""
         print(f"\n🔍 Testing {method} with: '{prompt[:50]}...'")
 
@@ -145,13 +145,13 @@ class EnhancedConsensusValidator:
             return {"success": False, "error": str(e)}
 
     def _test_direct_provider(
-        self, method: str, test_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, method: str, test_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Test the consensus provider directly."""
         try:
             # Import and test the enhanced provider directly
-            import sys
             import os
+            import sys
 
             sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
@@ -189,8 +189,8 @@ class EnhancedConsensusValidator:
             return {"success": False, "error": str(e)}
 
     def _analyze_consensus_result(
-        self, method: str, result: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, method: str, result: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze consensus result."""
         try:
             consensus_text = result.get("consensus_text", "")
@@ -242,7 +242,7 @@ class EnhancedConsensusValidator:
             print(f"   ❌ Result analysis failed: {e}")
             return {"success": False, "error": str(e)}
 
-    def run_comprehensive_test(self) -> Dict[str, Any]:
+    def run_comprehensive_test(self) -> dict[str, Any]:
         """Run comprehensive test of all methods."""
         print("🧪 Starting Comprehensive Enhanced Consensus Test")
         print("=" * 60)
@@ -284,7 +284,7 @@ class EnhancedConsensusValidator:
             results[method] = method_results
 
         # 4. Summary
-        print(f"\n4️⃣ Test Summary")
+        print("\n4️⃣ Test Summary")
         print("=" * 60)
         print(f"📊 Total Tests: {total_tests}")
         print(f"✅ Successful: {successful_tests}")

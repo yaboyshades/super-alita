@@ -5,10 +5,8 @@ Following Super Alita debugging patterns.
 """
 
 import asyncio
+
 import httpx
-import json
-import traceback
-from pathlib import Path
 
 
 async def debug_consensus_execution():
@@ -49,7 +47,7 @@ async def test_ability_registry_state():
                     print(f"❌ Registry issue detected: {registry_status}")
                     return False
                 else:
-                    print(f"✅ Registry is healthy")
+                    print("✅ Registry is healthy")
                     return True
             else:
                 print(f"❌ Health check failed: {response.status_code}")
@@ -96,8 +94,8 @@ async def test_simplified_consensus():
 
                     return True
                 elif stream_response.status_code == 500:
-                    print(f"❌ 500 error confirmed in simple test")
-                    print(f"   This suggests the issue is in tool execution itself")
+                    print("❌ 500 error confirmed in simple test")
+                    print("   This suggests the issue is in tool execution itself")
                     return False
                 else:
                     print(f"❌ Stream error: {stream_response.status_code}")

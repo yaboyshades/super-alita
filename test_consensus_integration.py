@@ -5,10 +5,9 @@ Tests the actual REUG → Tool → Ollama integration path.
 """
 
 import asyncio
-import httpx
-import json
 import time
-from typing import Dict, List, Any
+
+import httpx
 
 
 class ConsensusIntegrationTester:
@@ -65,7 +64,7 @@ class ConsensusIntegrationTester:
                         (t for t in tools if t["name"] == "deepconf_consensus"), None
                     )
                     if consensus_tool:
-                        print(f"✅ Consensus tool registered:")
+                        print("✅ Consensus tool registered:")
                         print(f"   Description: {consensus_tool['description']}")
 
                         # Check schema
@@ -78,7 +77,7 @@ class ConsensusIntegrationTester:
 
                         return True
                     else:
-                        print(f"❌ Consensus tool not found in catalog")
+                        print("❌ Consensus tool not found in catalog")
                         print(f"   Available tools: {tool_names}")
                         return False
                 else:
@@ -235,7 +234,7 @@ class ConsensusIntegrationTester:
                 break
 
         # Analyze results
-        print(f"\n📊 Stream Analysis:")
+        print("\n📊 Stream Analysis:")
         print(f"   Chunks received: {chunks_received}")
         print(f"   Consensus detected: {consensus_detected}")
         print(f"   Tool execution detected: {tool_execution_detected}")
@@ -245,11 +244,11 @@ class ConsensusIntegrationTester:
         success = (consensus_detected or tool_execution_detected) and not error_detected
 
         if success:
-            print(f"🎉 Consensus integration working!")
+            print("🎉 Consensus integration working!")
         elif error_detected:
-            print(f"⚠️  Integration has errors - need investigation")
+            print("⚠️  Integration has errors - need investigation")
         else:
-            print(f"⚠️  No consensus activity detected")
+            print("⚠️  No consensus activity detected")
 
         return success
 
@@ -273,20 +272,20 @@ class ConsensusIntegrationTester:
                     )
 
                     if consensus_found:
-                        print(f"✅ Consensus ability found in registry")
+                        print("✅ Consensus ability found in registry")
                         return True
                     else:
-                        print(f"❌ Consensus ability not in registry")
+                        print("❌ Consensus ability not in registry")
                         return False
                 else:
-                    print(f"⚠️  No debug endpoint available (expected)")
+                    print("⚠️  No debug endpoint available (expected)")
                     return True  # Not a failure, just no debug endpoint
 
         except Exception as e:
             print(f"⚠️  Registry test skipped: {e}")
             return True  # Not critical for main integration
 
-    async def run_comprehensive_test(self) -> Dict[str, bool]:
+    async def run_comprehensive_test(self) -> dict[str, bool]:
         """Run all integration tests following Super Alita patterns."""
         print("🚀 Comprehensive Consensus Integration Test")
         print("Following Super Alita Development Instructions")

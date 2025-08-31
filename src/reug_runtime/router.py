@@ -16,14 +16,14 @@ conflicts are resolved or provider-specific logic evolves.
 
 import asyncio
 import json
+import os
+import re
 import time
+import urllib.request
 import uuid
 from collections.abc import AsyncGenerator
-import os
-from typing import Any
 from pathlib import Path
-import urllib.request
-import re
+from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -63,8 +63,8 @@ class Orchestrator:
         try:
             # Prefer canonical tool_id from MCP index if available
             try:
-                from pathlib import Path
                 import json as _json
+                from pathlib import Path
                 idx_path = Path(os.getenv("MCP_BOX_DIR", ".mcp_box")) / "index.json"
                 if idx_path.exists():
                     index = _json.loads(idx_path.read_text(encoding="utf-8"))
@@ -134,7 +134,7 @@ class Orchestrator:
                 return True
 
             # URL fetcher
-            if ("url" in {k.lower() for k in tool_args.keys()}) or (
+            if ("url" in {k.lower() for k in tool_args}) or (
                 any(x in tool_name.lower() for x in ("url", "http", "fetch"))
             ):
                 contract = {
@@ -276,7 +276,7 @@ class Orchestrator:
         for tool_call in tool_calls:
             # Support both OpenAI SDK objects and plain dicts
             if hasattr(tool_call, "function"):
-                fn = getattr(tool_call, "function")
+                fn = tool_call.function
                 tool_name = getattr(fn, "name", None)
                 tool_args_raw = getattr(fn, "arguments", "{}")
                 tool_call_id = getattr(tool_call, "id", str(uuid.uuid4()))

@@ -5,11 +5,12 @@ Provides multiple consensus algorithms with direct Ollama integration.
 """
 
 import asyncio
-import httpx
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any
+
+import httpx
 
 from src.plugins.plugin_interface import PluginInterface
 
@@ -31,15 +32,15 @@ class ConsensusResponse:
     consensus_text: str
     consensus_confidence: float
     aggregation_method: str
-    individual_responses: List[str]
-    confidence_scores: List[float]
-    metadata: Dict[str, Any]
+    individual_responses: list[str]
+    confidence_scores: list[float]
+    metadata: dict[str, Any]
 
 
 class EnhancedConsensusProvider(PluginInterface):
     """Enhanced consensus sampling with multiple aggregation methods."""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] = None):
         super().__init__(name="enhanced_consensus")
         self.config = config or {}
         self.base_url = self.config.get("base_url", "http://localhost:11434/v1")
@@ -47,7 +48,7 @@ class EnhancedConsensusProvider(PluginInterface):
         self.timeout = self.config.get("timeout", 60.0)
         self.max_retries = self.config.get("max_retries", 3)
         # Debug/telemetry fields captured per request batch
-        self._transport_used: List[str] = []
+        self._transport_used: list[str] = []
 
     async def initialize(self) -> None:
         """Initialize the consensus provider."""
@@ -61,7 +62,7 @@ class EnhancedConsensusProvider(PluginInterface):
         """Cleanup the consensus provider."""
         pass
 
-    async def process_event(self, event: Dict[str, Any]) -> Dict[str, Any] | None:
+    async def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
         """Process events if needed."""
         return None
 
@@ -74,7 +75,7 @@ class EnhancedConsensusProvider(PluginInterface):
         method: str = "weighted_vote",
         confidence_threshold: float = 0.7,
         temperature_range: float = 0.2,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Enhanced consensus sampling with multiple methods."""
 
         try:
@@ -99,7 +100,7 @@ class EnhancedConsensusProvider(PluginInterface):
                 "metadata": {"error": "No valid responses"},
             }
 
-        responses, confidence_scores = zip(*responses_with_confidence)
+        responses, confidence_scores = zip(*responses_with_confidence, strict=False)
 
         # Apply consensus method
         if consensus_method == ConsensusMethod.SIMPLE_VOTE:
@@ -118,7 +119,7 @@ class EnhancedConsensusProvider(PluginInterface):
             consensus = self._weighted_vote_consensus(responses, confidence_scores)
 
         # Merge consensus metadata with transport/debug info
-        transport_counts: Dict[str, int] = {}
+        transport_counts: dict[str, int] = {}
         for t in self._transport_used:
             transport_counts[t] = transport_counts.get(t, 0) + 1
 
@@ -145,7 +146,7 @@ class EnhancedConsensusProvider(PluginInterface):
         base_temp: float,
         max_tokens: int,
         temp_range: float,
-    ) -> List[Tuple[str, float]]:
+    ) -> list[tuple[str, float]]:
         """Generate diverse responses with confidence estimation."""
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -182,7 +183,7 @@ class EnhancedConsensusProvider(PluginInterface):
         prompt: str,
         temperature: float,
         max_tokens: int,
-    ) -> Tuple[str, float]:
+    ) -> tuple[str, float]:
         """Make a single request and estimate confidence."""
         # First attempt: OpenAI-compatible /v1/chat/completions
         try:
@@ -285,7 +286,7 @@ class EnhancedConsensusProvider(PluginInterface):
 
         return max(0.1, min(1.0, confidence))
 
-    def _simple_vote_consensus(self, responses: Tuple[str, ...]) -> ConsensusResponse:
+    def _simple_vote_consensus(self, responses: tuple[str, ...]) -> ConsensusResponse:
         """Simple majority voting consensus."""
         response_counts = {}
         for resp in responses:
@@ -308,12 +309,12 @@ class EnhancedConsensusProvider(PluginInterface):
         )
 
     def _weighted_vote_consensus(
-        self, responses: Tuple[str, ...], confidence_scores: Tuple[float, ...]
+        self, responses: tuple[str, ...], confidence_scores: tuple[float, ...]
     ) -> ConsensusResponse:
         """Weighted voting based on confidence scores."""
         weighted_counts = {}
 
-        for resp, conf in zip(responses, confidence_scores):
+        for resp, conf in zip(responses, confidence_scores, strict=False):
             if resp not in weighted_counts:
                 weighted_counts[resp] = 0.0
             weighted_counts[resp] += conf
@@ -340,8 +341,8 @@ class EnhancedConsensusProvider(PluginInterface):
 
     def _confidence_based_consensus(
         self,
-        responses: Tuple[str, ...],
-        confidence_scores: Tuple[float, ...],
+        responses: tuple[str, ...],
+        confidence_scores: tuple[float, ...],
         threshold: float,
     ) -> ConsensusResponse:
         """Select highest confidence response above threshold."""
@@ -349,7 +350,7 @@ class EnhancedConsensusProvider(PluginInterface):
         # Filter responses by confidence threshold
         high_conf_responses = [
             (resp, conf)
-            for resp, conf in zip(responses, confidence_scores)
+            for resp, conf in zip(responses, confidence_scores, strict=False)
             if conf >= threshold
         ]
 
@@ -383,7 +384,7 @@ class EnhancedConsensusProvider(PluginInterface):
         )
 
     async def _semantic_similarity_consensus(
-        self, responses: Tuple[str, ...]
+        self, responses: tuple[str, ...]
     ) -> ConsensusResponse:
         """Consensus based on semantic similarity clustering."""
         # Simplified semantic similarity using word overlap
@@ -424,14 +425,14 @@ class EnhancedConsensusProvider(PluginInterface):
         )
 
     def _ensemble_ranking_consensus(
-        self, responses: Tuple[str, ...], confidence_scores: Tuple[float, ...]
+        self, responses: tuple[str, ...], confidence_scores: tuple[float, ...]
     ) -> ConsensusResponse:
         """Ensemble ranking combining multiple factors."""
 
         # Score based on multiple factors
         ensemble_scores = []
 
-        for i, (resp, conf) in enumerate(zip(responses, confidence_scores)):
+        for i, (resp, conf) in enumerate(zip(responses, confidence_scores, strict=False)):
             score = 0.0
 
             # Confidence component (40%)
@@ -519,7 +520,7 @@ async def register_abilities(registry: Any) -> None:
             "output_schema": {"type": "object"},
         }
 
-        async def exec_fn(args: Dict[str, Any]) -> Dict[str, Any]:
+        async def exec_fn(args: dict[str, Any]) -> dict[str, Any]:
             return await provider.consensus_sampling(
                 prompt=args["prompt"],
                 num_samples=args.get("num_samples", 3),

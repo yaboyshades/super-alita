@@ -10,9 +10,11 @@ and call these tools directly by name (e.g., `mangle_query`).
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-from src.abilities.mangle.register import export_mangle_to_mcp_box, export_mangle_rules_to_mcp_box
+from src.abilities.mangle.register import (
+    export_mangle_rules_to_mcp_box,
+    export_mangle_to_mcp_box,
+)
 
 
 def main() -> None:

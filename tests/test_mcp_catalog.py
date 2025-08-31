@@ -8,11 +8,10 @@ works correctly.
 
 import asyncio
 import json
-import os
 import sys
 from pathlib import Path
+
 import requests
-import shutil
 
 sys.path.insert(0, './src')
 

@@ -2,8 +2,8 @@
 """Test enhanced consensus algorithms with multiple methods."""
 
 import asyncio
+
 import httpx
-import json
 
 
 async def test_enhanced_consensus_methods():
@@ -113,7 +113,7 @@ async def test_consensus_parameter_variations():
 
                 if response.status_code == 200:
                     result = response.json()
-                    print(f"✅ Success:")
+                    print("✅ Success:")
                     print(
                         f"   Consensus: {result.get('consensus_text', 'N/A')[:100]}..."
                     )

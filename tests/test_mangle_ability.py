@@ -6,12 +6,10 @@ This module contains tests for the Mangle deductive database integration
 with the Super Alita system, verifying logical reasoning capabilities.
 """
 
-import asyncio
-import os
-import pytest
 import sys
 from pathlib import Path
-from typing import Dict, Any, List
+
+import pytest
 
 # Add src directory to path to allow imports
 sys.path.insert(0, str(Path(__file__).parent.parent))

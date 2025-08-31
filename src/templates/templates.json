@@ -1,0 +1,9 @@
+{
+  "askExpert": "You are an expert {role} specializing in Super Alita development. \"{input}\". Provide the answer in {format}. Steps:",
+  "contextBlock": "=== CONTEXT ===\n• {title}: {snippet}\n=== END CONTEXT ===",
+  "deepConfConsensus": "Using Super Alita's DeepConf consensus system with method '{method}' and {num_samples} samples at temperature {temperature}.",
+  "reugStreaming": "Implementing REUG streaming orchestration with event types: {event_types}",
+  "mangleLogic": "Applying Mangle logic engine with rules: {rules}",
+  "mcpIntegration": "MCP VS Code integration with tools: {tools}",
+  "neuralSymbolic": "Neural-symbolic event bus configuration with {config}"
+}

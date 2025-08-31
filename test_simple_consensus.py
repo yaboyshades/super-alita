@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Simple test to verify consensus tool execution."""
 
-import json
 import requests
 
 

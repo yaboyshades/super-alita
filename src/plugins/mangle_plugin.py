@@ -21,15 +21,14 @@ import logging
 import os
 import subprocess
 import tempfile
-import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
+from src.core import proc
 from src.core.event_bus import EventBus
 from src.plugins.plugin_interface import PluginInterface
-from src.core import proc
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -46,7 +45,7 @@ class MangleRule:
     name: str
     body: str
     description: str = ""
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
@@ -67,8 +66,8 @@ class ManglePlugin(PluginInterface):
         self.description = "Deductive database programming using Google's Mangle"
         
         # Storage for rules and facts
-        self.rules: Dict[str, MangleRule] = {}
-        self.facts: Dict[str, List[Dict[str, Any]]] = {}
+        self.rules: dict[str, MangleRule] = {}
+        self.facts: dict[str, list[dict[str, Any]]] = {}
         
         # Paths
         self.storage_dir = Path("./data/mangle")
@@ -120,12 +119,12 @@ class ManglePlugin(PluginInterface):
                    f"and {sum(len(f) for f in self.facts.values())} facts")
         return True
     
-    async def process_event(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
         """Process events from the event bus."""
         # This plugin primarily uses specific event handlers rather than this generic method
         return None
     
-    async def handle_new_fact(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def handle_new_fact(self, event: dict[str, Any]) -> dict[str, Any] | None:
         """Handle new fact events from the event bus."""
         try:
             if "relation" in event and "data" in event:
@@ -147,7 +146,7 @@ class ManglePlugin(PluginInterface):
         
         return None
     
-    async def handle_knowledge_query(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def handle_knowledge_query(self, event: dict[str, Any]) -> dict[str, Any] | None:
         """Handle knowledge query events."""
         try:
             if "query" in event:
@@ -160,7 +159,7 @@ class ManglePlugin(PluginInterface):
         
         return None
     
-    async def execute_query(self, query: str) -> Dict[str, Any]:
+    async def execute_query(self, query: str) -> dict[str, Any]:
         """Execute a Mangle query against the current fact database."""
         try:
             # Create a temporary file for the program
@@ -192,7 +191,7 @@ class ManglePlugin(PluginInterface):
             logger.error(f"Error executing Mangle query: {e}")
             raise
     
-    def add_rule(self, name: str, body: str, description: str = "", tags: List[str] = None) -> str:
+    def add_rule(self, name: str, body: str, description: str = "", tags: list[str] = None) -> str:
         """Add a new rule to the database."""
         rule_id = name.lower().replace(" ", "_")
         
@@ -209,11 +208,11 @@ class ManglePlugin(PluginInterface):
         logger.info(f"Added new rule: {rule_id}")
         return rule_id
     
-    def get_rule(self, rule_id: str) -> Optional[MangleRule]:
+    def get_rule(self, rule_id: str) -> MangleRule | None:
         """Get a rule by its ID."""
         return self.rules.get(rule_id)
     
-    def add_fact(self, relation: str, data: Dict[str, Any]) -> None:
+    def add_fact(self, relation: str, data: dict[str, Any]) -> None:
         """Add a fact to the database."""
         if relation not in self.facts:
             self.facts[relation] = []
@@ -221,7 +220,7 @@ class ManglePlugin(PluginInterface):
         self.facts[relation].append(data)
         self._save_facts()
     
-    def get_facts(self, relation: str = None) -> Dict[str, List[Dict[str, Any]]]:
+    def get_facts(self, relation: str = None) -> dict[str, list[dict[str, Any]]]:
         """Get facts, optionally filtered by relation."""
         if relation:
             return {relation: self.facts.get(relation, [])}
@@ -231,7 +230,7 @@ class ManglePlugin(PluginInterface):
         """Load rules from disk."""
         try:
             if self.rules_file.exists():
-                with open(self.rules_file, "r") as f:
+                with open(self.rules_file) as f:
                     rules_data = json.load(f)
                 
                 self.rules = {
@@ -269,7 +268,7 @@ class ManglePlugin(PluginInterface):
         """Load facts from disk."""
         try:
             if self.facts_file.exists():
-                with open(self.facts_file, "r") as f:
+                with open(self.facts_file) as f:
                     self.facts = json.load(f)
                 logger.info(f"Loaded facts for {len(self.facts)} relations from {self.facts_file}")
         except Exception as e:
@@ -287,7 +286,7 @@ class ManglePlugin(PluginInterface):
         except Exception as e:
             logger.error(f"Error saving facts: {e}")
     
-    def _convert_fact_to_mangle(self, relation: str, fact: Dict[str, Any]) -> str:
+    def _convert_fact_to_mangle(self, relation: str, fact: dict[str, Any]) -> str:
         """Convert a fact dictionary to Mangle syntax."""
         # Handle different data types appropriately
         values = []
@@ -304,7 +303,7 @@ class ManglePlugin(PluginInterface):
         
         return f"{relation}({', '.join(values)})"
     
-    def _parse_mangle_output(self, output: str) -> Dict[str, Any]:
+    def _parse_mangle_output(self, output: str) -> dict[str, Any]:
         """Parse the output from Mangle execution."""
         # This is a simple parser and would need to be enhanced for real use
         lines = output.strip().split("\n")

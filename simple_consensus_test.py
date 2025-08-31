@@ -6,7 +6,8 @@ This bypasses the complex DeepConf pipeline to provide basic consensus functiona
 
 import asyncio
 import json
-from typing import Any, Dict, List
+from typing import Any
+
 import httpx
 
 
@@ -51,7 +52,7 @@ class SimpleConsensusProvider:
         num_samples: int = 3,
         temperature: float = 0.7,
         max_tokens: int = 512,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform consensus sampling with multiple responses"""
 
         print(f"🧠 Generating {num_samples} responses for consensus...")

@@ -216,7 +216,7 @@ async def test_plugin_system():
 
 async def run_deployment_validation():
     """Run complete deployment validation"""
-    print("🚀 Super Alita Deployment Validation")
+    print(">>> Super Alita Deployment Validation <<<")
     print("=" * 50)
 
     tests = [
@@ -249,9 +249,9 @@ async def run_deployment_validation():
     print(f"❌ Tests Failed: {total - passed}/{total}")
 
     if passed == total:
-        print("🎉 ALL TESTS PASSED - Super Alita is ready for deployment!")
+        print("SUCCESS! ALL TESTS PASSED - Super Alita ready for deployment!")
     else:
-        print("⚠️ Some tests failed - Check output above for issues")
+        print("WARNING! Some tests failed - Check output above for issues")
 
     return passed == total
 

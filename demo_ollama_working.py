@@ -29,7 +29,7 @@ sys.path.insert(0, str(project_root))
 async def test_ollama_working():
     """Test the working Ollama integration"""
     try:
-        from src.abilities.deepconf_ability import DeepConfAbility, ConsensusMode
+        from src.abilities.deepconf_ability import ConsensusMode, DeepConfAbility
 
         print("🚀 Super Alita + Ollama Integration Test")
         print("=" * 50)
@@ -92,7 +92,7 @@ async def test_ollama_working():
             )
 
             print("✅ Consensus sampling successful!")
-            print(f"📝 Question: What is 2+2?")
+            print("📝 Question: What is 2+2?")
             print(f"📝 Consensus answer: {response.consensus_text}")
             print(f"🎯 Confidence: {response.consensus_confidence:.3f}")
             print(f"📊 Aggregation method: {response.aggregation_method}")

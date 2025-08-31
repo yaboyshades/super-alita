@@ -1,0 +1,41 @@
+{
+    "name": "prompt-pipeline",
+    "displayName": "Prompt Pipeline for Super Alita",
+    "publisher": "superalita",
+    "description": "VS Code extension for Super Alita prompt optimization",
+    "version": "0.1.0",
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onCommand:prompt-pipeline.optimizePrompt"
+    ],
+    "main": "./extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "prompt-pipeline.optimizePrompt",
+                "title": "Optimize Prompt with Super Alita"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "prompt-pipeline.optimizePrompt",
+                "key": "ctrl+shift+p o",
+                "mac": "cmd+shift+p o"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "echo Compiling...",
+        "watch": "echo Watching..."
+    },
+    "devDependencies": {
+        "@types/node": "^16.0.0",
+        "@types/vscode": "^1.80.0"
+    }
+}

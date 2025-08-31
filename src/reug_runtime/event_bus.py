@@ -9,9 +9,9 @@ import os
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ def make_event_bus() -> BaseEventBus:
 # ---- Typed helper emitters (optional) --------------------------------------
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def evt_task_started(correlation_id: str, goal: str, session_id: str | None = None) -> dict[str, Any]:

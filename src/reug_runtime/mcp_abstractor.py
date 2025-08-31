@@ -92,12 +92,8 @@ class AbstractIndex:
         }
 
 
-def abstract_mcp_box(box_dir: str | Path = ".mcp_box", *, consolidate_catalog: bool = False) -> dict[str, Any]:
-    """Normalize, deduplicate and index specs under the MCP Box directory.
-
-    If consolidate_catalog is True, also write a catalog_consolidated.json with
-    at most one tool per action (best-effort heuristic).
-    """
+def abstract_mcp_box(box_dir: str | Path = ".mcp_box") -> dict[str, Any]:
+    """Normalize, deduplicate and index specs under the MCP Box directory."""
     base = Path(box_dir)
     base.mkdir(parents=True, exist_ok=True)
     files = [p for p in base.glob("*.json") if p.name != "index.json"]
@@ -157,7 +153,7 @@ def abstract_mcp_box(box_dir: str | Path = ".mcp_box", *, consolidate_catalog: b
     # Sort for stable output
     for k in list(by_action.keys()):
         by_action[k] = sorted(by_action[k])
-    tools_list.sort(key=lambda x: x["tool_id"]) 
+    tools_list.sort(key=lambda x: x["tool_id"])
 
     index = AbstractIndex(
         version=1,
@@ -174,7 +170,7 @@ def abstract_mcp_box(box_dir: str | Path = ".mcp_box", *, consolidate_catalog: b
     (base / "index.json").write_text(
         json.dumps(index.to_dict(), indent=2), encoding="utf-8"
     )
-    
+
     # Generate catalog.json for direct tool loading
     catalog_tools = []
     for cid, item in canonical.items():
@@ -186,41 +182,14 @@ def abstract_mcp_box(box_dir: str | Path = ".mcp_box", *, consolidate_catalog: b
             "output_schema": item.get("output_schema", {"type": "object"}),
         }
         catalog_tools.append(catalog_entry)
-    
+
     # Sort catalog for stable output
     catalog_tools.sort(key=lambda x: x["name"])
-    
+
     # Write catalog.json
     (base / "catalog.json").write_text(
         json.dumps(catalog_tools, indent=2), encoding="utf-8"
     )
 
-    if consolidate_catalog:
-        # Keep one representative per action (choose with most aliases/files)
-        by_action_best: dict[str, dict[str, Any]] = {}
-        for cid, item in canonical.items():
-            action = item.get("action")
-            cur = by_action_best.get(action)
-            score = len(item.get("aliases", [])) + len(item.get("files", []))
-            if not cur:
-                by_action_best[action] = {"id": cid, "item": item, "score": score}
-            else:
-                if score > cur["score"]:
-                    by_action_best[action] = {"id": cid, "item": item, "score": score}
-        consolidated = []
-        for action, rec in by_action_best.items():
-            it = rec["item"]
-            consolidated.append(
-                {
-                    "name": rec["id"],
-                    "description": it.get("description", ""),
-                    "input_schema": it.get("input_schema", {"type": "object"}),
-                    "output_schema": it.get("output_schema", {"type": "object"}),
-                }
-            )
-        consolidated.sort(key=lambda x: x["name"])
-        (base / "catalog_consolidated.json").write_text(
-            json.dumps(consolidated, indent=2), encoding="utf-8"
-        )
-
     return index.to_dict()
+

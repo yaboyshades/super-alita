@@ -7,10 +7,8 @@ This script tests that the MCP registration endpoint correctly:
 3. Persists new tools when no canonical equivalent exists
 """
 
-import json
+
 import requests
-import sys
-from pathlib import Path
 
 # Base URL for the API
 BASE_URL = "http://127.0.0.1:8080"

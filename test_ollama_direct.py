@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Test consensus tool directly via HTTP."""
 
+
 import requests
-import json
 
 
 def test_consensus_direct():

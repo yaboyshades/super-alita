@@ -5,11 +5,13 @@ Demonstrates that the system learns, retains, and improves capabilities over tim
 """
 
 import json
-import requests
-import time
 import os
+import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
+
+import requests
+
 
 class CapabilityRetentionProof:
     """Proof-of-concept test suite for emergent capability retention"""
@@ -20,10 +22,10 @@ class CapabilityRetentionProof:
             "SUPER_ALITA_BASE_URL", os.getenv("BASE_URL", "http://127.0.0.1:8080")
         )
         self.consensus_timeout = int(os.getenv("RETENTION_CONSENSUS_TIMEOUT", "120"))
-        self.test_results: List[Dict[str, Any]] = []
+        self.test_results: list[dict[str, Any]] = []
         self.memory_persistence_path = Path(".") / ".agentic-tools-mcp" / "memories"
 
-    def log_test(self, test_name: str, result: Dict[str, Any]):
+    def log_test(self, test_name: str, result: dict[str, Any]):
         """Log test results for analysis"""
         self.test_results.append({
             "test": test_name,
@@ -82,7 +84,7 @@ class CapabilityRetentionProof:
             later_avg = sum(r['confidence'] for r in composition_results[-2:]) / 2
 
             improvement = later_avg - early_avg
-            print(f"\n   📊 Analysis:")
+            print("\n   📊 Analysis:")
             print(f"   📈 Early average confidence: {early_avg:.3f}")
             print(f"   📈 Later average confidence: {later_avg:.3f}")
             print(f"   📈 Improvement: {improvement:.3f}")
@@ -95,11 +97,11 @@ class CapabilityRetentionProof:
 
             if perfect_retention:
                 print(f"   🧠 Perfect retention detected: Early {early_avg:.3f} → Later {later_avg:.3f}")
-                print(f"   ✨ System demonstrates perfect knowledge retention!")
+                print("   ✨ System demonstrates perfect knowledge retention!")
             elif improving_learning:
                 print(f"   🧠 Learning improvement detected: +{improvement:.3f}")
             else:
-                print(f"   🧠 No significant learning pattern detected")
+                print("   🧠 No significant learning pattern detected")
 
             self.log_test("composition_history", {
                 "composition_count": len(composition_results),
@@ -130,7 +132,7 @@ class CapabilityRetentionProof:
                 # Read a sample memory file to show persistence
                 sample_file = memory_files[0]
                 try:
-                    with open(sample_file, 'r') as f:
+                    with open(sample_file) as f:
                         memory_data = json.load(f)
 
                     print(f"   📝 Sample memory: {sample_file.name}")
@@ -164,7 +166,7 @@ class CapabilityRetentionProof:
         total_memory_evidence = memory_files_found + chroma_files_found
 
         if total_memory_evidence > 0:
-            print(f"   ✅ Memory persistence confirmed!")
+            print("   ✅ Memory persistence confirmed!")
             print(f"      - Traditional files: {memory_files_found}")
             print(f"      - ChromaDB files: {chroma_files_found}")
             print(f"      - Total evidence: {total_memory_evidence} files")
@@ -178,7 +180,7 @@ class CapabilityRetentionProof:
 
             return True
         else:
-            print(f"   📁 No memory persistence detected")
+            print("   📁 No memory persistence detected")
 
         return False
 
@@ -275,7 +277,7 @@ class CapabilityRetentionProof:
             confidence_trend = confidence_progression[-1] - confidence_progression[0]
             stability = max(confidence_progression) - min(confidence_progression)
 
-            print(f"\n   📊 Confidence Analysis:")
+            print("\n   📊 Confidence Analysis:")
             print(f"   📈 Progression: {' → '.join(f'{c:.3f}' for c in confidence_progression)}")
             print(f"   📈 Trend: {confidence_trend:+.3f}")
             print(f"   📈 Stability range: {stability:.3f}")
@@ -295,7 +297,7 @@ class CapabilityRetentionProof:
 
         return False
 
-    def run_all_tests(self) -> Dict[str, Any]:
+    def run_all_tests(self) -> dict[str, Any]:
         """Run all retention proof tests"""
         print("🚀 SUPER ALITA EMERGENT CAPABILITY RETENTION PROOF")
         print("=" * 60)
@@ -367,4 +369,4 @@ if __name__ == "__main__":
     with open("retention_proof_results.json", "w") as f:
         json.dump(results, f, indent=2)
 
-    print(f"\n📁 Results saved to: retention_proof_results.json")
+    print("\n📁 Results saved to: retention_proof_results.json")

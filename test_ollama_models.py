@@ -2,8 +2,8 @@
 """
 Test Ollama models with proper parameters to avoid verbose output
 """
+
 import requests
-import json
 
 
 def test_model_simple(model_name, prompt="Hello! How are you?"):

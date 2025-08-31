@@ -17,7 +17,8 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import requests
 

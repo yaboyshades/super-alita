@@ -2,6 +2,7 @@
 """Test consensus tool implementation directly."""
 
 import asyncio
+
 import httpx
 
 
@@ -100,7 +101,7 @@ async def test_consensus_implementation():
                 },
             }
 
-            print(f"🎯 Consensus result:")
+            print("🎯 Consensus result:")
             print(f"  Text: {consensus_text}")
             print(f"  Confidence: {consensus_confidence}")
             print(f"  Responses: {len(valid_responses)}")

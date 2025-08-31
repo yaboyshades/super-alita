@@ -6,12 +6,10 @@ Uses the runtime's REUG tool routes for consensus validation.
 
 from __future__ import annotations
 
-import json
 import sys
-from typing import Any, Dict
+from typing import Any
 
 import requests
-
 
 BASE = "http://127.0.0.1:8080"
 
@@ -30,7 +28,7 @@ def test_health() -> bool:
         return False
 
 
-def test_tools_catalog() -> Dict[str, Any]:
+def test_tools_catalog() -> dict[str, Any]:
     try:
         r = requests.get(f"{BASE}/tools/catalog", timeout=5)
         if r.status_code != 200:

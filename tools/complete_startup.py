@@ -21,7 +21,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
 
 import requests
 
@@ -36,7 +35,7 @@ class SuperAlitaOrchestrator:
     """Complete system orchestrator following development instructions."""
 
     def __init__(self) -> None:
-        self.processes: List[subprocess.Popen] = []
+        self.processes: list[subprocess.Popen] = []
         self.base_dir = Path.cwd()
         self.timeout = 300  # 5 minutes
 
@@ -99,7 +98,7 @@ class SuperAlitaOrchestrator:
         print("✅ Prerequisites check passed")
         return True
 
-    def _run(self, argv: list[str], *, timeout: Optional[int] = None) -> tuple[int, str, str]:
+    def _run(self, argv: list[str], *, timeout: int | None = None) -> tuple[int, str, str]:
         """Run a command with repo proc util when available; returns rc, out, err."""
         if proc is not None:
             try:

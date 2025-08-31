@@ -21,10 +21,9 @@ import json
 import os
 import sys
 import time
-from typing import Any, Dict
+from typing import Any
 
 import requests
-
 
 BASE = os.getenv("SUPER_ALITA_BASE_URL", os.getenv("BASE_URL", "http://127.0.0.1:8080"))
 READ_TIMEOUT = int(os.getenv("VALIDATOR_TIMEOUT", "60"))
@@ -48,7 +47,7 @@ def _get_json(url: str, timeout: int | float = READ_TIMEOUT) -> tuple[bool, Any]
         return False, str(e)
 
 
-def _post_json(url: str, payload: Dict[str, Any], timeout: int | float = READ_TIMEOUT) -> tuple[bool, Any]:
+def _post_json(url: str, payload: dict[str, Any], timeout: int | float = READ_TIMEOUT) -> tuple[bool, Any]:
     try:
         r = requests.post(url, json=payload, timeout=timeout)
         if r.status_code != 200:

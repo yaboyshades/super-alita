@@ -11,9 +11,8 @@ This module provides additional Mangle integration capabilities for:
 
 import json
 import logging
-import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +27,9 @@ class MangleValidator:
     async def validate_output(
         self, 
         output_text: str, 
-        domain: Optional[str] = None,
-        meta: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        domain: str | None = None,
+        meta: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Validate output against Mangle policy rules.
         
         Uses rules with head violation(Reason) to detect policy violations 
@@ -129,9 +128,9 @@ class MangleValidator:
     async def validate_tool_execution(
         self, 
         tool_name: str,
-        params: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        params: dict[str, Any],
+        context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Pre-execution validation for tool/action requests.
         
         Uses rules with head deny_tool(Reason) to check if a tool execution
@@ -222,10 +221,10 @@ class MangleValidator:
     
     async def select_consensus_method(
         self,
-        domain: Optional[str] = None,
+        domain: str | None = None,
         sample_count: int = 0,
-        meta: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        meta: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Select an aggregation method based on Mangle rules.
         
         Uses rules with head select_method(Method) to choose the appropriate
@@ -320,8 +319,8 @@ class MangleValidator:
         self,
         output_text: str,
         claims_type: str = "factual",
-        meta: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        meta: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Verify claims made in LLM output using Mangle rules.
         
         Uses rules with head invalid_claim(Claim, Reason) to identify problematic

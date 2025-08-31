@@ -883,7 +883,8 @@ task:
         args = node.tool_template.get("args", {}) if isinstance(node.tool_template, dict) else {}
         if tool_id:
             try:
-                import os, requests
+                import os
+                import requests
                 base = os.getenv("LADDER_TOOL_EXEC_URL", "http://127.0.0.1:8080")
                 url = f"{base.rstrip('/')}/tools/execute/{tool_id}"
                 r = requests.post(url, json={"args": args}, timeout=6)
