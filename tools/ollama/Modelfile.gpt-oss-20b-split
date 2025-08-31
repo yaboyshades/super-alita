@@ -1,0 +1,12 @@
+FROM gpt-oss:20b
+
+# Conservative defaults for RTX 3060 12 GB
+# - Lower ctx and batch reduce VRAM to avoid OOM
+PARAMETER num_ctx 2048
+PARAMETER num_batch 1
+
+# Split layers between GPU and CPU (tune with tools/ollama_gpu_cpu_tuner.py)
+PARAMETER num_gpu 12
+PARAMETER num_thread 12
+
+TEMPLATE "{{ .Prompt }}"

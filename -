@@ -1,0 +1,250 @@
+#!/usr/bin/env python3
+"""MCP Server Wrapper for Super Alita Agent Integration
+
+This script creates an MCP (Model Context Protocol) server that wraps the
+Super Alita Agent, allowing it to be used directly by VS Code's built-in
+MCP support instead of requiring external server configuration.
+
+The server provides tools for:
+- Task management via VS Code todos
+- LADDER planning integration
+- Development workflow automation
+- Agent command execution
+
+Usage:
+    python agent_mcp_server.py
+
+Environment Variables:
+    WORKSPACE_FOLDER: VS Code workspace folder path
+    VSCODE_EXTENSION_MODE: Set to 'mcp-provider' when called from built-in provider
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+import sys
+from pathlib import Path
+
+
+# --- Make stdout/stderr UTF-8 & resilient on Windows ---
+def _force_utf8_stdio():
+    """Force UTF-8 encoding and make console output resilient to Unicode errors."""
+    # Encourage UTF-8 everywhere
+    os.environ.setdefault("PYTHONUTF8", "1")
+    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+    # Python 3.7+: reconfigure TextIO to utf-8, and never crash on encode
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+    # Windows console code page to UTF-8 (best effort)
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+        except Exception:
+            pass
+
+
+def _safe_str(s: str) -> str:
+    """Safe string conversion that handles Unicode encoding errors."""
+    try:
+        return str(s)
+    except UnicodeEncodeError:
+        return s.encode("utf-8", "replace").decode("utf-8")
+
+
+# Apply UTF-8 configuration immediately
+_force_utf8_stdio()
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# MCP Python SDK imports (Anthropic Model Context Protocol)
+print("🔍 Attempting MCP imports...", file=sys.stderr)
+try:
+    print("  - Importing mcp.server...", file=sys.stderr)
+    from mcp.server import Server
+
+    print("  - Importing mcp.types...", file=sys.stderr)
+    from mcp.types import (
+        CallToolRequest,
+        CallToolResult,
+        TextContent,
+        Tool,
+    )
+
+    print("✅ MCP imports successful", file=sys.stderr)
+    MCP_AVAILABLE = True
+except ImportError as e:
+    print(f"❌ MCP import failed at: {e}", file=sys.stderr)
+    print(f"Install with: `pip install mcp` - Original error: {e!r}", file=sys.stderr)
+    MCP_AVAILABLE = False
+
+# Import agent integration
+try:
+    from vscode_integration.agent_integration import SuperAlitaAgent
+
+    AGENT_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Agent integration not available: {e}", file=sys.stderr)
+    AGENT_AVAILABLE = False
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+class SuperAlitaMcpServer:
+    """MCP Server wrapper for Super Alita Agent."""
+
+    def __init__(self):
+        self.agent: SuperAlitaAgent | None = None
+        self.server: Server | None = None
+        self.workspace_folder = Path.cwd()
+
+        # Get workspace folder from environment if available
+        import os
+
+        if workspace_env := os.getenv("WORKSPACE_FOLDER"):
+            self.workspace_folder = Path(workspace_env)
+
+        logger.info(f"Super Alita MCP Server initializing in: {self.workspace_folder}")
+
+    async def initialize_agent(self) -> bool:
+        """Initialize the Super Alita Agent."""
+        if not AGENT_AVAILABLE:
+            logger.error("Agent integration not available")
+            return False
+
+        try:
+            self.agent = SuperAlitaAgent(self.workspace_folder)
+            success = await self.agent.initialize()
+
+            if success:
+                logger.info("✅ Super Alita Agent initialized successfully")
+            else:
+                logger.error("❌ Failed to initialize Super Alita Agent")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"❌ Agent initialization error: {e}")
+            return False
+
+    def create_mcp_server(self) -> Server:
+        """Create and configure the MCP server."""
+        if not MCP_AVAILABLE:
+            raise RuntimeError("MCP package not available")
+
+        server = Server("super-alita-agent")
+
+        @server.list_tools()
+        async def handle_list_tools() -> list[Tool]:
+            """List available tools provided by Super Alita Agent."""
+            return [
+                Tool(
+                    name="get_development_status",
+                    description="Get comprehensive development status including tasks, completion rate, and recommendations",
+                    inputSchema={"type": "object", "properties": {}, "required": []},
+                ),
+                Tool(
+                    name="create_development_task",
+                    description="Create a new development task with title, description, and priority",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string", "description": "Task title"},
+                            "description": {
+                                "type": "string",
+                                "description": "Task description",
+                            },
+                            "priority": {
+                                "type": "string",
+                                "enum": ["low", "medium", "high", "critical"],
+                                "description": "Task priority level",
+                                "default": "medium",
+                            },
+                        },
+                        "required": ["title", "description"],
+                    },
+                ),
+                Tool(
+                    name="complete_development_task",
+                    description="Mark a development task as complete with optional completion notes",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "task_id": {
+                                "type": "string",
+                                "description": "ID of the task to complete",
+                            },
+                            "notes": {
+                                "type": "string",
+                                "description": "Optional completion notes",
+                                "default": "",
+                            },
+                        },
+                        "required": ["task_id"],
+                    },
+                ),
+                Tool(
+                    name="plan_with_ladder",
+                    description="Create a LADDER plan for a development goal",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "goal": {
+                                "type": "string",
+                                "description": "Development goal to plan for",
+                            },
+                            "mode": {
+                                "type": "string",
+                                "enum": ["shadow", "active"],
+                                "description": "Planning mode",
+                                "default": "shadow",
+                            },
+                        },
+                        "required": ["goal"],
+                    },
+                ),
+                Tool(
+                    name="get_agent_recommendations",
+                    description="Get intelligent recommendations for the developer based on current state",
+                    inputSchema={"type": "object", "properties": {}, "required": []},
+                ),
+                Tool(
+                    name="execute_agent_command",
+                    description="Execute arbitrary agent commands for development automation",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "command": {
+                                "type": "string",
+                                "description": "Command to execute (status, create_task, complete_task, plan, recommendations, help)",
+                            },
+                            "kwargs": {
+                                "type": "object",
+                                "description": "Additional keyword arguments for the command",
+                                "default": {},
+                            },
+                        },
+                        "required": ["command"],
+                    },
+                ),
+                Tool(
+                    name="get_development_insights",
+                    description="Use Cortex LeanRAG to get development insights and recommendations for a specific query",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Development question or context to get insights about",
+                            },
+                        },
+                        "required": ["query"],

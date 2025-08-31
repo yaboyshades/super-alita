@@ -1,0 +1,105 @@
+{
+  "adjust_confidence_on_high_agreement": {
+    "name": "Adjust Confidence - High Agreement",
+    "description": "Boost confidence when multiple samples agree closely",
+    "body": "adjust_confidence(New) :- base_confidence(C), samples_valid(N), N >= 4, New = min(1.0, C + 0.05).",
+    "created_at": "2025-08-31T14:35:22Z",
+    "tags": ["confidence", "adjustment", "boosting"]
+  },
+
+  "adjust_confidence_on_long_response": {
+    "name": "Adjust Confidence - Long Response",
+    "description": "Slightly boost confidence for detailed responses",
+    "body": "adjust_confidence(New) :- base_confidence(C), response_length(L), L > 150, New = min(1.0, C + 0.03).",
+    "created_at": "2025-08-31T14:36:10Z",
+    "tags": ["confidence", "adjustment", "response_length"]
+  },
+
+  "adjust_confidence_on_financial_domain": {
+    "name": "Adjust Confidence - Financial Domain",
+    "description": "Reduce confidence for financial advice as a policy matter",
+    "body": "adjust_confidence(New) :- base_confidence(C), domain('finance'), New = max(0.0, C - 0.1).",
+    "created_at": "2025-08-31T14:38:52Z",
+    "tags": ["confidence", "adjustment", "domain_specific", "finance"]
+  },
+
+  "detect_financial_advice_violation": {
+    "name": "Policy Violation - Financial Advice",
+    "description": "Detect when output contains financial advice that should be disclaimed",
+    "body": "violation('Financial advice requires disclaimer') :- domain('finance'), output_text(Text), contains_substring(Text, 'invest'), not(contains_substring(Text, 'not financial advice')).",
+    "created_at": "2025-08-31T14:40:15Z",
+    "tags": ["validation", "policy", "finance", "disclaimer"]
+  },
+
+  "detect_medical_advice_violation": {
+    "name": "Policy Violation - Medical Advice",
+    "description": "Detect when output contains medical advice that should be disclaimed",
+    "body": "violation('Medical advice requires consultation disclaimer') :- output_text(Text), (contains_substring(Text, 'diagnose') ; contains_substring(Text, 'treatment') ; contains_substring(Text, 'symptom')), not(contains_substring(Text, 'consult a healthcare professional')).",
+    "created_at": "2025-08-31T14:42:33Z",
+    "tags": ["validation", "policy", "medical", "disclaimer"]
+  },
+
+  "deny_filesystem_tool_for_financial": {
+    "name": "Tool Policy - Restrict Filesystem Access for Financial",
+    "description": "Block file system write access for financial domain requests",
+    "body": "deny_tool('File system write operations not permitted for financial data') :- tool_name('file_write'), context('domain', 'finance').",
+    "created_at": "2025-08-31T14:45:18Z",
+    "tags": ["tool_policy", "security", "filesystem"]
+  },
+
+  "deny_exec_without_authorization": {
+    "name": "Tool Policy - Require Authorization for Execution",
+    "description": "Block execution of commands without proper authorization",
+    "body": "deny_tool('Command execution requires explicit authorization') :- tool_name('exec'), not(context('authorized', 'true')).",
+    "created_at": "2025-08-31T14:47:42Z",
+    "tags": ["tool_policy", "security", "execution"]
+  },
+
+  "select_semantic_similarity_for_subjective": {
+    "name": "Method Selection - Semantic for Subjective",
+    "description": "Use semantic similarity for subjective domains",
+    "body": "select_method('semantic_similarity', 'Better for subjective content') :- domain(D), (D = 'creative' ; D = 'opinion' ; D = 'subjective').",
+    "created_at": "2025-08-31T14:50:05Z",
+    "tags": ["method_selection", "consensus", "semantic"]
+  },
+
+  "select_ensemble_ranking_for_technical": {
+    "name": "Method Selection - Ensemble for Technical",
+    "description": "Use ensemble ranking for technical domains that need high precision",
+    "body": "select_method('ensemble_ranking', 'Better precision for technical content') :- domain(D), (D = 'technical' ; D = 'programming' ; D = 'scientific'), sample_count(N), N >= 3.",
+    "created_at": "2025-08-31T14:52:37Z",
+    "tags": ["method_selection", "consensus", "ensemble", "technical"]
+  },
+
+  "select_confidence_based_for_facts": {
+    "name": "Method Selection - Confidence for Factual",
+    "description": "Use confidence-based for fact-heavy domains",
+    "body": "select_method('confidence_based', 'Better for factual content') :- domain(D), (D = 'factual' ; D = 'historical' ; D = 'academic').",
+    "created_at": "2025-08-31T14:55:12Z",
+    "tags": ["method_selection", "consensus", "confidence", "facts"]
+  },
+
+  "invalid_claim_version_mismatch": {
+    "name": "Claim Verification - Version Numbers",
+    "description": "Detect incorrect software version claims",
+    "body": "invalid_claim('Software version claim is outdated', 'Referenced version is not current') :- output_text(Text), claims_type('software'), contains_substring(Text, 'Python 3.9'), not(contains_substring(Text, 'newer versions are available')).",
+    "created_at": "2025-08-31T14:58:45Z",
+    "tags": ["verification", "claims", "software", "versions"]
+  },
+
+  "invalid_claim_unsupported_feature": {
+    "name": "Claim Verification - Feature Support",
+    "description": "Detect claims about unsupported features",
+    "body": "invalid_claim('Feature claim is incorrect', 'Referenced feature is not supported') :- output_text(Text), claims_type('code'), contains_substring(Text, 'async with open'), contains_substring(Text, 'Python 3.7').",
+    "created_at": "2025-08-31T15:01:22Z",
+    "tags": ["verification", "claims", "code", "features"]
+  },
+
+  "contains_substring": {
+    "name": "Helper - Contains Substring",
+    "description": "Utility predicate to check if a string contains a substring (case insensitive)",
+    "body": "contains_substring(String, Substring) :- true.",
+    "created_at": "2025-08-31T15:03:50Z",
+    "tags": ["utility", "string"]
+  }
+}

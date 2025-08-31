@@ -1,0 +1,68 @@
+[
+  {
+    "name": "test_calculator",
+    "description": "Simple calculator for basic math operations",
+    "input_schema": {
+      "type": "object",
+      "required": [
+        "operation",
+        "a",
+        "b"
+      ],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "enum": [
+            "add",
+            "subtract",
+            "multiply",
+            "divide"
+          ]
+        },
+        "a": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  {
+    "name": "url_text_extractor",
+    "description": "Fetch a URL and return UTF-8 text (best-effort).",
+    "input_schema": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "truncate": {
+          "type": "integer"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+]

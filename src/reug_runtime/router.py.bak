@@ -1,0 +1,423 @@
+from __future__ import annotations
+
+"""Minimal streaming router for the REUG runtime.
+
+This router implements a simple single-turn protocol compatible with
+MockLLMClient and similar providers that emit tagged blocks:
+
+  - <tool_call>{"tool":"name","args":{...}}</tool_call>
+  - <tool_result tool="name">{...}</tool_result>
+  - <final_answer>{"content":"...","citations":[]}</final_answer>
+
+It executes tool calls via pp.state.ability_registry and streams text
+chunks through to the client. This keeps the agent functional while
+conflicts are resolved or provider-specific logic evolves.
+"""
+
+import asyncio
+import json
+import time
+import uuid
+from collections.abc import AsyncGenerator
+import os
+from typing import Any
+import re
+
+from fastapi import APIRouter, Request
+from fastapi.responses import StreamingResponse
+
+from .config import SETTINGS
+from .message_mw import MessageContext, apply_all
+
+router = APIRouter(prefix="/v1", tags=["agent"])
+
+
+class Orchestrator:
+    def __init__(self, event_bus: Any, registry: Any, model: Any, correlation_id: str):
+        self.event_bus = event_bus
+        self.registry = registry
+        self.model = model
+        self.correlation_id = correlation_id
+
+    async def _reasoning_step(
+        self, messages: list[dict[str, Any]], tool_schemas: list[dict[str, Any]]
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        llm_response_content = ""
+        tool_calls = []
+        # Call model.stream_chat with best-effort compatibility across providers
+        async def _stream() -> AsyncGenerator[dict[str, Any], None]:
+            try:
+                # Preferred: pass tools and timeout if supported
+                async for ch in self.model.stream_chat(
+                    messages,
+                    tools=tool_schemas,  # type: ignore[call-arg]
+                    timeout=SETTINGS.model_stream_timeout_s,  # type: ignore[arg-type]
+                ):
+                    yield ch
+                return
+            except TypeError:
+                pass
+            try:
+                # Fallback: pass only timeout
+                async for ch in self.model.stream_chat(
+                    messages,
+                    timeout=SETTINGS.model_stream_timeout_s,  # type: ignore[arg-type]
+                ):
+                    yield ch
+                return
+            except TypeError:
+                pass
+            # Last-resort: messages only
+            async for ch in self.model.stream_chat(messages):
+                yield ch
+
+        async for chunk in _stream():
+            if "content" in chunk:
+                text = chunk.get("content", "")
+                llm_response_content += text
+                yield {"type": "LLMChunk", "data": {"text": text}}
+            elif chunk.get("type") == "tool_calls":
+                tool_calls.extend(chunk.get("tool_calls", []))
+        # Store the return values for later retrieval
+        self._last_reasoning_result = (llm_response_content, tool_calls)
+
+    async def _acting_step(
+        self, tool_calls: list[dict[str, Any]]
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        tool_messages = []
+        for tool_call in tool_calls:
+            tool_name = tool_call.function.name
+            tool_args = json.loads(tool_call.function.arguments)
+            tool_call_id = tool_call.id
+            span_id = str(uuid.uuid4())
+
+            ability_called_event = {
+                "type": "AbilityCalled",
+                "tool": tool_name,
+                "correlation_id": self.correlation_id,
+                "span_id": span_id,
+            }
+            # include args for UI visibility
+            try:
+                ability_called_event["args"] = json.loads(tool_args if isinstance(tool_args, str) else json.dumps(tool_args))
+            except Exception:
+                ability_called_event["args"] = tool_args
+            await self.event_bus.emit(ability_called_event)
+            yield ability_called_event
+
+            try:
+                result = await asyncio.wait_for(
+                    self.registry.execute(tool_name, tool_args),
+                    timeout=SETTINGS.tool_timeout_s,
+                )
+                ability_succeeded_event = {
+                    "type": "AbilitySucceeded",
+                    "tool": tool_name,
+                    "correlation_id": self.correlation_id,
+                    "span_id": span_id,
+                    "result": result,
+                }
+                await self.event_bus.emit(ability_succeeded_event)
+                yield ability_succeeded_event
+                tool_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "name": tool_name,
+                        "content": json.dumps(result),
+                    }
+                )
+            except Exception as e:
+                ability_failed_event = {
+                    "type": "AbilityFailed",
+                    "tool": tool_name,
+                    "correlation_id": self.correlation_id,
+                    "span_id": span_id,
+                    "error": str(e),
+                }
+                await self.event_bus.emit(ability_failed_event)
+                yield ability_failed_event
+                tool_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "name": tool_name,
+                        "content": f'{{"error": "Tool execution failed: {e}"}}',
+                    }
+                )
+        # Store the return values for later retrieval
+        self._last_acting_result = tool_messages
+
+
+async def execute_turn(
+    user_msg: str, session_id: str, event_bus: Any, registry: Any, kg: Any, model: Any
+) -> AsyncGenerator[dict[str, Any], None]:
+    correlation_id = f"{session_id}-{int(time.time()*1000)}"
+
+    # Optional message optimization/amplification
+    if SETTINGS.message_optimizer_enabled:
+        try:
+            # Lazy import to avoid side effects when disabled
+            import src.plugins.message_amplifier_plugin  # noqa: F401
+        except Exception:
+            # If plugin import fails, continue with raw message
+            pass
+        optimized, steps = apply_all(user_msg, MessageContext(session_id=session_id))
+        if SETTINGS.message_optimizer_emit_telemetry:
+            await event_bus.emit(
+                {
+                    "type": "MessageOptimized",
+                    "correlation_id": correlation_id,
+                    "len_in": len(user_msg),
+                    "len_out": len(optimized),
+                    "steps": steps,
+                }
+            )
+        # Enforce a soft cap if configured to prevent runaway messages
+        if len(optimized) > SETTINGS.message_optimizer_max_len:
+            optimized = optimized[: SETTINGS.message_optimizer_max_len]
+        user_msg = optimized
+
+    orchestrator = Orchestrator(event_bus, registry, model, correlation_id)
+
+    start_event = {
+        "type": "TaskStarted",
+        "correlation_id": correlation_id,
+        "goal": user_msg,
+    }
+    await event_bus.emit(start_event)
+    yield start_event
+
+    # Build system prompt with optional output contract
+    base_system = "You are a helpful assistant. Use tools when necessary."
+    if os.getenv("ALITA_FORMAT_CONTRACT", "false").lower() in {"1", "true", "yes", "on"}:
+        contract = (
+            "\n\nOutput Contract:\n"
+            "- Always wrap multi-line code in fenced markdown with a language, e.g. ```python ...```.\n"
+            "- Use inline backticks for short code.\n"
+            "- Use only ASCII operators (*, /, <=, !=) and quotes; avoid typographic symbols.\n"
+            "- Never omit the multiplication operator; write 5 * x * x (not 5x² or 5 x x).\n"
+            "- Provide complete, runnable snippets with imports when including code.\n"
+            "- Brief explanation first, then exactly one fenced code block unless no code is needed.\n"
+            "- Self-check and regenerate if rules are violated."
+        )
+        system_content = base_system + contract
+    else:
+        system_content = base_system
+
+    messages: list[dict[str, Any]] = [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content": user_msg},
+    ]
+
+    llm_response_content = ""
+    
+    def _parse_tool_calls(text: str) -> list[dict[str, Any]]:
+        calls: list[dict[str, Any]] = []
+        try:
+            for m in re.finditer(r"<tool_call>(.*?)</tool_call>", text, re.DOTALL):
+                inner = m.group(1)
+                payload = json.loads(inner)
+                name = payload.get("tool")
+                args = payload.get("args", {})
+                if not name:
+                    continue
+                # Minimal adapter object with .function.name/.function.arguments
+                class _Fn:
+                    def __init__(self, n: str, a: str) -> None:
+                        self.name = n
+                        self.arguments = a
+
+                class _Call:
+                    def __init__(self, i: str, fn: _Fn) -> None:
+                        self.id = i
+                        self.function = fn
+
+                calls.append(
+                    _Call(
+                        i=str(uuid.uuid4()),
+                        fn=_Fn(name, json.dumps(args)),
+                    )
+                )
+        except Exception:
+            # best-effort parsing only
+            pass
+        return calls
+    for _ in range(SETTINGS.max_tool_calls):
+        tool_schemas = registry.get_available_tools_schema()
+
+        # Run reasoning step and get results
+        async for event in orchestrator._reasoning_step(messages, tool_schemas):
+            yield event
+        llm_response_content, tool_calls = orchestrator._last_reasoning_result
+        # Fallback: derive tool calls by parsing streamed content blocks
+        if not tool_calls and "<tool_call>" in llm_response_content:
+            tool_calls = _parse_tool_calls(llm_response_content)
+
+        assistant_message = {"role": "assistant", "content": llm_response_content}
+        if tool_calls:
+            assistant_message["tool_calls"] = tool_calls
+        messages.append(assistant_message)
+
+        if not tool_calls:
+            break
+
+        # Run acting step and get results
+        async for event in orchestrator._acting_step(tool_calls):
+            yield event
+        tool_messages = orchestrator._last_acting_result
+        messages.extend(tool_messages)
+        # Inject assistant-visible tool_result blocks to advance FakeLLM phase
+        for tm in tool_messages:
+            try:
+                tname = tm.get("name")
+                tcontent = tm.get("content", "")
+                if tname and isinstance(tcontent, str):
+                    messages.append(
+                        {
+                            "role": "assistant",
+                            "content": f"<tool_result tool=\"{tname}\">{tcontent}</tool_result>",
+                        }
+                    )
+            except Exception:
+                pass
+
+    def _enforce_output_contract_on_text(text: str) -> str:
+        """Optionally normalize text to reduce formatting issues.
+
+        - Replace common unicode operators with ASCII inside fenced blocks.
+        - Leave content unchanged when enforcement is disabled.
+        """
+        # Quick exit if nothing to do
+        if "```" not in text:
+            return text
+        # Process fenced blocks only
+        parts: list[str] = []
+        i = 0
+        lines = text.split("\n")
+        in_fence = False
+        fence_lang = ""
+        buf: list[str] = []
+        def norm_line(s: str) -> str:
+            s = s.replace("×", " * ").replace("·", " * ")
+            s = s.replace("−", "-").replace("–", "-").replace("—", "-")
+            s = s.replace("“", '"').replace("”", '"').replace("’", "'")
+            return s
+        for line in lines:
+            if line.startswith("```"):
+                if in_fence:
+                    # close fence: flush normalized buffer
+                    parts.append("\n".join(buf))
+                    buf = []
+                    in_fence = False
+                    fence_lang = ""
+                    parts.append(line)
+                else:
+                    in_fence = True
+                    fence_lang = line[3:].strip()
+                    parts.append(line)
+                continue
+            if in_fence:
+                buf.append(norm_line(line))
+            else:
+                parts.append(line)
+        # If fence left open, append remaining
+        if buf:
+            parts.append("\n".join(buf))
+        return "\n".join(parts)
+
+    content_out = llm_response_content or "Task complete."
+    if os.getenv("ALITA_FORMAT_ENFORCE", "false").lower() in {"1", "true", "yes", "on"}:
+        with contextlib.suppress(Exception):
+            content_out = _enforce_output_contract_on_text(content_out)
+
+    final_answer = {
+        "content": content_out,
+        "citations": [],
+    }
+    task_succeeded_event = {
+        "type": "TaskSucceeded",
+        "correlation_id": correlation_id,
+        "data": final_answer,
+    }
+    await event_bus.emit(task_succeeded_event)
+    yield task_succeeded_event
+
+
+async def sse_transformer(
+    event_generator: AsyncGenerator[dict[str, Any], None],
+) -> AsyncGenerator[str, None]:
+    """
+    Transform internal events into SSE frames.
+
+    Adds named SSE events so browser clients can listen with
+    addEventListener('start' | 'content' | 'tool_start' | 'tool_result' | 'done').
+    Falls back to generic 'message' when type is unknown.
+    """
+    name_map = {
+        "TaskStarted": "start",
+        "LLMChunk": "content",
+        "AbilityCalled": "tool_start",
+        "AbilitySucceeded": "tool_result",
+        "AbilityFailed": "tool_error",
+        "TaskSucceeded": "done",
+    }
+    async for event in event_generator:
+        evt_type = event.get("type", "message")
+        sse_name = name_map.get(evt_type, "message")
+        # Emit an explicit SSE event name for browsers (EventSource)
+        yield f"event: {sse_name}\n"
+        if evt_type == "LLMChunk":
+            # Simplify payload for UI consumption
+            text = event.get("data", {}).get("text", "")
+            yield f"data: {json.dumps({'content': text})}\n\n"
+        else:
+            yield f"data: {json.dumps(event)}\n\n"
+
+
+@router.post("/chat/stream")
+async def chat_stream(request: Request):
+    body = await request.json()
+    user_msg = body.get("message", "")
+    session_id = body.get("session_id", "default")
+
+    event_gen = execute_turn(
+        user_msg,
+        session_id,
+        request.app.state.event_bus,
+        request.app.state.ability_registry,
+        request.app.state.kg,
+        request.app.state.llm_model,
+    )
+
+    sse_gen = sse_transformer(event_gen)
+
+    return StreamingResponse(sse_gen, media_type="text/event-stream")
+
+
+@router.get("/chat/stream")
+async def chat_stream_get(request: Request):
+    """
+    GET variant to support browsers using EventSource.
+
+    Accepts query params:
+      - q or message
+      - session or session_id
+    """
+    qp = request.query_params  # type: ignore[attr-defined]
+    user_msg = qp.get("q") or qp.get("message") or ""
+    session_id = qp.get("session") or qp.get("session_id") or "default"
+
+    event_gen = execute_turn(
+        user_msg,
+        session_id,
+        request.app.state.event_bus,
+        request.app.state.ability_registry,
+        request.app.state.kg,
+        request.app.state.llm_model,
+    )
+
+    sse_gen = sse_transformer(event_gen)
+
+    return StreamingResponse(sse_gen, media_type="text/event-stream")
+

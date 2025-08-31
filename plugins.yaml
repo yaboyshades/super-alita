@@ -1,0 +1,204 @@
+# Super Alita Plugin Configuration
+# Following coding instructions - all plugins inherit from PluginInterface
+
+plugins:
+  # Core System Plugins (Essential for operation)
+  - name: "event_bus"
+    module: "src.plugins.event_bus_plugin:EventBusPlugin"
+    enabled: true
+    priority: 1
+    config:
+      redis_url: "${REDIS_URL:-redis://localhost:6379/0}"
+      buffer_size: 1000
+    description: "Event-driven communication backbone with Redis/Memurai"
+
+  # Enhanced Consensus Ability (Primary AI feature)
+  - name: "enhanced_consensus"
+    module: "src.abilities.enhanced_consensus_ability:EnhancedConsensusProvider"
+    enabled: true
+    priority: 2
+    config:
+      base_url: "http://localhost:11434/v1"
+      model_name: "gpt-oss:20b"
+      timeout: 60
+      default_method: "weighted_vote"
+    description: "Enhanced consensus algorithms with 5 methods"
+
+  # Core Tool Execution
+  - name: "tool_executor"
+    module: "src.plugins.tool_executor_plugin_unified:ToolExecutorPlugin"
+    enabled: true
+    priority: 3
+    config:
+      timeout: 300
+      max_concurrent: 5
+    description: "Unified tool execution with lifecycle management"
+
+  # Memory Management
+  - name: "memory_manager"
+    module: "src.plugins.memory_manager_plugin_unified:MemoryManagerPlugin"
+    enabled: true
+    priority: 4
+    config:
+      max_memories: 10000
+      persistence_interval: 60
+      chroma_persist_dir: "./data/chroma_memory"
+      max_episode_length: 50
+    description: "Unified memory management with ChromaDB persistence"
+
+  # LLM Planning
+  - name: "llm_planner"
+    module: "src.plugins.llm_planner_plugin_unified:LLMPlannerPlugin"
+    enabled: true
+    priority: 5
+    config:
+      model: "gpt-oss:20b"
+      max_planning_depth: 5
+    description: "Unified LLM-based task planning"
+
+  # Neural Atom System
+  - name: "adaptive_neural_atom"
+    module: "src.plugins.adaptive_neural_atom_plugin:AdaptiveNeuralAtomPlugin"
+    enabled: true
+    priority: 6
+    config:
+      learning_rate: 0.001
+      adaptation_threshold: 0.8
+    description: "Adaptive neural atom processing with learning"
+
+  # Creator Plugins
+  - name: "creator_unified"
+    module: "src.plugins.creator_plugin_unified:CreatorPlugin"
+    enabled: true
+    priority: 7
+    config:
+      max_creations: 100
+      validation_enabled: true
+    description: "Unified creation and composition capabilities"
+
+  # AutoGen Integration
+  - name: "autogen_creator"
+    module: "src.plugins.autogen_creator_plugin:AutogenCreatorPlugin"
+    enabled: true
+    priority: 8
+    config:
+      autogen_enabled: true
+      max_agents: 10
+    description: "AutoGen multi-agent system integration"
+
+  # DeepCode Integration
+  - name: "deepcode_orchestrator"
+    module: "src.plugins.deepcode_orchestrator_plugin:DeepCodeOrchestratorPlugin"
+    enabled: true
+    priority: 9
+    config:
+      deepcode_enabled: true
+      batch_size: 32
+    description: "DeepCode orchestration and generation"
+
+  # Native Perplexica Search
+  - name: "perplexica_search"
+    module: "src.plugins.native_perplexica_plugin:NativePerplexicaPlugin"
+    enabled: true
+    priority: 10
+    config:
+      search_enabled: true
+      max_results: 10
+    description: "Native Perplexica search integration"
+
+  # Self-Healing Capabilities
+  - name: "self_heal"
+    module: "src.plugins.self_heal_plugin_clean:SelfHealPlugin"
+    enabled: true
+    priority: 11
+    config:
+      auto_heal: true
+      max_attempts: 3
+    description: "Self-healing and error recovery"
+
+  # Knowledge Gap Detection
+  - name: "knowledge_gap_detector"
+    module: "src.plugins.knowledge_gap_detector:KnowledgeGapDetectorPlugin"
+    enabled: true
+    priority: 12
+    config:
+      threshold: 0.7
+      auto_suggest: true
+    description: "Automatic knowledge gap detection and filling"
+
+  # System Introspection
+  - name: "system_introspection"
+    module: "src.plugins.system_introspection_plugin:SystemIntrospectionPlugin"
+    enabled: true
+    priority: 13
+    config:
+      monitoring_interval: 30
+      metrics_enabled: true
+    description: "System health and performance monitoring"
+
+  # MCP Adapter
+  - name: "mcp_adapter"
+    module: "src.plugins.mcp_adapter_plugin:MCPAdapterPlugin"
+    enabled: true
+    priority: 14
+    config:
+      mcp_enabled: true
+      tools_path: "src/vscode_integration/"
+    description: "Model Context Protocol adapter for VS Code"
+
+  # Optional/Experimental Plugins
+  - name: "brainstorm"
+    module: "src.plugins.brainstorm_plugin:BrainstormPlugin"
+    enabled: false
+    priority: 20
+    config:
+      creativity_level: 0.8
+    description: "Creative brainstorming and idea generation"
+
+  - name: "puter_bridge"
+    module: "src.plugins.deepcode_puter_bridge_plugin:DeepCodePuterBridgePlugin"
+    enabled: false
+    priority: 21
+    config:
+      puter_enabled: false
+    description: "DeepCode-Puter integration bridge"
+
+# Plugin loading order (dependencies first)
+load_order:
+  - "event_bus"
+  - "enhanced_consensus"
+  - "tool_executor"
+  - "memory_manager"
+  - "llm_planner"
+  - "adaptive_neural_atom"
+  - "creator_unified"
+  - "autogen_creator"
+  - "deepcode_orchestrator"
+  - "perplexica_search"
+  - "self_heal"
+  - "knowledge_gap_detector"
+  - "system_introspection"
+  - "mcp_adapter"
+
+# Global plugin settings
+settings:
+  auto_discovery: true
+  strict_loading: false  # Allow system to work with partial plugin failures
+  plugin_timeout: 30
+  enable_hot_reload: false  # For production stability
+  fallback_to_static: true  # Use static plugin list if YAML fails
+  log_level: "INFO"
+
+# Environment variable interpolation
+env_vars:
+  - REDIS_URL
+  - LLM_PROVIDER
+  - OPENAI_API_KEY
+  - SUPER_ALITA_MODE
+
+# Plugin health monitoring
+monitoring:
+  health_check_interval: 60
+  performance_metrics: true
+  failure_recovery: true
+  max_failures: 3

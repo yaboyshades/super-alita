@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "generated_at": "2025-08-31T18:46:08.999538+00:00",
+  "total_files": 4,
+  "valid_specs": 3,
+  "canonical_count": 2,
+  "by_action": {
+    "calculate": [
+      "test_calculator"
+    ],
+    "fetch_url_text": [
+      "url_text_extractor"
+    ]
+  },
+  "aliases": {
+    "test_calculator": [
+      "basic_math"
+    ]
+  },
+  "tools": [
+    {
+      "tool_id": "test_calculator",
+      "action": "calculate",
+      "properties": [
+        "a",
+        "b",
+        "operation"
+      ],
+      "required": [
+        "a",
+        "b",
+        "operation"
+      ],
+      "files": [
+        "test_spec_0.json",
+        "test_spec_1.json"
+      ],
+      "aliases": [
+        "basic_math"
+      ],
+      "signature": "c78e02408590eba7"
+    },
+    {
+      "tool_id": "url_text_extractor",
+      "action": "fetch_url_text",
+      "properties": [
+        "truncate",
+        "url"
+      ],
+      "required": [
+        "url"
+      ],
+      "files": [
+        "url_text_extractor.json"
+      ],
+      "aliases": [],
+      "signature": "17a3b148a86064ce"
+    }
+  ]
+}

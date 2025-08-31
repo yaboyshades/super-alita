@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+# Usage:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.redis.yml up -d
+# Ensure your app service sets:
+#   ALITA_RATE_LIMIT_ENABLED=true
+#   ALITA_RATE_LIMIT=60
+#   ALITA_RATE_WINDOW=60
+#   ALITA_REDIS_URL=redis://redis:6379

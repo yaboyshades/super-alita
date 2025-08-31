@@ -1,0 +1,32 @@
+{
+  "tool_id": "Basic Math",
+  "description": "Alternative calculator with same signature",
+  "action": "calculate",
+  "input_schema": {
+    "type": "object",
+    "required": [
+      "operation",
+      "a",
+      "b"
+    ],
+    "properties": {
+      "operation": {
+        "type": "string"
+      },
+      "a": {
+        "type": "number"
+      },
+      "b": {
+        "type": "number"
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "result": {
+        "type": "number"
+      }
+    }
+  }
+}

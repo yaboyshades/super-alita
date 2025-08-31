@@ -1,0 +1,30 @@
+{
+  "tool_id": "url_text_extractor",
+  "description": "Fetch a URL and return UTF-8 text (best-effort).",
+  "action": "fetch_url_text",
+  "input_schema": {
+    "type": "object",
+    "required": [
+      "url"
+    ],
+    "properties": {
+      "url": {
+        "type": "string"
+      },
+      "truncate": {
+        "type": "integer"
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "content": {
+        "type": "string"
+      },
+      "truncated": {
+        "type": "boolean"
+      }
+    }
+  }
+}

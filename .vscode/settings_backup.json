@@ -1,0 +1,562 @@
+{{{
+
+  "alita.ollama.host": "http://127.0.0.1:11434",
+
+  "alita.ollama.model": "gpt-oss:20b",  // Configure Alita extension to use local Ollama with GPT-OSS:20B (Hybrid RAM+VRAM)  // Conf  // Python Environment Manager (donjayamanne.python-environment-manager)
+
+  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+
+  "python.autoComplete.addBrackets": true,  "alita.ollama.host": "http://127.0.0.1:11434",  "python.envFile": "${workspaceFolder}/.env",
+
+  "python.terminal.activateEnvironment": true,
+
+  "python.terminal.activateEnvInCurrentTerminal": true,  "alita.ollama.model": "gpt-oss:20b",  "python.experiments.enabled": true,
+
+  "python.envFile": "${workspaceFolder}/.env",
+
+  "python.experiments.enabled": true,  "python.experiments.optInto": [
+
+  "python.experiments.optInto": ["pythonTerminalEnvVarActivation"],
+
+  "python.analysis.diagnosticMode": "workspace",  // Python interpreter and environments    "pythonTerminalEnvVarActivation"
+
+  "python.analysis.typeCheckingMode": "strict",
+
+  "python.analysis.completeFunctionParens": true,  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",  ],lita extension to use local Ollama with GPT-OSS:20B (Hybrid RAM+VRAM)
+
+  "python.analysis.autoSearchPaths": true,
+
+  "python.analysis.autoImportCompletions": true,  "python.autoComplete.addBrackets": true,  "alita.ollama.host": "http://127.0.0.1:11434",
+
+  "python.analysis.indexing": true,
+
+  "[python]": {  "python.terminal.activateEnvironment": true,  "alita.ollama.model": "gpt-oss:20b",
+
+    "editor.formatOnSave": true,
+
+    "editor.codeActionsOnSave": {  "python.terminal.activateEnvInCurrentTerminal": true,
+
+      "source.organizeImports": "explicit",
+
+      "source.fixAll.ruff": "explicit"  // Python interpreter and environments
+
+    },
+
+    "editor.defaultFormatter": "ms-python.black-formatter"  // Python Environment Manager (donjayamanne.python-environment-manager)  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+
+  },
+
+  "black-formatter.args": ["--line-length=79", "--target-version=py39"],  "python.envFile": "${workspaceFolder}/.env",  "python.autoComplete.addBrackets": true,
+
+  "isort.args": ["--profile=black", "--line-length=79", "--multi-line=3", "--trailing-comma"],
+
+  "python.linting.enabled": false,  "python.experiments.enabled": true,  "python.terminal.activateEnvironment": true,
+
+  "python.linting.pylintEnabled": false,
+
+  "ruff.enable": true,  "python.experiments.optInto": [  "python.terminal.activateEnvInCurrentTerminal": true,
+
+  "ruff.importStrategy": "fromEnvironment",
+
+  "ruff.path": ["${workspaceFolder}\\.venv\\Scripts\\ruff.exe"],    "pythonTerminalEnvVarActivation"
+
+  "ruff.lint.enable": true,
+
+  "flake8.args": ["--max-line-length=79", "--extend-ignore=E203,W503"],  ],  // Python Environment Manager (donjayamanne.python-environment-manager)
+
+  "mypy-type-checker.args": ["--strict", "--ignore-missing-imports", "--show-error-codes"],
+
+  "mypy-type-checker.reportingScope": "workspace",  "python.envFile": "${workspaceFolder}/.env",
+
+  "python.testing.unittestEnabled": false,
+
+  "python.testing.pytestEnabled": true,  // Enhanced Python analysis with Pylance  "python.experiments.enabled": true,
+
+  "python.testing.pytestArgs": ["."],
+
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,  "python.analysis.diagnosticMode": "workspace",  "python.experiments.optInto": [
+
+  "jupyter.askForKernelRestart": false,
+
+  "jupyter.alwaysTrustNotebooks": true,  "python.analysis.typeCheckingMode": "strict",    "pythonDiscoveryUsingWorkers",
+
+  "jupyter.enableCellCodeLens": true,
+
+  "jupyter.sendSelectionToInteractiveWindow": true,  "python.analysis.completeFunctionParens": true,    "pythonTerminalEnvVarActivation"
+
+  "jupyter.interactiveWindowMode": "perFile",
+
+  "jupyter.generateSVGPlots": true,  "python.analysis.autoSearchPaths": true,  ],
+
+  "jupyter.enableScrollingForCellOutputs": true,
+
+  "jupyter.maxOutputSize": 400,  "python.analysis.autoImportCompletions": true,
+
+  "jupyter.enableExtendedKernelCompletions": true,
+
+  "[jupyter]": {  "python.analysis.indexing": true,  // Enhanced Python analysis with Pylance
+
+    "editor.formatOnSave": true,
+
+    "editor.codeActionsOnSave": {  "python.analysis.packageIndexDepths": [  "python.analysis.diagnosticMode": "workspace",
+
+      "source.organizeImports": "explicit"
+
+    }    { "name": "sklearn", "depth": 2 },  "python.analysis.typeCheckingMode": "strict",
+
+  },
+
+  "python.analysis.bracketMatcher": true,    { "name": "matplotlib", "depth": 2 },  "python.analysis.completeFunctionParens": true,
+
+  "editor.indentSize": 4,
+
+  "editor.tabSize": 4,    { "name": "scipy", "depth": 2 },  "python.analysis.autoSearchPaths": true,
+
+  "editor.insertSpaces": true,
+
+  "editor.detectIndentation": false,    { "name": "django", "depth": 2 }  "python.analysis.autoImportCompletions": true,
+
+  "editor.snippetSuggestions": "top",
+
+  "editor.tabCompletion": "on",  ],  "python.analysis.indexing": true,
+
+  "editor.suggest.snippetsPreventQuickSuggestions": false,
+
+  "editor.wordBasedSuggestions": "matchingDocuments",  "python.analysis.packageIndexDepths": [
+
+  "editor.quickSuggestions": {
+
+    "other": true,  // Python formatting with Black    { "name": "sklearn", "depth": 2 },
+
+    "comments": false,
+
+    "strings": true  "[python]": {    { "name": "matplotlib", "depth": 2 },
+
+  },
+
+  "editor.suggest.showSnippets": true,    "editor.formatOnSave": true,    { "name": "scipy", "depth": 2 },
+
+  "editor.suggest.includeLanguageSuggestions": true,
+
+  "editor.acceptSuggestionOnEnter": "on",    "editor.codeActionsOnSave": {    { "name": "django", "depth": 2 }
+
+  "alita.snippets.autoOptimize": true,
+
+  "alita.snippets.showSavingsInfo": true,      "source.organizeImports": "explicit",  ],
+
+  "alita.snippets.preferredApproach": "snippet",
+
+  "alita.snippets.minimumSavingsThreshold": 30,      "source.fixAll.ruff": "explicit"
+
+  "alita.toolchain.autoDetectEnvironments": true,
+
+  "alita.toolchain.enableJupyterIntegration": true,    },  // Python formatting with Black
+
+  "alita.toolchain.enableDebuggingEnhancements": true,
+
+  "github.copilot.editor.enableAutoCompletions": true,    "editor.defaultFormatter": "ms-python.black-formatter"  "[python]": {
+
+  "github.copilot.editor.enableCodeActions": true,
+
+  "alita.agent.tokenOptimization": {  },    "editor.formatOnSave": true,
+
+    "enabled": true,
+
+    "snippetFirst": true,    "editor.codeActionsOnSave": {
+
+    "targetReduction": 0.8,
+
+    "showEfficiencyMetrics": true,  // Black formatter settings      "source.organizeImports": "explicit",
+
+    "enableToolchainIntegration": true,
+
+    "optimizeDebugging": true,  "black-formatter.args": [      "source.fixAll.ruff": "explicit"
+
+    "optimizeJupyterWorkflows": true
+
+  },    "--line-length=79",    },
+
+  "errorLens.enabledDiagnosticLevels": ["error", "warning", "info"],
+
+  "errorLens.gutterIconsEnabled": true,    "--target-version=py39"    "editor.defaultFormatter": "ms-python.black-formatter"
+
+  "errorLens.statusBarIconsEnabled": true,
+
+  "shellcheck.enable": true,  ],  },
+
+  "shellcheck.executablePath": "shellcheck",
+
+  "shellcheck.run": "onType",
+
+  "shellcheck.exclude": [],
+
+  "shellcheck.customArgs": ["--severity=warning"],  // isort for import organization  // Black formatter settings
+
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+
+  "terminal.integrated.profiles.windows": {  "isort.args": [  "black-formatter.args": [
+
+    "PowerShell": {
+
+      "source": "PowerShell",    "--profile=black",    "--line-length=79",
+
+      "icon": "terminal-powershell",
+
+      "args": ["-ExecutionPolicy", "Bypass", "-NoLogo"]    "--line-length=79",    "--target-version=py39"
+
+    }
+
+  },    "--multi-line=3",  ],
+
+  "terminal.integrated.env.windows": {
+
+    "PYLINTHOME": "${workspaceFolder}\\.pylint_cache",    "--trailing-comma"
+
+    "PYTHONPATH": "${workspaceFolder}",
+
+    "JUPYTER_CONFIG_DIR": "${workspaceFolder}\\.jupyter"  ],  // isort for import organization
+
+  },
+
+  "files.associations": {  "isort.args": [
+
+    "*.py": "python",
+
+    "*.pyi": "python",  // Disable legacy linting and rely on modern tools    "--profile=black",
+
+    "*.ipynb": "jupyter"
+
+  },  "python.linting.enabled": false,    "--line-length=79",
+
+  "chatgpt.openOnStartup": false,
+
+  "poshProTools.signOnSaveCertificate": "Microsoft.PowerShell.Security\\Certificate::CurrentUser\\Root\\BC2DF68FAE5E83F1FEA59D8E3CBDA7F3FBDD18D9",  "python.linting.pylintEnabled": false,    "--multi-line=3",
+
+  "github.copilot.chat.gpt5AlternatePrompt": "Reference: See DeepCode Agent System Prompts in .vscode/deepcode-prompts.md for comprehensive paper reproduction and code implementation workflows. Utilize Python toolchain integrations including debugging, Jupyter, environment management, and comprehensive code quality tools.",
+
+  "github.copilot.chat.reviewSelection.instructions": [    "--trailing-comma"
+
+    {
+
+      "file": ".github/copilot-instructions.md"  // Ruff configuration (primary linter)  ],
+
+    },
+
+    {  "ruff.enable": true,
+
+      "file": ".vscode/deepcode-prompts.md"
+
+    }  "ruff.importStrategy": "fromEnvironment",  // Disable legacy linting and rely on modern tools
+
+  ]
+
+}  "ruff.path": [  "python.linting.enabled": false,
+
+    "${workspaceFolder}\\.venv\\Scripts\\ruff.exe"  "python.linting.pylintEnabled": false,
+
+  ],
+
+  "ruff.lint.enable": true,  // Ruff configuration (primary linter)
+
+  "ruff.enable": true,
+
+  // Flake8 configuration (secondary linter)  "ruff.importStrategy": "fromEnvironment",
+
+  "flake8.args": [  "ruff.path": [
+
+    "--max-line-length=79",    "${workspaceFolder}\\.venv\\Scripts\\ruff.exe"
+
+    "--extend-ignore=E203,W503"  ],
+
+  ],  "ruff.lint.enable": true,
+
+  "ruff.lint.run": "onType",
+
+  // MyPy type checking
+
+  "mypy-type-checker.args": [  // Flake8 configuration (secondary linter)
+
+    "--strict",  "flake8.args": [
+
+    "--ignore-missing-imports",    "--max-line-length=79",
+
+    "--show-error-codes"    "--extend-ignore=E203,W503"
+
+  ],  ],
+
+  "mypy-type-checker.reportingScope": "workspace",
+
+  // MyPy type checking
+
+  // Python debugging configuration  "mypy-type-checker.args": [
+
+  "python.testing.unittestEnabled": false,    "--strict",
+
+  "python.testing.pytestEnabled": true,    "--ignore-missing-imports",
+
+  "python.testing.pytestArgs": [    "--show-error-codes"
+
+    "."  ],
+
+  ],  "mypy-type-checker.reportingScope": "workspace",
+
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+
+  // Python debugging configuration
+
+  // Jupyter notebook settings  "python.testing.unittestEnabled": false,
+
+  "jupyter.askForKernelRestart": false,  "python.testing.pytestEnabled": true,
+
+  "jupyter.alwaysTrustNotebooks": true,  "python.testing.pytestArgs": [
+
+  "jupyter.enableCellCodeLens": true,    "."
+
+  "jupyter.sendSelectionToInteractiveWindow": true,  ],
+
+  "jupyter.interactiveWindowMode": "perFile",  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+
+  "jupyter.generateSVGPlots": true,
+
+  "jupyter.enableScrollingForCellOutputs": true,  // Jupyter notebook settings
+
+  "jupyter.maxOutputSize": 400,  "jupyter.askForKernelRestart": false,
+
+  "jupyter.enableExtendedKernelCompletions": true,  "jupyter.alwaysTrustNotebooks": true,
+
+  "jupyter.enableCellCodeLens": true,
+
+  // Notebook-specific formatting  "jupyter.sendSelectionToInteractiveWindow": true,
+
+  "[jupyter]": {  "jupyter.interactiveWindowMode": "perFile",
+
+    "editor.formatOnSave": true,  "jupyter.generateSVGPlots": true,
+
+    "editor.codeActionsOnSave": {  "jupyter.enableScrollingForCellOutputs": true,
+
+      "source.organizeImports": "explicit"  "jupyter.maxOutputSize": 400,
+
+    }  "jupyter.enableExtendedKernelCompletions": true,
+
+  },
+
+  // Notebook-specific formatting
+
+  // Python indentation (kevinrose.vsc-python-indent)  "[jupyter]": {
+
+  "python.analysis.bracketMatcher": true,    "editor.formatOnSave": true,
+
+  "editor.indentSize": 4,    "editor.codeActionsOnSave": {
+
+  "editor.tabSize": 4,      "source.organizeImports": true
+
+  "editor.insertSpaces": true,    }
+
+  "editor.detectIndentation": false,  },
+
+
+
+  // Snippet optimization settings for token efficiency  // Python indentation (kevinrose.vsc-python-indent)
+
+  "editor.snippetSuggestions": "top",  "python.analysis.bracketMatcher": true,
+
+  "editor.tabCompletion": "on",  "editor.indentSize": 4,
+
+  "editor.suggest.snippetsPreventQuickSuggestions": false,  "editor.tabSize": 4,
+
+  "editor.wordBasedSuggestions": "matchingDocuments",  "editor.insertSpaces": true,
+
+  "editor.quickSuggestions": {  "editor.detectIndentation": false,
+
+    "other": true,
+
+    "comments": false,  // Snippet optimization settings for token efficiency
+
+    "strings": true  "editor.snippetSuggestions": "top",
+
+  },  "editor.tabCompletion": "on",
+
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+
+  // Enhanced Python snippets (frhtylcn.pythonsnippets + ericsia.pythonsnippets3 + tushortz.python-extended-snippets)  "editor.wordBasedSuggestions": "matchingDocuments",
+
+  "editor.suggest.showSnippets": true,  "editor.quickSuggestions": {
+
+  "editor.suggest.includeLanguageSuggestions": true,    "other": true,
+
+  "editor.acceptSuggestionOnEnter": "on",    "comments": false,
+
+      "strings": true
+
+  // Token optimization settings for Alita Agent Mode  },
+
+  "alita.snippets.autoOptimize": true,  
+
+  "alita.snippets.showSavingsInfo": true,  // Enhanced Python snippets (frhtylcn.pythonsnippets + ericsia.pythonsnippets3 + tushortz.python-extended-snippets)
+
+  "alita.snippets.preferredApproach": "snippet",  "editor.suggest.showSnippets": true,
+
+  "alita.snippets.minimumSavingsThreshold": 30,  "editor.suggest.includeLanguageSuggestions": true,
+
+  "alita.toolchain.autoDetectEnvironments": true,  "editor.acceptSuggestionOnEnter": "on",
+
+  "alita.toolchain.enableJupyterIntegration": true,  
+
+  "alita.toolchain.enableDebuggingEnhancements": true,  // Token optimization settings for Alita Agent Mode
+
+    "alita.snippets.autoOptimize": true,
+
+  // Enhanced Copilot integration with all Python tools  "alita.snippets.showSavingsInfo": true,
+
+  "github.copilot.editor.enableAutoCompletions": true,  "alita.snippets.preferredApproach": "snippet",
+
+  "github.copilot.editor.enableCodeActions": true,  "alita.snippets.minimumSavingsThreshold": 30,
+
+    "alita.toolchain.autoDetectEnvironments": true,
+
+  // Alita agent token optimization with toolchain integration  "alita.toolchain.enableJupyterIntegration": true,
+
+  "alita.agent.tokenOptimization": {  "alita.toolchain.enableDebuggingEnhancements": true,
+
+    "enabled": true,  
+
+    "snippetFirst": true,  // Enhanced Copilot integration with all Python tools
+
+    "targetReduction": 0.8,  "github.copilot.editor.enableAutoCompletions": true,
+
+    "showEfficiencyMetrics": true,  "github.copilot.editor.enableCodeActions": true,
+
+    "enableToolchainIntegration": true,  "github.copilot.advanced": {
+
+    "optimizeDebugging": true,    "debug.overrideEngine": "codex",
+
+    "optimizeJupyterWorkflows": true    "debug.testOverrideProxyUrl": "",
+
+  },    "debug.filterLogCategories": []
+
+  },
+
+  // Code quality and error detection  
+
+  "errorLens.enabledDiagnosticLevels": [  // Alita agent token optimization with toolchain integration
+
+    "error",  "alita.agent.tokenOptimization": {
+
+    "warning",    "enabled": true,
+
+    "info"    "snippetFirst": true,
+
+  ],    "targetReduction": 0.8,
+
+  "errorLens.gutterIconsEnabled": true,    "showEfficiencyMetrics": true,
+
+  "errorLens.statusBarIconsEnabled": true,    "enableToolchainIntegration": true,
+
+    "optimizeDebugging": true,
+
+  // ShellCheck configuration for safe shell scripting    "optimizeJupyterWorkflows": true
+
+  "shellcheck.enable": true,  },
+
+  "shellcheck.executablePath": "shellcheck",
+
+  "shellcheck.run": "onType",  // Code quality and error detection
+
+  "shellcheck.exclude": [],  "errorLens.enabledDiagnosticLevels": [
+
+  "shellcheck.customArgs": [    "error",
+
+    "--severity=warning"    "warning",
+
+  ],    "info"
+
+  ],
+
+  // Terminal and shell settings  "errorLens.gutterIconsEnabled": true,
+
+  "terminal.integrated.defaultProfile.windows": "PowerShell",  "errorLens.statusBarIconsEnabled": true,
+
+  "terminal.integrated.profiles.windows": {
+
+    "PowerShell": {  // ShellCheck configuration for safe shell scripting
+
+      "source": "PowerShell",  "shellcheck.enable": true,
+
+      "icon": "terminal-powershell",  "shellcheck.executablePath": "shellcheck",
+
+      "args": ["-ExecutionPolicy", "Bypass", "-NoLogo"]  "shellcheck.run": "onType",
+
+    }  "shellcheck.exclude": [],
+
+  },  "shellcheck.customArgs": [
+
+    "--severity=warning"
+
+  // Environment variables  ],
+
+  "terminal.integrated.env.windows": {
+
+    "PYLINTHOME": "${workspaceFolder}\\.pylint_cache",  // Terminal and shell settings
+
+    "PYTHONPATH": "${workspaceFolder}",  "terminal.integrated.defaultProfile.windows": "PowerShell",
+
+    "JUPYTER_CONFIG_DIR": "${workspaceFolder}\\.jupyter"  "terminal.integrated.profiles.windows": {
+
+  },    "PowerShell": {
+
+      "source": "PowerShell",
+
+  // File associations and workspace settings      "icon": "terminal-powershell",
+
+  "files.associations": {      "args": ["-ExecutionPolicy", "Bypass", "-NoLogo"]
+
+    "*.py": "python",    }
+
+    "*.pyi": "python",  },
+
+    "*.ipynb": "jupyter"
+
+  },  // Environment variables
+
+    "terminal.integrated.env.windows": {
+
+  "chatgpt.openOnStartup": false,    "PYLINTHOME": "${workspaceFolder}\\.pylint_cache",
+
+  "poshProTools.signOnSaveCertificate": "Microsoft.PowerShell.Security\\Certificate::CurrentUser\\Root\\BC2DF68FAE5E83F1FEA59D8E3CBDA7F3FBDD18D9",    "PYTHONPATH": "${workspaceFolder}",
+
+    "JUPYTER_CONFIG_DIR": "${workspaceFolder}\\.jupyter"
+
+  // GitHub Copilot settings with Python toolchain awareness  },
+
+  "github.copilot.chat.gpt5AlternatePrompt": "Reference: See DeepCode Agent System Prompts in .vscode/deepcode-prompts.md for comprehensive paper reproduction and code implementation workflows. Utilize Python toolchain integrations including debugging, Jupyter, environment management, and comprehensive code quality tools.",
+
+  "github.copilot.chat.reviewSelection.instructions": [  // File associations and workspace settings
+
+    {  "files.associations": {
+
+      "file": ".github/copilot-instructions.md"    "*.py": "python",
+
+    },    "*.pyi": "python",
+
+    {    "*.ipynb": "jupyter"
+
+      "file": ".vscode/deepcode-prompts.md"  },
+
+    }  
+
+  ]  "chatgpt.openOnStartup": false,
+
+}  "poshProTools.signOnSaveCertificate": "Microsoft.PowerShell.Security\\Certificate::CurrentUser\\Root\\BC2DF68FAE5E83F1FEA59D8E3CBDA7F3FBDD18D9",
+
+  // GitHub Copilot settings with Python toolchain awareness
+  "github.copilot.chat.gpt5AlternatePrompt": "Reference: See DeepCode Agent System Prompts in .vscode/deepcode-prompts.md for comprehensive paper reproduction and code implementation workflows. Utilize Python toolchain integrations including debugging, Jupyter, environment management, and comprehensive code quality tools.",
+  "github.copilot.chat.reviewSelection.instructions": [
+    {
+      "file": ".github/copilot-instructions.md"
+    },
+    {
+      "file": ".vscode/deepcode-prompts.md"
+    }
+  ]
+}
+

@@ -1,0 +1,72 @@
+{
+  "proc.run": {
+    "prefix": ["proc.run", "sa-proc"],
+    "description": "Use src/core/proc.py to run subprocess safely",
+    "body": [
+      "from src.core.proc import run",
+      "code, out, err = run([\"python\", \"-V\"], timeout=10)",
+      "if code != 0:",
+      "    raise RuntimeError(err)",
+      "print(out.strip())"
+    ]
+  },
+  "yaml.utils": {
+    "prefix": ["yaml.utils", "sa-yaml"],
+    "description": "Load and dump YAML via yaml_utils",
+    "body": [
+      "from src.core.yaml_utils import load_yaml_file, dump_yaml_file",
+      "cfg = load_yaml_file(\"config/example.yaml\")",
+      "cfg[\"enabled\"] = True",
+      "dump_yaml_file(\"config/example.out.yaml\", cfg)"
+    ]
+  },
+  "sandbox.exec": {
+    "prefix": ["sandbox.exec", "sa-sbx"],
+    "description": "Execute code via sandbox wrapper",
+    "body": [
+      "from src.sandbox.exec_sandbox import execute_snippet",
+      "code = \"result = sum(range(5))\"",
+      "res = execute_snippet(code, globals_in={}, locals_in={})",
+      "assert res[\"result\"] == 10"
+    ]
+  },
+  "fastapi.route": {
+    "prefix": ["api.route", "sa-route"],
+    "description": "Minimal FastAPI route for app.py",
+    "body": [
+      "from fastapi import APIRouter",
+      "router = APIRouter()",
+      "",
+      "@router.get(\"/health\")",
+      "def health() -> dict[str, str]:",
+      "    return {\"status\": \"ok\"}",
+      "",
+      "# app.include_router(router)"
+    ]
+  },
+  "pytest.skeleton": {
+    "prefix": ["pytest.test", "sa-test"],
+    "description": "Basic pytest test with markers",
+    "body": [
+      "import pytest",
+      "",
+      "@pytest.mark.unit",
+      "def test_sum():",
+      "    assert sum([1, 2, 3]) == 6",
+      "",
+      "@pytest.mark.integration_redis",
+      "def test_integration_placeholder():",
+      "    pytest.skip(\"requires redis test env\")"
+    ]
+  },
+  "env.mode": {
+    "prefix": ["sa-mode"],
+    "description": "Set SUPER_ALITA_MODE and run main",
+    "body": [
+      "# SUPER_ALITA_MODE: shadow | act | batch",
+      "export SUPER_ALITA_MODE=shadow",
+      "python -m src.main"
+    ]
+  }
+}
+

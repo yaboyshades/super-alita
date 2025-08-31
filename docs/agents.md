@@ -25,16 +25,22 @@ The updater maintains a session ledger for continuity across "AI sessions" and h
 ---
 
 ## 1. Agents (Top‑Level)
+
 <!-- AGENTS:START -->
-| Agent | Kind | Entrypoint | Abilities (count) | Plugins (count) | Owner(s) | Stability | Notes |
-|---:|----|----|----|----|----|----|----|
-| super-alita | runtime | src/main.py | 1 | 57 | @owners | beta |  |
+
+|       Agent | Kind    | Entrypoint  | Abilities (count) | Plugins (count) | Owner(s) | Stability | Notes |
+| ----------: | ------- | ----------- | ----------------- | --------------- | -------- | --------- | ----- |
+| super-alita | runtime | src/main.py | 1                 | 57              | @owners  | beta      |       |
+
 <!-- AGENTS:END -->
 
 ### 1.1 Ownership & Contacts
+
 <!-- AGENTS:OWNERS_START -->
+
 | Component | CODEOWNERS | Slack | Escalation |
-|---:|----|----|----|
+| --------: | ---------- | ----- | ---------- |
+
 <!-- AGENTS:OWNERS_END -->
 
 ---
@@ -44,9 +50,11 @@ The updater maintains a session ledger for continuity across "AI sessions" and h
 > Contract‑first tools that the runtime can call (dynamic registry supported).
 
 <!-- ABILITIES:START -->
-| Ability | Module | Signature | Guardrails | Telemetry Events | Notes |
-|---:|----|----|----|----|----|
-| _utcnow | src/abilities/gemini_codegen_ability.py | (…) | yes | Ability* events |  |
+
+|  Ability | Module                                  | Signature | Guardrails | Telemetry Events | Notes |
+| -------: | --------------------------------------- | --------- | ---------- | ---------------- | ----- |
+| \_utcnow | src/abilities/gemini_codegen_ability.py | (…)       | yes        | Ability\* events |       |
+
 <!-- ABILITIES:END -->
 
 ---
@@ -56,65 +64,67 @@ The updater maintains a session ledger for continuity across "AI sessions" and h
 > Pluggable modules (planner, memory, search, MCP, etc.)
 
 <!-- PLUGINS:START -->
-| Plugin | Module | Capabilities | Config Keys | Health Check | Notes |
-|---:|----|----|----|----|----|
-| autonomy_tracker | src/plugins/autonomy_tracker.py | (…) | ENV_* | function() => ok |  |
-| planner_plugin_v2 | src/plugins/planner_plugin_v2.py | (…) | ENV_* | function() => ok |  |
-| memory_manager_plugin_unified | src/plugins/memory_manager_plugin_unified.py | (…) | ENV_* | function() => ok |  |
-| self_reflection_plugin | src/plugins/self_reflection_plugin.py | Enumerate all available tools and plugins, parameters.get("requested_capability", ""), {e}", exc_info=True) | ENV_* | function() => ok |  |
-| semantic_fsm_plugin | src/plugins/semantic_fsm_plugin.py | (…) | ENV_* | function() => ok |  |
-| flowise_adapter_plugin | src/plugins/flowise_adapter_plugin.py | (…) | ENV_* | function() => ok |  |
-| atom_creator_plugin | src/plugins/atom_creator_plugin.py | (…) | ENV_* | function() => ok |  |
-| compose_plugin | src/plugins/compose_plugin.py | atom.tool | ENV_* | function() => ok |  |
-| pythonic_preprocessor_plugin | src/plugins/pythonic_preprocessor_plugin.py | (…) | ENV_* | function() => ok |  |
-| creator_plugin | src/plugins/creator_plugin.py | (…) | ENV_* | function() => ok |  |
-| conversation_plugin | src/plugins/conversation_plugin.py | **, 🧠 **Cognitive Architecture**: I use a plugin-based system with neural atoms for reactive state management | ENV_* | function() => ok |  |
-| puter_plugin | src/plugins/puter_plugin.py | "cloud_storage", "process_execution", "file_io" | ENV_* | function() => ok |  |
-| atom_executor_plugin | src/plugins/atom_executor_plugin.py | (…) | ENV_* | function() => ok |  |
-| core_utils_plugin | src/plugins/core_utils_plugin.py | (…) | ENV_* | function() => ok |  |
-| semantic_memory_plugin | src/plugins/semantic_memory_plugin.py | "memory", "storage", "retrieval", "memory", "storage", "retrieval", "semantic_search" | ENV_* | function() => ok |  |
-| auto_tools_plugin | src/plugins/auto_tools_plugin.py | (…) | ENV_* | function() => ok |  |
-| perplexica_search_plugin | src/plugins/perplexica_search_plugin.py | (…) | ENV_* | function() => ok |  |
-| tool_lifecycle_plugin | src/plugins/tool_lifecycle_plugin.py | (…) | ENV_* | function() => ok |  |
-| deepcode_generator_plugin | src/plugins/deepcode_generator_plugin.py | (…) | ENV_* | function() => ok |  |
-| deepcode_puter_bridge_plugin | src/plugins/deepcode_puter_bridge_plugin.py | (…) | ENV_* | function() => ok |  |
-| calculator_plugin | src/plugins/calculator_plugin.py | (…) | ENV_* | function() => ok |  |
-| cortex_adapter_plugin | src/plugins/cortex_adapter_plugin.py | (…) | ENV_* | function() => ok |  |
-| openai_agent_plugin | src/plugins/openai_agent_plugin.py | (…) | ENV_* | function() => ok |  |
-| enhanced_pythonic_preprocessor_plugin | src/plugins/enhanced_pythonic_preprocessor_plugin.py | (…) | ENV_* | function() => ok |  |
-| llm_planner_plugin | src/plugins/llm_planner_plugin.py | (…) | ENV_* | function() => ok |  |
-| dify_adapter_plugin | src/plugins/dify_adapter_plugin.py | (…) | ENV_* | function() => ok |  |
-| predictive_world_model_plugin | src/plugins/predictive_world_model_plugin.py | (…) | ENV_* | function() => ok |  |
-| ladder_aog_plugin | src/plugins/ladder_aog_plugin.py | (…) | ENV_* | function() => ok |  |
-| tool_executor_plugin_unified | src/plugins/tool_executor_plugin_unified.py | (…) | ENV_* | function() => ok |  |
-| tool_executor_plugin | src/plugins/tool_executor_plugin.py | (…) | ENV_* | function() => ok |  |
-| skill_discovery_plugin | src/plugins/skill_discovery_plugin.py | (…) | ENV_* | function() => ok |  |
-| plugin_interface | src/plugins/plugin_interface.py | (…) | ENV_* | function() => ok |  |
-| atom_tools_plugin | src/plugins/atom_tools_plugin.py | (…) | ENV_* | function() => ok |  |
-| memory_manager_plugin_clean | src/plugins/memory_manager_plugin_clean.py | "storage", "recall", "memory" | ENV_* | function() => ok |  |
-| enhanced_protocol_plugin | src/plugins/enhanced_protocol_plugin.py | (…) | ENV_* | function() => ok |  |
-| deepcode_orchestrator_plugin | src/plugins/deepcode_orchestrator_plugin.py | (…) | ENV_* | function() => ok |  |
-| core_utils_plugin_dynamic | src/plugins/core_utils_plugin_dynamic.py | ", len(self._capabilities)), # Tool not in our discovered capabilities, dict[str, Callable, {name}" | ENV_* | function() => ok |  |
-| autogen_creator_plugin | src/plugins/autogen_creator_plugin.py | (…) | ENV_* | function() => ok |  |
-| creator_plugin_unified | src/plugins/creator_plugin_unified.py | = "calculate":, Capability Needed: {request.capability_description}, [, capabilities = ["execute", "process", "respond", capabilities,, if capability == "search":, if capability.lower() in task_lower:, json.dumps(spec.capabilities),, {capabilities}, | ENV_* | function() => ok |  |
-| option_executor_plugin | src/plugins/option_executor_plugin.py | (…) | ENV_* | function() => ok |  |
-| brainstorm_plugin | src/plugins/brainstorm_plugin.py | atom.tool | ENV_* | function() => ok |  |
-| adaptive_neural_atom_plugin | src/plugins/adaptive_neural_atom_plugin.py | (…) | ENV_* | function() => ok |  |
-| meta_learning_creator_plugin | src/plugins/meta_learning_creator_plugin.py | (…) | ENV_* | function() => ok |  |
-| memory_manager_plugin | src/plugins/memory_manager_plugin.py | "storage", "recall", "memory" | ENV_* | function() => ok |  |
-| llm_planner_plugin_unified | src/plugins/llm_planner_plugin_unified.py | {', '.join(atom_info['capabilities' | ENV_* | function() => ok |  |
-| self_heal_plugin | src/plugins/self_heal_plugin.py | (…) | ENV_* | function() => ok |  |
-| knowledge_gap_detector | src/plugins/knowledge_gap_detector.py | (…) | ENV_* | function() => ok |  |
-| planner_plugin | src/plugins/planner_plugin.py | (…) | ENV_* | function() => ok |  |
-| event_bus_plugin | src/plugins/event_bus_plugin.py | (…) | ENV_* | function() => ok |  |
-| system_introspection_plugin | src/plugins/system_introspection_plugin.py | (…) | ENV_* | function() => ok |  |
-| subproblem_manager | src/plugins/oak_core/subproblem_manager.py | (…) | ENV_* | function() => ok |  |
-| feature_discovery | src/plugins/oak_core/feature_discovery.py | (…) | ENV_* | function() => ok |  |
-| planning_engine | src/plugins/oak_core/planning_engine.py | (…) | ENV_* | function() => ok |  |
-| curation_manager | src/plugins/oak_core/curation_manager.py | (…) | ENV_* | function() => ok |  |
-| prediction_engine | src/plugins/oak_core/prediction_engine.py | (…) | ENV_* | function() => ok |  |
-| coordinator | src/plugins/oak_core/coordinator.py | (…) | ENV_* | function() => ok |  |
-| option_trainer | src/plugins/oak_core/option_trainer.py | (…) | ENV_* | function() => ok |  |
+
+|                                Plugin | Module                                               | Capabilities                                                                                                                                                                                                                                              | Config Keys | Health Check     | Notes |
+| ------------------------------------: | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------- | ----- |
+|                      autonomy_tracker | src/plugins/autonomy_tracker.py                      | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                     planner_plugin_v2 | src/plugins/planner_plugin_v2.py                     | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|         memory_manager_plugin_unified | src/plugins/memory_manager_plugin_unified.py         | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                self_reflection_plugin | src/plugins/self_reflection_plugin.py                | Enumerate all available tools and plugins, parameters.get("requested_capability", ""), {e}", exc_info=True)                                                                                                                                               | ENV\_\*     | function() => ok |       |
+|                   semantic_fsm_plugin | src/plugins/semantic_fsm_plugin.py                   | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                flowise_adapter_plugin | src/plugins/flowise_adapter_plugin.py                | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                   atom_creator_plugin | src/plugins/atom_creator_plugin.py                   | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                        compose_plugin | src/plugins/compose_plugin.py                        | atom.tool                                                                                                                                                                                                                                                 | ENV\_\*     | function() => ok |       |
+|          pythonic_preprocessor_plugin | src/plugins/pythonic_preprocessor_plugin.py          | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                        creator_plugin | src/plugins/creator_plugin.py                        | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                   conversation_plugin | src/plugins/conversation_plugin.py                   | **, 🧠 **Cognitive Architecture\*\*: I use a plugin-based system with neural atoms for reactive state management                                                                                                                                          | ENV\_\*     | function() => ok |       |
+|                          puter_plugin | src/plugins/puter_plugin.py                          | "cloud_storage", "process_execution", "file_io"                                                                                                                                                                                                           | ENV\_\*     | function() => ok |       |
+|                  atom_executor_plugin | src/plugins/atom_executor_plugin.py                  | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                     core_utils_plugin | src/plugins/core_utils_plugin.py                     | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                semantic_memory_plugin | src/plugins/semantic_memory_plugin.py                | "memory", "storage", "retrieval", "memory", "storage", "retrieval", "semantic_search"                                                                                                                                                                     | ENV\_\*     | function() => ok |       |
+|                     auto_tools_plugin | src/plugins/auto_tools_plugin.py                     | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|              perplexica_search_plugin | src/plugins/perplexica_search_plugin.py              | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                 tool_lifecycle_plugin | src/plugins/tool_lifecycle_plugin.py                 | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|             deepcode_generator_plugin | src/plugins/deepcode_generator_plugin.py             | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|          deepcode_puter_bridge_plugin | src/plugins/deepcode_puter_bridge_plugin.py          | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                     calculator_plugin | src/plugins/calculator_plugin.py                     | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                 cortex_adapter_plugin | src/plugins/cortex_adapter_plugin.py                 | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                   openai_agent_plugin | src/plugins/openai_agent_plugin.py                   | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+| enhanced_pythonic_preprocessor_plugin | src/plugins/enhanced_pythonic_preprocessor_plugin.py | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                    llm_planner_plugin | src/plugins/llm_planner_plugin.py                    | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                   dify_adapter_plugin | src/plugins/dify_adapter_plugin.py                   | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|         predictive_world_model_plugin | src/plugins/predictive_world_model_plugin.py         | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                     ladder_aog_plugin | src/plugins/ladder_aog_plugin.py                     | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|          tool_executor_plugin_unified | src/plugins/tool_executor_plugin_unified.py          | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                  tool_executor_plugin | src/plugins/tool_executor_plugin.py                  | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                skill_discovery_plugin | src/plugins/skill_discovery_plugin.py                | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                      plugin_interface | src/plugins/plugin_interface.py                      | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                     atom_tools_plugin | src/plugins/atom_tools_plugin.py                     | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|           memory_manager_plugin_clean | src/plugins/memory_manager_plugin_clean.py           | "storage", "recall", "memory"                                                                                                                                                                                                                             | ENV\_\*     | function() => ok |       |
+|              enhanced_protocol_plugin | src/plugins/enhanced_protocol_plugin.py              | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|          deepcode_orchestrator_plugin | src/plugins/deepcode_orchestrator_plugin.py          | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|             core_utils_plugin_dynamic | src/plugins/core_utils_plugin_dynamic.py             | ", len(self.\_capabilities)), # Tool not in our discovered capabilities, dict[str, Callable, {name}"                                                                                                                                                      | ENV\_\*     | function() => ok |       |
+|                autogen_creator_plugin | src/plugins/autogen_creator_plugin.py                | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                creator_plugin_unified | src/plugins/creator_plugin_unified.py                | = "calculate":, Capability Needed: {request.capability_description}, [, capabilities = ["execute", "process", "respond", capabilities,, if capability == "search":, if capability.lower() in task_lower:, json.dumps(spec.capabilities),, {capabilities}, | ENV\_\*     | function() => ok |       |
+|                option_executor_plugin | src/plugins/option_executor_plugin.py                | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                     brainstorm_plugin | src/plugins/brainstorm_plugin.py                     | atom.tool                                                                                                                                                                                                                                                 | ENV\_\*     | function() => ok |       |
+|           adaptive_neural_atom_plugin | src/plugins/adaptive_neural_atom_plugin.py           | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|          meta_learning_creator_plugin | src/plugins/meta_learning_creator_plugin.py          | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                 memory_manager_plugin | src/plugins/memory_manager_plugin.py                 | "storage", "recall", "memory"                                                                                                                                                                                                                             | ENV\_\*     | function() => ok |       |
+|            llm_planner_plugin_unified | src/plugins/llm_planner_plugin_unified.py            | {', '.join(atom_info['capabilities'                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                      self_heal_plugin | src/plugins/self_heal_plugin.py                      | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                knowledge_gap_detector | src/plugins/knowledge_gap_detector.py                | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                        planner_plugin | src/plugins/planner_plugin.py                        | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                      event_bus_plugin | src/plugins/event_bus_plugin.py                      | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|           system_introspection_plugin | src/plugins/system_introspection_plugin.py           | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                    subproblem_manager | src/plugins/oak_core/subproblem_manager.py           | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                     feature_discovery | src/plugins/oak_core/feature_discovery.py            | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                       planning_engine | src/plugins/oak_core/planning_engine.py              | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                      curation_manager | src/plugins/oak_core/curation_manager.py             | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                     prediction_engine | src/plugins/oak_core/prediction_engine.py            | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                           coordinator | src/plugins/oak_core/coordinator.py                  | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+|                        option_trainer | src/plugins/oak_core/option_trainer.py               | (…)                                                                                                                                                                                                                                                       | ENV\_\*     | function() => ok |       |
+
 <!-- PLUGINS:END -->
 
 ---
@@ -186,9 +196,11 @@ The agent mode enhances development workflow through:
 ---
 
 ## 5. Session Stitching (Cross‑Session Context)
+
 The updater maintains a session ledger for continuity across “AI sessions” and human sessions.
 
 **Ledger:** `.alita/sessions/ledger.json`
+
 ```json
 {
   "series": [
@@ -223,3 +235,4 @@ Index (recent):
 >>>>>>> Stashed changes
 <!-- CHANGELOG:START -->
 - 2025-08-26T04:06:01Z #146 Merge pull request #146 from yaboyshades/oak-core-integration (owner: @yaboyshades)
+```

@@ -1,0 +1,12 @@
+{
+  "host": "127.0.0.1",
+  "port": 8080,
+  "reload": true,
+  "timeout_keep_alive": 120,
+  "timeout_graceful_shutdown": 30,
+  "limit_concurrency": 100,
+  "limit_max_requests": 1000,
+  "workers": 1,
+  "access_log": true,
+  "use_colors": true
+}
