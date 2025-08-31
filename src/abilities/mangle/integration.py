@@ -6,6 +6,7 @@ DeepConf with validation gates, tool execution controls, and method selection.
 """
 
 import logging
+from typing import Any, Dict, List, Optional
 
 from src.abilities.mangle.mangle_ability import MangleAbility
 from src.abilities.mangle.mangle_validator import MangleValidator
@@ -16,14 +17,14 @@ logger = logging.getLogger(__name__)
 def integrate_mangle_with_deepconf(deepconf_instance):
     """
     Integrate Mangle validation capabilities with a DeepConf instance.
-    
+
     This function adds Mangle validation gates to a DeepConf consensus provider,
     enabling policy-based output validation, tool execution controls, and
     method selection.
-    
+
     Args:
         deepconf_instance: The DeepConf instance to enhance
-    
+
     Returns:
         Enhanced DeepConf instance with Mangle validation
     """
@@ -35,13 +36,13 @@ def integrate_mangle_with_deepconf(deepconf_instance):
         except Exception as e:
             logger.warning(f"Failed to initialize MangleAbility: {e}")
             return deepconf_instance
-    
+
     # Create a validator using the Mangle instance
     validator = MangleValidator(deepconf_instance._mangle)
-    
+
     # Store the original methods for wrapping
     original_generate_consensus = deepconf_instance.generate_consensus
-    
+
     # Define a wrapper for generate_consensus that adds validation
     async def generate_consensus_with_validation(request):
         # First, use Mangle to select the best consensus method if not specified
@@ -61,10 +62,10 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                            f"({method_selection['reason']})")
             except Exception as e:
                 logger.warning(f"Error in consensus method selection: {e}")
-        
+
         # Call the original consensus generation
         response = await original_generate_consensus(request)
-        
+
         # Post-process with validation gates
         try:
             validation_result = await validator.validate_output(
@@ -77,22 +78,22 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                     "consensus_confidence": response.consensus_confidence,
                 }
             )
-            
+
             if not validation_result["valid"]:
                 # Log validation issues
                 logger.warning(
                     f"Output validation failed with {len(validation_result['violations'])} "
                     f"violations: {validation_result['violations']}"
                 )
-                
+
                 # Apply confidence penalty
                 original_confidence = response.consensus_confidence
                 adjusted_confidence = max(
-                    0.0, 
+                    0.0,
                     original_confidence - validation_result["confidence_penalty"]
                 )
                 response.consensus_confidence = adjusted_confidence
-                
+
                 # Add validation metadata
                 if not response.metadata:
                     response.metadata = {}
@@ -101,10 +102,10 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                     "original_confidence": original_confidence,
                     "confidence_penalty": validation_result["confidence_penalty"],
                 }
-        
+
         except Exception as e:
             logger.warning(f"Error in output validation: {e}")
-        
+
         # Verify claims if appropriate
         try:
             if hasattr(request, "verify_claims") and request.verify_claims:
@@ -116,16 +117,16 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                         "consensus_confidence": response.consensus_confidence,
                     }
                 )
-                
+
                 if not verification["verified"]:
                     # Apply confidence adjustment for invalid claims
                     original_confidence = response.consensus_confidence
                     adjusted_confidence = max(
-                        0.0, 
+                        0.0,
                         original_confidence + verification["confidence_adjustment"]
                     )
                     response.consensus_confidence = adjusted_confidence
-                    
+
                     # Add verification metadata
                     if not response.metadata:
                         response.metadata = {}
@@ -134,22 +135,22 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                         "original_confidence": original_confidence,
                         "confidence_adjustment": verification["confidence_adjustment"],
                     }
-                    
+
                     logger.warning(
                         f"Claim verification identified {len(verification['invalid_claims'])} "
                         f"invalid claims"
                     )
         except Exception as e:
             logger.warning(f"Error in claim verification: {e}")
-            
+
         return response
-    
+
     # Replace the original method with our wrapped version
     deepconf_instance.generate_consensus = generate_consensus_with_validation
-    
+
     # Add tool validation capabilities
     deepconf_instance.validate_tool = validator.validate_tool_execution
-    
+
     logger.info("Enhanced DeepConf with Mangle validation gates and method selection")
     return deepconf_instance
 
@@ -162,17 +163,17 @@ from src.abilities.mangle.integration import integrate_mangle_with_deepconf
 
 class EnhancedConsensusProvider:
     # ...existing implementation...
-    
+
     async def initialize(self):
         # Original initialization
         # ...
-        
+
         # Enhance with Mangle validation if available
         try:
             from src.abilities.mangle.integration import integrate_mangle_with_deepconf
             self = integrate_mangle_with_deepconf(self)
         except ImportError:
             logger.info("Mangle validation not available - running without validation gates")
-        
+
         return self
 """
