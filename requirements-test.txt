@@ -3,6 +3,13 @@
 pytest>=8.0.0
 pytest-asyncio>=0.21.0
 
+# Jest-equivalent testing packages for complete Jest-like workflow
+pytest-cov>=4.0.0           # Coverage reporting (jest --coverage)
+pytest-mock>=3.12.0         # Enhanced mocking (jest.fn/jest.mock)
+syrupy>=4.6.0               # Snapshot testing (Jest snapshots)
+pytest-xdist>=3.3.0         # Parallel test execution (Jest parallelism)
+pytest-watch>=4.2.0         # Watch mode (jest --watch)
+
 # Optional protobuf support
 # protobuf>=4.0.0
 
