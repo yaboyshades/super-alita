@@ -17,10 +17,10 @@ npx --no-install lint-staged --quiet || {
 
 # Additional validation for critical files
 if git diff --cached --name-only | grep -E "(app\.py|src/main\.py|validate_deployment\.py)"; then
-    echo "🎯 Critical files changed, running deployment validation..."
+    echo "Critical files changed, running deployment validation..."
 
     # Don't block commits due to validation failures in pre-commit
-    echo "⚠️ Critical files changed - recommend running: python validate_deployment.py"
+    echo "Critical files changed - recommend running: python run_validation.py"
 fi
 
 echo "✅ Pre-commit checks passed!"
