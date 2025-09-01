@@ -1,0 +1,39 @@
+# Dockerfile for consensus gRPC server
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir grpcio grpcio-tools
+
+# Copy source code
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+
+# Generate protobuf stubs
+RUN python scripts/gen_protos.py
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash consensus
+RUN chown -R consensus:consensus /app
+USER consensus
+
+# Environment variables
+ENV PYTHONPATH=/app
+ENV CONSENSUS_GRPC_BIND=0.0.0.0:50052
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import grpc; grpc.channel_ready_future(grpc.insecure_channel('localhost:50052')).result(timeout=1)" || exit 1
+
+EXPOSE 50052
+CMD ["python", "-m", "src.consensus_grpc.server"]

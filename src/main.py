@@ -1548,29 +1548,44 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 if len(plugin_names) > 5:
                     print(f"   ... and {len(plugin_names) - 5} more")
 
-        # Register Enhanced Consensus sampling tool with multiple algorithms
+        # Register Enhanced / external Consensus sampling tool
         try:
-            from src.abilities.enhanced_consensus_ability import (
-                EnhancedConsensusProvider,
-            )
-
-            print("🔧 DEBUG: Starting enhanced consensus tool registration...")
-
+            print("🔧 DEBUG: Starting consensus tool registration (adapter-aware)...")
             ability_reg = app.state.ability_registry  # type: ignore
-            print(f"🔧 DEBUG: ability_reg = {ability_reg}")
 
-            # Create the enhanced consensus provider instance
-            consensus_provider = EnhancedConsensusProvider(
-                {
-                    "base_url": "http://localhost:11434/v1",
-                    "model_name": "gpt-oss:20b",
-                    "timeout": 60.0,
-                }
-            )
-            await consensus_provider.initialize()
-            print("🔧 DEBUG: Created enhanced consensus provider")
+            # Decide whether to use adapter (env-driven)
+            use_adapter = os.getenv("CONSENSUS_SERVICE_MODE") is not None
+            if use_adapter:
+                from src.adapters.consensus_client import ConsensusClient
 
-            # Define the enhanced consensus sampling tool contract
+                consensus_provider = ConsensusClient(
+                    {
+                        "base_url": "http://localhost:11434/v1",
+                        "model_name": "gpt-oss:20b",
+                        "timeout": 60.0,
+                        "grpc_url": os.getenv("CONSENSUS_GRPC_URL", "localhost:50051"),
+                    }
+                )
+                await consensus_provider.initialize()  # local provider init
+                print(
+                    "🔧 DEBUG: Consensus adapter initialized (mode="
+                    f"{os.getenv('CONSENSUS_SERVICE_MODE','local')})"
+                )
+            else:
+                from src.abilities.enhanced_consensus_ability import (
+                    EnhancedConsensusProvider,
+                )
+
+                consensus_provider = EnhancedConsensusProvider(
+                    {
+                        "base_url": "http://localhost:11434/v1",
+                        "model_name": "gpt-oss:20b",
+                        "timeout": 60.0,
+                    }
+                )
+                await consensus_provider.initialize()
+                print("🔧 DEBUG: Local enhanced consensus provider initialized")
+
             consensus_contract = {
                 "tool_id": "deepconf_consensus",
                 "description": "Enhanced consensus sampling with multiple aggregation methods",
@@ -1609,11 +1624,8 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     },
                 },
             }
-            print("🔧 DEBUG: Created enhanced consensus contract")
 
-            # Define the executor function
             async def consensus_executor(args: dict[str, Any]) -> dict[str, Any]:
-                print(f"🔧 DEBUG: enhanced_consensus_executor called with args: {args}")
                 return await consensus_provider.consensus_sampling(
                     prompt=args["prompt"],
                     num_samples=args.get("num_samples", 3),
@@ -1624,14 +1636,12 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     temperature_range=args.get("temperature_range", 0.2),
                 )
 
-            print("🔧 DEBUG: Registering enhanced consensus tool...")
             ability_reg.register_tool(
                 contract=consensus_contract, executor=consensus_executor
             )
-            print("✅ DEBUG: Enhanced consensus tool registered successfully!")
-
-        except Exception as e:
-            print(f"❌ DEBUG: Failed to register enhanced consensus tool: {e}")
+            print("✅ DEBUG: Consensus tool registered (adapter-aware)")
+        except Exception as e:  # noqa: BLE001
+            print(f"❌ DEBUG: Failed to register consensus tool: {e}")
             import traceback
 
             traceback.print_exc()

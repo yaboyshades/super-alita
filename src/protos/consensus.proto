@@ -1,0 +1,24 @@
+syntax = "proto3";
+package consensus;
+
+service ConsensusService {
+  rpc GetConsensus (ConsensusRequest) returns (ConsensusResponse);
+}
+
+message ConsensusRequest {
+  string prompt = 1;
+  string method = 2;
+  int32 num_samples = 3;
+  double temperature = 4;
+  int32 max_tokens = 5;
+  double confidence_threshold = 6;
+  double temperature_range = 7;
+}
+
+message ConsensusResponse {
+  string result = 1;
+  double confidence = 2;
+  string method_used = 3;
+  repeated string raw_responses = 4;
+  map<string, double> confidence_scores = 5;
+}

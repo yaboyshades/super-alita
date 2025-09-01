@@ -1,5 +1,39 @@
 version: "3.9"
 services:
+  # Redis for distributed event bus
+  redis:
+    image: redis:7-alpine
+    container_name: super-alita-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    profiles: ["redis", "microservices"]
+
+  # Consensus gRPC server
+  consensus-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.consensus
+    container_name: super-alita-consensus
+    ports:
+      - "50052:50052"
+    environment:
+      - CONSENSUS_GRPC_BIND=0.0.0.0:50052
+      - CONSENSUS_BASE_URL=http://host.docker.internal:11434/v1
+      - CONSENSUS_MODEL_NAME=gpt-oss:20b
+      - CONSENSUS_TIMEOUT=60
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles: ["microservices"]
+
   app:
     build: .
     container_name: reug-runtime
@@ -9,6 +43,11 @@ services:
       - PYTHONPATH=/app/src
       - REUG_EVENT_LOG_DIR=/data/logs/events
       - REUG_TOOL_REGISTRY_DIR=/data/tools_registry
+      # Microservices configuration
+      - CONSENSUS_SERVICE_MODE=grpc
+      - CONSENSUS_GRPC_URL=consensus-service:50052
+      - REDIS_URL=redis://redis:6379/0
+      - USE_REDIS_EVENT_BUS=true
     volumes:
       - ./src:/app/src:rw
       - ./app.py:/app/app.py:rw
@@ -23,6 +62,9 @@ services:
       retries: 3
       start_period: 10s
     profiles: ["app"]
+    depends_on:
+      - redis
+      - consensus-service
 
   # Optional Redis, KG, etc. (disabled by default)
   # redis:
@@ -56,3 +98,6 @@ services:
   #   ports: ["11434:11434"]
   #   volumes: ["./ollama:/root/.ollama"]
   #   profiles: ["ollama"]
+
+volumes:
+  redis_data:

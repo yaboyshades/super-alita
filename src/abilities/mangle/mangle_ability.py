@@ -852,8 +852,9 @@ class ManglePluginInterface(PluginInterface):
                 return {"valid": True, "violations": [], "confidence_penalty": 0.0}
 
             # Build temp facts about the output and context
-            # Truncate to avoid oversized facts
-            tfacts: list[str] = [f"output_text('{output_text[:500].replace(\"'\", \"\\\'\")}')"]
+            # Truncate to avoid oversized facts; escape single quotes
+            _slice = output_text[:500].replace("'", "\\'")
+            tfacts: list[str] = [f"output_text('{_slice}')"]
             if domain:
                 tfacts.append(f"domain('{domain}')")
             if meta:
@@ -861,7 +862,8 @@ class ManglePluginInterface(PluginInterface):
                     if isinstance(v, (int, float)):
                         tfacts.append(f"{k}({v})")
                     elif isinstance(v, str):
-                        tfacts.append(f"{k}('{v.replace(\"'\", \"\\'\")}')")
+                        safe_v = v.replace("'", "\\'")
+                        tfacts.append(f"{k}('{safe_v}')")
 
             # Check for violation rules
             violations: list[str] = []

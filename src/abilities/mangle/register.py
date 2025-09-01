@@ -7,10 +7,9 @@ with Super Alita's ability registry and provides tool contracts.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.abilities.mangle.mangle_ability import MangleAbility
-from src.core.events import create_event
 from src.core.plugin_registry import register_plugin
 from src.abilities.mangle.mangle_ability import ManglePluginInterface
 from src.reug_runtime.mcp_abstractor import abstract_mcp_box
@@ -29,86 +28,100 @@ def register_mangle_abilities(ability_registry, config=None):
         True if registration successful, False otherwise
     """
     try:
-        # Initialize the Mangle ability
-        mangle_config = config.get("mangle", {}) if config else {}
+        mangle_config = (config or {}).get("mangle", {})
         mangle_ability = MangleAbility(mangle_config)
 
-        # Register the query ability
+        # mangle_query
+        async def _exec_query(args):  # type: ignore
+            return await mangle_ability.query(
+                args.get("query", ""), args.get("params", {})
+            )
+
         ability_registry.register_tool(
             contract={
                 "tool_id": "mangle_query",
-                "description": "Execute a Mangle deductive query against the knowledge base",
+                "description": (
+                    "Execute a Mangle deductive query against the knowledge "
+                    "base"
+                ),
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The Mangle query to execute"
+                            "description": "The Mangle query to execute",
                         },
                         "params": {
                             "type": "object",
-                            "description": "Optional parameters for the query"
-                        }
+                            "description": "Optional parameters",
+                        },
                     },
-                    "required": ["query"]
-                }
+                    "required": ["query"],
+                },
             },
-            executor=lambda args: mangle_ability.query(
-                args.get("query", ""),
-                args.get("params", {})
-            )
+            executor=_exec_query,
         )
 
-        # Register the add fact ability
+        # mangle_add_fact
+        async def _exec_add_fact(args):  # type: ignore
+            return await mangle_ability.add_fact(args.get("fact", ""))
+
         ability_registry.register_tool(
             contract={
                 "tool_id": "mangle_add_fact",
-                "description": "Add a fact to the Mangle knowledge base",
+                "description": "Add a fact to the knowledge base",
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "fact": {
                             "type": "string",
-                            "description": "The fact to add to the knowledge base"
+                            "description": "Fact to add",
                         }
                     },
-                    "required": ["fact"]
-                }
+                    "required": ["fact"],
+                },
             },
-            executor=lambda args: mangle_ability.add_fact(args.get("fact", ""))
+            executor=_exec_add_fact,
         )
 
-        # Register the add rule ability
+        # mangle_add_rule
+        async def _exec_add_rule(args):  # type: ignore
+            return await mangle_ability.add_rule(
+                args.get("name", ""), args.get("rule", "")
+            )
+
         ability_registry.register_tool(
             contract={
                 "tool_id": "mangle_add_rule",
-                "description": "Add a rule to the Mangle knowledge base",
+                "description": "Add a rule to the knowledge base",
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "name": {
                             "type": "string",
-                            "description": "The name for this rule"
+                            "description": "Rule name",
                         },
                         "rule": {
                             "type": "string",
-                            "description": "The Mangle rule to add"
-                        }
+                            "description": "Rule clause",
+                        },
                     },
-                    "required": ["name", "rule"]
-                }
+                    "required": ["name", "rule"],
+                },
             },
-            executor=lambda args: mangle_ability.add_rule(
-                args.get("name", ""),
-                args.get("rule", "")
-            )
+            executor=_exec_add_rule,
         )
 
-        # Register the dependency analysis ability
+        # mangle_analyze_dependencies
+        async def _exec_analyze_deps(args):  # type: ignore
+            return await mangle_ability.analyze_dependencies(
+                args.get("dependencies", [])
+            )
+
         ability_registry.register_tool(
             contract={
                 "tool_id": "mangle_analyze_dependencies",
-                "description": "Analyze project dependencies for vulnerabilities",
+                "description": "Analyze dependencies for issues",
                 "input_schema": {
                     "type": "object",
                     "properties": {
@@ -117,143 +130,166 @@ def register_mangle_abilities(ability_registry, config=None):
                             "items": {
                                 "type": "object",
                                 "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "description": "The dependency name"
-                                    },
-                                    "version": {
-                                        "type": "string",
-                                        "description": "The dependency version"
-                                    }
+                                    "name": {"type": "string"},
+                                    "version": {"type": "string"},
                                 },
-                                "required": ["name", "version"]
+                                "required": ["name", "version"],
                             },
-                            "description": "List of dependencies to analyze"
+                            "description": "Dependencies list",
                         }
                     },
-                    "required": ["dependencies"]
-                }
+                    "required": ["dependencies"],
+                },
             },
-            executor=lambda args: mangle_ability.analyze_dependencies(
-                args.get("dependencies", [])
-            )
+            executor=_exec_analyze_deps,
         )
 
-        # Register the knowledge graph query ability
-        ability_registry.register_tool({
-            "tool_id": "mangle_knowledge_graph",
-            "description": "Perform a knowledge graph query with context",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "The knowledge graph query to execute"
-                    },
-                    "context": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "relation": {
-                                    "type": "string",
-                                    "description": "The relation type"
+        # mangle_knowledge_graph
+        async def _exec_kg(args):  # type: ignore
+            return await mangle_ability.knowledge_graph_query(
+                args.get("query", ""), args.get("context", [])
+            )
+
+        ability_registry.register_tool(
+            contract={
+                "tool_id": "mangle_knowledge_graph",
+                "description": "Perform a knowledge graph query",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string"},
+                        "context": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "relation": {"type": "string"},
+                                    "subject": {"type": "string"},
+                                    "object": {"type": "string"},
                                 },
-                                "subject": {
-                                    "type": "string",
-                                    "description": "The subject entity"
-                                },
-                                "object": {
-                                    "type": "string",
-                                    "description": "The object entity"
-                                }
+                                "required": [
+                                    "relation",
+                                    "subject",
+                                    "object",
+                                ],
                             },
-                            "required": ["relation", "subject", "object"]
                         },
-                        "description": "Context for the knowledge graph query"
+                    },
+                    "required": ["query"],
+                },
+            },
+            executor=_exec_kg,
+        )
+
+        # mangle_explain
+        async def _exec_explain(args):  # type: ignore
+            return await mangle_ability.explain_query_results(
+                args.get("query", "")
+            )
+
+        ability_registry.register_tool(
+            contract={
+                "tool_id": "mangle_explain",
+                "description": "Execute a query and explain results",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}},
+                    "required": ["query"],
+                },
+            },
+            executor=_exec_explain,
+        )
+
+        # mangle_rule_catalog
+        async def _exec_rule_catalog(_args):  # type: ignore
+            if hasattr(mangle_ability, "rule_catalog"):
+                return await mangle_ability.rule_catalog()
+            return {
+                "success": True,
+                "rules": [
+                    {
+                        "id": name,
+                        "name": name,
+                        "description": body[:60],
                     }
-                },
-                "required": ["query"]
+                    for name, body in getattr(
+                        mangle_ability, "rules", {}
+                    ).items()
+                ],
+                "count": len(getattr(mangle_ability, "rules", {})),
+                "fallback": True,
             }
-        }, lambda args: mangle_ability.knowledge_graph_query(
-            args.get("query", ""),
-            args.get("context", [])
-        ))
 
-        # Register the explanation ability
-        ability_registry.register_tool({
-            "tool_id": "mangle_explain",
-            "description": "Execute a query and explain the results",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "The query to explain"
-                    }
+        ability_registry.register_tool(
+            contract={
+                "tool_id": "mangle_rule_catalog",
+                "description": "List available Mangle rules",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {},
                 },
-                "required": ["query"]
-            }
-        }, lambda args: mangle_ability.explain_query_results(
-            args.get("query", "")
-        ))
+            },
+            executor=_exec_rule_catalog,
+        )
 
-        # Register rule catalog ability
-        ability_registry.register_tool({
-            "tool_id": "mangle_rule_catalog",
-            "description": "List available Mangle rules discovered on disk or current session",
-            "input_schema": {"type": "object", "properties": {}},
-        }, lambda args: mangle_ability.rule_catalog())
+        # mangle_run_rule
+        async def _exec_run_rule(args):  # type: ignore
+            return await mangle_ability.run_rule(
+                args.get("rule", ""), args.get("query", "")
+            )
 
-        # Register generic rule runner
-        ability_registry.register_tool({
-            "tool_id": "mangle_run_rule",
-            "description": "Execute a one-off Mangle rule with a query over current facts",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "rule": {"type": "string", "description": "Rule clause to add for this run"},
-                    "query": {"type": "string", "description": "Query to execute"}
+        ability_registry.register_tool(
+            contract={
+                "tool_id": "mangle_run_rule",
+                "description": "Run a one-off rule with a query",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "rule": {"type": "string"},
+                        "query": {"type": "string"},
+                    },
+                    "required": ["rule", "query"],
                 },
-                "required": ["rule", "query"]
-            }
-        }, lambda args: mangle_ability.run_rule(
-            args.get("rule", ""), args.get("query", "")
-        ))
+            },
+            executor=_exec_run_rule,
+        )
 
         logger.info("Mangle abilities registered successfully")
         return True
-
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.error(f"Failed to register Mangle abilities: {e}")
         return False
 
 
-def register_mangle_plugin(_, config=None):
+def register_mangle_plugin(
+    _plugin_registry: Any | None = None,
+    _config: dict[str, Any] | None = None,
+):
     """Register the Mangle plugin with the Super Alita plugin registry.
 
+    The current application startup passes two positional arguments
+    (plugin_registry, config). We don't actually need either at the moment
+    because plugin registration uses the global registry, but we accept them
+    for forward compatibility and to avoid TypeErrors.
+
     Args:
-        _: Unused parameter (kept for API compatibility)
-        config: Optional configuration for the plugin
+        _plugin_registry: Optional plugin registry (unused currently)
+        _config: Optional configuration (unused currently)
 
     Returns:
-        True if registration successful, False otherwise
+        True if registration successful, False otherwise.
     """
     try:
-        # Create plugin instance
         plugin = ManglePluginInterface()
-
-        # Register with plugin registry
         register_plugin("mangle_plugin", plugin)
-
         logger.info("Mangle plugin registered successfully")
         return True
-
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.error(f"Failed to register Mangle plugin: {e}")
         return False
 
-def export_mangle_rules_to_mcp_box(mcp_box_dir: str = ".mcp_box") -> dict[str, int]:
+
+def export_mangle_rules_to_mcp_box(dir_: str = ".mcp_box") -> dict[str, int]:
     """Mine known rules and export generic Mangle rule tools to MCP-Box.
 
     Writes mangle_rule_catalog and mangle_run_rule if not already present,
@@ -262,7 +298,7 @@ def export_mangle_rules_to_mcp_box(mcp_box_dir: str = ".mcp_box") -> dict[str, i
     import json
     from pathlib import Path
 
-    box = Path(mcp_box_dir)
+    box = Path(dir_)
     box.mkdir(parents=True, exist_ok=True)
 
     base_specs = [
@@ -271,18 +307,36 @@ def export_mangle_rules_to_mcp_box(mcp_box_dir: str = ".mcp_box") -> dict[str, i
             "description": "List available Mangle rules",
             "action": "mangle_rule_catalog",
             "input_schema": {"type": "object", "properties": {}},
-            "output_schema": {"type": "object", "properties": {"rules": {"type": "array"}, "count": {"type": "integer"}}},
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "rules": {"type": "array"},
+                    "count": {"type": "integer"},
+                },
+            },
         },
         {
             "tool_id": "mangle_run_rule",
-            "description": "Execute a one-off Mangle rule with a query over current facts",
+            "description": (
+                "Execute a one-off Mangle rule with a query over current "
+                "facts"
+            ),
             "action": "mangle_run_rule",
             "input_schema": {
                 "type": "object",
                 "required": ["rule", "query"],
-                "properties": {"rule": {"type": "string"}, "query": {"type": "string"}},
+                "properties": {
+                    "rule": {"type": "string"},
+                    "query": {"type": "string"},
+                },
             },
-            "output_schema": {"type": "object", "properties": {"results": {"type": "array"}, "count": {"type": "integer"}}},
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "results": {"type": "array"},
+                    "count": {"type": "integer"},
+                },
+            },
         },
     ]
 
@@ -294,7 +348,9 @@ def export_mangle_rules_to_mcp_box(mcp_box_dir: str = ".mcp_box") -> dict[str, i
             written += 1
     index = abstract_mcp_box(box)
     return {"written": written, "catalog": len(index.get("tools", []))}
-def export_mangle_to_mcp_box(mcp_box_dir: str = ".mcp_box") -> dict[str, int]:
+
+
+def export_mangle_to_mcp_box(dir_: str = ".mcp_box") -> dict[str, int]:
     """Export core Mangle abilities as MCP specs into the MCP-Box.
 
     This aligns with the training-free AgentDistill pathway by packaging
@@ -309,13 +365,16 @@ def export_mangle_to_mcp_box(mcp_box_dir: str = ".mcp_box") -> dict[str, int]:
     import json
     from pathlib import Path
 
-    box = Path(mcp_box_dir)
+    box = Path(dir_)
     box.mkdir(parents=True, exist_ok=True)
 
     specs: list[dict[str, Any]] = [
         {
             "tool_id": "mangle_query",
-            "description": "Execute a Mangle deductive query against the knowledge base",
+            "description": (
+                "Execute a Mangle deductive query against the knowledge "
+                "base"
+            ),
             "action": "mangle_query",
             "input_schema": {
                 "type": "object",
@@ -363,7 +422,10 @@ def export_mangle_to_mcp_box(mcp_box_dir: str = ".mcp_box") -> dict[str, int]:
         },
         {
             "tool_id": "mangle_analyze_dependencies",
-            "description": "Analyze project dependencies for known vulnerabilities",
+            "description": (
+                "Analyze project dependencies for known "
+                "vulnerabilities"
+            ),
             "action": "mangle_analyze_dependencies",
             "input_schema": {
                 "type": "object",
@@ -396,21 +458,33 @@ def export_mangle_to_mcp_box(mcp_box_dir: str = ".mcp_box") -> dict[str, int]:
             "input_schema": {"type": "object", "properties": {}},
             "output_schema": {
                 "type": "object",
-                "properties": {"rules": {"type": "array"}, "count": {"type": "integer"}},
+                "properties": {
+                    "rules": {"type": "array"},
+                    "count": {"type": "integer"},
+                },
             },
         },
         {
             "tool_id": "mangle_run_rule",
-            "description": "Execute a one-off Mangle rule with a query over current facts",
+            "description": (
+                "Execute a one-off Mangle rule with a query over current "
+                "facts"
+            ),
             "action": "mangle_run_rule",
             "input_schema": {
                 "type": "object",
                 "required": ["rule", "query"],
-                "properties": {"rule": {"type": "string"}, "query": {"type": "string"}},
+                "properties": {
+                    "rule": {"type": "string"},
+                    "query": {"type": "string"},
+                },
             },
             "output_schema": {
                 "type": "object",
-                "properties": {"results": {"type": "array"}, "count": {"type": "integer"}},
+                "properties": {
+                    "results": {"type": "array"},
+                    "count": {"type": "integer"},
+                },
             },
         },
     ]
