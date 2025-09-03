@@ -22,7 +22,6 @@ class WorkflowType(Enum):
     TODO_RESOLUTION = "todo_resolution"
     CODE_REVIEW = "code_review"
     FEATURE_DEVELOPMENT = "feature_development"
-    # ADD THIS NEW WORKFLOW TYPE
     PASTED_CODE_INTEGRATION = "pasted_code_integration"
     # Future workflows can be added here
 
