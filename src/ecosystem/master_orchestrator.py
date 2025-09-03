@@ -196,7 +196,6 @@ class NoopMetricsCollector(IMetricsCollector):
         pass
 
 
-# Add these with the other Noop classes
 class NoopNamingEnforcer(INamingConventionEnforcer):
     async def validate_code_block(
         self, code_block: str, file_path: str
