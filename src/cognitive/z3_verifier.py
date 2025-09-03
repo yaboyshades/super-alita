@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
-
 import logging
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,12 +10,7 @@ try:  # soft dependency
     from z3 import (  # type: ignore
         Int,
         IntVal,
-        Bool,
-        BoolVal,
         Solver,
-        And,
-        Or,
-        Not,
         sat,
     )
 
@@ -27,8 +21,8 @@ except Exception:  # pragma: no cover - if z3 not present
 
 @dataclass
 class ConstraintAnalysis:
-    variables: Set[str]
-    operators: Set[str]
+    variables: set[str]
+    operators: set[str]
     nesting_depth: int
     estimated_cost: float
 
@@ -36,8 +30,8 @@ class ConstraintAnalysis:
 class ConstraintComplexityAnalyzer:
     """Heuristic constraint complexity analyzer suitable for gating timeouts."""
 
-    def _extract_variables(self, c: Dict[str, Any]) -> Set[str]:
-        vars_: Set[str] = set()
+    def _extract_variables(self, c: dict[str, Any]) -> set[str]:
+        vars_: set[str] = set()
         for key in ("left", "right"):
             val = c.get(key)
             if isinstance(val, str) and val.isidentifier():
@@ -49,11 +43,11 @@ class ConstraintComplexityAnalyzer:
                     vars_.add(v)
         return vars_
 
-    def _extract_operators(self, c: Dict[str, Any]) -> Set[str]:
+    def _extract_operators(self, c: dict[str, Any]) -> set[str]:
         op = str(c.get("op") or c.get("operator") or "").strip()
         return {op} if op else set()
 
-    def _estimate_cost(self, c: Dict[str, Any], var_count: int) -> float:
+    def _estimate_cost(self, c: dict[str, Any], var_count: int) -> float:
         kind = str(c.get("type") or "").lower()
         base = 1.0
         if kind in {"behavioral_constraint", "relation", "ineq", "eq"}:
@@ -62,9 +56,9 @@ class ConstraintComplexityAnalyzer:
             base = 2.0
         return base + 0.3 * var_count
 
-    async def analyze(self, constraints: List[Dict[str, Any]]) -> Dict[str, Any]:
-        out: Dict[str, Any] = {"constraints": {}, "total_variables": 0, "overall_complexity": 0.0}
-        all_vars: Set[str] = set()
+    async def analyze(self, constraints: list[dict[str, Any]]) -> dict[str, Any]:
+        out: dict[str, Any] = {"constraints": {}, "total_variables": 0, "overall_complexity": 0.0}
+        all_vars: set[str] = set()
         total_cost = 0.0
         for idx, c in enumerate(constraints):
             vars_ = self._extract_variables(c)
@@ -96,14 +90,14 @@ class ScalableZ3Verifier:
         self.max_timeout = max(self.base_timeout, int(max_timeout))
         self.analyzer = ConstraintComplexityAnalyzer()
 
-    async def analyze_constraints(self, constraints: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def analyze_constraints(self, constraints: list[dict[str, Any]]) -> dict[str, Any]:
         return await self.analyzer.analyze(constraints)
 
-    async def minimize_constraints(self, constraints: List[Dict[str, Any]], analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def minimize_constraints(self, constraints: list[dict[str, Any]], analysis: dict[str, Any]) -> list[dict[str, Any]]:
         # Keep type/correctness constraints always; defer performance/style when cost is high
-        essential: List[Dict[str, Any]] = []
-        nice: List[Dict[str, Any]] = []
-        cost_map: Dict[str, float] = {}
+        essential: list[dict[str, Any]] = []
+        nice: list[dict[str, Any]] = []
+        cost_map: dict[str, float] = {}
         cm = analysis.get("constraints", {})
         for idx, c in enumerate(constraints):
             key = str(idx)
@@ -128,18 +122,18 @@ class ScalableZ3Verifier:
                 current += ccost
         return essential
 
-    def _adaptive_timeout(self, analysis: Dict[str, Any]) -> int:
+    def _adaptive_timeout(self, analysis: dict[str, Any]) -> int:
         comp = float(analysis.get("overall_complexity", 1.0))
         to = int(self.base_timeout * (1.0 + comp / 5.0))
         return min(max(1, to), self.max_timeout)
 
-    async def verify(self, constraints: List[Dict[str, Any]], timeout_s: Optional[int] = None) -> Dict[str, Any]:
+    async def verify(self, constraints: list[dict[str, Any]], timeout_s: int | None = None) -> dict[str, Any]:
         if not Z3_AVAILABLE:
             return {"is_valid": False, "error": "z3-solver not installed"}
         solver = Solver()
         solver.set("timeout", int(1000 * (timeout_s or self.base_timeout)))
         # Collect variables
-        var_objs: Dict[str, Any] = {}
+        var_objs: dict[str, Any] = {}
 
         def _to_term(t: Any):
             if isinstance(t, int):

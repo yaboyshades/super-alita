@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import asyncio
 import ast
+import asyncio
 import logging
-import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:  # numpy is in requirements
     import numpy as np
@@ -28,7 +27,7 @@ class SimplePythonReward:
     Clipped to [0, 1].
     """
 
-    async def compute_reward(self, code: str, _context: Optional[Dict[str, Any]] = None) -> float:
+    async def compute_reward(self, code: str, _context: dict[str, Any] | None = None) -> float:
         try:
             tree = ast.parse(code)
         except SyntaxError:
@@ -59,7 +58,7 @@ class RewardComparison:
     correlation: float
     timestamp: datetime
     code_sample: str
-    context: Dict[str, Any]
+    context: dict[str, Any]
 
 
 class ShadowRewardDeployment:
@@ -70,16 +69,16 @@ class ShadowRewardDeployment:
     - When rollout > 0, will occasionally substitute alt score
     """
 
-    def __init__(self, stub_model: Any, torch_model: Any, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, stub_model: Any, torch_model: Any, config: dict[str, Any] | None = None) -> None:
         self.stub_model = stub_model
         self.torch_model = torch_model
         self.config = config or {}
-        self.comparisons: List[RewardComparison] = []
+        self.comparisons: list[RewardComparison] = []
         self.correlation_threshold: float = float(self.config.get("correlation_threshold", 0.8))
         self.correlation_window: int = int(self.config.get("correlation_window", 100))
         self.torch_enabled_percentage: float = 0.0
 
-    async def compute_reward_with_shadow(self, code: str, context: Optional[Dict[str, Any]] = None) -> float:
+    async def compute_reward_with_shadow(self, code: str, context: dict[str, Any] | None = None) -> float:
         context = context or {}
         # Production stub score
         stub_score = await self.stub_model.compute_reward(code, context)
@@ -105,17 +104,17 @@ class ShadowRewardDeployment:
                 logger.warning("shadow alt failed: %s", e)
         return stub_score
 
-    async def _safe_torch_compute(self, code: str, context: Dict[str, Any]) -> float:
+    async def _safe_torch_compute(self, code: str, context: dict[str, Any]) -> float:
         try:
             return await asyncio.wait_for(self.torch_model.compute_reward(code, context), timeout=5.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("torch reward timeout")
             return 0.5
         except Exception as e:  # pragma: no cover
             logger.error("torch reward error: %s", e)
             return 0.5
 
-    async def _collect_shadow_comparison(self, code: str, context: Dict[str, Any], stub_score: float, torch_future: asyncio.Task) -> None:
+    async def _collect_shadow_comparison(self, code: str, context: dict[str, Any], stub_score: float, torch_future: asyncio.Task) -> None:
         try:
             torch_score = await torch_future
             cmp = RewardComparison(
@@ -155,7 +154,7 @@ class ShadowRewardDeployment:
             self.torch_enabled_percentage = max(0.0, self.torch_enabled_percentage - 0.1)
         logger.info("shadow corr=%.3f, rollout=%.1f%%", corr, 100 * self.torch_enabled_percentage)
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         if not self.comparisons:
             return {"status": "collecting", "samples": 0, "rollout": self.torch_enabled_percentage}
         window = self.comparisons[-min(len(self.comparisons), 50) :]
