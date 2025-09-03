@@ -36,7 +36,7 @@ jobs:
         run: |
           python validate_deployment.py
 
-      - name: Optional: Lint/Type check (non-blocking here)
+      - name: Optional lint and type check (non-blocking)
         run: |
           if command -v ruff >/dev/null 2>&1; then ruff check . || true; fi
           if command -v black >/dev/null 2>&1; then black . --check || true; fi
