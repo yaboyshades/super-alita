@@ -282,7 +282,6 @@ class EcosystemOrchestrator:
                     "workflow_runs.todo_resolution", tags={"user_id": user_id}
                 )
                 return await self._orchestrate_todo_workflow(dev_context, context)
-        # ADD THIS NEW ROUTE
         elif action == "code_pasted":
             with self.telemetry.timer(
                 "workflow.integration.duration_ms", tags={"user_id": user_id}
