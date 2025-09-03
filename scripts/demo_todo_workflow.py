@@ -22,6 +22,7 @@ import argparse
 import asyncio
 import os
 import sys
+import tempfile
 
 # Add the source directory to the Python path to allow for absolute imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -49,6 +50,9 @@ async def main():
     parser.add_argument(
         "--user", type=str, default="demo_user", help="The user ID for the demo."
     )
+    # ADDED: New flag for VS Code simulation
+    parser.add_argument("--simulate-vscode", action="store_true", 
+                       help="Run the VS Code bridge simulation for the specified file.")
     args = parser.parse_args()
 
     print("--- 🚀 Initializing REUG Ecosystem Orchestrator Demo ---")
@@ -64,8 +68,8 @@ async def main():
     copilot_enhancer = None
     if github_token:
         print("✅ GITHUB_TOKEN found. Enabling real GitHub Code Search.")
-        bridge = GitHubCodeSearchBridge(token=github_token)
-        copilot_enhancer = CopilotContextEnhancerFromGitHub(bridge)
+        github_bridge = GitHubCodeSearchBridge(token=github_token)
+        copilot_enhancer = CopilotContextEnhancerFromGitHub(github_bridge)
     else:
         print("⚠️ GITHUB_TOKEN not found. Using No-Op for GitHub search.")
 
@@ -80,6 +84,26 @@ async def main():
     print(f"User: {args.user}")
     print(f"File: {args.file}")
     print(f'TODO: "{args.todo_text}"')
+
+    if args.simulate_vscode:
+        # Run the VS Code bridge simulation
+        from src.ecosystem.vscode_bridge import VSCodeBridgeSimulator
+        print("\n--- 🔗 Running VS Code Bridge Simulation ---")
+        bridge = VSCodeBridgeSimulator()
+        
+        # Create a temporary file with the TODO for simulation
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(f"# TODO: {args.todo_text}\n")
+            f.write("# This is a simulated file for the VS Code bridge demo\n")
+            temp_file = f.name
+        
+        try:
+            await bridge.scan_and_process_file(temp_file)
+        finally:
+            if os.path.exists(temp_file):
+                os.unlink(temp_file)
+        return
+    
     print("\n--- 📣 Orchestrator Events (Live) ---")
 
     # This is the main call to the orchestrator.

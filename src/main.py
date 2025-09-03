@@ -1319,6 +1319,68 @@ if FASTAPI_AVAILABLE:
             payload["rate_limit"] = rl_info
         return payload
 
+    # ---------------------- Patch 0003: Developer Experience & Team Integration ---------------------- #
+    
+    # Import team orchestrator at module level (will add this after creating the routes)
+    team_orchestrator: Any = None  # Global state for team orchestrator
+    
+    class DeveloperActionRequest(BaseModel):  # type: ignore[misc,valid-type]
+        user_id: str
+        action: str
+        context: dict[str, Any]
+    
+    @api_router.post("/developer-action")  # type: ignore
+    async def handle_developer_action(
+        req: DeveloperActionRequest,  # type: ignore
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> Any:  # type: ignore
+        """Handles developer actions from VS Code bridge."""
+        try:
+            # Get the orchestrator from app state if available
+            orchestrator = getattr(app.state, 'ecosystem_orchestrator', None)
+            if not orchestrator:
+                # Create a basic orchestrator for demonstration
+                from src.ecosystem.master_orchestrator import EcosystemOrchestrator
+                orchestrator = EcosystemOrchestrator()
+            
+            # Process the developer action through the orchestrator
+            result = await orchestrator.handle_developer_action(
+                req.user_id, req.action, req.context
+            )
+            
+            # Feed data to team orchestrator if available
+            global team_orchestrator
+            if team_orchestrator and req.action == "todo_detected":
+                team_orchestrator.consume_event(
+                    "workflow.todo_resolution.completed",
+                    {"context": req.context}
+                )
+            
+            return result
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+    
+    @api_router.get("/team/health")  # type: ignore
+    async def get_team_health() -> dict[str, Any]:  # type: ignore
+        """Returns a health summary and optimization suggestions for the team."""
+        global team_orchestrator
+        if not team_orchestrator:
+            from src.ecosystem.team_orchestrator import TeamProductivityOrchestrator
+            team_orchestrator = TeamProductivityOrchestrator()
+            
+            # Manually feed some sample data for the demo
+            team_orchestrator.consume_event(
+                "workflow.todo_resolution.completed", 
+                {"context": {"todo_text": "Refactor the authentication logic"}}
+            )
+            team_orchestrator.consume_event(
+                "workflow.todo_resolution.completed", 
+                {"context": {"todo_text": "Add new authentication endpoint"}}
+            )
+            
+        return team_orchestrator.generate_team_health_summary()
+
     # ---------------------- Auth management ---------------------- #
     auth_router = APIRouter(prefix="/api/v1/auth", tags=["auth"])  # type: ignore
 
