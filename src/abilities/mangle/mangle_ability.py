@@ -17,7 +17,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set
 
 from src.core.events import create_event
 from src.plugins.plugin_interface import PluginInterface

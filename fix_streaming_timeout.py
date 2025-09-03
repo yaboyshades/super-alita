@@ -11,24 +11,24 @@ from pathlib import Path
 def fix_uvicorn_config():
     """Apply uvicorn configuration fixes for streaming."""
     print("🔧 Applying Uvicorn Streaming Fixes...")
-    
+
     # Check if there's a uvicorn config file
     config_files = [
         "uvicorn.json",
-        "server.json", 
+        "server.json",
         ".uvicorn.json"
     ]
-    
+
     config_found = False
     for config_file in config_files:
         if Path(config_file).exists():
             print(f"✅ Found config: {config_file}")
             config_found = True
             break
-    
+
     if not config_found:
         print("📝 Creating uvicorn configuration...")
-        
+
         # Create optimized uvicorn config
         config = {
             "host": "127.0.0.1",
@@ -42,12 +42,12 @@ def fix_uvicorn_config():
             "access_log": True,
             "use_colors": True
         }
-        
+
         with open("uvicorn.json", "w") as f:
             json.dump(config, f, indent=2)
-        
+
         print("✅ Created uvicorn.json with optimized streaming settings")
-    
+
     # Print recommended startup command
     print("\n🚀 Recommended server startup:")
     print("uvicorn app:app --config uvicorn.json")
@@ -58,29 +58,29 @@ def fix_uvicorn_config():
 def check_app_config():
     """Check app.py for streaming configuration."""
     print("\n🔍 Checking App Configuration...")
-    
+
     app_py = Path("app.py")
     if app_py.exists():
         content = app_py.read_text()
-        
+
         # Check for timeout configurations
         streaming_configs = [
             "timeout",
-            "keep_alive", 
+            "keep_alive",
             "lifespan",
             "chunk"
         ]
-        
+
         found_configs = []
         for config in streaming_configs:
             if config in content.lower():
                 found_configs.append(config)
-        
+
         if found_configs:
             print(f"✅ Found streaming configs: {found_configs}")
         else:
             print("⚠️  No explicit streaming configs found")
-        
+
         # Check for CORS configuration
         if "cors" in content.lower():
             print("✅ CORS configuration found")
@@ -93,7 +93,7 @@ def check_app_config():
 def create_streaming_test_server():
     """Create a simple test server to validate streaming."""
     print("\n🧪 Creating Streaming Test Server...")
-    
+
     test_server_code = '''#!/usr/bin/env python3
 """
 Simple streaming test server to validate connection handling.
@@ -150,10 +150,10 @@ if __name__ == "__main__":
         access_log=True
     )
 '''
-    
+
     test_file = Path("test_streaming_server.py")
     test_file.write_text(test_server_code)
-    
+
     print(f"✅ Created {test_file}")
     print("🚀 Run with: python test_streaming_server.py")
     print("🧪 Test with: curl http://127.0.0.1:8081/test/stream")
@@ -164,11 +164,11 @@ def main():
     print("🔧 Streaming Connection Fix Tool")
     print("Following Super Alita Development Instructions")
     print("=" * 50)
-    
+
     fix_uvicorn_config()
     check_app_config()
     create_streaming_test_server()
-    
+
     print("\n" + "=" * 50)
     print("✅ Streaming fixes applied!")
     print("\n🎯 Next Steps:")

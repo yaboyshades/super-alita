@@ -356,7 +356,7 @@ class PredictiveWorldModel:
                 )
             # Implementation would load from configured storage
             # For now, just log
-            
+
         except Exception as e:
             logger.error(f"❌ Failed to load persistent data: {e}")
 

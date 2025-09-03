@@ -420,7 +420,7 @@ class ExecutionStatus(str, Enum):
 # GitHub Integration Event Schemas
 class GitHubEventType(str, Enum):
     """Types of GitHub events for cognitive agent integration."""
-    
+
     ISSUE_CREATED = "issue_created"
     ISSUE_UPDATED = "issue_updated"
     ISSUE_CLOSED = "issue_closed"
@@ -437,7 +437,7 @@ class GitHubEventType(str, Enum):
 
 class GitHubEventSchema(BaseModel):
     """Schema for GitHub events captured by the cognitive agent."""
-    
+
     event_type: GitHubEventType = Field(..., description="Type of GitHub event")
     repository: str = Field(..., description="Repository name (owner/repo)")
     actor: str = Field(..., description="GitHub username of the actor")
@@ -447,7 +447,7 @@ class GitHubEventSchema(BaseModel):
     payload: dict[str, Any] = Field(..., description="GitHub event payload")
     event_id: str = Field(..., description="Unique event identifier")
     session_id: str | None = Field(default=None, description="Associated session ID")
-    
+
     # Cognitive processing metadata
     attention_level: AttentionLevel = Field(
         default=AttentionLevel.MEDIUM, description="Cognitive attention priority"
@@ -462,7 +462,7 @@ class GitHubEventSchema(BaseModel):
 
 class GitHubPriorityMetrics(BaseModel):
     """Schema for GitHub-specific priority calculation metrics."""
-    
+
     has_security_alert: bool = Field(default=False, description="Has security implications")
     blocks_other_prs: bool = Field(default=False, description="Blocks other pull requests")
     has_stakeholder_mention: bool = Field(default=False, description="Mentions key stakeholders")
@@ -472,7 +472,7 @@ class GitHubPriorityMetrics(BaseModel):
     file_changes_count: int = Field(default=0, ge=0, description="Number of changed files")
     lines_changed: int = Field(default=0, ge=0, description="Lines of code changed")
     issue_labels: list[str] = Field(default_factory=list, description="GitHub issue labels")
-    
+
     # Relationship metrics
     related_issues: list[str] = Field(default_factory=list, description="Related issue numbers")
     dependent_prs: list[str] = Field(default_factory=list, description="Dependent PR numbers")
@@ -481,7 +481,7 @@ class GitHubPriorityMetrics(BaseModel):
 
 class GitHubApiRequest(BaseModel):
     """Schema for GitHub API requests."""
-    
+
     endpoint: str = Field(..., description="GitHub API endpoint")
     method: str = Field(default="GET", description="HTTP method")
     parameters: dict[str, Any] = Field(
@@ -498,7 +498,7 @@ class GitHubApiRequest(BaseModel):
 
 class GitHubApiResponse(BaseModel):
     """Schema for GitHub API responses."""
-    
+
     success: bool = Field(..., description="Whether request succeeded")
     status_code: int = Field(..., description="HTTP status code")
     data: Any = Field(default=None, description="Response data")
@@ -514,7 +514,7 @@ class GitHubApiResponse(BaseModel):
 
 class GitHubWorkflowConfig(BaseModel):
     """Schema for GitHub Actions workflow configuration."""
-    
+
     workflow_name: str = Field(..., description="Workflow name")
     trigger_events: list[str] = Field(..., description="Events that trigger workflow")
     cognitive_mode: str = Field(
@@ -530,5 +530,5 @@ class GitHubWorkflowConfig(BaseModel):
         default=True, description="Enable security scanning"
     )
     performance_monitoring: bool = Field(
-        default=True, description="Enable performance monitoring" 
+        default=True, description="Enable performance monitoring"
     )

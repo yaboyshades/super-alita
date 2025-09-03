@@ -8,8 +8,6 @@ including event processing, priority calculation, and API integration.
 
 import asyncio
 import json
-from datetime import datetime, timezone
-from typing import Dict, Any
 
 # Import our GitHub integration components
 import sys
@@ -42,7 +40,7 @@ def print_section(title: str):
 async def demo_github_event_processing():
     """Demonstrate GitHub event processing."""
     print_banner("GitHub Event Processing Demo")
-    
+
     # Create sample GitHub events
     events = [
         GitHubEventSchema(
@@ -78,23 +76,23 @@ async def demo_github_event_processing():
             actor="github-actions[bot]",
             payload={
                 "workflow_name": "CI/CD Pipeline",
-                "status": "failure", 
+                "status": "failure",
                 "conclusion": "failure"
             },
             event_id="workflow-run-789",
             attention_level=AttentionLevel.HIGH
         )
     ]
-    
+
     print_section("Processing GitHub Events")
-    
+
     for i, event in enumerate(events, 1):
         print(f"\n{i}. {event.event_type.value.replace('_', ' ').title()}")
         print(f"   Repository: {event.repository}")
         print(f"   Actor: {event.actor}")
         print(f"   Attention Level: {event.attention_level.value}")
         print(f"   Event ID: {event.event_id}")
-        
+
         # Show key payload data
         if event.event_type == GitHubEventType.ISSUE_CREATED:
             print(f"   Issue #{event.payload['issue_number']}: {event.payload['title']}")
@@ -106,16 +104,16 @@ async def demo_github_event_processing():
         elif event.event_type == GitHubEventType.WORKFLOW_RUN:
             print(f"   Workflow: {event.payload['workflow_name']}")
             print(f"   Status: {event.payload['status']} - {event.payload['conclusion']}")
-    
+
     return events
 
 
 async def demo_priority_calculation():
     """Demonstrate GitHub-enhanced priority calculation."""
     print_banner("GitHub-Enhanced Priority Calculation Demo")
-    
+
     calculator = GitHubPriorityCalculator()
-    
+
     # Create sample scenarios
     scenarios = [
         {
@@ -166,26 +164,26 @@ async def demo_priority_calculation():
             )
         }
     ]
-    
+
     print_section("Priority Calculation Results")
-    
+
     for i, scenario in enumerate(scenarios, 1):
         metrics = scenario["metrics"]
         priority = calculator.calculate_priority(metrics)
         explanation = calculator.get_priority_explanation(metrics, priority)
-        
+
         print(f"\n{i}. {scenario['name']}")
         print(f"   Priority Score: {priority:.2f}")
         print(f"   Category: {explanation['priority_category']}")
         print(f"   Base Priority: {explanation['base_priority']:.2f}")
         print(f"   GitHub Adjustment: {explanation['github_adjustment']:.2f}x")
         print(f"   Temporal Adjustment: {explanation['temporal_adjustment']:.2f}x")
-        
+
         if explanation['contributing_factors']:
             print("   Contributing Factors:")
             for factor in explanation['contributing_factors']:
                 print(f"     • {factor}")
-        
+
         if metrics.github_metrics:
             print("   GitHub Metrics:")
             if metrics.github_metrics.has_security_alert:
@@ -201,9 +199,9 @@ async def demo_priority_calculation():
 async def demo_github_cli_tool():
     """Demonstrate GitHub CLI tool integration."""
     print_banner("GitHub CLI Tool Integration Demo")
-    
+
     tool = GitHubCliTool()
-    
+
     # Test various GitHub CLI commands in dry-run mode
     commands = [
         "gh issue create --title 'New bug report' --body 'Found an issue' --label bug",
@@ -214,20 +212,20 @@ async def demo_github_cli_tool():
         "invalid command",  # This should fail validation
         "gh issue list; rm -rf /"  # This should fail security validation
     ]
-    
+
     print_section("GitHub CLI Command Execution (Dry-Run Mode)")
-    
+
     for i, command in enumerate(commands, 1):
         print(f"\n{i}. Command: {command}")
-        
+
         input_data = GitHubCliInput(
             command=command,
             dry_run=True,
             repository="super-alita/cognitive-agent"
         )
-        
+
         result = await tool.execute(input_data)
-        
+
         print(f"   Success: {result.success}")
         if result.success:
             print(f"   Output: {result.output}")
@@ -241,20 +239,20 @@ async def demo_github_cli_tool():
 async def demo_github_api_integration():
     """Demonstrate GitHub API integration (mock mode)."""
     print_banner("GitHub API Integration Demo")
-    
+
     print_section("GitHub API Client Features")
-    
+
     # Initialize client (without token for demo)
     client = GitHubApiClient(token=None)
-    
+
     print("✅ GitHub API Client initialized")
     print(f"   Base URL: {client.base_url}")
     print(f"   Rate Limit Buffer: {client.rate_limit_buffer}")
     print(f"   Timeout: {client.timeout}s")
-    
+
     # Show API request structure (won't actually make requests without token)
     from src.core.schemas import GitHubApiRequest
-    
+
     sample_requests = [
         GitHubApiRequest(
             endpoint="repos/super-alita/cognitive-agent/issues",
@@ -271,17 +269,17 @@ async def demo_github_api_integration():
             parameters={"status": "failure"}
         )
     ]
-    
+
     print("\n📋 Sample API Requests:")
     for i, request in enumerate(sample_requests, 1):
         print(f"\n{i}. {request.method} {request.endpoint}")
         if request.parameters:
             print(f"   Parameters: {json.dumps(request.parameters, indent=6)}")
         print(f"   Rate Limit Aware: {request.rate_limit_aware}")
-    
+
     # Demonstrate priority metrics extraction (mock)
     print_section("Priority Metrics Extraction")
-    
+
     mock_metrics = GitHubPriorityMetrics(
         has_security_alert=True,
         blocks_other_prs=False,
@@ -294,7 +292,7 @@ async def demo_github_api_integration():
         issue_labels=["bug", "critical", "security"],
         merge_conflicts=True
     )
-    
+
     print("📊 Sample Priority Metrics (extracted from GitHub API):")
     print(f"   Security Alert: {mock_metrics.has_security_alert}")
     print(f"   Blocks Other PRs: {mock_metrics.blocks_other_prs}")
@@ -311,12 +309,12 @@ async def demo_github_api_integration():
 async def demo_integration_workflow():
     """Demonstrate end-to-end GitHub integration workflow."""
     print_banner("End-to-End GitHub Integration Workflow")
-    
+
     print_section("Simulated GitHub Workflow")
-    
+
     # Step 1: GitHub event occurs
     print("1. 📨 GitHub Event: Pull Request Opened")
-    
+
     event = GitHubEventSchema(
         event_type=GitHubEventType.PR_OPENED,
         repository="super-alita/cognitive-agent",
@@ -333,23 +331,23 @@ async def demo_integration_workflow():
         },
         event_id="workflow-demo-pr-789"
     )
-    
+
     print(f"   PR #{event.payload['pr_number']}: {event.payload['title']}")
     print(f"   Actor: {event.actor}")
-    
+
     # Step 2: Extract priority metrics from event
     print("\n2. 🔍 Extracting Priority Metrics")
-    
+
     calculator = GitHubPriorityCalculator()
     priority_metrics = calculator.create_priority_metrics_from_github_event(event)
-    
+
     print(f"   Base Impact: {priority_metrics.impact}")
     print(f"   Base Urgency: {priority_metrics.urgency}")
     print(f"   GitHub Metrics: {'✅ Available' if priority_metrics.github_metrics else '❌ None'}")
-    
+
     # Step 3: Calculate enhanced priority
     print("\n3. 📊 Calculating Enhanced Priority")
-    
+
     # Enhance with additional GitHub metrics
     if priority_metrics.github_metrics:
         priority_metrics.github_metrics.has_security_alert = True
@@ -358,16 +356,16 @@ async def demo_integration_workflow():
         priority_metrics.github_metrics.lines_changed = (
             event.payload["additions"] + event.payload["deletions"]
         )
-    
+
     final_priority = calculator.calculate_priority(priority_metrics)
     explanation = calculator.get_priority_explanation(priority_metrics, final_priority)
-    
+
     print(f"   Final Priority Score: {final_priority:.2f}")
     print(f"   Priority Category: {explanation['priority_category']}")
-    
+
     # Step 4: Generate cognitive response (simulated)
     print("\n4. 🧠 Cognitive Agent Response")
-    
+
     if final_priority >= 15.0:
         response_urgency = "IMMEDIATE"
         actions = [
@@ -389,17 +387,17 @@ async def demo_integration_workflow():
             "Add to review queue",
             "Run standard CI/CD pipeline"
         ]
-    
+
     print(f"   Response Urgency: {response_urgency}")
     print("   Recommended Actions:")
     for action in actions:
         print(f"     • {action}")
-    
+
     # Step 5: Execute actions using GitHub CLI (dry-run)
     print("\n5. 🛠️ Executing Actions (Dry-Run)")
-    
+
     cli_tool = GitHubCliTool()
-    
+
     if final_priority >= 15.0:
         # High priority actions
         cli_commands = [
@@ -410,21 +408,21 @@ async def demo_integration_workflow():
         cli_commands = [
             "gh pr edit 789 --add-label needs-review"
         ]
-    
+
     for command in cli_commands:
         input_data = GitHubCliInput(
             command=command,
             dry_run=True,
             repository=event.repository
         )
-        
+
         result = await cli_tool.execute(input_data)
         print(f"   ✅ {command}")
         print(f"      Result: {result.output}")
-    
+
     print("\n6. 📈 Telemetry & Learning")
     print("   • Event processed and logged")
-    print("   • Priority calculation recorded") 
+    print("   • Priority calculation recorded")
     print("   • Action effectiveness will be monitored")
     print("   • Model will learn from outcome")
 
@@ -435,15 +433,15 @@ async def main():
     print("=" * 60)
     print("\nThis demo showcases the enhanced GitHub integration capabilities")
     print("added to the Super Alita cognitive agent architecture.")
-    
+
     try:
         # Run all demonstration sections
         await demo_github_event_processing()
-        await demo_priority_calculation() 
+        await demo_priority_calculation()
         await demo_github_cli_tool()
         await demo_github_api_integration()
         await demo_integration_workflow()
-        
+
         print_banner("Demo Complete!")
         print("\n✅ All GitHub integration features demonstrated successfully!")
         print("\n🎯 Key Capabilities Shown:")
@@ -457,7 +455,7 @@ async def main():
         print("   • Set up GitHub webhooks for real-time events")
         print("   • Deploy cognitive agent workflow in shadow mode")
         print("   • Monitor and tune priority calculation parameters")
-        
+
     except Exception as e:
         print(f"\n❌ Demo error: {str(e)}")
         import traceback

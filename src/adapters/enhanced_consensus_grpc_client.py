@@ -24,7 +24,9 @@ def _import_stubs():  # lazy import / generation
     except Exception:  # pragma: no cover
         # Attempt generation
         try:
-            import subprocess, sys, pathlib
+            import subprocess
+            import sys
+            import pathlib
 
             root = pathlib.Path(__file__).resolve().parent.parent
             script = root / "scripts" / "gen_protos.py"
