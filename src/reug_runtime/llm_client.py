@@ -16,9 +16,7 @@ try:  # pragma: no cover - optional dependency
     from telemetry import EventTypes, broadcast_agent_event  # type: ignore
 except Exception:  # pragma: no cover
 
-    async def broadcast_agent_event(  # type: ignore
-        *_, **__
-    ) -> None:  # noqa: D401
+    async def broadcast_agent_event(*_, **__) -> None:  # type: ignore  # noqa: D401
         """No-op broadcast when telemetry not available."""
         return None
 

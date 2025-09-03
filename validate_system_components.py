@@ -136,11 +136,11 @@ class ValidationTestSuite:
                     # Mock generation result
                     class MockResult:
                         def __init__(self):
-                            self.text = f"Mock response for: {kwargs.get('prompt', 'test')}"
+                            self.text = (
+                                f"Mock response for: {kwargs.get('prompt', 'test')}"
+                            )
                             self.confidence_score = 0.85
-                            self.logprobs = [
-                                {"token": "mock", "logprob": -0.1}
-                            ]
+                            self.logprobs = [{"token": "mock", "logprob": -0.1}]
                             self.generation_time = 0.1
                             self.metadata = {"mock": True}
 
@@ -190,9 +190,7 @@ class ValidationTestSuite:
         """Test confidence calibration functionality"""
         try:
             print("📋 Testing calibrator initialization...")
-            calibrator = MultiDomainConfidenceCalibrator(
-                cache_dir="./.test_cache"
-            )
+            calibrator = MultiDomainConfidenceCalibrator(cache_dir="./.test_cache")
 
             # Test calibration update
             print("📋 Testing calibration update...")
@@ -248,9 +246,7 @@ class ValidationTestSuite:
                 await asyncio.sleep(0.01)  # Simulate work
                 return "Tool executed successfully"
 
-            result = await gating_system.execute_tool(
-                "test_tool", mock_tool_function
-            )
+            result = await gating_system.execute_tool("test_tool", mock_tool_function)
 
             assert result.success == True
             assert result.output == "Tool executed successfully"
@@ -408,9 +404,7 @@ class ValidationTestSuite:
                 )
                 # May fail without real server, that's OK for validation
             except Exception:
-                print(
-                    "✓ Ability initialization handled connection error gracefully"
-                )
+                print("✓ Ability initialization handled connection error gracefully")
 
             # Test plugin info
             print("📋 Testing plugin info...")
@@ -443,9 +437,7 @@ class ValidationTestSuite:
                 return "integration_test_success"
 
             gating.register_tool("integration_test")
-            result = await gating.execute_tool(
-                "integration_test", test_function
-            )
+            result = await gating.execute_tool("integration_test", test_function)
             assert result.success == True
             assert result.output == "integration_test_success"
 
@@ -479,9 +471,7 @@ class ValidationTestSuite:
         print("=" * 60)
 
         total_tests = self.passed_tests + self.failed_tests
-        success_rate = (
-            (self.passed_tests / total_tests * 100) if total_tests > 0 else 0
-        )
+        success_rate = (self.passed_tests / total_tests * 100) if total_tests > 0 else 0
 
         print(f"Total Tests: {total_tests}")
         print(f"Passed: {self.passed_tests}")
@@ -489,13 +479,9 @@ class ValidationTestSuite:
         print(f"Success Rate: {success_rate:.1f}%")
 
         if self.failed_tests == 0:
-            print(
-                "\n🎉 ALL TESTS PASSED - Super Alita is ready for deployment!"
-            )
+            print("\n🎉 ALL TESTS PASSED - Super Alita is ready for deployment!")
         else:
-            print(
-                f"\n⚠️  {self.failed_tests} test(s) failed - review errors above"
-            )
+            print(f"\n⚠️  {self.failed_tests} test(s) failed - review errors above")
 
         print("\n📊 Detailed Results:")
         for result in self.test_results:

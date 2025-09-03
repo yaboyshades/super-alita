@@ -22,14 +22,16 @@ class MessageStore:
     def init_db(self):
         """Initialize database with proper indexing"""
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     type TEXT NOT NULL,
                     payload TEXT NOT NULL,
                     timestamp TEXT NOT NULL
                 )
-            """)
+            """
+            )
             # Add indexes for performance
             conn.execute("CREATE INDEX IF NOT EXISTS idx_type ON events(type)")
             conn.execute(

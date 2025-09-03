@@ -102,9 +102,9 @@ class SimpleTodoManager:
             "id": new_id,
             "title": task_data.get("title", "New Task"),
             "description": task_data.get("description", ""),
-            "status": "completed"
-            if task_data.get("completed", False)
-            else "not-started",
+            "status": (
+                "completed" if task_data.get("completed", False) else "not-started"
+            ),
         }
 
         todos_data["todoList"].append(new_todo)

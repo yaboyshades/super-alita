@@ -15,7 +15,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Any, Optional
 
 # Add project root to path to facilitate imports
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -23,8 +22,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import Super Alita specific modules
 try:
-    from src.context.retriever import fetch_context, get_consensus_methods
     from src.abilities.enhanced_consensus_ability import ConsensusMethod
+    from src.context.retriever import fetch_context, get_consensus_methods
 except ImportError:
     print("Warning: Could not import Super Alita modules. Using fallbacks.")
     ConsensusMethod = None
@@ -47,19 +46,22 @@ class PromptPipeline:
     def load_templates(self) -> None:
         """Load prompt templates from file."""
         try:
-            with open(self.template_path, "r", encoding="utf-8") as f:
+            with open(self.template_path, encoding="utf-8") as f:
                 self.templates = json.load(f)
         except Exception as e:
             print(f"Error loading templates: {e}")
             self.templates = {
-                "askExpert": "You are an expert {role}. \"{input}\". "
-                            "Provide the answer in {format}. Steps:",
-                "contextBlock": "=== CONTEXT ===\n• {title}: {snippet}\n=== END ==="
+                "askExpert": 'You are an expert {role}. "{input}". '
+                "Provide the answer in {format}. Steps:",
+                "contextBlock": "=== CONTEXT ===\n• {title}: {snippet}\n=== END ===",
             }
 
     def optimize_prompt(
-        self, user_input: str, role: str = "AI developer",
-        format_type: str = "detailed explanation", constraints: str = ""
+        self,
+        user_input: str,
+        role: str = "AI developer",
+        format_type: str = "detailed explanation",
+        constraints: str = "",
     ) -> str:
         """
         Apply prompt optimization using templates.
@@ -73,11 +75,15 @@ class PromptPipeline:
         Returns:
             Optimized prompt based on template
         """
-        template = self.templates.get("askExpert",
-            "You are an expert {role}. \"{input}\". Provide the answer in {format}.")
-        optimized = template.replace("{role}", role)\
-                           .replace("{input}", user_input)\
-                           .replace("{format}", format_type)
+        template = self.templates.get(
+            "askExpert",
+            'You are an expert {role}. "{input}". Provide the answer in {format}.',
+        )
+        optimized = (
+            template.replace("{role}", role)
+            .replace("{input}", user_input)
+            .replace("{format}", format_type)
+        )
 
         if constraints:
             optimized += f"\nConstraints: {constraints}"
@@ -85,7 +91,7 @@ class PromptPipeline:
         optimized += "\nLet's think step by step..."
         return optimized
 
-    def format_context_block(self, contexts: List[Dict[str, str]]) -> str:
+    def format_context_block(self, contexts: list[dict[str, str]]) -> str:
         """
         Format retrieved context into a block for prompt enhancement.
 
@@ -95,23 +101,26 @@ class PromptPipeline:
         Returns:
             Formatted context block
         """
-        template = self.templates.get("contextBlock",
-            "=== CONTEXT ===\n• {title}: {snippet}\n=== END ===")
+        template = self.templates.get(
+            "contextBlock", "=== CONTEXT ===\n• {title}: {snippet}\n=== END ==="
+        )
         blocks = []
 
         for ctx in contexts:
-            block = template.replace("{title}", ctx["title"])\
-                           .replace("{snippet}", ctx["snippet"])
+            block = template.replace("{title}", ctx["title"]).replace(
+                "{snippet}", ctx["snippet"]
+            )
             blocks.append(block)
 
         return "\n".join(blocks)
 
     async def build_enhanced_prompt(
-        self, user_input: str,
+        self,
+        user_input: str,
         role: str = "AI developer",
         format_type: str = "detailed explanation",
         constraints: str = "",
-        consensus_method: str = "weighted_vote"
+        consensus_method: str = "weighted_vote",
     ) -> str:
         """
         Build a complete enhanced prompt with context and optimization.
@@ -138,11 +147,14 @@ class PromptPipeline:
         # 4. Add DeepConf consensus information if applicable
         methods = await get_consensus_methods()
         if consensus_method in methods:
-            consensus_template = self.templates.get("deepConfConsensus",
-                "Using DeepConf consensus with method '{method}'")
-            consensus_block = consensus_template.replace("{method}", consensus_method)\
-                                              .replace("{num_samples}", "3")\
-                                              .replace("{temperature}", "0.7")
+            consensus_template = self.templates.get(
+                "deepConfConsensus", "Using DeepConf consensus with method '{method}'"
+            )
+            consensus_block = (
+                consensus_template.replace("{method}", consensus_method)
+                .replace("{num_samples}", "3")
+                .replace("{temperature}", "0.7")
+            )
             optimized = f"{optimized}\n\n{consensus_block}"
 
         # 5. Combine everything
@@ -164,17 +176,21 @@ class PromptPipeline:
         try:
             # Try to use Super Alita's consensus ability
             from src.main import create_app
+
             app = create_app()
             registry = app.state.ability_registry
 
             if registry and registry.knows("deepconf_consensus"):
                 print("Using Super Alita's DeepConf consensus...")
-                result = await registry.execute("deepconf_consensus", {
-                    "prompt": prompt,
-                    "method": "weighted_vote",
-                    "num_samples": 3,
-                    "temperature": 0.7
-                })
+                result = await registry.execute(
+                    "deepconf_consensus",
+                    {
+                        "prompt": prompt,
+                        "method": "weighted_vote",
+                        "num_samples": 3,
+                        "temperature": 0.7,
+                    },
+                )
                 return result.get("result", "No result from consensus")
             else:
                 print("Falling back to direct API call...")
@@ -185,9 +201,7 @@ class PromptPipeline:
         # Fallback: direct API call (using requests to avoid additional dependencies)
         import requests
 
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
 
@@ -198,13 +212,11 @@ class PromptPipeline:
                 headers=headers,
                 json={
                     "model": self.model,
-                    "messages": [
-                        {"role": "user", "content": prompt}
-                    ],
+                    "messages": [{"role": "user", "content": prompt}],
                     "temperature": 0.7,
-                    "max_tokens": 800
+                    "max_tokens": 800,
                 },
-                timeout=60  # Extended timeout
+                timeout=60,  # Extended timeout
             )
 
             if response.status_code == 200:

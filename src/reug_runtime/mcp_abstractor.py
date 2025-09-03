@@ -14,7 +14,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-
 _ID_RE = re.compile(r"[^a-z0-9_]+")
 
 
@@ -192,4 +191,3 @@ def abstract_mcp_box(box_dir: str | Path = ".mcp_box") -> dict[str, Any]:
     )
 
     return index.to_dict()
-

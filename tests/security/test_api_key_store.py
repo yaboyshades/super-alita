@@ -38,4 +38,3 @@ def test_store_expired_key(tmp_path: Path) -> None:
     result = store.add("expired@example.com", ttl_hours=0)
     k = result["api_key"]
     assert store.verify(k) is False
-

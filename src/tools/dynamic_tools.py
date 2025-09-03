@@ -174,9 +174,11 @@ class DynamicToolRegistry:
             self.creation_log.append(
                 {
                     "tool_name": schema.name,
-                    "created_at": schema.created_at.isoformat()
-                    if schema.created_at
-                    else datetime.now(UTC).isoformat(),
+                    "created_at": (
+                        schema.created_at.isoformat()
+                        if schema.created_at
+                        else datetime.now(UTC).isoformat()
+                    ),
                     "version": schema.version,
                     "parameter_count": len(schema.parameters),
                 }
@@ -218,9 +220,9 @@ class DynamicToolRegistry:
             "tool_usage": {
                 name: {
                     "call_count": tool.call_count,
-                    "last_called": tool.last_called.isoformat()
-                    if tool.last_called
-                    else None,
+                    "last_called": (
+                        tool.last_called.isoformat() if tool.last_called else None
+                    ),
                 }
                 for name, tool in self.tools.items()
             },

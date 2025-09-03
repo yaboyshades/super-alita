@@ -25,18 +25,25 @@ def test_health() -> bool:
         print(f"❌ Health Check Error: {e}")
         return False
 
+
 def test_tools_catalog() -> dict[str, Any]:
     """Test dynamic tools catalog"""
     try:
         response = requests.get("http://127.0.0.1:8080/tools/catalog", timeout=5)
         if response.status_code == 200:
             tools = response.json()
-            tool_names = [tool.get('name', 'unnamed') for tool in tools]
+            tool_names = [tool.get("name", "unnamed") for tool in tools]
             print(f"✅ Tools Catalog: {len(tools)} tools available")
-            print(f"   📋 Tool Names: {', '.join(tool_names[:5])}{'...' if len(tool_names) > 5 else ''}")
+            print(
+                f"   📋 Tool Names: {', '.join(tool_names[:5])}{'...' if len(tool_names) > 5 else ''}"
+            )
 
             # Check for key dynamic tools
-            dynamic_tools = ['deepconf_consensus', 'reug_start_turn', 'reug_stream_next']
+            dynamic_tools = [
+                "deepconf_consensus",
+                "reug_start_turn",
+                "reug_stream_next",
+            ]
             found_dynamic = [tool for tool in dynamic_tools if tool in tool_names]
             print(f"   🎯 Dynamic Tools Found: {', '.join(found_dynamic)}")
 
@@ -48,27 +55,30 @@ def test_tools_catalog() -> dict[str, Any]:
         print(f"❌ Tools Catalog Error: {e}")
         return {"success": False}
 
+
 def test_consensus_ability() -> bool:
     """Test dynamic consensus ability"""
     try:
         payload = {
             "prompt": "What is machine learning?",
             "num_samples": 2,
-            "temperature": 0.7
+            "temperature": 0.7,
         }
         response = requests.post(
             "http://127.0.0.1:8080/ability/execute/deepconf_consensus",
             json=payload,
-            timeout=120
+            timeout=120,
         )
         if response.status_code == 200:
             result = response.json()
-            consensus_text = result.get('result', {}).get('consensus_text', '')
-            confidence = result.get('result', {}).get('consensus_confidence', 0)
+            consensus_text = result.get("result", {}).get("consensus_text", "")
+            confidence = result.get("result", {}).get("consensus_confidence", 0)
 
             print("✅ Consensus Ability Working!")
             print(f"   🎯 Confidence: {confidence:.2f}")
-            print(f"   📝 Response: {consensus_text[:100]}{'...' if len(consensus_text) > 100 else ''}")
+            print(
+                f"   📝 Response: {consensus_text[:100]}{'...' if len(consensus_text) > 100 else ''}"
+            )
             return True
         else:
             print(f"❌ Consensus Test Failed: {response.status_code}")
@@ -77,6 +87,7 @@ def test_consensus_ability() -> bool:
     except Exception as e:
         print(f"❌ Consensus Test Error: {e}")
         return False
+
 
 def test_streaming_chat() -> bool:
     """Test streaming chat endpoint (POST with GET fallback)."""
@@ -116,6 +127,7 @@ def test_streaming_chat() -> bool:
     except Exception as e:
         print(f"❌ Streaming Chat Error: {e}")
         return False
+
 
 def main():
     """Run all validation tests"""
@@ -158,6 +170,7 @@ def main():
     else:
         print("⚠️  Some systems need attention")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

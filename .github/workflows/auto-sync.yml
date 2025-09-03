@@ -1,0 +1,91 @@
+name: Auto Sync
+
+on:
+  schedule:
+    - cron: '17 * * * *'  # hourly at :17
+  workflow_dispatch: {}
+  push:
+    branches:
+      - master
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  SYNC_BRANCH_MAIN: master
+  UPSTREAM_REMOTE: upstream
+  ORIGIN_REMOTE: origin
+
+jobs:
+  repo-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream remote (if provided)
+        if: env.UPSTREAM_REMOTE == 'upstream'
+        run: |
+          if git remote get-url upstream 2>/dev/null; then
+            echo "Upstream already set";
+          elif [ -n "${{ secrets.UPSTREAM_URL }}" ]; then
+            git remote add upstream "${{ secrets.UPSTREAM_URL }}";
+          else
+            echo 'No UPSTREAM_URL secret provided; skipping upstream add';
+          fi
+
+      - name: Fetch remotes
+        run: |
+          git fetch origin --prune || true
+          if git remote get-url upstream 2>/dev/null; then git fetch upstream --prune || true; fi
+
+      - name: Merge/Fast-forward from upstream
+        run: |
+          TARGET_BRANCH=${SYNC_BRANCH_MAIN}
+          git checkout "$TARGET_BRANCH"
+          if git remote get-url upstream 2>/dev/null; then
+            if git rev-parse upstream/$TARGET_BRANCH >/dev/null 2>&1; then
+              git merge --ff-only upstream/$TARGET_BRANCH || git merge --no-edit upstream/$TARGET_BRANCH || true
+            fi
+          fi
+
+      - name: Resolve trivial conflicts (ours preference markers)
+        run: |
+          # Very conservative auto-resolution: keep ours for docs conflicts with markers
+          set +e
+          grep -rl '<<<<<<<' . | while read f; do
+            echo "Conflict in $f";
+            if echo "$f" | grep -Eq '\\.(md|txt|json|toml|yml)$'; then
+              # Try crude strategy if trivial
+              perl -0777 -pi -e 's/<<<<<<<.*?=======//s; s/>>>>>>>.*?\n//s' "$f" || true
+              git add "$f" || true
+            fi
+          done
+          set -e
+
+      - name: Commit sync changes (if any)
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No sync changes"; exit 0; fi
+          git commit -m "chore(sync): auto upstream fast-forward $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "Nothing to commit"
+
+      - name: Push changes
+        run: |
+          git push origin ${SYNC_BRANCH_MAIN} || echo "Push skipped"
+
+      - name: Open PR for upstream divergence
+        if: ${{ failure() }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          commit-message: "chore(sync): auto resolution attempt"
+          branch: chore/auto-sync-fallback
+          delete-branch: true
+          title: "Auto Sync Fallback"
+          body: "Automated fallback PR due to non fast-forward merge. Please review manually."

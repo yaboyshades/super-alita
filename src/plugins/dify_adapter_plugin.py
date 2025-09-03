@@ -119,9 +119,11 @@ class DifyAdapterPlugin(PluginInterface):
             async with self._session.post(
                 f"{self._cfg.api_url}/callbacks/{callback_id}",
                 json=payload,
-                headers={"Authorization": f"Bearer {self._cfg.api_key}"}
-                if self._cfg.api_key
-                else None,
+                headers=(
+                    {"Authorization": f"Bearer {self._cfg.api_key}"}
+                    if self._cfg.api_key
+                    else None
+                ),
                 timeout=aiohttp.ClientTimeout(total=20),
             ) as resp:
                 await resp.text()

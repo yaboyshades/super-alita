@@ -210,9 +210,11 @@ class PerplexicaSearchTool:
                 "reasoning": ("The search query did not return any matching results."),
                 "confidence": 0.0,
                 "followup_questions": [
-                    f"Try searching for related terms to '{query}'"
-                    if query
-                    else "Try a more specific query",
+                    (
+                        f"Try searching for related terms to '{query}'"
+                        if query
+                        else "Try a more specific query"
+                    ),
                     "Consider broadening your search criteria",
                 ],
             }
@@ -230,12 +232,16 @@ class PerplexicaSearchTool:
         confidence = min(0.95, 0.6 + (len(results) * 0.05))
 
         followups = [
-            f"What are the implications of {query}?"
-            if query
-            else "What are the key implications?",
-            f"How does {query} compare to alternatives?"
-            if query
-            else "How does this compare to alternatives?",
+            (
+                f"What are the implications of {query}?"
+                if query
+                else "What are the key implications?"
+            ),
+            (
+                f"How does {query} compare to alternatives?"
+                if query
+                else "How does this compare to alternatives?"
+            ),
         ]
 
         return {

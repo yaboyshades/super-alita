@@ -84,7 +84,9 @@ class ToolRegistry:
         finally:
             duration_ms = (time.perf_counter() - start) * 1000
             try:
-                telemetry.emit("tool_invocation", duration_ms=duration_ms, success=success)
+                telemetry.emit(
+                    "tool_invocation", duration_ms=duration_ms, success=success
+                )
             except Exception:  # pragma: no cover - optional telemetry
                 pass
 

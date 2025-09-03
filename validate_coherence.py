@@ -47,7 +47,9 @@ def _get_json(url: str, timeout: int | float = READ_TIMEOUT) -> tuple[bool, Any]
         return False, str(e)
 
 
-def _post_json(url: str, payload: dict[str, Any], timeout: int | float = READ_TIMEOUT) -> tuple[bool, Any]:
+def _post_json(
+    url: str, payload: dict[str, Any], timeout: int | float = READ_TIMEOUT
+) -> tuple[bool, Any]:
     try:
         r = requests.post(url, json=payload, timeout=timeout)
         if r.status_code != 200:
@@ -91,7 +93,9 @@ def test_ability_consensus() -> bool:
         "temperature": 0.2,
         "max_tokens": 32,
     }
-    ok, data = _post_json(f"{BASE}/ability/execute/deepconf_consensus", payload, timeout=120)
+    ok, data = _post_json(
+        f"{BASE}/ability/execute/deepconf_consensus", payload, timeout=120
+    )
     if not ok:
         _fail("Ability: deepconf_consensus", json.dumps(data))
         return False
@@ -133,7 +137,11 @@ def test_streaming() -> bool:
 
 def test_mcp_loop() -> bool:
     # Brainstorm
-    ok, props = _post_json(f"{BASE}/tools/mcp/brainstorm", {"task": "Fetch a URL and extract text"}, timeout=15)
+    ok, props = _post_json(
+        f"{BASE}/tools/mcp/brainstorm",
+        {"task": "Fetch a URL and extract text"},
+        timeout=15,
+    )
     if not ok:
         _fail("MCP brainstorm", json.dumps(props))
         return False
@@ -153,14 +161,18 @@ def test_mcp_loop() -> bool:
         return False
     # Execute
     ok, out = _post_json(
-        f"{BASE}/tools/execute/{tool_id}", {"args": {"url": "https://example.com", "truncate": 500}}, timeout=20
+        f"{BASE}/tools/execute/{tool_id}",
+        {"args": {"url": "https://example.com", "truncate": 500}},
+        timeout=20,
     )
     if not ok:
         _fail("MCP execute", json.dumps(out))
         return False
     try:
         content = (out.get("result", {}) or {}).get("content", "")
-        if isinstance(content, str) and ("Example Domain" in content or len(content) > 0):
+        if isinstance(content, str) and (
+            "Example Domain" in content or len(content) > 0
+        ):
             _ok(f"MCP loop ({tool_id})")
             return True
         _fail("MCP execute", "unexpected content")

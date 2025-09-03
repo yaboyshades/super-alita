@@ -19,17 +19,9 @@ def find_real_mangle_binary():
     # Check if Mangle is in PATH
     try:
         if platform.system() == "Windows":
-            result = subprocess.run(
-                ["where", "mangle"],
-                capture_output=True,
-                text=True
-            )
+            result = subprocess.run(["where", "mangle"], capture_output=True, text=True)
         else:
-            result = subprocess.run(
-                ["which", "mangle"],
-                capture_output=True,
-                text=True
-            )
+            result = subprocess.run(["which", "mangle"], capture_output=True, text=True)
 
         if result.returncode == 0:
             mangle_path = result.stdout.strip()
@@ -52,14 +44,22 @@ def find_real_mangle_binary():
                 build_dir.mkdir(exist_ok=True)
 
                 build_cmd = [
-                    "go", "build", "-o",
-                    str(build_dir / "mangle" + (".exe" if platform.system() == "Windows" else "")),
-                    "./mangle/cmd/mangle"
+                    "go",
+                    "build",
+                    "-o",
+                    str(
+                        build_dir / "mangle"
+                        + (".exe" if platform.system() == "Windows" else "")
+                    ),
+                    "./mangle/cmd/mangle",
                 ]
 
                 try:
                     subprocess.run(build_cmd, check=True)
-                    mangle_path = str(build_dir / "mangle" + (".exe" if platform.system() == "Windows" else ""))
+                    mangle_path = str(
+                        build_dir / "mangle"
+                        + (".exe" if platform.system() == "Windows" else "")
+                    )
                     print(f"✅ Built Mangle binary at: {mangle_path}")
                     return mangle_path
                 except subprocess.CalledProcessError as e:
@@ -107,8 +107,9 @@ def setup_mangle_binary(mock_only=False):
 
 def start_server(port=8080, reload=True):
     """Start the Super Alita server."""
-    print("🚀 Starting Super Alita server with Mangle integration "
-          f"on port {port}...")
+    print(
+        "🚀 Starting Super Alita server with Mangle integration " f"on port {port}..."
+    )
 
     cmd = [sys.executable, "-m", "uvicorn", "app:app"]
     if reload:
@@ -124,17 +125,26 @@ def start_server(port=8080, reload=True):
 def parse_args():
     """Parse command line arguments."""
     import argparse
-    parser = argparse.ArgumentParser(
-        description="Start Super Alita with Mangle integration")
 
-    parser.add_argument("--port", type=int, default=8080,
-                        help="Port to run the server on (default: 8080)")
-    parser.add_argument("--no-reload", action="store_true",
-                        help="Disable automatic reload on code changes")
+    parser = argparse.ArgumentParser(
+        description="Start Super Alita with Mangle integration"
+    )
+
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port to run the server on (default: 8080)",
+    )
+    parser.add_argument(
+        "--no-reload",
+        action="store_true",
+        help="Disable automatic reload on code changes",
+    )
     parser.add_argument(
         "--mock-only",
         action="store_true",
-        help="Force use of mock Mangle binary even if real one exists"
+        help="Force use of mock Mangle binary even if real one exists",
     )
 
     return parser.parse_args()
@@ -155,8 +165,10 @@ def setup_environment(mock_only=False):
 
     print("✅ Environment configured successfully!")
     print(f"- MANGLE_BIN_PATH: {os.environ.get('MANGLE_BIN_PATH')}")
-    print("- Auto-discover abilities: " +
-          f"{os.environ.get('ALITA_AUTO_DISCOVER_ABILITIES')}")
+    print(
+        "- Auto-discover abilities: "
+        + f"{os.environ.get('ALITA_AUTO_DISCOVER_ABILITIES')}"
+    )
 
 
 def main():

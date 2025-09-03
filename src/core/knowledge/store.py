@@ -133,7 +133,8 @@ class KnowledgeStore:
         self.connection.row_factory = sqlite3.Row  # Enable dict-like access
 
         # Create atoms table
-        self.connection.execute("""
+        self.connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS atoms (
                 atom_id TEXT PRIMARY KEY,
                 atom_type TEXT NOT NULL,
@@ -143,10 +144,12 @@ class KnowledgeStore:
                 updated_at TEXT NOT NULL,
                 hash_signature TEXT NOT NULL UNIQUE
             )
-        """)
+        """
+        )
 
         # Create bonds table
-        self.connection.execute("""
+        self.connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS bonds (
                 bond_id TEXT PRIMARY KEY,
                 from_atom_id TEXT NOT NULL,
@@ -159,7 +162,8 @@ class KnowledgeStore:
                 FOREIGN KEY (from_atom_id) REFERENCES atoms (atom_id),
                 FOREIGN KEY (to_atom_id) REFERENCES atoms (atom_id)
             )
-        """)
+        """
+        )
 
         # Create indexes for performance
         self.connection.execute(

@@ -98,6 +98,7 @@ class PythonicPreprocessorPlugin(PluginInterface):
         if GEMINI_AVAILABLE:
             try:
                 import os
+
                 api_key = config.get("gemini_api_key") or os.getenv("GEMINI_API_KEY")
                 if api_key:
                     genai.configure(api_key=api_key)

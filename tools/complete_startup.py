@@ -98,7 +98,9 @@ class SuperAlitaOrchestrator:
         print("✅ Prerequisites check passed")
         return True
 
-    def _run(self, argv: list[str], *, timeout: int | None = None) -> tuple[int, str, str]:
+    def _run(
+        self, argv: list[str], *, timeout: int | None = None
+    ) -> tuple[int, str, str]:
         """Run a command with repo proc util when available; returns rc, out, err."""
         if proc is not None:
             try:
@@ -368,7 +370,9 @@ class SuperAlitaOrchestrator:
                 "max_tokens": 50,
             }
             r = requests.post(
-                f"{base_url}/ability/execute/deepconf_consensus", json=payload, timeout=60
+                f"{base_url}/ability/execute/deepconf_consensus",
+                json=payload,
+                timeout=60,
             )
             if r.status_code != 200:
                 print(f"❌ Consensus test failed: HTTP {r.status_code}")
@@ -410,7 +414,10 @@ class SuperAlitaOrchestrator:
                 print("🔄 Starting REUG tool-based turn...")
                 start = requests.post(
                     "http://127.0.0.1:8080/tools/reug_start_turn",
-                    json={"message": user_input, "session_id": f"interactive_{int(time.time())}"},
+                    json={
+                        "message": user_input,
+                        "session_id": f"interactive_{int(time.time())}",
+                    },
                     timeout=15,
                 )
                 if start.status_code != 200:
@@ -436,7 +443,9 @@ class SuperAlitaOrchestrator:
                     for c in chunks:
                         total_chunks += 1
                         out = str(c)
-                        print(f"   {total_chunks:02d}: {out[:200] + ('…' if len(out) > 200 else '')}")
+                        print(
+                            f"   {total_chunks:02d}: {out[:200] + ('…' if len(out) > 200 else '')}"
+                        )
                     if not finished and not chunks:
                         time.sleep(0.3)
             except KeyboardInterrupt:
@@ -501,4 +510,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

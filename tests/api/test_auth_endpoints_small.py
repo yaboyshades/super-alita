@@ -48,4 +48,3 @@ async def test_auth_create_and_query_roundtrip(monkeypatch):
         assert r.status_code in (200, 429)  # depending on limiter timing
         if r.status_code == 429:
             assert r.headers.get("Retry-After") is not None
-

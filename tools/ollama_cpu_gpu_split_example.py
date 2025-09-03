@@ -61,11 +61,22 @@ def generate(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ollama CPU+GPU split test")
-    parser.add_argument("--model", required=True, help="Model name (e.g., llama3:8b or custom)")
+    parser.add_argument(
+        "--model", required=True, help="Model name (e.g., llama3:8b or custom)"
+    )
     parser.add_argument("--prompt", default="Say hi!", help="Prompt text")
-    parser.add_argument("--gpu-layers", type=int, default=None, help="Layers offloaded to GPU (mapped to num_gpu)")
-    parser.add_argument("--num-thread", type=int, default=None, help="CPU threads for CPU-bound layers")
-    parser.add_argument("--host", default="http://localhost:11434", help="Ollama host URL")
+    parser.add_argument(
+        "--gpu-layers",
+        type=int,
+        default=None,
+        help="Layers offloaded to GPU (mapped to num_gpu)",
+    )
+    parser.add_argument(
+        "--num-thread", type=int, default=None, help="CPU threads for CPU-bound layers"
+    )
+    parser.add_argument(
+        "--host", default="http://localhost:11434", help="Ollama host URL"
+    )
     args = parser.parse_args()
 
     generate(

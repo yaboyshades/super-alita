@@ -152,7 +152,9 @@ def _collect_tool_capabilities() -> dict[str, Any]:
     try:
         # Attempt integration with a tool registry when configured
         tools["status"] = "limited"
-        tools["note"] = "Tool registry integration not configured; reporting metadata only"
+        tools["note"] = (
+            "Tool registry integration not configured; reporting metadata only"
+        )
 
         # Example of what this could look like:
         # from ..core.tool_registry import get_all_tools

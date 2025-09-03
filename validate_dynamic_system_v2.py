@@ -37,10 +37,12 @@ def test_tools_catalog() -> dict[str, Any]:
         tools = r.json()
         names = [t.get("name", "unnamed") for t in tools]
         print(f"? Tools: {len(names)} available")
-        print(
-            f"   ?? First: {', '.join(names[:5])}{'...' if len(names) > 5 else ''}"
-        )
-        dyn = [n for n in ["deepconf_consensus", "reug_start_turn", "reug_stream_next"] if n in names]
+        print(f"   ?? First: {', '.join(names[:5])}{'...' if len(names) > 5 else ''}")
+        dyn = [
+            n
+            for n in ["deepconf_consensus", "reug_start_turn", "reug_stream_next"]
+            if n in names
+        ]
         print(f"   ?? Dynamic: {', '.join(dyn)}")
         return {"success": True, "tools": tools}
     except Exception as e:
@@ -58,7 +60,9 @@ def test_consensus_via_reug() -> bool:
             ),
             "session_id": "validation_consensus",
         }
-        s = requests.post(f"{BASE}/tools/reug_start_turn", json=start_payload, timeout=10)
+        s = requests.post(
+            f"{BASE}/tools/reug_start_turn", json=start_payload, timeout=10
+        )
         if s.status_code != 200:
             print(f"? start_turn failed: {s.status_code}")
             print(f"   body: {s.text[:200]}")
@@ -86,7 +90,11 @@ def test_consensus_via_reug() -> bool:
             chunks = data.get("chunks", []) or []
             finished = data.get("finished", False)
             for ev in chunks:
-                if isinstance(ev, dict) and ev.get("type") == "AbilitySucceeded" and ev.get("tool") == "deepconf_consensus":
+                if (
+                    isinstance(ev, dict)
+                    and ev.get("type") == "AbilitySucceeded"
+                    and ev.get("tool") == "deepconf_consensus"
+                ):
                     res = ev.get("result", {}) or {}
                     consensus_text = res.get("consensus_text", "")
                     try:
@@ -95,7 +103,11 @@ def test_consensus_via_reug() -> bool:
                         confidence = 0.0
                     method = res.get("aggregation_method") or "weighted_vote"
                     found = True
-                if isinstance(ev, dict) and ev.get("type") == "TaskSucceeded" and not consensus_text:
+                if (
+                    isinstance(ev, dict)
+                    and ev.get("type") == "TaskSucceeded"
+                    and not consensus_text
+                ):
                     try:
                         consensus_text = (ev.get("data", {}) or {}).get("content", "")
                     except Exception:
@@ -108,7 +120,9 @@ def test_consensus_via_reug() -> bool:
             print(f"   ?? Confidence: {confidence:.2f}")
             if method:
                 print(f"   ?? Method: {method}")
-            print(f"   ?? Text: {consensus_text[:120]}{'...' if len(consensus_text) > 120 else ''}")
+            print(
+                f"   ?? Text: {consensus_text[:120]}{'...' if len(consensus_text) > 120 else ''}"
+            )
             return True
         print("? Consensus not observed in stream")
         return False
@@ -120,14 +134,18 @@ def test_consensus_via_reug() -> bool:
 def test_streaming_chat() -> bool:
     try:
         payload = {"message": "Hello from validator", "session_id": "validation_test"}
-        r = requests.post(f"{BASE}/v1/chat/stream", json=payload, timeout=10, stream=True)
+        r = requests.post(
+            f"{BASE}/v1/chat/stream", json=payload, timeout=10, stream=True
+        )
         if r.status_code != 200:
             print(f"? Stream failed: {r.status_code}")
             return False
         first = next(r.iter_lines(decode_unicode=True), None)
         if first:
             print("? Streaming: OK")
-            print(f"   ?? First: {str(first)[:80]}{'...' if first and len(str(first))>80 else ''}")
+            print(
+                f"   ?? First: {str(first)[:80]}{'...' if first and len(str(first))>80 else ''}"
+            )
             return True
         print("? Streaming: no content")
         return False
@@ -169,4 +187,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

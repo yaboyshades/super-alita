@@ -134,11 +134,14 @@ def make_event_bus() -> BaseEventBus:
 
 # ---- Typed helper emitters (optional) --------------------------------------
 
+
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def evt_task_started(correlation_id: str, goal: str, session_id: str | None = None) -> dict[str, Any]:
+def evt_task_started(
+    correlation_id: str, goal: str, session_id: str | None = None
+) -> dict[str, Any]:
     return {
         "type": "TaskStarted",
         "correlation_id": correlation_id,
@@ -148,7 +151,9 @@ def evt_task_started(correlation_id: str, goal: str, session_id: str | None = No
     }
 
 
-def evt_llm_chunk(correlation_id: str, text: str, session_id: str | None = None) -> dict[str, Any]:
+def evt_llm_chunk(
+    correlation_id: str, text: str, session_id: str | None = None
+) -> dict[str, Any]:
     return {
         "type": "LLMChunk",
         "correlation_id": correlation_id,
@@ -158,7 +163,13 @@ def evt_llm_chunk(correlation_id: str, text: str, session_id: str | None = None)
     }
 
 
-def evt_ability_called(correlation_id: str, span_id: str, tool: str, args: Any | None = None, session_id: str | None = None) -> dict[str, Any]:
+def evt_ability_called(
+    correlation_id: str,
+    span_id: str,
+    tool: str,
+    args: Any | None = None,
+    session_id: str | None = None,
+) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "type": "AbilityCalled",
         "correlation_id": correlation_id,
@@ -172,7 +183,13 @@ def evt_ability_called(correlation_id: str, span_id: str, tool: str, args: Any |
     return payload
 
 
-def evt_ability_succeeded(correlation_id: str, span_id: str, tool: str, result: Any, session_id: str | None = None) -> dict[str, Any]:
+def evt_ability_succeeded(
+    correlation_id: str,
+    span_id: str,
+    tool: str,
+    result: Any,
+    session_id: str | None = None,
+) -> dict[str, Any]:
     return {
         "type": "AbilitySucceeded",
         "correlation_id": correlation_id,
@@ -184,7 +201,13 @@ def evt_ability_succeeded(correlation_id: str, span_id: str, tool: str, result: 
     }
 
 
-def evt_ability_failed(correlation_id: str, span_id: str, tool: str, error: str, session_id: str | None = None) -> dict[str, Any]:
+def evt_ability_failed(
+    correlation_id: str,
+    span_id: str,
+    tool: str,
+    error: str,
+    session_id: str | None = None,
+) -> dict[str, Any]:
     return {
         "type": "AbilityFailed",
         "correlation_id": correlation_id,
@@ -196,7 +219,9 @@ def evt_ability_failed(correlation_id: str, span_id: str, tool: str, error: str,
     }
 
 
-def evt_task_succeeded(correlation_id: str, data: dict[str, Any], session_id: str | None = None) -> dict[str, Any]:
+def evt_task_succeeded(
+    correlation_id: str, data: dict[str, Any], session_id: str | None = None
+) -> dict[str, Any]:
     return {
         "type": "TaskSucceeded",
         "correlation_id": correlation_id,

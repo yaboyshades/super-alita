@@ -101,7 +101,9 @@ def main() -> None:
         required=True,
         help="List or ranges of gpu_layers (e.g., 8 12 16 or 8-32)",
     )
-    ap.add_argument("--num-thread", type=int, default=None, help="CPU threads for CPU layers")
+    ap.add_argument(
+        "--num-thread", type=int, default=None, help="CPU threads for CPU layers"
+    )
     ap.add_argument("--prompt", default="Hello!", help="Short prompt to measure")
     ap.add_argument("--host", default="http://localhost:11434", help="Ollama host URL")
     args = ap.parse_args()
@@ -125,7 +127,9 @@ def main() -> None:
         )
 
     if not results:
-        print("No successful runs. Ensure Ollama is running and the model is available.")
+        print(
+            "No successful runs. Ensure Ollama is running and the model is available."
+        )
         return
 
     # Sort by tokens_per_s then elapsed

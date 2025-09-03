@@ -71,9 +71,9 @@ async def run_check(repo_root: Path, telemetry_file: Path) -> dict[str, Any]:
             ),
             {},
         ),
-        "missing_docstrings_result": missing
-        if isinstance(missing, dict)
-        else {"_type": type(missing).__name__},
+        "missing_docstrings_result": (
+            missing if isinstance(missing, dict) else {"_type": type(missing).__name__}
+        ),
     }
 
 

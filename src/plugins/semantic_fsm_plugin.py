@@ -170,9 +170,9 @@ class SemanticFSM:
         self.states: dict[str, FSMState] = {}
         self.transitions: list[FSMTransition] = []
         self.current_state: str | None = None
-        self.state_history: list[
-            tuple[str, datetime, str]
-        ] = []  # (state, timestamp, trigger)
+        self.state_history: list[tuple[str, datetime, str]] = (
+            []
+        )  # (state, timestamp, trigger)
         self.context: dict[str, Any] = {}
         self.start_time: datetime | None = None
         self.state_enter_time: datetime | None = None

@@ -815,6 +815,7 @@ class KnowledgeGraphTaskManager(PluginInterface):
         """Persist task manager state to JSON file."""
         import json
         from pathlib import Path
+
         snapshot = {
             "tasks": {tid: task.dict() for tid, task in self.tasks.items()},
             "task_graphs": {

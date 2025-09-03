@@ -52,13 +52,13 @@ if not _descriptor._USE_C_DESCRIPTORS:
     _globals["_KNOWLEDGEEDGE_DATAENTRY"]._loaded_options = None
     _globals["_KNOWLEDGEEDGE_DATAENTRY"]._serialized_options = b"8\001"
     _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"]._loaded_options = None
-    _globals[
-        "_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"
-    ]._serialized_options = b"8\001"
+    _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"]._serialized_options = (
+        b"8\001"
+    )
     _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"]._loaded_options = None
-    _globals[
-        "_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"
-    ]._serialized_options = b"8\001"
+    _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"]._serialized_options = (
+        b"8\001"
+    )
     _globals["_CREATEPOLICYREQUEST_CONFIGENTRY"]._loaded_options = None
     _globals["_CREATEPOLICYREQUEST_CONFIGENTRY"]._serialized_options = b"8\001"
     _globals["_POLICYARM_METADATAENTRY"]._loaded_options = None

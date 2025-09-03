@@ -118,6 +118,7 @@ class AtomToolsPlugin(PluginInterface):
 
                 # Create deterministic embedding for tool using hash seeding
                 import hashlib
+
                 seed = int(hashlib.md5(tool_key.encode()).hexdigest()[:8], 16)
                 rng = np.random.default_rng(seed)
                 embedding = rng.random(EMBEDDING_DIM, dtype=np.float32)
@@ -154,6 +155,7 @@ class AtomToolsPlugin(PluginInterface):
         try:
             # Create deterministic query embedding from text
             import hashlib
+
             seed = int(hashlib.md5(query.encode()).hexdigest()[:8], 16)
             rng = np.random.default_rng(seed)
             query_embedding = rng.random(EMBEDDING_DIM, dtype=np.float32)

@@ -31,7 +31,9 @@ async def validate_mangle_integration():
         print("✅ Super Alita server is running and healthy")
     except Exception as e:
         print(f"❌ Failed to connect to Super Alita server: {e}")
-        print("   Make sure the server is running with: uvicorn app:app --reload --port 8080")
+        print(
+            "   Make sure the server is running with: uvicorn app:app --reload --port 8080"
+        )
         return False
 
     # Check for tool catalog to see if Mangle tools are registered
@@ -63,7 +65,7 @@ async def validate_mangle_integration():
         # Add a test fact
         fact_response = requests.post(
             "http://127.0.0.1:8080/ability/execute/mangle_add_fact",
-            json={"fact": "test_component('validation')"}
+            json={"fact": "test_component('validation')"},
         )
 
         if fact_response.status_code != 200:
@@ -80,10 +82,7 @@ async def validate_mangle_integration():
         # Add a test rule
         rule_response = requests.post(
             "http://127.0.0.1:8080/ability/execute/mangle_add_rule",
-            json={
-                "name": "test_rule",
-                "rule": "validated(X) :- test_component(X)"
-            }
+            json={"name": "test_rule", "rule": "validated(X) :- test_component(X)"},
         )
 
         if rule_response.status_code != 200:
@@ -100,7 +99,7 @@ async def validate_mangle_integration():
         # Execute a query
         query_response = requests.post(
             "http://127.0.0.1:8080/ability/execute/mangle_query",
-            json={"query": "validated(X)"}
+            json={"query": "validated(X)"},
         )
 
         if query_response.status_code != 200:

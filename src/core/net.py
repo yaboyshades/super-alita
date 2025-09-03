@@ -115,9 +115,11 @@ class AdaptiveConcurrencyGate:
         return {
             "current_limit": self._current_limit,
             "in_flight": self._in_flight,
-            "avg_rtt": sum(self._rtt_samples) / len(self._rtt_samples)
-            if self._rtt_samples
-            else 0,
+            "avg_rtt": (
+                sum(self._rtt_samples) / len(self._rtt_samples)
+                if self._rtt_samples
+                else 0
+            ),
             "sample_count": len(self._rtt_samples),
         }
 

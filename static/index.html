@@ -1,6 +1,233 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <title>Super Alita Chat</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root { --bg:#0f1115; --panel:#1c2129; --accent:#6ea8fe; --accent2:#9d7dff; --text:#f5f7fa; --error:#ff5577; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); display:flex; flex-direction:column; height:100vh; }
+    header { padding:0.75rem 1rem; background:#161a20; font-weight:600; letter-spacing:.5px; display:flex; align-items:center; gap:.75rem; }
+    header span.badge { background:linear-gradient(135deg,var(--accent),var(--accent2)); padding:.25rem .6rem; border-radius:999px; font-size:.7rem; text-transform:uppercase; }
+    #chat { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:.75rem; }
+    .msg { max-width:72ch; line-height:1.4; padding:.75rem 1rem; border-radius:10px; position:relative; white-space:pre-wrap; word-wrap:break-word; animation:fade .3s ease; }
+    .user { background:#2d3744; align-self:flex-end; }
+    .assistant { background:var(--panel); border:1px solid #2b333d; }
+    .assistant.consensus { outline:1px solid var(--accent2); box-shadow:0 0 0 1px var(--accent2) inset; }
+    .meta { font-size:.65rem; opacity:.6; margin-top:.25rem; }
+    form { display:flex; gap:.5rem; padding:.75rem; background:#161a20; border-top:1px solid #222a33; }
+    textarea { flex:1; resize:vertical; min-height:60px; max-height:200px; background:#1d232b; color:var(--text); border:1px solid #2c333d; border-radius:8px; padding:.65rem .75rem; font:inherit; line-height:1.3; }
+    textarea:focus { outline:1px solid var(--accent); }
+    button { background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; color:#fff; padding:.75rem 1.1rem; font:600 0.9rem system-ui; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:.4rem; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .controls { display:flex; flex-direction:column; gap:.4rem; width:220px; }
+    .control-block { background:#1a1f26; padding:.6rem .75rem .75rem; border:1px solid #252d37; border-radius:10px; display:flex; flex-direction:column; gap:.4rem; }
+    label { font-size:.7rem; text-transform:uppercase; letter-spacing:.7px; opacity:.75; }
+    input[type=checkbox] { transform:scale(1.05); }
+    input.small, select.small { background:#222a33; border:1px solid #303943; color:var(--text); padding:.35rem .5rem; border-radius:6px; font:inherit; font-size:.8rem; width:100%; }
+    .layout { flex:1; display:flex; overflow:hidden; }
+    .sidebar { width:240px; background:#14181d; border-right:1px solid #222a2f; display:flex; flex-direction:column; }
+    .sidebar h2 { font-size:.75rem; font-weight:600; margin:1rem 1rem .5rem; letter-spacing:.7px; opacity:.65; text-transform:uppercase; }
+    .sessions { list-style:none; margin:0; padding:0 .5rem 1rem; flex:1; overflow-y:auto; }
+    .sessions li { padding:.5rem .6rem; border-radius:6px; font-size:.8rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:.5rem; }
+    .sessions li.active { background:#1f252c; border:1px solid #2c333b; }
+    .sessions li:hover { background:#202830; }
+    .new-session { margin:.5rem .75rem; }
+    .badge-sm { background:#27313c; padding:.1rem .45rem; border-radius:5px; font-size:.55rem; letter-spacing:.5px; }
+    .spinner { width:14px; height:14px; border:2px solid #ffffff44; border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg);} }
+    @keyframes fade { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:translateY(0);} }
+    .toolbar { display:flex; gap:.5rem; align-items:center; margin:0 .75rem .75rem; }
+    .toolbar button.secondary { background:#222a33; font-weight:500; }
+    .toolbar button.secondary:hover { background:#28313c; }
+    code { background:#272f38; padding:.15rem .4rem; border-radius:4px; font-size:.8rem; }
+    pre code { display:block; padding:1rem; overflow-x:auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="badge">Unified</span>
+    <div>Super Alita Chat</div>
+    <div id="status" style="margin-left:auto;font-size:.65rem;opacity:.7;">idle</div>
+  </header>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="toolbar">
+        <button class="secondary" id="newSessionBtn" title="New Session">＋</button>
+        <button class="secondary" id="refreshSessions" title="Refresh Sessions">⟳</button>
+      </div>
+      <h2>Sessions</h2>
+      <ul class="sessions" id="sessions"></ul>
+    </aside>
+    <main style="flex:1;display:flex;flex-direction:column;min-width:0;">
+      <div id="chat"></div>
+      <div style="display:flex;gap:.75rem;align-items:stretch;border-top:1px solid #1d232b;background:#14181d;">
+        <div class="controls">
+          <div class="control-block">
+            <label>Consensus</label>
+            <div style="display:flex;align-items:center;gap:.4rem;">
+              <input type="checkbox" id="consensusToggle" /> <span style="font-size:.75rem;">Enable</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.4rem;">
+              <select id="consensusMethod" class="small">
+                <option value="weighted_vote">weighted</option>
+                <option value="simple_vote">simple</option>
+                <option value="confidence_based">confidence</option>
+                <option value="semantic_similarity">semantic</option>
+                <option value="ensemble_ranking">ensemble</option>
+              </select>
+              <input type="number" id="consensusSamples" class="small" min="1" max="8" value="3" />
+            </div>
+          </div>
+          <div class="control-block">
+            <label>Mode</label>
+            <div style="display:flex;flex-direction:column;gap:.3rem;font-size:.7rem;">
+              <label><input type="radio" name="mode" value="stream" checked /> Stream</label>
+              <label><input type="radio" name="mode" value="single" /> Single</label>
+            </div>
+          </div>
+        </div>
+        <form id="composer" style="flex:1;display:flex;flex-direction:column;">
+          <textarea id="input" placeholder="Ask something... (Ctrl+Enter to send)"></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.4rem;">
+            <small style="opacity:.6;">Press Ctrl+Enter to send • Session: <span id="sessionLabel"></span></small>
+            <div style="display:flex;gap:.5rem;align-items:center;">
+              <button id="sendBtn" type="submit">Send</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+  <script>
+    const chatEl = document.getElementById('chat');
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusEl = document.getElementById('status');
+    const sessionsEl = document.getElementById('sessions');
+    const sessionLabelEl = document.getElementById('sessionLabel');
+    const consensusToggle = document.getElementById('consensusToggle');
+    const consensusMethod = document.getElementById('consensusMethod');
+    const consensusSamples = document.getElementById('consensusSamples');
+    const newSessionBtn = document.getElementById('newSessionBtn');
+    const refreshSessionsBtn = document.getElementById('refreshSessions');
+    let currentSession = localStorage.getItem('alita.session') || null;
+
+    function uuidv4(){return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c ^ crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));}
+
+    async function ensureSession(){
+      if(currentSession) return currentSession;
+      const sid = uuidv4();
+      const r = await fetch('/api/chat/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:sid})});
+      const js = await r.json();
+      currentSession = js.session_id; localStorage.setItem('alita.session', currentSession);
+      renderSessionLabel();
+      await loadSessions();
+      return currentSession;
+    }
+
+    function renderSessionLabel(){ sessionLabelEl.textContent = currentSession || '—'; }
+
+    function addMessage(role, content, opts={}){
+      const div = document.createElement('div');
+      div.className = 'msg ' + role + (opts.consensus? ' consensus':'');
+      div.innerHTML = content.replace(/```(\w+)?\n([\s\S]*?)```/g,(m,lang,code)=>`<pre><code>${escapeHtml(code)}</code></pre>`);
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function escapeHtml(str){ return str.replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s])); }
+
+    async function sendSingle(message){
+      statusEl.textContent='requesting';
+      const payload={
+        session_id: await ensureSession(),
+        message,
+        consensus: consensusToggle.checked,
+        consensus_method: consensusMethod.value,
+        consensus_samples: parseInt(consensusSamples.value||'3',10)
+      };
+      const r = await fetch('/api/chat/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const js = await r.json();
+      statusEl.textContent='idle';
+      addMessage('assistant', js.response || '(empty)');
+    }
+
+    async function sendStream(message){
+      statusEl.textContent='streaming';
+      const payload={
+        session_id: await ensureSession(),
+        message,
+        consensus: consensusToggle.checked,
+        consensus_method: consensusMethod.value,
+        consensus_samples: parseInt(consensusSamples.value||'3',10)
+      };
+      const ctrl = new AbortController();
+      const es = await fetch('/api/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctrl.signal});
+      const reader = es.body.getReader();
+      let buffer='';
+      while(true){
+        const {done,value} = await reader.read();
+        if(done) break;
+        buffer += new TextDecoder().decode(value);
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop();
+        for(const p of parts){ if(!p.trim()) continue; handleSSEChunk(p); }
+      }
+      statusEl.textContent='idle';
+    }
+
+    function handleSSEChunk(raw){
+      const lines = raw.split(/\n/); let evType='event'; let data='';
+      for(const l of lines){
+        if(l.startsWith('event:')) evType = l.slice(6).trim();
+        else if(l.startsWith('data:')) data += l.slice(5).trim();
+      }
+      if(!data) return; let js; try { js=JSON.parse(data);} catch { return; }
+      if(evType==='LLMChunk'){ appendStreaming(js.data?.text||''); }
+      else if(evType==='TaskStarted'){ addMessage('user', js.goal); streamingBuffer=''; }
+      else if(evType==='AbilityCalled'){ /* could surface tool usage */ }
+      else if(evType==='AbilitySucceeded'){ /* ignore */ }
+      else if(evType==='ConsensusResult'){ addMessage('assistant', js.result?.consensus_text || '(no consensus)', {consensus:true}); }
+      else if(evType==='TaskSucceeded'){ finalizeStreaming(); }
+      else if(evType==='Error'){ addMessage('assistant', `<span style="color:var(--error)">${js.error}</span>`); }
+    }
+    let streamingDiv=null; let streamingBuffer='';
+    function appendStreaming(text){
+      if(!streamingDiv){ streamingDiv=document.createElement('div'); streamingDiv.className='msg assistant'; chatEl.appendChild(streamingDiv); }
+      streamingBuffer += text; streamingDiv.textContent = streamingBuffer; chatEl.scrollTop = chatEl.scrollHeight;
+    }
+    function finalizeStreaming(){ streamingDiv=null; streamingBuffer=''; }
+
+    document.getElementById('composer').addEventListener('submit', async e=>{
+      e.preventDefault();
+      const val = inputEl.value.trim(); if(!val) return;
+      addMessage('user', val); inputEl.value='';
+      const mode = document.querySelector('input[name=mode]:checked').value;
+      if(mode==='single') await sendSingle(val); else await sendStream(val);
+    });
+    inputEl.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.ctrlKey){ e.preventDefault(); sendBtn.click(); }});
+
+    newSessionBtn.addEventListener('click', async ()=>{ currentSession=null; localStorage.removeItem('alita.session'); await ensureSession(); addMessage('assistant', 'Started new session.'); await loadSessions(); });
+    refreshSessionsBtn.addEventListener('click', loadSessions);
+
+    async function loadSessions(){
+      // Simple representation based on service stats (no endpoint yet) -> derive from local only for now
+      const active = currentSession; sessionsEl.innerHTML='';
+      if(active){
+        const li=document.createElement('li'); li.className='active'; li.textContent=active.slice(0,8)+'…';
+        const b=document.createElement('span'); b.className='badge-sm'; b.textContent='current'; li.appendChild(b); sessionsEl.appendChild(li);
+      }
+    }
+
+    (async()=>{ await ensureSession(); renderSessionLabel(); await loadSessions(); })();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Alita - AI Agent Chat</title>

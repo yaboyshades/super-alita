@@ -254,9 +254,11 @@ class DecisionPolicyEngine:
             "decisions": {
                 "total": len(policy_decisions),
                 "with_feedback": len(decisions_with_feedback),
-                "feedback_rate": len(decisions_with_feedback) / len(policy_decisions)
-                if policy_decisions
-                else 0.0,
+                "feedback_rate": (
+                    len(decisions_with_feedback) / len(policy_decisions)
+                    if policy_decisions
+                    else 0.0
+                ),
             },
         }
 

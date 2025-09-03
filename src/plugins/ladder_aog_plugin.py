@@ -879,12 +879,21 @@ task:
 
         # Hook into the tool execution system: try HTTP tool execution, fallback to simulated
         logger.info(f"Executing tool: {node.tool_template.get('tool', 'unknown')}")
-        tool_id = node.tool_template.get("tool") if isinstance(node.tool_template, dict) else None
-        args = node.tool_template.get("args", {}) if isinstance(node.tool_template, dict) else {}
+        tool_id = (
+            node.tool_template.get("tool")
+            if isinstance(node.tool_template, dict)
+            else None
+        )
+        args = (
+            node.tool_template.get("args", {})
+            if isinstance(node.tool_template, dict)
+            else {}
+        )
         if tool_id:
             try:
                 import os
                 import requests
+
                 base = os.getenv("LADDER_TOOL_EXEC_URL", "http://127.0.0.1:8080")
                 url = f"{base.rstrip('/')}/tools/execute/{tool_id}"
                 r = requests.post(url, json={"args": args}, timeout=6)
@@ -894,6 +903,7 @@ task:
                 pass
         # Fallback: simulate based on success rate
         import hashlib
+
         hash_val = int(hashlib.md5(node.node_id.encode()).hexdigest()[:8], 16)
         success_threshold = node.get_success_rate()
         return (hash_val % 100) / 100.0 < success_threshold

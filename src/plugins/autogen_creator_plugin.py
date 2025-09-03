@@ -78,5 +78,6 @@ class AutogenCreatorPlugin(PluginInterface):
         with ThreadPoolExecutor(max_workers=1) as executor:
             await loop.run_in_executor(executor, _run)
 
+
 # Backwards-compatible alias for configs referencing 'AutoGenCreatorPlugin'
 AutoGenCreatorPlugin = AutogenCreatorPlugin

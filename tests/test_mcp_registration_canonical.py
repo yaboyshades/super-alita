@@ -13,6 +13,7 @@ import requests
 # Base URL for the API
 BASE_URL = "http://127.0.0.1:8080"
 
+
 def test_mcp_registration():
     """Test MCP registration with canonical tool resolution."""
     # First, ensure we have a clean index
@@ -34,17 +35,18 @@ def test_mcp_registration():
             "type": "object",
             "required": ["operation", "a", "b"],
             "properties": {
-                "operation": {"type": "string", "enum": ["add", "subtract", "multiply", "divide"]},
+                "operation": {
+                    "type": "string",
+                    "enum": ["add", "subtract", "multiply", "divide"],
+                },
                 "a": {"type": "number"},
-                "b": {"type": "number"}
-            }
+                "b": {"type": "number"},
+            },
         },
         "output_schema": {
             "type": "object",
-            "properties": {
-                "result": {"type": "number"}
-            }
-        }
+            "properties": {"result": {"type": "number"}},
+        },
     }
 
     res = requests.post(f"{BASE_URL}/tools/mcp/register", json=calculator_spec)
@@ -65,17 +67,18 @@ def test_mcp_registration():
             "type": "object",
             "required": ["operation", "a", "b"],
             "properties": {
-                "operation": {"type": "string", "enum": ["add", "subtract", "multiply", "divide"]},
+                "operation": {
+                    "type": "string",
+                    "enum": ["add", "subtract", "multiply", "divide"],
+                },
                 "a": {"type": "number"},
-                "b": {"type": "number"}
-            }
+                "b": {"type": "number"},
+            },
         },
         "output_schema": {
             "type": "object",
-            "properties": {
-                "result": {"type": "number"}
-            }
-        }
+            "properties": {"result": {"type": "number"}},
+        },
     }
 
     res = requests.post(f"{BASE_URL}/tools/mcp/register", json=calculator_spec_2)
@@ -87,7 +90,9 @@ def test_mcp_registration():
         if reg_result_2.get("tool_id") == reg_result.get("tool_id"):
             print("✅ SUCCESS: Canonical ID was correctly reused!")
         else:
-            print(f"❌ FAILED: Canonical ID was not reused. Got {reg_result_2.get('tool_id')}")
+            print(
+                f"❌ FAILED: Canonical ID was not reused. Got {reg_result_2.get('tool_id')}"
+            )
     else:
         print(f"❌ Failed to register second tool: {res.status_code}")
 
@@ -109,7 +114,9 @@ def test_mcp_registration():
             print(f"   - Aliases: {canonical_tool.get('aliases')}")
             print(f"   - Files: {canonical_tool.get('files')}")
         else:
-            print(f"❌ FAILED: Found {len(calc_tools)} tools instead of 1 canonical tool")
+            print(
+                f"❌ FAILED: Found {len(calc_tools)} tools instead of 1 canonical tool"
+            )
     else:
         print(f"❌ Failed to get index: {res.status_code}")
 
@@ -133,4 +140,3 @@ def test_mcp_registration():
 
 if __name__ == "__main__":
     test_mcp_registration()
-

@@ -414,12 +414,12 @@ class OptimizedReliabilityManager:
         # Add component-specific metrics
         if hasattr(self.idempotent_processor, "get_metrics"):
             idempotent_metrics = self.idempotent_processor.get_metrics()
-            metrics["performance"]["cache_efficiency"] = (
-                idempotent_metrics.cache_efficiency
-            )
-            metrics["reliability"]["bloom_filter_efficiency"] = (
-                idempotent_metrics.bloom_filter_hits
-            )
+            metrics["performance"][
+                "cache_efficiency"
+            ] = idempotent_metrics.cache_efficiency
+            metrics["reliability"][
+                "bloom_filter_efficiency"
+            ] = idempotent_metrics.bloom_filter_hits
 
         if self.circuit_breaker:
             cb_metrics = self.circuit_breaker.get_metrics()

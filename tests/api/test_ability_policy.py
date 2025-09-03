@@ -23,7 +23,9 @@ async def test_ability_whitelist(monkeypatch):
         r = await client.post("/ability/execute/echo", json={"payload": "hello"})
         assert r.status_code == 200, r.text
         # Blocked
-        r = await client.post("/ability/execute/fetch_github_raw", json={"url": "https://x"})
+        r = await client.post(
+            "/ability/execute/fetch_github_raw", json={"url": "https://x"}
+        )
         assert r.status_code == 403
         assert r.json().get("error") == "ability_not_allowed"
 
@@ -50,4 +52,3 @@ async def test_ability_admin_only(monkeypatch):
             json={"payload": "hi"},
         )
         assert r.status_code == 200, r.text
-

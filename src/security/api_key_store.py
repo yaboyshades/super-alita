@@ -71,7 +71,9 @@ class APIKeyStore:
     def _save(self) -> None:
         serialized = {kid: asdict(rec) for kid, rec in self._db.items()}
         tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(serialized, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.write_text(
+            json.dumps(serialized, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         tmp.replace(self.path)
 
     def verify(self, raw_key: str) -> bool:
@@ -91,7 +93,10 @@ class APIKeyStore:
         return False
 
     def add(
-        self, owner: str, metadata: dict[str, Any] | None = None, ttl_hours: int | None = None
+        self,
+        owner: str,
+        metadata: dict[str, Any] | None = None,
+        ttl_hours: int | None = None,
     ) -> dict[str, str]:
         self._ensure_loaded()
         raw = generate_api_key()

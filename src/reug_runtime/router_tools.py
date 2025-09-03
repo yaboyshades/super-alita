@@ -198,12 +198,16 @@ async def get_catalog(request: Request) -> JSONResponse:
                         mcp_catalog_tools = json.loads(
                             catalog_path.read_text(encoding="utf-8")
                         )
-                        print(f"🔍 DEBUG: Found {len(mcp_catalog_tools)} tools in catalog.json")
+                        print(
+                            f"🔍 DEBUG: Found {len(mcp_catalog_tools)} tools in catalog.json"
+                        )
 
                         # Add tools from catalog.json (if not already in the static catalog)
                         for tool in mcp_catalog_tools:
                             tool_name = tool.get("name")
-                            if tool_name and not any(t["name"] == tool_name for t in catalog):
+                            if tool_name and not any(
+                                t["name"] == tool_name for t in catalog
+                            ):
                                 catalog.append(tool)
                                 print(f"🔍 DEBUG: Added catalog tool: {tool_name}")
                 except Exception as e:
@@ -524,7 +528,11 @@ def _ensure_mcp_box() -> Path:
 
 def _persist_spec(spec: dict[str, Any]) -> str:
     box = _ensure_mcp_box()
-    tid = spec.get("tool_id") or spec.get("name") or f"mcp_{len(list(box.glob('*.json')))}"
+    tid = (
+        spec.get("tool_id")
+        or spec.get("name")
+        or f"mcp_{len(list(box.glob('*.json')))}"
+    )
     spec = {"tool_id": tid, **spec}
     path = box / f"{tid}.json"
     path.write_text(json.dumps(spec, indent=2), encoding="utf-8")
@@ -532,7 +540,9 @@ def _persist_spec(spec: dict[str, Any]) -> str:
 
 
 @tools.post("/mcp/brainstorm")
-async def mcp_brainstorm(body: dict[str, Any] = Body(...)) -> JSONResponse:  # noqa: B008
+async def mcp_brainstorm(
+    body: dict[str, Any] = Body(...),
+) -> JSONResponse:  # noqa: B008
     """Propose lightweight MCP-like tool specs for a given task description.
 
     Input: {"task": str}
@@ -551,11 +561,17 @@ async def mcp_brainstorm(body: dict[str, Any] = Body(...)) -> JSONResponse:  # n
                 "input_schema": {
                     "type": "object",
                     "required": ["url"],
-                    "properties": {"url": {"type": "string"}, "truncate": {"type": "integer"}},
+                    "properties": {
+                        "url": {"type": "string"},
+                        "truncate": {"type": "integer"},
+                    },
                 },
                 "output_schema": {
                     "type": "object",
-                    "properties": {"content": {"type": "string"}, "truncated": {"type": "boolean"}},
+                    "properties": {
+                        "content": {"type": "string"},
+                        "truncated": {"type": "boolean"},
+                    },
                 },
             }
         )
@@ -598,7 +614,10 @@ async def mcp_brainstorm(body: dict[str, Any] = Body(...)) -> JSONResponse:  # n
                     "required": ["task"],
                     "properties": {"task": {"type": "string"}},
                 },
-                "output_schema": {"type": "object", "properties": {"steps": {"type": "array"}}},
+                "output_schema": {
+                    "type": "object",
+                    "properties": {"steps": {"type": "array"}},
+                },
             }
         )
 
@@ -633,6 +652,7 @@ async def mcp_register(
 
             # Get signature for this spec
             from .mcp_abstractor import _compute_signature, _normalize_spec
+
             norm_spec = _normalize_spec(spec)
             sig = _compute_signature(norm_spec)
 
@@ -640,7 +660,9 @@ async def mcp_register(
             for tool in index_data.get("tools", []):
                 if tool.get("signature") == sig:
                     canonical_tool_id = tool.get("tool_id")
-                    print(f"🔍 DEBUG: Found canonical tool {canonical_tool_id} for signature {sig}")
+                    print(
+                        f"🔍 DEBUG: Found canonical tool {canonical_tool_id} for signature {sig}"
+                    )
                     break
     except Exception as e:
         print(f"⚠️  Warning: Error checking canonical tools: {e}")
@@ -701,16 +723,20 @@ async def mcp_register(
 
     registry.register_tool(contract=contract, executor=_exec)
     # Include both "registered" and "tool_id" for compatibility with callers
-    return JSONResponse({
-        "ok": True,
-        "registered": tool_id,
-        "tool_id": tool_id,
-        "action": action,
-    })
+    return JSONResponse(
+        {
+            "ok": True,
+            "registered": tool_id,
+            "tool_id": tool_id,
+            "action": action,
+        }
+    )
 
 
 @tools.post("/mcp/abstract")
-async def mcp_abstract(body: dict[str, Any] = Body(default={})) -> JSONResponse:  # noqa: B008
+async def mcp_abstract(
+    body: dict[str, Any] = Body(default={}),
+) -> JSONResponse:  # noqa: B008
     """Normalize, deduplicate and index specs in MCP Box.
 
     Input (optional): {"mcp_box_dir": ".mcp_box"}
@@ -740,6 +766,5 @@ async def mcp_catalog() -> JSONResponse:
         return JSONResponse(catalog)
     except Exception as e:
         return JSONResponse(
-            status_code=500,
-            content={"error": f"Failed to read catalog: {str(e)}"}
+            status_code=500, content={"error": f"Failed to read catalog: {str(e)}"}
         )

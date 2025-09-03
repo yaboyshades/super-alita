@@ -36,4 +36,3 @@ class RedisRateLimiter:
             remaining = 0
         reset_in = max(1, window)
         return allowed, {"remaining": remaining, "reset_in": reset_in}
-

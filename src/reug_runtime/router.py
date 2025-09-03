@@ -65,6 +65,7 @@ class Orchestrator:
             try:
                 import json as _json
                 from pathlib import Path
+
                 idx_path = Path(os.getenv("MCP_BOX_DIR", ".mcp_box")) / "index.json"
                 if idx_path.exists():
                     index = _json.loads(idx_path.read_text(encoding="utf-8"))
@@ -124,13 +125,15 @@ class Orchestrator:
 
                 self.registry.register_tool(contract=contract, executor=_exec)
                 # Persist spec for reuse
-                self._persist_mcp_spec({
-                    "tool_id": tool_name,
-                    "description": contract["description"],
-                    "action": "fetch_github_raw",
-                    "input_schema": contract["input_schema"],
-                    "output_schema": contract["output_schema"],
-                })
+                self._persist_mcp_spec(
+                    {
+                        "tool_id": tool_name,
+                        "description": contract["description"],
+                        "action": "fetch_github_raw",
+                        "input_schema": contract["input_schema"],
+                        "output_schema": contract["output_schema"],
+                    }
+                )
                 return True
 
             # URL fetcher
@@ -166,7 +169,9 @@ class Orchestrator:
 
                     def _do_fetch() -> dict[str, Any]:
                         try:
-                            with urllib.request.urlopen(url, timeout=8) as resp:  # nosec B310
+                            with urllib.request.urlopen(
+                                url, timeout=8
+                            ) as resp:  # nosec B310
                                 raw = resp.read()
                             text = raw.decode("utf-8", errors="replace")
                             truncated = False
@@ -181,13 +186,15 @@ class Orchestrator:
 
                 self.registry.register_tool(contract=contract, executor=_exec)
                 # Persist spec for reuse
-                self._persist_mcp_spec({
-                    "tool_id": tool_name,
-                    "description": contract["description"],
-                    "action": "fetch_url_text",
-                    "input_schema": contract["input_schema"],
-                    "output_schema": contract["output_schema"],
-                })
+                self._persist_mcp_spec(
+                    {
+                        "tool_id": tool_name,
+                        "description": contract["description"],
+                        "action": "fetch_url_text",
+                        "input_schema": contract["input_schema"],
+                        "output_schema": contract["output_schema"],
+                    }
+                )
                 return True
 
             # Fallback planning tool
@@ -200,7 +207,9 @@ class Orchestrator:
                 },
                 "output_schema": {
                     "type": "object",
-                    "properties": {"steps": {"type": "array", "items": {"type": "string"}}},
+                    "properties": {
+                        "steps": {"type": "array", "items": {"type": "string"}}
+                    },
                 },
             }
 
@@ -216,13 +225,15 @@ class Orchestrator:
 
             self.registry.register_tool(contract=contract, executor=_exec)
             # Persist spec for reuse
-            self._persist_mcp_spec({
-                "tool_id": tool_name,
-                "description": contract["description"],
-                "action": "echo_plan",
-                "input_schema": contract["input_schema"],
-                "output_schema": contract["output_schema"],
-            })
+            self._persist_mcp_spec(
+                {
+                    "tool_id": tool_name,
+                    "description": contract["description"],
+                    "action": "echo_plan",
+                    "input_schema": contract["input_schema"],
+                    "output_schema": contract["output_schema"],
+                }
+            )
             return True
         except Exception:
             return False
@@ -232,6 +243,7 @@ class Orchestrator:
     ) -> AsyncGenerator[dict[str, Any], None]:
         llm_response_content = ""
         tool_calls = []
+
         # Call model.stream_chat with best-effort compatibility across providers
         async def _stream() -> AsyncGenerator[dict[str, Any], None]:
             try:
@@ -283,7 +295,9 @@ class Orchestrator:
             elif isinstance(tool_call, dict):
                 fn = tool_call.get("function", {})
                 if isinstance(fn, dict):
-                    tool_name = fn.get("name") or tool_call.get("name") or tool_call.get("tool")
+                    tool_name = (
+                        fn.get("name") or tool_call.get("name") or tool_call.get("tool")
+                    )
                     tool_args_raw = fn.get("arguments", "{}")
                 else:
                     tool_name = tool_call.get("name") or tool_call.get("tool")
@@ -299,7 +313,11 @@ class Orchestrator:
                 continue
 
             try:
-                tool_args = json.loads(tool_args_raw) if isinstance(tool_args_raw, str) else (tool_args_raw or {})
+                tool_args = (
+                    json.loads(tool_args_raw)
+                    if isinstance(tool_args_raw, str)
+                    else (tool_args_raw or {})
+                )
             except Exception:
                 tool_args = {}
             span_id = str(uuid.uuid4())
@@ -312,7 +330,9 @@ class Orchestrator:
             }
             # include args for UI visibility
             try:
-                ability_called_event["args"] = json.loads(tool_args if isinstance(tool_args, str) else json.dumps(tool_args))
+                ability_called_event["args"] = json.loads(
+                    tool_args if isinstance(tool_args, str) else json.dumps(tool_args)
+                )
             except Exception:
                 ability_called_event["args"] = tool_args
             await self.event_bus.emit(ability_called_event)
@@ -407,7 +427,12 @@ async def execute_turn(
 
     # Build system prompt with optional output contract
     base_system = "You are a helpful assistant. Use tools when necessary."
-    if os.getenv("ALITA_FORMAT_CONTRACT", "false").lower() in {"1", "true", "yes", "on"}:
+    if os.getenv("ALITA_FORMAT_CONTRACT", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
         contract = (
             "\n\nOutput Contract:\n"
             "- Always wrap multi-line code in fenced markdown with a language, e.g. ```python ...```.\n"
@@ -428,7 +453,7 @@ async def execute_turn(
     ]
 
     llm_response_content = ""
-    
+
     def _parse_tool_calls(text: str) -> list[dict[str, Any]]:
         calls: list[dict[str, Any]] = []
         try:
@@ -439,6 +464,7 @@ async def execute_turn(
                 args = payload.get("args", {})
                 if not name:
                     continue
+
                 # Minimal adapter object with .function.name/.function.arguments
                 class _Fn:
                     def __init__(self, n: str, a: str) -> None:
@@ -460,6 +486,7 @@ async def execute_turn(
             # best-effort parsing only
             pass
         return calls
+
     for _ in range(SETTINGS.max_tool_calls):
         tool_schemas = registry.get_available_tools_schema()
 
@@ -493,7 +520,7 @@ async def execute_turn(
                     messages.append(
                         {
                             "role": "assistant",
-                            "content": f"<tool_result tool=\"{tname}\">{tcontent}</tool_result>",
+                            "content": f'<tool_result tool="{tname}">{tcontent}</tool_result>',
                         }
                     )
             except Exception:
@@ -515,11 +542,13 @@ async def execute_turn(
         in_fence = False
         fence_lang = ""
         buf: list[str] = []
+
         def norm_line(s: str) -> str:
             s = s.replace("×", " * ").replace("·", " * ")
             s = s.replace("−", "-").replace("–", "-").replace("—", "-")
             s = s.replace("“", '"').replace("”", '"').replace("’", "'")
             return s
+
         for line in lines:
             if line.startswith("```"):
                 if in_fence:
@@ -550,11 +579,13 @@ async def execute_turn(
         lines = text.split("\n")
         in_fence = False
         buf: list[str] = []
+
         def norm_line(s: str) -> str:
             s = s.replace("×", " * ").replace("·", " * ")
             s = s.replace("−", "-").replace("–", "-").replace("—", "-")
             s = s.replace("“", '"').replace("”", '"').replace("’", "'")
             return s
+
         for line in lines:
             if line.startswith("```"):
                 if in_fence:
@@ -605,7 +636,12 @@ async def sse_transformer(
         "AbilityFailed": "tool_error",
         "TaskSucceeded": "done",
     }
-    use_hb = os.getenv("ALITA_SSE_HEARTBEAT", "false").lower() in {"1", "true", "yes", "on"}
+    use_hb = os.getenv("ALITA_SSE_HEARTBEAT", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     hb_interval = int(os.getenv("ALITA_SSE_HEARTBEAT_INTERVAL", "15") or 15)
 
     queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
@@ -656,18 +692,36 @@ async def sse_transformer(
 async def chat_stream(request: Request):
     # Rate limit pre-check (optional)
     try:
-        if os.getenv("ALITA_RATE_LIMIT_ENABLED", "false").lower() in {"1","true","yes","on"}:
+        if os.getenv("ALITA_RATE_LIMIT_ENABLED", "false").lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }:
             rl = getattr(request.app.state, "rate_limiter", None)
             if rl is not None:
                 limit = int(os.getenv("ALITA_RATE_LIMIT", "60") or 60)
                 window = int(os.getenv("ALITA_RATE_WINDOW", "60") or 60)
-                hdr = request.headers.get(os.getenv("ALITA_API_HEADER", "Authorization"), "")
-                tok = hdr[7:].strip() if hdr.lower().startswith("bearer ") else hdr.strip()
-                ident = f"key:{tok[:8]}" if tok else f"ip:{(request.client.host if request.client else 'unknown')}"
+                hdr = request.headers.get(
+                    os.getenv("ALITA_API_HEADER", "Authorization"), ""
+                )
+                tok = (
+                    hdr[7:].strip()
+                    if hdr.lower().startswith("bearer ")
+                    else hdr.strip()
+                )
+                ident = (
+                    f"key:{tok[:8]}"
+                    if tok
+                    else f"ip:{(request.client.host if request.client else 'unknown')}"
+                )
                 allowed, _ = await rl.is_allowed(ident, limit, window)
                 if not allowed:
                     from fastapi.responses import JSONResponse
-                    return JSONResponse(status_code=429, content={"error": "rate_limited"})
+
+                    return JSONResponse(
+                        status_code=429, content={"error": "rate_limited"}
+                    )
     except Exception:
         pass
     body = await request.json()

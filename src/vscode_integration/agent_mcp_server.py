@@ -349,19 +349,34 @@ class SuperAlitaMcpServer:
 
                 elif name == "deepconf_consensus":
                     # Delegate to runtime's ability execution endpoint
-                    base = os.getenv("MCP_RUNTIME_BASE", "http://127.0.0.1:8080").rstrip("/")
+                    base = os.getenv(
+                        "MCP_RUNTIME_BASE", "http://127.0.0.1:8080"
+                    ).rstrip("/")
                     try:
                         import httpx  # type: ignore
+
                         async with httpx.AsyncClient(timeout=30.0) as client:
                             resp = await client.post(
                                 f"{base}/ability/execute/deepconf_consensus",
                                 json=arguments,
                                 headers={"Accept": "application/json"},
                             )
-                            data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {"status": resp.status_code, "text": await resp.aread()}
+                            data = (
+                                resp.json()
+                                if resp.headers.get("content-type", "").startswith(
+                                    "application/json"
+                                )
+                                else {
+                                    "status": resp.status_code,
+                                    "text": await resp.aread(),
+                                }
+                            )
                             result = data
                     except Exception as e:
-                        result = {"error": f"consensus_call_failed: {type(e).__name__}", "detail": str(e)}
+                        result = {
+                            "error": f"consensus_call_failed: {type(e).__name__}",
+                            "detail": str(e),
+                        }
 
                 else:
                     result = {"error": f"Unknown tool: {name}"}

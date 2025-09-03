@@ -190,9 +190,11 @@ def _mcp_index(props: dict[str, Any]) -> str:
     if box_dir.exists():
         for p in sorted(box_dir.glob("*.json")):
             items.append(p.name)
-    body = ["<div class='panel'>",
-            "<div class='panel-header'>MCP Box</div>",
-            "<div class='panel-body'>"]
+    body = [
+        "<div class='panel'>",
+        "<div class='panel-header'>MCP Box</div>",
+        "<div class='panel-body'>",
+    ]
     if items:
         body.append("<ul>")
         for name in items[:200]:
@@ -229,7 +231,11 @@ def _mcp_console(props: dict[str, Any]) -> str:
         "<div><label>Execute Registered Tool:</label><br/>"
         "<input id='mcp_tool' type='text' placeholder='tool_id' style='width:60%'/>"
         "<br/><textarea id='mcp_args' class='mono' style='width:100%;height:100px'"
-        " placeholder='{""arg"": ""value""}'></textarea><br/>"
+        " placeholder='{"
+        "arg"
+        ": "
+        "value"
+        "}'></textarea><br/>"
         "<button id='mcp_btn_exec'>Execute</button></div>"
         "<div id='mcp_exec' class='mono' style='white-space:pre-wrap;margin-top:8px'></div>"
         "</div>"
@@ -284,9 +290,11 @@ def _mcp_index_abstracted(props: dict[str, Any]) -> str:
     else:
         data = None
 
-    body = ["<div class='panel'>",
-            "<div class='panel-header'>MCP Box (Abstracted Index)</div>",
-            "<div class='panel-body'>"]
+    body = [
+        "<div class='panel'>",
+        "<div class='panel-header'>MCP Box (Abstracted Index)</div>",
+        "<div class='panel-body'>",
+    ]
     if data:
         tools = data.get("tools", [])
         body.append(f"<p><strong>Canonical tools:</strong> {len(tools)}</p>")
@@ -295,9 +303,13 @@ def _mcp_index_abstracted(props: dict[str, Any]) -> str:
             tid = t.get("tool_id")
             act = t.get("action")
             props_l = ", ".join(t.get("properties", []))
-            body.append(f"<li><code>{tid}</code> &mdash; action: <code>{act}</code>; props: {props_l}</li>")
+            body.append(
+                f"<li><code>{tid}</code> &mdash; action: <code>{act}</code>; props: {props_l}</li>"
+            )
         body.append("</ul>")
     else:
-        body.append("<em>No index.json found. Use /tools/mcp/abstract to generate.</em>")
+        body.append(
+            "<em>No index.json found. Use /tools/mcp/abstract to generate.</em>"
+        )
     body.append("</div></div>")
     return "".join(body)

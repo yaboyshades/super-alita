@@ -30,7 +30,8 @@ class ToolSpec:
         )
 
     def to_markdown(self) -> str:
-        return textwrap.dedent(f"""
+        return textwrap.dedent(
+            f"""
         # Tool Spec: {self.name}
 
         - Description: {self.description}
@@ -39,7 +40,8 @@ class ToolSpec:
 
         ## Examples
         {json.dumps(self.examples, indent=2)}
-        """)
+        """
+        )
 
 
 def sanitize_slug(text: str) -> str:
@@ -108,7 +110,8 @@ def write_tool_spec(spec: ToolSpec, root: str = ".") -> dict[str, str]:
 
 
 def render_issue_body(spec: ToolSpec) -> str:
-    return textwrap.dedent(f"""
+    return textwrap.dedent(
+        f"""
     ### New Tool Request: `{spec.name}`
 
     - Reason: {spec.description}
@@ -125,7 +128,8 @@ def render_issue_body(spec: ToolSpec) -> str:
     - Provides deterministic output for same input
     - Includes unit tests and docs
     - Integrates via `src/core/tool_types.py`
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

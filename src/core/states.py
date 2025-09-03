@@ -148,9 +148,9 @@ class StateMachine:
         self.session = session or Session()
 
         # Transition registry
-        self.transitions: dict[
-            tuple[StateType, TransitionTrigger], StateTransition
-        ] = {}
+        self.transitions: dict[tuple[StateType, TransitionTrigger], StateTransition] = (
+            {}
+        )
         self._setup_transitions()
 
         # Define ignored triggers (no warnings)

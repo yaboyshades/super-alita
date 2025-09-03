@@ -131,9 +131,11 @@ class FlowiseAdapterPlugin(PluginInterface):
                 task_kind="text2backend",
                 requirements=inputs.get("prompt") or "",
                 repo_path=inputs.get("repoPath") or ".",
-                context_files=(inputs.get("contextFiles") or "").splitlines()
-                if inputs.get("contextFiles")
-                else [],
+                context_files=(
+                    (inputs.get("contextFiles") or "").splitlines()
+                    if inputs.get("contextFiles")
+                    else []
+                ),
                 flowise_session_id=session_id,
                 timestamp=_utcnow(),
             )

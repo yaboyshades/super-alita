@@ -34,7 +34,7 @@ def test_mangle_api():
     try:
         fact_response = requests.post(
             f"{base_url}/mangle_add_fact",
-            json={"fact": "vulnerable('log4j', '2.14.0')"}
+            json={"fact": "vulnerable('log4j', '2.14.0')"},
         )
         fact_data = fact_response.json()
         print(f"   Response: {fact_data}")
@@ -52,15 +52,12 @@ def test_mangle_api():
         "vulnerable('spring-core', '5.3.17')",
         "vulnerable('commons-text', '1.9.0')",
         "safe('log4j', '2.17.1')",
-        "safe('spring-core', '5.3.20')"
+        "safe('spring-core', '5.3.20')",
     ]
 
     for fact in facts:
         try:
-            response = requests.post(
-                f"{base_url}/mangle_add_fact",
-                json={"fact": fact}
-            )
+            response = requests.post(f"{base_url}/mangle_add_fact", json={"fact": fact})
             if response.status_code == 200:
                 print(f"   ✅ Added: {fact}")
             else:
@@ -78,8 +75,7 @@ def test_mangle_api():
 
     try:
         rule_response = requests.post(
-            f"{base_url}/mangle_add_rule",
-            json={"name": "update_rule", "rule": rule}
+            f"{base_url}/mangle_add_rule", json={"name": "update_rule", "rule": rule}
         )
         rule_data = rule_response.json()
         print(f"   Response: {rule_data}")
@@ -95,8 +91,7 @@ def test_mangle_api():
     print("\n4. Querying vulnerable dependencies...")
     try:
         query_response = requests.post(
-            f"{base_url}/mangle_query",
-            json={"query": "vulnerable(Name, Version)"}
+            f"{base_url}/mangle_query", json={"query": "vulnerable(Name, Version)"}
         )
         query_data = query_response.json()
 
@@ -107,7 +102,9 @@ def test_mangle_api():
             items = result.get("results", [])
             if items:
                 for item in items:
-                    print(f"   - {item.get('Name')} {item.get('Version')} is vulnerable")
+                    print(
+                        f"   - {item.get('Name')} {item.get('Version')} is vulnerable"
+                    )
             else:
                 print("   - No vulnerable dependencies found")
         else:
@@ -120,13 +117,13 @@ def test_mangle_api():
     dependencies = [
         {"name": "log4j", "version": "2.14.0"},
         {"name": "spring-core", "version": "5.3.20"},
-        {"name": "commons-text", "version": "1.9.0"}
+        {"name": "commons-text", "version": "1.9.0"},
     ]
 
     try:
         analyze_response = requests.post(
             f"{base_url}/mangle_analyze_dependencies",
-            json={"dependencies": dependencies}
+            json={"dependencies": dependencies},
         )
         analyze_data = analyze_response.json()
 
@@ -137,7 +134,9 @@ def test_mangle_api():
             items = result.get("results", [])
             if items:
                 for item in items:
-                    print(f"   - {item.get('Name')} {item.get('Version')} is vulnerable")
+                    print(
+                        f"   - {item.get('Name')} {item.get('Version')} is vulnerable"
+                    )
             else:
                 print("   - No vulnerable dependencies found")
         else:

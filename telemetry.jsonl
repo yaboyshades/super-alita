@@ -5,3 +5,5 @@
 {"type": "AbilityCalled", "tool": "format_and_lint_selection", "span_id": "d35a3a9a5e9c498e8d3aa1800eee9dd5", "args_hash": "ab03230417cb861e6cd43d26c4e2d29b6e636bfcdace3006f04a2425f28afd92"}
 {"type": "AbilityCalled", "tool": "format_and_lint_selection", "span_id": "8c2519b85b924d1f840793a5d86efd9e", "args_hash": "68244c7a488c800ff4ef378ffb57485219b941b4c0bdcba99ae23e7d649693a9"}
 {"type": "AbilityCalled", "tool": "format_and_lint_selection", "span_id": "8094d474a3e44410b2b6beb08cf34d1c", "args_hash": "a481cdab8ccfa2f22138bf64f4a81d1940f5277edd8684a2ddcb63e65dbf0abb"}
+{"type": "AbilityCalled", "tool": "format_and_lint_selection", "span_id": "5623d1d840954ae08afc22b019317482", "args_hash": "06623f333642d885240788dea31a625b7c8c64e76aba95e02115a2f0e26e4349"}
+{"type": "AbilityCalled", "tool": "format_and_lint_selection", "span_id": "c1c8d51bcbe84afc996e6eb535cf7d02", "args_hash": "a3a21680c360b20e17d05326842a04a14e11c4f61fac4758ccf4e4a7964bc000"}

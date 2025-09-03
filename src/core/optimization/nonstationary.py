@@ -272,9 +272,7 @@ class NonStationaryBandit:
         # Update probabilities
         gamma = min(
             1.0,
-            np.sqrt(
-                (np.log(self.n_arms)) / (self.n_arms * self.total_actions)
-            ),
+            np.sqrt((np.log(self.n_arms)) / (self.n_arms * self.total_actions)),
         )
 
         self.probabilities = (1 - gamma) * (
@@ -351,9 +349,7 @@ class NonStationaryBandit:
         """
         Handle detected change point by adapting algorithm parameters
         """
-        self.logger.info(
-            f"Change point detected at action {self.total_actions}"
-        )
+        self.logger.info(f"Change point detected at action {self.total_actions}")
 
         # Reset or decay historical information
         if self.algorithm == "ucb_sliding":
@@ -413,8 +409,7 @@ class NonStationaryBandit:
             "n_arms": self.n_arms,
             "performance": {
                 "total_regret": total_regret,
-                "average_regret": total_regret
-                / max(1, len(self.regret_history)),
+                "average_regret": total_regret / max(1, len(self.regret_history)),
                 "recent_regret": (
                     np.mean(self.regret_history[-100:])
                     if len(self.regret_history) >= 100
@@ -426,15 +421,11 @@ class NonStationaryBandit:
                 "current_window_size": self.window_size,
             },
             "change_detection": {
-                "change_points_detected": len(
-                    self.change_detector.change_points
-                ),
+                "change_points_detected": len(self.change_detector.change_points),
                 "distance_to_last_change": self.change_detector.get_latest_change_distance(
                     self.total_actions
                 ),
-                "change_points": self.change_detector.change_points[
-                    -10:
-                ],  # Last 10
+                "change_points": self.change_detector.change_points[-10:],  # Last 10
             },
             "arms": [arm.get_stats() for arm in self.arms],
         }

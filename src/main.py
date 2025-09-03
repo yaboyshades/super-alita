@@ -633,6 +633,31 @@ class SimpleAbilityRegistry:
         self._known.add(tid)
 
     async def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+        # Validate args against contract schema (best-effort JSON Schema)
+        try:
+            contract = self._contracts.get(tool_name, {})
+            schema = contract.get("input_schema")
+            if isinstance(schema, dict):
+                try:
+                    # Optional dependency: jsonschema
+                    import jsonschema  # type: ignore
+
+                    jsonschema.validate(args, schema)  # type: ignore[arg-type]
+                except ModuleNotFoundError:
+                    # Fallback: check required fields only
+                    required = schema.get("required", []) or []
+                    missing = [k for k in required if k not in args]
+                    if missing:
+                        return {
+                            "error": "invalid_args",
+                            "message": f"missing required fields: {', '.join(missing)}",
+                            "missing": missing,
+                        }
+                except Exception as e:  # pragma: no cover - schema errors
+                    return {"error": "invalid_args", "message": str(e)}
+        except Exception:
+            # Never block execution due to validator crash
+            pass
         # Prefer dynamically registered executors
         exec_fn = self._executors.get(tool_name)
         if exec_fn is not None:
@@ -697,6 +722,17 @@ class SimpleAbilityRegistry:
                 ),
                 (r"os\.system\(", "MEDIUM", "os.system() call detected"),
                 (r"pickle\.loads\(", "MEDIUM", "Untrusted pickle.loads()"),
+                # Placeholder/mock detection to enforce no-mock policy
+                (
+                    r"\bNotImplementedError\b",
+                    "MEDIUM",
+                    "NotImplementedError placeholder",
+                ),
+                (r"\bTODO\b", "LOW", "TODO found in generated code"),
+                (r"\bFIXME\b", "LOW", "FIXME found in code"),
+                (r"\bplaceholder\b", "LOW", "Placeholder marker found"),
+                (r"\bdummy\b", "LOW", "Dummy marker found"),
+                (r"\bmock\b", "LOW", "Mock marker found"),
             ]
             issues: list[dict[str, Any]] = []
             for pat, severity, message in patterns:
@@ -1402,6 +1438,22 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     _configure_logging()
     app = FastAPI(title="REUG Runtime", version="0.2.0")  # type: ignore
 
+    # Mount unified chat static assets (best-effort)
+    try:  # noqa: SIM105
+        static_dir = Path("static")
+        if static_dir.exists():
+            app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")  # type: ignore
+
+            @app.get("/", include_in_schema=False)  # type: ignore[misc]
+            async def _root_ui() -> Response:  # type: ignore
+                index_path = static_dir / "index.html"
+                if index_path.exists():
+                    return FileResponse(index_path)  # type: ignore
+                return JSONResponse({"message": "Super Alita running"})  # type: ignore
+
+    except Exception as e:  # pragma: no cover - non critical
+        print(f"⚠️  Static mount failed: {e}")
+
     # CORS (tweak as needed)
     app.add_middleware(  # type: ignore
         CORSMiddleware,  # type: ignore
@@ -1453,6 +1505,14 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     app.state.ability_registry = SimpleAbilityRegistry()  # type: ignore
     app.state.kg = SimpleKG()  # type: ignore
     app.state.llm_model = get_llm_client(os.getenv("LLM_MODEL"))  # type: ignore
+
+    # Include unified chat API if available
+    try:
+        from src.api.chat_endpoints import router as chat_router  # noqa: WPS433
+
+        app.include_router(chat_router)  # type: ignore
+    except Exception as e:  # noqa: BLE001
+        print(f"⚠️  Unified chat endpoints not loaded: {e}")
 
     # Lifespan handler (replaces deprecated on_event startup/shutdown)
     app.state.plugins = []  # type: ignore
@@ -1646,6 +1706,66 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
             traceback.print_exc()
 
+        # Register Task Planner ability
+        try:
+            print("🔧 DEBUG: Starting task planner registration...")
+            from src.abilities.planner_ability import plan_task
+
+            planner_contract = {
+                "tool_id": "task_planner",
+                "description": "Decompose objectives into atomic, tool-oriented steps",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["prompt"],
+                    "properties": {
+                        "prompt": {"type": "string"},
+                        "max_steps": {
+                            "type": "integer",
+                            "default": 6,
+                            "minimum": 1,
+                            "maximum": 10,
+                        },
+                    },
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {
+                        "steps": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {"type": "integer"},
+                                    "action": {"type": "string"},
+                                    "rationale": {"type": "string"},
+                                },
+                            },
+                        },
+                        "summary": {"type": "string"},
+                        "source": {
+                            "type": "string",
+                            "enum": ["llm", "heuristic", "fallback"],
+                        },
+                    },
+                },
+            }
+
+            async def planner_executor(args: dict[str, Any]) -> dict[str, Any]:
+                return plan_task(
+                    prompt=args["prompt"],
+                    max_steps=args.get("max_steps", 6),
+                )
+
+            ability_reg.register_tool(
+                contract=planner_contract, executor=planner_executor
+            )
+            print("✅ DEBUG: Task planner tool registered")
+        except Exception as e:  # noqa: BLE001
+            print(f"❌ DEBUG: Failed to register task planner tool: {e}")
+            import traceback
+
+            traceback.print_exc()
+
         # Register Mangle integration
         try:
             from src.abilities.mangle.register import (
@@ -1670,6 +1790,1282 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
         except Exception as e:
             print(f"❌ DEBUG: Failed to register Mangle integration: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # Register Repository + Paper MCP-style tools (dynamic abilities)
+        try:
+            from pathlib import Path as _Path
+
+            from src.vscode_integration.paper_ingestion_tool import (
+                PaperIngestionTool,
+            )  # noqa: WPS433
+            from src.vscode_integration.repo_mcp_tool import (
+                RepositoryMCPTool,  # noqa: WPS433
+            )
+
+            ability_reg = app.state.ability_registry  # type: ignore[attr-defined]
+
+            # Initialize tool instances
+            repo_tool = RepositoryMCPTool(repo_root=_Path.cwd())
+            await repo_tool.initialize(app.state.event_bus)  # type: ignore[attr-defined]
+
+            paper_tool = PaperIngestionTool()
+            await paper_tool.initialize(app.state.event_bus)  # type: ignore[attr-defined]
+
+            # Repository: list files
+            async def _repo_list_files(args: dict[str, Any]) -> dict[str, Any]:
+                return await repo_tool.list_files(
+                    directory=args.get("directory", ""),
+                    pattern=args.get("pattern", "**/*"),
+                    exclude_patterns=args.get("exclude_patterns"),
+                )
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "repo_list_files",
+                    "description": "List files in repository directory with filtering",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "directory": {"type": "string", "default": ""},
+                            "pattern": {"type": "string", "default": "**/*"},
+                            "exclude_patterns": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_repo_list_files,
+            )
+
+            # Repository: read file
+            async def _repo_read_file(args: dict[str, Any]) -> dict[str, Any]:
+                return await repo_tool.read_file(
+                    file_path=args.get("file_path", ""),
+                    max_lines=args.get("max_lines"),
+                )
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "repo_read_file",
+                    "description": "Read file content from repository",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "file_path": {"type": "string"},
+                            "max_lines": {"type": "integer"},
+                        },
+                        "required": ["file_path"],
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_repo_read_file,
+            )
+
+            # Repository: write file
+            async def _repo_write_file(args: dict[str, Any]) -> dict[str, Any]:
+                return await repo_tool.write_file(
+                    file_path=args.get("file_path", ""),
+                    content=args.get("content", ""),
+                    create_dirs=bool(args.get("create_dirs", True)),
+                )
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "repo_write_file",
+                    "description": "Write content to repository file",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "file_path": {"type": "string"},
+                            "content": {"type": "string"},
+                            "create_dirs": {"type": "boolean", "default": True},
+                        },
+                        "required": ["file_path", "content"],
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_repo_write_file,
+            )
+
+            # Repository: search code
+            async def _repo_search_code(args: dict[str, Any]) -> dict[str, Any]:
+                return await repo_tool.search_code(
+                    query=args.get("query", ""),
+                    file_pattern=args.get("file_pattern", "**/*.py"),
+                    context_lines=int(args.get("context_lines", 3)),
+                )
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "repo_search_code",
+                    "description": "Search for code patterns in repository",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string"},
+                            "file_pattern": {"type": "string", "default": "**/*.py"},
+                            "context_lines": {"type": "integer", "default": 3},
+                        },
+                        "required": ["query"],
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_repo_search_code,
+            )
+
+            # Repository: git history
+            async def _repo_git_history(args: dict[str, Any]) -> dict[str, Any]:
+                return await repo_tool.get_git_history(
+                    file_path=args.get("file_path"),
+                    limit=int(args.get("limit", 10)),
+                )
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "repo_git_history",
+                    "description": "Get git commit history for file or repository",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "file_path": {"type": "string"},
+                            "limit": {"type": "integer", "default": 10},
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_repo_git_history,
+            )
+
+            # Paper: extract text
+            async def _paper_extract_text(args: dict[str, Any]) -> dict[str, Any]:
+                return await paper_tool.extract_text_from_pdf(args.get("pdf_path", ""))
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "paper_extract_text",
+                    "description": "Extract text content from PDF research papers",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {"pdf_path": {"type": "string"}},
+                        "required": ["pdf_path"],
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_paper_extract_text,
+            )
+
+            # Paper: summary
+            async def _paper_generate_summary(args: dict[str, Any]) -> dict[str, Any]:
+                return await paper_tool.generate_paper_summary(
+                    pdf_path=args.get("pdf_path", ""),
+                    focus_areas=args.get("focus_areas"),
+                )
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "paper_generate_summary",
+                    "description": "Generate focused summary of research paper",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "pdf_path": {"type": "string"},
+                            "focus_areas": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                        "required": ["pdf_path"],
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_paper_generate_summary,
+            )
+
+            # Paper: download
+            async def _paper_download(args: dict[str, Any]) -> dict[str, Any]:
+                return await paper_tool.download_paper(
+                    url=args.get("url", ""),
+                    filename=args.get("filename"),
+                )
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "paper_download",
+                    "description": "Download research paper from URL",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "url": {"type": "string"},
+                            "filename": {"type": "string"},
+                        },
+                        "required": ["url"],
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_paper_download,
+            )
+
+            # Paper: local search
+            async def _paper_search(args: dict[str, Any]) -> dict[str, Any]:
+                return await paper_tool.search_papers(
+                    query=args.get("query", ""),
+                    max_results=int(args.get("max_results", 10)),
+                )
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "paper_search_local",
+                    "description": "Search previously ingested/cached papers",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string"},
+                            "max_results": {"type": "integer", "default": 10},
+                        },
+                        "required": ["query"],
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_paper_search,
+            )
+
+            print("? DEBUG: Repository + Paper tools registered")
+        except Exception as e:
+            print(f"? DEBUG: Failed to register repo/paper tools: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # Register lightweight code writing abilities (no DeepCode dependency)
+        try:
+            ability_reg = app.state.ability_registry  # type: ignore[attr-defined]
+
+            def _code_prompt(
+                language: str,
+                spec: str,
+                style_guides: str | None,
+                constraints: str | None,
+            ) -> str:
+                parts = [
+                    "You are a senior software engineer. Produce ONLY code in the requested language.",
+                    f"Language: {language}",
+                    f"Specification: {spec}",
+                ]
+                if style_guides:
+                    parts.append(f"Style Guides: {style_guides}")
+                if constraints:
+                    parts.append(f"Constraints: {constraints}")
+                parts.append(
+                    "Output: Provide a single complete code listing, no commentary."
+                )
+                parts.append(
+                    "Policy: No mock/dummy/placeholder code. No TODO/FIXME/NotImplementedError. Provide a full, working implementation."
+                )
+                return "\n".join(parts)
+
+            async def _code_synthesize(args: dict[str, Any]) -> dict[str, Any]:
+                language = (args.get("language") or "").strip() or "python"
+                spec = (args.get("spec") or "").strip()
+                style_guides = (args.get("style_guides") or "").strip() or None
+                constraints = (args.get("constraints") or "").strip() or None
+                prompt = _code_prompt(language, spec, style_guides, constraints)
+                result = await ability_reg.execute(  # type: ignore
+                    "deepconf_consensus",
+                    {"prompt": prompt, "method": "weighted_vote", "num_samples": 3},
+                )
+                code = (
+                    result.get("best_response")
+                    or result.get("consensus_text")
+                    or result.get("consensus_result")
+                    or ""
+                )
+                return {
+                    "language": language,
+                    "code": code,
+                    "notes": {"method": "consensus"},
+                }
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "code_synthesize",
+                    "description": "Generate code from a natural language specification using consensus prompting",
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["language", "spec"],
+                        "properties": {
+                            "language": {"type": "string"},
+                            "spec": {"type": "string"},
+                            "style_guides": {"type": "string"},
+                            "constraints": {"type": "string"},
+                        },
+                    },
+                    "output_schema": {
+                        "type": "object",
+                        "properties": {
+                            "language": {"type": "string"},
+                            "code": {"type": "string"},
+                            "notes": {"type": "object"},
+                        },
+                    },
+                },
+                executor=_code_synthesize,
+            )
+
+            async def _code_synthesize_and_write(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
+                file_path = (args.get("file_path") or "").strip()
+                if not file_path:
+                    return {"error": "file_path is required"}
+                force_write = bool(args.get("force_write", False))
+                test_first = bool(args.get("test_first", True))
+                consolidate_tests = bool(args.get("consolidate_tests", True))
+
+                # Optionally generate tests first (TDD)
+                test_write: dict[str, Any] | None = None
+                if test_first:
+                    test_lang = (
+                        args.get("test_language") or args.get("language") or "python"
+                    ).strip()
+                    test_spec = (
+                        args.get("test_spec") or args.get("spec") or ""
+                    ).strip()
+                    test_file_path = (args.get("test_file_path") or "").strip()
+                    if not test_file_path:
+                        if consolidate_tests:
+                            test_file_path = "tests/test_codegen.py"
+                        else:
+                            from pathlib import Path as _P
+
+                            fp = _P(file_path)
+                            rel_dirs = list(fp.parent.parts)
+                            if rel_dirs and rel_dirs[0] in {"src", "app", "services"}:
+                                rel_dirs = rel_dirs[1:]
+                            test_file_path = (
+                                _P("tests")
+                                .joinpath(*rel_dirs, f"test_{fp.stem}.py")
+                                .as_posix()
+                            )
+
+                    test_prompt = "\n".join(
+                        [
+                            "Write unit tests for the following specification.",
+                            f"Target code path: {file_path}",
+                            f"Language: {test_lang}",
+                            "Use idiomatic testing for the language (pytest for Python).",
+                            "Include realistic edge cases. Avoid placeholders like TODO/FIXME.",
+                            "Prefer deterministic tests without external network calls.",
+                            *([f"Specification: {test_spec}"] if test_spec else []),
+                        ]
+                    )
+                    t_res = await ability_reg.execute(  # type: ignore
+                        "deepconf_consensus",
+                        {
+                            "prompt": test_prompt,
+                            "method": "weighted_vote",
+                            "num_samples": 3,
+                        },
+                    )
+                    t_code = (
+                        t_res.get("best_response")
+                        or t_res.get("consensus_text")
+                        or t_res.get("consensus_result")
+                        or ""
+                    )
+                    # Append to existing test file when present
+                    prior = await ability_reg.execute("repo_read_file", {"file_path": test_file_path})  # type: ignore
+                    if prior and not prior.get("error") and prior.get("content"):
+                        new_content = (prior.get("content") or "") + "\n\n" + t_code
+                    else:
+                        new_content = (
+                            f"# Auto-generated tests for {file_path}\n\n" + t_code
+                        )
+                    test_write = await ability_reg.execute(  # type: ignore
+                        "repo_write_file",
+                        {
+                            "file_path": test_file_path,
+                            "content": new_content,
+                            "create_dirs": True,
+                        },
+                    )
+
+                # 1) synthesize code
+                synth = await _code_synthesize(args)
+                code = synth.get("code") or ""
+                # 2) quick safety scan
+                scan = await ability_reg.execute(  # type: ignore
+                    "secure_scan_code", {"code": code}
+                )
+                issues = scan.get("issues", [])
+                issue_count = int(scan.get("issue_count", len(issues)))
+                wrote = False
+                write_res: dict[str, Any] | None = None
+                if force_write or issue_count == 0:
+                    write_res = await ability_reg.execute(  # type: ignore
+                        "repo_write_file",
+                        {"file_path": file_path, "content": code, "create_dirs": True},
+                    )
+                    wrote = bool(write_res and write_res.get("success"))
+                return {
+                    "file_path": file_path,
+                    "wrote": wrote,
+                    "issues": issues,
+                    "issue_count": issue_count,
+                    "synth": {
+                        "language": synth.get("language"),
+                        "notes": synth.get("notes"),
+                    },
+                    **({"write_result": write_res} if write_res else {}),
+                    **({"test_write": test_write} if test_write else {}),
+                }
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "code_synthesize_and_write",
+                    "description": "Generate code from a spec, scan it, and (optionally) write to the repo",
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["language", "spec", "file_path"],
+                        "properties": {
+                            "language": {"type": "string"},
+                            "spec": {"type": "string"},
+                            "file_path": {"type": "string"},
+                            "style_guides": {"type": "string"},
+                            "constraints": {"type": "string"},
+                            "force_write": {"type": "boolean", "default": False},
+                            "test_first": {"type": "boolean", "default": True},
+                            "consolidate_tests": {"type": "boolean", "default": True},
+                            "test_file_path": {"type": "string"},
+                            "test_language": {"type": "string"},
+                            "test_spec": {"type": "string"},
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_code_synthesize_and_write,
+            )
+
+            print("? DEBUG: Code synthesis abilities registered")
+        except Exception as e:
+            print(f"? DEBUG: Failed to register code synthesis abilities: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # Register hybrid reasoning pipeline (extract → reason → synthesize/validate)
+        try:
+            ability_reg = app.state.ability_registry  # type: ignore[attr-defined]
+
+            async def _hybrid_reasoning_pipeline(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
+                """Extract structure → reason → synthesize/validate.
+
+                Args:
+                  text: Optional raw text to extract from.
+                  pdf_path: Optional paper path under ./papers to extract from.
+                  file_path: Optional repository file to read as input.
+                  mangle_query: Optional Mangle query to run after asserting facts/rules.
+                  explain: bool, include Mangle explanation.
+                  generate_code: bool, synthesize code from the spec.
+                  language: target language for code generation.
+                  code_spec: natural language spec for code generation (optional).
+                  file_output: optional repo path to write synthesized code.
+                  validation_queries: list of Mangle queries to validate code/invariants.
+                """
+                import json as _json
+                import re as _re
+
+                def _extract_json_block(s: str) -> dict[str, Any] | None:
+                    m = _re.search(r"```json\s*(\{[\s\S]*?\})\s*```", s)
+                    if not m:
+                        return None
+                    try:
+                        return _json.loads(m.group(1))
+                    except Exception:
+                        return None
+
+                def _fallback_parse(s: str) -> tuple[list[str], list[dict[str, str]]]:
+                    facts: list[str] = []
+                    rules: list[dict[str, str]] = []
+                    for line in s.splitlines():
+                        t = line.strip()
+                        if not t:
+                            continue
+                        if ":-" in t and t.endswith("."):
+                            rules.append({"name": "rule_auto", "rule": t})
+                        elif t.endswith(".") and _re.match(
+                            r"^[a-z_][a-zA-Z0-9_,()\s]*\.$", t
+                        ):
+                            facts.append(t)
+                    return facts, rules
+
+                # 1) Acquire source text
+                source_text = (args.get("text") or "").strip()
+                if not source_text and args.get("pdf_path"):
+                    res = await ability_reg.execute("paper_extract_text", {"pdf_path": args["pdf_path"]})  # type: ignore
+                    source_text = (res.get("text") or "").strip()
+                if not source_text and args.get("file_path"):
+                    resf = await ability_reg.execute("repo_read_file", {"file_path": args["file_path"]})  # type: ignore
+                    source_text = (resf.get("content") or "").strip()
+                if not source_text:
+                    return {
+                        "error": "no_input",
+                        "hint": "Provide text, pdf_path, or file_path",
+                    }
+
+                # 2) Ask LLM to extract Mangle facts and rules
+                extract_prompt = (
+                    "Extract precise Mangle facts and rules from the text.\n"
+                    "Return ONLY a fenced JSON block with keys: facts (array of strings, each ends with '.'),\n"
+                    "rules (array of objects with fields 'name' and 'rule' where rule ends with '.').\n"
+                    'Example:```json\n{"facts":["edge(a,b)."],"rules":[{"name":"reachable","rule":"reachable(X,Y) :- edge(X,Y)."}]}```\n\n'
+                    f"Text:\n{source_text[:4000]}"
+                )
+                llm_res = await ability_reg.execute(  # type: ignore
+                    "deepconf_consensus",
+                    {
+                        "prompt": extract_prompt,
+                        "method": "weighted_vote",
+                        "num_samples": 3,
+                    },
+                )
+                raw = (
+                    llm_res.get("best_response")
+                    or llm_res.get("consensus_text")
+                    or llm_res.get("consensus_result")
+                    or ""
+                )
+                parsed = _extract_json_block(raw)
+                facts: list[str] = []
+                rules: list[dict[str, str]] = []
+                if parsed and isinstance(parsed, dict):
+                    facts = [
+                        str(x).strip()
+                        for x in parsed.get("facts", [])
+                        if str(x).strip()
+                    ]
+                    rules = [
+                        {
+                            "name": str(r.get("name") or "rule_auto").strip(),
+                            "rule": str(r.get("rule") or "").strip(),
+                        }
+                        for r in (parsed.get("rules", []) or [])
+                        if isinstance(r, dict) and str(r.get("rule") or "").strip()
+                    ]
+                else:
+                    facts, rules = _fallback_parse(raw)
+
+                # 3) Assert into Mangle
+                asserted: dict[str, Any] = {"facts": 0, "rules": 0}
+                for f in facts[:200]:  # safety cap
+                    await ability_reg.execute("mangle_add_fact", {"fact": f})  # type: ignore
+                    asserted["facts"] += 1
+                for i, r in enumerate(rules[:100]):  # safety cap
+                    nm = r.get("name") or f"rule_{i+1}"
+                    await ability_reg.execute("mangle_add_rule", {"name": nm, "rule": r.get("rule", "")})  # type: ignore
+                    asserted["rules"] += 1
+
+                # 4) Query / Explain
+                mq = (args.get("mangle_query") or "").strip()
+                query_result: dict[str, Any] | None = None
+                explain_result: dict[str, Any] | None = None
+                if mq:
+                    query_result = await ability_reg.execute("mangle_query", {"query": mq})  # type: ignore
+                    if args.get("explain"):
+                        explain_result = await ability_reg.execute("mangle_explain", {"query": mq})  # type: ignore
+
+                # 5) Optional code synthesis
+                synth_result: dict[str, Any] | None = None
+                if bool(args.get("generate_code")):
+                    language = (args.get("language") or "python").strip()
+                    spec = (
+                        args.get("code_spec")
+                        or "Implement the algorithm described by the extracted facts and rules."
+                    ).strip()
+                    file_output = (args.get("file_output") or "").strip()
+                    code_args = {
+                        "language": language,
+                        "spec": spec,
+                        "style_guides": args.get("style_guides"),
+                        "constraints": args.get("constraints"),
+                    }
+                    if file_output:
+                        code_args["file_path"] = file_output
+                        synth_result = await ability_reg.execute("code_synthesize_and_write", code_args)  # type: ignore
+                    else:
+                        synth_result = await ability_reg.execute("code_synthesize", code_args)  # type: ignore
+
+                # 6) Optional validation queries
+                validations: list[dict[str, Any]] = []
+                vqs = args.get("validation_queries") or []
+                if isinstance(vqs, list):
+                    for v in vqs[:20]:
+                        q = str(v or "").strip()
+                        if not q:
+                            continue
+                        vres = await ability_reg.execute("mangle_query", {"query": q})  # type: ignore
+                        validations.append({"query": q, "result": vres})
+
+                return {
+                    "asserted": asserted,
+                    "extraction_raw": raw,
+                    "facts": facts,
+                    "rules": rules,
+                    **(
+                        {"query_result": query_result}
+                        if query_result is not None
+                        else {}
+                    ),
+                    **(
+                        {"explain_result": explain_result}
+                        if explain_result is not None
+                        else {}
+                    ),
+                    **({"synthesis": synth_result} if synth_result is not None else {}),
+                    **({"validations": validations} if validations else {}),
+                }
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "hybrid_reasoning_pipeline",
+                    "description": "Extract facts/rules → assert to Mangle → query/explain → optional code synth + validation",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "text": {"type": "string"},
+                            "pdf_path": {"type": "string"},
+                            "file_path": {"type": "string"},
+                            "mangle_query": {"type": "string"},
+                            "explain": {"type": "boolean", "default": False},
+                            "generate_code": {"type": "boolean", "default": False},
+                            "language": {"type": "string", "default": "python"},
+                            "code_spec": {"type": "string"},
+                            "file_output": {"type": "string"},
+                            "style_guides": {"type": "string"},
+                            "constraints": {"type": "string"},
+                            "validation_queries": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_hybrid_reasoning_pipeline,
+            )
+
+            print("? DEBUG: Hybrid reasoning pipeline registered")
+        except Exception as e:
+            print(f"? DEBUG: Failed to register hybrid pipeline: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # Register GitHub discovery tools (search before building)
+        try:
+            ability_reg = app.state.ability_registry  # type: ignore[attr-defined]
+
+            def _gh_headers() -> dict[str, str]:
+                headers = {
+                    "Accept": "application/vnd.github+json",
+                    "User-Agent": "super-alita",
+                }
+                token = os.getenv("GITHUB_TOKEN", "").strip()
+                if token:
+                    headers["Authorization"] = f"Bearer {token}"
+                return headers
+
+            async def _github_search_code(args: dict[str, Any]) -> dict[str, Any]:
+                import json
+                from urllib.parse import quote_plus
+
+                q = (args.get("q") or args.get("query") or "").strip()
+                if not q:
+                    return {"error": "missing query 'q'"}
+                language = (args.get("language") or "").strip()
+                repo = (args.get("repo") or "").strip()
+                qualifiers: list[str] = []
+                if language:
+                    qualifiers.append(f"language:{language}")
+                if repo:
+                    qualifiers.append(f"repo:{repo}")
+                q_full = "+".join([quote_plus(q)] + [quote_plus(x) for x in qualifiers])
+                per_page = max(1, min(int(args.get("per_page", 10) or 10), 50))
+                page = max(1, min(int(args.get("page", 1) or 1), 10))
+                url = f"https://api.github.com/search/code?q={q_full}&per_page={per_page}&page={page}"
+                req = urllib.request.Request(url, headers=_gh_headers())  # nosec B310
+                try:
+                    with urllib.request.urlopen(req, timeout=8) as resp:  # nosec B310
+                        data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                except Exception as e:  # pragma: no cover - network variability
+                    return {"error": str(e), "url": url}
+                items = []
+                for it in data.get("items", []) or []:
+                    repo_obj = it.get("repository") or {}
+                    items.append(
+                        {
+                            "name": it.get("name"),
+                            "path": it.get("path"),
+                            "repo": repo_obj.get("full_name") or repo,
+                            "html_url": it.get("html_url"),
+                            "score": it.get("score"),
+                        }
+                    )
+                return {
+                    "items": items,
+                    "total_count": data.get("total_count", len(items)),
+                    "incomplete_results": data.get("incomplete_results", False),
+                    "url": url,
+                }
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "github_search_code",
+                    "description": "Search public GitHub code for matches (uses GitHub Search API; set GITHUB_TOKEN to raise rate limits)",
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["q"],
+                        "properties": {
+                            "q": {"type": "string"},
+                            "language": {"type": "string"},
+                            "repo": {"type": "string"},
+                            "per_page": {"type": "integer", "default": 10},
+                            "page": {"type": "integer", "default": 1},
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_github_search_code,
+            )
+
+            async def _github_search_repos(args: dict[str, Any]) -> dict[str, Any]:
+                import json
+                from urllib.parse import quote_plus
+
+                q = (args.get("q") or args.get("query") or "").strip()
+                if not q:
+                    return {"error": "missing query 'q'"}
+                sort = (args.get("sort") or "stars").strip()
+                order = (args.get("order") or "desc").strip()
+                per_page = max(1, min(int(args.get("per_page", 10) or 10), 50))
+                page = max(1, min(int(args.get("page", 1) or 1), 10))
+                url = (
+                    f"https://api.github.com/search/repositories?q={quote_plus(q)}&sort={quote_plus(sort)}&order={quote_plus(order)}"
+                    f"&per_page={per_page}&page={page}"
+                )
+                req = urllib.request.Request(url, headers=_gh_headers())  # nosec B310
+                try:
+                    with urllib.request.urlopen(req, timeout=8) as resp:  # nosec B310
+                        data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                except Exception as e:  # pragma: no cover
+                    return {"error": str(e), "url": url}
+                items = []
+                for it in data.get("items", []) or []:
+                    items.append(
+                        {
+                            "full_name": it.get("full_name"),
+                            "html_url": it.get("html_url"),
+                            "description": it.get("description"),
+                            "stargazers_count": it.get("stargazers_count"),
+                            "language": it.get("language"),
+                        }
+                    )
+                return {
+                    "items": items,
+                    "total_count": data.get("total_count", len(items)),
+                    "url": url,
+                }
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "github_search_repos",
+                    "description": "Search GitHub repositories (uses GitHub Search API; set GITHUB_TOKEN to raise rate limits)",
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["q"],
+                        "properties": {
+                            "q": {"type": "string"},
+                            "sort": {"type": "string", "default": "stars"},
+                            "order": {"type": "string", "default": "desc"},
+                            "per_page": {"type": "integer", "default": 10},
+                            "page": {"type": "integer", "default": 1},
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_github_search_repos,
+            )
+
+            print("? DEBUG: GitHub discovery tools registered")
+        except Exception as e:
+            print(f"? DEBUG: Failed to register GitHub discovery tools: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # Register Python verification helpers and prompt evolution
+        try:
+            ability_reg = app.state.ability_registry  # type: ignore[attr-defined]
+
+            async def _pytest_run(args: dict[str, Any]) -> dict[str, Any]:
+                """Run pytest with optional target and markers.
+
+                Args: target (str), markers (str), k (str), maxfail (int), quiet (bool)
+                """
+                from src.core.proc import arun
+
+                target = str(args.get("target") or "tests")
+                quiet = bool(args.get("quiet", True))
+                markers = str(args.get("markers") or "").strip()
+                k_expr = str(args.get("k") or "").strip()
+                maxfail = args.get("maxfail")
+                cmd: list[str] = [sys.executable, "-m", "pytest"]
+                if quiet:
+                    cmd.append("-q")
+                if markers:
+                    cmd.extend(["-m", markers])
+                if k_expr:
+                    cmd.extend(["-k", k_expr])
+                if isinstance(maxfail, int) and maxfail > 0:
+                    cmd.extend(["--maxfail", str(maxfail)])
+                cmd.append(target)
+                try:
+                    out = await arun(cmd, timeout=300)
+                    return {"ok": True, "exit_code": 0, "stdout": out, "stderr": ""}
+                except (
+                    Exception
+                ) as e:  # pragma: no cover - returns stderr via exception
+                    msg = str(e)
+                    return {
+                        "ok": False,
+                        "exit_code": getattr(e, "returncode", 1),
+                        "stderr": msg,
+                        "stdout": getattr(e, "stdout", ""),
+                    }
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "pytest_run",
+                    "description": "Run pytest with optional target and filters",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "target": {"type": "string", "default": "tests"},
+                            "markers": {"type": "string"},
+                            "k": {"type": "string"},
+                            "maxfail": {"type": "integer"},
+                            "quiet": {"type": "boolean", "default": True},
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_pytest_run,
+            )
+
+            async def _python_import_smoke(args: dict[str, Any]) -> dict[str, Any]:
+                """Import all modules under a path (default 'src') and report failures."""
+                import importlib
+                import pkgutil
+
+                base = str(args.get("path") or "src").rstrip("/\\")
+                ok: list[str] = []
+                fail: list[dict[str, str]] = []
+                try:
+                    for mod in pkgutil.walk_packages([base]):
+                        name = mod.name
+                        if not name.startswith("src."):
+                            name = f"src.{name}"
+                        try:
+                            importlib.import_module(name)
+                            ok.append(name)
+                        except (
+                            Exception
+                        ) as e:  # pragma: no cover - environment dependent
+                            fail.append({"module": name, "error": str(e)})
+                except Exception as e:
+                    return {"error": str(e)}
+                return {
+                    "ok_count": len(ok),
+                    "fail_count": len(fail),
+                    "failures": fail[:200],
+                }
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "python_import_smoke",
+                    "description": "Attempt to import all modules under a base path (default 'src')",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {"path": {"type": "string"}},
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_python_import_smoke,
+            )
+
+            async def _prompt_evolve(args: dict[str, Any]) -> dict[str, Any]:
+                """Generate prompt variants and choose the best via simple heuristics.
+
+                Inputs: prompt (str), variants (int), domain (str)
+                Outputs: best_prompt, variants (list with scores)
+                """
+                import random
+
+                base = (args.get("prompt") or "").strip()
+                if not base:
+                    return {"error": "missing prompt"}
+                n = max(2, min(int(args.get("variants", 4) or 4), 8))
+                domain = (args.get("domain") or "python").lower()
+
+                def make_variant(p: str, kind: str) -> str:
+                    blocks = {
+                        "role": "You are a Senior Python Engineer.",
+                        "constraints": "Constraints: PEP 8, full type hints, error handling, no placeholders.",
+                        "examples": "Examples: Provide 1-2 concise input/output examples.",
+                        "steps": "Steps: 1) Design 2) Implement 3) Tests 4) Optimize 5) Review.",
+                        "format": "Output: Return only code in a single block.",
+                        "tdd": "Testing: Write/append tests first, then code.",
+                    }
+                    order = [
+                        "role",
+                        "constraints",
+                        "examples",
+                        "steps",
+                        "format",
+                        "tdd",
+                    ]
+                    if kind == "long":
+                        body = "\n".join([blocks[k] for k in order])
+                    elif kind == "short":
+                        body = "\n".join(
+                            [blocks[k] for k in ["role", "constraints", "format"]]
+                        )
+                    else:  # mixed
+                        random.shuffle(order)
+                        body = "\n".join([blocks[k] for k in order[:4]])
+                    return f"{p}\n\n{body}"
+
+                variants: list[dict[str, Any]] = []
+                for i in range(n):
+                    kind = random.choice(
+                        ["long", "short", "mixed"]
+                    )  # non-deterministic variety
+                    v = make_variant(base, kind)
+                    # Heuristic score by presence of key sections
+                    score = 0
+                    for key in [
+                        "Constraints:",
+                        "Examples:",
+                        "Steps:",
+                        "Output:",
+                        "Testing:",
+                    ]:
+                        if key.lower() in v.lower():
+                            score += 1
+                    variants.append({"prompt": v, "score": score, "kind": kind})
+
+                best = (
+                    max(variants, key=lambda x: x["score"])
+                    if variants
+                    else {"prompt": base, "score": 0}
+                )
+                return {"best_prompt": best["prompt"], "variants": variants}
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "prompt_evolve",
+                    "description": "Create structured prompt variants and pick the best by simple heuristics",
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["prompt"],
+                        "properties": {
+                            "prompt": {"type": "string"},
+                            "variants": {"type": "integer"},
+                            "domain": {"type": "string"},
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_prompt_evolve,
+            )
+
+            print("? DEBUG: Python verification + prompt evolution tools registered")
+        except Exception as e:
+            print(f"? DEBUG: Failed to register verification/evolution tools: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # Register shadow reward deployment abilities
+        try:
+            from src.cognitive.shadow_reward import (
+                ShadowRewardDeployment,
+                SimplePythonReward,
+            )
+
+            # Keep a single deployment instance on app.state
+            if not hasattr(app.state, "shadow_reward"):
+                stub = SimplePythonReward()
+
+                class AltReward(
+                    SimplePythonReward
+                ):  # reuse logic; acts as "torch" adapter
+                    async def compute_reward(self, code: str, context: dict | None = None) -> float:  # type: ignore[override]
+                        # Slight variant: favor docstrings more
+                        base = await super().compute_reward(code, context)
+                        return min(1.0, base + 0.05)
+
+                torch_like = AltReward()
+                app.state.shadow_reward = ShadowRewardDeployment(stub, torch_like, {})  # type: ignore[attr-defined]
+
+            async def _shadow_reward_score(args: dict[str, Any]) -> dict[str, Any]:
+                code = str(args.get("code") or "")
+                if not code:
+                    return {"error": "missing code"}
+                ctx = args.get("context") or {}
+                deploy = app.state.shadow_reward  # type: ignore[attr-defined]
+                score = await deploy.compute_reward_with_shadow(code, ctx)
+                return {"score": score}
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "shadow_reward_score",
+                    "description": "Compute reward with shadow (alt) model in parallel; may progressively use alt based on correlation",
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["code"],
+                        "properties": {
+                            "code": {"type": "string"},
+                            "context": {"type": "object"},
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_shadow_reward_score,
+            )
+
+            async def _shadow_reward_metrics(_: dict[str, Any]) -> dict[str, Any]:
+                deploy = app.state.shadow_reward  # type: ignore[attr-defined]
+                return deploy.get_metrics()
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "shadow_reward_metrics",
+                    "description": "Get shadow deployment metrics (correlation, rollout, means)",
+                    "input_schema": {"type": "object", "properties": {}},
+                    "output_schema": {"type": "object"},
+                },
+                executor=_shadow_reward_metrics,
+            )
+
+            print("? DEBUG: Shadow reward deployment registered")
+        except Exception as e:
+            print(f"? DEBUG: Failed to register shadow reward: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # Register Z3 verifier abilities (feature-flagged)
+        try:
+            if os.getenv("ALITA_ENABLE_Z3", "false").lower() in {
+                "1",
+                "true",
+                "yes",
+                "on",
+            }:
+                from src.cognitive.z3_verifier import ScalableZ3Verifier  # noqa: WPS433
+
+                z3v = ScalableZ3Verifier(base_timeout=10, max_timeout=60)
+
+                async def _z3_analyze_minimize(args: dict[str, Any]) -> dict[str, Any]:
+                    cons = args.get("constraints") or []
+                    if not isinstance(cons, list):
+                        return {"error": "constraints must be a list"}
+                    analysis = await z3v.analyze_constraints(cons)
+                    minimized = await z3v.minimize_constraints(cons, analysis)
+                    return {"analysis": analysis, "minimized": minimized}
+
+                ability_reg.register_tool(
+                    contract={
+                        "tool_id": "z3_analyze_minimize",
+                        "description": "Analyze constraints for complexity and propose a minimized essential set",
+                        "input_schema": {
+                            "type": "object",
+                            "required": ["constraints"],
+                            "properties": {"constraints": {"type": "array"}},
+                        },
+                        "output_schema": {"type": "object"},
+                    },
+                    executor=_z3_analyze_minimize,
+                )
+
+                async def _z3_verify(args: dict[str, Any]) -> dict[str, Any]:
+                    cons = args.get("constraints") or []
+                    if not isinstance(cons, list):
+                        return {"error": "constraints must be a list"}
+                    timeout_s = args.get("timeout_s")
+                    res = await z3v.verify(
+                        cons, timeout_s=int(timeout_s) if timeout_s else None
+                    )
+                    return res
+
+                ability_reg.register_tool(
+                    contract={
+                        "tool_id": "z3_verify",
+                        "description": "Verify constraints with z3 (eq/ineq relations on Int symbols)",
+                        "input_schema": {
+                            "type": "object",
+                            "required": ["constraints"],
+                            "properties": {
+                                "constraints": {"type": "array"},
+                                "timeout_s": {"type": "integer"},
+                            },
+                        },
+                        "output_schema": {"type": "object"},
+                    },
+                    executor=_z3_verify,
+                )
+
+                print("? DEBUG: Z3 verifier abilities registered")
+            else:
+                print(
+                    "? DEBUG: Z3 verifier disabled (set ALITA_ENABLE_Z3=true to enable)"
+                )
+        except Exception as e:
+            print(f"? DEBUG: Failed to register Z3 verifier: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # Register REUG-LADDER bridging pipeline (planning + discovery + TDD codegen)
+        try:
+            ability_reg = app.state.ability_registry  # type: ignore[attr-defined]
+
+            async def _ladder_reug_generate(args: dict[str, Any]) -> dict[str, Any]:
+                """Integrate planning + discovery + TDD codegen in one call.
+
+                Args:
+                  goal: description of the feature to implement
+                  file_path: where to write the code
+                  language: target language (default python)
+                  use_github_discovery: bool (default true)
+                  test_first: bool (default true)
+                  constraints: optional list of simple z3 constraints
+                """
+                goal = (args.get("goal") or args.get("prompt") or "").strip()
+                if not goal:
+                    return {"error": "missing goal"}
+                file_path = (args.get("file_path") or "").strip()
+                language = (args.get("language") or "python").strip()
+                use_discovery = bool(args.get("use_github_discovery", True))
+                test_first = bool(args.get("test_first", True))
+                constraints = args.get("constraints") or []
+                context: dict[str, Any] = args.get("context") or {}
+
+                result: dict[str, Any] = {"goal": goal}
+
+                # 1) Try to evolve the prompt
+                try:
+                    evo = await ability_reg.execute(  # type: ignore
+                        "prompt_evolve", {"prompt": goal, "variants": 4}
+                    )
+                    best_prompt = evo.get("best_prompt") or goal
+                except Exception:
+                    best_prompt = goal
+                result["prompt"] = best_prompt
+
+                # 2) Optional GitHub discovery to augment spec
+                refs: list[dict[str, Any]] = []
+                if use_discovery:
+                    try:
+                        q = f"{goal} language:{language}"
+                        gh = await ability_reg.execute(  # type: ignore
+                            "github_search_code", {"q": q, "per_page": 5}
+                        )
+                        refs = (gh.get("items") or [])[:5]
+                    except Exception:
+                        refs = []
+                result["github_refs"] = refs
+
+                # 3) Optional constraints verification (if enabled)
+                z3_summary: dict[str, Any] | None = None
+                if constraints and os.getenv("ALITA_ENABLE_Z3", "false").lower() in {
+                    "1",
+                    "true",
+                    "yes",
+                    "on",
+                }:
+                    try:
+                        analysis = await ability_reg.execute(  # type: ignore
+                            "z3_analyze_minimize", {"constraints": constraints}
+                        )
+                        ver = await ability_reg.execute(  # type: ignore
+                            "z3_verify",
+                            {
+                                "constraints": analysis.get("minimized") or constraints,
+                                "timeout_s": 10,
+                            },
+                        )
+                        z3_summary = {"analysis": analysis, "verify": ver}
+                    except Exception as e:  # pragma: no cover
+                        z3_summary = {"error": str(e)}
+                if z3_summary is not None:
+                    result["z3"] = z3_summary
+
+                # 4) Assemble spec for code synth
+                spec_lines = [best_prompt]
+                if refs:
+                    spec_lines.append("References:")
+                    for r in refs[:3]:
+                        spec_lines.append(f" - {r.get('html_url')}")
+                spec = "\n".join(spec_lines)
+
+                # 5) TDD code generation and write
+                synth_args: dict[str, Any] = {
+                    "language": language,
+                    "spec": spec,
+                    "file_path": file_path,
+                    "test_first": test_first,
+                    "consolidate_tests": True,
+                }
+                synth = await ability_reg.execute("code_synthesize_and_write", synth_args)  # type: ignore
+                result["codegen"] = synth
+                return result
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "ladder_reug_generate",
+                    "description": "Plan + discover + TDD codegen pipeline. Uses prompt evolution, optional GitHub search, and writes code/tests.",
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["goal", "file_path"],
+                        "properties": {
+                            "goal": {"type": "string"},
+                            "file_path": {"type": "string"},
+                            "language": {"type": "string", "default": "python"},
+                            "use_github_discovery": {
+                                "type": "boolean",
+                                "default": True,
+                            },
+                            "test_first": {"type": "boolean", "default": True},
+                            "constraints": {"type": "array"},
+                            "context": {"type": "object"},
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_ladder_reug_generate,
+            )
+
+            print("? DEBUG: LADDER–REUG bridging ability registered")
+        except Exception as e:
+            print(f"? DEBUG: Failed to register ladder bridge: {e}")
             import traceback
 
             traceback.print_exc()

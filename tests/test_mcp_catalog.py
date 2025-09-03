@@ -13,7 +13,7 @@ from pathlib import Path
 
 import requests
 
-sys.path.insert(0, './src')
+sys.path.insert(0, "./src")
 
 from src.reug_runtime.mcp_abstractor import abstract_mcp_box
 
@@ -36,17 +36,18 @@ async def test_mcp_abstraction():
                 "type": "object",
                 "required": ["operation", "a", "b"],
                 "properties": {
-                    "operation": {"type": "string", "enum": ["add", "subtract", "multiply", "divide"]},
+                    "operation": {
+                        "type": "string",
+                        "enum": ["add", "subtract", "multiply", "divide"],
+                    },
                     "a": {"type": "number"},
-                    "b": {"type": "number"}
-                }
+                    "b": {"type": "number"},
+                },
             },
             "output_schema": {
                 "type": "object",
-                "properties": {
-                    "result": {"type": "number"}
-                }
-            }
+                "properties": {"result": {"type": "number"}},
+            },
         },
         {
             "tool_id": "Basic Math",  # Will be normalized
@@ -58,16 +59,14 @@ async def test_mcp_abstraction():
                 "properties": {
                     "operation": {"type": "string"},
                     "a": {"type": "number"},
-                    "b": {"type": "number"}
-                }
+                    "b": {"type": "number"},
+                },
             },
             "output_schema": {
                 "type": "object",
-                "properties": {
-                    "result": {"type": "number"}
-                }
-            }
-        }
+                "properties": {"result": {"type": "number"}},
+            },
+        },
     ]
 
     # Write test specs
@@ -112,9 +111,13 @@ async def test_mcp_abstraction():
         abstract_resp = requests.post(f"{base_url}/tools/mcp/abstract", json={})
         if abstract_resp.status_code == 200:
             abstract_data = abstract_resp.json()
-            print(f"✅ /tools/mcp/abstract endpoint: {len(abstract_data['tools'])} tools")
+            print(
+                f"✅ /tools/mcp/abstract endpoint: {len(abstract_data['tools'])} tools"
+            )
         else:
-            print(f"❌ /tools/mcp/abstract endpoint failed: {abstract_resp.status_code}")
+            print(
+                f"❌ /tools/mcp/abstract endpoint failed: {abstract_resp.status_code}"
+            )
     except Exception as e:
         print(f"❌ /tools/mcp/abstract request error: {e}")
 
@@ -144,11 +147,12 @@ async def test_mcp_abstraction():
             else:
                 print("❌ Test tool not found in /tools/catalog")
         else:
-            print(f"❌ /tools/catalog endpoint failed: {tools_catalog_resp.status_code}")
+            print(
+                f"❌ /tools/catalog endpoint failed: {tools_catalog_resp.status_code}"
+            )
     except Exception as e:
         print(f"❌ /tools/catalog request error: {e}")
 
 
 if __name__ == "__main__":
     asyncio.run(test_mcp_abstraction())
-
