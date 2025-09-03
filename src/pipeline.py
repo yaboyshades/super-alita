@@ -15,7 +15,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Dict, List
 
 # Add project root to path to facilitate imports
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -23,8 +22,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import Super Alita specific modules
 try:
-    from src.context.retriever import fetch_context, get_consensus_methods
     from src.abilities.enhanced_consensus_ability import ConsensusMethod
+    from src.context.retriever import fetch_context, get_consensus_methods
 except ImportError:
     print("Warning: Could not import Super Alita modules. Using fallbacks.")
     ConsensusMethod = None
@@ -47,7 +46,7 @@ class PromptPipeline:
     def load_templates(self) -> None:
         """Load prompt templates from file."""
         try:
-            with open(self.template_path, "r", encoding="utf-8") as f:
+            with open(self.template_path, encoding="utf-8") as f:
                 self.templates = json.load(f)
         except Exception as e:
             print(f"Error loading templates: {e}")
@@ -85,7 +84,7 @@ class PromptPipeline:
         optimized += "\nLet's think step by step..."
         return optimized
 
-    def format_context_block(self, contexts: List[Dict[str, str]]) -> str:
+    def format_context_block(self, contexts: list[dict[str, str]]) -> str:
         """
         Format retrieved context into a block for prompt enhancement.
 

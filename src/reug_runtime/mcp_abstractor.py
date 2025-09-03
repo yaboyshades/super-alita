@@ -14,7 +14,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-
 _ID_RE = re.compile(r"[^a-z0-9_]+")
 
 

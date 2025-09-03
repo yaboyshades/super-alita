@@ -4,13 +4,14 @@ This tool provides GitHub CLI integration with dry-run support and
 cognitive agent shadow mode operation.
 """
 
-import subprocess
 import shlex
-from typing import Any, Dict
-from datetime import datetime, timezone
+import subprocess
+from datetime import UTC, datetime
+from typing import Any
+
 from pydantic import BaseModel, Field
 
-from src.core.schemas import GitHubEventSchema, GitHubEventType, AttentionLevel
+from src.core.schemas import AttentionLevel, GitHubEventSchema, GitHubEventType
 
 
 class GitHubCliInput(BaseModel):
@@ -76,7 +77,7 @@ class GitHubCliTool:
 
     async def execute(self, input_data: GitHubCliInput) -> GitHubCliOutput:
         """Execute GitHub CLI command with cognitive agent support."""
-        start_time = datetime.now(timezone.utc).timestamp()
+        start_time = datetime.now(UTC).timestamp()
 
         try:
             # Validate and prepare command
@@ -101,11 +102,11 @@ class GitHubCliTool:
             if github_event:
                 result.github_event = github_event
 
-            result.execution_time = datetime.now(timezone.utc).timestamp() - start_time
+            result.execution_time = datetime.now(UTC).timestamp() - start_time
             return result
 
         except Exception as e:
-            execution_time = datetime.now(timezone.utc).timestamp() - start_time
+            execution_time = datetime.now(UTC).timestamp() - start_time
             return GitHubCliOutput(
                 success=False,
                 command=input_data.command,
@@ -258,20 +259,20 @@ class GitHubCliTool:
                 "output": result.output,
                 "execution_time": result.execution_time,
             },
-            event_id=f"cli-{datetime.now(timezone.utc).isoformat()}",
+            event_id=f"cli-{datetime.now(UTC).isoformat()}",
             attention_level=AttentionLevel.MEDIUM,
             processing_status="generated",
         )
 
-    def get_input_schema(self) -> Dict[str, Any]:
+    def get_input_schema(self) -> dict[str, Any]:
         """Get tool input schema."""
         return GitHubCliInput.model_json_schema()
 
-    def get_output_schema(self) -> Dict[str, Any]:
+    def get_output_schema(self) -> dict[str, Any]:
         """Get tool output schema."""
         return GitHubCliOutput.model_json_schema()
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         """Get tool metadata."""
         return {
             "name": self.name,

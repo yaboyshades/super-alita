@@ -10,7 +10,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 
 try:
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class RedisEventBus(EventBus):
     """Redis-backed distributed event bus with graceful fallback."""
 
-    def __init__(self, config: Optional[dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize Redis event bus with connection pooling.
 
         Args:
@@ -46,8 +46,8 @@ class RedisEventBus(EventBus):
         """
         super().__init__()
         self.config = config or {}
-        self.redis_client: Optional[redis.Redis] = None
-        self.pubsub: Optional[redis.client.PubSub] = None
+        self.redis_client: redis.Redis | None = None
+        self.pubsub: redis.client.PubSub | None = None
         self._subscribers: dict[str, list[EventHandler]] = {}
         self._background_tasks: list[asyncio.Task] = []
         self._connected = False
@@ -179,7 +179,7 @@ class RedisEventBus(EventBus):
         if "timestamp" not in event:
             import datetime
             event["timestamp"] = datetime.datetime.now(
-                datetime.timezone.utc
+                datetime.UTC
             ).isoformat()
 
         if self._connected and self.redis_client:
@@ -329,7 +329,7 @@ class EventBusAdapter:
     """Factory for creating appropriate event bus implementation."""
 
     @staticmethod
-    def create(config: Optional[Dict[str, Any]] = None) -> EventBus:
+    def create(config: Dict[str, Any] | None = None) -> EventBus:
         """Create event bus based on configuration and availability."""
         config = config or {}
 

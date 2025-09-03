@@ -3,18 +3,19 @@
 Provides REST and GraphQL API integration for richer telemetry and data collection.
 """
 
-import httpx
 import asyncio
-from typing import Any, Dict, List
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
+
+import httpx
 
 from src.core.schemas import (
+    AttentionLevel,
     GitHubApiRequest,
     GitHubApiResponse,
     GitHubEventSchema,
     GitHubEventType,
     GitHubPriorityMetrics,
-    AttentionLevel,
 )
 
 
@@ -48,7 +49,7 @@ class GitHubApiClient:
 
     async def make_request(self, request: GitHubApiRequest) -> GitHubApiResponse:
         """Make GitHub API request with rate limiting and error handling."""
-        start_time = datetime.now(timezone.utc).timestamp()
+        start_time = datetime.now(UTC).timestamp()
 
         try:
             # Check rate limits if enabled
@@ -84,7 +85,7 @@ class GitHubApiClient:
                 self._update_rate_limit_info(response)
 
                 # Parse response
-                execution_time = datetime.now(timezone.utc).timestamp() - start_time
+                execution_time = datetime.now(UTC).timestamp() - start_time
 
                 if response.status_code < 400:
                     data = response.json() if response.content else None
@@ -114,7 +115,7 @@ class GitHubApiClient:
                     )
 
         except httpx.TimeoutException:
-            execution_time = datetime.now(timezone.utc).timestamp() - start_time
+            execution_time = datetime.now(UTC).timestamp() - start_time
             return GitHubApiResponse(
                 success=False,
                 status_code=408,
@@ -122,7 +123,7 @@ class GitHubApiClient:
                 execution_time=execution_time,
             )
         except Exception as e:
-            execution_time = datetime.now(timezone.utc).timestamp() - start_time
+            execution_time = datetime.now(UTC).timestamp() - start_time
             return GitHubApiResponse(
                 success=False,
                 status_code=500,
@@ -134,7 +135,7 @@ class GitHubApiClient:
         """Check if we can make a request based on rate limits."""
         if self.rate_limit_remaining <= self.rate_limit_buffer:
             if self.rate_limit_reset:
-                return datetime.now(timezone.utc) >= self.rate_limit_reset
+                return datetime.now(UTC) >= self.rate_limit_reset
             return False
         return True
 
@@ -142,7 +143,7 @@ class GitHubApiClient:
         """Wait for rate limit to reset."""
         if self.rate_limit_reset:
             wait_time = (
-                self.rate_limit_reset - datetime.now(timezone.utc)
+                self.rate_limit_reset - datetime.now(UTC)
             ).total_seconds()
             if wait_time > 0:
                 await asyncio.sleep(min(wait_time, 3600))  # Max 1 hour wait
@@ -156,7 +157,7 @@ class GitHubApiClient:
             reset_timestamp = response.headers.get("x-ratelimit-reset")
             if reset_timestamp:
                 self.rate_limit_reset = datetime.fromtimestamp(
-                    int(reset_timestamp), timezone.utc
+                    int(reset_timestamp), UTC
                 )
         except (ValueError, TypeError):
             pass
@@ -170,7 +171,7 @@ class GitHubApiClient:
         self,
         repository: str,
         state: str = "open",
-        labels: List[str] | None = None,
+        labels: list[str] | None = None,
         limit: int = 30,
     ) -> GitHubApiResponse:
         """List repository issues."""
@@ -356,7 +357,7 @@ class GitHubApiClient:
         return metrics
 
     async def create_github_event_from_api_data(
-        self, repository: str, api_data: Dict[str, Any], event_type: GitHubEventType
+        self, repository: str, api_data: dict[str, Any], event_type: GitHubEventType
     ) -> GitHubEventSchema:
         """Create GitHub event schema from API data."""
 
@@ -365,12 +366,12 @@ class GitHubApiClient:
             repository=repository,
             actor=api_data.get("user", {}).get("login", "unknown"),
             payload=api_data,
-            event_id=f"api-{api_data.get('id', 'unknown')}-{datetime.now(timezone.utc).isoformat()}",
+            event_id=f"api-{api_data.get('id', 'unknown')}-{datetime.now(UTC).isoformat()}",
             attention_level=self._calculate_attention_level(api_data),
             processing_status="api_captured",
         )
 
-    def _calculate_attention_level(self, api_data: Dict[str, Any]) -> AttentionLevel:
+    def _calculate_attention_level(self, api_data: dict[str, Any]) -> AttentionLevel:
         """Calculate attention level based on API data."""
 
         # Check for critical indicators

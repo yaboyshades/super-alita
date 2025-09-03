@@ -1,0 +1,93 @@
+name: Copilot Task
+description: Assign a single-PR task to the Copilot coding agent
+title: "[Copilot] "
+labels: ["copilot", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Copilot Task Assignment
+        
+        This template is designed for single-PR tasks that can be completed by the Copilot coding agent.
+        Please provide clear, focused requirements with specific acceptance criteria.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+      description: Clearly describe what needs to be implemented or fixed
+      placeholder: Describe the specific task, feature, or bug fix needed
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Define clear, testable acceptance criteria
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: true
+
+  - type: textarea
+    id: files-affected
+    attributes:
+      label: Files/Areas Affected
+      description: List the files or code areas that may need changes
+      placeholder: |
+        - src/module/file.py
+        - tests/test_module.py
+        - docs/module.md
+
+  - type: dropdown
+    id: task-type
+    attributes:
+      label: Task Type
+      description: What type of task is this?
+      options:
+        - Bug Fix
+        - Feature Addition
+        - Refactoring
+        - Documentation
+        - Testing
+        - Performance Optimization
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: Task priority level
+      options:
+        - Low
+        - Medium
+        - High
+        - Critical
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any additional context, links, or background information
+      placeholder: Add any relevant context, links to discussions, related issues, etc.
+
+  - type: checkboxes
+    id: requirements
+    attributes:
+      label: Requirements Checklist
+      description: Ensure the task meets quality requirements
+      options:
+        - label: Task is focused and can be completed in a single PR
+          required: true
+        - label: Acceptance criteria are clear and testable
+          required: true
+        - label: Files/areas affected are identified
+          required: true
+        - label: Task follows Super Alita coding standards and patterns
+          required: true

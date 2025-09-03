@@ -24,7 +24,7 @@ if _version_not_supported:
     )
 
 
-class ConsensusServiceStub(object):
+class ConsensusServiceStub:
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -40,7 +40,7 @@ class ConsensusServiceStub(object):
                 _registered_method=True)
 
 
-class ConsensusServiceServicer(object):
+class ConsensusServiceServicer:
     """Missing associated documentation comment in .proto file."""
 
     def GetConsensus(self, request, context):
@@ -65,7 +65,7 @@ def add_ConsensusServiceServicer_to_server(servicer, server):
 
 
  # This class is part of an EXPERIMENTAL API.
-class ConsensusService(object):
+class ConsensusService:
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
