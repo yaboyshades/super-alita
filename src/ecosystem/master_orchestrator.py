@@ -22,6 +22,8 @@ class WorkflowType(Enum):
     TODO_RESOLUTION = "todo_resolution"
     CODE_REVIEW = "code_review"
     FEATURE_DEVELOPMENT = "feature_development"
+    # ADD THIS NEW WORKFLOW TYPE
+    PASTED_CODE_INTEGRATION = "pasted_code_integration"
     # Future workflows can be added here
 
 
@@ -111,6 +113,21 @@ class IMetricsCollector(Protocol):
     ) -> None: ...
 
 
+# Add these new protocols alongside the existing ones (IReugEngine, etc.)
+class INamingConventionEnforcer(Protocol):
+    """Interface for a naming convention validation module."""
+
+    async def validate_code_block(
+        self, code_block: str, file_path: str
+    ) -> list[dict[str, Any]]: ...
+
+
+class IPatternAnalyzer(Protocol):
+    """Interface for comparing code against project-specific patterns."""
+
+    async def compare_against_codebase(self, code_block: str) -> dict[str, Any]: ...
+
+
 # --- No-Op Implementations for Standalone Operation ---
 
 
@@ -180,6 +197,21 @@ class NoopMetricsCollector(IMetricsCollector):
         pass
 
 
+# Add these with the other Noop classes
+class NoopNamingEnforcer(INamingConventionEnforcer):
+    async def validate_code_block(
+        self, code_block: str, file_path: str
+    ) -> list[dict[str, Any]]:
+        print("[Orchestrator] No-op Naming Enforcer: Assuming all names are valid.")
+        return []  # Return an empty list, indicating no violations
+
+
+class NoopPatternAnalyzer(IPatternAnalyzer):
+    async def compare_against_codebase(self, code_block: str) -> dict[str, Any]:
+        print("[Orchestrator] No-op Pattern Analyzer: No patterns compared.")
+        return {"compliance_score": 0.7, "suggested_refactors": []}
+
+
 # --- The Master Orchestrator ---
 
 
@@ -196,6 +228,9 @@ class EcosystemOrchestrator:
         # ADDED: event_bus and telemetry dependencies
         event_bus: IEventBus = None,
         telemetry: Telemetry = None,
+        # ADD THESE NEW DEPENDENCIES
+        naming_enforcer: INamingConventionEnforcer | None = None,
+        pattern_analyzer: IPatternAnalyzer | None = None,
     ):
         # Core systems are injected, allowing for easy replacement with real
         # implementations.
@@ -213,6 +248,10 @@ class EcosystemOrchestrator:
         self.metrics_collector = (
             telemetry  # Can be aliased for simplicity or have its own class
         )
+
+        # ADD THESE NEW DEPENDENCIES
+        self.naming_enforcer = naming_enforcer or NoopNamingEnforcer()
+        self.pattern_analyzer = pattern_analyzer or NoopPatternAnalyzer()
 
         # State management for developer contexts.
         self.developer_contexts: dict[str, DeveloperContext] = {}
@@ -245,6 +284,17 @@ class EcosystemOrchestrator:
                     "workflow_runs.todo_resolution", tags={"user_id": user_id}
                 )
                 return await self._orchestrate_todo_workflow(dev_context, context)
+        # ADD THIS NEW ROUTE
+        elif action == "code_pasted":
+            with self.telemetry.timer(
+                "workflow.integration.duration_ms", tags={"user_id": user_id}
+            ):
+                self.telemetry.increment_counter(
+                    "workflow_runs.integration", tags={"user_id": user_id}
+                )
+                return await self._orchestrate_integration_workflow(
+                    dev_context, context
+                )
 
         # Default response for unknown actions.
         return {"status": "error", "message": f"Unknown action: '{action}'"}
@@ -358,3 +408,87 @@ class EcosystemOrchestrator:
         )
 
         return "\n".join(prompt_parts)
+
+    # Add this new method to the EcosystemOrchestrator class
+    async def _orchestrate_integration_workflow(
+        self, dev_context: DeveloperContext, context: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Analyzes pasted code and generates a plan for integrating it into the codebase."""
+        pasted_code = context.get("pasted_code", "")
+        file_path = context.get("file_path", "")
+        if not pasted_code:
+            return {"status": "error", "message": "pasted_code not provided"}
+
+        # Emit event at the start of the workflow
+        await self.event_bus.emit(
+            "workflow.integration.started",
+            {"user_id": dev_context.user_id, "file_path": file_path},
+        )
+
+        # 1. Analyze for Naming Convention Violations
+        naming_violations = await self.naming_enforcer.validate_code_block(
+            pasted_code, file_path
+        )
+
+        # 2. Analyze for Architectural Pattern Mismatches
+        pattern_analysis = await self.pattern_analyzer.compare_against_codebase(
+            pasted_code
+        )
+
+        # 3. (From Patch 0002) Find similar internal code for context
+        related_internal_code = await self.semantic_search.find_related_implementations(
+            pasted_code, dev_context.active_codebase
+        )
+
+        # 4. Synthesize an "Integration Plan" with refactoring prompts for Copilot
+        integration_prompts = self._synthesize_integration_prompts(
+            {
+                "naming_violations": naming_violations,
+                "pattern_analysis": pattern_analysis,
+                "related_code": related_internal_code,
+            }
+        )
+
+        # 5. Track metrics for this new workflow
+        issues_found = len(naming_violations) + len(
+            pattern_analysis.get("suggested_refactors", [])
+        )
+
+        # Emit a final event with the outcome
+        await self.event_bus.emit(
+            "workflow.integration.completed",
+            {"user_id": dev_context.user_id, "issues_found": issues_found},
+        )
+
+        return {
+            "workflow_type": "pasted_code_integration",
+            "compliance_score": pattern_analysis.get("compliance_score", 0.0),
+            "issues_found": issues_found,
+            "refactoring_prompts": integration_prompts,  # This is the key output
+            "related_files": [item.path for item in related_internal_code],
+        }
+
+    def _synthesize_integration_prompts(
+        self, analysis_data: dict[str, Any]
+    ) -> list[str]:
+        """Generates a series of specific, actionable prompts for Copilot to refactor the code."""
+        prompts = []
+
+        # Create prompts for naming violations
+        for violation in analysis_data.get("naming_violations", []):
+            prompts.append(
+                f"Refactor the name `{violation['name']}` to `{violation['suggestion']}` to conform to the project's {violation['rule']} naming convention."
+            )
+
+        # Create prompts for pattern mismatches
+        for refactor in analysis_data.get("pattern_analysis", {}).get(
+            "suggested_refactors", []
+        ):
+            prompts.append(refactor["prompt"])  # The analyzer provides the full prompt
+
+        if not prompts:
+            prompts.append(
+                "The pasted code appears to be consistent with project standards. Review for logical correctness."
+            )
+
+        return prompts
