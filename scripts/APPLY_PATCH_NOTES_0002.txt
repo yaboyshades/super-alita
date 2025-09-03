@@ -1,0 +1,24 @@
+Patch 0002: Observability and GitHub Integration
+
+This patch introduces an event bus for observability and a bridge to the GitHub API for real-world code examples.
+
+**Instructions:**
+1. Unzip the patch bundle `patch_super_alita_ecosystem_0002.zip` at the root of your repository.
+2. Copy the new and modified files into your source directory:
+   cp -R src/ecosystem/*.py ./src/ecosystem/
+3. Copy the new test file and the conftest.py (if you don't have one) into your tests directory:
+   cp -R tests/test_eventbus_and_bridge.py ./tests/
+   cp -n tests/conftest.py ./tests/  # Use -n to not overwrite if it exists
+4. Copy the new documentation files:
+   cp -R docs/TELEMETRY.md ./docs/
+   cp -R docs/GITHUB_BRIDGE.md ./docs/
+5. Copy the new demo script:
+   cp -R scripts/demo_todo_workflow.py ./scripts/
+6. **Verification:** Run the tests to confirm a successful integration.
+   pytest -q tests/
+7. **Live Demo (Optional):**
+   - Set your GitHub token: `export GITHUB_TOKEN=ghp_...`
+   - Run the demo: `python scripts/demo_todo_workflow.py "Implement a Python decorator for caching"`
+
+**Outcome:**
+The orchestrator now emits events and can fetch real code from GitHub, providing significantly richer context to Copilot.

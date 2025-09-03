@@ -9,6 +9,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Protocol
 
+# Added imports for event bus and telemetry
+from .eventbus import IEventBus, NoopEventBus
+from .telemetry import Telemetry
+
 # --- Enums and Data Classes ---
 
 
@@ -113,7 +117,9 @@ class IMetricsCollector(Protocol):
 class NoopReugEngine(IReugEngine):
     """A default, no-operation REUG engine for standalone testing."""
 
-    async def analyze_todo_complexity(self, todo_text: str) -> TodoAnalysisResult:  # noqa: ARG002
+    async def analyze_todo_complexity(
+        self, todo_text: str  # noqa: ARG002
+    ) -> TodoAnalysisResult:
         print("[Orchestrator] No-op REUG Engine: Returning default analysis.")
         return TodoAnalysisResult(
             complexity_score=0.3,
@@ -136,7 +142,9 @@ class NoopSemanticSearch(ISemanticCodeSearch):
 class NoopCopilotEnhancer(ICopilotContextEnhancer):
     """A default, no-operation Copilot Enhancer for standalone testing."""
 
-    async def find_github_examples(self, query: str) -> list[GitHubExample]:  # noqa: ARG002
+    async def find_github_examples(
+        self, query: str  # noqa: ARG002
+    ) -> list[GitHubExample]:
         print("[Orchestrator] No-op Copilot Enhancer: Returning no examples.")
         return []
 
@@ -185,6 +193,9 @@ class EcosystemOrchestrator:
         copilot_enhancer: ICopilotContextEnhancer | None = None,
         snippet_generator: IDynamicSnippetGenerator | None = None,
         metrics_collector: IMetricsCollector | None = None,
+        # ADDED: event_bus and telemetry dependencies
+        event_bus: IEventBus = None,
+        telemetry: Telemetry = None,
     ):
         # Core systems are injected, allowing for easy replacement with real
         # implementations.
@@ -193,6 +204,15 @@ class EcosystemOrchestrator:
         self.copilot_enhancer = copilot_enhancer or NoopCopilotEnhancer()
         self.snippet_generator = snippet_generator or NoopSnippetGenerator()
         self.metrics_collector = metrics_collector or NoopMetricsCollector()
+
+        # ADDED:
+        self.event_bus = event_bus or NoopEventBus()
+        self.telemetry = telemetry or Telemetry()
+
+        # MODIFIED: Use the telemetry's counter
+        self.metrics_collector = (
+            telemetry  # Can be aliased for simplicity or have its own class
+        )
 
         # State management for developer contexts.
         self.developer_contexts: dict[str, DeveloperContext] = {}
@@ -209,10 +229,22 @@ class EcosystemOrchestrator:
         """Central entry point for all developer interactions with the ecosystem."""
         dev_context = await self._get_or_create_developer_context(user_id)
 
+        # ADDED: Emit an event when an action is handled
+        await self.event_bus.emit(
+            "developer.action.received", {"user_id": user_id, "action": action}
+        )
+
         # Simple routing based on the action type. This can be expanded with a more
         # sophisticated classification engine in the future.
         if action == "todo_detected":
-            return await self._orchestrate_todo_workflow(dev_context, context)
+            # ADDED: Wrap the workflow in a telemetry span
+            with self.telemetry.timer(
+                "workflow.todo_resolution.duration_ms", tags={"user_id": user_id}
+            ):
+                self.telemetry.increment_counter(
+                    "workflow_runs.todo_resolution", tags={"user_id": user_id}
+                )
+                return await self._orchestrate_todo_workflow(dev_context, context)
 
         # Default response for unknown actions.
         return {"status": "error", "message": f"Unknown action: '{action}'"}
@@ -220,27 +252,36 @@ class EcosystemOrchestrator:
     async def _orchestrate_todo_workflow(
         self, dev_context: DeveloperContext, context: dict[str, Any]
     ) -> dict[str, Any]:
-        """Coordinates the complete TODO resolution workflow across all 
+        """Coordinates the complete TODO resolution workflow across all
         integrated subsystems."""
         todo_text = context.get("todo_text", "")
         if not todo_text:
             return {"status": "error", "message": "todo_text not provided in context"}
 
-        # 1. TODO Analysis (Cognitive Engine)
-        todo_analysis = await self.reug_engine.analyze_todo_complexity(todo_text)
-
-        # 2. Semantic Code Discovery (Local Codebase)
-        related_code = await self.semantic_search.find_related_implementations(
-            todo_text, dev_context.active_codebase
+        # ADDED: Emit event at the start of the workflow
+        await self.event_bus.emit(
+            "workflow.todo_resolution.started",
+            {"user_id": dev_context.user_id, "file_path": context.get("file_path")},
         )
 
-        # 3. GitHub Examples (External Knowledge)
-        github_examples = await self.copilot_enhancer.find_github_examples(todo_text)
+        # ADDED: Time individual steps of the workflow
+        with self.telemetry.timer("todo.analysis.duration_ms"):
+            todo_analysis = await self.reug_engine.analyze_todo_complexity(todo_text)
 
-        # 4. Generate Context-Aware Snippets
-        snippets = await self.snippet_generator.generate_for_todo(
-            todo_text, related_code, dev_context.preferred_patterns
-        )
+        with self.telemetry.timer("todo.semantic_search.duration_ms"):
+            related_code = await self.semantic_search.find_related_implementations(
+                todo_text, dev_context.active_codebase
+            )
+
+        with self.telemetry.timer("todo.github_search.duration_ms"):
+            github_examples = await self.copilot_enhancer.find_github_examples(
+                todo_text
+            )
+
+        with self.telemetry.timer("todo.snippet_generation.duration_ms"):
+            snippets = await self.snippet_generator.generate_for_todo(
+                todo_text, related_code, dev_context.preferred_patterns
+            )
 
         # 5. Unified Copilot Prompt Synthesis
         copilot_prompt = self._synthesize_copilot_context(
@@ -253,14 +294,17 @@ class EcosystemOrchestrator:
             }
         )
 
-        # 6. Track Metrics for Observability and Learning
-        await self.metrics_collector.record_workflow_execution(
-            "todo_resolution",
+        # REMOVED: The metrics collector is now handled by telemetry
+        # await self.metrics_collector.record_workflow_execution(...)
+
+        # ADDED: Emit a final event with the outcome
+        await self.event_bus.emit(
+            "workflow.todo_resolution.completed",
             {
-                "complexity": todo_analysis.complexity_score,
-                "context_sources": len(related_code) + len(github_examples),
-                "developer_level": dev_context.skill_level,
-                "file_path": context.get("file_path", "unknown"),
+                "user_id": dev_context.user_id,
+                "confidence": todo_analysis.confidence,
+                "related_files_found": len(related_code),
+                "github_examples_found": len(github_examples),
             },
         )
 
@@ -275,7 +319,7 @@ class EcosystemOrchestrator:
         }
 
     def _synthesize_copilot_context(self, context_data: dict[str, Any]) -> str:
-        """Creates a concise, context-rich prompt engineered for high-quality 
+        """Creates a concise, context-rich prompt engineered for high-quality
         GitHub Copilot responses."""
 
         todo_text: str = context_data["todo_text"]
