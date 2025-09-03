@@ -2,11 +2,8 @@
 Context retrieval module for Super Alita prompt pipeline.
 Leverages knowledge graph and semantic search to find relevant context.
 """
-import asyncio
-import json
-import os
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List
 
 # Define context source paths relative to project root
 PROJECT_ROOT = Path(__file__).parent.parent.parent

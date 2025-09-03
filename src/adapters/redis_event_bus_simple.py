@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Redis Event Bus Adapter - simplified version."""
 
-import asyncio
 import json
 import logging
 import os

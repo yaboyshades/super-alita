@@ -428,7 +428,7 @@ async def execute_turn(
     ]
 
     llm_response_content = ""
-    
+
     def _parse_tool_calls(text: str) -> list[dict[str, Any]]:
         calls: list[dict[str, Any]] = []
         try:

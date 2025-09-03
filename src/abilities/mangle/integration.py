@@ -6,7 +6,6 @@ DeepConf with validation gates, tool execution controls, and method selection.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
 
 from src.abilities.mangle.mangle_ability import MangleAbility
 from src.abilities.mangle.mangle_validator import MangleValidator

@@ -21,11 +21,10 @@ import logging
 import os
 import subprocess
 import tempfile
-import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 from src.core.event_bus import EventBus
 from src.plugins.plugin_interface import PluginInterface

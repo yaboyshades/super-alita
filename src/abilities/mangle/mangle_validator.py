@@ -11,9 +11,8 @@ This module provides additional Mangle integration capabilities for:
 
 import json
 import logging
-import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
