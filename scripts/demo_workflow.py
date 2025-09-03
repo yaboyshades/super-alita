@@ -41,7 +41,7 @@ from src.ecosystem.telemetry import Telemetry
 
 async def main():
     parser = argparse.ArgumentParser(description="Demo the REUG Ecosystem Workflows.")
-    # ADD a mode argument
+    
     parser.add_argument(
         "mode", choices=["todo", "integrate"], help="The workflow mode to run."
     )
