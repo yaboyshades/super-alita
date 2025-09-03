@@ -9,9 +9,8 @@ with Super Alita's ability registry and provides tool contracts.
 import logging
 from typing import Any
 
-from src.abilities.mangle.mangle_ability import MangleAbility
+from src.abilities.mangle.mangle_ability import MangleAbility, ManglePluginInterface
 from src.core.plugin_registry import register_plugin
-from src.abilities.mangle.mangle_ability import ManglePluginInterface
 from src.reug_runtime.mcp_abstractor import abstract_mcp_box
 
 logger = logging.getLogger(__name__)

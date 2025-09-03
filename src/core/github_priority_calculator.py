@@ -4,14 +4,15 @@ Extends the existing priority system to incorporate GitHub-specific metrics
 like security alerts, blocking relationships, and stakeholder involvement.
 """
 
-from typing import Any, Dict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from src.core.schemas import (
-    GitHubPriorityMetrics,
-    GitHubEventSchema,
     AttentionLevel,
+    GitHubEventSchema,
+    GitHubPriorityMetrics,
     TaskRequest,
 )
 
@@ -86,7 +87,7 @@ class GitHubPriorityCalculator:
         }
 
     def calculate_priority(
-        self, metrics: EnhancedPriorityMetrics, context: Dict[str, Any] | None = None
+        self, metrics: EnhancedPriorityMetrics, context: dict[str, Any] | None = None
     ) -> float:
         """Calculate enhanced priority score with GitHub metrics."""
 
@@ -238,7 +239,7 @@ class GitHubPriorityCalculator:
 
         # Calculate age from event timestamp
         age_hours = (
-            datetime.now(timezone.utc) - event.timestamp
+            datetime.now(UTC) - event.timestamp
         ).total_seconds() / 3600
 
         # Map attention level to urgency
@@ -307,7 +308,7 @@ class GitHubPriorityCalculator:
             try:
                 created_at = datetime.fromisoformat(task.metadata["created_at"])
                 age_hours = (
-                    datetime.now(timezone.utc) - created_at
+                    datetime.now(UTC) - created_at
                 ).total_seconds() / 3600
             except (ValueError, TypeError):
                 pass
@@ -334,7 +335,7 @@ class GitHubPriorityCalculator:
 
     def get_priority_explanation(
         self, metrics: EnhancedPriorityMetrics, final_priority: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get explanation of priority calculation."""
 
         base_priority = self._calculate_base_priority(metrics)

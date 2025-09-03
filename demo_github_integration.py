@@ -11,17 +11,21 @@ import json
 
 # Import our GitHub integration components
 import sys
+
 sys.path.append('./src')
 
+from src.core.github_priority_calculator import (
+    EnhancedPriorityMetrics,
+    GitHubPriorityCalculator,
+)
 from src.core.schemas import (
+    AttentionLevel,
     GitHubEventSchema,
     GitHubEventType,
     GitHubPriorityMetrics,
-    AttentionLevel
 )
-from src.tools.github_cli_tool import GitHubCliTool, GitHubCliInput
 from src.integration.github_api import GitHubApiClient
-from src.core.github_priority_calculator import GitHubPriorityCalculator, EnhancedPriorityMetrics
+from src.tools.github_cli_tool import GitHubCliInput, GitHubCliTool
 
 
 def print_banner(title: str):

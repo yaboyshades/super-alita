@@ -24,9 +24,9 @@ def _import_stubs():  # lazy import / generation
     except Exception:  # pragma: no cover
         # Attempt generation
         try:
+            import pathlib
             import subprocess
             import sys
-            import pathlib
 
             root = pathlib.Path(__file__).resolve().parent.parent
             script = root / "scripts" / "gen_protos.py"
@@ -100,7 +100,7 @@ class EnhancedConsensusGrpcClient:
                 "confidence_scores": list(resp.confidence_scores.values()),
                 "metadata": {"source": "grpc"},
             }
-        except asyncio.TimeoutError as e:  # noqa: PERF203
+        except TimeoutError as e:  # noqa: PERF203
             raise TimeoutError(
                 f"Consensus gRPC timeout after {self.timeout}s"
             ) from e
