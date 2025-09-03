@@ -141,19 +141,21 @@ class GeminiCodegenAbility(PluginInterface):
         ]
         validation_summary = {"missing_required_fields": missing, "unknown_fields": []}
         telem = telemetry_footer(
-            retrieval_rounds=int(
-                raw_obj.get("telemetry", {}).get("retrieval_rounds", 1)
-            )
-            if isinstance(raw_obj, dict)
-            else 1,
-            segments_used=int(
-                raw_obj.get("telemetry", {}).get("segments_used", ledger.count())
-            )
-            if isinstance(raw_obj, dict)
-            else ledger.count(),
-            totals=raw_obj.get("telemetry", {}).get("total_extracted", {})
-            if isinstance(raw_obj, dict)
-            else {},
+            retrieval_rounds=(
+                int(raw_obj.get("telemetry", {}).get("retrieval_rounds", 1))
+                if isinstance(raw_obj, dict)
+                else 1
+            ),
+            segments_used=(
+                int(raw_obj.get("telemetry", {}).get("segments_used", ledger.count()))
+                if isinstance(raw_obj, dict)
+                else ledger.count()
+            ),
+            totals=(
+                raw_obj.get("telemetry", {}).get("total_extracted", {})
+                if isinstance(raw_obj, dict)
+                else {}
+            ),
         )
         telem["telemetry"]["extraction_duration_ms"] = end_timer(t0)
 

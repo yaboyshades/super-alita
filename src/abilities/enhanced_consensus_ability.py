@@ -432,7 +432,9 @@ class EnhancedConsensusProvider(PluginInterface):
         # Score based on multiple factors
         ensemble_scores = []
 
-        for i, (resp, conf) in enumerate(zip(responses, confidence_scores, strict=False)):
+        for i, (resp, conf) in enumerate(
+            zip(responses, confidence_scores, strict=False)
+        ):
             score = 0.0
 
             # Confidence component (40%)

@@ -214,15 +214,21 @@ class CortexRuntime(PluginInterface):
             result = CortexResult(
                 cycle_id=context.cycle_id,
                 success=success,
-                perception_result=perception_result.data
-                if perception_result and perception_result.success
-                else None,
-                reasoning_result=reasoning_result.data
-                if reasoning_result and reasoning_result.success
-                else None,
-                action_result=action_result.data
-                if action_result and action_result.success
-                else None,
+                perception_result=(
+                    perception_result.data
+                    if perception_result and perception_result.success
+                    else None
+                ),
+                reasoning_result=(
+                    reasoning_result.data
+                    if reasoning_result and reasoning_result.success
+                    else None
+                ),
+                action_result=(
+                    action_result.data
+                    if action_result and action_result.success
+                    else None
+                ),
                 performance_markers=self.performance_tracker.get_markers(),
                 total_duration_ms=total_duration_ms,
                 error=error,

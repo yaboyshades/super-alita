@@ -4,7 +4,9 @@ from datetime import UTC, datetime
 from typing import Any
 
 
-def api_error(error: str, code: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
+def api_error(
+    error: str, code: str, details: dict[str, Any] | None = None
+) -> dict[str, Any]:
     return {
         "error": error,
         "code": code,
@@ -14,4 +16,3 @@ def api_error(error: str, code: str, details: dict[str, Any] | None = None) -> d
 
 
 __all__ = ["api_error"]
-

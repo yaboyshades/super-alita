@@ -27,11 +27,9 @@ class CapabilityRetentionProof:
 
     def log_test(self, test_name: str, result: dict[str, Any]):
         """Log test results for analysis"""
-        self.test_results.append({
-            "test": test_name,
-            "timestamp": time.time(),
-            "result": result
-        })
+        self.test_results.append(
+            {"test": test_name, "timestamp": time.time(), "result": result}
+        )
 
     def test_composition_history_persistence(self) -> bool:
         """Test 1: Prove composition patterns are learned and retained"""
@@ -43,7 +41,7 @@ class CapabilityRetentionProof:
             "Explain quantum computing",
             "What are the benefits of AI?",
             "How does neural networks work?",
-            "What is deep learning?"
+            "What is deep learning?",
         ]
 
         composition_results = []
@@ -60,17 +58,19 @@ class CapabilityRetentionProof:
                         "temperature": 0.5,
                         "max_tokens": 120,
                     },
-                    timeout=(5, self.consensus_timeout)
+                    timeout=(5, self.consensus_timeout),
                 )
 
                 if response.status_code == 200:
                     result = response.json()
-                    confidence = result.get('result', {}).get('consensus_confidence', 0)
-                    composition_results.append({
-                        "prompt": prompt,
-                        "confidence": confidence,
-                        "timestamp": time.time()
-                    })
+                    confidence = result.get("result", {}).get("consensus_confidence", 0)
+                    composition_results.append(
+                        {
+                            "prompt": prompt,
+                            "confidence": confidence,
+                            "timestamp": time.time(),
+                        }
+                    )
                     print(f"   ✅ Confidence: {confidence:.3f}")
                 else:
                     print(f"   ❌ Failed: {response.status_code}")
@@ -80,8 +80,8 @@ class CapabilityRetentionProof:
 
         # Analyze if system is learning (later calls should show pattern improvements)
         if len(composition_results) >= 3:
-            early_avg = sum(r['confidence'] for r in composition_results[:2]) / 2
-            later_avg = sum(r['confidence'] for r in composition_results[-2:]) / 2
+            early_avg = sum(r["confidence"] for r in composition_results[:2]) / 2
+            later_avg = sum(r["confidence"] for r in composition_results[-2:]) / 2
 
             improvement = later_avg - early_avg
             print("\n   📊 Analysis:")
@@ -96,22 +96,27 @@ class CapabilityRetentionProof:
             learning_detected = perfect_retention or improving_learning
 
             if perfect_retention:
-                print(f"   🧠 Perfect retention detected: Early {early_avg:.3f} → Later {later_avg:.3f}")
+                print(
+                    f"   🧠 Perfect retention detected: Early {early_avg:.3f} → Later {later_avg:.3f}"
+                )
                 print("   ✨ System demonstrates perfect knowledge retention!")
             elif improving_learning:
                 print(f"   🧠 Learning improvement detected: +{improvement:.3f}")
             else:
                 print("   🧠 No significant learning pattern detected")
 
-            self.log_test("composition_history", {
-                "composition_count": len(composition_results),
-                "early_confidence": early_avg,
-                "later_confidence": later_avg,
-                "improvement": improvement,
-                "perfect_retention": perfect_retention,
-                "improving_learning": improving_learning,
-                "learning_detected": learning_detected
-            })
+            self.log_test(
+                "composition_history",
+                {
+                    "composition_count": len(composition_results),
+                    "early_confidence": early_avg,
+                    "later_confidence": later_avg,
+                    "improvement": improvement,
+                    "perfect_retention": perfect_retention,
+                    "improving_learning": improving_learning,
+                    "learning_detected": learning_detected,
+                },
+            )
 
             return learning_detected
 
@@ -171,12 +176,15 @@ class CapabilityRetentionProof:
             print(f"      - ChromaDB files: {chroma_files_found}")
             print(f"      - Total evidence: {total_memory_evidence} files")
 
-            self.log_test("memory_file_persistence", {
-                "traditional_files": memory_files_found,
-                "chromadb_files": chroma_files_found,
-                "chromadb_size_mb": chroma_size / 1024 / 1024,
-                "total_evidence": total_memory_evidence
-            })
+            self.log_test(
+                "memory_file_persistence",
+                {
+                    "traditional_files": memory_files_found,
+                    "chromadb_files": chroma_files_found,
+                    "chromadb_size_mb": chroma_size / 1024 / 1024,
+                    "total_evidence": total_memory_evidence,
+                },
+            )
 
             return True
         else:
@@ -193,40 +201,52 @@ class CapabilityRetentionProof:
             response = requests.get(f"{self.base_url}/tools/catalog", timeout=10)
             if response.status_code == 200:
                 tools = response.json()
-                tool_names = [tool.get('name', 'unnamed') for tool in tools]
+                tool_names = [tool.get("name", "unnamed") for tool in tools]
 
                 # Look for evidence of dynamic discovery
                 dynamic_indicators = [
-                    'deepconf_consensus',  # Enhanced consensus
-                    'reug_start_turn',     # Streaming runtime
-                    'reug_stream_next',    # Stream continuation
+                    "deepconf_consensus",  # Enhanced consensus
+                    "reug_start_turn",  # Streaming runtime
+                    "reug_stream_next",  # Stream continuation
                 ]
 
-                found_dynamic = [tool for tool in dynamic_indicators if tool in tool_names]
+                found_dynamic = [
+                    tool for tool in dynamic_indicators if tool in tool_names
+                ]
 
                 print(f"   📋 Total tools available: {len(tools)}")
-                print(f"   🎯 Dynamic tools found: {len(found_dynamic)}/{len(dynamic_indicators)}")
+                print(
+                    f"   🎯 Dynamic tools found: {len(found_dynamic)}/{len(dynamic_indicators)}"
+                )
                 print(f"   🔧 Dynamic tools: {', '.join(found_dynamic)}")
 
                 # Check for complex tool compositions
-                complex_tools = [t for t in tools if len(t.get('input_schema', {}).get('properties', {})) > 3]
+                complex_tools = [
+                    t
+                    for t in tools
+                    if len(t.get("input_schema", {}).get("properties", {})) > 3
+                ]
                 print(f"   🧩 Complex tools (>3 parameters): {len(complex_tools)}")
 
-                evolution_score = (len(found_dynamic) / len(dynamic_indicators)) * 0.7 + \
-                                (min(len(complex_tools), 5) / 5) * 0.3
+                evolution_score = (
+                    len(found_dynamic) / len(dynamic_indicators)
+                ) * 0.7 + (min(len(complex_tools), 5) / 5) * 0.3
 
                 print(f"   📊 Evolution score: {evolution_score:.3f}")
 
                 evolved = evolution_score > 0.6
                 print(f"   🧬 Evolution detected: {'YES' if evolved else 'NO'}")
 
-                self.log_test("capability_evolution", {
-                    "total_tools": len(tools),
-                    "dynamic_tools_found": len(found_dynamic),
-                    "complex_tools": len(complex_tools),
-                    "evolution_score": evolution_score,
-                    "evolved": evolved
-                })
+                self.log_test(
+                    "capability_evolution",
+                    {
+                        "total_tools": len(tools),
+                        "dynamic_tools_found": len(found_dynamic),
+                        "complex_tools": len(complex_tools),
+                        "evolution_score": evolution_score,
+                        "evolved": evolved,
+                    },
+                )
 
                 return evolved
 
@@ -255,12 +275,12 @@ class CapabilityRetentionProof:
                         "temperature": 0.4,
                         "max_tokens": 120,
                     },
-                    timeout=(5, self.consensus_timeout)
+                    timeout=(5, self.consensus_timeout),
                 )
 
                 if response.status_code == 200:
                     result = response.json()
-                    confidence = result.get('result', {}).get('consensus_confidence', 0)
+                    confidence = result.get("result", {}).get("consensus_confidence", 0)
                     confidence_progression.append(confidence)
                     print(f"   📊 Confidence: {confidence:.3f}")
 
@@ -278,7 +298,9 @@ class CapabilityRetentionProof:
             stability = max(confidence_progression) - min(confidence_progression)
 
             print("\n   📊 Confidence Analysis:")
-            print(f"   📈 Progression: {' → '.join(f'{c:.3f}' for c in confidence_progression)}")
+            print(
+                f"   📈 Progression: {' → '.join(f'{c:.3f}' for c in confidence_progression)}"
+            )
             print(f"   📈 Trend: {confidence_trend:+.3f}")
             print(f"   📈 Stability range: {stability:.3f}")
 
@@ -286,12 +308,15 @@ class CapabilityRetentionProof:
             adaptive = abs(confidence_trend) > 0.05 or stability < 0.1
             print(f"   🎯 Adaptive behavior: {'YES' if adaptive else 'NO'}")
 
-            self.log_test("adaptive_confidence", {
-                "confidence_progression": confidence_progression,
-                "trend": confidence_trend,
-                "stability": stability,
-                "adaptive": adaptive
-            })
+            self.log_test(
+                "adaptive_confidence",
+                {
+                    "confidence_progression": confidence_progression,
+                    "trend": confidence_trend,
+                    "stability": stability,
+                    "adaptive": adaptive,
+                },
+            )
 
             return adaptive
 
@@ -358,8 +383,9 @@ class CapabilityRetentionProof:
             "total_tests": len(tests),
             "retention_score": passed / len(tests),
             "detailed_results": results,
-            "test_logs": self.test_results
+            "test_logs": self.test_results,
         }
+
 
 if __name__ == "__main__":
     proof = CapabilityRetentionProof()

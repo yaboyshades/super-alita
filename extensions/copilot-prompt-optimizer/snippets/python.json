@@ -1,0 +1,471 @@
+{
+  "Super Alita Plugin": {
+    "prefix": "alitaplugin",
+    "body": [
+      "from typing import Any, Dict",
+      "from src.plugins.plugin_interface import PluginInterface",
+      "from src.core.events import create_event",
+      "",
+      "class ${1:NewPlugin}(PluginInterface):",
+      "    \"\"\"${2:Plugin description}\"\"\"",
+      "    ",
+      "    async def initialize(self, event_bus, **kwargs) -> bool:",
+      "        \"\"\"Initialize the plugin\"\"\"",
+      "        self.event_bus = event_bus",
+      "        return True",
+      "    ",
+      "    async def process_event(self, event: Dict[str, Any]) -> Dict[str, Any] | None:",
+      "        \"\"\"Process events\"\"\"",
+      "        ${3:pass}",
+      "        return {\"processed\": True, \"data\": event}"
+    ],
+    "description": "Create Super Alita plugin following established patterns"
+  },
+
+  "Python File Header": {
+    "prefix": "fileheader",
+    "body": "# -*- coding: utf-8 -*-",
+    "description": "Add Python file encoding header"
+  },
+
+  "Python File Shebang": {
+    "prefix": "shebang",
+    "body": "#!/usr/bin/env python",
+    "description": "Add Python shebang line"
+  },
+
+  "Set breakpoint for debugging": {
+    "prefix": "ipdb",
+    "body": "import ipdb; ipdb.set_trace()  # noqa",
+    "description": "Set ipdb debugger breakpoint"
+  },
+
+  "Main script guard": {
+    "prefix": "ifname",
+    "body": "if __name__ == \"__main__\":",
+    "description": "Add main script execution guard"
+  },
+
+  "Import re": {
+    "prefix": "impr",
+    "body": "import re",
+    "description": "Import regular expressions module"
+  },
+
+  "Import requests": {
+    "prefix": "imreq",
+    "body": "import requests",
+    "description": "Import requests HTTP library"
+  },
+
+  "Import os and sys": {
+    "prefix": "imos",
+    "body": ["import os", "import sys"],
+    "description": "Import os and sys modules"
+  },
+
+  "Import functools": {
+    "prefix": "imfu",
+    "body": "import functools",
+    "description": "Import functools module"
+  },
+
+  "Import itertools": {
+    "prefix": "imit",
+    "body": "import itertools",
+    "description": "Import itertools module"
+  },
+
+  "Import numpy": {
+    "prefix": "imnp",
+    "body": "import numpy as np",
+    "description": "Import numpy as np"
+  },
+
+  "Import pandas": {
+    "prefix": "impd",
+    "body": "import pandas as pd",
+    "description": "Import pandas as pd"
+  },
+
+  "Import matplotlib": {
+    "prefix": "immpl",
+    "body": "from matplotlib import pyplot as plt",
+    "description": "Import matplotlib pyplot"
+  },
+
+  "Import BeautifulSoup": {
+    "prefix": "imbs",
+    "body": "from bs4 import BeautifulSoup",
+    "description": "Import BeautifulSoup for HTML parsing"
+  },
+
+  "Import datetime": {
+    "prefix": "imdt",
+    "body": "from datetime import datetime, timezone",
+    "description": "Import datetime with timezone support (Super Alita pattern)"
+  },
+
+  "For loop": {
+    "prefix": "fori",
+    "body": ["for ${1:i} in ${2:iterable}:", "    ${3:pass}"],
+    "description": "Create for loop"
+  },
+
+  "For loop with range": {
+    "prefix": "forr",
+    "body": ["for ${1:i} in range(len(${2:iterable})):", "    ${3:pass}"],
+    "description": "Create for loop with range and len"
+  },
+
+  "Simple list comprehension": {
+    "prefix": "foro",
+    "body": "[${1:i} for ${1:i} in ${2:iterable}]",
+    "description": "Create simple list comprehension"
+  },
+
+  "Function with type hints": {
+    "prefix": "func",
+    "body": [
+      "def ${1:function_name}(",
+      "    ${2:param}: ${3:type},",
+      "    ${4:optional_param}: ${5:type} = ${6:default},",
+      ") -> ${7:return_type}:",
+      "    \"\"\"${8:Function description}.",
+      "    ",
+      "    Args:",
+      "        ${2:param}: ${9:Parameter description}",
+      "        ${4:optional_param}: ${10:Optional parameter description}",
+      "    ",
+      "    Returns:",
+      "        ${11:Return description}",
+      "    \"\"\"",
+      "    ${12:pass}",
+      "    return ${13:None}"
+    ],
+    "description": "Create function with proper type hints and docstring (Black 88 chars)"
+  },
+
+  "Async function": {
+    "prefix": "asyncfunc",
+    "body": [
+      "async def ${1:async_function}(",
+      "    ${2:param}: ${3:type},",
+      ") -> ${4:return_type}:",
+      "    \"\"\"${5:Async function description}.",
+      "    ",
+      "    Args:",
+      "        ${2:param}: ${6:Parameter description}",
+      "    ",
+      "    Returns:",
+      "        ${7:Return description}",
+      "    \"\"\"",
+      "    ${8:pass}",
+      "    return ${9:None}"
+    ],
+    "description": "Create async function with type hints"
+  },
+
+  "Main class with type hints": {
+    "prefix": "mainclass",
+    "body": [
+      "class ${1:NewClass}:",
+      "    \"\"\"${2:Class description}\"\"\"",
+      "    ",
+      "    def __init__(self, ${3:param}: ${4:type}) -> None:",
+      "        \"\"\"Initialize ${1:NewClass}.",
+      "        ",
+      "        Args:",
+      "            ${3:param}: ${5:Parameter description}",
+      "        \"\"\"",
+      "        self.${3:param} = ${3:param}",
+      "        ${6:pass}"
+    ],
+    "description": "Create main class with type hints and proper docstring"
+  },
+
+  "Subclass": {
+    "prefix": "subclass",
+    "body": [
+      "class ${1:Subclass}(${2:BaseClass}):",
+      "    \"\"\"${3:Subclass description}\"\"\"",
+      "    ",
+      "    def __init__(self, ${4:param}: ${5:type}) -> None:",
+      "        \"\"\"Initialize ${1:Subclass}.",
+      "        ",
+      "        Args:",
+      "            ${4:param}: ${6:Parameter description}",
+      "        \"\"\"",
+      "        super().__init__(${4:param})",
+      "        ${7:pass}"
+    ],
+    "description": "Create subclass with super() call and type hints"
+  },
+
+  "If statement": {
+    "prefix": "if",
+    "body": ["if ${1:condition}:", "    ${2:pass}"],
+    "description": "if statement"
+  },
+
+  "If/elif statement": {
+    "prefix": "ifelif",
+    "body": [
+      "if ${1:condition}:",
+      "    ${2:pass}",
+      "elif ${3:condition}:",
+      "    ${4:pass}"
+    ],
+    "description": "if/elif statement"
+  },
+
+  "If/elif/else statement": {
+    "prefix": "ifelifelse",
+    "body": [
+      "if ${1:condition}:",
+      "    ${2:pass}",
+      "elif ${3:condition}:",
+      "    ${4:pass}",
+      "else:",
+      "    ${5:pass}"
+    ],
+    "description": "if/elif/else statement"
+  },
+
+  "If/else statement": {
+    "prefix": "ifelse",
+    "body": ["if ${1:condition}:", "    ${2:pass}", "else:", "    ${3:pass}"],
+    "description": "if/else statement"
+  },
+
+  "Try/except": {
+    "prefix": "tryexcept",
+    "body": [
+      "try:",
+      "    ${1:pass}",
+      "except ${2:Exception} as e:",
+      "    ${3:pass}"
+    ],
+    "description": "Try/except block with specific exception"
+  },
+
+  "Try/except/finally": {
+    "prefix": "tryexceptfinally",
+    "body": [
+      "try:",
+      "    ${1:pass}",
+      "except ${2:Exception} as e:",
+      "    ${3:pass}",
+      "finally:",
+      "    ${4:pass}"
+    ],
+    "description": "Try/except/finally block"
+  },
+
+  "Lambda function": {
+    "prefix": "lambda",
+    "body": "lambda ${1:arguments}: ${2:expression}",
+    "description": "Lambda function"
+  },
+
+  "While loop": {
+    "prefix": "while",
+    "body": ["while ${1:condition}:", "    ${2:pass}"],
+    "description": "While loop"
+  },
+
+  "While/else loop": {
+    "prefix": "whileelse",
+    "body": [
+      "while ${1:condition}:",
+      "    ${2:pass}",
+      "else:",
+      "    ${3:pass}"
+    ],
+    "description": "While/else loop"
+  },
+
+  "Print statement": {
+    "prefix": "print",
+    "body": "print(${1:value})",
+    "description": "Print statement"
+  },
+
+  "Input statement": {
+    "prefix": "input",
+    "body": "${1:variable} = input('${2:Enter value}: ')",
+    "description": "Input statement"
+  },
+
+  "Length function": {
+    "prefix": "len",
+    "body": "len(${1:iterable})",
+    "description": "Length function"
+  },
+
+  "Range function": {
+    "prefix": "range",
+    "body": "range(${1:start}, ${2:stop}, ${3:step})",
+    "description": "Range function"
+  },
+
+  "Enumerate function": {
+    "prefix": "enumerate",
+    "body": "enumerate(${1:iterable}, start=${2:0})",
+    "description": "Enumerate function"
+  },
+
+  "Zip function": {
+    "prefix": "zip",
+    "body": "zip(${1:iterable1}, ${2:iterable2})",
+    "description": "Zip function"
+  },
+
+  "Open file": {
+    "prefix": "openfile",
+    "body": [
+      "with open('${1:filename}', '${2:r}') as f:",
+      "    ${3:content = f.read()}"
+    ],
+    "description": "Open file with context manager"
+  },
+
+  "Write file": {
+    "prefix": "writefile",
+    "body": [
+      "with open('${1:filename}', '${2:w}') as f:",
+      "    f.write('${3:content}')"
+    ],
+    "description": "Write to file with context manager"
+  },
+
+  "List comprehension": {
+    "prefix": "listcomp",
+    "body": "[${1:expression} for ${2:item} in ${3:iterable} if ${4:condition}]",
+    "description": "List comprehension with condition"
+  },
+
+  "Dictionary comprehension": {
+    "prefix": "dictcomp",
+    "body": "{${1:key}: ${2:value} for ${3:item} in ${4:iterable} if ${5:condition}}",
+    "description": "Dictionary comprehension"
+  },
+
+  "Set comprehension": {
+    "prefix": "setcomp",
+    "body": "{${1:expression} for ${2:item} in ${3:iterable} if ${4:condition}}",
+    "description": "Set comprehension"
+  },
+
+  "Pytest async test": {
+    "prefix": "asynctest",
+    "body": [
+      "@pytest.mark.asyncio  # Required for all async tests",
+      "async def ${1:test_function}():",
+      "    \"\"\"${2:Test description}\"\"\"",
+      "    from datetime import datetime, timezone",
+      "    ",
+      "    # Use timezone-aware timestamps",
+      "    timestamp = datetime.now(timezone.utc)",
+      "    ${3:pass}"
+    ],
+    "description": "Create async test following Super Alita patterns"
+  },
+
+  "Pytest parametrize": {
+    "prefix": "parametrize",
+    "body": [
+      "@pytest.mark.parametrize(",
+      "    \"${1:param_name}\",",
+      "    [${2:test_values}]",
+      ")",
+      "def ${3:test_function}(${1:param_name}):",
+      "    \"\"\"${4:Test description}\"\"\"",
+      "    ${5:pass}"
+    ],
+    "description": "Parametrized test following Super Alita patterns"
+  },
+
+  "Enhanced Consensus Usage": {
+    "prefix": "consensus",
+    "body": [
+      "from src.abilities.enhanced_consensus_ability import EnhancedConsensusProvider",
+      "",
+      "# Canonical constructor: config dict, not kwargs",
+      "provider = EnhancedConsensusProvider(config={",
+      "    \"base_url\": \"http://localhost:11434/v1\",",
+      "    \"model_name\": \"gpt-oss:20b\",",
+      "    \"timeout\": 60",
+      "})",
+      "",
+      "result = await provider.consensus_sampling(",
+      "    prompt=\"${1:Your question}\",",
+      "    num_samples=${2:3},",
+      "    method=\"weighted_vote\",  # Default method per src/main.py:1660",
+      "    confidence_threshold=${3:0.7}",
+      ")"
+    ],
+    "description": "Use enhanced consensus following Super Alita patterns"
+  },
+
+  "MCP Tool Registration": {
+    "prefix": "mcptool",
+    "body": [
+      "from src.core.ability_registry import AbilityContract",
+      "",
+      "# Register MCP tool",
+      "contract = AbilityContract(",
+      "    id=\"${1:tool_id}\",",
+      "    name=\"${2:Tool Name}\",",
+      "    description=\"${3:Tool description}\",",
+      "    parameters={",
+      "        \"type\": \"object\",",
+      "        \"properties\": {",
+      "            \"${4:param_name}\": {\"type\": \"string\"}",
+      "        },",
+      "        \"required\": [\"${4:param_name}\"]",
+      "    }",
+      ")",
+      "",
+      "async def ${5:tool_executor}(args: dict[str, Any]) -> dict[str, Any]:",
+      "    \"\"\"Execute the tool\"\"\"",
+      "    ${6:pass}",
+      "    return {\"result\": \"success\"}",
+      "",
+      "ability_registry.register_tool(contract, ${5:tool_executor})"
+    ],
+    "description": "Register MCP tool with Super Alita ability registry"
+  },
+
+  "Create Event": {
+    "prefix": "createevent",
+    "body": [
+      "from src.core.events import create_event",
+      "",
+      "event = create_event(",
+      "    \"${1:event_type}\",",
+      "    ${2:data}=${3:value},",
+      "    confidence=${4:0.95}",
+      ")"
+    ],
+    "description": "Create event following Super Alita patterns"
+  },
+
+  "Pathlib import": {
+    "prefix": "pathlib",
+    "body": "from pathlib import Path",
+    "description": "Import pathlib (Super Alita standard)"
+  },
+
+  "Path usage": {
+    "prefix": "pathusage",
+    "body": [
+      "from pathlib import Path",
+      "",
+      "file_path = Path('${1:filename}')",
+      "if file_path.exists():",
+      "    ${2:pass}"
+    ],
+    "description": "Use pathlib.Path (Super Alita standard)"
+  }
+}

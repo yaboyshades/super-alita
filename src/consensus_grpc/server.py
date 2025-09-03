@@ -14,6 +14,7 @@ Environment variables:
 Implements the consensus.proto service:
     rpc GetConsensus(ConsensusRequest) returns (ConsensusResponse)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -39,19 +40,21 @@ except Exception:  # pragma: no cover - generate stubs dynamically
         import subprocess
 
         subprocess.check_call([sys.executable, str(script)])
-        from protos import consensus_pb2, consensus_pb2_grpc  # type: ignore  # noqa: WPS433,E501
+        from protos import (  # type: ignore  # noqa: WPS433,E501
+            consensus_pb2,
+            consensus_pb2_grpc,
+        )
     else:  # pragma: no cover
         raise
 
 import grpc  # type: ignore  # noqa: E402
+
 from src.abilities.enhanced_consensus_ability import (  # noqa: E402
     EnhancedConsensusProvider,
 )
 
 
-class ConsensusService(
-    consensus_pb2_grpc.ConsensusServiceServicer  # type: ignore
-):
+class ConsensusService(consensus_pb2_grpc.ConsensusServiceServicer):  # type: ignore
     """gRPC servicer bridging to EnhancedConsensusProvider."""
 
     def __init__(self, provider: EnhancedConsensusProvider):

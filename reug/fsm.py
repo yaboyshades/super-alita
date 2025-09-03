@@ -77,9 +77,11 @@ class ExecutionFlow:
 
         while ctx.current_step < len(plan.steps):
             self._emit_transition(
-                State.DECOMPOSE_TASK
-                if ctx.current_step == 0
-                else State.PROCESS_TOOL_RESULT,
+                (
+                    State.DECOMPOSE_TASK
+                    if ctx.current_step == 0
+                    else State.PROCESS_TOOL_RESULT
+                ),
                 State.SELECT_TOOL,
                 ctx.correlation_id,
             )

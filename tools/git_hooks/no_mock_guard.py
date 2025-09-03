@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Strict guard against introducing mock / placeholder / scaffold files.
 
-Updated to reduce false positives via token based matching and allow‑listing
-selected legitimate files that previously triggered the guard.
+Token-based name matching plus placeholder content detection.
+Includes allow-list for expected generated artifacts.
 """
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Broad patterns – matched on token boundaries only.
 BLOCKED_NAME_PATTERNS: tuple[str, ...] = (
     "mock",
     "mocks",
@@ -33,8 +32,6 @@ BLOCKED_CONTENT_HINTS: tuple[str, ...] = (
     "INSERT CODE HERE",
 )
 
-# Explicit allow-list of legitimate files whose names previously matched tokens
-# but are acceptable (e.g. generated lockfiles, the guard script itself, etc.).
 ALLOWLIST_PATHS: set[str] = {
     "tools/git_hooks/no_mock_guard.py",
     "extensions/copilot-prompt-optimizer/package-lock.json",
@@ -48,13 +45,9 @@ def _tokenize(path: str) -> set[str]:
 
 
 def _staged_changes() -> list[tuple[str, str]]:
-    out = subprocess.check_output([
-        "git",
-        "diff",
-        "--cached",
-        "--name-status",
-        "-z",
-    ]).decode("utf-8", "replace")
+    out = subprocess.check_output(
+        ["git", "diff", "--cached", "--name-status", "-z"]
+    ).decode("utf-8", "replace")
     parts = [p for p in out.split("\x00") if p]
     pairs: list[tuple[str, str]] = []
     i = 0

@@ -1,0 +1,102 @@
+"""
+LADDER-Cortex Integration Demo
+
+This demonstrates how the LADDER planner integrates with the existing
+Cortex orchestration system using real components.
+"""
+import asyncio
+import sys
+from pathlib import Path
+
+# Add the src directory to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from ladder.planner import LadderPlanner
+from ladder.integration.cortex_adapter import LadderAdapter
+from ladder.models.task import Task, TASK_TEMPLATES
+from ladder.policies.bandit import UCB1Policy
+from ladder.decomposers.base import DefaultDecomposer
+
+# Import existing Cortex components following REUG patterns
+from core.event_bus import EventBus, InMemoryEventBus
+from core.events import create_event
+
+
+async def main():
+    """Demonstrate LADDER integration with real Cortex components."""
+    print("🚀 Starting LADDER-Cortex Integration Demo")
+    print("=" * 50)
+    
+    # Initialize real EventBus (following existing patterns)
+    event_bus = InMemoryEventBus()
+    await event_bus.start()
+    print("✅ EventBus initialized")
+    
+    # Create LADDER components
+    bandit_policy = UCB1Policy(
+        tools=["WebSearchTool", "CalculatorTool", "LLMTool"],
+        exploration_factor=1.414
+    )
+    
+    decomposer = DefaultDecomposer()
+    
+    planner = LadderPlanner(
+        bandit_policy=bandit_policy,
+        decomposers=[decomposer],
+        mode="shadow"  # Safe testing mode
+    )
+    print("✅ LADDER Planner created")
+    
+    # Initialize LADDER adapter with real EventBus
+    adapter = LadderAdapter(
+        planner=planner,
+        event_bus=event_bus,
+        source_plugin="ladder_demo"
+    )
+    
+    # Setup the adapter (async initialization)
+    await adapter.setup()
+    print("✅ LADDER Adapter initialized and connected to EventBus")
+    
+    # Test complex task that benefits from hierarchical planning
+    user_query = """
+    Research the latest developments in quantum computing from 2024,
+    then create a summary report and calculate the potential market size
+    by 2030 based on current growth trends.
+    """
+    
+    print(f"\n📋 User Query: {user_query}")
+    print("\n🔄 Processing with LADDER...")
+    
+    # Process the request through LADDER
+    result = await adapter.handle_request(user_query)
+    
+    print(f"\n✅ LADDER Result:")
+    print(f"   Status: {result.get('status', 'unknown')}")
+    print(f"   Answer: {result.get('answer', 'No answer provided')}")
+    print(f"   Tasks Created: {result.get('tasks_created', 0)}")
+    print(f"   Execution Time: {result.get('execution_time_ms', 0)}ms")
+    
+    # Show the task graph structure
+    if 'task_graph' in result:
+        graph = result['task_graph']
+        print(f"\n📊 Task Graph Metrics:")
+        print(f"   Total Tasks: {graph.metrics.total_tasks}")
+        print(f"   Completed: {graph.metrics.completed_tasks}")
+        print(f"   Failed: {graph.metrics.failed_tasks}")
+        print(f"   Average Energy: {graph.metrics.average_energy:.2f}")
+    
+    # Show bandit learning
+    print(f"\n🎯 Bandit Learning Status:")
+    for tool, metrics in bandit_policy.get_metrics().items():
+        success_rate = metrics.success_rate
+        uses = metrics.total_uses
+        print(f"   {tool}: {success_rate:.1%} success ({uses} uses)")
+    
+    # Cleanup
+    await event_bus.stop()
+    print("\n✅ Demo completed successfully!")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

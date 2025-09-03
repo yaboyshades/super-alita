@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Redis Event Bus Adapter - simplified version."""
 
-import asyncio
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 try:
     import redis.asyncio as redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     redis = None
@@ -22,16 +22,15 @@ logger = logging.getLogger(__name__)
 class RedisEventBus(EventBus):
     """Redis-backed distributed event bus with graceful fallback."""
 
-    def __init__(self, config: Optional[dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__()
         self.config = config or {}
         self.redis_client = None
         self._connected = False
 
         # Configuration
-        self.redis_url = (
-            self.config.get("redis_url") or
-            os.getenv("REDIS_URL", "redis://localhost:6379")
+        self.redis_url = self.config.get("redis_url") or os.getenv(
+            "REDIS_URL", "redis://localhost:6379"
         )
 
     async def initialize(self) -> bool:
@@ -75,7 +74,7 @@ class EventBusAdapter:
     """Factory for creating event bus."""
 
     @staticmethod
-    def create(config: Optional[dict[str, Any]] = None) -> EventBus:
+    def create(config: dict[str, Any] | None = None) -> EventBus:
         """Create event bus based on configuration."""
         config = config or {}
         use_redis = config.get("use_redis", True)
@@ -85,4 +84,5 @@ class EventBusAdapter:
 
         # Fall back to in-memory
         from src.core.event_bus import InMemoryEventBus
+
         return InMemoryEventBus()

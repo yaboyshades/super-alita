@@ -130,16 +130,18 @@ class CopilotAgentAtom(NeuralAtom):
 
         return {
             "analysis": {
-                "dominant_intent": max(set(user_intents), key=user_intents.count)
-                if user_intents
-                else "unknown",
+                "dominant_intent": (
+                    max(set(user_intents), key=user_intents.count)
+                    if user_intents
+                    else "unknown"
+                ),
                 "technical_focus": list(set(technical_topics)),
                 "message_count": len(messages),
-                "conversation_depth": "deep"
-                if len(messages) > 20
-                else "moderate"
-                if len(messages) > 5
-                else "shallow",
+                "conversation_depth": (
+                    "deep"
+                    if len(messages) > 20
+                    else "moderate" if len(messages) > 5 else "shallow"
+                ),
             },
             "confidence": min(len(messages) / 10.0, 1.0),
         }

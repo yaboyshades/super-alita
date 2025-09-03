@@ -46,16 +46,10 @@ def parse_mangle_file(file_path: str) -> dict[str, Any]:
     query_pattern = r"([a-zA-Z_][a-zA-Z0-9_]*\([^)]*\))\?"
     queries = re.findall(query_pattern, content)
 
-    return {
-        "facts": facts,
-        "rules": rules,
-        "queries": queries
-    }
+    return {"facts": facts, "rules": rules, "queries": queries}
 
 
-def process_query(
-    query: str, parsed_data: dict[str, Any]
-) -> list[dict[str, Any]]:
+def process_query(query: str, parsed_data: dict[str, Any]) -> list[dict[str, Any]]:
     """Process a Mangle query and return mock results.
 
     Args:
@@ -83,22 +77,19 @@ def process_query(
     if predicate == "vulnerable" or predicate == "known_vulnerability":
         return [
             {"Name": "log4j", "Version": "2.14.0"},
-            {"Name": "junit", "Version": "4.13.1"}
+            {"Name": "junit", "Version": "4.13.1"},
         ]
     elif predicate == "affected_by_auth_vuln":
-        return [
-            {"X": "Frontend"},
-            {"X": "Backend"}
-        ]
+        return [{"X": "Frontend"}, {"X": "Backend"}]
     elif predicate == "non_compliant":
         return [
             {"Component": "api_server", "Policy": "tls_version"},
-            {"Component": "database", "Policy": "authentication"}
+            {"Component": "database", "Policy": "authentication"},
         ]
     elif "transitive_depends_on" in query:
         return [
             {"X": "Frontend", "Y": "Authentication"},
-            {"X": "Backend", "Y": "Authentication"}
+            {"X": "Backend", "Y": "Authentication"},
         ]
 
     # Default response based on the query variables
@@ -108,14 +99,11 @@ def process_query(
             {"X": "Frontend"},
             {"X": "Backend"},
             {"X": "Database"},
-            {"X": "Authentication"}
+            {"X": "Authentication"},
         ]
 
     # Generic fallback response
-    return [
-        {variables[0]: "Result1"},
-        {variables[0]: "Result2"}
-    ]
+    return [{variables[0]: "Result1"}, {variables[0]: "Result2"}]
 
 
 def handle_explain(query: str) -> dict[str, Any]:
@@ -180,4 +168,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

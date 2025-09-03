@@ -23,5 +23,5 @@ if __name__ == "__main__":
     print("🔍 Running Mangle integration demo with mock implementation")
     print(f"📌 Using mock binary at: {os.environ['MANGLE_BIN_PATH']}")
     from examples.mangle_integration_demo import main
-    asyncio.run(main())
 
+    asyncio.run(main())

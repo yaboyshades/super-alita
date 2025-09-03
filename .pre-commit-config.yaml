@@ -23,6 +23,15 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=2000"]
 
+  - repo: local
+    hooks:
+      - id: no-mock-files
+        name: "Block mock/scaffold/dummy/placeholder file creation"
+        entry: python tools/git_hooks/no_mock_guard.py
+        language: system
+        pass_filenames: false
+        stages: [commit]
+
 default_stages:
   - commit
   - push

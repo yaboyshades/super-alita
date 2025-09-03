@@ -71,6 +71,7 @@ User/API guide and deployment:
 - User Guide: see `docs/USER_GUIDE.md` for the unified API (`/api/v1/query`), auth, rate limits, and CLI usage.
 - Production Deployment: see `PRODUCTION_DEPLOYMENT_GUIDE.md` for environment hardening and Redis-backed rate limiting.
 - Chat UI: open `http://localhost:8080/` to use the built-in chat interface. See `docs/CHAT_UI.md` for SSE details and endpoints.
+- REUG v12.2+ Implementation Guide: see `docs/reug_v12_2_implementation_guide.md` for the plan to extend the KG‑enhanced LADDER system with advanced REUG modules and deployment.
 
 ### 4. Run tests
 

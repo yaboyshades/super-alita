@@ -25,4 +25,5 @@ if __name__ == "__main__":
     print(f"📌 Using mock binary at: {os.environ['MANGLE_BIN_PATH']}")
     # Import and run the demo
     from examples.mangle_integration_demo import main
+
     asyncio.run(main())

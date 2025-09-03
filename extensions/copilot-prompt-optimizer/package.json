@@ -1,0 +1,141 @@
+{
+  "name": "copilot-prompt-optimizer",
+  "displayName": "Copilot Prompt Optimizer",
+  "description": "Intercept and enhance prompts before sending to a chat model (e.g., Copilot-backed models via VS Code LM API).",
+  "version": "0.1.0",
+  "publisher": "your-org",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "copilotPromptOptimizer.startChat",
+        "title": "Copilot: Open Optimized Chat"
+      },
+      {
+        "command": "copilotPromptOptimizer.optimizeSelection",
+        "title": "Copilot: Optimize Selection"
+      },
+      {
+        "command": "copilotPromptOptimizer.bridgeExtensions",
+        "title": "Copilot: Bridge to Other AI Extensions"
+      },
+      {
+        "command": "copilotPromptOptimizer.insertSnippet",
+        "title": "Insert Super Alita Snippet",
+        "category": "Copilot Optimizer"
+      },
+      {
+        "command": "copilotPromptOptimizer.browseSnippets",
+        "title": "Browse Snippet Library",
+        "category": "Copilot Optimizer"
+      },
+      {
+        "command": "copilotPromptOptimizer.searchSnippets",
+        "title": "Search Snippets",
+        "category": "Copilot Optimizer"
+      },
+      {
+        "command": "copilotPromptOptimizer.insertSnippetByPrefix",
+        "title": "Insert Snippet by Prefix",
+        "category": "Copilot Optimizer"
+      },
+      {
+        "command": "copilotPromptOptimizer.safeRunCommand",
+        "title": "Copilot: Safe Run Command"
+      },
+      {
+        "command": "copilotPromptOptimizer.stopLongRunning",
+        "title": "Copilot: Stop Long-Running Terminals"
+      },
+      {
+        "command": "copilotPromptOptimizer.githubSearchSelection",
+        "title": "Copilot: GitHub Code Search (Selection)"
+      },
+      {
+        "command": "copilotPromptOptimizer.reugPipeline",
+        "title": "Copilot: REUG Plan→Discover→TDD Codegen"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Copilot Prompt Optimizer",
+      "properties": {
+        "copilotPromptOptimizer.terminal.timeoutMs": {
+          "type": "number",
+          "default": 60000,
+          "description": "Timeout for non-watch commands (ms)."
+        },
+        "copilotPromptOptimizer.terminal.addNoWatchFlags": {
+          "type": "boolean",
+          "default": true,
+          "description": "Attempt to add no-watch flags for common runners (jest/vitest/pytest)."
+        },
+        "copilotPromptOptimizer.terminal.detectWatch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect long-running/watch commands and run in a dedicated terminal without waiting."
+        },
+        "copilotPromptOptimizer.terminal.reusePolicy": {
+          "type": "string",
+          "enum": [
+            "single",
+            "perCommand",
+            "new"
+          ],
+          "default": "single",
+          "description": "Terminal reuse policy."
+        }
+      }
+    },
+    "snippets": [
+      {
+        "language": "python",
+        "path": "./snippets/python.json"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "copilotPromptOptimizer.insertSnippet",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s",
+        "when": "editorTextFocus && editorLangId == python"
+      },
+      {
+        "command": "copilotPromptOptimizer.browseSnippets",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b",
+        "when": "editorTextFocus && editorLangId == python"
+      },
+      {
+        "command": "copilotPromptOptimizer.searchSnippets",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f",
+        "when": "editorTextFocus && editorLangId == python"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "compile": "npm run build",
+    "watch": "tsc -w -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "typescript": "^5.5.4",
+    "vsce": "^2.15.0",
+    "vscode": "^1.1.37"
+  },
+  "dependencies": {}
+}

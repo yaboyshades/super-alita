@@ -1,6 +1,7 @@
 """Generate gRPC Python stubs for consensus service.
 Run: python scripts/gen_protos.py
 """
+
 from __future__ import annotations
 
 import pathlib

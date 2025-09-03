@@ -6,7 +6,6 @@ DeepConf with validation gates, tool execution controls, and method selection.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
 
 from src.abilities.mangle.mangle_ability import MangleAbility
 from src.abilities.mangle.mangle_validator import MangleValidator
@@ -29,7 +28,7 @@ def integrate_mangle_with_deepconf(deepconf_instance):
         Enhanced DeepConf instance with Mangle validation
     """
     # Initialize Mangle if not already available
-    if not hasattr(deepconf_instance, '_mangle') or not deepconf_instance._mangle:
+    if not hasattr(deepconf_instance, "_mangle") or not deepconf_instance._mangle:
         try:
             deepconf_instance._mangle = MangleAbility()
             logger.info("Initialized MangleAbility for DeepConf integration")
@@ -55,11 +54,13 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                         "temperature": request.temperature,
                         "temperature_range": getattr(request, "temperature_range", 0.2),
                         "max_tokens": request.max_tokens,
-                    }
+                    },
                 )
                 request.method = method_selection["method"]
-                logger.info(f"Mangle selected consensus method: {request.method} "
-                           f"({method_selection['reason']})")
+                logger.info(
+                    f"Mangle selected consensus method: {request.method} "
+                    f"({method_selection['reason']})"
+                )
             except Exception as e:
                 logger.warning(f"Error in consensus method selection: {e}")
 
@@ -76,7 +77,7 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                     "samples_valid": len(response.individual_responses),
                     "response_length": len(response.consensus_text),
                     "consensus_confidence": response.consensus_confidence,
-                }
+                },
             )
 
             if not validation_result["valid"]:
@@ -89,8 +90,7 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                 # Apply confidence penalty
                 original_confidence = response.consensus_confidence
                 adjusted_confidence = max(
-                    0.0,
-                    original_confidence - validation_result["confidence_penalty"]
+                    0.0, original_confidence - validation_result["confidence_penalty"]
                 )
                 response.consensus_confidence = adjusted_confidence
 
@@ -115,15 +115,14 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                     meta={
                         "domain": request.domain,
                         "consensus_confidence": response.consensus_confidence,
-                    }
+                    },
                 )
 
                 if not verification["verified"]:
                     # Apply confidence adjustment for invalid claims
                     original_confidence = response.consensus_confidence
                     adjusted_confidence = max(
-                        0.0,
-                        original_confidence + verification["confidence_adjustment"]
+                        0.0, original_confidence + verification["confidence_adjustment"]
                     )
                     response.consensus_confidence = adjusted_confidence
 

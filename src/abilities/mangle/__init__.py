@@ -16,5 +16,5 @@ __all__ = [
     "MangleAbility",
     "ManglePluginInterface",
     "register_mangle_abilities",
-    "register_mangle_plugin"
+    "register_mangle_plugin",
 ]

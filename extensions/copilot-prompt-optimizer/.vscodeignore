@@ -1,0 +1,9 @@
+**/*.ts
+**/*.map
+src/**
+tsconfig.json
+**/node_modules/**
+!dist/**
+!package.json
+README.md
+

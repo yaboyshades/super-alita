@@ -1,0 +1,14 @@
+{
+  "name": "copilot-agent-middleware",
+  "version": "0.1.0",
+  "description": "Prompt optimization/amplification middleware for agent-mode style pipelines.",
+  "main": "index.js",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./optimize": "./optimize.js",
+    "./amplify": "./amplify.js"
+  }
+}
+

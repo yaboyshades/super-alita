@@ -9,18 +9,20 @@ Modes (EVENT_BUS_MODE env var):
 The adapter exposes a minimal subset publish/subscribe used by current
 code. Additional methods can be forwarded transparently as needed.
 """
+
 from __future__ import annotations
 
-import os
 import logging
-from typing import Any, Awaitable, Callable
+import os
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 try:  # optional redis import
     from redis.asyncio import Redis  # type: ignore
 except Exception:  # pragma: no cover
     Redis = None  # type: ignore
 
-from reug_runtime.event_bus import FileEventBus, BaseEventBus  # type: ignore
+from reug_runtime.event_bus import BaseEventBus, FileEventBus  # type: ignore
 
 logger = logging.getLogger(__name__)
 

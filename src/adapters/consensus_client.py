@@ -6,6 +6,7 @@ Env vars:
 
 Falls back to local provider if gRPC unavailable or errors (hybrid mode).
 """
+
 from __future__ import annotations
 
 import os
@@ -47,9 +48,7 @@ class ConsensusClient:
         # Always have a local provider for fallback or direct usage
         self.local_provider = EnhancedConsensusProvider(
             {
-                "base_url": self.config.get(
-                    "base_url", "http://localhost:11434/v1"
-                ),
+                "base_url": self.config.get("base_url", "http://localhost:11434/v1"),
                 "model_name": self.config.get("model_name", "gpt-oss:20b"),
                 "timeout": self.timeout,
             }
@@ -77,17 +76,10 @@ class ConsensusClient:
     async def initialize(self) -> None:
         await self.local_provider.initialize()
 
-    async def consensus_sampling(
-        self, prompt: str, **kwargs: Any
-    ) -> dict[str, Any]:
+    async def consensus_sampling(self, prompt: str, **kwargs: Any) -> dict[str, Any]:
         # Local only or missing remote client
-        if (
-            self.mode == ConsensusServiceMode.LOCAL
-            or self._grpc_client is None
-        ):
-            return await self.local_provider.consensus_sampling(
-                prompt, **kwargs
-            )
+        if self.mode == ConsensusServiceMode.LOCAL or self._grpc_client is None:
+            return await self.local_provider.consensus_sampling(prompt, **kwargs)
 
         # Pure gRPC mode
         if self.mode == ConsensusServiceMode.GRPC:
@@ -98,6 +90,4 @@ class ConsensusClient:
             return await self._grpc_client.consensus_sampling(prompt, **kwargs)
         except Exception as e:  # pragma: no cover
             print(f"⚠️  Remote consensus failed, fallback to local: {e}")
-            return await self.local_provider.consensus_sampling(
-                prompt, **kwargs
-            )
+            return await self.local_provider.consensus_sampling(prompt, **kwargs)

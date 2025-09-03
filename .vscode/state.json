@@ -3,7 +3,8 @@
         {
             "name": "Analyzer",
             "type": "state",
-            "currentAnalyzer": "d:\\Coding_Projects\\super-alita-clean"
+            "currentTextFile": "\\",
+            "currentPassFile": "\\"
         }
     ]
 }

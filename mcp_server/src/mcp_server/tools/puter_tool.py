@@ -278,9 +278,9 @@ async def puter_execute(
         return {
             "success": proc.returncode == 0,
             "result": stdout.decode("utf-8", errors="replace"),
-            "error": stderr.decode("utf-8", errors="replace")
-            if proc.returncode != 0
-            else "",
+            "error": (
+                stderr.decode("utf-8", errors="replace") if proc.returncode != 0 else ""
+            ),
             "execution_info": {
                 "command": command,
                 "args": args,

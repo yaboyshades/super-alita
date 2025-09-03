@@ -17,11 +17,11 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
+from src.core import proc
 from src.core.events import create_event
 from src.plugins.plugin_interface import PluginInterface
-from src.core import proc
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class MangleAbility:
     explainability.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize the Mangle integration.
 
         Args:
@@ -57,13 +57,15 @@ class MangleAbility:
         Path(self.knowledge_base_dir).mkdir(parents=True, exist_ok=True)
 
         # Track registered facts and rules
-        self.facts: Set[str] = set()
-        self.rules: Dict[str, str] = {}
+        self.facts: set[str] = set()
+        self.rules: dict[str, str] = {}
 
         # Load any existing knowledge base
         self._load_knowledge_base()
 
-        logger.info(f"Mangle ability initialized with {len(self.facts)} facts and {len(self.rules)} rules")
+        logger.info(
+            f"Mangle ability initialized with {len(self.facts)} facts and {len(self.rules)} rules"
+        )
 
     def _load_knowledge_base(self) -> None:
         """Load existing knowledge base from disk if available."""
@@ -81,16 +83,13 @@ class MangleAbility:
         """Persist knowledge base to disk."""
         kb_path = Path(self.knowledge_base_dir) / "knowledge_base.json"
         try:
-            data = {
-                "facts": list(self.facts),
-                "rules": self.rules
-            }
+            data = {"facts": list(self.facts), "rules": self.rules}
             kb_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
             logger.info(f"Saved knowledge base to {kb_path}")
         except Exception as e:
             logger.error(f"Error saving knowledge base: {e}")
 
-    async def add_fact(self, fact: str) -> Dict[str, Any]:
+    async def add_fact(self, fact: str) -> dict[str, Any]:
         """Add a fact to the knowledge base.
 
         Args:
@@ -105,13 +104,9 @@ class MangleAbility:
         self.facts.add(fact)
         self._save_knowledge_base()
 
-        return {
-            "success": True,
-            "fact": fact,
-            "total_facts": len(self.facts)
-        }
+        return {"success": True, "fact": fact, "total_facts": len(self.facts)}
 
-    async def add_rule(self, name: str, rule: str) -> Dict[str, Any]:
+    async def add_rule(self, name: str, rule: str) -> dict[str, Any]:
         """Add a rule to the knowledge base.
 
         Args:
@@ -131,10 +126,12 @@ class MangleAbility:
             "success": True,
             "rule_name": name,
             "rule": rule,
-            "total_rules": len(self.rules)
+            "total_rules": len(self.rules),
         }
 
-    async def query(self, query: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def query(
+        self, query: str, params: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Execute a Mangle query against the knowledge base.
 
         Args:
@@ -182,10 +179,7 @@ class MangleAbility:
                     "error": f"Mangle execution error ({e.returncode}): {e.stderr}",
                 }
             except Exception as e:
-                return {
-                    "success": False,
-                    "error": f"Unexpected error: {str(e)}"
-                }
+                return {"success": False, "error": f"Unexpected error: {str(e)}"}
             finally:
                 # Clean up temporary file
                 try:
@@ -193,7 +187,9 @@ class MangleAbility:
                 except:
                     pass
 
-    async def analyze_dependencies(self, project_deps: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def analyze_dependencies(
+        self, project_deps: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Analyze project dependencies for security vulnerabilities.
 
         Args:
@@ -214,16 +210,16 @@ class MangleAbility:
             "vuln_check",
             """vulnerable(Name, Version) :-
                 dependency(Name, Version),
-                known_vulnerability(Name, Version)."""
+                known_vulnerability(Name, Version).""",
         )
 
         # Query for vulnerabilities
         results = await self.query("vulnerable(Name, Version)")
         return results
 
-    async def knowledge_graph_query(self,
-                                  query: str,
-                                  context: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    async def knowledge_graph_query(
+        self, query: str, context: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
         """Perform a knowledge graph query with additional context.
 
         Args:
@@ -255,7 +251,7 @@ class MangleAbility:
 
         return results
 
-    async def explain_query_results(self, query: str) -> Dict[str, Any]:
+    async def explain_query_results(self, query: str) -> dict[str, Any]:
         """Execute a query and provide explanation for the results.
 
         Args:
@@ -278,7 +274,14 @@ class MangleAbility:
 
             try:
                 # Run with explain flag (need stderr), use to_thread with subprocess.run
-                cmd = [self.binary_path, "query", "--explain", "--format", "json", f.name]
+                cmd = [
+                    self.binary_path,
+                    "query",
+                    "--explain",
+                    "--format",
+                    "json",
+                    f.name,
+                ]
 
                 def _call() -> subprocess.CompletedProcess[str]:
                     return subprocess.run(
@@ -290,9 +293,13 @@ class MangleAbility:
                         timeout=self.timeout,
                     )
 
-                result: subprocess.CompletedProcess[str] = await asyncio.to_thread(_call)
+                result: subprocess.CompletedProcess[str] = await asyncio.to_thread(
+                    _call
+                )
                 results = json.loads(result.stdout) if result.stdout.strip() else []
-                explanation = result.stderr if result.stderr else "No explanation available"
+                explanation = (
+                    result.stderr if result.stderr else "No explanation available"
+                )
                 return {
                     "success": True,
                     "results": results,
@@ -300,10 +307,7 @@ class MangleAbility:
                     "count": len(results),
                 }
             except Exception as e:
-                return {
-                    "success": False,
-                    "error": str(e)
-                }
+                return {"success": False, "error": str(e)}
             finally:
                 try:
                     os.unlink(f.name)
@@ -353,8 +357,12 @@ class ManglePluginInterface(PluginInterface):
             await event_bus.subscribe("request_mangle_query", self.handle_mangle_query)
             await event_bus.subscribe("request_mangle_fact_add", self.handle_add_fact)
             await event_bus.subscribe("request_mangle_rule_add", self.handle_add_rule)
-            await event_bus.subscribe("request_mangle_dependency_analysis", self.handle_dependency_analysis)
-            await event_bus.subscribe("request_mangle_knowledge_graph", self.handle_knowledge_graph)
+            await event_bus.subscribe(
+                "request_mangle_dependency_analysis", self.handle_dependency_analysis
+            )
+            await event_bus.subscribe(
+                "request_mangle_knowledge_graph", self.handle_knowledge_graph
+            )
             await event_bus.subscribe("request_mangle_explain", self.handle_explain)
 
             logger.info("Mangle plugin initialized successfully")
@@ -363,7 +371,7 @@ class ManglePluginInterface(PluginInterface):
             logger.error(f"Failed to initialize Mangle plugin: {e}")
             return False
 
-    async def process_event(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
         """Process an event from the event bus.
 
         Args:
@@ -382,7 +390,7 @@ class ManglePluginInterface(PluginInterface):
         # Event handling is delegated to specific handlers
         return None
 
-    async def handle_mangle_query(self, event: Dict[str, Any]) -> None:
+    async def handle_mangle_query(self, event: dict[str, Any]) -> None:
         """Handle a Mangle query event.
 
         Args:
@@ -404,16 +412,14 @@ class ManglePluginInterface(PluginInterface):
 
             # Send response event
             response_event = create_event(
-                "mangle_query_response",
-                request_id=event.get("id"),
-                result=result
+                "mangle_query_response", request_id=event.get("id"), result=result
             )
             await self.event_bus.publish(response_event)
 
         except Exception as e:
             await self._send_error_response(event, f"Error executing query: {str(e)}")
 
-    async def handle_add_fact(self, event: Dict[str, Any]) -> None:
+    async def handle_add_fact(self, event: dict[str, Any]) -> None:
         """Handle a request to add a fact to the Mangle knowledge base.
 
         Args:
@@ -434,16 +440,14 @@ class ManglePluginInterface(PluginInterface):
 
             # Send response event
             response_event = create_event(
-                "mangle_fact_add_response",
-                request_id=event.get("id"),
-                result=result
+                "mangle_fact_add_response", request_id=event.get("id"), result=result
             )
             await self.event_bus.publish(response_event)
 
         except Exception as e:
             await self._send_error_response(event, f"Error adding fact: {str(e)}")
 
-    async def handle_add_rule(self, event: Dict[str, Any]) -> None:
+    async def handle_add_rule(self, event: dict[str, Any]) -> None:
         """Handle a request to add a rule to the Mangle knowledge base.
 
         Args:
@@ -465,16 +469,14 @@ class ManglePluginInterface(PluginInterface):
 
             # Send response event
             response_event = create_event(
-                "mangle_rule_add_response",
-                request_id=event.get("id"),
-                result=result
+                "mangle_rule_add_response", request_id=event.get("id"), result=result
             )
             await self.event_bus.publish(response_event)
 
         except Exception as e:
             await self._send_error_response(event, f"Error adding rule: {str(e)}")
 
-    async def handle_dependency_analysis(self, event: Dict[str, Any]) -> None:
+    async def handle_dependency_analysis(self, event: dict[str, Any]) -> None:
         """Handle a request to analyze dependencies.
 
         Args:
@@ -488,7 +490,9 @@ class ManglePluginInterface(PluginInterface):
             dependencies = event.get("dependencies", [])
 
             if not dependencies:
-                await self._send_error_response(event, "Dependencies parameter missing or empty")
+                await self._send_error_response(
+                    event, "Dependencies parameter missing or empty"
+                )
                 return
 
             result = await self.mangle_ability.analyze_dependencies(dependencies)
@@ -497,14 +501,16 @@ class ManglePluginInterface(PluginInterface):
             response_event = create_event(
                 "mangle_dependency_analysis_response",
                 request_id=event.get("id"),
-                result=result
+                result=result,
             )
             await self.event_bus.publish(response_event)
 
         except Exception as e:
-            await self._send_error_response(event, f"Error analyzing dependencies: {str(e)}")
+            await self._send_error_response(
+                event, f"Error analyzing dependencies: {str(e)}"
+            )
 
-    async def handle_knowledge_graph(self, event: Dict[str, Any]) -> None:
+    async def handle_knowledge_graph(self, event: dict[str, Any]) -> None:
         """Handle a knowledge graph query request.
 
         Args:
@@ -528,14 +534,16 @@ class ManglePluginInterface(PluginInterface):
             response_event = create_event(
                 "mangle_knowledge_graph_response",
                 request_id=event.get("id"),
-                result=result
+                result=result,
             )
             await self.event_bus.publish(response_event)
 
         except Exception as e:
-            await self._send_error_response(event, f"Error executing knowledge graph query: {str(e)}")
+            await self._send_error_response(
+                event, f"Error executing knowledge graph query: {str(e)}"
+            )
 
-    async def handle_explain(self, event: Dict[str, Any]) -> None:
+    async def handle_explain(self, event: dict[str, Any]) -> None:
         """Handle a request for explanation of a query.
 
         Args:
@@ -556,16 +564,18 @@ class ManglePluginInterface(PluginInterface):
 
             # Send response event
             response_event = create_event(
-                "mangle_explain_response",
-                request_id=event.get("id"),
-                result=result
+                "mangle_explain_response", request_id=event.get("id"), result=result
             )
             await self.event_bus.publish(response_event)
 
         except Exception as e:
-            await self._send_error_response(event, f"Error generating explanation: {str(e)}")
+            await self._send_error_response(
+                event, f"Error generating explanation: {str(e)}"
+            )
 
-    async def _send_error_response(self, original_event: Dict[str, Any], error_message: str) -> None:
+    async def _send_error_response(
+        self, original_event: dict[str, Any], error_message: str
+    ) -> None:
         """Send an error response for a failed request.
 
         Args:
@@ -579,12 +589,12 @@ class ManglePluginInterface(PluginInterface):
             response_type,
             request_id=original_event.get("id"),
             success=False,
-            error=error_message
+            error=error_message,
         )
 
         await self.event_bus.publish(error_event)
 
-    async def run_rule(self, rule: str, query: str) -> Dict[str, Any]:
+    async def run_rule(self, rule: str, query: str) -> dict[str, Any]:
         """Execute a temporary program consisting of stored facts, a rule, and a query."""
         if not rule.endswith("."):
             rule = f"{rule}."
@@ -599,18 +609,24 @@ class ManglePluginInterface(PluginInterface):
             f.write(f"{query}\n")
             f.flush()
             try:
-                stdout = await proc.arun([self.binary_path, "query", "--format", "json", f.name], timeout=self.timeout)
+                stdout = await proc.arun(
+                    [self.binary_path, "query", "--format", "json", f.name],
+                    timeout=self.timeout,
+                )
                 data = json.loads(stdout) if stdout.strip() else []
                 return {"success": True, "results": data, "count": len(data)}
             except proc.ProcError as e:
-                return {"success": False, "error": f"Mangle execution error ({e.returncode}): {e.stderr}"}
+                return {
+                    "success": False,
+                    "error": f"Mangle execution error ({e.returncode}): {e.stderr}",
+                }
             finally:
                 try:
                     os.unlink(f.name)
                 except Exception:
                     pass
 
-    async def rule_catalog(self) -> Dict[str, Any]:
+    async def rule_catalog(self) -> dict[str, Any]:
         """Return a list of discovered Mangle rules from disk or current session."""
         catalog: list[dict[str, Any]] = []
         # Prefer plugin rules storage if present
@@ -619,19 +635,27 @@ class ManglePluginInterface(PluginInterface):
             if rules_file.exists():
                 rules_data = json.loads(rules_file.read_text(encoding="utf-8"))
                 for rid, meta in rules_data.items():
-                    catalog.append({
-                        "id": rid,
-                        "name": meta.get("name", rid),
-                        "description": meta.get("description", ""),
-                        "created_at": meta.get("created_at"),
-                        "tags": meta.get("tags", []),
-                    })
+                    catalog.append(
+                        {
+                            "id": rid,
+                            "name": meta.get("name", rid),
+                            "description": meta.get("description", ""),
+                            "created_at": meta.get("created_at"),
+                            "tags": meta.get("tags", []),
+                        }
+                    )
         except Exception:
             pass
         # Fallback to in-memory rules
         if not catalog and self.rules:
             for name, body in self.rules.items():
-                catalog.append({"id": name, "name": name, "description": body[:60] + ("..." if len(body) > 60 else "")})
+                catalog.append(
+                    {
+                        "id": name,
+                        "name": name,
+                        "description": body[:60] + ("..." if len(body) > 60 else ""),
+                    }
+                )
         return {"success": True, "rules": catalog, "count": len(catalog)}
 
     async def validate_output(self, output_text: str, domain=None, meta=None):
@@ -713,7 +737,7 @@ class ManglePluginInterface(PluginInterface):
             return {
                 "valid": valid,
                 "violations": violations,
-                "confidence_penalty": confidence_penalty
+                "confidence_penalty": confidence_penalty,
             }
         except Exception as e:
             logger.warning(f"Output validation error: {e}")
@@ -814,7 +838,7 @@ class ManglePluginInterface(PluginInterface):
             return {
                 "valid": valid,
                 "violations": violations,
-                "confidence_penalty": confidence_penalty
+                "confidence_penalty": confidence_penalty,
             }
         except Exception as e:
             logger.warning(f"Output validation error: {e}")
@@ -900,7 +924,7 @@ class ManglePluginInterface(PluginInterface):
             return {
                 "valid": valid,
                 "violations": violations,
-                "confidence_penalty": confidence_penalty
+                "confidence_penalty": confidence_penalty,
             }
         except Exception as e:
             logger.warning(f"Output validation error: {e}")

@@ -15,7 +15,7 @@ result = subprocess.run(
     env=os.environ,
     text=True,
     encoding="ascii",
-    errors="replace"
+    errors="replace",
 )
 
 # Return the same exit code

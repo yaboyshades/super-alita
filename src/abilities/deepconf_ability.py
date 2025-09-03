@@ -306,7 +306,9 @@ class DeepConfAbility(PluginInterface):
                 meta = {
                     "samples_generated": len(samples),
                     "samples_valid": len(valid_samples),
-                    "response_length": len(aggregation_result.get("consensus_text", "")),
+                    "response_length": len(
+                        aggregation_result.get("consensus_text", "")
+                    ),
                 }
                 final_confidence = await self._mangle.evaluate_confidence(
                     final_confidence, domain=request.domain, meta=meta

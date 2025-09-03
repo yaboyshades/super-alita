@@ -275,9 +275,11 @@ class EventBus:
                     current_patterns: set[str] = set()
                     if hasattr(self._pubsub, "patterns") and self._pubsub.patterns:
                         current_patterns = {
-                            pattern.decode("utf-8")
-                            if isinstance(pattern, bytes)
-                            else str(pattern)
+                            (
+                                pattern.decode("utf-8")
+                                if isinstance(pattern, bytes)
+                                else str(pattern)
+                            )
                             for pattern in self._pubsub.patterns
                         }
 

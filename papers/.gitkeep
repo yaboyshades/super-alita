@@ -1,0 +1,3 @@
+# This directory stores research papers for ingestion
+# Papers can be PDFs or text files
+# Cache files are stored in papers/.cache/

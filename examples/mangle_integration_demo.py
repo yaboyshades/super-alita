@@ -27,7 +27,7 @@ async def demonstrate_dependency_analysis():
     dependencies = [
         {"name": "log4j", "version": "2.14.0"},
         {"name": "spring-core", "version": "5.3.20"},
-        {"name": "junit", "version": "4.13.1"}
+        {"name": "junit", "version": "4.13.1"},
     ]
 
     # Add vulnerability data
@@ -71,12 +71,16 @@ async def demonstrate_knowledge_graph():
         """
         transitive_depends_on(X, Y) :- depends_on(X, Y).
         transitive_depends_on(X, Z) :- depends_on(X, Y), transitive_depends_on(Y, Z).
-        """
+        """,
     )
 
     # Add security context
     context = [
-        {"relation": "has_vulnerability", "subject": "Authentication", "object": "CVE-2023-1234"}
+        {
+            "relation": "has_vulnerability",
+            "subject": "Authentication",
+            "object": "CVE-2023-1234",
+        }
     ]
 
     # Query for components affected by the vulnerability
@@ -145,7 +149,7 @@ async def demonstrate_security_rules():
         non_compliant(Component, 'default_password') :-
             component_config(Component, 'default_password', Value),
             Value != 'none'.
-        """
+        """,
     )
 
     # Query for non-compliant components
@@ -161,14 +165,16 @@ async def demonstrate_security_rules():
 
     # Get explanation for a specific component
     print("\nGetting detailed compliance explanation for api_server...")
-    explanation = await mangle.explain_query_results("non_compliant('api_server', Policy)")
+    explanation = await mangle.explain_query_results(
+        "non_compliant('api_server', Policy)"
+    )
 
     # Show explanation
     print("Explanation for api_server non-compliance:")
     explanation_text = explanation.get("explanation", "No explanation available")
     if isinstance(explanation_text, str):
         # Print first few lines of explanation
-        lines = explanation_text.split('\n')
+        lines = explanation_text.split("\n")
         for line in lines[:10]:
             print(f"  {line}")
 

@@ -21,10 +21,14 @@ async def auto_register_abilities(registry: Any) -> None:
     """
     abilities_dir = Path(__file__).parent
     include = set(
-        x.strip() for x in (os.getenv("ALITA_ABILITIES_INCLUDE", "") or "").split(",") if x.strip()
+        x.strip()
+        for x in (os.getenv("ALITA_ABILITIES_INCLUDE", "") or "").split(",")
+        if x.strip()
     )
     exclude = set(
-        x.strip() for x in (os.getenv("ALITA_ABILITIES_EXCLUDE", "") or "").split(",") if x.strip()
+        x.strip()
+        for x in (os.getenv("ALITA_ABILITIES_EXCLUDE", "") or "").split(",")
+        if x.strip()
     )
 
     for file in abilities_dir.glob("*.py"):

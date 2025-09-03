@@ -76,7 +76,7 @@ async def example_output_validation():
     result = await validator.validate_output(
         output_text=financial_text,
         domain="finance",
-        meta={"samples_valid": 3, "response_length": len(financial_text)}
+        meta={"samples_valid": 3, "response_length": len(financial_text)},
     )
 
     print(f"Valid: {result['valid']}")
@@ -91,8 +91,7 @@ async def example_output_validation():
     """
 
     result = await validator.validate_output(
-        output_text=financial_text_with_disclaimer,
-        domain="finance"
+        output_text=financial_text_with_disclaimer, domain="finance"
     )
 
     print(f"\nWith disclaimer - Valid: {result['valid']}")
@@ -109,18 +108,18 @@ async def example_tool_validation():
     result = await validator.validate_tool_execution(
         tool_name="file_write",
         params={"path": "/etc/passwd", "content": "new text"},
-        context={"domain": "finance", "user_role": "standard"}
+        context={"domain": "finance", "user_role": "standard"},
     )
 
     print(f"Tool authorized: {result['authorized']}")
-    if not result['authorized']:
+    if not result["authorized"]:
         print(f"Reason: {result['reason']}")
 
     # Example allowed tool execution
     result = await validator.validate_tool_execution(
         tool_name="file_read",
         params={"path": "/tmp/example.txt"},
-        context={"domain": "development", "user_role": "admin"}
+        context={"domain": "development", "user_role": "admin"},
     )
 
     print(f"\nSafe tool authorized: {result['authorized']}")
@@ -135,19 +134,14 @@ async def example_method_selection():
 
     # Technical domain selection
     result = await validator.select_consensus_method(
-        domain="programming",
-        sample_count=4,
-        meta={"temperature": 0.7}
+        domain="programming", sample_count=4, meta={"temperature": 0.7}
     )
 
     print(f"Technical domain - Selected method: {result['method']}")
     print(f"Reason: {result['reason']}")
 
     # Subjective domain selection
-    result = await validator.select_consensus_method(
-        domain="creative",
-        sample_count=3
-    )
+    result = await validator.select_consensus_method(domain="creative", sample_count=3)
 
     print(f"\nSubjective domain - Selected method: {result['method']}")
     print(f"Reason: {result['reason']}")
@@ -167,12 +161,11 @@ async def example_claim_verification():
     """
 
     result = await validator.verify_llm_claims(
-        output_text=python_text,
-        claims_type="software"
+        output_text=python_text, claims_type="software"
     )
 
     print(f"Claims verified: {result['verified']}")
-    if not result['verified']:
+    if not result["verified"]:
         print(f"Invalid claims: {result['invalid_claims']}")
         print(f"Confidence adjustment: {result['confidence_adjustment']}")
 

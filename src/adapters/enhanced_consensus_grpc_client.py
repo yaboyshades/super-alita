@@ -3,6 +3,7 @@
 This is a thin wrapper mirroring the local provider's consensus_sampling
 interface so callers can remain agnostic.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -14,17 +15,21 @@ try:  # optional dependency
 except Exception:  # pragma: no cover
     grpc = None  # type: ignore
 
+
 def _import_stubs():  # lazy import / generation
     try:  # type: ignore
         from protos.consensus_pb2 import ConsensusRequest  # type: ignore
         from protos.consensus_pb2_grpc import (  # type: ignore
             ConsensusServiceStub,
         )
+
         return ConsensusRequest, ConsensusServiceStub
     except Exception:  # pragma: no cover
         # Attempt generation
         try:
-            import subprocess, sys, pathlib
+            import pathlib
+            import subprocess
+            import sys
 
             root = pathlib.Path(__file__).resolve().parent.parent
             script = root / "scripts" / "gen_protos.py"
@@ -36,10 +41,12 @@ def _import_stubs():  # lazy import / generation
                 from protos.consensus_pb2_grpc import (  # type: ignore
                     ConsensusServiceStub,  # noqa: WPS433
                 )
+
                 return ConsensusRequest, ConsensusServiceStub
         except Exception:
             return None, None
         return None, None
+
 
 ConsensusRequest, ConsensusServiceStub = _import_stubs()
 
@@ -55,11 +62,7 @@ class ConsensusResult:
 
 class EnhancedConsensusGrpcClient:
     def __init__(self, config: dict[str, Any]):
-        if (
-            grpc is None
-            or ConsensusServiceStub is None
-            or ConsensusRequest is None
-        ):
+        if grpc is None or ConsensusServiceStub is None or ConsensusRequest is None:
             raise RuntimeError("gRPC consensus stubs not available")
         self.config = config
         self.server_url = self.config.get("grpc_url", "localhost:50051")
@@ -73,9 +76,7 @@ class EnhancedConsensusGrpcClient:
         )
         self._stub = ConsensusServiceStub(self._channel)  # type: ignore
 
-    async def consensus_sampling(
-        self, prompt: str, **kwargs: Any
-    ) -> dict[str, Any]:
+    async def consensus_sampling(self, prompt: str, **kwargs: Any) -> dict[str, Any]:
         req = ConsensusRequest(  # type: ignore
             prompt=prompt,
             method=kwargs.get("method", "weighted_vote"),
@@ -98,9 +99,7 @@ class EnhancedConsensusGrpcClient:
                 "confidence_scores": list(resp.confidence_scores.values()),
                 "metadata": {"source": "grpc"},
             }
-        except asyncio.TimeoutError as e:  # noqa: PERF203
-            raise TimeoutError(
-                f"Consensus gRPC timeout after {self.timeout}s"
-            ) from e
+        except TimeoutError as e:  # noqa: PERF203
+            raise TimeoutError(f"Consensus gRPC timeout after {self.timeout}s") from e
         except grpc.RpcError as e:  # type: ignore[attr-defined]
             raise RuntimeError(f"Consensus gRPC error: {e}") from e

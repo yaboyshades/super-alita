@@ -10,12 +10,13 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 
 try:
     import redis.asyncio as redis
     from redis.asyncio import ConnectionPool
+
     REDIS_AVAILABLE = True
 except ImportError:
     redis = None  # type: ignore
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 class RedisEventBus(EventBus):
     """Redis-backed distributed event bus with graceful fallback."""
 
-    def __init__(self, config: Optional[dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize Redis event bus with connection pooling.
 
         Args:
@@ -46,8 +47,8 @@ class RedisEventBus(EventBus):
         """
         super().__init__()
         self.config = config or {}
-        self.redis_client: Optional[redis.Redis] = None
-        self.pubsub: Optional[redis.client.PubSub] = None
+        self.redis_client: redis.Redis | None = None
+        self.pubsub: redis.client.PubSub | None = None
         self._subscribers: dict[str, list[EventHandler]] = {}
         self._background_tasks: list[asyncio.Task] = []
         self._connected = False
@@ -61,12 +62,10 @@ class RedisEventBus(EventBus):
         self.redis_port = int(
             self.config.get("redis_port", os.getenv("REDIS_PORT", 6379))
         )
-        self.redis_db = int(
-            self.config.get("redis_db", os.getenv("REDIS_DB", 0))
+        self.redis_db = int(self.config.get("redis_db", os.getenv("REDIS_DB", 0)))
+        self.redis_password = self.config.get("redis_password") or os.getenv(
+            "REDIS_PASSWORD"
         )
-        self.redis_password = self.config.get(
-            "redis_password"
-        ) or os.getenv("REDIS_PASSWORD")
         self.max_connections = int(self.config.get("max_connections", 10))
         self.retry_on_failure = self.config.get("retry_on_failure", True)
         self.fallback_to_memory = self.config.get("fallback_to_memory", True)
@@ -77,9 +76,7 @@ class RedisEventBus(EventBus):
     async def initialize(self) -> bool:
         """Initialize Redis connection and start background listeners."""
         if not REDIS_AVAILABLE:
-            logger.warning(
-                "Redis not available, falling back to in-memory event bus"
-            )
+            logger.warning("Redis not available, falling back to in-memory event bus")
             return self.fallback_to_memory
 
         try:
@@ -88,7 +85,7 @@ class RedisEventBus(EventBus):
                 pool = ConnectionPool.from_url(
                     self.redis_url,
                     max_connections=self.max_connections,
-                    retry_on_failure=self.retry_on_failure
+                    retry_on_failure=self.retry_on_failure,
                 )
             else:
                 pool = ConnectionPool(
@@ -97,7 +94,7 @@ class RedisEventBus(EventBus):
                     db=self.redis_db,
                     password=self.redis_password,
                     max_connections=self.max_connections,
-                    retry_on_failure=self.retry_on_failure
+                    retry_on_failure=self.retry_on_failure,
                 )
 
             self.redis_client = redis.Redis(connection_pool=pool)
@@ -137,11 +134,14 @@ class RedisEventBus(EventBus):
                 await self.pubsub.subscribe(channel)
 
                 # Start listener task if not already running
-                if not any(task.get_name() == f"redis_listener_{event_type}"
-                          for task in self._background_tasks if not task.done()):
+                if not any(
+                    task.get_name() == f"redis_listener_{event_type}"
+                    for task in self._background_tasks
+                    if not task.done()
+                ):
                     task = asyncio.create_task(
                         self._listen_to_channel(channel),
-                        name=f"redis_listener_{event_type}"
+                        name=f"redis_listener_{event_type}",
                     )
                     self._background_tasks.append(task)
 
@@ -149,9 +149,7 @@ class RedisEventBus(EventBus):
                 return True
 
             except Exception as e:
-                logger.error(
-                    f"Failed to subscribe to Redis channel {event_type}: {e}"
-                )
+                logger.error(f"Failed to subscribe to Redis channel {event_type}: {e}")
                 if self.fallback_to_memory:
                     # Store in fallback handlers
                     if event_type not in self._fallback_handlers:
@@ -178,9 +176,8 @@ class RedisEventBus(EventBus):
             event["id"] = str(uuid4())
         if "timestamp" not in event:
             import datetime
-            event["timestamp"] = datetime.datetime.now(
-                datetime.timezone.utc
-            ).isoformat()
+
+            event["timestamp"] = datetime.datetime.now(datetime.UTC).isoformat()
 
         if self._connected and self.redis_client:
             try:
@@ -226,7 +223,9 @@ class RedisEventBus(EventBus):
                                     else:
                                         handler(event)
                                 except Exception as e:
-                                    logger.error(f"Error in event handler for {event_type}: {e}")
+                                    logger.error(
+                                        f"Error in event handler for {event_type}: {e}"
+                                    )
 
                     except json.JSONDecodeError as e:
                         logger.error(f"Failed to decode event message: {e}")
@@ -282,7 +281,7 @@ class RedisEventBus(EventBus):
             return {
                 "status": "disconnected",
                 "redis_available": REDIS_AVAILABLE,
-                "fallback_mode": self.fallback_to_memory
+                "fallback_mode": self.fallback_to_memory,
             }
 
         if self.redis_client:
@@ -292,36 +291,39 @@ class RedisEventBus(EventBus):
                     "status": "connected",
                     "redis_available": True,
                     "subscribers": len(self._subscribers),
-                    "fallback_handlers": len(self._fallback_handlers)
+                    "fallback_handlers": len(self._fallback_handlers),
                 }
             except Exception as e:
                 return {
                     "status": "error",
                     "error": str(e),
-                    "fallback_mode": self.fallback_to_memory
+                    "fallback_mode": self.fallback_to_memory,
                 }
 
-        return {
-            "status": "fallback",
-            "fallback_handlers": len(self._fallback_handlers)
-        }
+        return {"status": "fallback", "fallback_handlers": len(self._fallback_handlers)}
 
     def get_stats(self) -> Dict[str, Any]:
         """Get event bus statistics."""
         return {
             "connected": self._connected,
             "redis_available": REDIS_AVAILABLE,
-            "subscribers": {event_type: len(handlers)
-                          for event_type, handlers in self._subscribers.items()},
-            "fallback_handlers": {event_type: len(handlers)
-                                for event_type, handlers in self._fallback_handlers.items()},
-            "background_tasks": len([t for t in self._background_tasks if not t.done()]),
+            "subscribers": {
+                event_type: len(handlers)
+                for event_type, handlers in self._subscribers.items()
+            },
+            "fallback_handlers": {
+                event_type: len(handlers)
+                for event_type, handlers in self._fallback_handlers.items()
+            },
+            "background_tasks": len(
+                [t for t in self._background_tasks if not t.done()]
+            ),
             "config": {
                 "host": self.redis_host,
                 "port": self.redis_port,
                 "db": self.redis_db,
-                "max_connections": self.max_connections
-            }
+                "max_connections": self.max_connections,
+            },
         }
 
 
@@ -329,7 +331,7 @@ class EventBusAdapter:
     """Factory for creating appropriate event bus implementation."""
 
     @staticmethod
-    def create(config: Optional[Dict[str, Any]] = None) -> EventBus:
+    def create(config: Dict[str, Any] | None = None) -> EventBus:
         """Create event bus based on configuration and availability."""
         config = config or {}
 
@@ -341,4 +343,5 @@ class EventBusAdapter:
         # Fall back to in-memory implementation
         logger.info("Using in-memory event bus")
         from src.core.event_bus import InMemoryEventBus
+
         return InMemoryEventBus()
