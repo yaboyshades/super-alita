@@ -1496,6 +1496,17 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             app.state.kg,  # type: ignore
             app.state.llm_model,  # type: ignore
         )
+        
+        # Add unified system health if available
+        unified_health = {}
+        if hasattr(app.state, 'unified_registry'):
+            try:
+                unified_health = await app.state.unified_registry.health_check_all()  # type: ignore
+                status["unified_tools"] = len(app.state.unified_registry.get_available_tools())  # type: ignore
+                status["unified_details"] = unified_health
+            except Exception as e:
+                status["unified_error"] = str(e)
+        
         code = 200 if status["status"] == "healthy" else 503
         if (
             isinstance(app.state.event_bus, FileEventBus)  # type: ignore
@@ -1506,6 +1517,8 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             minimal: dict[str, Any] = {
                 "status": status["status"],
                 "service": "super-alita",
+                "tools": status.get("unified_tools", 0),
+                "details": unified_health,
             }
             return JSONResponse(status_code=code, content=minimal)  # type: ignore
         return JSONResponse(status_code=code, content=status)  # type: ignore
@@ -1609,6 +1622,24 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 print(f"   Loaded: {', '.join(plugin_names[:5])}")
                 if len(plugin_names) > 5:
                     print(f"   ... and {len(plugin_names) - 5} more")
+
+        # Initialize Unified System (v3.0 integration)
+        try:
+            print("🔧 DEBUG: Initializing Unified System (v3.0)...")
+            from src.abilities.unified_registry import UnifiedToolRegistry
+            from src.reug_runtime.unified_router import UnifiedToolRouter
+            
+            unified_registry = UnifiedToolRegistry()
+            await unified_registry.auto_discover_all()
+            unified_router = UnifiedToolRouter(unified_registry)
+            
+            # Store in app state for access
+            app.state.unified_registry = unified_registry  # type: ignore
+            app.state.unified_router = unified_router  # type: ignore
+            
+            print(f"✅ DEBUG: Unified System initialized with {len(unified_registry.get_available_tools())} tools")
+        except Exception as e:  # noqa: BLE001
+            print(f"⚠️ DEBUG: Unified System initialization failed: {e}")
 
         # Register Enhanced / external Consensus sampling tool
         try:
@@ -2098,6 +2129,23 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     async def health_simple() -> dict[str, object]:  # type: ignore
         # minimal health with a timestamp for clients/tests
         return {"status": "ok", "timestamp": int(time.time())}
+
+    # Unified System (v3.0) Endpoints
+    @app.get("/tools")  # type: ignore
+    async def list_unified_tools() -> dict[str, object]:  # type: ignore
+        """List all tools available through unified registry."""
+        if hasattr(app.state, 'unified_registry'):
+            return {"tools": app.state.unified_registry.get_tools()}  # type: ignore
+        return {"tools": {}}
+
+    @app.post("/tools/{tool_id}")  # type: ignore
+    async def exec_unified_tool(tool_id: str, args: dict) -> dict[str, object]:  # type: ignore
+        """Execute a tool through unified router with recovery."""
+        if not hasattr(app.state, 'unified_router'):
+            raise HTTPException(404, "Unified router not available")  # type: ignore
+        if tool_id not in app.state.unified_registry.get_tools():  # type: ignore
+            raise HTTPException(404, f"Tool {tool_id} not found")  # type: ignore
+        return await app.state.unified_router.execute_tool_with_recovery(tool_id, args)  # type: ignore
 
     # Route enumeration (debug only)
     @app.get("/routes")  # type: ignore
