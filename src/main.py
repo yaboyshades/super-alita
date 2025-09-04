@@ -1487,9 +1487,78 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         code = 200 if status["status"] == "healthy" else 503
         return JSONResponse(status_code=code, content=status)  # type: ignore
 
-    # Alternative health endpoint
+    # Enhanced health endpoint with tool count and detailed status
     @app.get("/health")  # type: ignore
-    async def health_check_alt() -> JSONResponse:  # type: ignore
+    async def health_check_enhanced() -> JSONResponse:  # type: ignore
+        """Enhanced health endpoint with tool count and registry status."""
+        try:
+            # Get base health check
+            base_status = await check_health(
+                app.state.event_bus,  # type: ignore
+                app.state.ability_registry,  # type: ignore
+                app.state.kg,  # type: ignore
+                app.state.llm_model,  # type: ignore
+            )
+            
+            # Enhanced status with tool information
+            enhanced_status = {
+                **base_status,
+                "tools": {
+                    "total_count": 0,
+                    "available": True,
+                    "registry_type": "unknown"
+                },
+                "features": {},
+                "version": "3.0"
+            }
+            
+            # Get tool count and registry info
+            try:
+                registry = app.state.ability_registry  # type: ignore
+                if hasattr(registry, 'get_available_tools_schema'):
+                    tools_schema = registry.get_available_tools_schema()
+                    enhanced_status["tools"]["total_count"] = len(tools_schema)
+                    enhanced_status["tools"]["available"] = True
+                    
+                    # Check if unified registry
+                    if hasattr(registry, 'get_status'):
+                        registry_status = registry.get_status()
+                        enhanced_status["tools"]["registry_type"] = "unified"
+                        enhanced_status["features"] = registry_status.get("feature_flags", {})
+                    else:
+                        enhanced_status["tools"]["registry_type"] = "simple"
+                        
+            except Exception as e:
+                enhanced_status["tools"]["error"] = str(e)
+                enhanced_status["tools"]["available"] = False
+            
+            # Check for resilient router
+            try:
+                if hasattr(app.state, 'unified_router'):
+                    router = app.state.unified_router  # type: ignore
+                    if hasattr(router, 'get_health_status'):
+                        router_health = router.get_health_status()
+                        enhanced_status["router"] = router_health
+            except Exception:
+                pass  # Router health is optional
+            
+            code = 200 if enhanced_status["status"] == "healthy" else 503
+            return JSONResponse(status_code=code, content=enhanced_status)  # type: ignore
+            
+        except Exception as e:
+            # Fallback to basic status if enhanced check fails
+            error_status = {
+                "status": "error",
+                "error": str(e),
+                "tools": {"total_count": 0, "available": False},
+                "version": "3.0"
+            }
+            return JSONResponse(status_code=503, content=error_status)  # type: ignore
+
+    # Alternative legacy health endpoint  
+    @app.get("/health/simple")  # type: ignore
+    async def health_check_simple() -> JSONResponse:  # type: ignore
+        """Simple health check for backwards compatibility."""
         status = await check_health(
             app.state.event_bus,  # type: ignore
             app.state.ability_registry,  # type: ignore
