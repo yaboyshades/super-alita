@@ -1,0 +1,183 @@
+# Constitutional Compliance Configuration
+#
+# This file configures the constitutional compliance checker for gRPC services.
+# Adjust thresholds and settings based on your project requirements.
+
+# Constitutional validation thresholds
+thresholds:
+  # Article III: Simplicity Gate
+  max_function_lines: 50
+  max_class_lines: 200
+  max_cyclomatic_complexity: 10
+  
+  # Article II: Test-First Development
+  min_test_coverage: 80
+  min_test_file_ratio: 0.5
+  
+  # Article V: Clarity and Unambiguity
+  min_docstring_coverage: 90
+  min_function_name_length: 3
+  
+  # Overall compliance
+  constitutional_compliance_threshold: 0.75
+
+# Article-specific settings
+articles:
+  article_i:
+    # Library-First Development
+    enforce_standard_libraries: true
+    prohibited_custom_implementations:
+      - "grpc_server"
+      - "grpc_client"
+      - "protocol_buffer"
+    allowed_library_patterns:
+      - "grpcio*"
+      - "protobuf*"
+      - "grpcio-*"
+  
+  article_ii:
+    # Test-First Development
+    required_test_patterns:
+      - "test_*.py"
+      - "*_test.py"
+    required_test_categories:
+      - "unit"
+      - "integration"
+      - "constitutional"
+    async_test_support: true
+  
+  article_iii:
+    # Simplicity Gate
+    complexity_analysis: true
+    function_length_check: true
+    nesting_depth_limit: 4
+    parameter_count_limit: 8
+  
+  article_iv:
+    # Integration-First Testing
+    require_integration_tests: true
+    grpc_integration_patterns:
+      - "end_to_end"
+      - "integration"
+      - "e2e"
+  
+  article_v:
+    # Clarity and Unambiguity
+    docstring_enforcement: true
+    naming_convention_check: true
+    type_hint_requirement: true
+    comment_quality_analysis: true
+  
+  article_vi:
+    # Counterfactual Justification
+    require_decision_comments: true
+    justification_patterns:
+      - "# rationale:"
+      - "# decision:"
+      - "# why:"
+      - "# alternative:"
+      - "# justification:"
+
+# Analysis settings
+analysis:
+  # File patterns to include/exclude
+  include_patterns:
+    - "**/*.py"
+  exclude_patterns:
+    - "**/__pycache__/**"
+    - "**/.*"
+    - "**/build/**"
+    - "**/dist/**"
+  
+  # Severity levels for different violation types
+  severity_mapping:
+    missing_tests: "error"
+    function_too_long: "error"
+    missing_docstring: "warning"
+    poor_naming: "info"
+    missing_justification: "info"
+  
+  # Enable/disable specific checks
+  enabled_checks:
+    library_usage: true
+    test_coverage: true
+    complexity_analysis: true
+    integration_tests: true
+    documentation: true
+    justification: true
+    type_hints: true
+    naming_conventions: true
+
+# Reporting settings
+reporting:
+  # Report format options
+  include_statistics: true
+  include_recommendations: true
+  include_violation_details: true
+  
+  # Output customization
+  max_violations_per_article: 50
+  group_violations_by_file: true
+  sort_violations_by_severity: true
+
+# Tool integration
+tools:
+  # Code coverage tool
+  coverage_tool: "pytest-cov"
+  coverage_command: "pytest --cov=. --cov-report=json"
+  
+  # Linting tools
+  linting_tools:
+    - name: "ruff"
+      command: "ruff check ."
+    - name: "mypy"
+      command: "mypy --strict ."
+  
+  # Complexity analysis
+  complexity_tool: "radon"
+  complexity_command: "radon cc . -j"
+
+# Constitutional framework version
+framework:
+  version: "1.0"
+  articles_count: 14
+  minimum_compliance_score: 0.75
+  
+  # Article weights for overall score calculation
+  article_weights:
+    article_i: 0.12   # Library-First
+    article_ii: 0.15  # Test-First
+    article_iii: 0.15 # Simplicity
+    article_iv: 0.12  # Integration
+    article_v: 0.15   # Clarity
+    article_vi: 0.10  # Justification
+    article_vii: 0.03 # Additional articles...
+    article_viii: 0.03
+    article_ix: 0.03
+    article_x: 0.03
+    article_xi: 0.03
+    article_xii: 0.03
+    article_xiii: 0.03
+    article_xiv: 0.03
+
+# Project-specific overrides
+project:
+  # Service-specific settings
+  service_type: "grpc"
+  expected_components:
+    - "servicer"
+    - "server" 
+    - "middleware"
+    - "tests"
+  
+  # Performance requirements
+  performance_thresholds:
+    max_startup_time_ms: 1000
+    max_response_time_ms: 100
+    max_memory_usage_mb: 100
+  
+  # Documentation requirements
+  documentation:
+    require_readme: true
+    require_api_docs: true
+    require_examples: true

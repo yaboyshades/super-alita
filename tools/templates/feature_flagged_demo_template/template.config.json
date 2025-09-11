@@ -1,0 +1,9 @@
+{
+  "name": "feature_flagged_demo_template",
+  "description": "Feature-flagged demo entry template",
+  "variables": [
+    "demoName",
+    "demoDescription"
+  ]
+}
+

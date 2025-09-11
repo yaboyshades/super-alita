@@ -1,0 +1,162 @@
+{
+  "opportunities": [
+    {
+      "file_path": "tools/alita_cli.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/codex_mcp_check.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/complete_startup.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/deepcode_cli.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/export_mangle_to_mcp_box.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/generate_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/langchain_adapter.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/ollama_cpu_gpu_split_example.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/ollama_gpu_cpu_tuner.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/refactor_hotspots.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/refactor_hotspots.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.9,
+      "description": "Direct eval/exec detected; requires sandbox wrapping",
+      "suggested_pattern": "sandbox_execute",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/scan_placeholders.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/socratic_testing_engine.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/tribal_knowledge_extractor.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/__main__.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/ci/measure_prompt_perf.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/git_hooks/no_mock_guard.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/templates/launcher_template/start_template.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tools/templates/feature_flagged_demo_template/___demoName___/main.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    }
+  ],
+  "metadata": {
+    "scanned_path": "tools",
+    "file_count": 19,
+    "opportunity_count": 19,
+    "elapsed_seconds": 0.307
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "launcher_template",
+  "description": "Unified launcher template for Super-Alita runtime",
+  "variables": [
+    "modelName",
+    "mode",
+    "port",
+    "logLevel"
+  ]
+}
+

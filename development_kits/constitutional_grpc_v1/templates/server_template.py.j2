@@ -1,0 +1,338 @@
+"""
+Constitutional {{ service_name }} gRPC Server
+
+Generated from Constitutional gRPC Development Kit v1.0
+Following all 14 articles of the Super-Alita Constitutional Framework.
+
+Server Implementation:
+- Article I: Library-First (uses established gRPC patterns)
+- Article III: Simplicity Gate (clear server lifecycle)
+- Article IV: Integration-First (health checking, reflection)
+- Article V: Clarity (unambiguous startup/shutdown)
+- Article XII: Predictive Maintenance (monitoring hooks)
+"""
+
+import asyncio
+import logging
+import signal
+import time
+from typing import Any
+
+import grpc
+from grpc_health.v1 import health, health_pb2, health_pb2_grpc
+from grpc_reflection.v1alpha import reflection
+from importlib import import_module
+
+# Local constitutional interceptor (server-side)
+from .constitutional_middleware import ConstitutionalValidationMiddleware
+
+{% if unified_integration %}
+from src.main_unified import UnifiedSuperAlita
+from src.sdd.mangle_reasoner import MangleReasoner
+{% endif %}
+from .{{ servicer_module }} import Constitutional{{ service_class }}Servicer
+
+logger = logging.getLogger(__name__)
+
+
+class Constitutional{{ service_class }}Server:
+    """
+    Constitutional {{ service_name }} gRPC server with built-in compliance monitoring.
+
+    Features:
+    - Graceful startup and shutdown (Article V: Clarity)
+    - Health checking for production readiness (Article IV: Integration)
+    - gRPC reflection for development (Article V: Clarity)
+    - Constitutional compliance monitoring (All Articles)
+    - Performance metrics collection (Article XII: Predictive Maintenance)
+
+    Constitutional Design Decisions (Article VI):
+    - Async implementation for scalability
+    - Health checking follows gRPC standards
+    - Graceful shutdown prevents data loss
+    - Reflection enabled for development ease
+    - Structured logging for operational clarity
+    """
+
+    def __init__(
+        self,
+        host: str = "0.0.0.0",
+        port: int = {{ default_port }},
+        max_workers: int = 10,
+        enable_reflection: bool = True,
+        enable_health_checking: bool = True,
+        unified_integration: bool = False,
+    ):
+        """
+        Initialize constitutional {{ service_name }} server.
+
+        Args:
+            host: Server host address
+            port: Server port
+            max_workers: Maximum worker threads
+            enable_reflection: Enable gRPC reflection
+            enable_health_checking: Enable health checking
+        """
+        self.host = host
+        self.port = port
+        self.max_workers = max_workers
+        self.enable_reflection = enable_reflection
+        self.enable_health_checking = enable_health_checking
+        self.unified_integration = unified_integration
+
+        # Server components
+        self.server: grpc.aio.Server | None = None
+        self.servicer: Constitutional{{ service_class }}Servicer | None = None
+        self.health_servicer: health.HealthServicer | None = None
+
+        # Integration components
+        {% if unified_integration %}
+        self.unified_agent: UnifiedSuperAlita | None = None
+        self.mangle_reasoner: MangleReasoner | None = None
+        {% endif %}
+
+        # Server state
+        self._running = False
+        self._start_time = 0.0
+        self._shutdown_event = asyncio.Event()
+
+        logger.info(
+            f"Constitutional {{ service_name }} server initialized "
+            f"({host}:{port}, workers: {max_workers})"
+        )
+
+    async def setup(
+        self,
+        {% if unified_integration %}
+        unified_agent: UnifiedSuperAlita | None = None,
+        mangle_reasoner: MangleReasoner | None = None,
+        {% endif %}
+        constitutional_threshold: float = 0.75,
+        enable_validation: bool = True,
+    ) -> None:
+        """
+        Setup server components with constitutional validation.
+
+        Args:
+            {% if unified_integration %}
+            unified_agent: UnifiedSuperAlita instance
+            mangle_reasoner: MangleReasoner instance
+            {% endif %}
+            constitutional_threshold: Minimum compliance score
+            enable_validation: Enable constitutional validation
+        """
+        try:
+            logger.info("Setting up constitutional {{ service_name }} server...")
+
+            # Store integration components
+            {% if unified_integration %}
+            self.unified_agent = unified_agent
+            self.mangle_reasoner = mangle_reasoner
+            {% endif %}
+
+            # Interceptors (Article I & III)
+            interceptors = [
+                ConstitutionalValidationMiddleware,
+            ]
+
+            # Create gRPC server
+            self.server = grpc.aio.server(
+                interceptors=[i() if callable(i) else i for i in interceptors],
+                options=[
+                    ("grpc.keepalive_time_ms", 30000),
+                    ("grpc.keepalive_timeout_ms", 10000),
+                    ("grpc.keepalive_permit_without_calls", True),
+                    ("grpc.http2.max_pings_without_data", 0),
+                    ("grpc.http2.min_time_between_pings_ms", 10000),
+                    ("grpc.http2.min_ping_interval_without_data_ms", 300000),
+                ]
+            )
+
+            # Create and add main servicer
+            self.servicer = Constitutional{{ service_class }}Servicer(
+                {% if unified_integration %}
+                unified_agent=unified_agent,
+                mangle_reasoner=mangle_reasoner,
+                {% endif %}
+                constitutional_threshold=constitutional_threshold,
+                enable_validation=enable_validation,
+            )
+
+            # Add servicer to server (best-effort)
+            try:
+                pb2_grpc = import_module(f".{ '{{ proto_module }}' }_pb2_grpc", package=__package__)
+                add_fn = getattr(pb2_grpc, f"add_{{ service_class }}Servicer_to_server", None)
+                if add_fn and callable(add_fn):
+                    add_fn(self.servicer, self.server)
+                else:
+                    logger.debug("add_{{ service_class }}Servicer_to_server not found; skipping binding")
+            except Exception as e:
+                logger.debug(f"pb2_grpc not available for registration: {e}")
+
+            # Setup health checking (Article IV: Integration-First)
+            if self.enable_health_checking:
+                await self._setup_health_checking()
+
+            # Setup reflection (Article V: Clarity)
+            if self.enable_reflection:
+                await self._setup_reflection()
+
+            # Add server port (ephemeral if 0)
+            listen_addr = f"{self.host}:{self.port}"
+            selected_port = self.server.add_insecure_port(listen_addr)
+            if self.port == 0 and selected_port > 0:
+                self.port = selected_port
+
+            logger.info(f"Constitutional {{ service_name }} server setup complete")
+
+        except Exception as e:
+            logger.error(f"Server setup failed: {e}")
+            raise
+
+    async def start(self) -> None:
+        """Start the gRPC server."""
+        if not self.server:
+            raise RuntimeError("Server not configured. Call setup() first.")
+        await self.server.start()
+        self._running = True
+        self._start_time = time.time()
+        if self.health_servicer:
+            self.health_servicer.set("{{ service_name }}", health_pb2.HealthCheckResponse.SERVING)
+        logger.info(f"Server started on {self.host}:{self.port}")
+
+    async def stop(self, grace: float = 2.0) -> None:
+        """Stop the gRPC server gracefully."""
+        if not self.server:
+            return
+        if self.health_servicer:
+            self.health_servicer.set("{{ service_name }}", health_pb2.HealthCheckResponse.NOT_SERVING)
+        await self.server.stop(grace)
+        self._running = False
+        logger.info("Server stopped")
+
+    def is_running(self) -> bool:
+        """Return running state flag."""
+        return self._running
+
+    async def check_health(self) -> dict[str, Any]:
+        """Return simple health summary."""
+        status = "healthy" if self._running and self.health_servicer else "unhealthy"
+        return {"status": status, "service": "{{ service_name }}"}
+
+    def _get_interceptors(self):
+        """Return interceptor classes used by this server."""
+        return [ConstitutionalValidationMiddleware]
+
+    # (Duplicate older lifecycle helpers removed in favor of simpler versions above)
+
+    def get_server_stats(self) -> dict[str, Any]:
+        """Get comprehensive server statistics."""
+        stats = {
+            "running": self._running,
+            "host": self.host,
+            "port": self.port,
+            "uptime": time.time() - self._start_time if self._start_time else 0,
+            "constitutional_compliance": "enabled",
+            "health_checking": "enabled" if self.enable_health_checking else "disabled",
+            "reflection": "enabled" if self.enable_reflection else "disabled",
+        }
+
+        # Add servicer statistics
+        if self.servicer:
+            stats["constitutional_stats"] = self.servicer.get_constitutional_stats()
+
+        {% if unified_integration %}
+        # Add integration status
+        stats["integrations"] = {
+            "unified_agent": "available" if self.unified_agent else "unavailable",
+            "mangle_reasoner": "available" if self.mangle_reasoner else "unavailable",
+        }
+        {% endif %}
+
+        return stats
+
+    # Private Methods (Article III: Simplicity Gate)
+
+    async def _setup_health_checking(self) -> None:
+        """Setup gRPC health checking service."""
+        self.health_servicer = health.HealthServicer()
+        health_pb2_grpc.add_HealthServicer_to_server(self.health_servicer, self.server)
+
+        # Set initial health status
+        self.health_servicer.set(
+            "{{ service_name }}",
+            health_pb2.HealthCheckResponse.NOT_SERVING
+        )
+
+        logger.info("Health checking service enabled")
+
+    async def _setup_reflection(self) -> None:
+        """Setup gRPC reflection service."""
+        SERVICE_NAMES = (
+            "{{ proto_package }}.{{ service_class }}",
+            health.SERVICE_NAME,
+            reflection.SERVICE_NAME,
+        )
+        reflection.enable_server_reflection(SERVICE_NAMES, self.server)
+        logger.info("gRPC reflection service enabled")
+
+    def _setup_signal_handlers(self) -> None:
+        """Setup signal handlers for graceful shutdown."""
+        def signal_handler(signum: int, frame) -> None:  # type: ignore
+            signal_name = signal.Signals(signum).name
+            logger.info(f"Received {signal_name}, initiating graceful shutdown...")
+            self._shutdown_event.set()
+
+        # Handle common shutdown signals
+        if hasattr(signal, 'SIGTERM'):
+            signal.signal(signal.SIGTERM, signal_handler)
+        if hasattr(signal, 'SIGINT'):
+            signal.signal(signal.SIGINT, signal_handler)
+
+
+# Convenience function for easy server creation
+async def create_constitutional_{{ service_name.lower() }}_server(
+    host: str = "0.0.0.0",
+    port: int = {{ default_port }},
+    unified_integration: bool = False,
+    {% if unified_integration %}unified_agent: UnifiedSuperAlita | None = None,
+    mangle_reasoner: MangleReasoner | None = None,{% endif %}
+    enable_reflection: bool = True,
+    enable_health_checking: bool = True,
+    constitutional_threshold: float = 0.75,
+) -> Constitutional{{ service_class }}Server:
+    """
+    Create and setup constitutional {{ service_name }} server.
+
+    Args:
+        host: Server host
+        port: Server port
+        unified_integration: Toggle unified intelligence hooks
+        {% if unified_integration %}unified_agent: UnifiedSuperAlita instance
+        mangle_reasoner: MangleReasoner instance{% endif %}
+        enable_reflection: Enable gRPC reflection
+        enable_health_checking: Enable health checking
+        constitutional_threshold: Constitutional compliance threshold
+
+    Returns:
+        Configured Constitutional{{ service_class }}Server
+    """
+    server = Constitutional{{ service_class }}Server(
+        host=host,
+        port=port,
+        enable_reflection=enable_reflection,
+        enable_health_checking=enable_health_checking,
+        unified_integration=unified_integration,
+    )
+
+    await server.setup(
+        {% if unified_integration %}unified_agent=unified_agent,
+        mangle_reasoner=mangle_reasoner,{% endif %}
+        constitutional_threshold=constitutional_threshold,
+    )
+
+    return server
+
+
+# Export server class and convenience function
+__all__ = ["Constitutional{{ service_class }}Server", "create_constitutional_{{ service_name.lower() }}_server"]

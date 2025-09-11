@@ -1,0 +1,8 @@
+# ---
+# doc_type: requirements_ledger
+# schema_required: req_id,type,title,description,acceptance_criteria,test_cases,status,owner
+# ---
+req_id,type,title,description,acceptance_criteria,test_cases,status,owner
+REQ-001,feature,"Initial Setup","Set up the initial file structure for the Constitutional Coding Architect.","All required files are created with correct headers.", "File `00_README_COPILOT.md` exists; File `10_requirements_ledger.csv` contains this row.",complete,system
+REQ-002,feature,"User Authentication","A function to authenticate a user with email and password.","Returns a JWT on success; Throws an error on failure.", "user: 'test@test.com', pass: 'goodpass' -> returns token; user: 'test@test.com', pass: 'badpass' -> throws AuthError",pending,analyst
+

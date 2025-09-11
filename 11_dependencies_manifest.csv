@@ -1,0 +1,9 @@
+# ---
+# doc_type: dependencies_manifest
+# schema_required: dep_id,name,version,type,purpose,contract_file
+# ---
+dep_id,name,version,type,purpose,contract_file
+DEP-001,pytest,8.2.2,python,"Testing framework for Test-First development.",N/A
+DEP-002,requests,2.32.3,python,"HTTP requests to external APIs.",N/A
+DEP-003,Stripe API,v1,api,"Payment processing.","spec/stripe_api_contract.json"
+

@@ -1,0 +1,386 @@
+#!/usr/bin/env python3
+"""
+Enhanced Consensus Demo - Featur        default=DEFAULT_FEATURES,
+        help="Features to test (default: weighted_vote, confidence_scoring, "
+             "semantic_similarity)"
+    )lagged Demo Script
+
+Demonstrates the Enhanced Consensus Ability with multiple algorithms
+and comprehensive feature flags for testing different scenarios.
+
+Template Application:
+- featureName: "Enhanced Consensus"
+- mainFunction: "test_consensus_algorithms"
+- defaultFeatures: ["weighted_vote", "confidence_scoring", "semantic_similarity"]
+- testScenarios: ["basic_consensus", "model_comparison", "confidence_thresholds"]
+"""
+
+import argparse
+import asyncio
+import os
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
+# Feature flags for different consensus scenarios
+AVAILABLE_FEATURES = {
+    "weighted_vote": "Test weighted voting consensus algorithm",
+    "confidence_scoring": "Test confidence-based consensus selection",
+    "semantic_similarity": "Test semantic similarity clustering",
+    "ensemble_ranking": "Test multi-factor ensemble ranking",
+    "simple_vote": "Test basic majority voting",
+    "temperature_diversity": "Test temperature-based sample diversity",
+    "model_comparison": "Compare different LLM models",
+    "batch_processing": "Test batch consensus processing",
+    "error_handling": "Test error scenarios and recovery",
+    "performance_metrics": "Measure consensus performance",
+}
+
+DEFAULT_FEATURES = ["weighted_vote", "confidence_scoring", "semantic_similarity"]
+
+
+def create_parser():
+    """Create argument parser for Enhanced Consensus Demo."""
+    parser = argparse.ArgumentParser(
+        description="Enhanced Consensus Demo - Feature-Flagged Testing",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=f"""
+Available Features:
+{chr(10).join(f"  {name}: {desc}" for name, desc in AVAILABLE_FEATURES.items())}
+
+Examples:
+  python demo_enhanced_consensus.py
+  python demo_enhanced_consensus.py --features weighted_vote confidence_scoring
+  python demo_enhanced_consensus.py --all-features
+  python demo_enhanced_consensus.py --prompt "Explain quantum computing"
+        """,
+    )
+
+    parser.add_argument(
+        "--features",
+        nargs="*",
+        choices=list(AVAILABLE_FEATURES.keys()),
+        default=DEFAULT_FEATURES,
+        help="Features to test (default: weighted_vote, confidence_scoring, semantic_similarity)",
+    )
+
+    parser.add_argument(
+        "--all-features",
+        action="store_true",
+        help="Enable all available features for comprehensive testing",
+    )
+
+    parser.add_argument(
+        "--prompt",
+        default="Explain the benefits of test-driven development in Python",
+        help="Test prompt for consensus generation",
+    )
+
+    parser.add_argument(
+        "--model",
+        default=os.getenv("SUPER_ALITA_MODEL", "llama3.2:3b"),
+        help="LLM model to use for consensus",
+    )
+
+    parser.add_argument(
+        "--samples",
+        type=int,
+        default=3,
+        help="Number of samples for consensus (default: 3)",
+    )
+
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output with detailed metrics",
+    )
+
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be tested without executing",
+    )
+
+    return parser
+
+
+async def test_weighted_vote(provider, prompt: str, samples: int, verbose: bool):
+    """Test weighted voting consensus algorithm."""
+    print("🔄 Testing Weighted Vote Consensus...")
+
+    try:
+        result = await provider.consensus_sampling(
+            prompt=prompt,
+            num_samples=samples,
+            method="weighted_vote",
+            temperature=0.7,
+            confidence_threshold=0.6,
+        )
+
+        print(f"✅ Weighted Vote Result: {result['consensus'][:100]}...")
+        if verbose:
+            print(f"   Confidence: {result.get('confidence', 'N/A')}")
+            print(f"   Method: {result.get('method', 'N/A')}")
+            print(f"   Samples: {len(result.get('samples', []))}")
+
+        return result
+
+    except Exception as e:
+        print(f"❌ Weighted Vote Failed: {e}")
+        return None
+
+
+async def test_confidence_scoring(provider, prompt: str, samples: int, verbose: bool):
+    """Test confidence-based consensus selection."""
+    print("🎯 Testing Confidence Scoring...")
+
+    try:
+        result = await provider.consensus_sampling(
+            prompt=prompt,
+            num_samples=samples,
+            method="confidence_based",
+            temperature=0.8,
+            confidence_threshold=0.7,
+        )
+
+        print(f"✅ Confidence Result: {result['consensus'][:100]}...")
+        if verbose:
+            print(f"   Confidence: {result.get('confidence', 'N/A')}")
+            print("   Threshold: 0.7")
+
+        return result
+
+    except Exception as e:
+        print(f"❌ Confidence Scoring Failed: {e}")
+        return None
+
+
+async def test_semantic_similarity(provider, prompt: str, samples: int, verbose: bool):
+    """Test semantic similarity clustering."""
+    print("🔗 Testing Semantic Similarity...")
+
+    try:
+        result = await provider.consensus_sampling(
+            prompt=prompt,
+            num_samples=samples,
+            method="semantic_similarity",
+            temperature=0.9,
+            confidence_threshold=0.5,
+        )
+
+        print(f"✅ Semantic Result: {result['consensus'][:100]}...")
+        if verbose:
+            print(f"   Similarity Score: {result.get('confidence', 'N/A')}")
+
+        return result
+
+    except Exception as e:
+        print(f"❌ Semantic Similarity Failed: {e}")
+        return None
+
+
+async def test_ensemble_ranking(provider, prompt: str, samples: int, verbose: bool):
+    """Test multi-factor ensemble ranking."""
+    print("🏆 Testing Ensemble Ranking...")
+
+    try:
+        result = await provider.consensus_sampling(
+            prompt=prompt,
+            num_samples=samples,
+            method="ensemble_ranking",
+            temperature=0.7,
+            confidence_threshold=0.6,
+        )
+
+        print(f"✅ Ensemble Result: {result['consensus'][:100]}...")
+        if verbose:
+            print(f"   Ensemble Score: {result.get('confidence', 'N/A')}")
+
+        return result
+
+    except Exception as e:
+        print(f"❌ Ensemble Ranking Failed: {e}")
+        return None
+
+
+async def test_simple_vote(provider, prompt: str, samples: int, verbose: bool):
+    """Test basic majority voting."""
+    print("🗳️  Testing Simple Vote...")
+
+    try:
+        result = await provider.consensus_sampling(
+            prompt=prompt,
+            num_samples=samples,
+            method="simple_vote",
+            temperature=0.6,
+            confidence_threshold=0.5,
+        )
+
+        print(f"✅ Simple Vote Result: {result['consensus'][:100]}...")
+        if verbose:
+            print(f"   Vote Count: {result.get('confidence', 'N/A')}")
+
+        return result
+
+    except Exception as e:
+        print(f"❌ Simple Vote Failed: {e}")
+        return None
+
+
+async def test_temperature_diversity(
+    provider, prompt: str, samples: int, verbose: bool
+):
+    """Test temperature-based sample diversity."""
+    print("🌡️  Testing Temperature Diversity...")
+
+    try:
+        # Test with different temperature ranges
+        temperatures = [0.3, 0.7, 1.0]
+        results = []
+
+        for temp in temperatures:
+            result = await provider.consensus_sampling(
+                prompt=prompt,
+                num_samples=samples,
+                method="weighted_vote",
+                temperature=temp,
+                temperature_range=0.2,
+            )
+            results.append((temp, result))
+
+        print(f"✅ Temperature Diversity: {len(results)} variants tested")
+        if verbose:
+            for temp, result in results:
+                print(f"   Temp {temp}: {result['consensus'][:50]}...")
+
+        return results
+
+    except Exception as e:
+        print(f"❌ Temperature Diversity Failed: {e}")
+        return None
+
+
+async def test_performance_metrics(provider, prompt: str, samples: int, verbose: bool):
+    """Measure consensus performance metrics."""
+    print("📊 Testing Performance Metrics...")
+
+    import time
+
+    try:
+        start_time = time.time()
+
+        result = await provider.consensus_sampling(
+            prompt=prompt, num_samples=samples, method="weighted_vote", temperature=0.7
+        )
+
+        end_time = time.time()
+        duration = end_time - start_time
+
+        print("✅ Performance Test Complete")
+        print(f"   Duration: {duration:.2f}s")
+        print(f"   Samples/sec: {samples/duration:.2f}")
+
+        if verbose:
+            print(f"   Total samples: {samples}")
+            print(f"   Result length: {len(result.get('consensus', ''))}")
+
+        return {
+            "duration": duration,
+            "samples_per_sec": samples / duration,
+            "result": result,
+        }
+
+    except Exception as e:
+        print(f"❌ Performance Metrics Failed: {e}")
+        return None
+
+
+# Feature test mapping
+FEATURE_TESTS = {
+    "weighted_vote": test_weighted_vote,
+    "confidence_scoring": test_confidence_scoring,
+    "semantic_similarity": test_semantic_similarity,
+    "ensemble_ranking": test_ensemble_ranking,
+    "simple_vote": test_simple_vote,
+    "temperature_diversity": test_temperature_diversity,
+    "performance_metrics": test_performance_metrics,
+}
+
+
+async def main():
+    """Main demo function."""
+    parser = create_parser()
+    args = parser.parse_args()
+
+    # Handle all-features flag
+    if args.all_features:
+        args.features = list(AVAILABLE_FEATURES.keys())
+
+    print("🚀 Enhanced Consensus Demo")
+    print(f"   Model: {args.model}")
+    print(f"   Samples: {args.samples}")
+    print(f"   Features: {', '.join(args.features)}")
+    print(f"   Prompt: {args.prompt[:50]}...")
+    print()
+
+    if args.dry_run:
+        print("🔍 DRY RUN - Would test the following features:")
+        for feature in args.features:
+            print(f"   ✓ {feature}: {AVAILABLE_FEATURES.get(feature, 'Unknown')}")
+        return
+
+    # Initialize Enhanced Consensus Provider
+    try:
+        from abilities.enhanced_consensus_ability import EnhancedConsensusProvider
+
+        config = {
+            "base_url": "http://localhost:11434/v1",
+            "model_name": args.model,
+            "timeout": 60,
+        }
+
+        provider = EnhancedConsensusProvider(config)
+        print("✅ Enhanced Consensus Provider initialized")
+
+    except ImportError as e:
+        print(f"❌ Failed to import Enhanced Consensus Provider: {e}")
+        print("   Make sure Super-Alita is properly installed")
+        return
+    except Exception as e:
+        print(f"❌ Failed to initialize provider: {e}")
+        return
+
+    # Run selected feature tests
+    results = {}
+
+    for feature in args.features:
+        if feature in FEATURE_TESTS:
+            print(f"\n--- Testing {feature} ---")
+            test_func = FEATURE_TESTS[feature]
+            result = await test_func(provider, args.prompt, args.samples, args.verbose)
+            results[feature] = result
+        else:
+            print(f"⚠️  Unknown feature: {feature}")
+
+    # Summary
+    print("\n📋 Demo Summary:")
+    successful = sum(1 for r in results.values() if r is not None)
+    total = len(results)
+    print(f"   Successful: {successful}/{total}")
+
+    if args.verbose and results:
+        print(
+            f"   Results available for: {', '.join(k for k, v in results.items() if v is not None)}"
+        )
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n👋 Demo cancelled by user")
+    except Exception as e:
+        print(f"❌ Demo failed: {e}")
+        sys.exit(1)

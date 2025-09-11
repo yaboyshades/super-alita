@@ -1,0 +1,162 @@
+{
+  "opportunities": [
+    {
+      "file_path": "src/abilities/alita_paper_code_implementation.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/api_client.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/base_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/base_ability.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.6,
+      "description": "Class appears to be an Ability without PluginInterface",
+      "suggested_pattern": "plugin_inheritance",
+      "estimated_effort": "low"
+    },
+    {
+      "file_path": "src/abilities/deepconf_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/enhanced_consensus_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/gemini_codegen_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/paper_code_implementation.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/planner_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/registry.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/registry_auto.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/resnet_paper_code_implementation.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/transformer_paper_code_implementation.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/web_scraper.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/mangle/integration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/mangle/mangle_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/mangle/mangle_validation.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/mangle/mangle_validator.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/mangle/register.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    }
+  ],
+  "metadata": {
+    "scanned_path": "src/abilities",
+    "file_count": 20,
+    "opportunity_count": 19,
+    "elapsed_seconds": 0.262
+  }
+}

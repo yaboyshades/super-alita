@@ -1,0 +1,12 @@
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    { "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": "Hello world" }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7,
+    "num_predict": 100
+  }
+}

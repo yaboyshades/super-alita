@@ -1,0 +1,722 @@
+{
+  "opportunities": [
+    {
+      "file_path": "src/plugins/adaptive_neural_atom_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/atom_creator_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/atom_creator_plugin.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.9,
+      "description": "Direct eval/exec detected; requires sandbox wrapping",
+      "suggested_pattern": "sandbox_execute",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/atom_executor_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/atom_tools_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/autogen_creator_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/autonomy_tracker.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/auto_tools_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/brainstorm_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/calculator_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/calculator_plugin.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.9,
+      "description": "Direct eval/exec detected; requires sandbox wrapping",
+      "suggested_pattern": "sandbox_execute",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/compose_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/conversation_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/core_utils_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/core_utils_plugin_dynamic.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/cortex_adapter_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/creator_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/creator_plugin_unified.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/creator_plugin_unified.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.9,
+      "description": "Direct eval/exec detected; requires sandbox wrapping",
+      "suggested_pattern": "sandbox_execute",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/creator_test_tool_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/debug_fibonacci_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/debug_test_tool_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/deepcode_events.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/deepcode_generator_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/deepcode_orchestrator_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/deepcode_orchestrator_plugin.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.9,
+      "description": "Direct eval/exec detected; requires sandbox wrapping",
+      "suggested_pattern": "sandbox_execute",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/deepcode_puter_bridge_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/dify_adapter_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/doubler_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/dynamic_tool_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/e2e_fibonacci_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/enhanced_protocol_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/enhanced_pythonic_preprocessor_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/event_bus_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/fibonacci_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/fibonacci_sequence_calculator_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/flowise_adapter_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/knowledge_gap_detector.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/ladder_aog_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/llm_planner_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/llm_planner_plugin_unified.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/mangle_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/mcp_adapter_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/memory_manager_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/memory_manager_plugin_clean.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/memory_manager_plugin_unified.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/message_amplifier_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/meta_learning_creator_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/native_deepcode_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/native_perplexica_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/openai_agent_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/option_executor_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/perplexica_search_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/planner_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/planner_plugin_v2.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/plugin_interface.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/predictive_world_model_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/puter_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/pythonic_preprocessor_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/self_heal_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/self_reflection_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/semantic_fsm_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/semantic_memory_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/skill_discovery_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/skill_discovery_plugin.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.9,
+      "description": "Direct eval/exec detected; requires sandbox wrapping",
+      "suggested_pattern": "sandbox_execute",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/system_introspection_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/test_fibonacci_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/test_tool_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/text_reverser_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/tool_executor_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/tool_executor_plugin.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.9,
+      "description": "Direct eval/exec detected; requires sandbox wrapping",
+      "suggested_pattern": "sandbox_execute",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/tool_executor_plugin_unified.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/tool_lifecycle_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/validation_fibonacci_test_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/oak_core/coordinator.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/oak_core/curation_manager.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/oak_core/failure_learning.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/oak_core/feature_discovery.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/oak_core/option_trainer.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/oak_core/planning_engine.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/oak_core/prediction_engine.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/oak_core/subproblem_manager.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/oak_core/tool_gating.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/telemetry_pipeline/abilities.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/telemetry_pipeline/abilities.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.6,
+      "description": "Class appears to be an Ability without PluginInterface",
+      "suggested_pattern": "plugin_inheritance",
+      "estimated_effort": "low"
+    },
+    {
+      "file_path": "src/plugins/telemetry_pipeline/evaluation.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/telemetry_pipeline/orchestrator.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/telemetry_pipeline/__init__.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/plugins/memory_manager_plugin_clean.py",
+      "issue_type": "duplication",
+      "severity": 0.7,
+      "description": "Duplicate content of memory_manager_plugin.py",
+      "suggested_pattern": "deduplicate_helper",
+      "estimated_effort": "low"
+    }
+  ],
+  "metadata": {
+    "scanned_path": "src/plugins",
+    "file_count": 84,
+    "opportunity_count": 89,
+    "elapsed_seconds": 1.126
+  }
+}

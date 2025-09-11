@@ -1,0 +1,1202 @@
+{
+  "opportunities": [
+    {
+      "file_path": "tests/conftest.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/conftest.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.9,
+      "description": "Direct eval/exec detected; requires sandbox wrapping",
+      "suggested_pattern": "sandbox_execute",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_agent_development_patterns.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_autonomous_refactoring_agent.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_autonomous_refactoring_agent.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.9,
+      "description": "Direct eval/exec detected; requires sandbox wrapping",
+      "suggested_pattern": "sandbox_execute",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_benchmarks.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_chat_endpoints.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_ci_extension_build.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_cognitive_architecture.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_context_and_trace.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_core_utils.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_deepcode_integration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_deepcode_latest_apply.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_enhanced_consensus_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_error_recovery.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_eventbus_wildcard_limited.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_eventbus_wildcard_robust.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_event_roundtrip.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_event_types.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_gui_library.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_jest_like_patterns.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_kg_todos_integration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_ladder_planner.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_leanrag.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_mangle_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_mcp_capabilities_tool.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_mcp_catalog.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_mcp_registration_canonical.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_mcp_router_tdd.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_pattern_basic.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_plugin_loader.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_prompt_builder_and_subagent.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_race_safe_breaker.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_socratic_testing_engine.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_start_launcher.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_tool_registry_telemetry.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_tribal_knowledge_extractor.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/test_true_wildcard.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/abilities/test_alita_paper_code_implementation.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/abilities/test_registry_contract.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/abilities/test_registry_contract.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.6,
+      "description": "Class appears to be an Ability without PluginInterface",
+      "suggested_pattern": "plugin_inheritance",
+      "estimated_effort": "low"
+    },
+    {
+      "file_path": "tests/abilities/test_resnet_paper_code_implementation.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/abilities/test_transformer_paper_code_implementation.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/abilities/test_web_scraper.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/acp/test_acp_agents.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/api/test_ability_policy.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/benchmarks/test_performance.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/capabilities/test_web_scraper.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/copilot/test_context_builder.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/core/test_concurrency.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/core/test_event_bus_fallback.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/core/test_event_bus_redis.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/core/test_execution_flow_decision_policy.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/core/test_neural_atom.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/core/test_neural_atom_metrics.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/core/test_plugin_interface.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/integration/test_agent_loop.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/integration/test_cortex_integration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/integration/test_live_gemini.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/integration/test_oak_reasoning_flow.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/pipelines/test_autogen_pipeline.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/planner/test_ladder_enhanced.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/planner/test_parallel_policy.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/planner/test_parallel_wrapper.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/test_cortex_adapter.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/test_cortex_adapter_integration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/test_deepcode_orchestrator.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/test_event_emission_schema.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/test_knowledge_gap_detector.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/test_ladder_aog_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/test_perplexica_search_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/test_semantic_memory_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/test_semantic_memory_plugin.py",
+      "issue_type": "pattern_violation",
+      "severity": 0.9,
+      "description": "Direct eval/exec detected; requires sandbox wrapping",
+      "suggested_pattern": "sandbox_execute",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/test_telemetry_pipeline.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/reug/test_dynamic_tool.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/reug/test_services_wiring.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/reug/test_trace_integrity.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/fakes.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/puter_fakes.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_agents_md_integrity.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_agent_tasks.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_authorization.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_block_parser.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_cli.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_copilot_context.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_curation_manager_features.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_deepcode_orchestrator.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_docstrings.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_dynamic_contract_cache.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_event_bus.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_event_emitter_redis.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_event_telemetry.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_execute_turn_stream.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_gemini_codegen_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_generated_tools.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_health_endpoints.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_langchain_adapter.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_llm_client.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_logging_events_replacement.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_main_app.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_mcp_registry_stream.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_mcp_stdio_entrypoint.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_oak_core_plugins.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_option_trainer_ppo_epochs.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_planner_smoke.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_plugin_store_registration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_puter_integration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_puter_plugin.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_puter_system_integration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_router_circuit_breaker.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_router_config_limits.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_router_disconnect.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_router_dynamic_tool.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_router_model_stream_timeout.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_router_result_cap.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_router_retry.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_router_schema_bypass.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_router_smoke.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_router_tools_git_patch.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_scrub.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_telemetry_events.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/test_unified_plugin_startup.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/sandbox/test_exec_sandbox.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/tools/test_langchain_adapter.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/core/cortex/test_cortex.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/oak_core/test_curation_manager.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/plugins/oak_core/test_option_trainer.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_agent_mcp_simple.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_complete_agent_system.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_dashboard_api.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_decision_policy.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_end_to_end.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_full_integration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_knowledge_graph.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_mangle_components.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_mangle_integration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_mangle_simplified.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_mcp_connectivity.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_optimization.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_server_startup.py",
+      "issue_type": "complexity",
+      "severity": 0.8333333333333334,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/runtime/legacy/test_telemetry_dashboard.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "tests/capabilities/test_web_scraper.py",
+      "issue_type": "duplication",
+      "severity": 0.7,
+      "description": "Duplicate content of test_web_scraper.py",
+      "suggested_pattern": "deduplicate_helper",
+      "estimated_effort": "low"
+    },
+    {
+      "file_path": "tests/integration/test_main.py",
+      "issue_type": "duplication",
+      "severity": 0.7,
+      "description": "Duplicate content of test_genealogy.py",
+      "suggested_pattern": "deduplicate_helper",
+      "estimated_effort": "low"
+    },
+    {
+      "file_path": "tests/planner/__init__.py",
+      "issue_type": "duplication",
+      "severity": 0.7,
+      "description": "Duplicate content of test_genealogy.py",
+      "suggested_pattern": "deduplicate_helper",
+      "estimated_effort": "low"
+    },
+    {
+      "file_path": "tests/plugins/test_event_bus_plugin.py",
+      "issue_type": "duplication",
+      "severity": 0.7,
+      "description": "Duplicate content of test_genealogy.py",
+      "suggested_pattern": "deduplicate_helper",
+      "estimated_effort": "low"
+    },
+    {
+      "file_path": "tests/plugins/test_ladder_aog_plugin_fixed.py",
+      "issue_type": "duplication",
+      "severity": 0.7,
+      "description": "Duplicate content of test_genealogy.py",
+      "suggested_pattern": "deduplicate_helper",
+      "estimated_effort": "low"
+    },
+    {
+      "file_path": "tests/plugins/__init__.py",
+      "issue_type": "duplication",
+      "severity": 0.7,
+      "description": "Duplicate content of test_genealogy.py",
+      "suggested_pattern": "deduplicate_helper",
+      "estimated_effort": "low"
+    },
+    {
+      "file_path": "tests/tools/__init__.py",
+      "issue_type": "duplication",
+      "severity": 0.7,
+      "description": "Duplicate content of test_genealogy.py",
+      "suggested_pattern": "deduplicate_helper",
+      "estimated_effort": "low"
+    },
+    {
+      "file_path": "tests/plugins/oak_core/__init__.py",
+      "issue_type": "duplication",
+      "severity": 0.7,
+      "description": "Duplicate content of test_genealogy.py",
+      "suggested_pattern": "deduplicate_helper",
+      "estimated_effort": "low"
+    }
+  ],
+  "metadata": {
+    "scanned_path": "tests",
+    "file_count": 198,
+    "opportunity_count": 149,
+    "elapsed_seconds": 2.531
+  }
+}

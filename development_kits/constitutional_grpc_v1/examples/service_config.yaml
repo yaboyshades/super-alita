@@ -1,0 +1,286 @@
+# Example Service Configuration for Constitutional gRPC Generator
+#
+# This file demonstrates how to configure the constitutional gRPC service generator
+# for creating compliant services that adhere to all 14 constitutional articles.
+
+# Basic service information
+service:
+  name: "ExampleService"
+  version: "1.0.0"
+  description: "Example constitutional gRPC service"
+
+  # Service class configuration
+  service_class: "ExampleServicer"
+  proto_package: "example.v1"
+  proto_module: "example_v1"
+
+# Server configuration
+server:
+  default_port: 50051
+  max_workers: 10
+  host: "0.0.0.0"
+
+  # gRPC server options
+  options:
+    - key: "grpc.keepalive_time_ms"
+      value: 30000
+    - key: "grpc.keepalive_timeout_ms"
+      value: 5000
+    - key: "grpc.http2.max_pings_without_data"
+      value: 0
+    - key: "grpc.http2.max_ping_strikes"
+      value: 2
+
+# Constitutional framework settings
+constitutional:
+  framework_version: "1.0"
+  articles_enforced: 14
+  compliance_threshold: 0.75
+  strict_mode: true
+  monitoring_enabled: true
+
+  # Article-specific configurations
+  article_settings:
+    article_i:
+      # Library-First Development
+      enforce_grpc_libraries: true
+      prohibited_custom_implementations: true
+
+    article_ii:
+      # Test-First Development
+      generate_comprehensive_tests: true
+      min_test_coverage: 80
+      async_test_support: true
+
+    article_iii:
+      # Simplicity Gate
+      max_function_lines: 50
+      max_complexity: 10
+      enforce_single_responsibility: true
+
+    article_iv:
+      # Integration-First Testing
+      generate_integration_tests: true
+      include_grpc_testing: true
+
+    article_v:
+      # Clarity and Unambiguity
+      require_comprehensive_docs: true
+      enforce_naming_conventions: true
+      generate_api_documentation: true
+
+    article_vi:
+      # Counterfactual Justification
+      include_decision_comments: true
+      document_alternatives: true
+
+# Service methods configuration
+methods:
+  # Define the gRPC methods for the service
+  - name: "ProcessRequest"
+    request_type: "ProcessRequestRequest"
+    response_type: "ProcessRequestResponse"
+    description: "Process incoming requests with constitutional validation"
+    implementation_type: "unified_processing"
+    constitutional_validation: true
+
+  - name: "CheckHealth"
+    request_type: "HealthCheckRequest"
+    response_type: "HealthCheckResponse"
+    description: "Health check endpoint for service monitoring"
+    implementation_type: "health_check"
+    constitutional_validation: false
+
+  - name: "GetServiceStatus"
+    request_type: "ServiceStatusRequest"
+    response_type: "ServiceStatusResponse"
+    description: "Get current service status and metrics"
+    implementation_type: "status_check"
+    constitutional_validation: true
+
+  - name: "ValidateConstitutionalCompliance"
+    request_type: "ComplianceCheckRequest"
+    response_type: "ComplianceCheckResponse"
+    description: "Validate request/response constitutional compliance"
+    implementation_type: "validation"
+    constitutional_validation: true
+
+# Integration settings
+integration:
+  unified_integration: true
+  unified_integration_endpoint: "http://localhost:8080/api/v1/process"
+
+  # External service integrations
+  external_services:
+    - name: "constitutional_framework"
+      endpoint: "http://localhost:8080/constitutional"
+      timeout_ms: 5000
+    - name: "monitoring"
+      endpoint: "http://localhost:8080/metrics"
+      timeout_ms: 2000
+
+# Testing configuration
+testing:
+  generate_unit_tests: true
+  generate_integration_tests: true
+  generate_performance_tests: true
+  generate_constitutional_tests: true
+
+  # Test categories
+  test_categories:
+    unit:
+      coverage_target: 90
+      test_patterns:
+        - "test_*_unit.py"
+    integration:
+      coverage_target: 80
+      test_patterns:
+        - "test_*_integration.py"
+    constitutional:
+      coverage_target: 95
+      test_patterns:
+        - "test_*_constitutional.py"
+
+  # Mock configurations
+  mocks:
+    unified_integration: true
+    external_services: true
+    grpc_context: true
+
+# Documentation configuration
+documentation:
+  generate_readme: true
+  generate_api_docs: true
+  generate_deployment_guide: true
+  generate_constitutional_report: true
+
+  # Documentation sections
+  readme_sections:
+    - "overview"
+    - "constitutional_compliance"
+    - "architecture"
+    - "quick_start"
+    - "testing"
+    - "deployment"
+    - "monitoring"
+    - "troubleshooting"
+
+  # API documentation format
+  api_docs:
+    format: "markdown"
+    include_examples: true
+    include_schemas: true
+
+# Deployment configuration
+deployment:
+  # Docker configuration
+  docker:
+    generate_dockerfile: true
+    base_image: "python:3.11-slim"
+    expose_port: 50051
+
+  # Kubernetes configuration
+  kubernetes:
+    generate_manifests: true
+    include_health_checks: true
+    include_monitoring: true
+
+  # Environment variables
+  environment_variables:
+    - name: "GRPC_PORT"
+      default: "50051"
+      description: "gRPC server port"
+    - name: "CONSTITUTIONAL_THRESHOLD"
+      default: "0.75"
+      description: "Constitutional compliance threshold"
+    - name: "UNIFIED_INTEGRATION_ENDPOINT"
+      default: "http://localhost:8080/api/v1/process"
+      description: "Unified integration service endpoint"
+
+# Monitoring and observability
+monitoring:
+  # Metrics configuration
+  metrics:
+    enable_prometheus: true
+    custom_metrics:
+      - "constitutional_requests_total"
+      - "constitutional_violations_total"
+      - "constitutional_score_histogram"
+      - "response_time_histogram"
+
+  # Logging configuration
+  logging:
+    format: "json"
+    level: "INFO"
+    include_constitutional_context: true
+
+  # Health checks
+  health_checks:
+    enable_grpc_health: true
+    constitutional_health_check: true
+    dependency_checks: true
+
+# Development tools configuration
+development:
+  # Code generation
+  code_generation:
+    include_type_hints: true
+    include_docstrings: true
+    include_examples: true
+
+  # Linting and formatting
+  code_quality:
+    enable_ruff: true
+    enable_black: true
+    enable_mypy: true
+    enable_constitutional_checker: true
+
+  # Pre-commit hooks
+  pre_commit:
+    enable: true
+    hooks:
+      - "ruff-check"
+      - "black"
+      - "mypy"
+      - "constitutional-compliance"
+      - "test-runner"
+
+# Template customization
+templates:
+  # Template overrides
+  custom_templates:
+    servicer: null  # Use default template
+    server: null    # Use default template
+    tests: null     # Use default template
+
+  # Template variables
+  template_variables:
+    author: "Constitutional gRPC Development Kit"
+    license: "Constitutional Framework License"
+    copyright_year: "2025"
+
+  # Code style preferences
+  code_style:
+    line_length: 88
+    quote_style: "double"
+    import_style: "absolute"
+
+# Output configuration
+output:
+  # Directory structure
+  directory_structure:
+    create_package_dirs: true
+    separate_test_dir: false
+    include_docs_dir: true
+
+  # File naming conventions
+  file_naming:
+    servicer_suffix: "_servicer"
+    server_suffix: "_server"
+    test_prefix: "test_"
+
+  # Generation options
+  generation_options:
+    overwrite_existing: false
+    backup_existing: true
+    validate_after_generation: true

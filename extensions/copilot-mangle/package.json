@@ -1,0 +1,135 @@
+{
+  "name": "github-copilot-mangle-integration",
+  "displayName": "GitHub Copilot Mangle Integration",
+  "description": "Native Mangle Code Knowledge Graph integration for GitHub Copilot",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "GitHub Copilot Mangle Integration",
+      "properties": {
+        "copilot.mangle.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic Mangle reasoning in GitHub Copilot"
+        },
+        "copilot.mangle.autoAnalyze": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically analyze code context in Copilot responses"
+        },
+        "copilot.mangle.constitutionalMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable constitutional compliance checking"
+        },
+        "copilot.mangle.workspaceRoot": {
+          "type": "string",
+          "default": "${workspaceFolder}",
+          "description": "Root directory for Mangle analysis"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "copilot.mangle.askQuestion",
+        "title": "Ask Mangle Question",
+        "category": "Copilot"
+      },
+      {
+        "command": "copilot.mangle.analyzeConstitutional",
+        "title": "Analyze Constitutional Compliance",
+        "category": "Copilot"
+      },
+      {
+        "command": "copilot.mangle.checkQuality",
+        "title": "Check Code Quality",
+        "category": "Copilot"
+      },
+      {
+        "command": "copilot.mangle.traceToSpec",
+        "title": "Trace Code to Specification",
+        "category": "Copilot"
+      },
+      {
+        "command": "copilot.mangle.toggleMode",
+        "title": "Toggle Mangle Integration",
+        "category": "Copilot"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "copilot.mangle.askQuestion",
+        "key": "ctrl+shift+m q",
+        "mac": "cmd+shift+m q",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "copilot.mangle.analyzeConstitutional",
+        "key": "ctrl+shift+m c",
+        "mac": "cmd+shift+m c",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "copilot.mangle.checkQuality",
+        "key": "ctrl+shift+m q",
+        "mac": "cmd+shift+m q",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "copilot.mangle.askQuestion",
+          "when": "copilot.mangle.enabled"
+        },
+        {
+          "command": "copilot.mangle.analyzeConstitutional",
+          "when": "copilot.mangle.enabled"
+        },
+        {
+          "command": "copilot.mangle.checkQuality",
+          "when": "copilot.mangle.enabled"
+        },
+        {
+          "command": "copilot.mangle.traceToSpec",
+          "when": "copilot.mangle.enabled"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "copilot.mangle.traceToSpec",
+          "when": "editorHasSelection && copilot.mangle.enabled",
+          "group": "copilot@1"
+        },
+        {
+          "command": "copilot.mangle.checkQuality",
+          "when": "copilot.mangle.enabled",
+          "group": "copilot@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^18.x",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.4.0"
+  }
+}
