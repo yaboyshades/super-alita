@@ -1,0 +1,50 @@
+{
+  "opportunities": [
+    {
+      "file_path": "src/abilities/mangle/integration.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/mangle/mangle_ability.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/mangle/mangle_validation.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/mangle/mangle_validator.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    },
+    {
+      "file_path": "src/abilities/mangle/register.py",
+      "issue_type": "complexity",
+      "severity": 1.0,
+      "description": "High cyclomatic complexity detected",
+      "suggested_pattern": "extract_method",
+      "estimated_effort": "medium"
+    }
+  ],
+  "metadata": {
+    "scanned_path": "src/abilities/mangle",
+    "file_count": 6,
+    "opportunity_count": 5,
+    "elapsed_seconds": 0.117
+  }
+}

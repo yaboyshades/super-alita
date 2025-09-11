@@ -1,0 +1,419 @@
+// Example Protobuf Definition for Constitutional gRPC Service
+// 
+// This file demonstrates a constitutional-compliant protobuf service definition
+// following all relevant constitutional articles.
+
+syntax = "proto3";
+
+package example.v1;
+
+option go_package = "github.com/example/service/proto/example/v1";
+option java_package = "com.example.service.proto.v1";
+option java_outer_classname = "ExampleServiceProto";
+
+// Constitutional gRPC Service Definition
+// 
+// This service implements constitutional compliance validation
+// and unified intelligence integration.
+service ExampleService {
+  // Process requests with constitutional validation
+  // Article V: Clear, unambiguous method purpose
+  rpc ProcessRequest(ProcessRequestRequest) returns (ProcessRequestResponse) {
+    option deprecated = false;
+  }
+  
+  // Health check endpoint for monitoring
+  // Article IV: Integration-first with standard health checking
+  rpc CheckHealth(HealthCheckRequest) returns (HealthCheckResponse) {
+    option deprecated = false;
+  }
+  
+  // Get service status and constitutional compliance metrics
+  // Article V: Clear status reporting functionality
+  rpc GetServiceStatus(ServiceStatusRequest) returns (ServiceStatusResponse) {
+    option deprecated = false;
+  }
+  
+  // Validate constitutional compliance of requests/responses
+  // Article VI: Explicit justification and validation
+  rpc ValidateConstitutionalCompliance(ComplianceCheckRequest) returns (ComplianceCheckResponse) {
+    option deprecated = false;
+  }
+}
+
+// Process Request Messages
+// Article III: Simple, focused message structure
+
+message ProcessRequestRequest {
+  // Unique request identifier for tracing
+  string request_id = 1;
+  
+  // Request content to be processed
+  string content = 2;
+  
+  // Processing options
+  ProcessingOptions options = 3;
+  
+  // Constitutional validation context
+  ConstitutionalContext constitutional_context = 4;
+}
+
+message ProcessRequestResponse {
+  // Unique request identifier (matches request)
+  string request_id = 1;
+  
+  // Processing result
+  ProcessingResult result = 2;
+  
+  // Constitutional compliance score
+  ConstitutionalScore constitutional_score = 3;
+  
+  // Response metadata
+  ResponseMetadata metadata = 4;
+}
+
+// Health Check Messages
+// Article I: Library-first using standard health check patterns
+
+message HealthCheckRequest {
+  // Service to check (optional, defaults to this service)
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  // Health status
+  HealthStatus status = 1;
+  
+  // Constitutional framework status
+  ConstitutionalHealth constitutional_health = 2;
+  
+  // Additional health details
+  map<string, string> details = 3;
+}
+
+// Service Status Messages
+// Article V: Clear status reporting structure
+
+message ServiceStatusRequest {
+  // Include detailed metrics in response
+  bool include_metrics = 1;
+  
+  // Include constitutional compliance report
+  bool include_constitutional_report = 2;
+}
+
+message ServiceStatusResponse {
+  // Service information
+  ServiceInfo service_info = 1;
+  
+  // Current operational status
+  OperationalStatus operational_status = 2;
+  
+  // Constitutional compliance status
+  ConstitutionalComplianceStatus constitutional_status = 3;
+  
+  // Performance metrics (optional)
+  PerformanceMetrics metrics = 4;
+}
+
+// Constitutional Compliance Messages
+// Article VI: Explicit compliance validation
+
+message ComplianceCheckRequest {
+  // Target to validate (request, response, or service)
+  string target_type = 1;
+  
+  // Content to validate
+  google.protobuf.Any content = 2;
+  
+  // Validation context
+  ValidationContext context = 3;
+}
+
+message ComplianceCheckResponse {
+  // Overall compliance result
+  bool is_compliant = 1;
+  
+  // Detailed constitutional score
+  ConstitutionalScore score = 2;
+  
+  // List of violations found
+  repeated ConstitutionalViolation violations = 3;
+  
+  // Recommendations for improvement
+  repeated string recommendations = 4;
+}
+
+// Supporting Message Types
+// Article III: Simple, focused data structures
+
+message ProcessingOptions {
+  // Processing timeout in milliseconds
+  int32 timeout_ms = 1;
+  
+  // Enable constitutional validation
+  bool enable_constitutional_validation = 2;
+  
+  // Processing priority level
+  Priority priority = 3;
+  
+  // Additional processing parameters
+  map<string, string> parameters = 4;
+}
+
+message ProcessingResult {
+  // Processing success status
+  bool success = 1;
+  
+  // Result content
+  string content = 2;
+  
+  // Processing error (if any)
+  ProcessingError error = 3;
+  
+  // Processing statistics
+  ProcessingStats stats = 4;
+}
+
+message ConstitutionalContext {
+  // Constitutional framework version
+  string framework_version = 1;
+  
+  // Required compliance threshold
+  float compliance_threshold = 2;
+  
+  // Enabled constitutional articles
+  repeated string enabled_articles = 3;
+  
+  // Validation mode (strict or lenient)
+  ValidationMode validation_mode = 4;
+}
+
+message ConstitutionalScore {
+  // Overall constitutional compliance score (0.0-1.0)
+  float overall_score = 1;
+  
+  // Individual article scores
+  map<string, float> article_scores = 2;
+  
+  // Compliance threshold used
+  float threshold = 3;
+  
+  // Timestamp of scoring
+  google.protobuf.Timestamp scored_at = 4;
+}
+
+message ConstitutionalViolation {
+  // Constitutional article violated
+  string article = 1;
+  
+  // Violation severity level
+  Severity severity = 2;
+  
+  // Violation description
+  string description = 3;
+  
+  // Location of violation (file, line, etc.)
+  string location = 4;
+  
+  // Suggested fix
+  string suggestion = 5;
+}
+
+message ResponseMetadata {
+  // Response timestamp
+  google.protobuf.Timestamp timestamp = 1;
+  
+  // Processing duration in milliseconds
+  int32 processing_duration_ms = 2;
+  
+  // Server instance identifier
+  string server_instance = 3;
+  
+  // Trace correlation ID
+  string trace_id = 4;
+}
+
+message ConstitutionalHealth {
+  // Constitutional framework status
+  FrameworkStatus framework_status = 1;
+  
+  // Current compliance level
+  float compliance_level = 2;
+  
+  // Active constitutional violations
+  int32 active_violations = 3;
+  
+  // Last compliance check timestamp
+  google.protobuf.Timestamp last_check = 4;
+}
+
+message ServiceInfo {
+  // Service name
+  string name = 1;
+  
+  // Service version
+  string version = 2;
+  
+  // Build information
+  string build_info = 3;
+  
+  // Constitutional framework version
+  string constitutional_framework_version = 4;
+  
+  // Service start time
+  google.protobuf.Timestamp start_time = 5;
+}
+
+message OperationalStatus {
+  // Current operational state
+  OperationalState state = 1;
+  
+  // Active connections count
+  int32 active_connections = 2;
+  
+  // Total requests processed
+  int64 total_requests = 3;
+  
+  // Current load level (0.0-1.0)
+  float load_level = 4;
+  
+  // Last activity timestamp
+  google.protobuf.Timestamp last_activity = 5;
+}
+
+message ConstitutionalComplianceStatus {
+  // Overall compliance status
+  bool is_compliant = 1;
+  
+  // Current compliance score
+  float compliance_score = 2;
+  
+  // Compliance trend (improving, stable, degrading)
+  ComplianceTrend trend = 3;
+  
+  // Recent violations count
+  int32 recent_violations = 4;
+  
+  // Last compliance assessment
+  google.protobuf.Timestamp last_assessment = 5;
+}
+
+message PerformanceMetrics {
+  // Average response time in milliseconds
+  float avg_response_time_ms = 1;
+  
+  // Request rate (requests per second)
+  float request_rate = 2;
+  
+  // Error rate percentage
+  float error_rate = 3;
+  
+  // Memory usage in megabytes
+  float memory_usage_mb = 4;
+  
+  // CPU usage percentage
+  float cpu_usage_percent = 5;
+}
+
+message ValidationContext {
+  // Validation mode
+  ValidationMode mode = 1;
+  
+  // Context-specific parameters
+  map<string, string> parameters = 2;
+  
+  // Validation timestamp
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+message ProcessingError {
+  // Error code
+  string code = 1;
+  
+  // Error message
+  string message = 2;
+  
+  // Error details
+  string details = 3;
+  
+  // Constitutional article related to error (if applicable)
+  string related_article = 4;
+}
+
+message ProcessingStats {
+  // Processing start time
+  google.protobuf.Timestamp start_time = 1;
+  
+  // Processing end time
+  google.protobuf.Timestamp end_time = 2;
+  
+  // CPU time used (milliseconds)
+  int32 cpu_time_ms = 3;
+  
+  // Memory peak usage (bytes)
+  int64 memory_peak_bytes = 4;
+}
+
+// Enumerations
+// Article III: Simple, clear enumeration values
+
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  PRIORITY_LOW = 1;
+  PRIORITY_NORMAL = 2;
+  PRIORITY_HIGH = 3;
+  PRIORITY_CRITICAL = 4;
+}
+
+enum ValidationMode {
+  VALIDATION_MODE_UNSPECIFIED = 0;
+  VALIDATION_MODE_STRICT = 1;
+  VALIDATION_MODE_LENIENT = 2;
+  VALIDATION_MODE_DISABLED = 3;
+}
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_INFO = 1;
+  SEVERITY_WARNING = 2;
+  SEVERITY_ERROR = 3;
+  SEVERITY_CRITICAL = 4;
+}
+
+enum HealthStatus {
+  HEALTH_STATUS_UNSPECIFIED = 0;
+  HEALTH_STATUS_HEALTHY = 1;
+  HEALTH_STATUS_UNHEALTHY = 2;
+  HEALTH_STATUS_DEGRADED = 3;
+  HEALTH_STATUS_UNKNOWN = 4;
+}
+
+enum FrameworkStatus {
+  FRAMEWORK_STATUS_UNSPECIFIED = 0;
+  FRAMEWORK_STATUS_ACTIVE = 1;
+  FRAMEWORK_STATUS_INACTIVE = 2;
+  FRAMEWORK_STATUS_ERROR = 3;
+  FRAMEWORK_STATUS_UPDATING = 4;
+}
+
+enum OperationalState {
+  OPERATIONAL_STATE_UNSPECIFIED = 0;
+  OPERATIONAL_STATE_STARTING = 1;
+  OPERATIONAL_STATE_RUNNING = 2;
+  OPERATIONAL_STATE_STOPPING = 3;
+  OPERATIONAL_STATE_STOPPED = 4;
+  OPERATIONAL_STATE_ERROR = 5;
+}
+
+enum ComplianceTrend {
+  COMPLIANCE_TREND_UNSPECIFIED = 0;
+  COMPLIANCE_TREND_IMPROVING = 1;
+  COMPLIANCE_TREND_STABLE = 2;
+  COMPLIANCE_TREND_DEGRADING = 3;
+  COMPLIANCE_TREND_UNKNOWN = 4;
+}
+
+// Import standard protobuf types
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";

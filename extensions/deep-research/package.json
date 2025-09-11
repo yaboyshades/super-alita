@@ -1,0 +1,96 @@
+{
+  "name": "deep-research",
+  "displayName": "Deep Research",
+  "description": "AI-powered research assistant with Stack Overflow integration",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "research",
+        "name": "research-assistant",
+        "description": "AI-powered research with Stack Overflow integration",
+        "when": "true"
+      }
+    ],
+    "configuration": {
+      "title": "Deep Research",
+      "properties": {
+        "deepResearch.provider": {
+          "type": "string",
+          "enum": ["searxng", "perplexica"],
+          "default": "searxng",
+          "description": "Search provider to use"
+        },
+        "deepResearch.maxArticles": {
+          "type": "number",
+          "default": 5,
+          "description": "Maximum number of articles to fetch"
+        },
+        "deepResearch.timeoutMs": {
+          "type": "number",
+          "default": 20000,
+          "description": "Request timeout in milliseconds"
+        },
+        "deepResearch.model.vendor": {
+          "type": "string",
+          "description": "Model vendor for synthesis"
+        },
+        "deepResearch.model.family": {
+          "type": "string",
+          "description": "Model family for synthesis"
+        },
+        "deepResearch.searxng.endpoint": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "SearXNG endpoint URL"
+        },
+        "deepResearch.searxng.engines": {
+          "type": "string",
+          "description": "SearXNG engines to use"
+        },
+        "deepResearch.perplexica.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "Perplexica base URL"
+        },
+        "deepResearch.perplexica.apiKey": {
+          "type": "string",
+          "description": "Perplexica API key"
+        },
+        "deepResearch.stackOverflow.apiKey": {
+          "type": "string",
+          "description": "Stack Overflow API key (optional)"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "deepResearch.search",
+        "title": "Deep Research: Search"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "20.x",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}

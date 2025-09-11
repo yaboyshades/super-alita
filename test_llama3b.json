@@ -1,0 +1,5 @@
+{
+  "model": "llama3.2:3b",
+  "messages": [{ "role": "user", "content": "What is 2+2?" }],
+  "max_tokens": 50
+}

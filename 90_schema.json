@@ -1,0 +1,43 @@
+{
+  "10_requirements_ledger.csv": {
+    "required_columns": [
+      "req_id",
+      "type",
+      "title",
+      "description",
+      "acceptance_criteria",
+      "test_cases",
+      "status",
+      "owner"
+    ],
+    "enums": {
+      "type": ["feature", "bug", "chore"],
+      "status": ["pending", "in_progress", "in_review", "complete", "blocked"]
+    }
+  },
+  "11_dependencies_manifest.csv": {
+    "required_columns": [
+      "dep_id",
+      "name",
+      "version",
+      "type",
+      "purpose",
+      "contract_file"
+    ],
+    "enums": {
+      "type": ["python", "javascript", "api", "database"]
+    }
+  },
+  "99_gate_log.csv": {
+    "required_columns": [
+      "log_id",
+      "timestamp",
+      "req_id",
+      "score",
+      "status",
+      "notes",
+      "reviewer"
+    ]
+  }
+}
+

@@ -1,0 +1,7 @@
+# ---
+# doc_type: gate_log
+# schema_required: log_id,timestamp,req_id,score,status,notes,reviewer
+# ---
+log_id,timestamp,req_id,score,status,notes,reviewer
+LOG-001,2024-10-27T10:00:00Z,REQ-001,100,pass,"Initial setup complete.",system
+

@@ -1,0 +1,47 @@
+{
+  "name": "alita-refactor",
+  "displayName": "Alita Refactor",
+  "description": "Autonomous Refactoring Agent (semantic + static analysis) wired to your repo tools",
+  "version": "0.1.0",
+  "publisher": "super-alita",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other", "Programming Languages", "Linters"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "alitaRefactor.scanWorkspace",
+        "title": "Alita: Scan Workspace for Refactor Hotspots"
+      },
+      {
+        "command": "alitaRefactor.scanFolder",
+        "title": "Alita: Scan Folder for Refactor Hotspots"
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "constitutional.refactor",
+        "name": "refactor",
+        "description": "Autonomous Refactoring Agent (semantic + static analysis)"
+      }
+    ]
+  },
+  "enabledApiProposals": [
+    "chatParticipants"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.5.0"
+  }
+}
+
