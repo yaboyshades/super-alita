@@ -28,11 +28,24 @@ mangle = true
 shadow_reward = true
 snippet_optimizer = true
 
+# SDD + Constitutional features
+constitutional_validation = true
+sdd = true
+sdd_cli = true
+
 [paths]
 # Directory where temporary artifacts for Codex tasks may be stored
 temp_dir = "./.codex/tmp"
 # Location for generated reports
 reports_dir = "./.codex/reports"
+
+[commands]
+# These commands are convenience wrappers Codex-aware tooling may call.
+# They are shell-invoked; adjust paths if your venv differs.
+sdd_specify = ["python", "-m", "src.sdd", "specify"]
+sdd_plan    = ["python", "-m", "src.sdd", "plan"]
+sdd_tasks   = ["python", "-m", "src.sdd", "tasks"]
+sdd_validate= ["python", "-m", "src.sdd", "validate"]
 
 [security]
 # If true, restricts tool execution to a vetted allowlist
@@ -47,5 +60,7 @@ enable_dynamic_tools = true
 # OPENAI_API_KEY = ""
 # ANTHROPIC_API_KEY = ""
 # GEMINI_API_KEY = ""
+ALITA_REQUIRE_API_KEY = "false"
+PYTHONPATH = "./src"
 
 # End of config.toml

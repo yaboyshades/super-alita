@@ -1,9 +1,21 @@
 """
 EventBus Reliability Enhancement Components
 
-Research-driven implementation of production-grade patterns for exactly-once semantics,
-circuit breaker resilience, and operational reliability. Based on analysis of 83 academic
-papers and industry implementations.
+DEPRECATION NOTICE:
+This legacy reliability module will be replaced by
+`UnifiedReliabilityManager` providing mode-based (fast|balanced|strict)
+configuration.
+Migration Plan:
+  - Phase 1: Introduce unified manager (no removal) – current phase
+  - Phase 2: Internal imports switch to unified manager
+  - Phase 3: This module becomes a thin shim emitting DeprecationWarning
+  - Phase 4: Removal after one release cycle
+Reference Design: design/reliability_unified_interface.md
+
+Research-driven implementation of production-grade patterns for
+exactly-once semantics, circuit breaker resilience, and operational
+reliability. Based on analysis of 83 academic papers and industry
+implementations.
 
 Key Patterns Implemented:
 1. Idempotent Event Processing - Prevents duplicate processing
@@ -11,7 +23,8 @@ Key Patterns Implemented:
 3. Dead Letter Queue - Handles failed events gracefully
 4. Backpressure Management - Adaptive flow control
 
-Performance Target: Maintain >1,300 events/second while adding reliability guarantees.
+Performance Target: Maintain >1,300 events/second while adding
+reliability guarantees.
 """
 
 import asyncio
@@ -19,6 +32,7 @@ import hashlib
 import logging
 import time
 import uuid
+import warnings
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from enum import Enum
@@ -27,6 +41,13 @@ from typing import Any
 import redis.asyncio as redis
 
 from src.core.events import BaseEvent
+
+warnings.warn(
+    "Module deprecated; use UnifiedReliabilityManager (see design/"
+    "reliability_unified_interface.md)",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 logger = logging.getLogger(__name__)
 

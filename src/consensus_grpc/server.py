@@ -40,7 +40,7 @@ except Exception:  # pragma: no cover - generate stubs dynamically
         import subprocess
 
         subprocess.check_call([sys.executable, str(script)])
-        from protos import (  # type: ignore  # noqa: WPS433,E501
+        from protos import (  # type: ignore  # noqa: E501
             consensus_pb2,
             consensus_pb2_grpc,
         )

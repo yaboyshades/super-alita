@@ -435,11 +435,14 @@ class SkillEvaluator:
             )
 
             execution_time = (datetime.now(UTC) - start_time).total_seconds()
-
-            success = len(errors) == 0 and safety_score > 0.5
+            success = (not errors) and safety_score > 0.5
 
             feedback = self._generate_feedback(
-                proposal, safety_score, performance_score, usefulness_score, errors
+                proposal,
+                safety_score,
+                performance_score,
+                usefulness_score,
+                errors,
             )
 
             return SkillEvaluation(

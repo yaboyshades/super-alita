@@ -11,9 +11,8 @@ This module provides additional Mangle integration capabilities for:
 
 import json
 import logging
-import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +27,14 @@ class MangleValidator:
     async def validate_output(
         self,
         output_text: str,
-        domain: Optional[str] = None,
-        meta: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        domain: str | None = None,
+        meta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Validate output against Mangle policy rules.
 
-        Uses rules with head violation(Reason) to detect policy violations in the output.
-        If violations are found, returns details with rejection flag set to True.
+        Uses rules with head violation(Reason) to detect policy violations
+        in the output. If violations are found, returns details with
+        rejection flag set to True.
 
         Args:
             output_text: The output text to validate
@@ -50,7 +50,11 @@ class MangleValidator:
         try:
             rules_file = Path("./data/mangle/rules.json")
             if not rules_file.exists():
-                return {"valid": True, "violations": [], "confidence_penalty": 0.0}
+                return {
+                    "valid": True,
+                    "violations": [],
+                    "confidence_penalty": 0.0,
+                }
 
             # Build temp facts about the output and context
             tfacts = []
@@ -87,7 +91,9 @@ class MangleValidator:
                     continue
 
                 # Run the violation check
-                res = await self.mangle.run_rule(body, "violation(Reason)", temp_facts=tfacts)
+                res = await self.mangle.run_rule(
+                    body, "violation(Reason)", temp_facts=tfacts
+                )
                 if res.get("success") and res.get("count", 0) > 0:
                     try:
                         for result in res.get("results", []):
@@ -99,7 +105,7 @@ class MangleValidator:
                         continue
 
             # If any violations found, calculate penalty and return details
-            valid = len(violations) == 0
+            valid = not violations
             if not valid:
                 # Scale penalty based on violation count, max 0.5
                 confidence_penalty = min(0.5, 0.1 * len(violations))
@@ -107,7 +113,7 @@ class MangleValidator:
             return {
                 "valid": valid,
                 "violations": violations,
-                "confidence_penalty": confidence_penalty
+                "confidence_penalty": confidence_penalty,
             }
         except Exception as e:
             logger.warning(f"Output validation error: {e}")
@@ -116,13 +122,13 @@ class MangleValidator:
     async def validate_tool_execution(
         self,
         tool_name: str,
-        params: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        params: dict[str, Any],
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Pre-execution validation for tool/action requests.
 
-        Uses rules with head authorize_tool(ToolName) to check if a tool execution
-        should be permitted based on parameters and context.
+        Uses rules with head authorize_tool(ToolName) to check if a tool
+        execution should be permitted based on parameters and context.
 
         Args:
             tool_name: Name of the tool to be executed
@@ -145,7 +151,6 @@ class MangleValidator:
             # Add tool name
             safe_tool_name = tool_name.replace("'", " ")
             tfacts.append(f"tool_name('{safe_tool_name}')")
-            ]
 
             # Add parameter facts
             for k, v in params.items():
@@ -183,7 +188,9 @@ class MangleValidator:
                     continue
 
                 # Run the authorization check
-                res = await self.mangle.run_rule(body, "deny_tool(Reason)", temp_facts=tfacts)
+                res = await self.mangle.run_rule(
+                    body, "deny_tool(Reason)", temp_facts=tfacts
+                )
                 if res.get("success") and res.get("count", 0) > 0:
                     try:
                         for result in res.get("results", []):
@@ -193,23 +200,20 @@ class MangleValidator:
                     except Exception:
                         continue
 
-            authorized = len(denied_reasons) == 0
+            authorized = not denied_reasons
             reason = denied_reasons[0] if denied_reasons else None
 
-            return {
-                "authorized": authorized,
-                "reason": reason
-            }
+            return {"authorized": authorized, "reason": reason}
         except Exception as e:
             logger.warning(f"Tool validation error: {e}")
             return {"authorized": True, "reason": None}
 
     async def select_consensus_method(
         self,
-        domain: Optional[str] = None,
+        domain: str | None = None,
         sample_count: int = 0,
-        meta: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        meta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Select an aggregation method based on Mangle rules.
 
         Uses rules with head select_method(Method) to choose the appropriate
@@ -228,7 +232,10 @@ class MangleValidator:
         try:
             rules_file = Path("./data/mangle/rules.json")
             if not rules_file.exists():
-                return {"method": "weighted_vote", "reason": "Default method (no rules)"}
+                return {
+                    "method": "weighted_vote",
+                    "reason": "Default method (no rules)",
+                }
 
             # Build temp facts for method selection
             tfacts = [f"sample_count({sample_count})"]
@@ -261,7 +268,9 @@ class MangleValidator:
                     continue
 
                 # Run the method selection
-                res = await self.mangle.run_rule(body, "select_method(Method, Reason)", temp_facts=tfacts)
+                res = await self.mangle.run_rule(
+                    body, "select_method(Method, Reason)", temp_facts=tfacts
+                )
                 if res.get("success") and res.get("count", 0) > 0:
                     try:
                         for result in res.get("results", []):
@@ -278,25 +287,33 @@ class MangleValidator:
             if methods:
                 return {
                     "method": methods[0],
-                    "reason": reasons[0] if reasons else f"Selected via rule: {methods[0]}"
+                    "reason": (
+                        reasons[0] if reasons else f"Selected via rule: {methods[0]}"
+                    ),
                 }
 
             # Default to weighted_vote if no method selected
-            return {"method": "weighted_vote", "reason": "Default method (no matching rules)"}
+            return {
+                "method": "weighted_vote",
+                "reason": "Default method (no matching rules)",
+            }
         except Exception as e:
             logger.warning(f"Method selection error: {e}")
-            return {"method": "weighted_vote", "reason": f"Default method (error: {e})"}
+            return {
+                "method": "weighted_vote",
+                "reason": f"Default method (error: {e})",
+            }
 
     async def verify_llm_claims(
         self,
         output_text: str,
         claims_type: str = "factual",
-        meta: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        meta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Verify claims made in LLM output using Mangle rules.
 
-        Uses rules with head invalid_claim(Claim, Reason) to identify problematic
-        claims in the LLM output based on verification rules.
+        Uses rules with head invalid_claim(Claim, Reason) to identify
+        problematic claims in the LLM output based on verification rules.
 
         Args:
             output_text: The LLM output text containing claims to verify
@@ -307,12 +324,17 @@ class MangleValidator:
             Dictionary with keys:
                 - verified: Boolean indicating if all claims pass verification
                 - invalid_claims: List of invalid claims with reasons
-                - confidence_adjustment: Suggested confidence adjustment (-1.0 to 0.0)
+                                - confidence_adjustment: Suggested confidence adjustment
+                                    (-1.0 to 0.0)
         """
         try:
             rules_file = Path("./data/mangle/rules.json")
             if not rules_file.exists():
-                return {"verified": True, "invalid_claims": [], "confidence_adjustment": 0.0}
+                return {
+                    "verified": True,
+                    "invalid_claims": [],
+                    "confidence_adjustment": 0.0,
+                }
 
             # Build temp facts about the output
             tfacts = []
@@ -345,29 +367,41 @@ class MangleValidator:
                     continue
 
                 # Run the claim verification
-                res = await self.mangle.run_rule(body, "invalid_claim(Claim, Reason)", temp_facts=tfacts)
+                res = await self.mangle.run_rule(
+                    body, "invalid_claim(Claim, Reason)", temp_facts=tfacts
+                )
                 if res.get("success") and res.get("count", 0) > 0:
                     try:
                         for result in res.get("results", []):
                             claim = result.get("Claim")
                             reason = result.get("Reason")
                             if claim:
-                                invalid_claims.append({
-                                    "claim": str(claim),
-                                    "reason": str(reason) if reason else "Unverified claim"
-                                })
+                                invalid_claims.append(
+                                    {
+                                        "claim": str(claim),
+                                        "reason": (
+                                            str(reason)
+                                            if reason
+                                            else "Unverified claim"
+                                        ),
+                                    }
+                                )
                     except Exception:
                         continue
 
             # Calculate confidence adjustment based on invalid claims
-            verified = len(invalid_claims) == 0
+            verified = not invalid_claims
             confidence_adjustment = max(-0.5, -0.1 * len(invalid_claims))
 
             return {
                 "verified": verified,
                 "invalid_claims": invalid_claims,
-                "confidence_adjustment": confidence_adjustment if not verified else 0.0
+                "confidence_adjustment": (0.0 if verified else confidence_adjustment),
             }
         except Exception as e:
             logger.warning(f"Claim verification error: {e}")
-            return {"verified": True, "invalid_claims": [], "confidence_adjustment": 0.0}
+            return {
+                "verified": True,
+                "invalid_claims": [],
+                "confidence_adjustment": 0.0,
+            }

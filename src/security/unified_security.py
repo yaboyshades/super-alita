@@ -158,7 +158,7 @@ class PasswordManager:
             "score": score,
             "max_score": 6,
             "strength": strength,
-            "is_valid": len(issues) == 0,
+            "is_valid": not issues,
             "issues": issues,
         }
 

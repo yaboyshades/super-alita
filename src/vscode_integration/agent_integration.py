@@ -45,8 +45,8 @@ try:
     IMPORTS_AVAILABLE = True
     CORTEX_AVAILABLE = True
 except ImportError as e:
-    print(f"⚠️ Import warning: {e}")
-    print("Running in standalone mode")
+    logging.getLogger(__name__).warning("Import warning: %s", e)
+    logging.getLogger(__name__).warning("Running in standalone mode")
     IMPORTS_AVAILABLE = False
     CORTEX_AVAILABLE = False
 
@@ -125,33 +125,33 @@ class SuperAlitaAgent:
     async def initialize(self) -> bool:
         """Initialize the super-alita agent with full system integration."""
         try:
-            print("🚀 Initializing Super Alita Agent...")
+            logger.info("🚀 Initializing Super Alita Agent...")
 
             # Initialize todo manager
-            print("📋 Setting up VS Code todos integration...")
+            logger.info("📋 Setting up VS Code todos integration...")
 
             # Try to initialize full LADDER system if available
             try:
-                print("🧠 Attempting to initialize LADDER planner...")
+                logger.info("🧠 Attempting to initialize LADDER planner...")
                 self.event_bus = EventBus()
                 await self.event_bus.initialize()
 
                 # For now, skip LADDER planner initialization as it requires
                 # proper interface implementations (KG, Bandit, Store, Orchestrator)
                 # This will be implemented in a future iteration
-                print("⚠️ LADDER planner requires full interface implementations")
-                print("🔄 Continuing with todo manager only...")
+                logger.warning("LADDER planner requires full interface implementations")
+                logger.info("Continuing with todo manager only...")
 
             except Exception as e:
-                print(f"⚠️ LADDER planner initialization failed: {e}")
-                print("🔄 Continuing with todo manager only...")
+                logger.warning("LADDER planner initialization failed: %s", e)
+                logger.info("Continuing with todo manager only...")
 
             self.initialized = True
-            print("✅ Super Alita Agent initialized successfully!")
+            logger.info("✅ Super Alita Agent initialized successfully!")
             return True
 
         except Exception as e:
-            print(f"❌ Failed to initialize Super Alita Agent: {e}")
+            logger.error("❌ Failed to initialize Super Alita Agent: %s", e)
             return False
 
     async def get_development_status(self) -> dict[str, Any]:

@@ -34,7 +34,16 @@
   ],
   "activationEvents": [
     "onDebug",
-    "workspaceContains:*.alita"
+    "workspaceContains:*.alita",
+    "onCommand:alita.sdd.specify",
+    "onCommand:alita.sdd.plan",
+    "onCommand:alita.sdd.tasks",
+    "onCommand:alita.sdd.viewState",
+    "onCommand:alita.reasoning.analyzeCurrentFile",
+    "onCommand:alita.reasoning.explainSuggestion",
+    "onCommand:alita.copilot.openOptimizedChat",
+    "onCommand:alita.deepcode.toggle",
+    "onCommand:alita.deepcode.configure"
   ],
   "capabilities": {
     "virtualWorkspaces": {
@@ -122,48 +131,138 @@
         "category": "Alita"
       },
       {
-          "command": "alita.context.indexWorkspace",
-          "title": "Alita: Index Workspace for Context",
-          "category": "Alita"
+        "command": "alita.context.indexWorkspace",
+        "title": "Alita: Index Workspace for Context",
+        "category": "Alita"
       },
       {
         "command": "alita.deepcode.analyze",
-        "title": "Alita: DeepCode — Analyze Workspace",
+        "title": "Alita: DeepCode \u2014 Analyze Workspace",
         "category": "Alita"
       },
       {
         "command": "alita.deepcode.generate",
-        "title": "Alita: DeepCode — Generate From Prompt",
+        "title": "Alita: DeepCode \u2014 Generate From Prompt",
         "category": "Alita"
       },
       {
         "command": "alita.deepcode.showResults",
-        "title": "Alita: DeepCode — Show Results",
+        "title": "Alita: DeepCode \u2014 Show Results",
         "category": "Alita"
       },
       {
         "command": "alita.deepcode.refreshResults",
-        "title": "Alita: DeepCode — Refresh Results",
+        "title": "Alita: DeepCode \u2014 Refresh Results",
         "category": "Alita"
       },
       {
         "command": "alita.deepcode.applySelected",
-        "title": "Alita: DeepCode — Apply Selected",
+        "title": "Alita: DeepCode \u2014 Apply Selected",
         "category": "Alita"
       },
       {
         "command": "alita.deepcode.openDiffDoc",
-        "title": "Alita: DeepCode — Open Diff Document",
+        "title": "Alita: DeepCode \u2014 Open Diff Document",
         "category": "Alita"
       },
       {
-          "command": "alita.codegen.status",
-          "title": "Alita: Show WIT Binding Status",
-          "category": "Alita"
+        "command": "alita.codegen.status",
+        "title": "Alita: Show WIT Binding Status",
+        "category": "Alita"
       },
       {
         "command": "alita.chatRuntime",
         "title": "Alita: Chat via Runtime (Stream)",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.constitutional.analyzeWorkspace",
+        "title": "Alita: Constitutional \u2014 Analyze Workspace",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.constitutional.analyzeFile",
+        "title": "Alita: Constitutional \u2014 Analyze File",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.constitutional.validateCompliance",
+        "title": "Alita: Constitutional \u2014 Validate Compliance",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.constitutional.enforce",
+        "title": "Alita: \ud83c\udfdb\ufe0f Enforce Constitutional Compliance",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.constitutional.scan",
+        "title": "Alita: \ud83d\udd0d Scan Workspace for Constitutional Compliance",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.convergent.analyze",
+        "title": "Alita: \ud83e\uddec Analyze Convergent Evolution",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.consensus.analyze",
+        "title": "Alita: \ud83e\udd1d Enhanced Consensus Analysis",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.self.optimize",
+        "title": "Alita: \ud83d\ude80 Self-Optimization Review",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.knowledge.showPatterns",
+        "title": "Alita: Knowledge — Show Patterns",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.sdd.specify",
+        "title": "SDD: Specify Intent (/specify)",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.sdd.plan",
+        "title": "SDD: Technical Planning (/plan)",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.sdd.tasks",
+        "title": "SDD: Break Down Tasks (/tasks)",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.sdd.viewState",
+        "title": "SDD: View Current State",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.reasoning.analyzeCurrentFile",
+        "title": "🧠 Analyze with DeepCode Reasoning",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.reasoning.explainSuggestion",
+        "title": "📋 Explain Reasoning",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.copilot.openOptimizedChat",
+        "title": "Copilot: Open Optimized Chat",
+        "category": "Copilot"
+      },
+      {
+        "command": "alita.deepcode.toggle",
+        "title": "DeepCode: Toggle Reasoning",
+        "category": "Alita"
+      },
+      {
+        "command": "alita.deepcode.configure",
+        "title": "DeepCode: Configure Reasoning Settings",
         "category": "Alita"
       }
     ],
@@ -192,6 +291,42 @@
         {
           "command": "alita.codegen.status",
           "when": "!virtualWorkspace"
+        },
+        {
+          "command": "alita.constitutional.analyzeWorkspace",
+          "when": "!virtualWorkspace"
+        },
+        {
+          "command": "alita.constitutional.analyzeFile",
+          "when": "!virtualWorkspace"
+        },
+        {
+          "command": "alita.constitutional.validateCompliance",
+          "when": "!virtualWorkspace"
+        },
+        {
+          "command": "alita.constitutional.enforce",
+          "when": "!virtualWorkspace"
+        },
+        {
+          "command": "alita.constitutional.scan",
+          "when": "!virtualWorkspace"
+        },
+        {
+          "command": "alita.convergent.analyze",
+          "when": "!virtualWorkspace"
+        },
+        {
+          "command": "alita.consensus.analyze",
+          "when": "!virtualWorkspace"
+        },
+        {
+          "command": "alita.self.optimize",
+          "when": "!virtualWorkspace"
+        },
+        {
+          "command": "alita.knowledge.showPatterns",
+          "when": "!virtualWorkspace"
         }
       ],
       "view/item/context": [
@@ -211,6 +346,18 @@
           "command": "alita.deepcode.refreshResults",
           "when": "view == alitaDeepCodeView",
           "group": "navigation@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "alita.constitutional.enforce",
+          "when": "editorHasDocument",
+          "group": "alita@1"
+        },
+        {
+          "command": "alita.consensus.analyze",
+          "when": "editorHasSelection",
+          "group": "alita@2"
         }
       ]
     },
@@ -265,6 +412,30 @@
     "configuration": {
       "title": "Alita Language Extension",
       "properties": {
+        "alita.reasoning.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable DeepCode reasoning for Copilot"
+        },
+        "alita.reasoning.confidenceThreshold": {
+          "type": "number",
+          "default": 0.6,
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Minimum confidence threshold for reasoning suggestions"
+        },
+        "alita.reasoning.consensusMethod": {
+          "type": "string",
+          "enum": [
+            "simple_vote",
+            "weighted_vote",
+            "confidence_based",
+            "semantic_similarity",
+            "ensemble_ranking"
+          ],
+          "default": "ensemble_ranking",
+          "description": "Consensus method for reasoning"
+        },
         "alita.telemetry.enable": {
           "type": "boolean",
           "default": true,
@@ -324,6 +495,50 @@
           "type": "boolean",
           "default": false,
           "description": "Enable experimental WASM-based code analysis prefetch (invokes analyze export)."
+        },
+        "alita.constitutional.gatewayUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8080/constitutional",
+          "description": "Base URL for the Constitutional Gateway API."
+        },
+        "alita.constitutional.apiKey": {
+          "type": "string",
+          "description": "API key for Constitutional Gateway authentication (optional)."
+        },
+        "alita.constitutional.timeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "Timeout for Constitutional Gateway requests in milliseconds."
+        },
+        "alita.constitutional.enableDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time constitutional diagnostics and compliance checking."
+        },
+        "alita.constitutional.enableCodeActions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable constitutional code actions and refactoring suggestions."
+        },
+        "alita.constitutional.enableInlineSuggestions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable constitutional inline suggestions and AI-powered completions."
+        },
+        "alita.constitutional.enableArchitect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Constitutional Mastery Architect v5.0 (commands, analysis panel)."
+        },
+        "alita.constitutional.selfOptimization": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable meta-cognitive self-optimization scaffolding."
+        },
+        "alita.constitutional.convergentEvolution": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable convergent evolution analysis commands."
         }
       }
     }
@@ -395,12 +610,14 @@
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-import-resolver-typescript": "3.6.1",
     "glob": "^8.1.0",
     "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
     "unimported": "^1.31.1",
-    "vitest": "^2.0.0"
+    "vitest": "^2.0.0",
+    "npm-run-all": "^4.1.5"
   },
   "bundlesize": [
     {
@@ -417,3 +634,7 @@
     "url": "https://github.com/yaboyshades/super-alita"
   }
 }
+        {
+          "command": "alita.copilot.openOptimizedChat",
+          "when": "!virtualWorkspace"
+        },

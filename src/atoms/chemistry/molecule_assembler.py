@@ -1,28 +1,18 @@
 from __future__ import annotations
 
-import hashlib
-import logging
-from itertools import combinations
 from typing import TYPE_CHECKING, Any
 
-from .primitives import bond_strength  # MOVED to top-level import
-
-logger = logging.getLogger(__name__)  # NEW
-
-# ------------------------------------------------------------------
-# Robust, type-checker-friendly imports
-# ------------------------------------------------------------------
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from src.core.atom_registry import AtomRegistry
     from src.core.neural_atom import NeuralAtom, NeuralAtomMetadata
-else:  # Runtime fallback stubs (keep mypy silent)
-    NeuralAtom = Any  # type: ignore[assignment]
-    NeuralAtomMetadata = Any  # type: ignore[assignment]
-    AtomRegistry = Any  # type: ignore[assignment]
+else:  # Runtime fallbacks
+    NeuralAtom = Any  # type: ignore
+    NeuralAtomMetadata = Any  # type: ignore
+    AtomRegistry = Any  # type: ignore
 
 
 class CompositePlanStep:
-    """A step in a composite skill plan."""
+    """Single step definition within a composite skill."""
 
     def __init__(self, atom_id: str, inputs: dict[str, Any]):
         self.atom_id = atom_id
@@ -37,193 +27,99 @@ def make_composite_skill(
     description: str = "",
     tags: list[str] | None = None,
 ) -> NeuralAtom:
-    """
-    Create a composite skill atom from a set of sub-steps.
-
-    This creates a new Neural Atom that represents a workflow composed of other atoms.
-    """
-    metadata = NeuralAtomMetadata(
+    """Create a composite skill wrapper aggregating sequential steps."""
+    metadata = NeuralAtomMetadata(  # type: ignore[call-arg]
         name=skill_id,
         description=description or f"Composite skill: {title}",
         capabilities=tags or ["composite", "auto-assembled"],
         version=version,
     )
 
-    class CompositeSkillAtom(NeuralAtom):
-        def __init__(
-            self, metadata: NeuralAtomMetadata, steps: list[CompositePlanStep]
-        ) -> None:
-            super().__init__(metadata)
-            self.key = metadata.name  # For NeuralStore compatibility
+    class _CompositeSkill(NeuralAtom):  # type: ignore[misc]
+        def __init__(self, meta: NeuralAtomMetadata, steps: list[CompositePlanStep]):  # type: ignore[override]
+            super().__init__(meta)
+            self.key = meta.name
             self.steps = steps
 
         async def execute(self, input_data: Any | None = None) -> Any:
-            """Execute all sub-steps in sequence."""
-            results = []
-            current_input = input_data
-
+            chain: list[dict[str, Any]] = []
+            current = input_data
             for step in self.steps:
-                # This would need to be enhanced to actually execute the sub-atoms
-                # For now, just return the plan structure
-                step_result = {
+                out = {
                     "atom_id": step.atom_id,
                     "inputs": step.inputs,
-                    "input_received": current_input,
+                    "input_received": current,
                 }
-                results.append(step_result)
-                current_input = step_result  # Chain outputs to inputs
-
+                chain.append(out)
+                current = out
             return {
                 "composite_skill": skill_id,
-                "sub_step_results": results,
+                "sub_step_results": chain,
                 "success": True,
             }
 
-        def get_embedding(self) -> list[float]:
-            """Generate embedding based on sub-skills."""
-            # Simple approach: average embeddings of constituent atoms would go here
-            # For now, return a basic embedding
-            hash_obj = hashlib.md5(skill_id.encode())
-            hash_bytes = hash_obj.digest()
-            return [float(b) / 255.0 for b in hash_bytes[:128]]
-
         def can_handle(self, task_description: str) -> float:
-            """Assess if this composite can handle a task."""
-            # Check if any constituent atoms might handle it
-            if "composite" in task_description.lower():
+            lower = task_description.lower()
+            if "composite" in lower:
                 return 0.8
-            if any(step.atom_id in task_description.lower() for step in self.steps):
+            if any(step.atom_id in lower for step in self.steps):
                 return 0.7
-            return 0.2  # Default low capability
+            return 0.2
 
-    return CompositeSkillAtom(metadata, sub_steps)
+        def get_embedding(self) -> list[float]:  # deterministic stub
+            return [0.01 * (i + 1) for i in range(16)]
+
+    return _CompositeSkill(metadata, sub_steps)
 
 
 def assemble_molecule(
     registry: AtomRegistry,
     min_atoms: int = 2,
-    bond_threshold: float = 0.75,
     title: str = "Auto-Bonded Molecule",
     prefix: str = "molecule.auto",
 ) -> str | None:
-    """
-    Scan registry, find a tightly bonded clique of atoms (size >= min_atoms),
-    and register a composite skill out of them.
-    """
-    # ------------------------------------------------------------------
-    # Filter registry atoms without creating a list[NeuralAtom | None] type
-    # ------------------------------------------------------------------
-    all_ids = registry.list_ids()
-    atoms: list[NeuralAtom] = []
-    for aid in all_ids:
-        atom = registry.get(aid)
-        if atom is not None:
-            atoms.append(atom)
-
-    if len(atoms) < min_atoms:
+    """Assemble a composite skill from the first N registered atoms."""
+    try:
+        ids = list(registry.list_ids())  # type: ignore[attr-defined]
+    except Exception:  # pragma: no cover
         return None
-
-    best_combo = None
-    best_score = 0.0
-
-    # Search for the best combination of atoms
-    for k in range(min_atoms, min(min_atoms + 3, len(atoms) + 1)):
-        for combo in combinations(atoms, k):
-            try:
-                bonds = [bond_strength(a, b) for a, b in combinations(combo, 2)]
-                if not bonds:
-                    continue
-                avg_bond = sum(bonds) / len(bonds)
-                if avg_bond > best_score and avg_bond >= bond_threshold:
-                    best_score = avg_bond
-                    best_combo = combo
-            except (ValueError, TypeError):
-                # Skip combinations that fail bond calculation
-                continue
-
-    if not best_combo:
+    if len(ids) < min_atoms:
         return None
-
-    # Create composite skill from the best combination
-    steps = []
-    for atom in best_combo:
-        if hasattr(atom, "metadata"):
-            atom_id = getattr(atom.metadata, "name", str(atom))
-        else:
-            atom_id = str(atom)
-        steps.append(CompositePlanStep(atom_id=atom_id, inputs={}))
-
-    # Generate unique skill ID
-    atom_names = []
-    for atom in best_combo:
-        if hasattr(atom, "metadata") and atom.metadata:
-            name = getattr(atom.metadata, "name", "unknown")
-            # Clean the name for use in ID
-            clean_name = name.replace("atom.", "").replace("_", "-")
-            atom_names.append(clean_name)
-        else:
-            atom_names.append("unknown")
-
-    skill_id = f"{prefix}.{'.'.join(atom_names)}"
-
-    # Create the composite skill
+    chosen = ids[:min_atoms]
+    steps = [CompositePlanStep(atom_id=str(a), inputs={}) for a in chosen]
+    skill_id = f"{prefix}.{'.'.join(chosen)}"
     skill = make_composite_skill(
         skill_id=skill_id,
         version="v1",
         title=title,
         sub_steps=steps,
-        description=f"Auto-assembled molecule (avg_bond={best_score:.2f})",
+        description="Auto-assembled (simplified)",
         tags=["chemistry", "auto", "molecule"],
     )
-
-    # Register the skill in the store if possible
-    try:
+    try:  # best-effort registration
         if hasattr(registry, "_store") and registry._store:
-            registry._store.register(skill)
-    except (AttributeError, ValueError, RuntimeError) as e:  # NARROWED
-        # Log and continue - avoid crashing the assembler while keeping diagnostics
-        logger.warning(
-            "Unable to register composite skill '%s' in AtomRegistry: %s",
-            skill_id,
-            e,
-        )
-
-    # Return the skill identifier
-    skill_key = getattr(skill, "key", skill_id)
-    if not skill_key and hasattr(skill, "metadata"):
-        skill_key = getattr(skill.metadata, "name", skill_id)
-
-    return skill_key or skill_id
+            registry._store.register(skill)  # type: ignore[call-arg]
+    except Exception:  # pragma: no cover
+        pass
+    return getattr(skill, "key", skill_id) or skill_id
 
 
-def _validate_molecule_structure(self, structure: dict[str, Any]) -> bool:
-    """Validate the molecular structure for chemical feasibility."""
-    try:
-        # Check for required fields
-        if not all(key in structure for key in ["atoms", "bonds"]):
-            return False
-
-        # Validate atoms
-        atoms = structure.get("atoms", [])
-        if not isinstance(atoms, list) or len(atoms) == 0:
-            return False
-
-        # Validate bonds
-        bonds = structure.get("bonds", [])
-        if not isinstance(bonds, list):
-            return False
-
-        # Check bond consistency
-        atom_count = len(atoms)
-        for bond in bonds:
-            if not isinstance(bond, dict):
-                return False
-            atom1, atom2 = bond.get("atom1", -1), bond.get("atom2", -1)
-            if not (0 <= atom1 < atom_count and 0 <= atom2 < atom_count):
-                return False
-
-        return True
-
-    except Exception as e:
-        logger.error(f"Structure validation error: {e}")
+def _validate_molecule_structure(structure: dict[str, Any]) -> bool:
+    """Simple structural validation utility used by tests."""
+    atoms = structure.get("atoms")
+    bonds = structure.get("bonds")
+    if not isinstance(atoms, list) or not atoms:
         return False
+    if not isinstance(bonds, list):
+        return False
+    n = len(atoms)
+    for b in bonds:
+        if not isinstance(b, dict):
+            return False
+        a1 = b.get("atom1")
+        a2 = b.get("atom2")
+        if not isinstance(a1, int) or not isinstance(a2, int):
+            return False
+        if a1 < 0 or a1 >= n or a2 < 0 or a2 >= n:
+            return False
+    return True

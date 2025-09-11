@@ -248,6 +248,21 @@ def register_mangle_abilities(ability_registry, config=None):
             executor=_exec_run_rule,
         )
 
+
+        # mangle_grpc_health
+        async def _exec_grpc_health(_args):  # type: ignore
+            return await mangle_ability.grpc_health()
+
+        ability_registry.register_tool(
+            contract={
+                "tool_id": "mangle_grpc_health",
+                "description": "Check Mangle gRPC connectivity health",
+                "input_schema": {"type": "object", "properties": {}},
+            },
+            executor=_exec_grpc_health,
+        )
+
+
         logger.info("Mangle abilities registered successfully")
         return True
     except Exception as e:  # pragma: no cover

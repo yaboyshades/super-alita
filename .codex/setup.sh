@@ -32,4 +32,7 @@ if command -v pre-commit >/dev/null 2>&1; then
   pre-commit run --all-files || true
 fi
 
+# Prepare Codex runtime paths declared in config.toml
+mkdir -p ./.codex/tmp ./.codex/reports || true
+
 echo "Setup complete."

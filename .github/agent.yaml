@@ -49,12 +49,14 @@ plugins:
     db_path: "./data/chroma_db"
     collection_name: "alita_memory"
     embedding_model: "models/text-embedding-004"
-    gemini_api_key: "AIzaSyABwEc-G8UtkujcksR12ENW7rjCoa-LP8I"  # Direct API key
+    # Secrets are not stored in repo; read from env
+    gemini_api_key: "${GEMINI_API_KEY}"
 
   semantic_fsm:
     enabled: true
     embedding_model: "models/text-embedding-004"
-    gemini_api_key: "AIzaSyABwEc-G8UtkujcksR12ENW7rjCoa-LP8I"  # Direct API key
+    # Secrets are not stored in repo; read from env
+    gemini_api_key: "${GEMINI_API_KEY}"
     default_fsm: "agent_lifecycle"
 
   skill_discovery:
@@ -93,7 +95,8 @@ plugins:
     response_delay_seconds: 1.0
     enable_reasoning: true
     natural_language_processing: true
-    gemini_api_key: "AIzaSyABwEc-G8UtkujcksR12ENW7rjCoa-LP8I"  # Direct API key
+    # Secrets are not stored in repo; read from env
+    gemini_api_key: "${GEMINI_API_KEY}"
 
 # Genealogy settings (legacy, now handled by genealogy_tracer plugin)
 genealogy:
@@ -113,3 +116,73 @@ development:
   debug_mode: false
   enable_profiling: false
   mock_external_services: false
+
+# GitHub Copilot Agent Mode preferences (repo-first)
+copilot_agent_mode:
+  enabled: true
+  repo_first: true
+  use_github_code_search: true
+  adapt_with_web_fallback: true
+  instructions_file: ".github/copilot-instructions.md"
+  chat_modes_dir: ".github/chatmodes"
+  default_workflow: "sdd"
+  reasoning_engine: "super-alita-deepcode"
+  capabilities:
+    - advanced_code_analysis
+    - multi_perspective_reasoning
+    - confidence_calibration
+    - semantic_pattern_recognition
+    - risk_assessment
+  context_providers:
+    - name: "deepcode_reasoning"
+      endpoint: "${ALITA_RUNTIME_HOST}/reasoning/analyze-code"
+      trigger_patterns: ["function","class","import","def","async"]
+      confidence_threshold: 0.6
+  reasoning_flow:
+    pre_completion: ["analyze_code_context","assess_risk_factors","identify_patterns"]
+    post_completion: ["validate_suggestion","calibrate_confidence","provide_alternatives"]
+  tools:
+    preferred:
+      - edit_file
+      - create_file
+      - read_file
+      - list_directory
+      - rename_file
+      - delete_file
+      - create_directory
+    notes: |
+      File editing is first-class: prefer explicit file operations over inline patches. Keep edits minimal, atomic, and validated.
+  sdd:
+    endpoints:
+      specify: "/sdd/specify"
+      plan: "/sdd/plan"
+      tasks: "/sdd/tasks"
+      validate: "/sdd/validate"
+    constitutional_threshold: 0.75
+    templates:
+      - "templates/sdd/specification.md"
+      - "templates/sdd/plan.md"
+      - "templates/sdd/tasks.md"
+    memory: "memory/sdd/constitutional_sdd_framework.md"
+    validators: "src/sdd/validators.py"
+    unified_orchestrator:
+      stages:
+        - "sdd_specify_stage"
+        - "sdd_plan_stage"
+        - "sdd_tasks_stage"
+        - "sdd_validate_stage"
+      observability: "src/orchestration/observability.py"
+      event_schemas: "src/orchestration/event_schemas.py"
+    constitutional_gates:
+      - "Specification_Gate"
+      - "Planning_Gate"
+      - "Implementation_Gate"
+      - "Integration_Gate"
+    vscode_commands:
+      - "alita.sdd.specify"
+      - "alita.sdd.plan"
+      - "alita.sdd.tasks"
+      - "alita.sdd.viewState"
+      - "alita.orchestrator.status"
+      - "alita.constitutional.review"
+      - "alita.enhanced.consensus"

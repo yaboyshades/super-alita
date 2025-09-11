@@ -15,7 +15,6 @@ Note: Memurai is the Windows-native Redis implementation used in this system.
 """
 
 import asyncio
-import contextlib
 import json
 import logging
 import time
@@ -29,7 +28,7 @@ import redis.asyncio as redis
 from redis.asyncio.client import PubSub
 
 # Import core contracts and serializer at module level
-from src.core.events import EVENT_ALIASES, EVENT_TYPES, BaseEvent
+from src.core.events import BaseEvent
 from src.core.serialization import get_serializer
 
 # Fast JSON parsing for throughput optimization
@@ -380,4 +379,51 @@ class EventBus:
                         if channel in self._subscribers:
                             handlers_to_dispatch.extend(self._subscribers[channel])
                     else:
-                     
+                        # Has wildcard subscribers, process both specific and wildcard handlers
+                        if channel in self._subscribers:
+                            handlers_to_dispatch.extend(self._subscribers[channel])
+
+                # Dispatch to all collected handlers
+                if handlers_to_dispatch:
+                    # Parse the event data
+                    event_data = json.loads(message["data"].decode("utf-8"))
+                    event_type = event_data.get("type", "unknown")
+
+                    # Create the appropriate event object
+                    event = BaseEvent(
+                        event_type=event_type, data=event_data.get("data", {})
+                    )
+
+                    logger.debug(
+                        f"🚀 Dispatching {event_type} to {len(handlers_to_dispatch)} handlers"
+                    )
+
+                    # Dispatch to all handlers asynchronously
+                    for handler in handlers_to_dispatch:
+                        task = asyncio.create_task(self._safe_dispatch(handler, event))
+                        background_tasks.add(task)
+                        task.add_done_callback(background_tasks.discard)
+
+            except Exception as e:
+                logger.error(f"❌ Error in event listener loop: {e}")
+                await asyncio.sleep(1.0)  # Brief pause before retrying
+
+        # Wait for any remaining background tasks to complete
+        if background_tasks:
+            logger.info(
+                f"⏳ Waiting for {len(background_tasks)} background tasks to complete..."
+            )
+            await asyncio.gather(*background_tasks, return_exceptions=True)
+
+        logger.info("🛑 EventBus listener loop stopped")
+
+    async def _safe_dispatch(
+        self,
+        handler: Callable[[BaseEvent], Coroutine[Any, Any, None]],
+        event: BaseEvent,
+    ) -> None:
+        """Safely dispatch an event to a handler, catching and logging any errors."""
+        try:
+            await handler(event)
+        except Exception as e:
+            logger.error(f"❌ Error in event handler {handler.__name__}: {e}")

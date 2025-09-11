@@ -1,0 +1,58 @@
+name: Validate Configuration Security
+
+on:
+  push:
+    paths:
+      - '.github/**'
+  pull_request:
+    paths:
+      - '.github/**'
+
+jobs:
+  validate-security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for hardcoded secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE "api_key\s*:\s*[^$]" .github/; then
+            echo "Found hardcoded API keys in .github configs"; exit 1; fi
+          if grep -RInE "token\s*:\s*[^$]" .github/; then
+            echo "Found hardcoded tokens in .github configs"; exit 1; fi
+          echo "No hardcoded secrets detected"
+
+      - name: Validate agent.yaml structure
+        shell: bash
+        run: |
+          if [ -f .github/agent.yaml ]; then
+            echo "agent.yaml exists"
+            if ! grep -q "\${" .github/agent.yaml; then
+              echo "WARNING: No environment variables found in agent.yaml"; fi
+            if grep -q "sdd" .github/agent.yaml; then
+              echo "SDD configuration found"; else echo "WARNING: SDD configuration not found"; fi
+          else
+            echo "WARNING: .github/agent.yaml not found"
+          fi
+
+      - name: Validate workspace config YAML
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: YAML syntax check
+        shell: bash
+        run: |
+          pip install pyyaml >/dev/null 2>&1 || true
+          if [ -f ".github/copilot-workspace.yaml" ]; then
+            python - <<'PY'
+import yaml, sys
+with open('.github/copilot-workspace.yaml', 'r', encoding='utf-8') as f:
+    yaml.safe_load(f)
+print('Workspace YAML is valid')
+PY
+          else
+            echo "No workspace configuration found"
+          fi

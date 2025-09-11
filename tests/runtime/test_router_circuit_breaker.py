@@ -1,6 +1,7 @@
-from fastapi import FastAPI
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
 from reug_runtime import config
 from tests.runtime import prefix_path
 from tests.runtime.fakes import FakeEventBus, FakeKG
@@ -34,7 +35,9 @@ class FlakyRegistry:
 class LoopLLM:
     async def stream_chat(self, messages, timeout):
         errors = sum(
-            1 for m in messages if m["role"] == "assistant" and "<tool_error" in m["content"]
+            1
+            for m in messages
+            if m["role"] == "assistant" and "<tool_error" in m["content"]
         )
         if errors >= 4:
             yield {
@@ -85,8 +88,6 @@ try:
 except ImportError:  # pragma: no cover - skip if implementation missing
     pytest.skip("breaker not available", allow_module_level=True)
 
-from tests.runtime.fakes import FakeEventBus, FakeKG
-
 
 class FlakyRegistry:
     def __init__(self):
@@ -116,7 +117,9 @@ class FlakyRegistry:
 class LoopLLM:
     async def stream_chat(self, messages, timeout):
         errors = sum(
-            1 for m in messages if m["role"] == "assistant" and "<tool_error" in m["content"]
+            1
+            for m in messages
+            if m["role"] == "assistant" and "<tool_error" in m["content"]
         )
         if errors >= 4:
             yield {
@@ -157,4 +160,4 @@ def test_circuit_breaker(monkeypatch):
     assert terminals[0]["type"] == "TaskSucceeded"
     succ = {e["span_id"] for e in evts if e["type"] == "AbilitySucceeded"}
     fail = {e["span_id"] for e in evts if e["type"] == "AbilityFailed"}
-    assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls
+    assert all((c["span_id"] in succ) ^ (c["span_id"] in fail) for c in calls)

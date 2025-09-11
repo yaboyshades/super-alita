@@ -18,6 +18,7 @@ import asyncio
 import contextlib
 import json
 import logging
+import os
 import time
 from collections.abc import Callable, Coroutine
 from typing import (
@@ -233,6 +234,16 @@ class EventBus:
             logger.info("✅ EventBus initialized successfully")
         except Exception as e:
             logger.error(f"❌ EventBus initialization failed: {e}")
+            # Optional in-memory fallback for development
+            if os.getenv("EVENTBUS_MODE", "").lower() == "in_memory":
+                try:
+                    self._inmem = InMemoryEventBus()  # type: ignore[attr-defined]
+                    await self._inmem.initialize()  # type: ignore[attr-defined]
+                    self._is_running = True
+                    logger.info("🧪 EventBus fallback: using InMemoryEventBus")
+                    return
+                except Exception as ie:  # pragma: no cover
+                    logger.error(f"InMemoryEventBus fallback failed: {ie}")
             # Don't re-raise to allow graceful fallback
             pass
 
@@ -279,6 +290,10 @@ class EventBus:
 
     async def publish(self, event: BaseEvent) -> None:
         """Serializes and publishes a Pydantic event to the corresponding Redis channel."""
+        # In-memory fallback delegation
+        if hasattr(self, "_inmem") and self._inmem is not None:
+            await self._inmem.publish(event)  # type: ignore[attr-defined]
+            return
         if not self._redis:
             await self.connect()
         try:
@@ -299,6 +314,10 @@ class EventBus:
 
     async def publish_event(self, channel: str, event: BaseEvent) -> None:
         """Publish a structured event with proper serialization."""
+        if hasattr(self, "_inmem") and self._inmem is not None:
+            await self._inmem.publish_event(channel, event)  # type: ignore[attr-defined]
+            self.events_published += 1
+            return
         if not self._redis:
             await self.connect()
 
@@ -315,6 +334,9 @@ class EventBus:
 
     async def emit(self, event_type: str, **kwargs) -> None:
         """Enhanced emit with automatic field population and correlation ID support."""
+        if hasattr(self, "_inmem") and self._inmem is not None:
+            await self._inmem.emit(event_type, **kwargs)  # type: ignore[attr-defined]
+            return
         import uuid
         from datetime import UTC, datetime
 
