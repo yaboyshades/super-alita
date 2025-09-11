@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TaskType(str, Enum):
@@ -46,8 +46,7 @@ class TaskRequest(BaseModel):
     requester: str = Field(default="unknown", description="Entity requesting the task")
     metadata: dict[str, Any] = Field(default_factory=dict, description="Task metadata")
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class TaskResult(BaseModel):
@@ -69,8 +68,7 @@ class TaskResult(BaseModel):
         default=1.0, ge=0.0, le=1.0, description="Result confidence"
     )
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class CapabilityGapEvent(BaseModel):
@@ -119,8 +117,7 @@ class WorkspaceEvent(BaseModel):
         default_factory=list, description="Notified subscribers"
     )
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class CREATORStage(str, Enum):
@@ -173,8 +170,7 @@ class CREATORResult(BaseModel):
         default_factory=lambda: datetime.now(UTC), description="Creation timestamp"
     )
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class MemoryQuery(BaseModel):
@@ -419,3 +415,120 @@ class ExecutionStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     TIMEOUT = "timeout"
+
+
+# GitHub Integration Event Schemas
+class GitHubEventType(str, Enum):
+    """Types of GitHub events for cognitive agent integration."""
+
+    ISSUE_CREATED = "issue_created"
+    ISSUE_UPDATED = "issue_updated"
+    ISSUE_CLOSED = "issue_closed"
+    PR_OPENED = "pr_opened"
+    PR_UPDATED = "pr_updated"
+    PR_MERGED = "pr_merged"
+    PR_CLOSED = "pr_closed"
+    COMMIT_PUSHED = "commit_pushed"
+    WORKFLOW_RUN = "workflow_run"
+    SECURITY_ALERT = "security_alert"
+    REVIEW_SUBMITTED = "review_submitted"
+    RELEASE_PUBLISHED = "release_published"
+
+
+class GitHubEventSchema(BaseModel):
+    """Schema for GitHub events captured by the cognitive agent."""
+
+    event_type: GitHubEventType = Field(..., description="Type of GitHub event")
+    repository: str = Field(..., description="Repository name (owner/repo)")
+    actor: str = Field(..., description="GitHub username of the actor")
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Event timestamp"
+    )
+    payload: dict[str, Any] = Field(..., description="GitHub event payload")
+    event_id: str = Field(..., description="Unique event identifier")
+    session_id: str | None = Field(default=None, description="Associated session ID")
+
+    # Cognitive processing metadata
+    attention_level: AttentionLevel = Field(
+        default=AttentionLevel.MEDIUM, description="Cognitive attention priority"
+    )
+    processing_status: str = Field(
+        default="pending", description="Cognitive processing status"
+    )
+    insights_extracted: list[str] = Field(
+        default_factory=list, description="Extracted insights from event"
+    )
+
+
+class GitHubPriorityMetrics(BaseModel):
+    """Schema for GitHub-specific priority calculation metrics."""
+
+    has_security_alert: bool = Field(default=False, description="Has security implications")
+    blocks_other_prs: bool = Field(default=False, description="Blocks other pull requests")
+    has_stakeholder_mention: bool = Field(default=False, description="Mentions key stakeholders")
+    ci_status: str = Field(default="unknown", description="CI/CD status")
+    review_count: int = Field(default=0, ge=0, description="Number of reviews")
+    comment_count: int = Field(default=0, ge=0, description="Number of comments")
+    file_changes_count: int = Field(default=0, ge=0, description="Number of changed files")
+    lines_changed: int = Field(default=0, ge=0, description="Lines of code changed")
+    issue_labels: list[str] = Field(default_factory=list, description="GitHub issue labels")
+
+    # Relationship metrics
+    related_issues: list[str] = Field(default_factory=list, description="Related issue numbers")
+    dependent_prs: list[str] = Field(default_factory=list, description="Dependent PR numbers")
+    merge_conflicts: bool = Field(default=False, description="Has merge conflicts")
+
+
+class GitHubApiRequest(BaseModel):
+    """Schema for GitHub API requests."""
+
+    endpoint: str = Field(..., description="GitHub API endpoint")
+    method: str = Field(default="GET", description="HTTP method")
+    parameters: dict[str, Any] = Field(
+        default_factory=dict, description="API request parameters"
+    )
+    headers: dict[str, str] = Field(
+        default_factory=dict, description="Additional headers"
+    )
+    repository: str | None = Field(default=None, description="Target repository")
+    rate_limit_aware: bool = Field(
+        default=True, description="Whether to respect rate limits"
+    )
+
+
+class GitHubApiResponse(BaseModel):
+    """Schema for GitHub API responses."""
+
+    success: bool = Field(..., description="Whether request succeeded")
+    status_code: int = Field(..., description="HTTP status code")
+    data: Any = Field(default=None, description="Response data")
+    error: str | None = Field(default=None, description="Error message if failed")
+    rate_limit_remaining: int | None = Field(
+        default=None, description="Remaining API rate limit"
+    )
+    rate_limit_reset: datetime | None = Field(
+        default=None, description="Rate limit reset time"
+    )
+    execution_time: float = Field(..., description="Request execution time")
+
+
+class GitHubWorkflowConfig(BaseModel):
+    """Schema for GitHub Actions workflow configuration."""
+
+    workflow_name: str = Field(..., description="Workflow name")
+    trigger_events: list[str] = Field(..., description="Events that trigger workflow")
+    cognitive_mode: str = Field(
+        default="shadow", description="Cognitive agent mode (shadow/act/batch)"
+    )
+    analysis_scope: list[str] = Field(
+        default_factory=list, description="Scope of analysis to perform"
+    )
+    output_format: str = Field(
+        default="comment", description="How to output results (comment/check/artifact)"
+    )
+    security_scanning: bool = Field(
+        default=True, description="Enable security scanning"
+    )
+    performance_monitoring: bool = Field(
+        default=True, description="Enable performance monitoring"
+    )

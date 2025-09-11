@@ -1358,6 +1358,69 @@ if FASTAPI_AVAILABLE:
             payload["rate_limit"] = rl_info
         return payload
 
+    # ---------------------- Patch 0003: Developer Experience & Team Integration ---------------------- #
+
+    # Import team orchestrator at module level (will add this after creating the routes)
+    team_orchestrator: Any = None  # Global state for team orchestrator
+
+    class DeveloperActionRequest(BaseModel):  # type: ignore[misc,valid-type]
+        user_id: str
+        action: str
+        context: dict[str, Any]
+
+    @api_router.post("/developer-action")  # type: ignore
+    async def handle_developer_action(
+        req: DeveloperActionRequest,  # type: ignore
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> Any:  # type: ignore
+        """Handles developer actions from VS Code bridge."""
+        try:
+            # Get the orchestrator from app state if available
+            orchestrator = getattr(app.state, "ecosystem_orchestrator", None)
+            if not orchestrator:
+                # Create a basic orchestrator for demonstration
+                from src.ecosystem.master_orchestrator import EcosystemOrchestrator
+
+                orchestrator = EcosystemOrchestrator()
+
+            # Process the developer action through the orchestrator
+            result = await orchestrator.handle_developer_action(
+                req.user_id, req.action, req.context
+            )
+
+            # Feed data to team orchestrator if available
+            global team_orchestrator
+            if team_orchestrator and req.action == "todo_detected":
+                team_orchestrator.consume_event(
+                    "workflow.todo_resolution.completed", {"context": req.context}
+                )
+
+            return result
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    @api_router.get("/team/health")  # type: ignore
+    async def get_team_health() -> dict[str, Any]:  # type: ignore
+        """Returns a health summary and optimization suggestions for the team."""
+        global team_orchestrator
+        if not team_orchestrator:
+            from src.ecosystem.team_orchestrator import TeamProductivityOrchestrator
+
+            team_orchestrator = TeamProductivityOrchestrator()
+
+            # Manually feed some sample data for the demo
+            team_orchestrator.consume_event(
+                "workflow.todo_resolution.completed",
+                {"context": {"todo_text": "Refactor the authentication logic"}},
+            )
+            team_orchestrator.consume_event(
+                "workflow.todo_resolution.completed",
+                {"context": {"todo_text": "Add new authentication endpoint"}},
+            )
+
+        return team_orchestrator.generate_team_health_summary()
+
     # ---------------------- Auth management ---------------------- #
     auth_router = APIRouter(prefix="/api/v1/auth", tags=["auth"])  # type: ignore
 
@@ -1480,9 +1543,80 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         code = 200 if status["status"] == "healthy" else 503
         return JSONResponse(status_code=code, content=status)  # type: ignore
 
-    # Alternative health endpoint
+    # Enhanced health endpoint with tool count and detailed status
     @app.get("/health")  # type: ignore
-    async def health_check_alt() -> JSONResponse:  # type: ignore
+    async def health_check_enhanced() -> JSONResponse:  # type: ignore
+        """Enhanced health endpoint with tool count and registry status."""
+        try:
+            # Get base health check
+            base_status = await check_health(
+                app.state.event_bus,  # type: ignore
+                app.state.ability_registry,  # type: ignore
+                app.state.kg,  # type: ignore
+                app.state.llm_model,  # type: ignore
+            )
+
+            # Enhanced status with tool information
+            enhanced_status = {
+                **base_status,
+                "tools": {
+                    "total_count": 0,
+                    "available": True,
+                    "registry_type": "unknown",
+                },
+                "features": {},
+                "version": "3.0",
+            }
+
+            # Get tool count and registry info
+            try:
+                registry = app.state.ability_registry  # type: ignore
+                if hasattr(registry, "get_available_tools_schema"):
+                    tools_schema = registry.get_available_tools_schema()
+                    enhanced_status["tools"]["total_count"] = len(tools_schema)
+                    enhanced_status["tools"]["available"] = True
+
+                    # Check if unified registry
+                    if hasattr(registry, "get_status"):
+                        registry_status = registry.get_status()
+                        enhanced_status["tools"]["registry_type"] = "unified"
+                        enhanced_status["features"] = registry_status.get(
+                            "feature_flags", {}
+                        )
+                    else:
+                        enhanced_status["tools"]["registry_type"] = "simple"
+
+            except Exception as e:
+                enhanced_status["tools"]["error"] = str(e)
+                enhanced_status["tools"]["available"] = False
+
+            # Check for resilient router
+            try:
+                if hasattr(app.state, "unified_router"):
+                    router = app.state.unified_router  # type: ignore
+                    if hasattr(router, "get_health_status"):
+                        router_health = router.get_health_status()
+                        enhanced_status["router"] = router_health
+            except Exception:
+                pass  # Router health is optional
+
+            code = 200 if enhanced_status["status"] == "healthy" else 503
+            return JSONResponse(status_code=code, content=enhanced_status)  # type: ignore
+
+        except Exception as e:
+            # Fallback to basic status if enhanced check fails
+            error_status = {
+                "status": "error",
+                "error": str(e),
+                "tools": {"total_count": 0, "available": False},
+                "version": "3.0",
+            }
+            return JSONResponse(status_code=503, content=error_status)  # type: ignore
+
+    # Alternative legacy health endpoint
+    @app.get("/health/simple")  # type: ignore
+    async def health_check_simple() -> JSONResponse:  # type: ignore
+        """Simple health check for backwards compatibility."""
         status = await check_health(
             app.state.event_bus,  # type: ignore
             app.state.ability_registry,  # type: ignore

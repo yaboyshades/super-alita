@@ -1,0 +1,42 @@
+name: Copilot Setup
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/copilot-setup.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/copilot-setup.yml'
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
+
+      - name: Sanity checks
+        run: |
+          python -V
+          pip -V
+
+      - name: Validate deployment
+        run: |
+          python validate_deployment.py
+
+      - name: Optional lint and type check (non-blocking)
+        run: |
+          if command -v ruff >/dev/null 2>&1; then ruff check . || true; fi
+          if command -v black >/dev/null 2>&1; then black . --check || true; fi

@@ -1,0 +1,513 @@
+name: 🧠 Cognitive Agent Shadow Mode
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  issues:
+    types: [opened, edited, closed, labeled]
+  workflow_dispatch:
+    inputs:
+      analysis_mode:
+        description: 'Cognitive agent analysis mode'
+        required: true
+        default: 'shadow'
+        type: choice
+        options:
+        - shadow
+        - act
+        - batch
+      scope:
+        description: 'Analysis scope'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+        - full
+        - security
+        - performance
+        - quality
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write
+  actions: read
+
+jobs:
+  cognitive-analysis:
+    runs-on: ubuntu-latest
+    name: 🔍 Cognitive Agent Analysis
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        
+    - name: 📦 Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
+        
+    - name: 🧠 Initialize Cognitive Agent
+      id: init-agent
+      run: |
+        echo "🧠 Initializing Super Alita Cognitive Agent..."
+        python -c "
+        import sys
+        sys.path.append('./src')
+        from integration.github_api import GitHubApiClient
+        from core.github_priority_calculator import GitHubPriorityCalculator
+        from core.schemas import GitHubEventSchema, GitHubEventType
+        from datetime import datetime, timezone
+        import json
+        import os
+        
+        # Initialize components
+        github_client = GitHubApiClient(token='${{ secrets.GITHUB_TOKEN }}')
+        priority_calc = GitHubPriorityCalculator()
+        
+        # Create event from GitHub context
+        event_type = None
+        if '${{ github.event_name }}' == 'pull_request':
+            if '${{ github.event.action }}' == 'opened':
+                event_type = 'pr_opened'
+            elif '${{ github.event.action }}' == 'closed' and '${{ github.event.pull_request.merged }}' == 'true':
+                event_type = 'pr_merged'
+            else:
+                event_type = 'pr_updated'
+        elif '${{ github.event_name }}' == 'issues':
+            event_type = 'issue_created' if '${{ github.event.action }}' == 'opened' else 'issue_updated'
+        elif '${{ github.event_name }}' == 'push':
+            event_type = 'commit_pushed'
+        
+        # Save context for next steps
+        context = {
+            'event_type': event_type,
+            'repository': '${{ github.repository }}',
+            'actor': '${{ github.actor }}',
+            'mode': '${{ github.event.inputs.analysis_mode || 'shadow' }}',
+            'scope': '${{ github.event.inputs.scope || 'full' }}',
+            'pr_number': '${{ github.event.number }}' if '${{ github.event.number }}' else None,
+            'commit_sha': '${{ github.sha }}'
+        }
+        
+        with open('cognitive_context.json', 'w') as f:
+            json.dump(context, f)
+        
+        print(f'✅ Cognitive agent initialized for {event_type} analysis')
+        print(f'📊 Mode: {context[\"mode\"]}, Scope: {context[\"scope\"]}')
+        "
+        
+    - name: 🔍 Analyze GitHub Event
+      id: analyze-event
+      run: |
+        echo "🔍 Analyzing GitHub event with cognitive agent..."
+        python -c "
+        import sys
+        sys.path.append('./src')
+        import json
+        from integration.github_api import GitHubApiClient
+        from core.github_priority_calculator import GitHubPriorityCalculator, EnhancedPriorityMetrics
+        from core.schemas import GitHubEventSchema, GitHubEventType, AttentionLevel
+        from datetime import datetime, timezone
+        
+        # Load context
+        with open('cognitive_context.json', 'r') as f:
+            context = json.load(f)
+        
+        github_client = GitHubApiClient(token='${{ secrets.GITHUB_TOKEN }}')
+        priority_calc = GitHubPriorityCalculator()
+        
+        # Analyze based on event type
+        analysis_results = {
+            'priority_score': 0.0,
+            'attention_level': 'MEDIUM',
+            'insights': [],
+            'recommendations': [],
+            'security_alerts': [],
+            'performance_issues': [],
+            'quality_metrics': {}
+        }
+        
+        repository = context['repository']
+        
+        try:
+            if context['event_type'] == 'pr_opened' and context['pr_number']:
+                print(f'📋 Analyzing Pull Request #{context[\"pr_number\"]}')
+                
+                # Get PR metrics
+                pr_metrics = await github_client.extract_priority_metrics(
+                    repository, 'pull_request', int(context['pr_number'])
+                )
+                
+                # Calculate priority
+                enhanced_metrics = EnhancedPriorityMetrics(
+                    impact=7.0,  # PRs generally have high impact
+                    urgency=6.0,
+                    effort=5.0,
+                    github_metrics=pr_metrics
+                )
+                
+                priority_score = priority_calc.calculate_priority(enhanced_metrics)
+                analysis_results['priority_score'] = priority_score
+                
+                # Generate insights
+                if pr_metrics.has_security_alert:
+                    analysis_results['security_alerts'].append('PR contains security-related changes')
+                    analysis_results['insights'].append('🔒 Security review recommended')
+                
+                if pr_metrics.blocks_other_prs:
+                    analysis_results['insights'].append('⚠️ This PR may block other development work')
+                    analysis_results['recommendations'].append('Consider expedited review')
+                
+                if pr_metrics.merge_conflicts:
+                    analysis_results['insights'].append('🔀 Merge conflicts detected')
+                    analysis_results['recommendations'].append('Resolve conflicts before review')
+                
+                if pr_metrics.lines_changed > 500:
+                    analysis_results['insights'].append('📏 Large PR - consider breaking into smaller changes')
+                
+                # Quality metrics
+                analysis_results['quality_metrics'] = {
+                    'lines_changed': pr_metrics.lines_changed,
+                    'files_changed': pr_metrics.file_changes_count,
+                    'comments': pr_metrics.comment_count,
+                    'reviews': pr_metrics.review_count
+                }
+                
+            elif context['event_type'] == 'issue_created':
+                print(f'🐛 Analyzing Issue #{context.get(\"issue_number\", \"unknown\")}')
+                analysis_results['insights'].append('📝 New issue requires triage')
+                analysis_results['recommendations'].append('Assign appropriate labels and milestone')
+                
+            elif context['event_type'] == 'commit_pushed':
+                print('📦 Analyzing Commit Push')
+                analysis_results['insights'].append('🔄 New commits pushed - CI/CD pipeline triggered')
+                
+        except Exception as e:
+            print(f'⚠️ Analysis error: {str(e)}')
+            analysis_results['insights'].append(f'Analysis partially completed due to: {str(e)}')
+        
+        # Save results
+        with open('analysis_results.json', 'w') as f:
+            json.dump(analysis_results, f, indent=2)
+        
+        print('✅ Cognitive analysis completed')
+        print(f'📊 Priority Score: {analysis_results[\"priority_score\"]:.2f}')
+        print(f'💡 Insights: {len(analysis_results[\"insights\"])}')
+        "
+        
+    - name: 🛡️ Security Analysis
+      if: contains(github.event.inputs.scope, 'security') || github.event.inputs.scope == 'full'
+      run: |
+        echo "🛡️ Running cognitive security analysis..."
+        python -c "
+        import json
+        import os
+        
+        # Load previous results
+        with open('analysis_results.json', 'r') as f:
+            results = json.load(f)
+        
+        # Security scanning patterns
+        security_patterns = [
+            'eval(',
+            'exec(',
+            'subprocess.call',
+            'os.system',
+            'shell=True',
+            'pickle.loads',
+            '__import__'
+        ]
+        
+        security_issues = []
+        
+        # Scan changed files for security patterns
+        if os.path.exists('.git'):
+            import subprocess
+            try:
+                # Get changed files
+                result = subprocess.run(['git', 'diff', '--name-only', 'HEAD~1'], 
+                                      capture_output=True, text=True)
+                changed_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
+                
+                for file_path in changed_files:
+                    if file_path.endswith(('.py', '.js', '.ts', '.sh')):
+                        try:
+                            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                content = f.read()
+                                for pattern in security_patterns:
+                                    if pattern in content:
+                                        security_issues.append(f'{file_path}: {pattern} detected')
+                        except FileNotFoundError:
+                            pass
+                            
+            except Exception as e:
+                security_issues.append(f'Security scan error: {str(e)}')
+        
+        results['security_alerts'].extend(security_issues)
+        
+        if security_issues:
+            results['recommendations'].append('🔍 Security review required for detected patterns')
+        
+        # Save updated results
+        with open('analysis_results.json', 'w') as f:
+            json.dump(results, f, indent=2)
+        
+        print(f'🛡️ Security analysis completed: {len(security_issues)} issues found')
+        "
+        
+    - name: ⚡ Performance Analysis
+      if: contains(github.event.inputs.scope, 'performance') || github.event.inputs.scope == 'full'
+      run: |
+        echo "⚡ Running cognitive performance analysis..."
+        python -c "
+        import json
+        import os
+        import subprocess
+        
+        # Load previous results
+        with open('analysis_results.json', 'r') as f:
+            results = json.load(f)
+        
+        performance_issues = []
+        
+        # Basic performance checks
+        try:
+            # Check for large files
+            result = subprocess.run(['find', '.', '-type', 'f', '-size', '+10M'], 
+                                  capture_output=True, text=True)
+            large_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
+            
+            for file_path in large_files:
+                if not any(exclude in file_path for exclude in ['.git', 'node_modules', '__pycache__']):
+                    performance_issues.append(f'Large file detected: {file_path}')
+            
+            # Check for potential performance anti-patterns in Python files
+            if os.path.exists('.git'):
+                result = subprocess.run(['git', 'diff', '--name-only', 'HEAD~1'], 
+                                      capture_output=True, text=True)
+                changed_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
+                
+                perf_patterns = [
+                    'for.*in.*range.*len',  # Inefficient iteration
+                    'time.sleep',           # Blocking sleep calls
+                    '\.join.*in.*loop'      # String concatenation in loops
+                ]
+                
+                for file_path in changed_files:
+                    if file_path.endswith('.py'):
+                        try:
+                            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                content = f.read()
+                                lines = content.split('\n')
+                                for i, line in enumerate(lines):
+                                    for pattern in perf_patterns:
+                                        import re
+                                        if re.search(pattern, line):
+                                            performance_issues.append(
+                                                f'{file_path}:{i+1}: Potential performance issue'
+                                            )
+                        except FileNotFoundError:
+                            pass
+        
+        except Exception as e:
+            performance_issues.append(f'Performance analysis error: {str(e)}')
+        
+        results['performance_issues'].extend(performance_issues)
+        
+        if performance_issues:
+            results['recommendations'].append('⚡ Performance optimization recommended')
+        
+        # Save updated results
+        with open('analysis_results.json', 'w') as f:
+            json.dump(results, f, indent=2)
+        
+        print(f'⚡ Performance analysis completed: {len(performance_issues)} issues found')
+        "
+        
+    - name: 📝 Generate Cognitive Report
+      id: generate-report
+      run: |
+        echo "📝 Generating cognitive analysis report..."
+        python -c "
+        import json
+        from datetime import datetime
+        
+        # Load analysis results
+        with open('analysis_results.json', 'r') as f:
+            results = json.load(f)
+        
+        with open('cognitive_context.json', 'r') as f:
+            context = json.load(f)
+        
+        # Generate markdown report
+        report = f'''# 🧠 Cognitive Agent Analysis Report
+        
+**Event**: {context['event_type'].replace('_', ' ').title()}  
+**Repository**: {context['repository']}  
+**Actor**: {context['actor']}  
+**Mode**: {context['mode'].upper()}  
+**Timestamp**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+        
+## 📊 Priority Assessment
+        
+**Priority Score**: {results['priority_score']:.2f}/100  
+**Attention Level**: {results.get('attention_level', 'MEDIUM')}
+        
+## 💡 Insights ({len(results['insights'])})
+        
+'''
+        
+        for insight in results['insights']:
+            report += f'- {insight}\n'
+        
+        if not results['insights']:
+            report += '- No specific insights generated\n'
+        
+        report += f'''
+## 🎯 Recommendations ({len(results['recommendations'])})
+        
+'''
+        
+        for rec in results['recommendations']:
+            report += f'- {rec}\n'
+        
+        if not results['recommendations']:
+            report += '- No specific recommendations\n'
+        
+        # Security section
+        if results['security_alerts']:
+            report += f'''
+## 🛡️ Security Alerts ({len(results['security_alerts'])})
+        
+'''
+            for alert in results['security_alerts']:
+                report += f'- ⚠️ {alert}\n'
+        
+        # Performance section  
+        if results['performance_issues']:
+            report += f'''
+## ⚡ Performance Issues ({len(results['performance_issues'])})
+        
+'''
+            for issue in results['performance_issues']:
+                report += f'- 🐌 {issue}\n'
+        
+        # Quality metrics
+        if results['quality_metrics']:
+            report += f'''
+## 📏 Quality Metrics
+        
+'''
+            for metric, value in results['quality_metrics'].items():
+                report += f'- **{metric.replace('_', ' ').title()}**: {value}\n'
+        
+        report += f'''
+        
+---
+*Generated by Super Alita Cognitive Agent v1.0 in {context['mode']} mode*
+'''
+        
+        # Save report
+        with open('cognitive_report.md', 'w') as f:
+            f.write(report)
+        
+        # Set outputs for next step
+        print(f'::set-output name=priority_score::{results[\"priority_score\"]:.2f}')
+        print(f'::set-output name=has_security_alerts::{len(results[\"security_alerts\"]) > 0}')
+        print(f'::set-output name=has_performance_issues::{len(results[\"performance_issues\"]) > 0}')
+        
+        print('📝 Cognitive report generated successfully')
+        "
+        
+    - name: 💬 Post Analysis Comment (Shadow Mode)
+      if: github.event_name == 'pull_request' && github.event.inputs.analysis_mode != 'act'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            const report = fs.readFileSync('cognitive_report.md', 'utf8');
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🧠 Cognitive Agent Analysis (Shadow Mode)\n\n${report}`
+            });
+            
+            console.log('✅ Cognitive analysis posted as comment');
+          } catch (error) {
+            console.log('❌ Failed to post comment:', error.message);
+          }
+          
+    - name: 🚨 Create Security Check
+      if: steps.generate-report.outputs.has_security_alerts == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          await github.rest.checks.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            name: 'Cognitive Security Analysis',
+            head_sha: context.sha,
+            status: 'completed',
+            conclusion: 'failure',
+            output: {
+              title: '🛡️ Security Issues Detected',
+              summary: 'The cognitive agent detected potential security issues that require review.',
+              text: 'Please review the security alerts in the cognitive analysis report.'
+            }
+          });
+          
+    - name: 📊 Upload Analysis Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cognitive-analysis-results
+        path: |
+          cognitive_report.md
+          analysis_results.json
+          cognitive_context.json
+        retention-days: 30
+        
+    - name: 📈 Update Telemetry
+      run: |
+        echo "📈 Updating cognitive agent telemetry..."
+        python -c "
+        import json
+        from datetime import datetime
+        
+        # Create telemetry entry
+        telemetry = {
+            'timestamp': datetime.now().isoformat(),
+            'event_type': '${{ github.event_name }}',
+            'repository': '${{ github.repository }}',
+            'actor': '${{ github.actor }}',
+            'mode': '${{ github.event.inputs.analysis_mode || 'shadow' }}',
+            'priority_score': '${{ steps.generate-report.outputs.priority_score }}',
+            'security_alerts': '${{ steps.generate-report.outputs.has_security_alerts }}',
+            'performance_issues': '${{ steps.generate-report.outputs.has_performance_issues }}',
+            'workflow_run_id': '${{ github.run_id }}'
+        }
+        
+        # Append to telemetry file
+        try:
+            with open('telemetry.jsonl', 'a') as f:
+                f.write(json.dumps(telemetry) + '\n')
+            print('📈 Telemetry updated successfully')
+        except Exception as e:
+            print(f'⚠️ Telemetry update failed: {str(e)}')
+        "
