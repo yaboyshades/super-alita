@@ -4,8 +4,8 @@ Orchestrates AI development tools at the team level by aggregating
 metrics and identifying organization-wide patterns and bottlenecks.
 """
 from collections import Counter
-from typing import Dict, Any, List
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
 
 class TeamProductivityOrchestrator:
@@ -16,12 +16,12 @@ class TeamProductivityOrchestrator:
         # a database or a time-series metrics store (e.g., Prometheus, InfluxDB).
         self.todo_keyword_counts: Counter = Counter()
         self.naming_inconsistencies: Counter = Counter()
-        self.workflow_execution_times: Dict[str, List[float]] = {
+        self.workflow_execution_times: dict[str, list[float]] = {
             "todo_resolution": []
         }
         self.total_workflows_processed = 0
 
-    def consume_event(self, topic: str, payload: Dict[str, Any]):
+    def consume_event(self, topic: str, payload: dict[str, Any]):
         """Consumes an event from the event bus to update team metrics."""
         # This method would be called by a subscriber to the main event bus.
         if topic == "workflow.todo_resolution.completed":
@@ -30,7 +30,7 @@ class TeamProductivityOrchestrator:
         # In a real system, you would handle other events like 'naming.inconsistency.detected',
         # 'snippet.used', 'code_review.completed', etc.
 
-    def _process_todo_completion(self, payload: Dict[str, Any]):
+    def _process_todo_completion(self, payload: dict[str, Any]):
         """Processes data from a completed TODO workflow."""
         self.total_workflows_processed += 1
         
@@ -44,7 +44,7 @@ class TeamProductivityOrchestrator:
         # if execution_time:
         #     self.workflow_execution_times["todo_resolution"].append(execution_time)
 
-    def _extract_keywords(self, text: str) -> List[str]:
+    def _extract_keywords(self, text: str) -> list[str]:
         """A simple keyword extractor to find common themes in TODOs."""
         import re
         words = re.findall(r'\b\w{4,15}\b', text.lower()) # Find words 4-15 chars long
@@ -52,7 +52,7 @@ class TeamProductivityOrchestrator:
         stop_words = {"this", "that", "with", "from", "implement", "should", "todo"}
         return [word for word in words if word not in stop_words]
 
-    def generate_team_health_summary(self) -> Dict[str, Any]:
+    def generate_team_health_summary(self) -> dict[str, Any]:
         """Generates a summary of team productivity patterns."""
         
         # Suggest shared snippets based on most common TODO keywords
@@ -68,7 +68,7 @@ class TeamProductivityOrchestrator:
         # In the future, this would also analyze naming, review velocity, etc.
         
         return {
-            "summary_generated_at": datetime.now(timezone.utc).isoformat(),
+            "summary_generated_at": datetime.now(UTC).isoformat(),
             "total_workflows_analyzed": self.total_workflows_processed,
             "optimizations": {
                 "suggested_snippet_libraries": suggested_snippets,

@@ -18,7 +18,6 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import pytest_asyncio
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -110,7 +109,7 @@ class TestIntegrationReliability:
     @pytest.mark.asyncio
     async def test_resilient_router_timeout_handling(self, mock_base_router, mock_ollama_client):
         """Test router handles timeouts gracefully."""
-        from src.reug_runtime.unified_router import UnifiedRouter, TimeoutConfig
+        from src.reug_runtime.unified_router import TimeoutConfig, UnifiedRouter
         
         # Create router with short timeouts for testing
         timeout_config = TimeoutConfig(
@@ -143,7 +142,11 @@ class TestIntegrationReliability:
     @pytest.mark.asyncio
     async def test_circuit_breaker_functionality(self, mock_base_registry):
         """Test circuit breaker trips after failures."""
-        from src.reug_runtime.unified_router import CircuitBreaker, CircuitBreakerConfig, CircuitState
+        from src.reug_runtime.unified_router import (
+            CircuitBreaker,
+            CircuitBreakerConfig,
+            CircuitState,
+        )
         
         # Create circuit breaker with low threshold for testing
         config = CircuitBreakerConfig(failure_threshold=2, recovery_timeout_s=1)

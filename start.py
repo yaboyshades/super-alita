@@ -10,13 +10,10 @@ Reference: https://github.com/arthurcolle/openai-mcp/blob/main/cli.py#L2200
 """
 
 import argparse
-import asyncio
 import logging
 import os
 import sys
-import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 import uvicorn
 from rich.console import Console
@@ -40,7 +37,7 @@ class UnifiedLauncher:
             "test": self._launch_test_mode,
         }
         
-    def _get_feature_flags(self) -> Dict[str, bool]:
+    def _get_feature_flags(self) -> dict[str, bool]:
         """Get feature flags from environment variables."""
         return {
             "github_demo": os.getenv("ENABLE_GITHUB_DEMO", "false").lower() == "true",
@@ -58,7 +55,7 @@ class UnifiedLauncher:
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
     
-    def _check_prerequisites(self) -> Dict[str, bool]:
+    def _check_prerequisites(self) -> dict[str, bool]:
         """Check system prerequisites and dependencies."""
         checks = {}
         
@@ -89,7 +86,7 @@ class UnifiedLauncher:
         flags = self._get_feature_flags()
         enabled_features = [k for k, v in flags.items() if v]
         
-        info_text = f"[bold green]Super Alita v3.0 Unified Launcher[/bold green]\n"
+        info_text = "[bold green]Super Alita v3.0 Unified Launcher[/bold green]\n"
         info_text += f"Mode: {mode}\n"
         info_text += f"Features: {', '.join(enabled_features) or 'None'}\n"
         

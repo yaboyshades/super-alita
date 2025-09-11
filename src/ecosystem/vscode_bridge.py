@@ -7,11 +7,10 @@ This script demonstrates the developer experience loop:
 2. Calls the orchestrator's FastAPI endpoint.
 3. Simulates the IDE's reaction (inserting snippets, showing notifications).
 """
-import asyncio
-import aiohttp
-import json
 import re
-from typing import Dict, Any, List
+from typing import Any
+
+import aiohttp
 
 
 class VSCodeBridgeSimulator:
@@ -26,7 +25,7 @@ class VSCodeBridgeSimulator:
         """Scans a file for TODOs and processes them through the orchestrator."""
         print(f"\n---  simulating vs code bridge for file: {file_path} ---")
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
         except FileNotFoundError:
             print(f"Error: File not found at {file_path}")
@@ -53,7 +52,7 @@ class VSCodeBridgeSimulator:
                 # Call the orchestrator service
                 await self._call_orchestrator(context)
 
-    async def _call_orchestrator(self, context: Dict[str, Any]):
+    async def _call_orchestrator(self, context: dict[str, Any]):
         """Makes an HTTP POST request to the orchestrator's FastAPI service."""
         url = f"{self.orchestrator_url}/api/v1/developer-action"
         headers = {
@@ -84,14 +83,14 @@ class VSCodeBridgeSimulator:
                 print(f"[VSCode Bridge] Unexpected error: {e}")
                 print("                 Connection failed or response malformed.")
 
-    def _simulate_ide_actions(self, orchestrator_response: Dict[str, Any]):
+    def _simulate_ide_actions(self, orchestrator_response: dict[str, Any]):
         """Prints messages to the console simulating what a real IDE extension would do."""
         print("\n--- [Simulated IDE Actions] ---")
         
         # 1. Simulate showing a toast notification with the Copilot prompt
         prompt = orchestrator_response.get("copilot_prompt", "")
         if prompt:
-            print(f"✅ [TOAST NOTIFICATION] Enhanced Context Ready for Copilot!")
+            print("✅ [TOAST NOTIFICATION] Enhanced Context Ready for Copilot!")
             print(f"   Ask Copilot: \"{prompt[:120].replace(chr(10), ' ')}...\"")
 
         # 2. Simulate inserting dynamic snippets

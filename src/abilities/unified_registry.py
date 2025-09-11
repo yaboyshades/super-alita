@@ -10,13 +10,12 @@ Pattern adapted from GitHub patterns found in:
 - Graceful degradation when modules are unavailable
 """
 
-import asyncio
 import importlib
 import inspect
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class FeatureFlaggedDemo:
     """Represents a demo that can be enabled/disabled via feature flags."""
     
     def __init__(self, name: str, flag_env: str, module_path: str, 
-                 description: str = "", dependencies: Optional[List[str]] = None):
+                 description: str = "", dependencies: list[str] | None = None):
         self.name = name
         self.flag_env = flag_env
         self.module_path = module_path
@@ -84,7 +83,7 @@ class UnifiedAbilityRegistry:
         self.discovered_abilities = {}
         self.demo_tools = {}
         
-    def _register_demos(self) -> Dict[str, FeatureFlaggedDemo]:
+    def _register_demos(self) -> dict[str, FeatureFlaggedDemo]:
         """Register available feature-flagged demos."""
         return {
             "github_integration": FeatureFlaggedDemo(
@@ -124,7 +123,7 @@ class UnifiedAbilityRegistry:
             ),
         }
     
-    async def auto_discover_abilities(self) -> Dict[str, Any]:
+    async def auto_discover_abilities(self) -> dict[str, Any]:
         """
         Enhanced auto-discovery that respects include/exclude environment variables.
         
@@ -166,7 +165,7 @@ class UnifiedAbilityRegistry:
         self.discovered_abilities = discovered
         return discovered
     
-    async def _process_ability_module(self, module: Any, name: str) -> Dict[str, Any]:
+    async def _process_ability_module(self, module: Any, name: str) -> dict[str, Any]:
         """Process a discovered ability module using existing patterns."""
         result = {"module": module, "tools": [], "contracts": [], "executors": {}}
         
@@ -241,7 +240,7 @@ class UnifiedAbilityRegistry:
         result["registration_method"] = "none"
         return result
     
-    async def load_demo_tools(self) -> Dict[str, Any]:
+    async def load_demo_tools(self) -> dict[str, Any]:
         """Load tools from feature-flagged demos."""
         demo_results = {}
         
@@ -269,7 +268,7 @@ class UnifiedAbilityRegistry:
         
         return demo_results
     
-    async def _extract_demo_tools(self, module: Any, demo: FeatureFlaggedDemo) -> List[Dict[str, Any]]:
+    async def _extract_demo_tools(self, module: Any, demo: FeatureFlaggedDemo) -> list[dict[str, Any]]:
         """Extract tools from a demo module."""
         tools = []
         
@@ -327,7 +326,7 @@ class UnifiedAbilityRegistry:
         
         return tools
     
-    async def initialize(self) -> Dict[str, Any]:
+    async def initialize(self) -> dict[str, Any]:
         """Initialize the unified registry with full discovery."""
         logger.info("Initializing unified ability registry...")
         
@@ -350,7 +349,7 @@ class UnifiedAbilityRegistry:
             "feature_flags": {demo_id: demo.enabled for demo_id, demo in self.demos.items()}
         }
     
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current registry status including feature flags."""
         return {
             "discovered_abilities": len(self.discovered_abilities),
@@ -371,7 +370,7 @@ class UnifiedAbilityRegistry:
         }
     
     # Delegate methods to maintain compatibility
-    def register_tool(self, contract: Dict[str, Any], executor: callable):
+    def register_tool(self, contract: dict[str, Any], executor: callable):
         """Delegate to base registry for compatibility."""
         return self.base_registry.register_tool(contract, executor)
     
@@ -407,7 +406,7 @@ async def create_unified_registry(base_registry: Any) -> UnifiedAbilityRegistry:
     return registry
 
 
-def get_demo_status() -> Dict[str, Dict[str, Any]]:
+def get_demo_status() -> dict[str, dict[str, Any]]:
     """Get current demo status without creating registry."""
     registry = UnifiedAbilityRegistry(None)
     return {

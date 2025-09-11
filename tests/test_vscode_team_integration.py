@@ -1,11 +1,12 @@
 # tests/test_vscode_team_integration.py
-import pytest
-from unittest.mock import patch, MagicMock, mock_open
-import tempfile
 import os
+import tempfile
+from unittest.mock import MagicMock, patch
 
-from src.ecosystem.vscode_bridge import VSCodeBridgeSimulator
+import pytest
+
 from src.ecosystem.team_orchestrator import TeamProductivityOrchestrator
+from src.ecosystem.vscode_bridge import VSCodeBridgeSimulator
 
 
 @pytest.mark.asyncio

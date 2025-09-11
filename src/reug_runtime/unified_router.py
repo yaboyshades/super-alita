@@ -14,10 +14,11 @@ Patterns adapted from GitHub examples:
 import asyncio
 import logging
 import time
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any
 
 import httpx
 
@@ -109,9 +110,9 @@ class ResilientExecutor:
     """Executor with retry logic and circuit breaker."""
     
     def __init__(self, 
-                 retry_config: Optional[RetryConfig] = None,
-                 timeout_config: Optional[TimeoutConfig] = None,
-                 circuit_config: Optional[CircuitBreakerConfig] = None):
+                 retry_config: RetryConfig | None = None,
+                 timeout_config: TimeoutConfig | None = None,
+                 circuit_config: CircuitBreakerConfig | None = None):
         self.retry_config = retry_config or RetryConfig()
         self.timeout_config = timeout_config or TimeoutConfig()
         self.circuit_breaker = CircuitBreaker(circuit_config or CircuitBreakerConfig())
@@ -130,7 +131,7 @@ class ResilientExecutor:
     async def execute_with_retry(self, 
                                operation: callable, 
                                *args, 
-                               timeout: Optional[float] = None,
+                               timeout: float | None = None,
                                **kwargs) -> Any:
         """
         Execute operation with retry logic and circuit breaker.
@@ -155,7 +156,7 @@ class ResilientExecutor:
                 self.circuit_breaker.record_success()
                 return result
                 
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 last_exception = e
                 logger.warning(f"Operation timed out on attempt {attempt + 1}")
                 
@@ -205,9 +206,9 @@ class UnifiedRouter:
     
     def __init__(self, 
                  base_router: Any,
-                 retry_config: Optional[RetryConfig] = None,
-                 timeout_config: Optional[TimeoutConfig] = None,
-                 circuit_config: Optional[CircuitBreakerConfig] = None):
+                 retry_config: RetryConfig | None = None,
+                 timeout_config: TimeoutConfig | None = None,
+                 circuit_config: CircuitBreakerConfig | None = None):
         self.base_router = base_router
         self.executor = ResilientExecutor(retry_config, timeout_config, circuit_config)
         self.tool_circuits = {}  # Per-tool circuit breakers
@@ -230,7 +231,7 @@ class UnifiedRouter:
     async def execute_turn(self, 
                          message: str, 
                          session_id: str,
-                         **kwargs) -> AsyncGenerator[Dict[str, Any], None]:
+                         **kwargs) -> AsyncGenerator[dict[str, Any], None]:
         """
         Enhanced execute_turn with resilient patterns.
         
@@ -258,7 +259,7 @@ class UnifiedRouter:
             
             self.metrics["successful_executions"] += 1
             
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.metrics["timeout_errors"] += 1
             self.metrics["failed_executions"] += 1
             
@@ -286,8 +287,8 @@ class UnifiedRouter:
     
     async def execute_tool_with_resilience(self, 
                                          tool_name: str, 
-                                         tool_args: Dict[str, Any],
-                                         registry: Any) -> Dict[str, Any]:
+                                         tool_args: dict[str, Any],
+                                         registry: Any) -> dict[str, Any]:
         """
         Execute a tool with full resilience patterns.
         
@@ -336,7 +337,7 @@ class UnifiedRouter:
     
     async def execute_llm_with_resilience(self, 
                                         llm_client: Any,
-                                        messages: List[Dict[str, Any]], 
+                                        messages: list[dict[str, Any]], 
                                         **kwargs) -> Any:
         """Execute LLM call with resilience patterns."""
         
@@ -352,7 +353,7 @@ class UnifiedRouter:
             timeout=self.executor.timeout_config.llm_timeout_s
         )
     
-    def get_health_status(self) -> Dict[str, Any]:
+    def get_health_status(self) -> dict[str, Any]:
         """Get router health status with circuit breaker states."""
         total_executions = self.metrics["total_executions"]
         success_rate = (
@@ -401,9 +402,9 @@ class UnifiedRouter:
 
 @asynccontextmanager
 async def create_resilient_router(base_router: Any, 
-                                retry_config: Optional[RetryConfig] = None,
-                                timeout_config: Optional[TimeoutConfig] = None,
-                                circuit_config: Optional[CircuitBreakerConfig] = None) -> UnifiedRouter:
+                                retry_config: RetryConfig | None = None,
+                                timeout_config: TimeoutConfig | None = None,
+                                circuit_config: CircuitBreakerConfig | None = None) -> UnifiedRouter:
     """
     Context manager factory for creating resilient router.
     
