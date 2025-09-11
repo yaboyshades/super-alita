@@ -506,7 +506,7 @@ class AdaptiveEVCalculator:
     def should_use_tool(self, threshold: float = 0.0) -> bool:
         """Determine if tool should be used based on EV"""
         # Allow tools with no history to run (bootstrap period)
-        if len(self.execution_rewards) == 0:
+        if not self.execution_rewards:
             return True
         return self.current_ev > threshold and self.confidence_in_ev > 0.3
 

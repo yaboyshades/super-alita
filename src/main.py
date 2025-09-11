@@ -70,12 +70,15 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 # Event bus imports (moved after path setup to avoid import errors)
+from contextlib import suppress  # noqa: E402
+
 from reug_runtime.event_bus import (  # noqa: E402
     BaseEventBus,
     FileEventBus,
     make_event_bus,
 )
 from reug_runtime.llm_client import LLMClient, get_llm_client  # noqa: E402
+from src.constitutional_gateway import constitutional_router  # noqa: E402
 from src.core.events import create_event  # noqa: E402
 from src.gui.router import router as gui_router  # noqa: E402
 from src.security.api_key_store import APIKeyStore  # noqa: E402
@@ -144,8 +147,8 @@ if FASTAPI_AVAILABLE:
     _admin_key = os.getenv("ALITA_ADMIN_KEY", "").strip()
 
     def _get_api_store() -> APIKeyStore:
-        store = getattr(globals().get("app", None), "state", object()).__dict__.get(
-            "api_key_store", None
+        store = getattr(globals().get("app"), "state", object()).__dict__.get(
+            "api_key_store"
         )
         if store is None:
             store = APIKeyStore.from_env()
@@ -164,8 +167,8 @@ if FASTAPI_AVAILABLE:
     _redis_url = os.getenv("ALITA_REDIS_URL", "").strip()
 
     def _get_rate_limiter() -> RateLimiter:
-        rl = getattr(globals().get("app", None), "state", object()).__dict__.get(
-            "rate_limiter", None
+        rl = getattr(globals().get("app"), "state", object()).__dict__.get(
+            "rate_limiter"
         )
         if rl is None:
             if _redis_url:
@@ -380,9 +383,9 @@ except Exception as e:  # pragma: no cover
 
                 async def gen() -> AsyncGenerator[str, None]:
                     # Get model identity
-                    llm = getattr(
-                        globals().get("app", None), "state", object()
-                    ).__dict__.get("llm_model", None)
+                    llm = getattr(globals().get("app"), "state", object()).__dict__.get(
+                        "llm_model"
+                    )
                     model_identity = {"model": "unknown", "provider": "unknown"}
                     if llm and hasattr(llm, "identify"):
                         try:
@@ -972,9 +975,9 @@ if FASTAPI_AVAILABLE:
                 return []
             return tools
 
-        ability_reg = getattr(
-            globals().get("app", None), "state", object()
-        ).__dict__.get("ability_registry", None)
+        ability_reg = getattr(globals().get("app"), "state", object()).__dict__.get(
+            "ability_registry"
+        )
         llm_tools = _openai_tools_from_registry(ability_reg)
 
         # Try direct Ollama connection first for gpt-oss:20b model
@@ -1172,8 +1175,8 @@ if FASTAPI_AVAILABLE:
             llm = (
                 getattr(chat_stream_endpoint, "_llm", None)
                 or getattr(chat_router, "app_llm", None)
-                or getattr(globals().get("app", None), "state", object()).__dict__.get(
-                    "llm_model", None
+                or getattr(globals().get("app"), "state", object()).__dict__.get(
+                    "llm_model"
                 )
             )
             accumulated: list[str] = []
@@ -1249,7 +1252,7 @@ if FASTAPI_AVAILABLE:
         session_id = body.get("session") or "default"
         if not prompt:
             return JSONResponse({"error": "missing 'q' or 'message'"}, status_code=400)  # type: ignore
-        llm = getattr(app, "state", object()).__dict__.get("llm_model", None)
+        llm = getattr(app, "state", object()).__dict__.get("llm_model")
 
         # Get model identity
         model_identity = {"model": "unknown", "provider": "unknown"}
@@ -1304,7 +1307,7 @@ if FASTAPI_AVAILABLE:
         Delegates to the existing chat generation logic to avoid duplication.
         """
         sid = req.session or "default"
-        llm = getattr(app, "state", object()).__dict__.get("llm_model", None)
+        llm = getattr(app, "state", object()).__dict__.get("llm_model")
 
         # Identify model used
         model_identity = {"model": "unknown", "provider": "unknown"}
@@ -1508,7 +1511,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
     # Include unified chat API if available
     try:
-        from src.api.chat_endpoints import router as chat_router  # noqa: WPS433
+        from src.api.chat_endpoints import router as chat_router
 
         app.include_router(chat_router)  # type: ignore
     except Exception as e:  # noqa: BLE001
@@ -1800,12 +1803,12 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
             from src.vscode_integration.paper_ingestion_tool import (
                 PaperIngestionTool,
-            )  # noqa: WPS433
+            )
             from src.vscode_integration.repo_mcp_tool import (
-                RepositoryMCPTool,  # noqa: WPS433
+                RepositoryMCPTool,
             )
 
-            ability_reg = app.state.ability_registry  # type: ignore[attr-defined]
+            ability_reg = app.state.ability_registry  # type: ignore[attr- defined]
 
             # Initialize tool instances
             repo_tool = RepositoryMCPTool(repo_root=_Path.cwd())
@@ -2879,7 +2882,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 "yes",
                 "on",
             }:
-                from src.cognitive.z3_verifier import ScalableZ3Verifier  # noqa: WPS433
+                from src.cognitive.z3_verifier import ScalableZ3Verifier
 
                 z3v = ScalableZ3Verifier(base_timeout=10, max_timeout=60)
 
@@ -3070,6 +3073,172 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
             traceback.print_exc()
 
+        # Register Unified Orchestration ability + endpoint
+        try:
+            ability_reg = app.state.ability_registry  # type: ignore[attr-defined]
+
+            from src.orchestration.unified_orchestrator import (
+                UnifiedOrchestrator,
+                UnifiedRunConfig,
+            )
+
+            orchestrator_instance = UnifiedOrchestrator(
+                ability_reg, app.state.event_bus  # type: ignore[attr-defined]
+            )
+
+            async def _unified_execute(args: dict[str, Any]) -> dict[str, Any]:
+                prompt = (args.get("prompt") or args.get("goal") or "").strip()
+                if not prompt:
+                    return {"error": "missing prompt"}
+                cfg = UnifiedRunConfig.from_args(prompt, args)
+                # Run non-streaming for tool invocation (aggregated result)
+                return await orchestrator_instance.run(cfg)
+
+            ability_reg.register_tool(  # type: ignore
+                contract={
+                    "tool_id": "unified_execute",
+                    "description": (
+                        "Run unified orchestration pipeline "
+                        "(spec/plan/consensus/code/validate/score)"
+                    ),
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["prompt"],
+                        "properties": {
+                            "prompt": {"type": "string"},
+                            "run_id": {"type": "string"},
+                            "session_id": {"type": "string"},
+                            "file_path": {"type": "string"},
+                            "language": {
+                                "type": "string",
+                                "default": "python",
+                            },
+                            "enable_specification": {
+                                "type": "boolean",
+                                "default": False,
+                            },
+                            "enable_planning": {
+                                "type": "boolean",
+                                "default": True,
+                            },
+                            "enable_tasks": {
+                                "type": "boolean",
+                                "default": False,
+                            },
+                            "enable_consensus": {
+                                "type": "boolean",
+                                "default": True,
+                            },
+                            "enable_code_generation": {
+                                "type": "boolean",
+                                "default": False,
+                            },
+                            "enable_validation": {
+                                "type": "boolean",
+                                "default": False,
+                            },
+                            "enable_scoring": {
+                                "type": "boolean",
+                                "default": False,
+                            },
+                            "test_first": {"type": "boolean", "default": True},
+                            "timeout_s": {"type": "integer", "default": 120},
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_unified_execute,
+            )
+
+            # Add streaming endpoint (best-effort) under existing app
+            from fastapi import APIRouter  # type: ignore
+            from fastapi.responses import StreamingResponse  # type: ignore
+
+            unified_router = APIRouter(  # type: ignore
+                prefix="/v1/unified", tags=["unified"]
+            )
+
+            def _sse_pack(event_type: str, payload: dict[str, Any]) -> str:
+                data = json.dumps(payload, ensure_ascii=False)
+                return f"event: {event_type}\ndata: {data}\n\n"
+
+            @unified_router.post("/stream")  # type: ignore
+            async def unified_stream_post(request: Request):  # type: ignore
+                body = await request.json()
+                prompt = (body.get("prompt") or body.get("goal") or "").strip()
+                if not prompt:
+                    from fastapi.responses import JSONResponse  # type: ignore
+
+                    return JSONResponse(  # type: ignore
+                        {"error": "missing prompt"}, status_code=400
+                    )
+                cfg = UnifiedRunConfig.from_args(prompt, body)
+
+                async def gen():  # type: ignore
+                    async for ev in orchestrator_instance.run_stream(cfg):
+                        et = ev.get("type", "message")
+                        mapping = {
+                            "UnifiedRunStarted": "start",
+                            "UnifiedStageStarted": "stage_start",
+                            "UnifiedStageSucceeded": "stage_result",
+                            "UnifiedStageFailed": "stage_error",
+                            "UnifiedRunCompleted": "done",
+                        }
+                        yield _sse_pack(mapping.get(et, "message"), ev)
+
+                return StreamingResponse(
+                    gen(),
+                    media_type="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache, no-transform",
+                        "Connection": "keep-alive",
+                        "X-Accel-Buffering": "no",
+                    },
+                )
+
+            @unified_router.get("/stream")  # type: ignore
+            async def unified_stream_get(request: Request):  # type: ignore
+                params = request.query_params  # type: ignore[attr-defined]
+                prompt = (params.get("q") or params.get("prompt") or "").strip()
+                if not prompt:
+                    from fastapi.responses import JSONResponse  # type: ignore
+
+                    return JSONResponse(  # type: ignore
+                        {"error": "missing prompt"}, status_code=400
+                    )
+                cfg_args = dict(params)
+                cfg = UnifiedRunConfig.from_args(prompt, cfg_args)
+
+                async def gen():  # type: ignore
+                    async for ev in orchestrator_instance.run_stream(cfg):
+                        et = ev.get("type", "message")
+                        mapping = {
+                            "UnifiedRunStarted": "start",
+                            "UnifiedStageStarted": "stage_start",
+                            "UnifiedStageSucceeded": "stage_result",
+                            "UnifiedStageFailed": "stage_error",
+                            "UnifiedRunCompleted": "done",
+                        }
+                        yield _sse_pack(mapping.get(et, "message"), ev)
+
+                return StreamingResponse(
+                    gen(),
+                    media_type="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache, no-transform",
+                        "Connection": "keep-alive",
+                        "X-Accel-Buffering": "no",
+                    },
+                )
+
+            app.include_router(unified_router)  # Already has prefix="/v1/unified"
+            print("? DEBUG: Unified orchestration ability + endpoints registered")
+        except Exception as e:  # noqa: BLE001
+            print(f"? DEBUG: Failed to register unified orchestration: {e}")
+            import traceback
+
+            traceback.print_exc()
+
         # Optional ability auto-discovery (best-effort)
         try:
             if os.getenv("ALITA_AUTO_DISCOVER_ABILITIES", "false").lower() in {
@@ -3153,6 +3322,15 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         # GUI router under prefix
         with contextlib.suppress(Exception):
             app.include_router(gui_router, prefix=prefix)  # type: ignore
+        # Constitutional Gateway router under prefix
+        with contextlib.suppress(Exception):
+            app.include_router(constitutional_router, prefix=prefix)  # type: ignore
+        # SDD Framework router under prefix
+        with contextlib.suppress(Exception):
+            from src.sdd.router import create_sdd_router
+
+            sdd_router = create_sdd_router()
+            app.include_router(sdd_router, prefix=prefix)  # type: ignore
 
         # Automatic message optimization middleware (HTTP level)
         @app.middleware("http")  # type: ignore
@@ -3249,6 +3427,23 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         # GUI router without prefix
         with contextlib.suppress(Exception):
             app.include_router(gui_router)  # type: ignore
+        # Constitutional Gateway router without prefix
+        with contextlib.suppress(Exception):
+            app.include_router(constitutional_router)  # type: ignore
+        # SDD Framework router without prefix
+        with contextlib.suppress(Exception):
+            from src.sdd.router import create_sdd_router
+
+            sdd_router = create_sdd_router()
+            app.include_router(sdd_router)  # type: ignore
+
+        # Register reasoning endpoints (consensus/deepconf/mangle) if available
+        with suppress(Exception):
+            from src.reasoning.endpoints import (
+                register_reasoning_endpoints,  # type: ignore
+            )
+
+            register_reasoning_endpoints(app)  # type: ignore[arg-type]
 
     # Startup events are handled via lifespan; on_event is deprecated
 
@@ -3360,6 +3555,273 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         if not latest:
             return JSONResponse(status_code=404, content={"error": "no_latest"})  # type: ignore
         return JSONResponse(status_code=200, content=latest)  # type: ignore
+
+    # ---------------- SDD (Spec-Driven Development) Endpoints ---------------- #
+    class SDDSpecificationRequest(BaseModel):  # type: ignore[misc, valid-type]
+        spec_id: str  # External ID from IDE
+        title: str
+        description: str
+        requirements: list[str]
+        constraints: list[str]
+
+    class SDDPlanRequest(BaseModel):  # type: ignore[misc, valid-type]
+        plan_id: str
+        specification_id: str
+        tech_stack: list[str]
+        architecture: str
+        dependencies: list[str]
+
+    class SDDTasksRequest(BaseModel):  # type: ignore[misc, valid-type]
+        plan_id: str
+        tasks: list[dict]
+
+    @app.post("/sdd/specify")  # type: ignore
+    async def sdd_specify(
+        req: SDDSpecificationRequest,  # type: ignore
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> dict[str, object]:  # type: ignore
+        payload = req.model_dump()
+        with contextlib.suppress(Exception):
+            evt = create_event("sdd_specify", **payload)
+            if hasattr(app.state.event_bus, "publish"):  # type: ignore
+                await app.state.event_bus.publish(evt.model_dump())  # type: ignore
+            else:
+                await app.state.event_bus.emit(evt.model_dump())  # type: ignore
+        return {"status": "specification_processed", "spec_id": req.spec_id}
+
+    @app.post("/sdd/plan")  # type: ignore
+    async def sdd_plan(
+        req: SDDPlanRequest,  # type: ignore
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> dict[str, object]:  # type: ignore
+        payload = req.model_dump()
+        with contextlib.suppress(Exception):
+            evt = create_event("sdd_plan", **payload)
+            if hasattr(app.state.event_bus, "publish"):  # type: ignore
+                await app.state.event_bus.publish(evt.model_dump())  # type: ignore
+            else:
+                await app.state.event_bus.emit(evt.model_dump())  # type: ignore
+        return {"status": "plan_processed", "plan_id": req.plan_id}
+
+    @app.post("/sdd/tasks")  # type: ignore
+    async def sdd_tasks(
+        req: SDDTasksRequest,  # type: ignore
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> dict[str, object]:  # type: ignore
+        payload = req.model_dump()
+        with contextlib.suppress(Exception):
+            evt = create_event("sdd_tasks", **payload)
+            if hasattr(app.state.event_bus, "publish"):  # type: ignore
+                await app.state.event_bus.publish(evt.model_dump())  # type: ignore
+            else:
+                await app.state.event_bus.emit(evt.model_dump())  # type: ignore
+        return {
+            "status": "tasks_processed",
+            "plan_id": req.plan_id,
+            "count": len(req.tasks),
+        }
+
+    # ---------------- Reasoning (DeepCode) Endpoint ---------------- #
+    class CodeAnalysisRequest(BaseModel):  # type: ignore[misc, valid-type]
+        code: str
+        context_before: list[str] = []
+        context_after: list[str] = []
+        language: str
+        file_name: str
+        consensus_method: str = "ensemble_ranking"
+        include_alternatives: bool = True
+        confidence_threshold: float = 0.7
+
+    class ReasoningStep(BaseModel):  # type: ignore[misc, valid-type]
+        step: str
+        confidence: float = 0.5
+        evidence: list[str] = []
+        alternatives: list[str] = []
+
+    class CodeAnalysisResponse(BaseModel):  # type: ignore[misc, valid-type]
+        confidence: float
+        reasoning_steps: list[ReasoningStep]
+        alternatives: list[str] = []
+        patterns: list[dict[str, object]] = []
+        insights: list[dict[str, object]] = []
+        risk_assessment: dict[str, object] = {}
+        suggested_improvements: list[str] = []
+
+    def _semantic_insights(
+        code: str, language: str, before: list[str], after: list[str]
+    ) -> list[dict[str, object]]:
+        insights: list[dict[str, object]] = []
+        try:
+            if (
+                "class " in code or code.strip().startswith("class ")
+            ) and language.lower() in {
+                "python",
+                "typescript",
+                "javascript",
+                "java",
+                "csharp",
+            }:
+                insights.append(
+                    {
+                        "type": "architecture",
+                        "insight": "Class definition detected",
+                        "severity": "medium",
+                        "suggestion": "Ensure single responsibility and proper encapsulation",
+                    }
+                )
+            # Performance (very lightweight)
+            if "for" in code and (" in " in code or ":" in code):
+                insights.append(
+                    {
+                        "type": "performance",
+                        "insight": "Loop detected - consider efficiency",
+                        "severity": "low",
+                        "suggestion": "Consider comprehension/vectorization where applicable",
+                    }
+                )
+            # Security quick scan
+            low = code.lower()
+            if any(tok in low for tok in ["sql", "exec", "eval", "input("]):
+                insights.append(
+                    {
+                        "type": "security",
+                        "insight": "Potential security-sensitive call detected",
+                        "severity": "high",
+                        "suggestion": "Validate and sanitize all inputs; avoid eval/exec where possible",
+                    }
+                )
+        except Exception:
+            pass
+        return insights
+
+    def _risk_assessment(
+        code: str, language: str, base_conf: float
+    ) -> dict[str, object]:
+        # Heuristic scores; replace with DeepConf calibration if available
+        try:
+            lines = code.count("\n") + 1
+            words = len(code.split())
+            complexity = min(1.0, (lines * max(1, words // max(1, lines))) / 500)
+            coupling = code.count("import ") + code.count("from ")
+            coupling_score = min(1.0, coupling / 10)
+            overall = max(
+                0.0,
+                min(1.0, base_conf * (1 - (complexity * 0.5 + coupling_score * 0.3))),
+            )
+            return {
+                "overall": overall,
+                "factors": {
+                    "complexity": complexity,
+                    "coupling": coupling_score,
+                    "testability": base_conf,
+                    "security": 1.0 if "eval(" not in code.lower() else 0.3,
+                },
+                "language": language,
+            }
+        except Exception:
+            return {"overall": base_conf, "factors": {}}
+
+    @app.post("/reasoning/analyze-code", response_model=CodeAnalysisResponse)  # type: ignore
+    async def analyze_code_with_reasoning(
+        req: CodeAnalysisRequest,  # type: ignore
+        _auth: None = Depends(require_api_key),  # type: ignore
+        _rl: None = Depends(enforce_rate_limit),  # type: ignore
+    ) -> CodeAnalysisResponse:  # type: ignore
+        """Analyze code using consensus + lightweight semantic/risk heuristics.
+
+        This endpoint composes a prompt and calls the in-process ability
+        "deepconf_consensus" when available, falling back to a heuristic.
+        """
+        ability_registry = getattr(app.state, "ability_registry", None)  # type: ignore[attr-defined]
+        consensus: dict[str, object] = {
+            "consensus_text": "",
+            "consensus_confidence": 0.5,
+            "individual_responses": [],
+            "confidence_scores": [],
+        }
+        if ability_registry and getattr(ability_registry, "knows", lambda *_: False)(
+            "deepconf_consensus"
+        ):
+            prompt = (
+                "Analyze this code for patterns, improvements, and reasoning.\n\n"
+                f"Language: {req.language}\nFile: {req.file_name}\n"
+                f"ContextBefore(last5): {req.context_before[-5:]}\nContextAfter(next5): {req.context_after[:5]}\n\n"
+                f"Code:\n{req.code[:4000]}\n"
+                "Return confidence, reasoning, alternatives, patterns, and risks."
+            )
+            args = {
+                "prompt": prompt,
+                "num_samples": 5,
+                "temperature": 0.7,
+                "max_tokens": 512,
+                "method": req.consensus_method or "weighted_vote",
+                "confidence_threshold": req.confidence_threshold,
+                "temperature_range": 0.2,
+            }
+            try:
+                consensus = await ability_registry.execute("deepconf_consensus", args)  # type: ignore
+            except Exception as e:  # noqa: BLE001
+                # Fallback remains in place
+                with contextlib.suppress(Exception):
+                    await app.state.event_bus.emit(
+                        {  # type: ignore
+                            "type": "AbilityFailed",
+                            "tool": "deepconf_consensus",
+                            "error": str(e),
+                        }
+                    )
+
+        conf = float(consensus.get("consensus_confidence", 0.5) or 0.5)
+        responses = consensus.get("individual_responses", [])
+        if not isinstance(responses, list):
+            responses = []
+        steps: list[ReasoningStep] = []
+        for i, resp in enumerate(responses[:5]):
+            steps.append(
+                ReasoningStep(
+                    step=f"Analysis {i+1}: {str(resp)[:400]}", confidence=conf
+                )
+            )
+
+        insights = _semantic_insights(
+            req.code, req.language, req.context_before, req.context_after
+        )
+        risk = _risk_assessment(req.code, req.language, conf)
+
+        # Simple pattern placeholder derived from insights
+        patterns: list[dict[str, object]] = []
+        for ins in insights:
+            patterns.append(
+                {
+                    "pattern": str(ins.get("type")),
+                    "confidence": 0.6,
+                    "recommendation": str(ins.get("suggestion", "")),
+                    "examples": [],
+                }
+            )
+
+        # Suggested improvements: top 2 alternatives from steps if any
+        improvements: list[str] = []
+        for s in steps:
+            improvements.extend((s.alternatives or [])[:1])
+        improvements = improvements[:5]
+
+        return CodeAnalysisResponse(
+            confidence=conf,
+            reasoning_steps=steps,
+            alternatives=(
+                list(consensus.get("individual_responses", [])[:3])
+                if isinstance(consensus.get("individual_responses", []), list)
+                else []
+            ),
+            patterns=patterns,
+            insights=insights,
+            risk_assessment=risk,
+            suggested_improvements=improvements,
+        )
 
     # Bandit endpoints: decide + feedback
     @app.post("/bandit/decide")  # type: ignore

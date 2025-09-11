@@ -35,7 +35,7 @@ class SafetyGate(Gate):
                     reasons.append(
                         f"{path}: {it.get('severity')} - {it.get('message')}"
                     )
-        return (len(reasons) == 0, {"reasons": reasons})
+    return (not reasons, {"reasons": reasons})
 
 
 class RequiredPathsGate(Gate):
@@ -61,7 +61,7 @@ class RequiredPathsGate(Gate):
             rx.search(p) for p in paths for rx in self.required_docs
         ):
             reasons.append("required docs not found")
-        return (len(reasons) == 0, {"paths": paths, "reasons": reasons})
+    return (not reasons, {"paths": paths, "reasons": reasons})
 
 
 class PytestGate(Gate):

@@ -251,6 +251,39 @@ class PromptManager:
             core_prompt += f"\n\n## === 📚 ROUTING EXAMPLES ===\n\n{examples}"
         return core_prompt
 
+    def get_system_prompt(self, key: str) -> str:
+        """
+        Load a system prompt by key from the integrated prompt hierarchy.
+
+        Args:
+            key: Entry key under integrated_config['prompt_hierarchy']
+
+        Returns:
+            The contents of the referenced prompt file, or a fallback string.
+        """
+        try:
+            if not hasattr(self, "integrated_config") or not self.integrated_config:
+                logger.warning("Integrated prompt config not loaded; returning fallback")
+                return f"System prompt '{key}' not available."
+            hierarchy = self.integrated_config.get("prompt_hierarchy", {})
+            entry = hierarchy.get(key)
+            if not entry:
+                logger.warning(f"Prompt hierarchy entry not found: {key}")
+                return f"System prompt '{key}' not configured."
+            rel_path = entry.get("file")
+            if not rel_path:
+                logger.warning(f"No file path configured for prompt '{key}'")
+                return f"System prompt '{key}' has no file configured."
+            prompt_path = (self.config_root / rel_path).resolve()
+            if not prompt_path.exists():
+                logger.warning(f"Prompt file not found for '{key}': {prompt_path}")
+                return f"System prompt file missing for '{key}': {prompt_path}"
+            with open(prompt_path, encoding="utf-8") as f:
+                return f.read()
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"Failed to load system prompt '{key}': {e}")
+            return f"System prompt '{key}' failed to load."
+
     def get_plugin_prompt(self, plugin_name: str, operation: str | None = None) -> str:
         """
         Get specialized prompt for a specific plugin.

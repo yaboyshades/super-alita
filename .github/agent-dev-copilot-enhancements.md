@@ -123,3 +123,9 @@ logger.info("AgentAbilityExecuted", extra={"ability":"atomizer","atoms_created":
 - `#agent_ability` → generate event model, handler branch, pure ability function, and tests.
 - `#atomize` → generate atomizer ability: uuidv5 ids, ranked sentences, batch + unpack, clamps, logging, tests.
 - `#reason` → inference ability that derives new CONCEPT atoms + bonds from existing atoms (RELATES_TO/CAUSES), with uuidv5 + logging.
+
+## File Editing Policy (Agent Mode)
+
+- Prefer explicit file tools over inline patches: `edit_file`, `create_file`, `read_file`, `rename_file`, `delete_file`, `list_directory`, `create_directory`.
+- Keep edits minimal and atomic; verify by reading the file after write.
+- Respect repo path boundaries; never attempt to write outside the workspace.

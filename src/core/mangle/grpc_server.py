@@ -6,6 +6,10 @@ Includes endpoints for Cortex operations, telemetry, knowledge graph, and optimi
 """
 
 import asyncio
+import json
+import os
+import subprocess
+import tempfile
 import time
 from concurrent import futures
 
@@ -499,6 +503,68 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
             context.set_details(f"Optimization stats failed: {str(e)}")
             return pb2.OptimizationStatsResponse()
 
+
+
+    # Mangle Query Execution (optional capability)
+    def MangleQuery(
+        self, request: pb2.MangleProgramRequest, context: grpc.ServicerContext
+    ) -> pb2.MangleProgramResponse:  # type: ignore[attr-defined]
+        """Execute a Mangle program (facts/rules + query) and return JSON results.
+
+        This default implementation shells out to a local  binary. If the
+        binary is not present or execution fails, returns success=False with an error.
+        """
+        try:
+            program = request.program or ""
+            timeout = float(request.timeout_seconds or 30)
+            if not program.strip():
+                return pb2.MangleProgramResponse(  # type: ignore[attr-defined]
+                    success=False, error_message="Empty program"
+                )
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".mgl", delete=False) as f:
+                f.write(program)
+                f.flush()
+                path = f.name
+
+            try:
+                proc = subprocess.run(
+                    [os.environ.get("MANGLE_BIN_PATH", "mangle"), "query", "--format", "json", path],
+                    shell=False,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                )
+                if proc.returncode != 0:
+                    return pb2.MangleProgramResponse(  # type: ignore[attr-defined]
+                        success=False,
+                        error_message=f"mangle exited {proc.returncode}: {proc.stderr.strip()}",
+                        json_results="[]",
+                        count=0,
+                    )
+                out = proc.stdout.strip() or "[]"
+                try:
+                    import json as _json
+                    parsed = _json.loads(out)
+                    count = len(parsed) if isinstance(parsed, list) else 0
+                except Exception:
+                    parsed = []
+                    count = 0
+                return pb2.MangleProgramResponse(  # type: ignore[attr-defined]
+                    success=True, json_results=json.dumps(parsed), count=count, execution_time=0.0
+                )
+            finally:
+                try:
+                    os.unlink(path)
+                except Exception:
+                    pass
+        except Exception as e:  # pragma: no cover
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"MangleQuery failed: {e}")
+            return pb2.MangleProgramResponse(  # type: ignore[attr-defined]
+                success=False, error_message=str(e), json_results="[]", count=0
+            )
 
 class SuperAlitaGrpcServer:
     """

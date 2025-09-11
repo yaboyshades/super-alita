@@ -1,0 +1,29 @@
+name: Gate Check
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install minimal deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f constraints.txt ]; then pip install -r requirements.txt -c constraints.txt || true; else pip install -r requirements.txt || true; fi
+      - name: Gate score (heuristic)
+        env:
+          REQ_ID: ${{ github.event.pull_request.title }}
+        run: |
+          python tools/gate_score.py --req-id "${REQ_ID%% *}" --auto --notes "CI Gate" --reviewer "ci" || true
+      - name: Upload gate log artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-log
+          path: 99_gate_log.csv
+

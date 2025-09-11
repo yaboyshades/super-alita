@@ -26,9 +26,61 @@ import json
 import logging
 import os
 import sys
+import time
+import uuid
 from pathlib import Path
 
-from openai.types.responses.tool import InitializationOptions
+# MCP initialization/options types (version-compatible import with fallbacks)
+try:
+    # Preferred location in MCP Python SDK
+    from mcp.types import InitializationOptions  # type: ignore
+except Exception:
+    # Fallback shim to keep server.run() call site stable on older/newer SDKs
+    class InitializationOptions:  # type: ignore
+        def __init__(
+            self,
+            *,
+            server_name: str,
+            server_version: str,
+            capabilities=None,
+            instructions: str | None = None,
+            **kwargs,
+        ) -> None:
+            self.server_name = server_name
+            self.server_version = server_version
+            self.capabilities = capabilities or {}
+            # Newer SDKs may expect an 'instructions' field
+            self.instructions = instructions
+            # Accept/retain any extra keys without failing
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+
+try:
+    from mcp.types import NotificationOptions  # type: ignore
+except Exception:
+    # Optional; only used to configure capabilities. Provide a compatible shim.
+    # Fields mirror common MCP SDK expectations in Server.get_capabilities:
+    #   - tools_changed, prompts_changed, resources_changed
+    class NotificationOptions:  # type: ignore
+        def __init__(
+            self,
+            *,
+            tools_changed: bool = False,
+            prompts_changed: bool = False,
+            resources_changed: bool = False,
+            models_changed: bool = False,
+            server_metadata_changed: bool = False,
+            **kwargs,
+        ) -> None:
+            self.tools_changed = tools_changed
+            self.prompts_changed = prompts_changed
+            self.resources_changed = resources_changed
+            # Additional optional flags for broader compatibility
+            self.models_changed = models_changed
+            self.server_metadata_changed = server_metadata_changed
+            # Accept/retain any extra keys without failing
+            for k, v in kwargs.items():
+                setattr(self, k, v)
 
 
 # --- Make stdout/stderr UTF-8 & resilient on Windows ---
@@ -99,6 +151,43 @@ except ImportError as e:
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Optional MCP tool event emission (best-effort)
+_MCP_EVENT_BUS = None  # lazy init
+
+def _get_event_bus():  # pragma: no cover
+    global _MCP_EVENT_BUS
+    if _MCP_EVENT_BUS is not None:
+        return _MCP_EVENT_BUS
+    try:
+        from src.core.event_bus import EventBus
+        bus = EventBus()
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(bus.initialize())
+        else:
+            loop.run_until_complete(bus.initialize())
+        _MCP_EVENT_BUS = bus
+    except Exception as e:
+        logger.debug("MCP event bus unavailable: %s", e)
+        _MCP_EVENT_BUS = None
+    return _MCP_EVENT_BUS
+
+async def _emit_tool_event(phase: str, name: str, correlation_id: str, detail: dict) -> None:
+    payload = {
+        "phase": phase,
+        "tool": name,
+        "correlation_id": correlation_id,
+        "detail": detail,
+        "source_plugin": "mcp_server",
+    }
+    logger.debug("MCP tool event: %s", payload)
+    try:
+        bus = _get_event_bus()
+        if bus is not None:
+            await bus.emit("mcp_tool_event", **payload)
+    except Exception as e:
+        logger.debug("Event emit failed: %s", e)
 
 
 class SuperAlitaMcpServer:
@@ -293,6 +382,48 @@ class SuperAlitaMcpServer:
                         "required": ["prompt"],
                     },
                 ),
+                Tool(
+                    name="scan_refactor_hotspots",
+                    description="Scan a path for refactor hotspots (semantic + static)",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "path": {"type": "string", "default": "src"},
+                            "mode": {
+                                "type": "string",
+                                "enum": ["default", "semantic_only", "no_semantic"],
+                                "default": "default",
+                            },
+                        },
+                        "required": ["path"],
+                    },
+                ),
+                Tool(
+                    name="analyze_code_question",
+                    description="Answer a code question via semantic analysis (Mangle if available)",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "question": {"type": "string"},
+                            "scope": {"type": "string", "default": "."},
+                        },
+                        "required": ["question"],
+                    },
+                ),
+                Tool(
+                    name="get_refactor_suggestions",
+                    description="Return textual refactoring suggestions for a path",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {"path": {"type": "string", "default": "src"}},
+                        "required": ["path"],
+                    },
+                ),
+                Tool(
+                    name="check_mangle_status",
+                    description="Report whether Mangle semantic engine is available",
+                    inputSchema={"type": "object", "properties": {}, "required": []},
+                ),
             ]
 
         @server.call_tool()
@@ -309,6 +440,9 @@ class SuperAlitaMcpServer:
 
             try:
                 arguments = arguments or {}
+                started_at = time.time()
+                corr_id = str(uuid.uuid4())
+                await _emit_tool_event("started", name, corr_id, {"args": arguments})
 
                 if name == "get_development_status":
                     result = await self.agent.get_development_status()
@@ -378,16 +512,102 @@ class SuperAlitaMcpServer:
                             "detail": str(e),
                         }
 
+                elif name == "scan_refactor_hotspots":
+                    from pathlib import Path as _Path
+                    try:
+                        from tools.refactor_hotspots import (
+                            CodeAnalyzer,
+                            mangle_is_available,
+                        )
+                    except Exception as e:
+                        result = {"error": f"import_failed: {e}"}
+                    else:
+                        path = arguments.get("path", "src")
+                        mode = arguments.get("mode", "default")
+                        analyzer = CodeAnalyzer()
+                        if mode == "semantic_only" and not mangle_is_available():
+                            result = {"error": "semantic_only requested but Mangle not available"}
+                        else:
+                            if mode == "no_semantic" and hasattr(analyzer, "mangle"):
+                                analyzer.mangle = None
+                            root = _Path(path)
+                            ops = analyzer.scan_directory(root)
+                            result = {
+                                "opportunities": [
+                                    {
+                                        "file_path": o.file_path,
+                                        "issue_type": o.issue_type,
+                                        "severity": o.severity,
+                                        "description": o.description,
+                                        "suggested_pattern": o.suggested_pattern,
+                                        "estimated_effort": o.estimated_effort,
+                                    }
+                                    for o in ops
+                                ],
+                                "metadata": {
+                                    "scanned_path": str(root),
+                                    "opportunity_count": len(ops),
+                                },
+                            }
+
+                elif name == "analyze_code_question":
+                    try:
+                        from tools.refactor_hotspots import auto_code_reason
+                    except Exception as e:
+                        result = {"error": f"import_failed: {e}"}
+                    else:
+                        q = arguments.get("question", "")
+                        scope = arguments.get("scope", ".")
+                        if not q:
+                            result = {"error": "question is required"}
+                        else:
+                            result = auto_code_reason(q, scope=scope)
+
+                elif name == "get_refactor_suggestions":
+                    from pathlib import Path as _Path
+                    try:
+                        from tools.refactor_hotspots import AutonomousRefactoringAgent
+                    except Exception as e:
+                        result = {"error": f"import_failed: {e}"}
+                    else:
+                        p = arguments.get("path", "src")
+                        agent = AutonomousRefactoringAgent(_Path(p))
+                        plan = agent.analyze_project()
+                        suggestions = agent.suggest_improvements(plan)
+                        result = {"path": p, "suggestions": suggestions, "count": len(suggestions)}
+
+                elif name == "check_mangle_status":
+                    try:
+                        from tools.refactor_hotspots import mangle_is_available
+                        result = {"mangle_available": bool(mangle_is_available())}
+                    except Exception as e:
+                        result = {"mangle_available": False, "error": str(e)}
+
                 else:
                     result = {"error": f"Unknown tool: {name}"}
 
                 # Format result as JSON for the language model
                 result_text = json.dumps(result, indent=2, default=str)
+                await _emit_tool_event(
+                    "completed",
+                    name,
+                    corr_id,
+                    {"duration_s": round(time.time() - started_at, 3), "ok": True},
+                )
                 return [TextContent(type="text", text=result_text)]
 
             except Exception as e:
                 error_text = f"❌ Tool execution error: {str(e)}"
                 logger.error(error_text)
+                try:
+                    await _emit_tool_event(
+                        "failed",
+                        name,
+                        corr_id if 'corr_id' in locals() else str(uuid.uuid4()),
+                        {"error": str(e)},
+                    )
+                except Exception:
+                    pass
                 return [TextContent(type="text", text=error_text)]
 
         self.server = server
@@ -440,9 +660,14 @@ async def run_mcp_server():
                     InitializationOptions(
                         server_name="super-alita-agent",
                         server_version="1.0.0",
-                        capabilities=server.get_capabilities(
-                            notification_options=NotificationOptions(),
-                            experimental_capabilities={},
+                        capabilities=(
+                            # Be resilient to SDK differences in get_capabilities signature
+                            server.get_capabilities(
+                                notification_options=NotificationOptions(),
+                                experimental_capabilities={},
+                            )
+                            if hasattr(server, "get_capabilities")
+                            else {}
                         ),
                     ),
                 )

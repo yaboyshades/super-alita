@@ -20,6 +20,7 @@ import numpy as np
 
 from src.core.events import BaseEvent, ToolCallEvent
 from src.core.plugin_interface import PluginInterface
+from src.sandbox.exec_sandbox import evaluate_expression
 
 """
 ComposePlugin - Dynamic Atom Composition
@@ -447,8 +448,10 @@ Do not include explanations or markdown formatting."""
 
             # Also try direct execution for demonstration
             try:
-                # Simple execution - in production this should be sandboxed
-                result = eval(atom.code) if atom.code else "No code to execute"
+                # Sandbox execution to avoid eval/exec risks
+                result = (
+                    evaluate_expression(atom.code) if atom.code else "No code to execute"
+                )
                 logger.info(f"🔧 Tool executed → result: {str(result)[:100]}")
             except Exception as e:
                 logger.info(f"🔧 Tool execution attempted → error: {str(e)[:100]}")

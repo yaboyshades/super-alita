@@ -9,6 +9,12 @@ from .integration import (
     get_deepcode_integration,
     is_supported_file,
 )
+from .templates import (
+    get_templates_dir,
+    list_deepcode_templates,
+    load_deepcode_template,
+    render_deepcode_template,
+)
 
 __all__ = [
     "get_deepcode_integration",
@@ -18,4 +24,8 @@ __all__ = [
     "AnalysisLevel",
     "SeverityLevel",
     "create_deepcode_engine",
+    "get_templates_dir",
+    "list_deepcode_templates",
+    "load_deepcode_template",
+    "render_deepcode_template",
 ]

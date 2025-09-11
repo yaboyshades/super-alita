@@ -34,7 +34,7 @@ class EvolutionNode:
     @property
     def is_fully_expanded(self) -> bool:
         """Check if all actions have been tried."""
-        return len(self.untried_actions) == 0
+        return not self.untried_actions
 
     @property
     def is_terminal(self) -> bool:
@@ -198,7 +198,7 @@ class SkillEvolutionEnvironment(EvolutionEnvironment):
 
     async def is_terminal(self, state: dict[str, Any]) -> bool:
         """Check if evolution should stop."""
-        return state["depth"] >= self.max_depth or len(state["skills"]) == 0
+        return state["depth"] >= self.max_depth or not state["skills"]
 
 
 class MCTSEvolutionArena:

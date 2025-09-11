@@ -1,9 +1,10 @@
-"""Copilot utilities and helpers."""
+"""GitHub Copilot integration package."""
 
-from .scrub import clamp_tokens, scrub_prompt  # noqa: F401
+from .mangle_enhanced_agent import MangleEnhancedAgent, process_copilot_input
+from .mangle_middleware import enhance_copilot_with_mangle
 
-"""Copilot package."""
-
-__all__ = ["prompt_composer"]
-
-"""Copilot utilities."""
+__all__ = [
+    "MangleEnhancedAgent",
+    "process_copilot_input",
+    "enhance_copilot_with_mangle",
+]

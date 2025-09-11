@@ -72,6 +72,26 @@ rustup component add rust-src
 cargo install wasm-tools
 ```
 
+If `jco` is not found in PATH, the codegen scripts fall back to a stub world
+so the extension still compiles. To enable real bindings, ensure `jco` is
+installed and visible in your shell (e.g., `%AppData%\npm` on Windows is in PATH).
+
+Common scripts:
+
+```bash
+# Generate (or stub) bindings
+npm run codegen:wit
+
+# Build sample WASM and optionally componentize
+npm run codegen:componentize:sample
+
+# Test that bindings export a world symbol
+npm run test:codegen
+
+# Watch: codegen + ts compile in parallel (requires npm-run-all)
+npm run watch:dev
+```
+
 ### Development Watch Mode
 
 Use continuous generation + type checking:

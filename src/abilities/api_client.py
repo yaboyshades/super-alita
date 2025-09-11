@@ -79,6 +79,19 @@ class APIClient:
         """GET request"""
         return self._make_request("GET", endpoint, params=params)
 
+    # Optional event bus integration for demos
+    async def initialize(self, event_bus) -> bool:  # pragma: no cover
+        """Wire to an event bus; subscribe to system_shutdown if available."""
+        self.event_bus = event_bus
+        try:
+            if hasattr(event_bus, "subscribe"):
+                await event_bus.subscribe(
+                    "system_shutdown", getattr(self, "shutdown", lambda *_: None)
+                )
+        except Exception:
+            pass
+        return True
+
     def post(self, endpoint: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
         """POST request"""
         return self._make_request("POST", endpoint, data=data)

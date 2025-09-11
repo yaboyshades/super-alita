@@ -43,11 +43,17 @@ logger = logging.getLogger("mcp_server")
 
 # Try to import tools, provide fallbacks if not available
 try:
-    from mcp_server.tools import (
+    # Import the actual functions from the MCP server tools
+    sys.path.insert(0, str(REPO_ROOT / "mcp_server" / "src"))
+
+    # Try importing directly from specific modules to avoid dynamic import issues
+    from mcp_server.tools.format_and_scan import (
         find_missing_docstrings,
-        format_and_lint,
-        refactor_to_result,
+        format_and_lint_selection,
     )
+
+    # Rename to avoid conflicts with our tool wrappers
+    format_and_lint = format_and_lint_selection
 
     logger.info("Successfully imported MCP tools")
 except ImportError as e:
@@ -59,13 +65,11 @@ except ImportError as e:
     ) -> dict[str, Any]:
         return {"functions": [], "count": 0, "error": "MCP tools not available"}
 
-    async def format_and_lint(target_path: str) -> dict[str, str]:
+    async def format_and_lint_selection(target_path: str) -> dict[str, str]:
         return {"stdout": "", "stderr": "MCP tools not available"}
 
-    async def refactor_to_result(
-        file_path: str, function_name: str, dry_run: bool = True
-    ) -> dict[str, Any]:
-        return {"applied": False, "diff": "", "error": "MCP tools not available"}
+    # Alias for consistency
+    format_and_lint = format_and_lint_selection
 
 
 app = FastMCP("myCustomPythonAgent")
@@ -140,7 +144,11 @@ def _telemetry_wrapper(
                 )
                 raise
 
-        wrapped.__signature__ = inspect.signature(func, eval_str=False)
+        try:
+            wrapped.__signature__ = inspect.signature(func, eval_str=False)  # type: ignore
+        except (AttributeError, TypeError):
+            # Some function types don't support signature assignment
+            pass
         return wrapped
 
     return decorator
@@ -161,29 +169,13 @@ FastMCP.tool = _instrumented_tool  # type: ignore[assignment]
 
 
 @app.tool(
-    name="apply_result_pattern_refactor",
-    description=(
-        "Refactor a Python function to a Result-returning pattern. "
-        "Args: file_path (str), function_name (str), dry_run (bool, default true). "
-        "Returns JSON: {'applied': bool, 'diff': str, 'error': Optional[str]}."
-    ),
-)
-async def apply_result_pattern_refactor(
-    file_path: str, function_name: str, dry_run: bool = True
-) -> dict[str, Any]:
-    return await refactor_to_result(
-        file_path=file_path, function_name=function_name, dry_run=dry_run
-    )
-
-
-@app.tool(
     name="format_and_lint_selection",
     description=(
         "Run Ruff (fix) and Black on a path. "
         "Args: target_path (str). Returns JSON: {'stdout': str, 'stderr': str}."
     ),
 )
-async def format_and_lint_selection(target_path: str) -> dict[str, str]:
+async def format_and_lint_selection_tool(target_path: str) -> dict[str, str]:
     return await format_and_lint(target_path=target_path)
 
 
@@ -200,58 +192,242 @@ async def find_missing_docstrings_tool(
 ) -> dict[str, Any]:
     return await find_missing_docstrings(root=root, include_tests=include_tests)
 
+# ---- Filesystem helpers (repo-first, secure) ----
+REPO_ROOT = Path(__file__).resolve().parent
+
+def _resolve_path(p: str) -> Path:
+  base = REPO_ROOT
+  target = (base / p).resolve()
+  if not str(target).startswith(str(base)):
+    raise ValueError("Path escapes repository root")
+  return target
+
+@app.tool(
+    name="read_file",
+    description="Read a text file from the repository. Args: path (str), encoding (str, optional)."
+)
+async def read_file(path: str, encoding: str = "utf-8") -> dict[str, Any]:
+    fp = _resolve_path(path)
+    data = fp.read_text(encoding=encoding)
+    return {"path": str(fp), "content": data}
+
+@app.tool(
+    name="create_directory",
+    description="Create a directory (and parents). Args: path (str)."
+)
+async def create_directory(path: str) -> dict[str, Any]:
+    fp = _resolve_path(path)
+    fp.mkdir(parents=True, exist_ok=True)
+    return {"ok": True, "path": str(fp)}
+
+@app.tool(
+    name="create_file",
+    description=(
+        "Create a new file with content. Args: path (str), content (str), create_dirs (bool, default true), encoding (str)."
+    ),
+)
+async def create_file(path: str, content: str, create_dirs: bool = True, encoding: str = "utf-8") -> dict[str, Any]:
+    fp = _resolve_path(path)
+    if create_dirs:
+        fp.parent.mkdir(parents=True, exist_ok=True)
+    if fp.exists():
+        return {"ok": False, "error": "exists", "path": str(fp)}
+    fp.write_text(content, encoding=encoding)
+    return {"ok": True, "path": str(fp), "bytes": len(content.encode(encoding))}
+
+@app.tool(
+    name="edit_file",
+    description=(
+        "Overwrite or create a file with new content. Args: path (str), content (str), create_dirs (bool, default true), encoding (str)."
+    ),
+)
+async def edit_file(path: str, content: str, create_dirs: bool = True, encoding: str = "utf-8") -> dict[str, Any]:
+    fp = _resolve_path(path)
+    if create_dirs:
+        fp.parent.mkdir(parents=True, exist_ok=True)
+    fp.write_text(content, encoding=encoding)
+    return {"ok": True, "path": str(fp), "bytes": len(content.encode(encoding))}
+
+@app.tool(
+    name="delete_file",
+    description="Delete a file. Args: path (str)."
+)
+async def delete_file(path: str) -> dict[str, Any]:
+    fp = _resolve_path(path)
+    if not fp.exists():
+        return {"ok": False, "error": "missing", "path": str(fp)}
+    fp.unlink()
+    return {"ok": True, "path": str(fp)}
+
+@app.tool(
+    name="rename_file",
+    description="Rename or move a file. Args: src (str), dest (str), create_dirs (bool, default true)."
+)
+async def rename_file(src: str, dest: str, create_dirs: bool = True) -> dict[str, Any]:
+    sp = _resolve_path(src)
+    dp = _resolve_path(dest)
+    if create_dirs:
+        dp.parent.mkdir(parents=True, exist_ok=True)
+    sp.replace(dp)
+    return {"ok": True, "from": str(sp), "to": str(dp)}
+
+@app.tool(
+    name="list_directory",
+    description="List directory contents. Args: path (str). Returns names and types."
+)
+async def list_directory(path: str) -> dict[str, Any]:
+    fp = _resolve_path(path)
+    if not fp.exists() or not fp.is_dir():
+        return {"ok": False, "error": "not_a_directory", "path": str(fp)}
+    items = []
+    for child in fp.iterdir():
+        try:
+            items.append({"name": child.name, "is_dir": child.is_dir(), "size": child.stat().st_size})
+        except Exception:
+            items.append({"name": child.name, "is_dir": child.is_dir(), "size": None})
+    return {"ok": True, "path": str(fp), "items": items}
+
+
+# ---- Comprehensive MANGLE Reasoning Tools (stubs, repo-first) ----
+@app.tool(
+    name="mangle_spec_reason",
+    description=(
+        "Apply MANGLE reasoning to specifications. "
+        "Args: spec_content(str), reasoning_type(str: validate|enhance|analyze), domain_rules(list[str])."
+    ),
+)
+async def mangle_spec_reason(
+    spec_content: str,
+    reasoning_type: str = "analyze",
+    domain_rules: list[str] | None = None,
+) -> dict[str, Any]:
+    """Stubbed reasoning tool. Echoes inputs and notes missing MANGLE CLI.
+
+    This integrates with repo-first workflow so Copilot can call the tool.
+    Replace with real integration using src/core/proc.py to invoke MANGLE.
+    """
+    return {
+        "reasoning_type": reasoning_type,
+        "facts_extracted": 0,
+        "rules_applied": len(domain_rules or []),
+        "insights": [
+            {
+                "title": "Reasoning stub",
+                "detail": "MANGLE CLI not integrated; returning placeholder analysis.",
+            }
+        ],
+        "echo": {"spec_content": spec_content[:500], "domain_rules": domain_rules or []},
+    }
+
+
+@app.tool(
+    name="mangle_plan_validate",
+    description=(
+        "Validate planning decisions using deductive reasoning. "
+        "Args: plan_facts(list[str]), spec_constraints(list[str]), validation_rules(list[str])."
+    ),
+)
+async def mangle_plan_validate(
+    plan_facts: list[str] | None = None,
+    spec_constraints: list[str] | None = None,
+    validation_rules: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "feasible": False,
+        "violations": [],
+        "summary": "Reasoning stub — provide MANGLE to enable real validation.",
+        "echo": {
+            "plan_facts": plan_facts or [],
+            "spec_constraints": spec_constraints or [],
+            "validation_rules": validation_rules or [],
+        },
+    }
+
+
+@app.tool(
+    name="mangle_task_optimize",
+    description=(
+        "Optimize task sequences using MANGLE reasoning. "
+        "Args: tasks(list[dict]), dependencies(list[str]), constraints(list[str])."
+    ),
+)
+async def mangle_task_optimize(
+    tasks: list[dict[str, Any]] | None = None,
+    dependencies: list[str] | None = None,
+    constraints: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "optimal_sequence": [t.get("id") for t in (tasks or [])],
+        "ready_to_start": [t.get("id") for t in (tasks or [])[:1]],
+        "notes": [
+            "Reasoning stub — plug in MANGLE for real optimization.",
+        ],
+        "echo": {
+            "tasks": tasks or [],
+            "dependencies": dependencies or [],
+            "constraints": constraints or [],
+        },
+    }
+
+
+@app.tool(
+    name="mangle_cross_phase_verify",
+    description=(
+        "Verify consistency across development phases. "
+        "Args: phase1_facts(list[str]), phase2_facts(list[str]), consistency_rules(list[str])."
+    ),
+)
+async def mangle_cross_phase_verify(
+    phase1_facts: list[str] | None = None,
+    phase2_facts: list[str] | None = None,
+    consistency_rules: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "consistent": True,
+        "issues": [],
+        "echo": {
+            "phase1_facts": phase1_facts or [],
+            "phase2_facts": phase2_facts or [],
+            "consistency_rules": consistency_rules or [],
+        },
+        "note": "Reasoning stub — implement rule checks via MANGLE to enable.",
+    }
+
+
+@app.tool(
+    name="mangle_living_doc_update",
+    description=(
+        "Update living documents with reasoning insights. "
+        "Args: document_path(str), current_facts(list[str]), reasoning_updates(object)."
+    ),
+)
+async def mangle_living_doc_update(
+    document_path: str,
+    current_facts: list[str] | None = None,
+    reasoning_updates: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "document_path": document_path,
+        "updated": False,
+        "changes": [],
+        "note": "Reasoning stub — wire to updater once MANGLE is available.",
+        "echo": {"current_facts": current_facts or [], "reasoning_updates": reasoning_updates or {}},
+    }
+
 
 def main() -> None:
-    transport = os.environ.get("MCP_TRANSPORT", "stdio")  # Support SSE via env var
+    transport_env = os.environ.get("MCP_TRANSPORT", "stdio")
+    # Ensure transport is a valid literal
+    transport = "stdio" if transport_env not in ["stdio", "sse"] else transport_env
 
     logger.info("Starting MCP server (transport=%s)", transport)
     if transport == "sse":
         host = os.environ.get("MCP_HOST", "127.0.0.1")
         port = int(os.environ.get("MCP_PORT", "8001"))
         logger.info("SSE server will be available at http://%s:%s", host, port)
-        # Note: FastMCP may use environment variables for SSE config
-        app.run(transport=transport)
-    else:
-        app.run(transport=transport)
+
+    app.run(transport=transport)  # type: ignore
 
 
 if __name__ == "__main__":
     main()
-
-# --- Decision Policy Bridge ---
-
-from src.core.decision_policy_v1 import DecisionPolicyEngine  # noqa: E402
-from src.mcp_local.registry import ToolRegistry as LocalToolRegistry  # noqa: E402
-
-
-class MCPBridge:
-    def __init__(self):
-        self.decision_policy = DecisionPolicyEngine()
-        self.mcp_registry = LocalToolRegistry()
-
-    async def register_mcp_tools_as_capabilities(self):
-        for tool_name in self.mcp_registry.list_tools():
-            cap = self._convert_mcp_to_capability(
-                {
-                    "name": tool_name,
-                    "description": f"MCP tool {tool_name}",
-                    "inputSchema": {},
-                }
-            )
-            if hasattr(self.decision_policy, "register_capability"):
-                self.decision_policy.register_capability(cap)  # type: ignore[attr-defined]
-
-    def _create_mcp_executor(self, name: str):
-        async def _exec(**kwargs):
-            return await self.mcp_registry.ainvoke(name, kwargs)
-
-        return _exec
-
-    def _convert_mcp_to_capability(self, tool_spec: dict) -> dict:
-        return {
-            "name": tool_spec["name"],
-            "description": tool_spec.get("description", ""),
-            "parameters": tool_spec.get("inputSchema", {}),
-            "type": "mcp_tool",
-            "executor": self._create_mcp_executor(tool_spec["name"]),
-        }

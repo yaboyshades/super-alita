@@ -1,17 +1,23 @@
 """
 Research-Driven EventBus Reliability Enhancement - Production Optimized
 
-Based on comprehensive analysis of 83 academic papers and industry implementations,
-this module provides optimized reliability patterns that maintain >1,300 events/second
-throughput while ensuring exactly-once semantics and production resilience.
+DEPRECATION NOTICE:
+This optimized variant will merge into
+`UnifiedReliabilityManager` (design/reliability_unified_interface.md).
+Use mode `fast` or `balanced` in the unified manager instead of
+importing this module directly once available.
+
+Based on analysis of 83 academic papers and industry implementations,
+this module provides optimized patterns that maintain >1,300 eps while
+ensuring exactly-once semantics and production resilience.
 
 Key Optimizations:
-1. Fast-path idempotency with bloom filters for negative lookups
+1. Fast-path idempotency with bloom filter negatives
 2. Adaptive circuit breaker with exponential backoff
 3. Lightweight metrics collection with sampling
-4. Configurable reliability levels for performance tuning
+4. Configurable reliability levels (FAST/BALANCED/STRICT)
 
-Performance Target: <0.002s latency overhead, >1,300 events/second throughput
+Performance Target: <2ms latency overhead, >1,300 eps throughput
 """
 
 import hashlib

@@ -36,10 +36,10 @@ def _import_stubs():  # lazy import / generation
             if script.exists():
                 subprocess.check_call([sys.executable, str(script)])
                 from protos.consensus_pb2 import (  # type: ignore
-                    ConsensusRequest,  # noqa: WPS433
+                    ConsensusRequest,
                 )
                 from protos.consensus_pb2_grpc import (  # type: ignore
-                    ConsensusServiceStub,  # noqa: WPS433
+                    ConsensusServiceStub,
                 )
 
                 return ConsensusRequest, ConsensusServiceStub

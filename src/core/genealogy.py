@@ -525,7 +525,7 @@ class GenealogyTracer(PluginInterface):
                 self._cognitive_patterns["complex_combination"] += 1
 
         # Pattern: Spontaneous generation
-        elif len(parent_keys) == 0:
+        elif not parent_keys:
             self._cognitive_patterns["spontaneous_generation"] += 1
 
         # Context-based patterns
