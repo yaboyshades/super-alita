@@ -1,0 +1,44 @@
+default_decision: deny
+description: Super Alita Security Policies - Deny by default, explicit allow
+rules:
+- conditions:
+    resources:
+    - echo
+    - secure_scan_code
+    - python_import_smoke
+    - pytest_run
+  description: Allow core system tools for all actors
+  effect: allow
+  id: allow_core_tools
+  priority: 10
+- conditions:
+    environment:
+      authenticated: true
+    resources:
+    - github_*
+  description: Allow GitHub tools for authenticated requests
+  effect: allow
+  id: allow_authenticated_github
+  priority: 20
+- conditions:
+    environment:
+      env: development
+    resources:
+    - code_synthesize*
+    - ladder_reug_generate
+    - unified_execute
+  description: Allow development tools in dev environment
+  effect: allow
+  id: allow_development_tools
+  priority: 30
+- conditions:
+    actions:
+    - delete
+    - destroy
+    - overwrite
+    environment:
+      env: production
+  description: Deny destructive operations in production
+  effect: deny
+  id: deny_destructive_production
+  priority: 5
