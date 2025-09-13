@@ -3373,19 +3373,18 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
             traceback.print_exc()
 
-        # Optional ability auto-discovery (best-effort)
+        # Register Security & Resilience components
         try:
-            if os.getenv("ALITA_AUTO_DISCOVER_ABILITIES", "false").lower() in {
-                "1",
-                "true",
-                "yes",
-                "on",
-            }:
-                from src.abilities.registry_auto import auto_register_abilities
-
-                await auto_register_abilities(app.state.ability_registry)  # type: ignore
-        except Exception:
-            pass
+            from src.security.integration import integrate_security_resilience
+            
+            # Integrate security and resilience features
+            security_middleware = integrate_security_resilience(app)
+            
+            print("? DEBUG: Security & Resilience components integrated")
+        except Exception as e:
+            print(f"? DEBUG: Failed to integrate security & resilience: {e}")
+            import traceback
+            traceback.print_exc()
 
         # Emit startup events
         try:
