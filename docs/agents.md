@@ -11,7 +11,7 @@ The updater maintains a session ledger for continuity across "AI sessions" and h
 
 ```jsonws/update-agents-md.yml` after each PR merge.
 
-- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-09-13T14:14:47Z
+- Last Updated: <!-- AGENTS:LAST_UPDATED -->2025-09-13T18:37:57Z
 - Current Release: <!-- AGENTS:RELEASE -->master
 
 ---
@@ -222,7 +222,7 @@ The updater maintains a session ledger for continuity across “AI sessions” a
 Index (recent):
 
 <!-- SESSIONS:START -->
-- **series-202536** · PRs: [212]
+- **series-202536** · PRs: [212, 213]
 - **series-202535** · PRs: [200, 201, 202, 203, 204, 207]
 - **series-202534** · PRs: [62, 63, 64, 65, 66, 69, 70, 73, 74, 76, 77, 78, 83, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 155, 156, 157, 158, 159, 160, 164, 166, 167, 168, 171, 196]
 <!-- SESSIONS:END -->Add a line to .alita/sessions/notes/*.md to seed context for the next session; the ledger links it back here.
@@ -232,6 +232,6 @@ Index (recent):
 6. Changelog (Auto‑appended per PR)
 
 <!-- CHANGELOG:START -->
-- 2025-09-13T14:14:47Z #212 Merge pull request #212 from yaboyshades/copilot/fix-21dd72a7-2b14-4faf-ac1f-277d04fd03e3 (owner: @yaboyshades)
+- 2025-09-13T18:37:57Z #213 Merge pull request #213 from yaboyshades/copilot/fix-883e8423-28c0-4895-86bc-3b0f10de5c2d (owner: @yaboyshades)
 <!-- CHANGELOG:START -->
-- 2025-09-04T20:45:22Z #207 Merge pull request #207 from yaboyshades/copilot/fix-4004611b-9273-41e4-9bd1-0dc0cc1399be (owner: @yaboyshades)
+- 2025-09-13T14:14:47Z #212 Merge pull request #212 from yaboyshades/copilot/fix-21dd72a7-2b14-4faf-ac1f-277d04fd03e3 (owner: @yaboyshades)
