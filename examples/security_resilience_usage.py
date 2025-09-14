@@ -8,7 +8,6 @@ in Super Alita applications.
 
 import asyncio
 import os
-from typing import Dict, Any
 
 
 async def example_1_policy_enforcement():
@@ -61,7 +60,7 @@ async def example_2_secret_management():
     print("🔑 Example 2: Secret Management") 
     print("-" * 40)
     
-    from src.security.secret_manager import SecretManager, MemorySecretBackend
+    from src.security.secret_manager import MemorySecretBackend, SecretManager
     
     # Create secret manager with test data
     memory_backend = MemorySecretBackend({
@@ -97,9 +96,10 @@ async def example_3_resilient_api_calls():
     print("🛡️ Example 3: Resilient API Calls")
     print("-" * 40)
     
-    from src.security.resilience_manager import ResilienceManager, ServiceCategory
     import random
     import time
+
+    from src.security.resilience_manager import ResilienceManager, ServiceCategory
     
     resilience_manager = ResilienceManager()
     

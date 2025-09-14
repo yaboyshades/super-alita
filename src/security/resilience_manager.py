@@ -19,11 +19,12 @@ import asyncio
 import logging
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, Union
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, UTC
+from typing import Any, TypeVar
 
 import pybreaker
 
@@ -59,8 +60,8 @@ class ServiceMetrics:
     total_latency: float = 0.0
     min_latency: float = float('inf')
     max_latency: float = 0.0
-    last_success: Optional[float] = None
-    last_failure: Optional[float] = None
+    last_success: float | None = None
+    last_failure: float | None = None
     circuit_breaker_trips: int = 0
 
 
@@ -78,15 +79,15 @@ class CircuitBreakerConfig:
     """Configuration for circuit breaker"""
     failure_threshold: int = 5
     recovery_timeout: int = 60
-    expected_exception: Union[Exception, tuple] = Exception
-    name: Optional[str] = None
+    expected_exception: Exception | tuple = Exception
+    name: str | None = None
 
 
 class FallbackStrategy(ABC):
     """Abstract fallback strategy"""
     
     @abstractmethod
-    async def execute(self, context: Dict[str, Any]) -> Any:
+    async def execute(self, context: dict[str, Any]) -> Any:
         """Execute fallback logic"""
         pass
 
@@ -94,11 +95,11 @@ class FallbackStrategy(ABC):
 class CachedResponseFallback(FallbackStrategy):
     """Return cached response if available"""
     
-    def __init__(self, cache: Dict[str, Any], cache_key_fn: Callable[[Dict[str, Any]], str]):
+    def __init__(self, cache: dict[str, Any], cache_key_fn: Callable[[dict[str, Any]], str]):
         self.cache = cache
         self.cache_key_fn = cache_key_fn
     
-    async def execute(self, context: Dict[str, Any]) -> Any:
+    async def execute(self, context: dict[str, Any]) -> Any:
         cache_key = self.cache_key_fn(context)
         cached_value = self.cache.get(cache_key)
         if cached_value:
@@ -114,7 +115,7 @@ class DefaultResponseFallback(FallbackStrategy):
     def __init__(self, default_response: Any):
         self.default_response = default_response
     
-    async def execute(self, context: Dict[str, Any]) -> Any:
+    async def execute(self, context: dict[str, Any]) -> Any:
         logger.info("Returning default fallback response")
         return self.default_response
 
@@ -123,15 +124,15 @@ class CircuitBreakerManager:
     """Manages circuit breakers for different services"""
     
     def __init__(self):
-        self.circuit_breakers: Dict[str, pybreaker.CircuitBreaker] = {}
-        self.service_metrics: Dict[str, ServiceMetrics] = {}
-        self.fallback_strategies: Dict[str, FallbackStrategy] = {}
+        self.circuit_breakers: dict[str, pybreaker.CircuitBreaker] = {}
+        self.service_metrics: dict[str, ServiceMetrics] = {}
+        self.fallback_strategies: dict[str, FallbackStrategy] = {}
     
     def create_circuit_breaker(
         self,
         service_name: str,
         config: CircuitBreakerConfig,
-        fallback_strategy: Optional[FallbackStrategy] = None
+        fallback_strategy: FallbackStrategy | None = None
     ) -> pybreaker.CircuitBreaker:
         """Create and register a circuit breaker for a service"""
         
@@ -176,7 +177,7 @@ class CircuitBreakerManager:
         logger.info(f"Created circuit breaker for {service_name}")
         return circuit_breaker
     
-    def get_circuit_breaker(self, service_name: str) -> Optional[pybreaker.CircuitBreaker]:
+    def get_circuit_breaker(self, service_name: str) -> pybreaker.CircuitBreaker | None:
         """Get circuit breaker for a service"""
         return self.circuit_breakers.get(service_name)
     
@@ -265,7 +266,7 @@ class CircuitBreakerManager:
             self._record_success(service_name, latency)
             return result
             
-        except Exception as e:
+        except Exception:
             latency = time.time() - start_time
             self._record_failure(service_name, latency)
             raise
@@ -294,15 +295,15 @@ class CircuitBreakerManager:
         metrics.total_latency += latency
         metrics.last_failure = time.time()
     
-    def get_service_metrics(self, service_name: str) -> Optional[ServiceMetrics]:
+    def get_service_metrics(self, service_name: str) -> ServiceMetrics | None:
         """Get metrics for a service"""
         return self.service_metrics.get(service_name)
     
-    def get_all_metrics(self) -> Dict[str, ServiceMetrics]:
+    def get_all_metrics(self) -> dict[str, ServiceMetrics]:
         """Get metrics for all services"""
         return self.service_metrics.copy()
     
-    def get_circuit_breaker_status(self) -> Dict[str, Dict[str, Any]]:
+    def get_circuit_breaker_status(self) -> dict[str, dict[str, Any]]:
         """Get status of all circuit breakers"""
         status = {}
         for service_name, breaker in self.circuit_breakers.items():
@@ -336,10 +337,10 @@ class BulkheadManager:
     """Manages resource isolation using bulkhead pattern"""
     
     def __init__(self):
-        self.executors: Dict[ServiceCategory, ThreadPoolExecutor] = {}
-        self.semaphores: Dict[ServiceCategory, asyncio.Semaphore] = {}
-        self.configs: Dict[ServiceCategory, BulkheadConfig] = {}
-        self.metrics: Dict[ServiceCategory, Dict[str, Any]] = {}
+        self.executors: dict[ServiceCategory, ThreadPoolExecutor] = {}
+        self.semaphores: dict[ServiceCategory, asyncio.Semaphore] = {}
+        self.configs: dict[ServiceCategory, BulkheadConfig] = {}
+        self.metrics: dict[ServiceCategory, dict[str, Any]] = {}
     
     def create_bulkhead(
         self,
@@ -394,7 +395,7 @@ class BulkheadManager:
                 semaphore.acquire(),
                 timeout=0.1  # Very short timeout for queue check
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Check queue size
             if semaphore._waiters and len(semaphore._waiters) >= config.max_queue_size:
                 metrics["rejected_requests"] += 1
@@ -419,14 +420,14 @@ class BulkheadManager:
             
             return result
             
-        except asyncio.TimeoutError:
+        except TimeoutError:
             metrics["timeout_requests"] += 1
             raise Exception(f"Request timed out in bulkhead {category.value}")
         finally:
             metrics["active_requests"] -= 1
             semaphore.release()
     
-    def get_bulkhead_status(self) -> Dict[str, Dict[str, Any]]:
+    def get_bulkhead_status(self) -> dict[str, dict[str, Any]]:
         """Get status of all bulkheads"""
         status = {}
         for category, config in self.configs.items():
@@ -469,7 +470,7 @@ class RequestHedger:
     async def execute_with_hedging(
         self,
         primary_func: Callable,
-        hedge_func: Optional[Callable] = None,
+        hedge_func: Callable | None = None,
         *args,
         **kwargs
     ) -> Any:
@@ -494,7 +495,7 @@ class RequestHedger:
             self.metrics["original_wins"] += 1
             return result
             
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Primary is slow, start hedge request
             logger.debug(f"Primary request slow, starting hedge after {self.hedge_after_ms}ms")
             hedge_task = asyncio.create_task(self._execute_safely(hedge_func, *args, **kwargs))
@@ -551,7 +552,7 @@ class RequestHedger:
             logger.debug(f"Request failed: {e}")
             raise
     
-    def get_hedging_metrics(self) -> Dict[str, Any]:
+    def get_hedging_metrics(self) -> dict[str, Any]:
         """Get hedging performance metrics"""
         total = self.metrics["total_hedged_requests"]
         if total == 0:
@@ -630,7 +631,7 @@ class ResilienceManager:
         self,
         service_name: str,
         func: Callable,
-        category: Optional[ServiceCategory] = None,
+        category: ServiceCategory | None = None,
         use_hedging: bool = False,
         *args,
         **kwargs
@@ -676,7 +677,7 @@ class ResilienceManager:
         else:
             return ServiceCategory.EXTERNAL_API  # Default
     
-    def get_system_health(self) -> Dict[str, Any]:
+    def get_system_health(self) -> dict[str, Any]:
         """Get overall system health and resilience status"""
         circuit_breaker_status = self.circuit_breaker_manager.get_circuit_breaker_status()
         bulkhead_status = self.bulkhead_manager.get_bulkhead_status()
@@ -708,7 +709,7 @@ class ResilienceManager:
 
 
 # Global instance for easy access
-_global_resilience_manager: Optional[ResilienceManager] = None
+_global_resilience_manager: ResilienceManager | None = None
 
 def get_global_resilience_manager() -> ResilienceManager:
     """Get or create global resilience manager instance"""

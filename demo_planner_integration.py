@@ -8,9 +8,11 @@ graph expansion, IO contract validation, and plan caching.
 """
 
 import sys
+
 sys.path.insert(0, '/home/runner/work/super-alita/super-alita')
 
-from src.core.planner import Planner, VectorIndex, GraphStore
+from src.core.planner import GraphStore, Planner, VectorIndex
+
 
 def demo_planner():
     print("🎯 Planner Integration Demo")
@@ -92,7 +94,7 @@ def demo_planner():
     print(f"   WebSearch -> CodeGen: {gs.is_contract_compatible('WebSearch', 'CodeGen')}")  # Should be False
     
     # Test caching statistics
-    print(f"\n6. Cache statistics:")
+    print("\n6. Cache statistics:")
     print(f"   Cached plans: {len(planner._plan_cache)}")
     print(f"   Cache keys: {list(planner._plan_cache.keys())}")
     

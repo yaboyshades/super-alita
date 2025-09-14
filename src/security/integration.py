@@ -15,21 +15,30 @@ Features:
 
 import asyncio
 import logging
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 # Use absolute imports since we're testing as __main__
 try:
     from .policy_manager import PolicyManager, create_policy_manager_from_env
+    from .resilience_manager import (
+        ResilienceManager,
+        ServiceCategory,
+        get_global_resilience_manager,
+    )
     from .secret_manager import SecretManager, get_global_secret_manager
-    from .resilience_manager import ResilienceManager, get_global_resilience_manager, ServiceCategory
 except ImportError:
     # Fallback for direct execution
     import sys
     from pathlib import Path
     sys.path.append(str(Path(__file__).parent))
     from policy_manager import PolicyManager, create_policy_manager_from_env
+    from resilience_manager import (
+        ResilienceManager,
+        ServiceCategory,
+        get_global_resilience_manager,
+    )
     from secret_manager import SecretManager, get_global_secret_manager
-    from resilience_manager import ResilienceManager, get_global_resilience_manager, ServiceCategory
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +48,9 @@ class SecurityResilienceMiddleware:
     
     def __init__(
         self,
-        policy_manager: Optional[PolicyManager] = None,
-        secret_manager: Optional[SecretManager] = None,
-        resilience_manager: Optional[ResilienceManager] = None
+        policy_manager: PolicyManager | None = None,
+        secret_manager: SecretManager | None = None,
+        resilience_manager: ResilienceManager | None = None
     ):
         self.policy_manager = policy_manager or create_policy_manager_from_env()
         self.secret_manager = secret_manager or get_global_secret_manager()
@@ -54,7 +63,7 @@ class SecurityResilienceMiddleware:
         actor: str,
         tool_name: str,
         tool_function: Callable,
-        args: Dict[str, Any],
+        args: dict[str, Any],
         **kwargs
     ) -> Any:
         """Execute tool call with full security and resilience protection"""
@@ -95,7 +104,7 @@ class SecurityResilienceMiddleware:
             logger.error(f"Tool call failed: {actor} -> {tool_name}: {e}")
             raise
     
-    async def _resolve_secrets(self, args: Dict[str, Any]) -> Dict[str, Any]:
+    async def _resolve_secrets(self, args: dict[str, Any]) -> dict[str, Any]:
         """Resolve any secret references in arguments"""
         resolved_args = {}
         
@@ -140,7 +149,7 @@ class SecurityResilienceMiddleware:
             "api", "http", "llm", "openai", "search", "external"
         ])
     
-    async def get_health_status(self) -> Dict[str, Any]:
+    async def get_health_status(self) -> dict[str, Any]:
         """Get health status of all security and resilience components"""
         policy_metrics = self.policy_manager.get_metrics()
         secret_metrics = self.secret_manager.get_metrics()
@@ -168,7 +177,7 @@ class SecurityResilienceMiddleware:
 class SecureAbilityRegistry:
     """Enhanced ability registry with integrated security and resilience"""
     
-    def __init__(self, base_registry, middleware: Optional[SecurityResilienceMiddleware] = None):
+    def __init__(self, base_registry, middleware: SecurityResilienceMiddleware | None = None):
         self.base_registry = base_registry
         self.middleware = middleware or SecurityResilienceMiddleware()
         
@@ -181,7 +190,7 @@ class SecureAbilityRegistry:
             "secret_resolutions": 0
         }
     
-    async def execute(self, tool_name: str, args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+    async def execute(self, tool_name: str, args: dict[str, Any], **kwargs) -> dict[str, Any]:
         """Execute tool with security and resilience protection"""
         self.execution_stats["total_calls"] += 1
         
@@ -218,7 +227,7 @@ class SecureAbilityRegistry:
             logger.error(f"Tool execution failed: {e}")
             return {"error": "Execution failed", "details": str(e)}
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get execution statistics"""
         return self.execution_stats.copy()
     
@@ -292,7 +301,7 @@ async def test_integration():
     
     # Mock ability registry for testing
     class MockAbilityRegistry:
-        async def execute(self, tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+        async def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
             # Simulate tool execution
             await asyncio.sleep(0.1)
             if "fail" in tool_name:
@@ -326,13 +335,13 @@ async def test_integration():
             print(f"❌ Exception {actor} -> {tool}: {e}")
     
     # Show statistics
-    print(f"\nExecution Statistics:")
+    print("\nExecution Statistics:")
     stats = secure_registry.get_stats()
     for key, value in stats.items():
         print(f"  {key}: {value}")
     
     # Show health status
-    print(f"\nHealth Status:")
+    print("\nHealth Status:")
     health = await middleware.get_health_status()
     for component, status in health.items():
         print(f"  {component}: {status['status']}")

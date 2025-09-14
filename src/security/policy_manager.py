@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 import yaml
 
@@ -51,11 +51,11 @@ class PolicyContext:
     actor: str  # Which atom/component is making the call
     action: str  # What action is being attempted
     resource: str  # What resource/tool is being accessed
-    environment: Dict[str, Any] = field(default_factory=dict)
+    environment: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
-    session_id: Optional[str] = None
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
+    session_id: str | None = None
+    ip_address: str | None = None
+    user_agent: str | None = None
 
 
 @dataclass 
@@ -63,8 +63,8 @@ class PolicyResult:
     """Result of policy evaluation"""
     decision: PolicyDecision
     reason: str
-    rule_id: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    rule_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
     evaluation_time_ms: float = 0.0
 
 
@@ -74,7 +74,7 @@ class PolicyRule:
     id: str
     description: str
     effect: PolicyDecision  # ALLOW or DENY
-    conditions: Dict[str, Any]
+    conditions: dict[str, Any]
     priority: int = 100  # Lower number = higher priority
 
 
@@ -97,7 +97,7 @@ class YAMLPolicyEngine(PolicyEngineInterface):
     
     def __init__(self, policy_file: str = "config/security_policies.yaml"):
         self.policy_file = Path(policy_file)
-        self.rules: List[PolicyRule] = []
+        self.rules: list[PolicyRule] = []
         self.default_decision = PolicyDecision.DENY
         self._last_loaded = 0.0
         
@@ -135,7 +135,7 @@ class YAMLPolicyEngine(PolicyEngineInterface):
                 # Create default policy file
                 self._create_default_policies()
             
-            with open(self.policy_file, 'r') as f:
+            with open(self.policy_file) as f:
                 data = yaml.safe_load(f) or {}
             
             self.rules = []
@@ -204,7 +204,7 @@ class YAMLPolicyEngine(PolicyEngineInterface):
         
         return True
     
-    def _matches_patterns(self, value: str, patterns: List[str]) -> bool:
+    def _matches_patterns(self, value: str, patterns: list[str]) -> bool:
         """Check if value matches any of the patterns"""
         import fnmatch
         
@@ -352,7 +352,7 @@ class PolicyManager:
     def __init__(
         self,
         engine_type: PolicyEngine = PolicyEngine.YAML,
-        engine_config: Optional[Dict[str, Any]] = None
+        engine_config: dict[str, Any] | None = None
     ):
         self.engine_type = engine_type
         self.engine_config = engine_config or {}
@@ -365,7 +365,7 @@ class PolicyManager:
         # Performance metrics
         self.total_evaluations = 0
         self.total_evaluation_time = 0.0
-        self.cache: Dict[str, PolicyResult] = {}
+        self.cache: dict[str, PolicyResult] = {}
         self.cache_ttl = 300  # 5 minutes
         
     def _create_engine(self) -> PolicyEngineInterface:
@@ -386,8 +386,8 @@ class PolicyManager:
         actor: str,
         resource: str,
         action: str = "execute",
-        environment: Optional[Dict[str, Any]] = None,
-        session_id: Optional[str] = None
+        environment: dict[str, Any] | None = None,
+        session_id: str | None = None
     ) -> bool:
         """Main policy check method - returns True if call is allowed"""
         context = PolicyContext(
@@ -441,7 +441,7 @@ class PolicyManager:
         key_data = f"{context.actor}:{context.action}:{context.resource}:{json.dumps(context.environment, sort_keys=True)}"
         return hashlib.md5(key_data.encode()).hexdigest()
     
-    def _get_cached_result(self, cache_key: str) -> Optional[PolicyResult]:
+    def _get_cached_result(self, cache_key: str) -> PolicyResult | None:
         """Get cached result if still valid"""
         if cache_key not in self.cache:
             return None
@@ -490,7 +490,7 @@ class PolicyManager:
         except Exception as e:
             logger.error(f"Failed to write audit log: {e}")
     
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get performance and usage metrics"""
         avg_evaluation_time = (
             self.total_evaluation_time / max(1, self.total_evaluations) * 1000

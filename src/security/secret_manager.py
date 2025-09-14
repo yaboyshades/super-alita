@@ -21,10 +21,10 @@ import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from cryptography.fernet import Fernet
 
@@ -49,8 +49,8 @@ class SecretMetadata:
     created_at: datetime
     accessed_at: datetime
     access_count: int = 0
-    ttl_seconds: Optional[int] = None
-    tags: Dict[str, str] = field(default_factory=dict)
+    ttl_seconds: int | None = None
+    tags: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -66,12 +66,12 @@ class SecretBackendInterface(ABC):
     """Abstract interface for secret backends"""
     
     @abstractmethod
-    async def get_secret(self, name: str) -> Optional[str]:
+    async def get_secret(self, name: str) -> str | None:
         """Retrieve secret value by name"""
         pass
     
     @abstractmethod
-    async def list_secrets(self) -> List[str]:
+    async def list_secrets(self) -> list[str]:
         """List available secret names"""
         pass
     
@@ -84,9 +84,9 @@ class SecretBackendInterface(ABC):
 class EnvironmentSecretBackend(SecretBackendInterface):
     """Environment variables and .env file backend"""
     
-    def __init__(self, env_file: Optional[str] = None):
+    def __init__(self, env_file: str | None = None):
         self.env_file = Path(env_file) if env_file else None
-        self.env_vars: Dict[str, str] = {}
+        self.env_vars: dict[str, str] = {}
         self._load_env_file()
     
     def _load_env_file(self):
@@ -95,7 +95,7 @@ class EnvironmentSecretBackend(SecretBackendInterface):
             return
         
         try:
-            with open(self.env_file, 'r') as f:
+            with open(self.env_file) as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith('#') and '=' in line:
@@ -107,7 +107,7 @@ class EnvironmentSecretBackend(SecretBackendInterface):
         except Exception as e:
             logger.error(f"Failed to load env file {self.env_file}: {e}")
     
-    async def get_secret(self, name: str) -> Optional[str]:
+    async def get_secret(self, name: str) -> str | None:
         """Get secret from environment or .env file"""
         # Check OS environment first
         value = os.getenv(name)
@@ -117,7 +117,7 @@ class EnvironmentSecretBackend(SecretBackendInterface):
         # Check .env file
         return self.env_vars.get(name)
     
-    async def list_secrets(self) -> List[str]:
+    async def list_secrets(self) -> list[str]:
         """List all available environment variables"""
         env_keys = set(os.environ.keys())
         file_keys = set(self.env_vars.keys())
@@ -134,7 +134,7 @@ class VaultSecretBackend(SecretBackendInterface):
     def __init__(
         self,
         vault_url: str = "http://localhost:8200",
-        vault_token: Optional[str] = None,
+        vault_token: str | None = None,
         mount_point: str = "secret"
     ):
         self.vault_url = vault_url.rstrip('/')
@@ -156,7 +156,7 @@ class VaultSecretBackend(SecretBackendInterface):
         
         return self._client
     
-    async def get_secret(self, name: str) -> Optional[str]:
+    async def get_secret(self, name: str) -> str | None:
         """Get secret from Vault KV store"""
         try:
             client = await self._get_client()
@@ -194,7 +194,7 @@ class VaultSecretBackend(SecretBackendInterface):
             logger.error(f"Vault secret retrieval failed for '{name}': {e}")
             return None
     
-    async def list_secrets(self) -> List[str]:
+    async def list_secrets(self) -> list[str]:
         """List secrets in Vault"""
         try:
             client = await self._get_client()
@@ -230,7 +230,7 @@ class VaultSecretBackend(SecretBackendInterface):
 class AWSSSMSecretBackend(SecretBackendInterface):
     """AWS Systems Manager Parameter Store backend"""
     
-    def __init__(self, region: Optional[str] = None, prefix: str = "/super-alita/"):
+    def __init__(self, region: str | None = None, prefix: str = "/super-alita/"):
         self.region = region or os.getenv("AWS_DEFAULT_REGION", "us-east-1")
         self.prefix = prefix
         self._client = None
@@ -246,7 +246,7 @@ class AWSSSMSecretBackend(SecretBackendInterface):
         
         return self._client
     
-    async def get_secret(self, name: str) -> Optional[str]:
+    async def get_secret(self, name: str) -> str | None:
         """Get parameter from SSM Parameter Store"""
         try:
             client = await self._get_client()
@@ -265,7 +265,7 @@ class AWSSSMSecretBackend(SecretBackendInterface):
             logger.error(f"AWS SSM parameter retrieval failed for '{name}': {e}")
             return None
     
-    async def list_secrets(self) -> List[str]:
+    async def list_secrets(self) -> list[str]:
         """List parameters in SSM"""
         try:
             client = await self._get_client()
@@ -308,14 +308,14 @@ class AWSSSMSecretBackend(SecretBackendInterface):
 class MemorySecretBackend(SecretBackendInterface):
     """In-memory secret backend for testing"""
     
-    def __init__(self, initial_secrets: Optional[Dict[str, str]] = None):
+    def __init__(self, initial_secrets: dict[str, str] | None = None):
         self.secrets = initial_secrets or {}
     
-    async def get_secret(self, name: str) -> Optional[str]:
+    async def get_secret(self, name: str) -> str | None:
         """Get secret from memory"""
         return self.secrets.get(name)
     
-    async def list_secrets(self) -> List[str]:
+    async def list_secrets(self) -> list[str]:
         """List all secrets in memory"""
         return sorted(self.secrets.keys())
     
@@ -337,7 +337,7 @@ class SecretManager:
     
     def __init__(
         self,
-        backends: Optional[List[SecretBackendInterface]] = None,
+        backends: list[SecretBackendInterface] | None = None,
         cache_ttl: int = 300,  # 5 minutes
         enable_encryption: bool = True
     ):
@@ -356,15 +356,15 @@ class SecretManager:
             self.fernet = None
         
         # Cache and metrics
-        self.cache: Dict[str, CachedSecret] = {}
-        self.access_stats: Dict[str, int] = {}
-        self.backend_health: Dict[str, bool] = {}
+        self.cache: dict[str, CachedSecret] = {}
+        self.access_stats: dict[str, int] = {}
+        self.backend_health: dict[str, bool] = {}
         
         # Audit logging
         self.audit_file = Path("logs/secret_audit.jsonl")
         self.audit_file.parent.mkdir(parents=True, exist_ok=True)
     
-    def _detect_backends(self) -> List[SecretBackendInterface]:
+    def _detect_backends(self) -> list[SecretBackendInterface]:
         """Auto-detect available backends based on environment"""
         backends = []
         
@@ -388,7 +388,7 @@ class SecretManager:
         logger.info(f"Detected {len(backends)} secret backends")
         return backends
     
-    async def get_secret(self, name: str) -> Optional[str]:
+    async def get_secret(self, name: str) -> str | None:
         """Get secret from first available backend"""
         # Check cache first
         cached = self._get_cached_secret(name)
@@ -417,7 +417,7 @@ class SecretManager:
         value = await self.get_secret(name)
         return value if value is not None else fallback
     
-    async def list_secrets(self) -> Dict[str, List[str]]:
+    async def list_secrets(self) -> dict[str, list[str]]:
         """List secrets from all backends"""
         result = {}
         for backend in self.backends:
@@ -430,7 +430,7 @@ class SecretManager:
         
         return result
     
-    async def health_check(self) -> Dict[str, bool]:
+    async def health_check(self) -> dict[str, bool]:
         """Check health of all backends"""
         health = {}
         for backend in self.backends:
@@ -445,7 +445,7 @@ class SecretManager:
         
         return health
     
-    def _get_cached_secret(self, name: str) -> Optional[str]:
+    def _get_cached_secret(self, name: str) -> str | None:
         """Get secret from cache if valid"""
         if name not in self.cache:
             return None
@@ -531,7 +531,7 @@ class SecretManager:
         except Exception as e:
             logger.error(f"Failed to write secret audit log: {e}")
     
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get usage metrics"""
         return {
             "cache_size": len(self.cache),
@@ -550,7 +550,7 @@ class SecretManager:
 
 
 # Convenience functions for common use cases
-_global_secret_manager: Optional[SecretManager] = None
+_global_secret_manager: SecretManager | None = None
 
 def get_global_secret_manager() -> SecretManager:
     """Get or create global secret manager instance"""
@@ -559,7 +559,7 @@ def get_global_secret_manager() -> SecretManager:
         _global_secret_manager = SecretManager()
     return _global_secret_manager
 
-async def get_secret(name: str) -> Optional[str]:
+async def get_secret(name: str) -> str | None:
     """Convenience function to get secret using global manager"""
     manager = get_global_secret_manager()
     return await manager.get_secret(name)
