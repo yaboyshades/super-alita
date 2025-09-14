@@ -145,6 +145,13 @@ models/
 *.pkl
 *.pickle
 
+# Nested repos we do not commit
+my-agent/
+
+# Local FAISS memory index and injected context
+memory/data/
+memory/injected.md
+
 # Configuration overrides
 config.local.*
 settings.local.*

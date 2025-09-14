@@ -1,0 +1,12 @@
+description: "Memory Mode (GPU-accelerated background recall)"
+instructions: |
+  Before answering, pull top-k memories and prepend them to your working context.
+  Steps:
+    1) Ensure daemon running (VS Code Task: **memory:serve**).
+    2) Generate memory hints for the current context (Task: **memory:inject**), which writes `memory/injected.md`.
+    3) Read `memory/injected.md` and use its bullets as recall beacons. Do not paste large files; follow paths if needed.
+tools: ["terminal","workspace"]
+applyTo: ["**/*"]
+enabled: true
+schema_version: 2
+headers: { owner: "platform", purpose: "memory-recall" }

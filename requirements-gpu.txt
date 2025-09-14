@@ -3,3 +3,6 @@
 # GPU dependencies (install GPU torch wheel separately if needed)
 nvidia-cuda-runtime-cu12
 nvidia-cudnn-cu12
+faiss-gpu>=1.8.0
+# For convenience: install CUDA 12.1 PyTorch wheels from official index if not already installed
+# torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121

@@ -1,0 +1,29 @@
+artifact:
+  kind: feature-spec|plan|tasks|guideline|code|test
+  id: ART-<slug>-<seq>
+  title: "<Title>"
+  version: "v5.3"
+  created_at: "TBD"
+  updated_at: "TBD"
+provenance:
+  repo: "<org/repo>"
+  branch: "<branch>"
+  commit_sha: "TBD"
+  generated_by: "CMA v5.3 (PEL)"
+constitution:
+  version: "XIV"
+  checks: {}
+security:
+  scanners:
+    {
+      codeql: { status: pending },
+      semgrep: { status: pending },
+      bandit: { status: pending },
+    }
+quality:
+  coverage: { lines: 0.0, branches: 0.0 }
+  lint: { ok: false }
+  tests: { passed: 0, failed: 0, duration_s: 0 }
+rubric:
+  score_total: 0.0
+  grade: "TBD"

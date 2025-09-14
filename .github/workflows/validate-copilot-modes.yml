@@ -1,0 +1,26 @@
+name: Validate Copilot Modes
+on:
+  push:
+    paths:
+      - '.github/chatmodes/**'
+      - 'copilot/modes/**'
+      - 'scripts/**'
+  pull_request:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install "pydantic>=2.5" "pydantic-settings>=2.2" "ruamel.yaml>=0.18"
+      - name: Export JSON Schema
+        run: python scripts/export_schema.py
+      - name: Patch schema into example mode
+        run: python scripts/patch_schema_into_mode.py
+      - name: Validate Copilot Modes
+        run: python scripts/validate_modes.py

@@ -79,6 +79,7 @@ from reug_runtime.event_bus import (  # noqa: E402
 )
 from reug_runtime.llm_client import LLMClient, get_llm_client  # noqa: E402
 from src.constitutional_gateway import constitutional_router  # noqa: E402
+from src.core.env import ensure_env_loaded  # noqa: E402
 from src.core.events import create_event  # noqa: E402
 from src.gui.router import router as gui_router  # noqa: E402
 from src.security.api_key_store import APIKeyStore  # noqa: E402
@@ -1160,90 +1161,99 @@ if FASTAPI_AVAILABLE:
         parts.append(f"data: {json.dumps(payload, ensure_ascii=False)}")
         return "\n".join(parts) + "\n\n"
 
-    @chat_router.get("/stream")  # type: ignore
-    async def chat_stream_endpoint(
-        req: Request,  # type: ignore
-        q: str = Query(...),
-        session: str | None = Query(None),
-        _auth: None = Depends(require_api_key),
-        _rl: None = Depends(enforce_rate_limit),
-    ):  # type: ignore
-        async def event_source():  # type: ignore
-            ev_id = str(uuid4())
-            last_heartbeat = time.time()
-            sid = session or "default"
-            llm = (
-                getattr(chat_stream_endpoint, "_llm", None)
-                or getattr(chat_router, "app_llm", None)
-                or getattr(globals().get("app"), "state", object()).__dict__.get(
-                    "llm_model"
-                )
-            )
-            accumulated: list[str] = []
+    # Gate the simple chat stream route to avoid duplicating /v1/chat/stream
+    # which is already provided by reug_runtime.router. Enable only when explicitly requested.
+    _ENABLE_SIMPLE_CHAT_STREAM = os.getenv(
+        "ALITA_SIMPLE_CHAT_STREAM", "false"
+    ).lower() in {"1", "true", "yes", "on"}
+    if _ENABLE_SIMPLE_CHAT_STREAM:
 
-            # Get model identity early
-            model_identity = {"model": "unknown", "provider": "unknown"}
-            if llm and hasattr(llm, "identify"):
+        @chat_router.get("/stream")  # type: ignore
+        async def chat_stream_endpoint(
+            req: Request,  # type: ignore
+            q: str = Query(...),
+            session: str | None = Query(None),
+            _auth: None = Depends(require_api_key),
+            _rl: None = Depends(enforce_rate_limit),
+        ):  # type: ignore
+            async def event_source():  # type: ignore
+                ev_id = str(uuid4())
+                last_heartbeat = time.time()
+                sid = session or "default"
+                llm = (
+                    getattr(chat_stream_endpoint, "_llm", None)
+                    or getattr(chat_router, "app_llm", None)
+                    or getattr(globals().get("app"), "state", object()).__dict__.get(
+                        "llm_model"
+                    )
+                )
+                accumulated: list[str] = []
+
+                # Get model identity early
+                model_identity = {"model": "unknown", "provider": "unknown"}
+                if llm and hasattr(llm, "identify"):
+                    try:
+                        identity = await llm.identify()
+                        model_identity.update(identity)
+                    except Exception:
+                        pass
+
+                start_payload = {"id": ev_id, "session": sid, "model": model_identity}
+                rl_info = getattr(req.state, "rate_limit_info", None)
+                if isinstance(rl_info, dict):
+                    start_payload["rate_limit"] = rl_info
+                yield _sse_pack("start", start_payload, ev_id)
+                # Track user turn in history (streaming mode)
                 try:
-                    identity = await llm.identify()
-                    model_identity.update(identity)
+                    _get_session_messages(sid).append({"role": "user", "content": q})
                 except Exception:
                     pass
-
-            start_payload = {"id": ev_id, "session": sid, "model": model_identity}
-            rl_info = getattr(req.state, "rate_limit_info", None)
-            if isinstance(rl_info, dict):
-                start_payload["rate_limit"] = rl_info
-            yield _sse_pack("start", start_payload, ev_id)
-            # Track user turn in history (streaming mode)
-            try:
-                _get_session_messages(sid).append({"role": "user", "content": q})
-            except Exception:
-                pass
-            async for chunk in generate_reply_chunks(q, sid, llm):
-                # Support both legacy string tokens and typed dict events
-                if isinstance(chunk, str):
-                    accumulated.append(chunk)
-                    yield _sse_pack("content", {"content": chunk}, ev_id)
-                elif isinstance(chunk, dict):
-                    et = chunk.get("type") or "content"
-                    # Normalize content payload
-                    if et == "content":
-                        tok = chunk.get("content", "")
-                        if isinstance(tok, str) and tok:
-                            accumulated.append(tok)
-                        payload = {"content": tok}
+                async for chunk in generate_reply_chunks(q, sid, llm):
+                    # Support both legacy string tokens and typed dict events
+                    if isinstance(chunk, str):
+                        accumulated.append(chunk)
+                        yield _sse_pack("content", {"content": chunk}, ev_id)
+                    elif isinstance(chunk, dict):
+                        et = chunk.get("type") or "content"
+                        # Normalize content payload
+                        if et == "content":
+                            tok = chunk.get("content", "")
+                            if isinstance(tok, str) and tok:
+                                accumulated.append(tok)
+                            payload = {"content": tok}
+                        else:
+                            payload = {k: v for k, v in chunk.items() if k != "type"}
+                        yield _sse_pack(str(et), payload, ev_id)
                     else:
-                        payload = {k: v for k, v in chunk.items() if k != "type"}
-                    yield _sse_pack(str(et), payload, ev_id)
-                else:
-                    # Fallback: stringify unknown chunks
-                    yield _sse_pack("content", {"content": str(chunk)}, ev_id)
-                now = time.time()
-                if now - last_heartbeat > 15:
-                    # Heartbeat comment frame to keep connection alive behind proxies
-                    yield ": heartbeat\n\n"
-                    last_heartbeat = now
-            # Append assistant message to session history
-            history = _get_session_messages(sid)
-            try:
-                full = "".join(accumulated)
-                history.append(
-                    {"role": "assistant", "content": full or "(response streamed)"}
-                )
-            except Exception:
-                history.append({"role": "assistant", "content": "(response streamed)"})
-            yield _sse_pack("done", {"reason": "complete"}, ev_id)
+                        # Fallback: stringify unknown chunks
+                        yield _sse_pack("content", {"content": str(chunk)}, ev_id)
+                    now = time.time()
+                    if now - last_heartbeat > 15:
+                        # Heartbeat comment frame to keep connection alive behind proxies
+                        yield ": heartbeat\n\n"
+                        last_heartbeat = now
+                # Append assistant message to session history
+                history = _get_session_messages(sid)
+                try:
+                    full = "".join(accumulated)
+                    history.append(
+                        {"role": "assistant", "content": full or "(response streamed)"}
+                    )
+                except Exception:
+                    history.append(
+                        {"role": "assistant", "content": "(response streamed)"}
+                    )
+                yield _sse_pack("done", {"reason": "complete"}, ev_id)
 
-        return StreamingResponse(  # type: ignore
-            event_source(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache, no-transform",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no",
-            },
-        )
+            return StreamingResponse(  # type: ignore
+                event_source(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache, no-transform",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",
+                },
+            )
 
     @chat_router.post("")  # type: ignore
     async def chat_fallback(req: Request, _auth: None = Depends(require_api_key), _rl: None = Depends(enforce_rate_limit)):  # type: ignore
@@ -1500,6 +1510,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             "'pip install fastapi uvicorn'"
         )
         return None
+
+    # Ensure environment from .env is available (e.g., GITHUB_TOKEN)
+    ensure_env_loaded(silent=True)
 
     _configure_logging()
     app = FastAPI(title="REUG Runtime", version="0.2.0")  # type: ignore
@@ -2612,6 +2625,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 headers = {
                     "Accept": "application/vnd.github+json",
                     "User-Agent": "super-alita",
+                    "X-GitHub-Api-Version": "2022-11-28",
                 }
                 token = os.getenv("GITHUB_TOKEN", "").strip()
                 if token:
@@ -2737,6 +2751,127 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     "output_schema": {"type": "object"},
                 },
                 executor=_github_search_repos,
+            )
+
+            async def _github_integration_spec(args: dict[str, Any]) -> dict[str, Any]:
+                """Produce a lightweight integration spec from GitHub code search.
+
+                Inputs:
+                  - query/q: search terms
+                  - language: optional language qualifier
+                  - repo: optional owner/repo qualifier
+                  - per_page, page: pagination controls
+                  - max_candidates: cap number of candidates included in spec (default 5)
+
+                Output keys:
+                  - ok: bool
+                  - query: original query
+                  - candidates: list with repo, path, html_url, score, license_spdx
+                  - integration_spec: structured plan (goals, steps, validation, license_notes)
+                """
+                import json
+                from urllib.parse import quote_plus
+
+                q = (args.get("q") or args.get("query") or "").strip()
+                if not q:
+                    return {"ok": False, "error": "missing query 'q'"}
+                language = (args.get("language") or "").strip()
+                repo = (args.get("repo") or "").strip()
+                qualifiers: list[str] = []
+                if language:
+                    qualifiers.append(f"language:{language}")
+                if repo:
+                    qualifiers.append(f"repo:{repo}")
+                q_full = "+".join([quote_plus(q)] + [quote_plus(x) for x in qualifiers])
+                per_page = max(1, min(int(args.get("per_page", 10) or 10), 25))
+                page = max(1, min(int(args.get("page", 1) or 1), 5))
+                url = f"https://api.github.com/search/code?q={q_full}&per_page={per_page}&page={page}"
+                req = urllib.request.Request(url, headers=_gh_headers())  # nosec B310
+                try:
+                    with urllib.request.urlopen(req, timeout=8) as resp:  # nosec B310
+                        data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                except Exception as e:  # pragma: no cover - network variability
+                    return {"ok": False, "error": str(e), "url": url}
+
+                raw_items = data.get("items", []) or []
+                max_candidates = max(
+                    1, min(int(args.get("max_candidates", 5) or 5), 10)
+                )
+                candidates: list[dict[str, Any]] = []
+                for it in raw_items[:max_candidates]:
+                    repo_obj = it.get("repository") or {}
+                    license_obj = repo_obj.get("license") or {}
+                    candidates.append(
+                        {
+                            "name": it.get("name"),
+                            "path": it.get("path"),
+                            "repo": repo_obj.get("full_name") or repo,
+                            "html_url": it.get("html_url"),
+                            "score": it.get("score"),
+                            "license_spdx": license_obj.get("spdx_id"),
+                        }
+                    )
+
+                # Build a concise, deterministic integration spec
+                license_notes: list[str] = []
+                for c in candidates:
+                    spdx = (c.get("license_spdx") or "").strip()
+                    if spdx and spdx not in license_notes:
+                        license_notes.append(spdx)
+
+                integration_spec = {
+                    "goal": "Incorporate a proven snippet/library from GitHub instead of reinventing it",
+                    "query": q,
+                    "selection_criteria": [
+                        "Small, focused code with permissive license",
+                        "Recent updates and clear maintenance signal",
+                        "Low integration surface (few deps)",
+                        "Good README/docs or self-explanatory code",
+                    ],
+                    "recommended_steps": [
+                        "Review top candidates for license and quality",
+                        "Add code as vendored module or pinned dependency",
+                        "Wrap with our public API and add tests",
+                        "Wire into orchestrator/abilities as needed",
+                        "Document usage and add examples",
+                    ],
+                    "validation_checks": [
+                        "Unit tests cover main paths (≥70%)",
+                        "Type-check passes (mypy strict on changed paths)",
+                        "Ruff formatting/lint passes",
+                        "No dynamic eval/exec; subprocess via core.proc",
+                    ],
+                    "license_notes": license_notes,
+                }
+
+                return {
+                    "ok": True,
+                    "query": q,
+                    "url": url,
+                    "total_count": data.get("total_count", len(raw_items)),
+                    "candidates": candidates,
+                    "integration_spec": integration_spec,
+                }
+
+            ability_reg.register_tool(
+                contract={
+                    "tool_id": "github_integration_spec",
+                    "description": "Search GitHub and emit a structured integration plan from top results",
+                    "input_schema": {
+                        "type": "object",
+                        "required": ["q"],
+                        "properties": {
+                            "q": {"type": "string"},
+                            "language": {"type": "string"},
+                            "repo": {"type": "string"},
+                            "per_page": {"type": "integer", "default": 10},
+                            "page": {"type": "integer", "default": 1},
+                            "max_candidates": {"type": "integer", "default": 5},
+                        },
+                    },
+                    "output_schema": {"type": "object"},
+                },
+                executor=_github_integration_spec,
             )
 
             print("? DEBUG: GitHub discovery tools registered")
@@ -3231,10 +3366,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             ability_reg.register_tool(  # type: ignore
                 contract={
                     "tool_id": "unified_execute",
-                    "description": (
-                        "Run unified orchestration pipeline "
-                        "(spec/plan/consensus/code/validate/score)"
-                    ),
+                    "description": "Run unified orchestrator pipeline (non-streaming).",
                     "input_schema": {
                         "type": "object",
                         "required": ["prompt"],
@@ -3689,73 +3821,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             return JSONResponse(status_code=404, content={"error": "no_latest"})  # type: ignore
         return JSONResponse(status_code=200, content=latest)  # type: ignore
 
-    # ---------------- SDD (Spec-Driven Development) Endpoints ---------------- #
-    class SDDSpecificationRequest(BaseModel):  # type: ignore[misc, valid-type]
-        spec_id: str  # External ID from IDE
-        title: str
-        description: str
-        requirements: list[str]
-        constraints: list[str]
-
-    class SDDPlanRequest(BaseModel):  # type: ignore[misc, valid-type]
-        plan_id: str
-        specification_id: str
-        tech_stack: list[str]
-        architecture: str
-        dependencies: list[str]
-
-    class SDDTasksRequest(BaseModel):  # type: ignore[misc, valid-type]
-        plan_id: str
-        tasks: list[dict]
-
-    @app.post("/sdd/specify")  # type: ignore
-    async def sdd_specify(
-        req: SDDSpecificationRequest,  # type: ignore
-        _auth: None = Depends(require_api_key),  # type: ignore
-        _rl: None = Depends(enforce_rate_limit),  # type: ignore
-    ) -> dict[str, object]:  # type: ignore
-        payload = req.model_dump()
-        with contextlib.suppress(Exception):
-            evt = create_event("sdd_specify", **payload)
-            if hasattr(app.state.event_bus, "publish"):  # type: ignore
-                await app.state.event_bus.publish(evt.model_dump())  # type: ignore
-            else:
-                await app.state.event_bus.emit(evt.model_dump())  # type: ignore
-        return {"status": "specification_processed", "spec_id": req.spec_id}
-
-    @app.post("/sdd/plan")  # type: ignore
-    async def sdd_plan(
-        req: SDDPlanRequest,  # type: ignore
-        _auth: None = Depends(require_api_key),  # type: ignore
-        _rl: None = Depends(enforce_rate_limit),  # type: ignore
-    ) -> dict[str, object]:  # type: ignore
-        payload = req.model_dump()
-        with contextlib.suppress(Exception):
-            evt = create_event("sdd_plan", **payload)
-            if hasattr(app.state.event_bus, "publish"):  # type: ignore
-                await app.state.event_bus.publish(evt.model_dump())  # type: ignore
-            else:
-                await app.state.event_bus.emit(evt.model_dump())  # type: ignore
-        return {"status": "plan_processed", "plan_id": req.plan_id}
-
-    @app.post("/sdd/tasks")  # type: ignore
-    async def sdd_tasks(
-        req: SDDTasksRequest,  # type: ignore
-        _auth: None = Depends(require_api_key),  # type: ignore
-        _rl: None = Depends(enforce_rate_limit),  # type: ignore
-    ) -> dict[str, object]:  # type: ignore
-        payload = req.model_dump()
-        with contextlib.suppress(Exception):
-            evt = create_event("sdd_tasks", **payload)
-            if hasattr(app.state.event_bus, "publish"):  # type: ignore
-                await app.state.event_bus.publish(evt.model_dump())  # type: ignore
-            else:
-                await app.state.event_bus.emit(evt.model_dump())  # type: ignore
-        return {
-            "status": "tasks_processed",
-            "plan_id": req.plan_id,
-            "count": len(req.tasks),
-        }
+    # Removed legacy duplicate SDD endpoints; canonical SDD router is provided by src.sdd.router
 
     # ---------------- Reasoning (DeepCode) Endpoint ---------------- #
     class CodeAnalysisRequest(BaseModel):  # type: ignore[misc, valid-type]

@@ -6,6 +6,7 @@ from typing import Any
 
 from .base_gate import Gate
 
+# Basic static patterns
 RE_EVAL = re.compile(r"\beval\s*\(")
 RE_OS_SYSTEM = re.compile(r"\bos\.system\s*\(")
 RE_SHELL_TRUE = re.compile(r"subprocess\.(?:Popen|run|call)\(.*shell\s*=\s*True", re.S)
@@ -35,7 +36,7 @@ class SafetyGate(Gate):
                     reasons.append(
                         f"{path}: {it.get('severity')} - {it.get('message')}"
                     )
-    return (not reasons, {"reasons": reasons})
+        return (not reasons, {"reasons": reasons})
 
 
 class RequiredPathsGate(Gate):
@@ -61,7 +62,7 @@ class RequiredPathsGate(Gate):
             rx.search(p) for p in paths for rx in self.required_docs
         ):
             reasons.append("required docs not found")
-    return (not reasons, {"paths": paths, "reasons": reasons})
+        return (not reasons, {"paths": paths, "reasons": reasons})
 
 
 class PytestGate(Gate):

@@ -40,3 +40,90 @@
 - All dynamic execution must be sandboxed; do not bypass policy guards.
 - Process/YAML must go through repository utilities (`proc.py`, `yaml_utils.py`).
 - Modes via `SUPER_ALITA_MODE`: `shadow` (plan), `act` (sandboxed act), `batch` (replay).
+
+## Spec‑Kit SDD Workflow (Integrated)
+
+Spec‑Driven Development (Spec‑Kit) is a first‑class workflow in this repo. It provides a consistent path from specification → plan → tasks, with constitutional validation and test‑first gates.
+
+### What’s included
+
+- FastAPI endpoints:
+  - `POST /sdd/specify`
+  - `POST /sdd/plan`
+  - `POST /sdd/tasks`
+- Key runtime files:
+  - `src/sdd/router.py` — FastAPI routes for SDD
+  - `src/sdd/models.py` — Pydantic request/response models
+  - `src/sdd/enhanced_sdd_framework.py` — SDD pipeline logic (with Mangle integration)
+  - `src/sdd/config.py` — SDD configuration and defaults
+  - `src/sdd/validators.py` — Constitutional compliance checks
+  - `src/orchestration/unified_orchestrator.py` — Orchestrator wired for SDD + reliability
+- Templates & memory:
+  - `templates/sdd/specification.md`
+  - `templates/sdd/plan.md`
+  - `templates/sdd/tasks.md`
+  - `memory/sdd/constitutional_sdd_framework.md`
+
+### How to run (Windows PowerShell)
+
+1) Start the API (development):
+
+```powershell
+uvicorn app:app --reload --port 8080
+```
+
+1) Call SDD endpoints:
+
+```powershell
+# /sdd/specify
+curl -X POST "http://127.0.0.1:8080/sdd/specify" `
+  -H "Content-Type: application/json" `
+  -d '{
+    "user_input": "Add an SDD pipeline with constitutional validation gates.",
+    "context": {"priority": "high"}
+  }'
+
+# /sdd/plan
+curl -X POST "http://127.0.0.1:8080/sdd/plan" `
+  -H "Content-Type: application/json" `
+  -d '{
+    "feature_id": "feat-sdd-pipeline"
+  }'
+
+# /sdd/tasks
+curl -X POST "http://127.0.0.1:8080/sdd/tasks" `
+  -H "Content-Type: application/json" `
+  -d '{
+    "feature_id": "feat-sdd-pipeline"
+  }'
+```
+
+1) Use the CLI (sync wrappers around async SDD calls):
+
+```powershell
+# Specify → Plan → Tasks
+python -m src.sdd.sdd_cli specify "Implement streaming SDD endpoints" --context '{"owner":"platform"}'
+python -m src.sdd.sdd_cli plan feat-sdd-pipeline
+python -m src.sdd.sdd_cli tasks feat-sdd-pipeline
+```
+
+### VS Code tasks (quick checks)
+
+- SDD: Validate Environment — ensures key env vars are present
+- SDD: Check Runtime — simple health check against the running server
+- Run Prompt Pipeline — executes the prompt pipeline for ad‑hoc testing
+
+Use from Command Palette: “Tasks: Run Task”.
+
+### Quality gates and policies
+
+- Constitutional threshold: overall compliance score ≥ 0.75
+- Test‑first convention: unit tests for new modules and critical paths
+- Simplicity Gate: small, focused functions; avoid unnecessary complexity
+- Integration‑first verification for orchestrated flows
+- Security: dynamic execution via `src/sandbox/exec_sandbox.py`; subprocess via `src/core/proc.py` (no `shell=True`); YAML via `src/core/yaml_utils.py` (safe loading)
+
+### Notes
+
+- The SDD pipeline is integrated into the unified orchestrator and uses the reliability manager (retries, backoff, classification) under the hood.
+- If repo‑wide linting is noisy due to tools/examples, scope checks to `src/` and core tests first.

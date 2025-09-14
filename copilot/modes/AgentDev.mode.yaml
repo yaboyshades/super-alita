@@ -1,0 +1,13 @@
+name: Agent Development Mode
+summary: "Spec-to-Code with secure defaults and review gates."
+instructions: |
+  Read `specs/` and `tech/` first when present. For new work, prefer `.specify/templates/*`.
+  PLAN → IMPLEMENT → REVIEW loop. No secrets in code; parameterize inputs.
+shortcuts:
+  - name: /specify
+    prompt: "Use .specify/commands/specify.prompt.md with my feature description."
+  - name: /plan
+    prompt: "Use .specify/commands/plan.prompt.md and constitution to expand the spec."
+  - name: /tasks
+    prompt: "Use .specify/commands/tasks.prompt.md to generate tests-first tasks."
+applyTo: ["**/*"]

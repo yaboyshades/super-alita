@@ -1,0 +1,40 @@
+{
+  "additionalProperties": false,
+  "description": "Schema for a Copilot custom mode. Supports both `applyTo` (canonical)\nand `apply_to` (alias).",
+  "properties": {
+    "description": {
+      "maxLength": 512,
+      "title": "Description",
+      "type": "string"
+    },
+    "instructions": {
+      "title": "Instructions",
+      "type": "string"
+    },
+    "tools": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tools",
+      "type": "array"
+    },
+    "apply_to": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Apply To",
+      "type": "array"
+    },
+    "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "description",
+    "instructions"
+  ],
+  "title": "ChatModeConfig",
+  "type": "object"
+}

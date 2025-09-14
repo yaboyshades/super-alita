@@ -8,6 +8,7 @@ This module provides a command-line interface that integrates:
 - Quality analysis and recommendations
 """
 
+import asyncio
 import json
 import logging
 import sys
@@ -52,7 +53,7 @@ class CLIFormatter:
         return "\n".join(lines)
 
     @staticmethod
-    def format_list(items: list[str], title: str = None) -> str:
+    def format_list(items: list[str], title: str | None = None) -> str:
         """Format a list of items."""
         if not items:
             return f"{title}: None" if title else "No items."
@@ -67,7 +68,7 @@ class CLIFormatter:
         return "\n".join(lines)
 
     @staticmethod
-    def format_dict(data: dict, title: str = None, indent: int = 0) -> str:
+    def format_dict(data: dict, title: str | None = None, indent: int = 0) -> str:
         """Format a dictionary for display."""
         lines = []
         prefix = "  " * indent
@@ -412,10 +413,23 @@ def specify(ctx, description, context, output_format):
     framework = ctx.obj["framework"]
 
     try:
-        request = SpecifyRequest(user_input=description, context=context or "")
+        # Coerce --context (string) into a dict expected by the model
+        ctx_dict: dict[str, object] = {}
+        if context:
+            try:
+                loaded = json.loads(context)
+                if isinstance(loaded, dict):
+                    ctx_dict = loaded
+                else:
+                    ctx_dict = {"context": loaded}
+            except Exception:
+                ctx_dict = {"notes": context}
+
+        request = SpecifyRequest(user_input=description, context=ctx_dict)
 
         click.echo("Creating feature specification with enhanced analysis...")
-        result = await framework.specify(request)
+        # Framework methods are async; run them from sync Click command
+        result = asyncio.run(framework.specify(request))
 
         if output_format == "json":
             click.echo(result.model_dump_json(indent=2))
@@ -441,7 +455,7 @@ def specify(ctx, description, context, output_format):
             if validation.violations:
                 click.echo(f"Violations: {len(validation.violations)}")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         click.echo(f"Error creating specification: {e}", err=True)
         sys.exit(1)
 
@@ -464,7 +478,7 @@ def plan(ctx, feature_id, output_format):
         request = PlanRequest(feature_id=feature_id)
 
         click.echo("Generating implementation plan with enhanced analysis...")
-        result = await framework.plan(request)
+        result = asyncio.run(framework.plan(request))
 
         if output_format == "json":
             click.echo(result.model_dump_json(indent=2))
@@ -484,7 +498,7 @@ def plan(ctx, feature_id, output_format):
                     for op in reuse[:3]:
                         click.echo(f"    - {op}")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         click.echo(f"Error generating plan: {e}", err=True)
         sys.exit(1)
 
@@ -507,7 +521,7 @@ def tasks(ctx, feature_id, output_format):
         request = TasksRequest(feature_id=feature_id)
 
         click.echo("Generating implementation tasks with enhanced prioritization...")
-        result = await framework.tasks(request)
+        result = asyncio.run(framework.tasks(request))
 
         if output_format == "json":
             click.echo(result.model_dump_json(indent=2))
@@ -525,7 +539,7 @@ def tasks(ctx, feature_id, output_format):
             if len(result.tasks) > 5:
                 click.echo(f"\n... and {len(result.tasks) - 5} more tasks")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         click.echo(f"Error generating tasks: {e}", err=True)
         sys.exit(1)
 

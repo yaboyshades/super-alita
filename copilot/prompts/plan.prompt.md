@@ -1,0 +1,1 @@
+(Reference copy of the same as .specify/commands/plan.prompt.md; keep in sync)
