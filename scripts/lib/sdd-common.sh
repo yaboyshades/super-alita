@@ -111,10 +111,8 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         exit 1
     fi
 
-    set +e
     log_json '{"event":"sdd-common-self-test","slugify":"ok"}'
     log_json_status=$?
-    set -e
     if ((log_json_status != 0)); then
         echo "log_json self-test failed with exit code ${log_json_status}" >&2
         exit "${log_json_status}"
