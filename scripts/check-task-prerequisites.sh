@@ -85,7 +85,7 @@ fi
 if [[ -f "${DATA_MODEL}" ]]; then
     has_data_model=1
 fi
-if [[ -d "${CONTRACTS_DIR}" ]] && [[ -n "$(ls -A "${CONTRACTS_DIR}" 2>/dev/null)" ]]; then
+if [[ -d "${CONTRACTS_DIR}" ]] && [[ -n "$(find "${CONTRACTS_DIR}" -mindepth 1 -print -quit 2>/dev/null)" ]]; then
     has_contracts=1
 fi
 if [[ -f "${QUICKSTART}" ]]; then
