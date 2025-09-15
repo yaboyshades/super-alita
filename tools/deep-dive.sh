@@ -4,6 +4,15 @@ set -euo pipefail
 OUT="docs/deep-dive"
 mkdir -p "$OUT"/{artifacts,graphs,logs}
 
+if ! declare -F ensure_tools >/dev/null 2>&1; then
+  ensure_tools() {
+    if [ "${DEEP_DIVE_SKIP_INSTALLS:-}" = "1" ]; then
+      return 1
+    fi
+    return 0
+  }
+fi
+
 echo "== super-alita Deep Dive ==" | tee "$OUT/summary.txt"
 
 # --- Repo inventory & git forensics ---
@@ -42,40 +51,44 @@ echo "JS/TS=$HAS_JS PY=$HAS_PY GO=$HAS_GO RUST=$HAS_RS" | tee "$OUT/artifacts/la
 if [ "$HAS_JS" = "1" ]; then
   echo "[3/9] JS/TS checks..."
   if command -v node >/dev/null 2>&1; then
-    PKG_MGR="npm"
-    [ -f pnpm-lock.yaml ] && PKG_MGR="pnpm"
-    [ -f yarn.lock ] && PKG_MGR="yarn"
-    echo "Using $PKG_MGR" | tee -a "$OUT/logs/js.log"
+    if ! ensure_tools "js"; then
+      echo "Skipping JS/TS dependency installation (ensure_tools disabled)" | tee -a "$OUT/logs/js.log"
+    else
+      PKG_MGR="npm"
+      [ -f pnpm-lock.yaml ] && PKG_MGR="pnpm"
+      [ -f yarn.lock ] && PKG_MGR="yarn"
+      echo "Using $PKG_MGR" | tee -a "$OUT/logs/js.log"
 
-    # Install (no scripts for safety)
-    if [ -f package.json ]; then
-      case "$PKG_MGR" in
-        npm) npm ci --ignore-scripts || npm install --ignore-scripts ;;
-        yarn) yarn install --ignore-scripts || yarn install ;;
-        pnpm) pnpm install --ignore-scripts || pnpm install ;;
-      esac
-    fi
-
-    # Lint (if present and config exists)
-    if [ -f node_modules/.bin/eslint ]; then
-      if [ -f .eslintrc ] || [ -f .eslintrc.js ] || [ -f .eslintrc.json ] || [ -f .eslintrc.yaml ] || [ -f .eslintrc.yml ] || grep -q '"eslintConfig"' package.json 2>/dev/null; then
-        npx eslint . -f json -o "$OUT/artifacts/eslint.json" || true
+      # Install (no scripts for safety)
+      if [ -f package.json ]; then
+        case "$PKG_MGR" in
+          npm) npm ci --ignore-scripts || npm install --ignore-scripts ;;
+          yarn) yarn install --ignore-scripts || yarn install ;;
+          pnpm) pnpm install --ignore-scripts || pnpm install ;;
+        esac
       fi
+
+      # Lint (if present and config exists)
+      if [ -f node_modules/.bin/eslint ]; then
+        if [ -f .eslintrc ] || [ -f .eslintrc.js ] || [ -f .eslintrc.json ] || [ -f .eslintrc.yaml ] || [ -f .eslintrc.yml ] || grep -q '"eslintConfig"' package.json 2>/dev/null; then
+          npx eslint . -f json -o "$OUT/artifacts/eslint.json" || true
+        fi
+      fi
+
+      # Dep graph (dependency-cruiser if available)
+      npx --yes dependency-cruiser@latest -T dot -x "node_modules|dist|build" . > "$OUT/graphs/dep.dot" 2>>"$OUT/logs/js.log" || true
+
+      # Vulnerabilities
+      case "$PKG_MGR" in
+        npm) npm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
+        yarn) yarn npm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
+        pnpm) pnpm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
+      esac
+
+      # Tests: collect (don’t run full suite yet)
+      if [ -f node_modules/.bin/jest ]; then npx jest --listTests > "$OUT/artifacts/jest-tests.txt" || true; fi
+      if [ -f node_modules/.bin/vitest ]; then npx vitest list > "$OUT/artifacts/vitest-tests.txt" || true; fi
     fi
-
-    # Dep graph (dependency-cruiser if available)
-    npx --yes dependency-cruiser@latest -T dot -x "node_modules|dist|build" . > "$OUT/graphs/dep.dot" 2>>"$OUT/logs/js.log" || true
-
-    # Vulnerabilities
-    case "$PKG_MGR" in
-      npm) npm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
-      yarn) yarn npm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
-      pnpm) pnpm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
-    esac
-
-    # Tests: collect (don’t run full suite yet)
-    if [ -f node_modules/.bin/jest ]; then npx jest --listTests > "$OUT/artifacts/jest-tests.txt" || true; fi
-    if [ -f node_modules/.bin/vitest ]; then npx vitest list > "$OUT/artifacts/vitest-tests.txt" || true; fi
   fi
 fi
 
@@ -84,22 +97,26 @@ if [ "$HAS_PY" = "1" ]; then
   echo "[4/9] Python checks..."
   PYBIN=$(command -v python3 || true)
   if [ -n "$PYBIN" ]; then
-    # Create a virtual environment for isolation
-    VENV_DIR="$OUT/venv"
-    if [ ! -d "$VENV_DIR" ]; then
-      "$PYBIN" -m venv "$VENV_DIR"
-    fi
-    # shellcheck disable=SC1090
-    . "$VENV_DIR/bin/activate"
-    PYBIN="$VENV_DIR/bin/python"
-    "$PYBIN" -m pip install -q --upgrade pip
-    "$PYBIN" -m pip install -q pip-audit pipdeptree flake8 pytest || true
-    "$PYBIN" -m pipdeptree --json-tree > "$OUT/artifacts/pipdeptree.json" || true
-    "$PYBIN" -m pip_audit -f json -o "$OUT/artifacts/pip-audit.json" || true
-    "$VENV_DIR/bin/flake8" . --format=json --output-file "$OUT/artifacts/flake8.json" || true
-    # Test discovery
-    if [ -d tests ] || ls -1 *test*.py >/dev/null 2>&1; then
-      "$PYBIN" -m pytest --collect-only -q > "$OUT/artifacts/pytest-collect.txt" || true
+    if ! ensure_tools "python"; then
+      echo "Skipping Python dependency installation (ensure_tools disabled)" | tee -a "$OUT/logs/python.log"
+    else
+      # Create a virtual environment for isolation
+      VENV_DIR="$OUT/venv"
+      if [ ! -d "$VENV_DIR" ]; then
+        "$PYBIN" -m venv "$VENV_DIR"
+      fi
+      # shellcheck disable=SC1090
+      . "$VENV_DIR/bin/activate"
+      PYBIN="$VENV_DIR/bin/python"
+      "$PYBIN" -m pip install -q --upgrade pip
+      "$PYBIN" -m pip install -q pip-audit pipdeptree flake8 pytest || true
+      "$PYBIN" -m pipdeptree --json-tree > "$OUT/artifacts/pipdeptree.json" || true
+      "$PYBIN" -m pip_audit -f json -o "$OUT/artifacts/pip-audit.json" || true
+      "$VENV_DIR/bin/flake8" . --format=json --output-file "$OUT/artifacts/flake8.json" || true
+      # Test discovery
+      if [ -d tests ] || ls -1 *test*.py >/dev/null 2>&1; then
+        "$PYBIN" -m pytest --collect-only -q > "$OUT/artifacts/pytest-collect.txt" || true
+      fi
     fi
   fi
 fi
