@@ -1,13 +1,17 @@
 """Generate chunk manifests for repository Python files.
 
 This script discovers Python modules under ``src/`` and ``tests/`` and groups
-them into chunk manifests that respect ``AGENTS.md`` scope boundaries.  Each
+them into chunk manifests that respect ``AGENTS.md`` scope boundaries. Each
 manifest lists the Python files associated with a top-level directory (for
 example ``src/core`` or ``tests/runtime``) and is written to the ``chunks``
 directory.
 
+By default the script scans the ``src`` and ``tests`` directories, but
+additional repository-relative paths may be provided as positional arguments.
+
 Usage:
-    python tools/chunk_repo.py
+    python tools/chunk_repo.py [paths...]
+    python tools/chunk_repo.py src tests integrations
 
 The output directory can be customised via ``--output-dir`` and the script can
 run in dry-run mode with ``--dry-run`` to preview the manifests without writing
@@ -18,12 +22,12 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Mapping
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PATHS = ("src", "tests")
 
 
 @dataclass(frozen=True)
@@ -83,14 +87,15 @@ def chunk_key_for(file_path: Path, agent_dirs: set[Path]) -> tuple[str, ...]:
             # Scope aligns with a top-level directory (e.g. ``src/core``)
             if (scope_parts[0], scope_parts[1]) != (root, top_level):
                 msg = (
-                    "AGENTS.md scope mismatch: file %s is in %s but governed by %s"
-                    % (relative.as_posix(), f"{root}/{top_level}", "/".join(scope_parts))
+                    "AGENTS.md scope mismatch: file"
+                    f" {relative.as_posix()} is in {root}/{top_level}"
+                    f" but governed by {'/'.join(scope_parts)}"
                 )
                 raise ValueError(msg)
         elif scope_parts and scope_parts[0] != root:
             msg = (
-                "AGENTS.md scope for file %s does not align with root directory"
-                % relative.as_posix()
+                "AGENTS.md scope for file"
+                f" {relative.as_posix()} does not align with root directory"
             )
             raise ValueError(msg)
 
@@ -112,11 +117,13 @@ def render_chunk_name(chunk_key: tuple[str, ...]) -> str:
     return "-".join(chunk_key)
 
 
-def build_chunks(agent_dirs: set[Path]) -> Mapping[tuple[str, ...], list[Path]]:
+def build_chunks(
+    agent_dirs: set[Path], base_dirs: Iterable[str]
+) -> Mapping[tuple[str, ...], list[Path]]:
     """Group repository Python files into chunk manifests."""
 
     chunked: dict[tuple[str, ...], list[Path]] = defaultdict(list)
-    for file_path in iter_python_files(["src", "tests"]):
+    for file_path in iter_python_files(base_dirs):
         chunk_key = chunk_key_for(file_path, agent_dirs)
         chunked[chunk_key].append(file_path.relative_to(REPO_ROOT))
 
@@ -159,6 +166,12 @@ def write_chunks(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "paths",
+        nargs="*",
+        default=list(DEFAULT_PATHS),
+        help="Repository-relative directories to scan for Python files",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=REPO_ROOT / "chunks",
@@ -175,7 +188,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     agent_dirs = find_agent_directories(REPO_ROOT)
-    chunks = build_chunks(agent_dirs)
+    chunks = build_chunks(agent_dirs, args.paths)
     entries = write_chunks(chunks, args.output_dir, dry_run=args.dry_run)
 
     for entry in entries:

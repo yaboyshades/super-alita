@@ -1058,6 +1058,7 @@ python tools/dev/env_manager.py               # Check/setup environment
 python tools/chunk_repo.py                    # Generate chunks/chunk manifests
 python tools/chunk_repo.py --dry-run          # Preview without writing files
 python tools/chunk_repo.py --output-dir tmp   # Customise manifest directory
+python tools/chunk_repo.py src tests other    # Scan only specified paths
 
 # Building and packaging
 python tools/build/builder.py --all           # Build everything
@@ -1084,9 +1085,12 @@ python tools/maintenance/cleanup.py --logs    # Clean logs only
   while respecting the scope boundaries defined by `AGENTS.md` files.
 - **Output** - Creates (or updates) text files in `chunks/` (e.g.,
   `chunks/core.txt` or `chunks/tests-runtime.txt`) listing repository-relative
-  paths.
+  paths. Precomputed manifests ship in the `chunks/` directory for immediate
+  use.
 - **Options** - Use `--dry-run` to inspect the manifests without writing them
   and `--output-dir` to target an alternate directory for the generated files.
+- **Paths** - Provide optional positional arguments to limit scanning to
+  specific directories (defaults: `src` and `tests`).
 
 
 ### Best Practices
