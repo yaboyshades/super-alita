@@ -13,8 +13,10 @@ slugify() {
 
     local transliterated
     if command -v iconv >/dev/null 2>&1; then
-        transliterated=$(printf '%s' "${input}" |
-            iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null || printf '%s' "${input}")
+        transliterated=$(printf '%s' "${input}" | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null)
+        if [[ $? -ne 0 || -z "${transliterated}" ]]; then
+            transliterated="${input}"
+        fi
     else
         transliterated=$(python3 - <<'PY' "${input}"
 import sys
