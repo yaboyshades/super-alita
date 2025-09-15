@@ -85,6 +85,22 @@ sdd_json_array() {
     printf ']'
 }
 
+# Emit a JSON payload to stdout. Allow callers (or tests) to override the
+# implementation by defining log_json in the environment before sourcing or
+# executing this script.
+if ! declare -F log_json >/dev/null 2>&1; then
+    log_json() {
+        local payload="${1:-}"
+
+        if [[ -z "${payload}" ]]; then
+            printf '\n'
+            return 0
+        fi
+
+        printf '%s\n' "${payload}"
+    }
+fi
+
 # Basic self-test when the script is executed directly.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     expected="my-feature-123"
@@ -93,6 +109,15 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     if [[ "${result}" != "${expected}" ]]; then
         echo "slugify self-test failed: expected '${expected}', got '${result}'" >&2
         exit 1
+    fi
+
+    set +e
+    log_json '{"event":"sdd-common-self-test","slugify":"ok"}'
+    log_json_status=$?
+    set -e
+    if ((log_json_status != 0)); then
+        echo "log_json self-test failed with exit code ${log_json_status}" >&2
+        exit "${log_json_status}"
     fi
 
     echo "slugify self-test passed"
