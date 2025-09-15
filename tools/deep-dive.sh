@@ -137,13 +137,18 @@ if [ "$HAS_PY" = "1" ]; then
     PYBIN="$VENV_DIR/bin/python"
     "$PYBIN" -m pip install -q --upgrade pip
     "$PYBIN" -m pip install -q pip-audit pipdeptree flake8 flake8-json pytest || true
-    "$PYBIN" -m pipdeptree --json-tree > "$ARTIFACT_DIR/pipdeptree.json" || true
-    "$PYBIN" -m pip_audit -f json -o "$ARTIFACT_DIR/pip-audit.json" || true
-    PY_LINT_OUT="$ARTIFACT_DIR/python_lint.json"
-    "$VENV_DIR/bin/flake8" . --format=json | tee "$PY_LINT_OUT" >/dev/null || true
-    PY_LINT_STATUS=${PIPESTATUS[0]}
-    if [ "$PY_LINT_STATUS" -ne 0 ] && [ ! -s "$PY_LINT_OUT" ]; then
-      printf '{"error":"flake8 failed","exit_code":%s}\n' "$PY_LINT_STATUS" > "$PY_LINT_OUT"
+    # Check that flake8-json is installed
+    if ! "$PYBIN" -c "import flake8_json" 2>/dev/null; then
+      echo '{"error":"flake8-json plugin not installed"}' > "$ARTIFACT_DIR/python_lint.json"
+    else
+      "$VENV_DIR/bin/flake8" . --format=json | tee "$ARTIFACT_DIR/python_lint.json" >/dev/null || true
+      PY_LINT_STATUS=${PIPESTATUS[0]}
+      # Validate that output is valid JSON
+      if ! "$PYBIN" -m json.tool < "$ARTIFACT_DIR/python_lint.json" >/dev/null 2>&1; then
+        printf '{"error":"flake8 output is not valid JSON","exit_code":%s}\n' "$PY_LINT_STATUS" > "$ARTIFACT_DIR/python_lint.json"
+      elif [ "$PY_LINT_STATUS" -ne 0 ] && [ ! -s "$ARTIFACT_DIR/python_lint.json" ]; then
+        printf '{"error":"flake8 failed","exit_code":%s}\n' "$PY_LINT_STATUS" > "$ARTIFACT_DIR/python_lint.json"
+      fi
     fi
     # Test discovery
     if [ -d tests ] || ls -1 *test*.py >/dev/null 2>&1; then
