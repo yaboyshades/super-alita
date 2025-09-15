@@ -1,11 +1,12 @@
 """
-Super Alita gRPC Server
+Super Alita gRPC Server.
 
 Provides gRPC interface for external communication with the Super Alita agent system.
 Includes endpoints for Cortex operations, telemetry, knowledge graph, and optimization.
 """
 
 import asyncio
+import contextlib
 import json
 import os
 import subprocess
@@ -57,7 +58,7 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
     # Health and Status Methods
 
     def GetHealth(
-        self, request: empty_pb2.Empty, context: grpc.ServicerContext
+        self, _request: empty_pb2.Empty, context: grpc.ServicerContext
     ) -> pb2.HealthResponse:
         """Get health status of the agent system."""
         try:
@@ -107,7 +108,7 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
             return pb2.HealthResponse(status=pb2.HealthResponse.UNHEALTHY)
 
     def GetStatus(
-        self, request: empty_pb2.Empty, context: grpc.ServicerContext
+        self, _request: empty_pb2.Empty, context: grpc.ServicerContext
     ) -> pb2.StatusResponse:
         """Get detailed status information."""
         try:
@@ -198,7 +199,7 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
             )
 
     def GetCortexStatus(
-        self, request: empty_pb2.Empty, context: grpc.ServicerContext
+        self, _request: empty_pb2.Empty, context: grpc.ServicerContext
     ) -> pb2.CortexStatusResponse:
         """Get Cortex system status."""
         try:
@@ -236,7 +237,7 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
     # Telemetry Methods
 
     def GetMetrics(
-        self, request: empty_pb2.Empty, context: grpc.ServicerContext
+        self, _request: empty_pb2.Empty, context: grpc.ServicerContext
     ) -> pb2.MetricsResponse:
         """Get Prometheus-style metrics."""
         try:
@@ -333,7 +334,7 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
             return pb2.CreateRelationshipResponse(success=False, error_message=str(e))
 
     def GetKnowledgeGraphStats(
-        self, request: empty_pb2.Empty, context: grpc.ServicerContext
+        self, _request: empty_pb2.Empty, context: grpc.ServicerContext
     ) -> pb2.KnowledgeGraphStatsResponse:
         """Get knowledge graph statistics."""
         try:
@@ -446,7 +447,7 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
             return pb2.FeedbackResponse(success=False, error_message=str(e))
 
     def GetOptimizationStats(
-        self, request: empty_pb2.Empty, context: grpc.ServicerContext
+        self, _request: empty_pb2.Empty, context: grpc.ServicerContext
     ) -> pb2.OptimizationStatsResponse:
         """Get optimization statistics."""
         try:
@@ -503,8 +504,6 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
             context.set_details(f"Optimization stats failed: {str(e)}")
             return pb2.OptimizationStatsResponse()
 
-
-
     # Mangle Query Execution (optional capability)
     def MangleQuery(
         self, request: pb2.MangleProgramRequest, context: grpc.ServicerContext
@@ -522,14 +521,23 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
                     success=False, error_message="Empty program"
                 )
 
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".mgl", delete=False) as f:
-                f.write(program)
-                f.flush()
-                path = f.name
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".mgl", delete=False
+            ) as temp_file:
+                temp_file.write(program)
+                temp_file.flush()
+                path = temp_file.name
 
             try:
+                command = [
+                    os.environ.get("MANGLE_BIN_PATH", "mangle"),
+                    "query",
+                    "--format",
+                    "json",
+                    path,
+                ]
                 proc = subprocess.run(
-                    [os.environ.get("MANGLE_BIN_PATH", "mangle"), "query", "--format", "json", path],
+                    command,
                     shell=False,
                     check=False,
                     capture_output=True,
@@ -539,32 +547,38 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
                 if proc.returncode != 0:
                     return pb2.MangleProgramResponse(  # type: ignore[attr-defined]
                         success=False,
-                        error_message=f"mangle exited {proc.returncode}: {proc.stderr.strip()}",
+                        error_message=(
+                            f"mangle exited {proc.returncode}: "
+                            f"{proc.stderr.strip()}"
+                        ),
                         json_results="[]",
                         count=0,
                     )
                 out = proc.stdout.strip() or "[]"
                 try:
                     import json as _json
+
                     parsed = _json.loads(out)
                     count = len(parsed) if isinstance(parsed, list) else 0
                 except Exception:
                     parsed = []
                     count = 0
                 return pb2.MangleProgramResponse(  # type: ignore[attr-defined]
-                    success=True, json_results=json.dumps(parsed), count=count, execution_time=0.0
+                    success=True,
+                    json_results=json.dumps(parsed),
+                    count=count,
+                    execution_time=0.0,
                 )
             finally:
-                try:
+                with contextlib.suppress(Exception):
                     os.unlink(path)
-                except Exception:
-                    pass
         except Exception as e:  # pragma: no cover
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"MangleQuery failed: {e}")
             return pb2.MangleProgramResponse(  # type: ignore[attr-defined]
                 success=False, error_message=str(e), json_results="[]", count=0
             )
+
 
 class SuperAlitaGrpcServer:
     """

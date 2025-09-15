@@ -92,9 +92,9 @@ class EventBus:
             self._registered
         )  # Alias for compatibility
 
-        self._redis_subscribed: dict[str, bool] = (
-            {}
-        )  # Track Redis channel subscriptions
+        self._redis_subscribed: dict[
+            str, bool
+        ] = {}  # Track Redis channel subscriptions
         self._pubsub = None  # Redis pubsub object
 
         # Metrics tracking
@@ -222,7 +222,9 @@ class EventBus:
             logger.info("EventBus successfully connected to Memurai.")
         except Exception as e:
             logger.critical(
-                f"Could not connect to Memurai at {self.redis_url}. Is Memurai running? Error: {e}"
+                "Could not connect to Memurai at %s. Is Memurai running? Error: %s",
+                self.redis_url,
+                e,
             )
             raise
 
@@ -272,7 +274,8 @@ class EventBus:
                 self._pubsub = self._redis.pubsub()
                 self.logger.info("📡 Redis pubsub initialized")
 
-            # Optional: subscribe to a system heartbeat channel immediately to avoid "no channels" window
+            # Optional: subscribe to a system heartbeat channel immediately to
+            # avoid the initial "no channels" window
             if not self._redis_subscribed.get("__heartbeat__", False):
                 await self._pubsub.subscribe("__heartbeat__")
                 self._redis_subscribed["__heartbeat__"] = True
@@ -289,7 +292,7 @@ class EventBus:
             raise
 
     async def publish(self, event: BaseEvent) -> None:
-        """Serializes and publishes a Pydantic event to the corresponding Redis channel."""
+        """Serialize and publish a Pydantic event to its Redis channel."""
         # In-memory fallback delegation
         if hasattr(self, "_inmem") and self._inmem is not None:
             await self._inmem.publish(event)  # type: ignore[attr-defined]
@@ -393,7 +396,9 @@ class EventBus:
         handler_key = (event_type, callback.__name__)
         if handler_key in self._registered_handlers:
             logger.info(
-                f"Skipping duplicate handler '{callback.__name__}' for event type '{event_type}'."
+                "Skipping duplicate handler '%s' for event type '%s'.",
+                callback.__name__,
+                event_type,
             )
             return
         self._registered_handlers.add(handler_key)
@@ -403,7 +408,9 @@ class EventBus:
             self._handlers[event_type] = []
         self._handlers[event_type].append(callback)
         logger.info(
-            f"Handler '{callback.__name__}' registered for event type '{event_type}'."
+            "Handler '%s' registered for event type '%s'.",
+            callback.__name__,
+            event_type,
         )
 
         # CRITICAL FIX: Always subscribe to Memurai channel when handler is added
@@ -428,7 +435,7 @@ class EventBus:
                         await self._pubsub.psubscribe("*")
                         self._redis_subscribed["*"] = True  # Track pattern subscription
                         logger.info(
-                            "✅ Successfully pattern subscribed to Memurai: * (all channels)"
+                            "✅ Pattern subscribed to Memurai: * (all channels)"
                         )
                     else:
                         self._redis_subscribed["*"] = True  # Ensure tracking
@@ -446,7 +453,8 @@ class EventBus:
                         await self._pubsub.subscribe(event_type)
                         self._redis_subscribed[event_type] = True  # Track subscription
                         logger.info(
-                            f"✅ Successfully subscribed to Memurai channel: {event_type}"
+                            "✅ Subscribed to Memurai channel: %s",
+                            event_type,
                         )
                     else:
                         self._redis_subscribed[event_type] = (

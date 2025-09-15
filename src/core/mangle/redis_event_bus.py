@@ -240,19 +240,18 @@ class RedisEventBus:
             event_type: Type of events to unsubscribe from
             handler: Handler function to remove
         """
-        if event_type in self._subscribers:
-            if handler in self._subscribers[event_type]:
-                self._subscribers[event_type].remove(handler)
+        if event_type in self._subscribers and handler in self._subscribers[event_type]:
+            self._subscribers[event_type].remove(handler)
 
-                # Remove empty subscriber lists
-                if not self._subscribers[event_type]:
-                    del self._subscribers[event_type]
+            # Remove empty subscriber lists
+            if not self._subscribers[event_type]:
+                del self._subscribers[event_type]
 
-                    # Unsubscribe from Redis channel if no more handlers
-                    if self._pubsub:
-                        channel = self._get_channel_name(event_type)
-                        await self._pubsub.unsubscribe(channel)
-                        logger.info(f"Unsubscribed from events of type '{event_type}'")
+                # Unsubscribe from Redis channel if no more handlers
+                if self._pubsub:
+                    channel = self._get_channel_name(event_type)
+                    await self._pubsub.unsubscribe(channel)
+                    logger.info(f"Unsubscribed from events of type '{event_type}'")
 
     async def get_event_history(
         self, event_type: str, limit: int = 100, start_time: str | None = None
