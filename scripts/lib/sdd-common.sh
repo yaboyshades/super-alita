@@ -156,5 +156,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         exit 1
     fi
 
-    echo "slugify self-test passed"
+    echo "slugify and sdd_json_object_from_kv self-tests passed"
 fi
