@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from src.sdd.config import DEFAULT_SDD_COMMANDS, SDDConfig
 from src.sdd.constitutional_pipeline import ConstitutionalSDDPipeline
 from src.sdd.models import SpecifyRequest
 
@@ -81,6 +82,14 @@ def test_sdd_router_creation():
     assert router is not None
     assert router.prefix == "/sdd"
     assert "sdd" in router.tags
+
+
+def test_sdd_templates_exist():
+    """Ensure configured SDD templates resolve to files on disk."""
+    config = SDDConfig()
+    for command in DEFAULT_SDD_COMMANDS.values():
+        template_path = config.templates_dir / command.template
+        assert template_path.exists(), f"Missing template: {template_path}"
 
 
 if __name__ == "__main__":
