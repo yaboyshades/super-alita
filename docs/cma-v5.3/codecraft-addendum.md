@@ -13,7 +13,7 @@ This addendum extends the [Super-Alita Constitutional Framework](../../.github/C
 - **Shell helpers:**
   - `scripts/lib/constitutional-gates.sh` checks specifications and plans for CMA rule coverage (feature IDs, DoD, etc.).
   - `scripts/lib/sdd-common.sh` provides shared shell helpers (for example, canonical slug generation) so bespoke Codecraft scripts stay consistent with the Python implementation.
-- **Smoke tests:** `scripts/smoke_sdd_specify.py` issues a minimal `/sdd/specify` request against a running runtime to confirm that the constitutional gates and FastAPI wiring are intact.
+- **Smoke tests:** `scripts/smoke_sdd_specify.py` issues a minimal SDD `/sdd/specify` request against a running runtime to confirm that the constitutional gates and FastAPI wiring are intact.
 
 ## Telemetry and Reporting
 - Emit the standard REUG events for every Codecraft turn: `STATE_TRANSITION`, `TaskStarted`, `AbilityCalled/Succeeded/Failed`, and `TaskSucceeded/Failed`. The streaming router must still respect the single terminal event rule.
