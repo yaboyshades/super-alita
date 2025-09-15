@@ -326,6 +326,7 @@ An integrated blueprint for AI-native development combining:
 - VS Code language tools extension with telemetry + LSP & Ollama integration (`extensions/alita-language-tools`)
 - Experimental WASM component scaffold (`wasm/calculator`) now simplified to `add(a,b)`
 - Developer guides: architectural overview, refactoring, testing, secrets (`docs/01_architectural_overview.md`, `docs/02_refactoring_guide.md`, `docs/03_testing_guide.md`, `docs/02_developer_secrets.md`)
+- Constitutional framework: CMA v5.3.1 Codecraft Addendum (`docs/cma-v5.3/codecraft-addendum.md`) for coding standards and implementation patterns
 - S-Tier evolution roadmap (`docs/08_s_tier_evolution_roadmap.md`) outlining predictive execution, multi-agent swarm, PEFT adapters, and WASM code radar.
 * Swarm orchestrator (`backend/agent_orchestrator.py`) – OpenAI-compatible multi-agent execution (no Azure dependency)
 * Fine-tuning scaffold (`backend/fine_tuning/train_adapter.py`) – LoRA adapter training from feedback JSON
