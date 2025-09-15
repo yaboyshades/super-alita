@@ -56,9 +56,11 @@ if [ "$HAS_JS" = "1" ]; then
       esac
     fi
 
-    # Lint (if present)
+    # Lint (if present and config exists)
     if [ -f node_modules/.bin/eslint ]; then
-      npx eslint . -f json -o "$OUT/artifacts/eslint.json" || true
+      if [ -f .eslintrc ] || [ -f .eslintrc.js ] || [ -f .eslintrc.json ] || [ -f .eslintrc.yaml ] || [ -f .eslintrc.yml ] || grep -q '"eslintConfig"' package.json 2>/dev/null; then
+        npx eslint . -f json -o "$OUT/artifacts/eslint.json" || true
+      fi
     fi
 
     # Dep graph (dependency-cruiser if available)
