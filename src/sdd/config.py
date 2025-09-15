@@ -59,9 +59,12 @@ class SDDCommand:
 DEFAULT_SDD_COMMANDS = {
     "specify": SDDCommand(
         name="specify",
-        description="Create functional specification focusing on WHAT and WHY, not tech stack",
+        description=(
+            "Create functional specification focusing on WHAT and WHY, "
+            "not tech stack"
+        ),
         phase="specify",
-        template="spec-template.md",
+        template="specification.md",
         validation_rules=[
             "must_define_user_stories",
             "must_define_acceptance_criteria",
@@ -76,9 +79,12 @@ DEFAULT_SDD_COMMANDS = {
     ),
     "plan": SDDCommand(
         name="plan",
-        description="Generate technical implementation plan with tech stack and architecture choices",
+        description=(
+            "Generate technical implementation plan with tech stack "
+            "and architecture choices"
+        ),
         phase="plan",
-        template="plan-template.md",
+        template="plan.md",
         validation_rules=[
             "must_define_tech_stack",
             "must_define_architecture",
@@ -93,9 +99,11 @@ DEFAULT_SDD_COMMANDS = {
     ),
     "tasks": SDDCommand(
         name="tasks",
-        description="Break down implementation into actionable tasks with clear dependencies",
+        description=(
+            "Break down implementation into actionable tasks with clear dependencies"
+        ),
         phase="tasks",
-        template="tasks-template.md",
+        template="tasks.md",
         validation_rules=[
             "must_define_task_dependencies",
             "must_estimate_effort",
