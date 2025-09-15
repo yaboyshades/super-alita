@@ -20,7 +20,8 @@ The specification sync mini-protocol keeps written requirements, constitutional 
 
 ## 2. Preconditions Checklist
 
-- [ ] Source spec passes `SocraticTestingEngine` with readiness ≥ 0.75.
+- [ ] Source spec passes `SocraticTestingEngine` with readiness ≥ 0.75.  
+  <sub><sup>ℹ️ <b>SocraticTestingEngine</b> is an automated spec review tool that scores requirement clarity and completeness. See [SocraticTestingEngine documentation](https://github.com/alita-ai/socratic-testing-engine) for usage and scoring details.</sup></sub>
 - [ ] Drift analysis completed (`tools/spec_diff.py` or Git diff) and summarized.
 - [ ] Related feature TODOs in backlog tagged with existing correlation IDs.
 - [ ] Stakeholder sign-off recorded (async approval, issue comment, or telemetry event).
