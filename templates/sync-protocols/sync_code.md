@@ -48,7 +48,7 @@ Run these commands and capture artifacts (store logs or HTML reports alongside t
 
 1. `pre-commit run --all-files` — attach summary log with spec hash in header.
 2. `pytest -q tests/runtime` (extend selection if other areas touched) — save `pytest` output + coverage delta.
-3. `python tools/spec_diff.py --verify <spec_hash>` — optional guard verifying no spec drift since coding began.
+3. `python tools/spec_diff.py --verify <spec_hash>` — optional guard verifying no spec drift since coding began. _(planned implementation: script not yet available)_
 4. `python scripts/todo_sync.py --export` — snapshot TODO ledger after updates.
 
 Include command outputs or artifact paths in the PR description under "Verification".
