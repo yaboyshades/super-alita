@@ -68,5 +68,10 @@ if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
 fi
 
 JSON_OUTPUT=$("${PYTHON_BIN}" "${SCRIPT_DIR}/validation_messages_to_json.py" "${validation_messages[@]}")
+PYTHON_EXIT_CODE=$?
+if [[ ${PYTHON_EXIT_CODE} -ne 0 ]]; then
+  echo "Error: Python script validation_messages_to_json.py failed with exit code ${PYTHON_EXIT_CODE}" >&2
+  exit 1
+fi
 printf '%s\n' "${JSON_OUTPUT}"
 exit ${error_count}
