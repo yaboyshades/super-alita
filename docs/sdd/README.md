@@ -119,6 +119,15 @@ Each SDD phase undergoes constitutional validation against all six articles:
 4. **Implementation**: APE Engine optimizes corrective prompts
 5. **Validation**: Cross-Project Reasoning Miner confirms resolution
 
+## Spec-Code Integrity Mini-Protocols
+
+Article XI enforcement now relies on paired mini-protocols that coordinate specification changes with downstream code updates. These templates live under `templates/sync-protocols/` and are invoked immediately after `/specify` completes and again before merge readiness reviews:
+
+- [`sync_spec.md`](../../templates/sync-protocols/sync_spec.md) — Drives the spec-side loop (Event → Atom/Bond → Energy → TODO → Bandit → Reward) so revised requirements update the knowledge graph, TODO ledger, and telemetry before implementation starts.
+- [`sync_code.md`](../../templates/sync-protocols/sync_code.md) — Governs the implementation loop, binding commits, tests, and observability artifacts back to the spec hash produced by the first protocol.
+
+Both protocols emit deterministic telemetry (`STATE_TRANSITION`, `Ability*`, `Task*`) and require Socratic readiness ≥ 0.75 before code can ship. Integrating them into SDD automation prevents drift and keeps PR templates aligned with the latest constitutional guidance.
+
 ## Templates
 
 ### Specification Template (`templates/sdd/specification.md`)
