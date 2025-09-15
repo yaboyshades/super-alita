@@ -1,8 +1,8 @@
 # Slugification Strategies: Shell Pipelines vs. `python-slugify`
 
 ## Context within Super Alita
-- `src/sdd/constitutional_pipeline.py` and `spec_kit.py` apply a regex-driven helper that lowercases input, strips non-word characters, normalizes contiguous whitespace or hyphens to a single hyphen, removes leading/trailing separators, and truncates to 50 characters.【F:src/sdd/constitutional_pipeline.py†L207-L213】【F:spec_kit.py†L347-L353】
-- `src/tools/spec_generator.py` exposes `sanitize_slug`, which retains underscores, replaces disallowed characters with hyphens, trims the ends, and limits slugs to 60 characters.【F:src/tools/spec_generator.py†L47-L60】
+- [`src/sdd/constitutional_pipeline.py` (lines 207-213)](src/sdd/constitutional_pipeline.py#L207-L213) and [`spec_kit.py` (lines 347-353)](spec_kit.py#L347-L353) apply a regex-driven helper that lowercases input, strips non-word characters, normalizes contiguous whitespace or hyphens to a single hyphen, removes leading/trailing separators, and truncates to 50 characters.
+- [`src/tools/spec_generator.py` (lines 47-60)](src/tools/spec_generator.py#L47-L60) exposes `sanitize_slug`, which retains underscores, replaces disallowed characters with hyphens, trims the ends, and limits slugs to 60 characters.
 - These helpers mirror common shell-based slugification recipes that combine `tr`, `sed`, `awk`, or `perl` to lowercase, sanitize, and coalesce separators. Understanding shell trade-offs helps decide when to adopt a dedicated library such as [`python-slugify`](https://github.com/un33k/python-slugify) for richer Unicode handling.
 
 ## Shell-Based Slugification Patterns
