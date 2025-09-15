@@ -49,7 +49,7 @@
 These cases target both current regex helpers and prospective `python-slugify` integration. They should live alongside deterministic unit tests in `tests/runtime/` to guard our streaming and planning flows.
 
 1. **Character Set Contract**
-   - *Generators*: `st.text(alphabet=st.characters(blacklist_categories=("Cs",), blacklist_characters="\x00"), min_size=1, max_size=256)`.
+   - *Generators*: `st.text(alphabet=st.characters(blacklist_categories=("Cs",), blacklist_characters="\x00"), min_size=1, max_size=256)`
    - *Property*: Output only includes lowercase ASCII letters, digits, underscores (when allowed), and the configured separator (`-` by default). Both regex helpers and `python-slugify` should satisfy this under comparable configuration.
 
 2. **Idempotency**
