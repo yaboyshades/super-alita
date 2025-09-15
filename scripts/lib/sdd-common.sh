@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Resolve the Python interpreter once so downstream helpers can reuse it
+# without repeatedly scanning PATH.
+_python_path=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+if [[ -z "${_python_path}" ]]; then
+    echo "ERROR: Python interpreter not found on PATH" >&2
+    exit 1
+fi
+readonly _python_path
+
 # Common helper utilities for SDD shell tooling.
 # Provides helpers shared across bash entrypoints that orchestrate
 # specification-driven development workflows.
@@ -11,8 +20,51 @@ slugify() {
         return 0
     fi
 
+    local transliterated
+    if command -v iconv >/dev/null 2>&1; then
+        transliterated=$(printf '%s' "${input}" | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null)
+        if [[ $? -ne 0 || -z "${transliterated}" ]]; then
+            transliterated="${input}"
+        fi
+    else
+        transliterated=$(python3 - <<'PY' "${input}"
+import sys
+import unicodedata
+
+
+def _transliterate(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    fallback_map = {
+        "ß": "ss",
+        "Ø": "O",
+        "ø": "o",
+        "Đ": "D",
+        "đ": "d",
+        "Ł": "L",
+        "ł": "l",
+        "Æ": "AE",
+        "æ": "ae",
+        "Œ": "OE",
+        "œ": "oe",
+        "Þ": "Th",
+        "þ": "th",
+    }
+    without_marks = []
+    for ch in normalized:
+        if unicodedata.category(ch).startswith("M"):
+            continue
+        without_marks.append(fallback_map.get(ch, ch))
+    ascii_text = "".join(without_marks)
+    return ascii_text.encode("ascii", "ignore").decode("ascii")
+
+
+print(_transliterate(sys.argv[1]), end="")
+PY
+        )
+    fi
+
     local slug
-    slug=$(printf '%s' "${input}" \
+    slug=$(printf '%s' "${transliterated}" \
         | tr '[:upper:]' '[:lower:]' \
         | sed -E 's/[^a-z0-9]+/-/g' \
         | sed -E 's/^-+|-+$//g')
@@ -85,6 +137,7 @@ sdd_json_array() {
     printf ']'
 }
 
+
 # Convert key=value pairs into a JSON object. Keys retain their first
 # occurrence order and both keys and values are escaped to ensure the
 # resulting JSON is safe even when values contain whitespace, quotes, or
@@ -136,6 +189,47 @@ sdd_json_object_from_kv() {
         printf '"'
     done
     printf '}'
+=======
+# Emit structured JSON log lines with optional key=value metadata.
+log_json() {
+    local level="${1:-info}"
+    if (($# > 0)); then
+        shift
+    fi
+
+    local message="${1:-}"
+    if (($# > 0)); then
+        shift
+    fi
+
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    local args=("${level}" "${message}" "${timestamp}" "$@")
+    "${_python_path}" - "${args[@]}" <<'PY'
+import json
+import sys
+
+level = sys.argv[1] if len(sys.argv) > 1 else "info"
+message = sys.argv[2] if len(sys.argv) > 2 else ""
+timestamp = sys.argv[3] if len(sys.argv) > 3 else ""
+extra_args = sys.argv[4:]
+payload = {
+    "timestamp": timestamp,
+    "level": level,
+    "message": message,
+}
+extras = []
+for arg in extra_args:
+    if "=" in arg:
+        key, value = arg.split("=", 1)
+        payload[key] = value
+    else:
+        extras.append(arg)
+if extras:
+    payload["extra"] = extras
+print(json.dumps(payload, ensure_ascii=False))
+PY
 }
 
 # Basic self-test when the script is executed directly.

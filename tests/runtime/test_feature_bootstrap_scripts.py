@@ -2,7 +2,6 @@ import json
 import os
 import subprocess
 from pathlib import Path
-import re
 
 import pytest  # type: ignore[import-not-found]
 
@@ -24,7 +23,9 @@ def _run_git_command(repo_dir: Path, *args: str) -> subprocess.CompletedProcess[
     )
 
 
-def _run_script(script_path: Path, repo_dir: Path, *args: str) -> subprocess.CompletedProcess[str]:
+def _run_script(
+    script_path: Path, repo_dir: Path, *args: str
+) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy() | {
         "GIT_DIR": str(repo_dir / ".git"),
         "GIT_WORK_TREE": str(repo_dir),
@@ -49,23 +50,26 @@ def _init_repo(tmp_path: Path) -> Path:
 
     templates_dir = repo_dir / "templates"
     templates_dir.mkdir()
-    (templates_dir / "spec-template.md").write_text(SPEC_TEMPLATE_TEXT, encoding="utf-8")
-    (templates_dir / "plan-template.md").write_text(PLAN_TEMPLATE_TEXT, encoding="utf-8")
+    (templates_dir / "spec-template.md").write_text(
+        SPEC_TEMPLATE_TEXT, encoding="utf-8"
+    )
+    (templates_dir / "plan-template.md").write_text(
+        PLAN_TEMPLATE_TEXT, encoding="utf-8"
+    )
 
     return repo_dir
 
 
 def _slugify(text: str) -> str:
     """
-    Calls the slugify function from scripts/lib/sdd-common.sh via a subprocess.
-    Assumes that sdd-common.sh defines a slugify function that can be sourced and called.
+    Call the slugify function from scripts/lib/sdd-common.sh via a subprocess.
+
+    Assumes that the sourced script defines a slugify helper.
     """
     # Compose a shell command that sources the script and calls slugify
     # The shell script should print the slugified result to stdout
     # This assumes sdd-common.sh is in scripts/lib/sdd-common.sh
-    script = (
-        f"source scripts/lib/sdd-common.sh && slugify \"{text}\""
-    )
+    script = f'source scripts/lib/sdd-common.sh && slugify "{text}"'
     result = subprocess.run(
         ["bash", "-c", script],
         capture_output=True,
@@ -73,6 +77,17 @@ def _slugify(text: str) -> str:
         check=True,
     )
     return result.stdout.strip()
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("München", "munchen"),
+        ("Straße", "strasse"),
+    ],
+)
+def test_slugify_transliterates_unicode_characters(text: str, expected: str) -> None:
+    assert _slugify(text) == expected
 
 
 def _branch_suffix(slug: str) -> str:
@@ -105,9 +120,9 @@ def test_create_new_feature_generates_branch_and_spec(tmp_path: Path) -> None:
     assert expected_spec.exists()
     assert expected_spec.read_text(encoding="utf-8") == SPEC_TEMPLATE_TEXT
 
-    head_branch = (
-        _run_git_command(repo_dir, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
-    )
+    head_branch = _run_git_command(
+        repo_dir, "rev-parse", "--abbrev-ref", "HEAD"
+    ).stdout.strip()
     assert head_branch == expected_branch
 
 
@@ -136,7 +151,7 @@ def test_setup_plan_populates_template_and_reports_paths(tmp_path: Path) -> None
     assert expected_plan.exists()
     assert expected_plan.read_text(encoding="utf-8") == PLAN_TEMPLATE_TEXT
 
-    head_branch = (
-        _run_git_command(repo_dir, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
-    )
+    head_branch = _run_git_command(
+        repo_dir, "rev-parse", "--abbrev-ref", "HEAD"
+    ).stdout.strip()
     assert head_branch == branch_name
