@@ -1,0 +1,94 @@
+{
+  "spec": {
+    "checks": {
+      "has_user_stories": {
+        "passed": true,
+        "score": 1.0,
+        "message": "Good user stories",
+        "details": {
+          "count": 9
+        }
+      },
+      "has_acceptance_criteria": {
+        "passed": true,
+        "score": 1.0,
+        "message": "Good acceptance criteria",
+        "details": {
+          "count": 32
+        }
+      },
+      "constitutional_compliance": {
+        "passed": true,
+        "score": 1.0,
+        "message": "Strong constitutional compliance",
+        "details": {
+          "elements": 6
+        }
+      }
+    },
+    "overall_score": 1.0,
+    "passed": true
+  },
+  "plan": {
+    "checks": {
+      "has_architecture": {
+        "passed": true,
+        "score": 1.0,
+        "message": "Architecture defined",
+        "details": {
+          "matches": 10
+        }
+      },
+      "has_dependencies": {
+        "passed": true,
+        "score": 1.0,
+        "message": "Dependencies defined",
+        "details": {
+          "matches": 8
+        }
+      },
+      "has_testing_strategy": {
+        "passed": true,
+        "score": 1.0,
+        "message": "Testing strategy strong",
+        "details": {
+          "matches": 12
+        }
+      }
+    },
+    "overall_score": 1.0,
+    "passed": true
+  },
+  "tasks": {
+    "checks": {
+      "has_task_breakdown": {
+        "passed": true,
+        "score": 1.0,
+        "message": "Task breakdown good",
+        "details": {
+          "matches": 6
+        }
+      },
+      "has_dependencies": {
+        "passed": false,
+        "score": 0.3,
+        "message": "Dependencies missing",
+        "details": {
+          "matches": 0
+        }
+      },
+      "has_estimates": {
+        "passed": true,
+        "score": 1.0,
+        "message": "Estimates provided",
+        "details": {
+          "matches": 15
+        }
+      }
+    },
+    "overall_score": 0.7666666666666666,
+    "passed": true
+  },
+  "overall_score": 0.9222222222222222,
+  "passed": true
+}

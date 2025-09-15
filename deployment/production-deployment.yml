@@ -1,0 +1,189 @@
+# Production Deployment Configuration
+# Intelligent routing, autoscaling, and observability for Super Alita
+
+version: 1.0.0
+deployment:
+  name: super-alita-production
+  namespace: super-alita
+  
+  services:
+    api:
+      image: super-alita:latest
+      replicas:
+        min: 2
+        max: 10
+        target_cpu: 70
+        target_memory: 80
+      
+      ports:
+        - name: http
+          port: 8080
+          target_port: 8080
+        - name: grpc
+          port: 50051
+          target_port: 50051
+      
+      health_checks:
+        liveness:
+          path: /health/simple
+          interval: 30s
+          timeout: 5s
+        readiness:
+          path: /healthz
+          interval: 10s
+          timeout: 3s
+      
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
+    
+    consensus:
+      image: super-alita-consensus:latest
+      replicas:
+        min: 1
+        max: 3
+        target_cpu: 60
+      
+      ports:
+        - name: grpc
+          port: 50052
+          target_port: 50052
+      
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 512Mi
+
+  routing:
+    ingress:
+      class: nginx
+      annotations:
+        nginx.ingress.kubernetes.io/rate-limit: "100"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      
+      rules:
+        - host: api.super-alita.dev
+          paths:
+            - path: /
+              service: api
+              port: 8080
+        - host: consensus.super-alita.dev
+          paths:
+            - path: /
+              service: consensus
+              port: 50052
+    
+    load_balancing:
+      algorithm: round_robin
+      session_affinity: client_ip
+      timeout: 30s
+
+  autoscaling:
+    horizontal:
+      enabled: true
+      metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: Utilization
+              averageUtilization: 70
+        - type: Resource
+          resource:
+            name: memory
+            target:
+              type: Utilization
+              averageUtilization: 80
+    
+    vertical:
+      enabled: false
+      update_mode: Auto
+
+  observability:
+    metrics:
+      prometheus:
+        enabled: true
+        scrape_interval: 15s
+        retention: 30d
+      
+      custom_metrics:
+        - name: sdd_validation_count
+          type: counter
+          labels: ["status", "epic_id"]
+        - name: constitutional_score
+          type: gauge
+          labels: ["artifact_type"]
+    
+    logging:
+      level: INFO
+      format: json
+      aggregation:
+        enabled: true
+        backend: elasticsearch
+        retention: 7d
+    
+    tracing:
+      enabled: true
+      sampling_rate: 0.1
+      backend: jaeger
+      retention: 3d
+    
+    alerts:
+      - name: high_error_rate
+        condition: "error_rate > 0.05"
+        duration: 5m
+        severity: critical
+      
+      - name: high_latency
+        condition: "p95_latency > 1000ms"
+        duration: 2m
+        severity: warning
+      
+      - name: pod_restart_rate
+        condition: "restart_count > 3"
+        duration: 10m
+        severity: warning
+
+  security:
+    network_policies:
+      enabled: true
+      ingress_rules:
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  name: ingress-nginx
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  name: monitoring
+    
+    pod_security:
+      run_as_non_root: true
+      read_only_root_filesystem: true
+      allow_privilege_escalation: false
+    
+    secrets:
+      encryption_at_rest: true
+      rotation_policy: 90d
+
+  regional_compliance:
+    data_residency:
+      regions: ["us-east-1", "eu-west-1"]
+      replication: cross_region
+    
+    compliance_frameworks:
+      - SOC2
+      - GDPR
+      - ISO27001
+    
+    backup:
+      enabled: true
+      schedule: "0 2 * * *"
+      retention: 30d

@@ -1,0 +1,244 @@
+{
+  "version": "1.0.0",
+  "debug_config": {
+    "name": "super-alita-debug",
+    "description": "Debug configuration for Super Alita development and troubleshooting",
+    "qoder_integration": {
+      "enabled": true,
+      "debug_mode": true,
+      "code_intelligence": {
+        "language_servers": [
+          {
+            "language": "python",
+            "server": "pylsp",
+            "config": {
+              "pylsp.plugins.jedi.enabled": true,
+              "pylsp.plugins.mypy.enabled": true,
+              "pylsp.plugins.rope.enabled": true
+            }
+          }
+        ],
+        "indexing": {
+          "enabled": true,
+          "paths": [
+            "src/",
+            "tests/",
+            "sdd/"
+          ],
+          "exclude_patterns": [
+            "**/__pycache__/**",
+            "**/*.pyc",
+            ".git/**"
+          ]
+        }
+      }
+    },
+    "debugging": {
+      "breakpoints": {
+        "conditional": true,
+        "hit_count": true,
+        "log_points": true
+      },
+      "step_debugging": {
+        "step_over": true,
+        "step_into": true,
+        "step_out": true,
+        "continue": true
+      },
+      "variable_inspection": {
+        "locals": true,
+        "globals": true,
+        "expressions": true,
+        "call_stack": true
+      }
+    },
+    "logging": {
+      "level": "DEBUG",
+      "format": "detailed",
+      "structured_logging": {
+        "enabled": true,
+        "include_context": true,
+        "include_traceback": true
+      },
+      "loggers": {
+        "src.sdd": "DEBUG",
+        "src.constitutional": "DEBUG",
+        "src.sandbox": "DEBUG",
+        "src.reug_runtime": "INFO",
+        "src.orchestration": "INFO"
+      },
+      "outputs": [
+        {
+          "type": "console",
+          "level": "INFO"
+        },
+        {
+          "type": "file",
+          "level": "DEBUG",
+          "path": "logs/debug.log",
+          "rotation": "daily",
+          "retention": "7d"
+        }
+      ]
+    },
+    "profiling": {
+      "enabled": true,
+      "tools": [
+        {
+          "name": "cProfile",
+          "enabled": true,
+          "output_dir": "profiles/",
+          "sort_by": "cumulative"
+        },
+        {
+          "name": "memory_profiler",
+          "enabled": true,
+          "line_by_line": true,
+          "precision": 3
+        },
+        {
+          "name": "py-spy",
+          "enabled": false,
+          "sampling_rate": 100,
+          "duration": "30s"
+        }
+      ],
+      "auto_profiling": {
+        "triggers": {
+          "cpu_threshold": 90,
+          "memory_threshold": 90,
+          "duration": "10s"
+        },
+        "output_format": "json"
+      }
+    },
+    "testing": {
+      "debug_mode": {
+        "enabled": true,
+        "verbose": true,
+        "capture": "no",
+        "traceback": "long"
+      },
+      "coverage": {
+        "enabled": true,
+        "report_format": ["html", "xml", "term"],
+        "fail_under": 75,
+        "include": "src/**",
+        "exclude": [
+          "src/*/tests/**",
+          "src/*/*_test.py"
+        ]
+      },
+      "fixtures": {
+        "scope": "function",
+        "autouse": false,
+        "debug_fixtures": true
+      }
+    },
+    "hot_reload": {
+      "enabled": true,
+      "watch_patterns": [
+        "src/**/*.py",
+        "sdd/**/*.yaml",
+        "configs/**/*.yml",
+        "configs/**/*.json"
+      ],
+      "ignore_patterns": [
+        "**/__pycache__/**",
+        "**/*.pyc",
+        "**/logs/**"
+      ],
+      "restart_on_change": true,
+      "debounce_delay": "1s"
+    },
+    "constitutional_debugging": {
+      "enabled": true,
+      "validate_on_change": true,
+      "show_compliance_scores": true,
+      "highlight_violations": true,
+      "suggest_fixes": true,
+      "auto_format": false
+    },
+    "sdd_debugging": {
+      "enabled": true,
+      "validate_syntax": true,
+      "check_references": true,
+      "show_graph": true,
+      "highlight_dependencies": true
+    },
+    "performance_monitoring": {
+      "enabled": true,
+      "metrics": [
+        "response_time",
+        "memory_usage",
+        "cpu_usage",
+        "database_queries",
+        "external_api_calls"
+      ],
+      "alerts": {
+        "slow_query_threshold": "100ms",
+        "high_memory_threshold": "512MB",
+        "high_cpu_threshold": "80%"
+      }
+    },
+    "ide_integration": {
+      "vscode": {
+        "extensions": [
+          "ms-python.python",
+          "ms-python.debugpy",
+          "ms-python.mypy-type-checker"
+        ],
+        "settings": {
+          "python.defaultInterpreterPath": ".venv/bin/python",
+          "python.testing.pytestEnabled": true,
+          "python.linting.enabled": true,
+          "python.formatting.provider": "black"
+        },
+        "launch_configs": [
+          {
+            "name": "Debug Super Alita",
+            "type": "python",
+            "request": "launch",
+            "program": "app.py",
+            "env": {
+              "DEBUG": "true",
+              "LOG_LEVEL": "DEBUG"
+            }
+          },
+          {
+            "name": "Debug SDD Validation",
+            "type": "python",
+            "request": "launch",
+            "program": "validate_sdd_epic.py",
+            "env": {
+              "DEBUG": "true"
+            }
+          }
+        ]
+      }
+    },
+    "troubleshooting": {
+      "common_issues": [
+        {
+          "issue": "Constitutional validation failing",
+          "solution": "Check SDD files for required elements: user stories, acceptance criteria, testing strategy"
+        },
+        {
+          "issue": "Sandbox execution errors",
+          "solution": "Verify sandbox isolation and check for shell=True usage"
+        },
+        {
+          "issue": "Import errors in SDD modules",
+          "solution": "Ensure absolute imports from src.* are used"
+        }
+      ],
+      "diagnostic_commands": [
+        "python validate_deployment.py",
+        "python validate_sdd_epic.py",
+        "python -m src.sdd.sdd_cli validate",
+        "ruff check src/",
+        "mypy --strict src/"
+      ]
+    }
+  }
+}

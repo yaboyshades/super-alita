@@ -1,0 +1,97 @@
+# Quality Monitoring Configuration
+# Defines metrics, alerts, and dashboards for Super Alita quality monitoring
+
+version: 1.0.0
+monitoring:
+  metrics:
+    # Constitutional compliance metrics
+    constitutional_score:
+      type: gauge
+      description: "Constitutional compliance score (0-1)"
+      labels: ["epic_id", "artifact_type"]
+      thresholds:
+        warning: 0.6
+        critical: 0.75
+    
+    # Code quality metrics
+    test_coverage:
+      type: gauge
+      description: "Test coverage percentage"
+      labels: ["module", "test_type"]
+      thresholds:
+        warning: 70
+        critical: 80
+    
+    # Performance metrics
+    profiler_execution_time:
+      type: histogram
+      description: "AI code profiler execution time in seconds"
+      labels: ["code_type", "complexity"]
+      buckets: [0.1, 0.5, 1.0, 5.0, 10.0]
+    
+    # SDD workflow metrics
+    sdd_validation_time:
+      type: histogram
+      description: "SDD validation execution time"
+      labels: ["phase", "artifact_count"]
+      buckets: [1, 5, 10, 30, 60]
+
+  alerts:
+    constitutional_compliance_low:
+      condition: "constitutional_score < 0.75"
+      severity: critical
+      message: "Constitutional compliance score below threshold"
+      actions:
+        - notify_team
+        - block_deployment
+    
+    test_coverage_low:
+      condition: "test_coverage < 80"
+      severity: warning
+      message: "Test coverage below minimum threshold"
+      actions:
+        - notify_developers
+    
+    profiler_performance_degraded:
+      condition: "profiler_execution_time > 10"
+      severity: warning
+      message: "AI code profiler execution time exceeding limits"
+      actions:
+        - investigate_performance
+
+  dashboards:
+    constitutional_compliance:
+      title: "Constitutional Compliance Dashboard"
+      panels:
+        - title: "Overall Compliance Score"
+          type: gauge
+          metric: constitutional_score
+        - title: "Compliance by Epic"
+          type: table
+          metric: constitutional_score
+          group_by: ["epic_id"]
+    
+    quality_overview:
+      title: "Code Quality Overview"
+      panels:
+        - title: "Test Coverage"
+          type: graph
+          metric: test_coverage
+        - title: "SDD Validation Performance"
+          type: histogram
+          metric: sdd_validation_time
+    
+    performance_monitoring:
+      title: "Performance Monitoring"
+      panels:
+        - title: "Profiler Execution Times"
+          type: histogram
+          metric: profiler_execution_time
+        - title: "Performance Trends"
+          type: timeseries
+          metric: profiler_execution_time
+
+  retention:
+    metrics: "30d"
+    logs: "7d"
+    traces: "3d"
