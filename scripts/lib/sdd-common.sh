@@ -37,14 +37,24 @@ data = {
     "message": message,
 }
 
+message_override = None
 for pair in pairs:
     if "=" not in pair:
         continue
     key, value = pair.split("=", 1)
     if key == "message":
+        message_override = value
         continue
     data[key] = value
 
+if message_override is not None:
+    # Warn to stderr if both positional and key-value message are provided
+    if message != message_override:
+        print(
+            f"WARNING: Overriding positional message '{message}' with key-value 'message={message_override}'",
+            file=sys.stderr,
+        )
+    data["message"] = message_override
 print(json.dumps(data, ensure_ascii=False))
 PY
 }
