@@ -94,6 +94,11 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     fi
 
     log_output="$(log_json "SDD helper smoke test" level=debug scope=slugify)"
+    log_json_status=$?
+    if [ $log_json_status -ne 0 ]; then
+        echo "log_json failed with exit code $log_json_status" >&2
+        exit $log_json_status
+    fi
     if ! "${_python_for_tests}" - "$log_output" <<'PY'
 import json
 import sys
