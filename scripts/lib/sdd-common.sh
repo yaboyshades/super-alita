@@ -137,6 +137,59 @@ sdd_json_array() {
     printf ']'
 }
 
+
+# Convert key=value pairs into a JSON object. Keys retain their first
+# occurrence order and both keys and values are escaped to ensure the
+# resulting JSON is safe even when values contain whitespace, quotes, or
+# other special characters.
+sdd_json_object_from_kv() {
+    if (($# == 0)); then
+        printf '{}'
+        return 0
+    fi
+
+    local pair key value
+    local -a ordered_keys=()
+    local -A kv_store=()
+
+    for pair in "$@"; do
+        if [[ "${pair}" != *=* ]]; then
+            echo "ERROR: expected key=value pair, got: ${pair}" >&2
+            return 1
+        fi
+
+        key=${pair%%=*}
+        value=${pair#*=}
+
+        if [[ -z "${key}" ]]; then
+            echo "ERROR: key cannot be empty in pair: ${pair}" >&2
+            return 1
+        fi
+
+        if [[ -z "${kv_store[$key]+_}" ]]; then
+            ordered_keys+=("$key")
+        fi
+
+        kv_store["$key"]="$value"
+    done
+
+    local first=1
+    printf '{'
+    for key in "${ordered_keys[@]}"; do
+        if ((first)); then
+            first=0
+        else
+            printf ','
+        fi
+
+        printf '"'
+        sdd_json_escape "${key}"
+        printf '":"'
+        sdd_json_escape "${kv_store[$key]}"
+        printf '"'
+    done
+    printf '}'
+=======
 # Emit structured JSON log lines with optional key=value metadata.
 log_json() {
     local level="${1:-info}"
@@ -189,5 +242,13 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         exit 1
     fi
 
-    echo "slugify self-test passed"
+    object_expected='{"owner":"Platform Team","quote":"He said \"Hello\""}'
+    object_result="$(sdd_json_object_from_kv 'owner=Platform Team' 'quote=He said "Hello"')"
+
+    if [[ "${object_result}" != "${object_expected}" ]]; then
+        echo "sdd_json_object_from_kv self-test failed: expected '${object_expected}', got '${object_result}'" >&2
+        exit 1
+    fi
+
+    echo "slugify and sdd_json_object_from_kv self-tests passed"
 fi
