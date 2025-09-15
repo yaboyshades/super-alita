@@ -36,8 +36,7 @@ check_feature_branch "$CURRENT_BRANCH" || exit 1
 if [[ ! -d "$FEATURE_DIR" ]]; then
     if $JSON_MODE; then
         missing_json=$(build_json_array "feature-spec.md" "plan.md")
-        printf '{"ok":false,"missing":%s}
-' "$missing_json"
+        printf '{"ok":false,"missing":%s}\n' "$missing_json"
     else
         echo "ERROR: Feature directory not found: $FEATURE_DIR"
         echo "Run /specify first to create the feature structure."
