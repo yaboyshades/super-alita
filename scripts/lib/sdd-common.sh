@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Resolve the Python interpreter once so downstream helpers can reuse it
+# without repeatedly scanning PATH.
+_python_path=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+if [[ -z "${_python_path}" ]]; then
+    echo "ERROR: Python interpreter not found on PATH" >&2
+    exit 1
+fi
+readonly _python_path
+
 # Common helper utilities for SDD shell tooling.
 # Provides helpers shared across bash entrypoints that orchestrate
 # specification-driven development workflows.
@@ -11,8 +20,51 @@ slugify() {
         return 0
     fi
 
+    local transliterated
+    if command -v iconv >/dev/null 2>&1; then
+        transliterated=$(printf '%s' "${input}" | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null)
+        if [[ $? -ne 0 || -z "${transliterated}" ]]; then
+            transliterated="${input}"
+        fi
+    else
+        transliterated=$(python3 - <<'PY' "${input}"
+import sys
+import unicodedata
+
+
+def _transliterate(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    fallback_map = {
+        "ß": "ss",
+        "Ø": "O",
+        "ø": "o",
+        "Đ": "D",
+        "đ": "d",
+        "Ł": "L",
+        "ł": "l",
+        "Æ": "AE",
+        "æ": "ae",
+        "Œ": "OE",
+        "œ": "oe",
+        "Þ": "Th",
+        "þ": "th",
+    }
+    without_marks = []
+    for ch in normalized:
+        if unicodedata.category(ch).startswith("M"):
+            continue
+        without_marks.append(fallback_map.get(ch, ch))
+    ascii_text = "".join(without_marks)
+    return ascii_text.encode("ascii", "ignore").decode("ascii")
+
+
+print(_transliterate(sys.argv[1]), end="")
+PY
+        )
+    fi
+
     local slug
-    slug=$(printf '%s' "${input}" \
+    slug=$(printf '%s' "${transliterated}" \
         | tr '[:upper:]' '[:lower:]' \
         | sed -E 's/[^a-z0-9]+/-/g' \
         | sed -E 's/^-+|-+$//g')
@@ -85,6 +137,7 @@ sdd_json_array() {
     printf ']'
 }
 
+
 # Emit a JSON payload to stdout. Allow callers (or tests) to override the
 # implementation by defining log_json in the environment before sourcing or
 # executing this script.
@@ -100,6 +153,132 @@ if ! declare -F log_json >/dev/null 2>&1; then
         printf '%s\n' "${payload}"
     }
 fi
+
+
+# Emit a single-line JSON object for structured logging. Arguments are provided
+# as key=value pairs. The "message" key is reserved for human-readable text and
+# is omitted from the JSON output. When encountered, a warning is written to
+# stderr so callers can surface the drop in automation pipelines.
+log_json() {
+    printf '{'
+
+    local first=1
+    local kv key value
+    for kv in "$@"; do
+        if [[ "${kv}" != *=* ]]; then
+            printf 'WARN: log_json skipping malformed entry: %s\n' "${kv}" >&2
+            continue
+        fi
+
+        key=${kv%%=*}
+        value=${kv#*=}
+
+        if [[ "${key}" == "message" ]]; then
+            printf 'WARN: log_json skipping reserved message key (value=[REDACTED])\n' >&2
+            continue
+        fi
+
+
+# Convert key=value pairs into a JSON object. Keys retain their first
+# occurrence order and both keys and values are escaped to ensure the
+# resulting JSON is safe even when values contain whitespace, quotes, or
+# other special characters.
+sdd_json_object_from_kv() {
+    if (($# == 0)); then
+        printf '{}'
+        return 0
+    fi
+
+    local pair key value
+    local -a ordered_keys=()
+    local -A kv_store=()
+
+    for pair in "$@"; do
+        if [[ "${pair}" != *=* ]]; then
+            echo "ERROR: expected key=value pair, got: ${pair}" >&2
+            return 1
+        fi
+
+        key=${pair%%=*}
+        value=${pair#*=}
+
+        if [[ -z "${key}" ]]; then
+            echo "ERROR: key cannot be empty in pair: ${pair}" >&2
+            return 1
+        fi
+
+        if [[ -z "${kv_store[$key]+_}" ]]; then
+            ordered_keys+=("$key")
+        fi
+
+        kv_store["$key"]="$value"
+    done
+
+    local first=1
+    printf '{'
+    for key in "${ordered_keys[@]}"; do
+        if ((first)); then
+            first=0
+        else
+            printf ','
+        fi
+
+        printf '"'
+        sdd_json_escape "${key}"
+        printf '":"'
+        sdd_json_escape "${value}"
+        printf '"'
+    done
+
+    printf '}\n'
+
+        sdd_json_escape "${kv_store[$key]}"
+        printf '"'
+    done
+    printf '}'
+
+# Emit structured JSON log lines with optional key=value metadata.
+log_json() {
+    local level="${1:-info}"
+    if (($# > 0)); then
+        shift
+    fi
+
+    local message="${1:-}"
+    if (($# > 0)); then
+        shift
+    fi
+
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    local args=("${level}" "${message}" "${timestamp}" "$@")
+    "${_python_path}" - "${args[@]}" <<'PY'
+import json
+import sys
+
+level = sys.argv[1] if len(sys.argv) > 1 else "info"
+message = sys.argv[2] if len(sys.argv) > 2 else ""
+timestamp = sys.argv[3] if len(sys.argv) > 3 else ""
+extra_args = sys.argv[4:]
+payload = {
+    "timestamp": timestamp,
+    "level": level,
+    "message": message,
+}
+extras = []
+for arg in extra_args:
+    if "=" in arg:
+        key, value = arg.split("=", 1)
+        payload[key] = value
+    else:
+        extras.append(arg)
+if extras:
+    payload["extra"] = extras
+print(json.dumps(payload, ensure_ascii=False))
+PY
+}
+
 
 # Basic self-test when the script is executed directly.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -119,4 +298,14 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     fi
 
     echo "slugify self-test passed"
+
+    object_expected='{"owner":"Platform Team","quote":"He said \"Hello\""}'
+    object_result="$(sdd_json_object_from_kv 'owner=Platform Team' 'quote=He said "Hello"')"
+
+    if [[ "${object_result}" != "${object_expected}" ]]; then
+        echo "sdd_json_object_from_kv self-test failed: expected '${object_expected}', got '${object_result}'" >&2
+        exit 1
+    fi
+
+    echo "slugify and sdd_json_object_from_kv self-tests passed"
 fi
