@@ -94,6 +94,43 @@ interface DiagnosticResponse {
   recommendations: string[];
 }
 
+export function toVscodeDiagnostics(
+  arr: DiagnosticResponse['diagnostics'] | unknown
+): vscode.Diagnostic[] {
+  if (!Array.isArray(arr)) {
+    return [];
+  }
+
+  const diagnostics: vscode.Diagnostic[] = [];
+
+  for (const diag of arr) {
+    if (!diag?.range) {
+      continue;
+    }
+
+    const range = new vscode.Range(
+      diag.range.start.line,
+      diag.range.start.character,
+      diag.range.end.line,
+      diag.range.end.character
+    );
+
+    const severity =
+      diag.severity === 1
+        ? vscode.DiagnosticSeverity.Error
+        : diag.severity === 2
+          ? vscode.DiagnosticSeverity.Warning
+          : vscode.DiagnosticSeverity.Information;
+
+    const diagnostic = new vscode.Diagnostic(range, diag.message, severity);
+    diagnostic.source = diag.source;
+    diagnostic.code = diag.code;
+    diagnostics.push(diagnostic);
+  }
+
+  return diagnostics;
+}
+
 export class ConstitutionalGateway {
   private config: ConstitutionalConfig;
   private outputChannel: vscode.OutputChannel;
@@ -242,29 +279,7 @@ export class ConstitutionalGateway {
 
     try {
       const result = await this.analyzeDiagnostics(document);
-      const diagnostics: vscode.Diagnostic[] = result.diagnostics.map(diag => {
-        const range = new vscode.Range(
-          diag.range.start.line,
-          diag.range.start.character,
-          diag.range.end.line,
-          diag.range.end.character
-        );
-
-        const diagnostic = new vscode.Diagnostic(
-          range,
-          diag.message,
-          diag.severity === 1
-            ? vscode.DiagnosticSeverity.Error
-            : diag.severity === 2
-              ? vscode.DiagnosticSeverity.Warning
-              : vscode.DiagnosticSeverity.Information
-        );
-
-        diagnostic.source = diag.source;
-        diagnostic.code = diag.code;
-        return diagnostic;
-      });
-
+      const diagnostics = toVscodeDiagnostics(result.diagnostics);
       this.diagnosticCollection.set(document.uri, diagnostics);
     } catch (error) {
       this.outputChannel.appendLine(`Failed to update diagnostics: ${error}`);
