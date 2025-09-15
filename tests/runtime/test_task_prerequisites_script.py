@@ -50,13 +50,10 @@ def _run_script(repo_dir: Path, *args: str) -> subprocess.CompletedProcess[str]:
     if shutil.which("jq") is None:
         pytest.skip("jq is required to run check-task-prerequisites.sh")
 
-    env = os.environ.copy()
-    env.update(
-        {
-            "GIT_DIR": str(repo_dir / ".git"),
-            "GIT_WORK_TREE": str(repo_dir),
-        }
-    )
+    env = os.environ.copy() | {
+        "GIT_DIR": str(repo_dir / ".git"),
+        "GIT_WORK_TREE": str(repo_dir),
+    }
     return subprocess.run(
         ["bash", str(SCRIPT_PATH), *args],
         cwd=SCRIPT_PATH.parent,
