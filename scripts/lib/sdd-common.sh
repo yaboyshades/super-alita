@@ -172,7 +172,7 @@ import sys
 
 try:
     payload = json.loads(sys.argv[1])
-except json.JSONDecodeError as exc:  # pragma: no cover - defensive
+except json.JSONDecodeError as exc:
     raise SystemExit(f"log_json self-test failed: {exc}")
 
 required_keys = {"timestamp", "level", "message"}
