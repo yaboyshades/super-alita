@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Resolve the Python interpreter once so downstream helpers can reuse it
+# without repeatedly scanning PATH.
+_python_path=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+if [[ -z "${_python_path}" ]]; then
+    echo "ERROR: Python interpreter not found on PATH" >&2
+    exit 1
+fi
+readonly _python_path
+
 # Common helper utilities for SDD shell tooling.
 # Provides helpers shared across bash entrypoints that orchestrate
 # specification-driven development workflows.
@@ -83,6 +92,48 @@ sdd_json_array() {
         printf '"'
     done
     printf ']'
+}
+
+# Emit structured JSON log lines with optional key=value metadata.
+log_json() {
+    local level="${1:-info}"
+    if (($# > 0)); then
+        shift
+    fi
+
+    local message="${1:-}"
+    if (($# > 0)); then
+        shift
+    fi
+
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    local args=("${level}" "${message}" "${timestamp}" "$@")
+    "${_python_path}" - "${args[@]}" <<'PY'
+import json
+import sys
+
+level = sys.argv[1] if len(sys.argv) > 1 else "info"
+message = sys.argv[2] if len(sys.argv) > 2 else ""
+timestamp = sys.argv[3] if len(sys.argv) > 3 else ""
+extra_args = sys.argv[4:]
+payload = {
+    "timestamp": timestamp,
+    "level": level,
+    "message": message,
+}
+extras = []
+for arg in extra_args:
+    if "=" in arg:
+        key, value = arg.split("=", 1)
+        payload[key] = value
+    else:
+        extras.append(arg)
+if extras:
+    payload["extra"] = extras
+print(json.dumps(payload, ensure_ascii=False))
+PY
 }
 
 # Basic self-test when the script is executed directly.
