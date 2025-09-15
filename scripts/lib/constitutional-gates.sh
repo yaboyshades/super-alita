@@ -11,8 +11,26 @@ Options:
   --spec PATH   Path to the specification markdown or text file
   --plan PATH   Path to the implementation plan markdown or text file
   -h, --help    Show this message and exit
+
+Dependencies:
+  jq            Command-line JSON processor (https://stedolan.github.io/jq/)
 USAGE
 }
+
+if (($# > 0)); then
+    for arg in "$@"; do
+        if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+            usage
+            exit 0
+        fi
+    done
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+    echo "error: jq is required by constitutional-gates.sh but was not found in PATH." >&2
+    echo "Install jq from https://stedolan.github.io/jq/ and retry." >&2
+    exit 1
+fi
 
 spec_path=""
 plan_path=""
