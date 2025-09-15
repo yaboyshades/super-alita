@@ -6,6 +6,7 @@ on:
       - 'sdd/plans/**'
       - 'sdd/tasks/**'
       - 'src/sdd/**'
+      - 'validate_sdd_epic.py'
   push:
     branches:
       - main
@@ -33,6 +34,7 @@ jobs:
         run: python validate_sdd_epic.py
       - name: Upload SDD artifacts
         uses: actions/upload-artifact@v4
+        if: always()  # Upload artifacts even if validation fails
         with:
           name: sdd-advanced-debugging-and-perf
           path: sdd/artifacts/advanced_debugging_and_perf/
