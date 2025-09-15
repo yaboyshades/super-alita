@@ -69,7 +69,7 @@ build_here_doc() {
   for i in "${!elements[@]}"; do
     local escaped suffix
     escaped=$(render_json_string "${elements[$i]}")
-    suffix=",";
+    suffix=","
     if (( i == last_index )); then
       suffix=""
     fi
