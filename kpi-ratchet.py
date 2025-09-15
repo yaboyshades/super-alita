@@ -64,9 +64,7 @@ def _tracked_files(repo_root: Path) -> list[str]:
     """Return the list of tracked files for ``repo_root``."""
 
     output = _run_git_command(["ls-files"], repo_root)
-    if output is None:
-        return []
-    return [line for line in output.splitlines() if line]
+    return [] if output is None else [line for line in output.splitlines() if line]
 
 
 def _count_lines(repo_root: Path, files: Iterable[str]) -> int:
