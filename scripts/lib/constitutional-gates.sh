@@ -24,7 +24,11 @@ constitutional_check() {
 
   # Emit JSON
   printf '{'
-  printf '"ok":%s,' "$ok"
+  if [ "$ok" = "true" ]; then
+    printf '"ok":true,'
+  else
+    printf '"ok":false,'
+  fi
   printf '"messages":['
   for i in "${!messages[@]}"; do
     [[ $i -gt 0 ]] && printf ','
