@@ -56,8 +56,23 @@ def _init_repo(tmp_path: Path) -> Path:
 
 
 def _slugify(text: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-    return slug
+    """
+    Calls the slugify function from scripts/lib/sdd-common.sh via a subprocess.
+    Assumes that sdd-common.sh defines a slugify function that can be sourced and called.
+    """
+    # Compose a shell command that sources the script and calls slugify
+    # The shell script should print the slugified result to stdout
+    # This assumes sdd-common.sh is in scripts/lib/sdd-common.sh
+    script = (
+        f"source scripts/lib/sdd-common.sh && slugify \"{text}\""
+    )
+    result = subprocess.run(
+        ["bash", "-c", script],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()
 
 
 def _branch_suffix(slug: str) -> str:
