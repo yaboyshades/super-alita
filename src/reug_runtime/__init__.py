@@ -5,10 +5,12 @@ triggering the full router import (which may fail during partial checkouts
 or conflict resolution). Routers are available via lazy attribute access.
 """
 
+from typing import Any
+
 __all__ = ["router", "tools", "TOOL_CATALOG"]
 
 
-def __getattr__(name: str):  # pragma: no cover - small helper
+def __getattr__(name: str) -> Any:  # pragma: no cover - small helper
     if name == "router":
         from .router import router as _router
 
