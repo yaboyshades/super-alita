@@ -32,7 +32,7 @@ if not response.compliance_threshold_met:
 ```
 
 ### EnhancedSDDFramework
-`EnhancedSDDFramework` subclasses the base pipeline and layers on Mangle analysis, materializes inline specifications, and exposes extra helpers (`ask_question`, `validate_constitutional_compliance`, etc.). Use it when scaffolding needs richer analysis, reuse detection, or to publish the results over FastAPI/CLI surfaces. The enhanced responses embed extra data inside `analysis_results` so downstream scripts can decide whether to inject additional compliance tasks or store traceability metadata.
+`EnhancedSDDFramework` subclasses the base pipeline. It adds Mangle analysis, materializes inline specifications, and exposes extra helpers such as `ask_question` and `validate_constitutional_compliance`. Use this framework when scaffolding requires richer analysis, reuse detection, or when you need to publish results over FastAPI or CLI surfaces. The enhanced responses embed extra data inside `analysis_results`. This allows downstream scripts to decide whether to inject additional compliance tasks or store traceability metadata.
 
 ### FastAPI Router
 `create_sdd_router()` wires the enhanced framework into FastAPI. Scripts that spin up bespoke tooling servers can mount this router directly and inherit the same request/response contracts. This keeps the CLI, HTTP, and in-process flows consistent.
