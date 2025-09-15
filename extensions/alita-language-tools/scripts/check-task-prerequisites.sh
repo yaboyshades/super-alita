@@ -98,8 +98,7 @@ if $JSON_MODE; then
         ok_value="false"
     fi
     missing_json=$(build_json_array "${failures[@]}")
-    printf '{"ok":%s,"missing":%s}
-' "$ok_value" "$missing_json"
+    printf '{"ok":%s,"missing":%s}\n' "$ok_value" "$missing_json"
 else
     echo "FEATURE_DIR:$FEATURE_DIR"
     echo "REQUIRED:"
