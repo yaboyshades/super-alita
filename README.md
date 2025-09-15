@@ -37,7 +37,7 @@ Two equivalent setup paths are provided: Makefile workflow (recommended) or raw 
 
 ### Default Workflow: Specification-Driven Development (SDD)
 
-SDD is the default pipeline for feature work. Start every initiative with `specify → plan → tasks` using the constitutional gates that ship with `src/sdd/`.
+SDD (Specification-Driven Development) is the default pipeline for feature work. Start every initiative with `specify → plan → tasks` using the constitutional gates that ship with `src/sdd/`.
 
 - Use the enhanced CLI: `python -m src.sdd.sdd_cli specify "..."` / `plan` / `tasks`.
 - Shell helpers in `scripts/lib/constitutional-gates.sh` and `scripts/lib/sdd-common.sh` keep bespoke automation aligned with the CMA rules.
