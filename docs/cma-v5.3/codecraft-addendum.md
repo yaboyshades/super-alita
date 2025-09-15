@@ -49,7 +49,7 @@ Article XVI — Golden Implementation Patterns (Abstract, Reusable)
 
 Article XVII — Code Generation Protocol (for Copilot/LLMs/Tools)
 When asking an assistant to write code, prepend this protocol:
-CMA v5.3.1 Codecraft Addendum compliance is required. This code must:
+CMA v5.3.1 Codecraft Protocol compliance is required. This code must:
 • Include structured logging (JSON/logfmt) with trace_id, component, operation context.
 • Implement retries with exponential backoff + jitter; circuit breakers; timeouts.
 • Add SSRF guardrails for egress; use SecretResolver for credentials (never log secrets).
