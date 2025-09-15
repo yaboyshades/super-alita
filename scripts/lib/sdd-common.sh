@@ -3,11 +3,8 @@ set -euo pipefail
 
 # Resolve the Python interpreter once so downstream helpers can reuse it
 # without repeatedly scanning PATH.
-if _python_path=$(command -v python3 2>/dev/null); then
-    :
-elif _python_path=$(command -v python 2>/dev/null); then
-    :
-else
+_python_path=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+if [[ -z "${_python_path}" ]]; then
     echo "ERROR: Python interpreter not found on PATH" >&2
     exit 1
 fi
