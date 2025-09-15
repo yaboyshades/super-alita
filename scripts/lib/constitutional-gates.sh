@@ -99,4 +99,4 @@ fi
 
 jq_filter="{\"ok\":${ok_literal},\"messages\":[${message_body}]}"
 
-jq -cn "${jq_args[@]}" "$jq_filter"
+jq -cn "${jq_args[@]:-}" "$jq_filter"
