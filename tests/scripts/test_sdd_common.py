@@ -40,12 +40,14 @@ def test_log_json_reuses_cached_python_path() -> None:
         if stripped.startswith("TRACE:"):
             trace_lines.append(stripped[len("TRACE:") :])
 
-    first_log_index: int | None = None
-    for index, line in enumerate(trace_lines):
-        if "log_json info" in line:
-            first_log_index = index
-            break
-
+    first_log_index: int | None = next(
+        (
+            index
+            for index, line in enumerate(trace_lines)
+            if "log_json info" in line
+        ),
+        None,
+    )
     assert first_log_index is not None, "log_json invocation was not traced"
 
     detection_after_first_log = any(
