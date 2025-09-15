@@ -11,8 +11,49 @@ slugify() {
         return 0
     fi
 
+    local transliterated
+    if command -v iconv >/dev/null 2>&1; then
+        transliterated=$(printf '%s' "${input}" |
+            iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null || printf '%s' "${input}")
+    else
+        transliterated=$(python3 - <<'PY' "${input}"
+import sys
+import unicodedata
+
+
+def _transliterate(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    fallback_map = {
+        "ß": "ss",
+        "Ø": "O",
+        "ø": "o",
+        "Đ": "D",
+        "đ": "d",
+        "Ł": "L",
+        "ł": "l",
+        "Æ": "AE",
+        "æ": "ae",
+        "Œ": "OE",
+        "œ": "oe",
+        "Þ": "Th",
+        "þ": "th",
+    }
+    without_marks = []
+    for ch in normalized:
+        if unicodedata.category(ch).startswith("M"):
+            continue
+        without_marks.append(fallback_map.get(ch, ch))
+    ascii_text = "".join(without_marks)
+    return ascii_text.encode("ascii", "ignore").decode("ascii")
+
+
+print(_transliterate(sys.argv[1]), end="")
+PY
+        )
+    fi
+
     local slug
-    slug=$(printf '%s' "${input}" \
+    slug=$(printf '%s' "${transliterated}" \
         | tr '[:upper:]' '[:lower:]' \
         | sed -E 's/[^a-z0-9]+/-/g' \
         | sed -E 's/^-+|-+$//g')
