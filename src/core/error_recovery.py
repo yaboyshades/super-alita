@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Error Recovery & Resilience System
-Implements comprehensive error recovery mechanisms with circuit breakers, retry policies,
-graceful degradation, and automatic failover strategies for the Super Alita Agent System.
+Error Recovery & Resilience System.
+
+Implements comprehensive error recovery mechanisms with circuit breakers,
+retry policies, graceful degradation, and automatic failover strategies for
+the Super Alita Agent System.
 """
 
 import asyncio
@@ -263,7 +265,10 @@ class CircuitBreaker:
         self.half_open_calls = 0
 
         self.logger.info(
-            f"Circuit breaker {self.name} transitioned: {old_state.value} -> {self.state.value}"
+            "Circuit breaker %s transitioned: %s -> %s",
+            self.name,
+            old_state.value,
+            self.state.value,
         )
         await self._emit_state_change_event(old_state)
 
@@ -276,7 +281,10 @@ class CircuitBreaker:
         self.half_open_calls = 0
 
         self.logger.warning(
-            f"Circuit breaker {self.name} transitioned: {old_state.value} -> {self.state.value}"
+            "Circuit breaker %s transitioned: %s -> %s",
+            self.name,
+            old_state.value,
+            self.state.value,
         )
         await self._emit_state_change_event(old_state)
 
@@ -288,7 +296,10 @@ class CircuitBreaker:
         self.half_open_calls = 0
 
         self.logger.info(
-            f"Circuit breaker {self.name} transitioned: {old_state.value} -> {self.state.value}"
+            "Circuit breaker %s transitioned: %s -> %s",
+            self.name,
+            old_state.value,
+            self.state.value,
         )
         await self._emit_state_change_event(old_state)
 
@@ -513,13 +524,18 @@ class ErrorRecoveryOrchestrator:
                     "operator_alert",
                     alert_level="high",
                     error_context=error_context.to_dict(),
-                    message=f"Critical error in {error_context.component_name}: {error_context.error_message}",
+                    message=(
+                        f"Critical error in {error_context.component_name}: "
+                        f"{error_context.error_message}"
+                    ),
                     source_plugin="error_recovery",
                 )
                 await self.event_bus.emit(event)
 
                 self.logger.critical(
-                    f"OPERATOR ALERT: {error_context.component_name} - {error_context.error_message}"
+                    "OPERATOR ALERT: %s - %s",
+                    error_context.component_name,
+                    error_context.error_message,
                 )
                 return True
 
@@ -557,7 +573,8 @@ class ErrorRecoveryOrchestrator:
 
         if len(recent_errors) > 10:  # More than 10 errors in 5 minutes
             self.logger.warning(
-                f"High error rate detected: {len(recent_errors)} errors in last 5 minutes"
+                "High error rate detected: %s errors in last 5 minutes",
+                len(recent_errors),
             )
 
     async def _cleanup_error_history(self) -> None:
