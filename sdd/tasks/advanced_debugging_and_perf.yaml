@@ -1,0 +1,93 @@
+epic_id: SDD-ADP-2025-09
+version: 1.0.0
+task_breakdown_strategy: |
+  Tasks are designed following constitutional principles:
+  - Library-First: Research existing solutions before custom implementation
+  - Test-First: Unit tests with 80% coverage for all components
+  - Simplicity: Functions under 50 lines, single responsibility
+  - Integration: End-to-end validation with existing systems
+  - Clarity: Clear acceptance criteria and usage examples
+  - Counterfactual: Document alternatives and justify choices
+tasks:
+  - id: ADP-001
+    title: Deterministic Mode Utilities
+    description: Add seed control and inference parameter normalization helpers to promote reproducibility in CI and local runs.
+    dependencies:
+      - Research existing Python libraries (random, numpy, tensorflow.random)
+      - Evaluate pytest-deterministic and freezegun frameworks
+    estimated_effort: 8 hours
+    deliverables:
+      - src/utils/determinism.py
+    acceptance_criteria:
+      - Helpers are pure, typed, and safe no-ops if optional libs missing.
+      - Documented usage in docs/sdd/epics/advanced_debugging_and_perf.md.
+      - Unit tests achieve 80% coverage minimum.
+      - Integration tests with existing sandbox execution.
+      - Functions remain under 50 lines each.
+      - Alternative approaches documented with justifications.
+  - id: ADP-002
+    title: Structured Debugging (Beaver Method)
+    description: Provide a decorator-based structured logging and change-tracking helper to standardize debugging output.
+    dependencies:
+      - Evaluate existing logging frameworks (structlog, loguru, stdlib logging)
+      - Research decorator patterns in current codebase
+    estimated_effort: 6 hours
+    deliverables:
+      - src/debugging/beaver.py
+    acceptance_criteria:
+      - Entry/exit logs include inputs and outputs; errors captured.
+      - Opt-in usage; no functional side-effects.
+      - Unit tests with 80% coverage.
+      - Integration with existing logging infrastructure.
+      - Clear usage examples and documentation.
+      - Justification for decorator approach vs alternatives.
+  - id: ADP-003
+    title: Sandboxed AI Code Profiler
+    description: Implement a lightweight profiler that executes code via the sandbox, capturing exec time and memory, and surfacing optimization tips.
+    dependencies:
+      - Research profiling libraries (cProfile, py-spy, memory_profiler)
+      - Integrate with existing src/sandbox/exec_sandbox.py
+    estimated_effort: 12 hours
+    deliverables:
+      - src/monitoring/ai_profiler.py
+    acceptance_criteria:
+      - Uses sandbox execution; no shell=True; typed; logs failures.
+      - Produces a bounded performance score and suggestions.
+      - Unit tests with 80% coverage and performance benchmarks.
+      - Integration tests with real AI-generated code execution.
+      - Error handling for malformed code inputs.
+      - Documentation comparing profiling library alternatives.
+  - id: ADP-004
+    title: Quality Monitoring Configs
+    description: Add quality-monitoring.yml with real-time metrics, alerts, and dashboards.
+    dependencies:
+      - Research monitoring solutions (Prometheus, Grafana, OpenTelemetry)
+      - Assess existing telemetry infrastructure
+    estimated_effort: 4 hours
+    deliverables:
+      - configs/monitoring/quality-monitoring.yml
+    acceptance_criteria:
+      - Thresholds and dashboard names defined; referenced by docs.
+      - Configuration validates against monitoring system schemas.
+      - Integration with existing telemetry framework.
+      - Clear documentation with setup examples.
+      - Justification for chosen monitoring approach.
+  - id: ADP-005
+    title: Production Deployment Templates
+    description: Add production-deployment.yml for intelligent routing, autoscaling, and observability; add TRAE/Qoder configs for enterprise deployment.
+    dependencies:
+      - Research deployment tools (Docker Compose, Kubernetes, Helm)
+      - Evaluate existing deployment infrastructure
+    estimated_effort: 10 hours
+    deliverables:
+      - deployment/production-deployment.yml
+      - configs/trae/enterprise-config.json
+      - configs/trae/builders/performance-optimized.yml
+      - configs/qoder/debug-config.json
+    acceptance_criteria:
+      - Manifests are syntactically valid; clearly documented and versioned.
+      - End-to-end deployment tests pass.
+      - Integration with existing CI/CD pipeline.
+      - Clear usage examples and troubleshooting guides.
+      - Comparison of deployment approaches with justifications.
+constitutional_min_score: 0.75

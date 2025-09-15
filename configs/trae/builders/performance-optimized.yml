@@ -1,0 +1,152 @@
+version: 1.0.0
+performance_optimized_builder:
+  name: super-alita-performance
+  description: Performance-optimized build configuration for Super Alita
+  
+  build_stages:
+    - name: dependency_optimization
+      commands:
+        - "pip install --no-cache-dir -r requirements.txt"
+        - "pip uninstall -y pytest pytest-cov pytest-mock"  # Remove test deps in prod
+        - "find . -name '*.pyc' -delete"
+        - "find . -name '__pycache__' -type d -exec rm -rf {} +"
+      optimization_flags:
+        - "--optimize=2"
+        - "--strip-debug"
+    
+    - name: code_compilation
+      commands:
+        - "python -m compileall -b ."
+        - "find . -name '*.py' -not -path './tests/*' -delete"  # Keep only bytecode
+      optimization_level: "maximum"
+    
+    - name: asset_optimization
+      commands:
+        - "gzip -9 static/**/*.js static/**/*.css"
+        - "optipng static/**/*.png"
+      parallel: true
+    
+    - name: constitutional_validation
+      commands:
+        - "python validate_deployment.py"
+        - "python validate_sdd_epic.py"
+      required: true
+      timeout: "5m"
+
+  runtime_optimizations:
+    python:
+      version: "3.11-slim"
+      flags:
+        - "-O"  # Optimize bytecode
+        - "-W ignore"  # Ignore warnings for performance
+      memory:
+        max_heap: "1G"
+        gc_threshold: [700, 10, 10]
+    
+    uvicorn:
+      workers: 4
+      worker_class: "uvicorn.workers.UvicornWorker"
+      worker_connections: 1000
+      keepalive: 5
+      max_requests: 10000
+      max_requests_jitter: 1000
+    
+    system:
+      ulimits:
+        nofile: 65536
+        nproc: 32768
+      kernel_parameters:
+        net.core.somaxconn: 65535
+        net.ipv4.tcp_max_syn_backlog: 65535
+
+  caching:
+    layers:
+      - name: base_system
+        cache_key: "python:3.11-slim-{hash}"
+        ttl: "7d"
+      
+      - name: dependencies
+        cache_key: "deps-{requirements.txt|hash}"
+        ttl: "24h"
+      
+      - name: source_code
+        cache_key: "src-{src/**/*.py|hash}"
+        ttl: "1h"
+    
+    runtime_caching:
+      redis:
+        enabled: true
+        ttl_default: "1h"
+        max_memory: "256MB"
+      
+      application:
+        constitutional_scores: "24h"
+        sdd_validations: "1h"
+        profiler_results: "30m"
+
+  monitoring:
+    performance_metrics:
+      - name: build_time
+        target: "< 5m"
+        alert_threshold: "10m"
+      
+      - name: image_size
+        target: "< 500MB"
+        alert_threshold: "1GB"
+      
+      - name: startup_time
+        target: "< 10s"
+        alert_threshold: "30s"
+      
+      - name: memory_usage
+        target: "< 512MB"
+        alert_threshold: "1GB"
+    
+    profiling:
+      enabled: true
+      interval: "1m"
+      tools:
+        - "py-spy"
+        - "memory_profiler"
+      
+      triggers:
+        cpu_threshold: 80
+        memory_threshold: 85
+        duration: "5m"
+
+  security:
+    scanning:
+      - name: vulnerability_scan
+        tool: "safety"
+        fail_on: "medium"
+      
+      - name: dependency_audit
+        tool: "pip-audit"
+        fail_on: "high"
+      
+      - name: container_scan
+        tool: "trivy"
+        fail_on: "critical"
+    
+    hardening:
+      - "USER 1000:1000"
+      - "RUN chmod -R 755 /app"
+      - "COPY --chown=1000:1000 . /app"
+      - "HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:8080/health || exit 1"
+
+  deployment:
+    strategy: "blue_green"
+    rollback:
+      enabled: true
+      auto_rollback_on_failure: true
+      health_check_grace_period: "30s"
+    
+    validation:
+      pre_deployment:
+        - "python validate_deployment.py"
+        - "python validate_sdd_epic.py"
+        - "pytest tests/integration/ -x"
+      
+      post_deployment:
+        - "curl -f http://localhost:8080/health"
+        - "python -c 'import requests; assert requests.get(\"http://localhost:8080/healthz\").status_code == 200'"
