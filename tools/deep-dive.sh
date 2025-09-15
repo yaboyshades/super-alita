@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+OUT="docs/deep-dive"
+mkdir -p "$OUT"/{artifacts,graphs,logs}
+
+echo "== super-alita Deep Dive ==" | tee "$OUT/summary.txt"
+
+# --- Repo inventory & git forensics ---
+echo "[1/9] Repo inventory & git forensics..."
+{ 
+  echo "# Inventory"
+  find . -path ./.git -prune -o -type f -print | sed 's|^\./||' | wc -l | awk '{print "Total files:",$1}'
+  echo
+  echo "## Top file types"
+  find . -path ./.git -prune -o -type f -print0 \
+  | xargs -0 -I{} sh -c 'printf "%s\n" "${1##*.}"' _ {} \
+  | tr '[:upper:]' '[:lower:]' | sort | uniq -c | sort -nr | head -n 20
+
+  echo
+  echo "## cloc (if available)"
+  if command -v cloc >/dev/null 2>&1; then cloc --json . > "$OUT/artifacts/cloc.json" && echo "Saved cloc.json"; else echo "cloc not installed"; fi
+
+  echo
+  echo "## Git stats"
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 && {
+    echo "- Contributors:"; git shortlog -sn | sed 's/^/  /'
+    echo "- Churn (last 90 days):"; git log --since="90 days ago" --name-only --pretty=format: | grep -v '^$' | sort | uniq -c | sort -nr | head -n 30 | sed 's/^/  /'
+  } || echo "Not a git repo"
+} | tee "$OUT/artifacts/inventory.txt"
+
+# --- Language detection ---
+echo "[2/9] Language detection..."
+LANG_HINTS=$(find . -path ./.git -prune -o -type f -regex '.*\.(js|ts|jsx|tsx|py|go|rs|toml|lock|json|yml|yaml)' -print | tr '\n' ' ')
+HAS_JS=$(echo "$LANG_HINTS" | grep -E -q '\\.([jt]s|tsx?)|package\\.json|pnpm-lock|yarn\\.lock' && echo 1 || echo 0)
+HAS_PY=$(echo "$LANG_HINTS" | grep -E -q '\\.py|requirements\\.txt|pyproject\\.toml|poetry\\.lock' && echo 1 || echo 0)
+HAS_GO=$(echo "$LANG_HINTS" | grep -q 'go\\.mod' && echo 1 || echo 0)
+HAS_RS=$(echo "$LANG_HINTS" | grep -q 'Cargo\\.toml' && echo 1 || echo 0)
+echo "JS/TS=$HAS_JS PY=$HAS_PY GO=$HAS_GO RUST=$HAS_RS" | tee "$OUT/artifacts/langs.txt"
+
+# --- JS/TS analysis ---
+if [ "$HAS_JS" = "1" ]; then
+  echo "[3/9] JS/TS checks..."
+  if command -v node >/dev/null 2>&1; then
+    PKG_MGR="npm"
+    [ -f pnpm-lock.yaml ] && PKG_MGR="pnpm"
+    [ -f yarn.lock ] && PKG_MGR="yarn"
+    echo "Using $PKG_MGR" | tee -a "$OUT/logs/js.log"
+
+    # Install (no scripts for safety)
+    if [ -f package.json ]; then
+      case "$PKG_MGR" in
+        npm) npm ci --ignore-scripts || npm install --ignore-scripts ;;
+        yarn) yarn install --ignore-scripts || yarn install ;;
+        pnpm) pnpm install --ignore-scripts || pnpm install ;;
+      esac
+    fi
+
+    # Lint (if present and config exists)
+    if [ -f node_modules/.bin/eslint ]; then
+      if [ -f .eslintrc ] || [ -f .eslintrc.js ] || [ -f .eslintrc.json ] || [ -f .eslintrc.yaml ] || [ -f .eslintrc.yml ] || grep -q '"eslintConfig"' package.json 2>/dev/null; then
+        npx eslint . -f json -o "$OUT/artifacts/eslint.json" || true
+      fi
+    fi
+
+    # Dep graph (dependency-cruiser if available)
+    npx --yes dependency-cruiser@latest -T dot -x "node_modules|dist|build" . > "$OUT/graphs/dep.dot" 2>>"$OUT/logs/js.log" || true
+
+    # Vulnerabilities
+    case "$PKG_MGR" in
+      npm) npm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
+      yarn) yarn npm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
+      pnpm) pnpm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
+    esac
+
+    # Tests: collect (don’t run full suite yet)
+    if [ -f node_modules/.bin/jest ]; then npx jest --listTests > "$OUT/artifacts/jest-tests.txt" || true; fi
+    if [ -f node_modules/.bin/vitest ]; then npx vitest list > "$OUT/artifacts/vitest-tests.txt" || true; fi
+  fi
+fi
+
+# --- Python analysis ---
+if [ "$HAS_PY" = "1" ]; then
+  echo "[4/9] Python checks..."
+  PYBIN=$(command -v python3 || true)
+  if [ -n "$PYBIN" ]; then
+    # Create a virtual environment for isolation
+    VENV_DIR="$OUT/venv"
+    if [ ! -d "$VENV_DIR" ]; then
+      "$PYBIN" -m venv "$VENV_DIR"
+    fi
+    # shellcheck disable=SC1090
+    . "$VENV_DIR/bin/activate"
+    PYBIN="$VENV_DIR/bin/python"
+    "$PYBIN" -m pip install -q --upgrade pip
+    "$PYBIN" -m pip install -q pip-audit pipdeptree flake8 pytest || true
+    "$PYBIN" -m pipdeptree --json-tree > "$OUT/artifacts/pipdeptree.json" || true
+    "$PYBIN" -m pip_audit -f json -o "$OUT/artifacts/pip-audit.json" || true
+    "$VENV_DIR/bin/flake8" . --format=json --output-file "$OUT/artifacts/flake8.json" || true
+    # Test discovery
+    if [ -d tests ] || ls -1 *test*.py >/dev/null 2>&1; then
+      "$PYBIN" -m pytest --collect-only -q > "$OUT/artifacts/pytest-collect.txt" || true
+    fi
+  fi
+fi
+
+# --- Go analysis ---
+if [ "$HAS_GO" = "1" ]; then
+  echo "[5/9] Go checks..."
+  if command -v go >/dev/null 2>&1; then
+    go list -m all > "$OUT/artifacts/go-mods.txt" || true
+    go vet ./... > "$OUT/artifacts/go-vet.txt" 2>&1 || true
+    if command -v staticcheck >/dev/null 2>&1; then staticcheck ./... > "$OUT/artifacts/staticcheck.txt" || true; fi
+    go test ./... -c >/dev/null 2>&1 || true
+  fi
+fi
+
+# --- Rust analysis ---
+if [ "$HAS_RS" = "1" ]; then
+  echo "[6/9] Rust checks..."
+  if command -v cargo >/dev/null 2>&1; then
+    cargo tree -e features -J > "$OUT/artifacts/cargo-tree.json" || true
+    cargo clippy --message-format=json > "$OUT/artifacts/cargo-clippy.json" 2>&1 || true
+    if command -v cargo-audit >/dev/null 2>&1; then cargo audit -q -j > "$OUT/artifacts/cargo-audit.json" || true; fi
+    cargo test --no-run >/dev/null 2>&1 || true
+  fi
+fi
+
+# --- Secret scan (if available) ---
+echo "[7/9] Secret scan..."
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks detect -v --report-format json --report-path "$OUT/artifacts/gitleaks.json" || true
+else
+  echo "gitleaks not installed" > "$OUT/artifacts/gitleaks.txt"
+fi
+
+# --- Container/Docker (optional) ---
+echo "[8/9] Container scan..."
+if command -v trivy >/dev/null 2>&1; then
+  if [ -f Dockerfile ]; then trivy fs --format json --output "$OUT/artifacts/trivy-fs.json" . || true; fi
+else
+  echo "trivy not installed" > "$OUT/artifacts/trivy.txt"
+fi
+
+# --- SDD & Codecraft checklist synthesis (lightweight) ---
+echo "[9/9] SDD heuristics..." 
+{
+  echo "## SDD Readiness Heuristics"
+  echo "- Specs present?"; ls -1 | grep -E '^specs$|spec|docs' || true
+  echo "- Contracts folder?"; find . -type d -name contracts | sed 's/^/  - /' || true
+  echo "- Tests present?"; find . -type d -name tests | sed 's/^/  - /' || true
+  echo "- CI workflows:"; ls -1 .github/workflows 2>/dev/null || echo "  (none)"
+} > "$OUT/artifacts/sdd-readiness.txt"
+
+echo "Deep dive artifacts -> $OUT"
