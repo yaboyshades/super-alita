@@ -82,10 +82,19 @@ if [ "$HAS_PY" = "1" ]; then
   echo "[4/9] Python checks..."
   PYBIN=$(command -v python3 || true)
   if [ -n "$PYBIN" ]; then
-    "$PYBIN" -m pip install -q pip-audit pipdeptree flake8 || true
+    # Create a virtual environment for isolation
+    VENV_DIR="$OUT/venv"
+    if [ ! -d "$VENV_DIR" ]; then
+      "$PYBIN" -m venv "$VENV_DIR"
+    fi
+    # shellcheck disable=SC1090
+    . "$VENV_DIR/bin/activate"
+    PYBIN="$VENV_DIR/bin/python"
+    "$PYBIN" -m pip install -q --upgrade pip
+    "$PYBIN" -m pip install -q pip-audit pipdeptree flake8 pytest || true
     "$PYBIN" -m pipdeptree --json-tree > "$OUT/artifacts/pipdeptree.json" || true
     "$PYBIN" -m pip_audit -f json -o "$OUT/artifacts/pip-audit.json" || true
-    flake8 . --format=json --output-file "$OUT/artifacts/flake8.json" || true
+    "$VENV_DIR/bin/flake8" . --format=json --output-file "$OUT/artifacts/flake8.json" || true
     # Test discovery
     if [ -d tests ] || ls -1 *test*.py >/dev/null 2>&1; then
       "$PYBIN" -m pytest --collect-only -q > "$OUT/artifacts/pytest-collect.txt" || true
