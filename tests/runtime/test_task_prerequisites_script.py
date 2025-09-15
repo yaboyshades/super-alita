@@ -7,9 +7,10 @@ from pathlib import Path
 
 import pytest  # type: ignore[import-not-found]
 
-SCRIPT_PATH = (
-    Path("extensions/alita-language-tools") / "scripts" / "check-task-prerequisites.sh"
-)
+SCRIPT_PATHS = [
+    Path("extensions/alita-language-tools") / "scripts" / "check-task-prerequisites.sh",
+    Path("scripts") / "check-task-prerequisites.sh",
+]
 DEFAULT_BRANCH = "001-test-feature"
 EXPECTED_MISSING_JSON = '{"ok":false,"missing":["feature-spec.md","plan.md"]}'
 EXPECTED_OK_JSON = '{"ok":true,"missing":[]}'
@@ -46,8 +47,10 @@ def _init_feature_repo(
     return repo_dir, feature_dir
 
 
-def _run_script(repo_dir: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    if shutil.which("jq") is None:
+def _run_script(
+    script_path: Path, repo_dir: Path, *args: str
+) -> subprocess.CompletedProcess[str]:
+    if "extensions" in script_path.parts and shutil.which("jq") is None:
         pytest.skip("jq is required to run check-task-prerequisites.sh")
 
     env = os.environ.copy() | {
@@ -55,40 +58,45 @@ def _run_script(repo_dir: Path, *args: str) -> subprocess.CompletedProcess[str]:
         "GIT_WORK_TREE": str(repo_dir),
     }
     return subprocess.run(
-        ["bash", str(SCRIPT_PATH), *args],
-        cwd=SCRIPT_PATH.parent,
+        ["bash", str(script_path), *args],
+        cwd=script_path.parent,
         env=env,
         capture_output=True,
         text=True,
     )
 
 
-def test_reports_missing_required_documents(tmp_path: Path) -> None:
+@pytest.mark.parametrize("script_path", SCRIPT_PATHS)
+def test_reports_missing_required_documents(script_path: Path, tmp_path: Path) -> None:
     repo_dir, _ = _init_feature_repo(tmp_path)
 
-    result = _run_script(repo_dir, "--json")
+    result = _run_script(script_path, repo_dir, "--json")
 
     assert result.returncode == 1
     assert result.stdout.strip() == EXPECTED_MISSING_JSON
 
 
-def test_succeeds_when_required_documents_present(tmp_path: Path) -> None:
+@pytest.mark.parametrize("script_path", SCRIPT_PATHS)
+def test_succeeds_when_required_documents_present(
+    script_path: Path, tmp_path: Path
+) -> None:
     repo_dir, feature_dir = _init_feature_repo(tmp_path)
     _write_file(feature_dir / "feature-spec.md", "# Feature spec\n")
     _write_file(feature_dir / "plan.md", "# Plan\n")
 
-    result = _run_script(repo_dir, "--json")
+    result = _run_script(script_path, repo_dir, "--json")
 
     assert result.returncode == 0
     assert result.stdout.strip() == EXPECTED_OK_JSON
 
 
-def test_supports_legacy_file_names(tmp_path: Path) -> None:
+@pytest.mark.parametrize("script_path", SCRIPT_PATHS)
+def test_supports_legacy_file_names(script_path: Path, tmp_path: Path) -> None:
     repo_dir, feature_dir = _init_feature_repo(tmp_path)
     _write_file(feature_dir / "spec.md", "# Legacy spec\n")
     _write_file(feature_dir / "implementation-plan.md", "# Legacy plan\n")
 
-    result = _run_script(repo_dir, "--json")
+    result = _run_script(script_path, repo_dir, "--json")
 
     assert result.returncode == 0
     assert result.stdout.strip() == EXPECTED_OK_JSON
