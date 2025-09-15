@@ -104,7 +104,7 @@ log_json() {
         value=${kv#*=}
 
         if [[ "${key}" == "message" ]]; then
-            printf 'WARN: log_json skipping reserved message key (value=%s)\n' "${value}" >&2
+            printf 'WARN: log_json skipping reserved message key (value=[REDACTED])\n' >&2
             continue
         fi
 
