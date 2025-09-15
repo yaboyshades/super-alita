@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Minimal streaming router for the REUG runtime.
 
 This router implements a simple single-turn protocol compatible with
@@ -13,6 +11,8 @@ It executes tool calls via pp.state.ability_registry and streams text
 chunks through to the client. This keeps the agent functional while
 conflicts are resolved or provider-specific logic evolves.
 """
+
+from __future__ import annotations
 
 import asyncio
 import contextlib
@@ -68,6 +68,7 @@ class Orchestrator:
         self.model = model
         self.correlation_id = correlation_id
         self._mcp_box_dir = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
+        self._last_reasoning_result: tuple[str, list[dict[str, Any]]] = ("", [])
         self._last_reasoning_result: tuple[str, list[Any]] = ("", [])
         self._last_acting_result: list[dict[str, Any]] = []
 
@@ -417,16 +418,28 @@ class Orchestrator:
 async def execute_turn(
     user_msg: str, session_id: str, event_bus: Any, registry: Any, kg: Any, model: Any
 ) -> AsyncGenerator[dict[str, Any], None]:
+    """Run a single agent turn and stream events to downstream consumers.
+
+    Args:
+        user_msg: Raw user prompt to feed into the orchestrator.
+        session_id: Identifier used for correlation across telemetry artifacts.
+        event_bus: Event bus responsible for emitting telemetry records.
+        registry: Ability registry used to execute tool calls.
+        kg: Knowledge graph adapter for context lookup and persistence.
+        model: Chat model implementation providing the reasoning stream.
+
+    Yields:
+        Event payloads describing state transitions, tool usage and the final
+        answer payload. Consumers forward these as SSE frames or use them for
+        observability pipelines.
+    """
     correlation_id = f"{session_id}-{int(time.time()*1000)}"
 
     # Optional message optimization/amplification
     if SETTINGS.message_optimizer_enabled:
-        try:
-            # Lazy import to avoid side effects when disabled
+        # Lazy import to avoid side effects when disabled
+        with contextlib.suppress(Exception):
             import src.plugins.message_amplifier_plugin  # noqa: F401
-        except Exception:
-            # If plugin import fails, continue with raw message
-            pass
         optimized, steps = apply_all(user_msg, MessageContext(session_id=session_id))
         if SETTINGS.message_optimizer_emit_telemetry:
             await event_bus.emit(
@@ -464,22 +477,60 @@ async def execute_turn(
     }:
         contract = (
             "\n\nOutput Contract:\n"
-            "- Always wrap multi-line code in fenced markdown with a language, e.g. ```python ...```.\n"
+            "- Always wrap multi-line code in fenced markdown with a language, "
+            "e.g. ```python ...```.\n"
             "- Use inline backticks for short code.\n"
-            "- Use only ASCII operators (*, /, <=, !=) and quotes; avoid typographic symbols.\n"
-            "- Never omit the multiplication operator; write 5 * x * x (not 5x² or 5 x x).\n"
+            "- Use only ASCII operators (*, /, <=, !=) and quotes; avoid typographic "
+            "symbols.\n"
+            "- Never omit the multiplication operator; write 5 * x * x (not 5x² or "
+            "5 x x).\n"
             "- Provide complete, runnable snippets with imports when including code.\n"
-            "- Brief explanation first, then exactly one fenced code block unless no code is needed.\n"
+            "- Brief explanation first, then exactly one fenced code block unless "
+            "no code is needed.\n"
             "- Self-check and regenerate if rules are violated."
         )
         system_content = base_system + contract
     else:
         system_content = base_system
 
+    kg_context: str | None = None
+    kg_goal_id: str | None = None
+    if kg is not None:
+        with contextlib.suppress(Exception):
+            ctx_fn = getattr(kg, "retrieve_relevant_context", None)
+            if callable(ctx_fn):
+                kg_context = await ctx_fn(user_msg)
+            goal_fn = getattr(kg, "get_goal_for_session", None)
+            if callable(goal_fn):
+                kg_goal = await goal_fn(session_id)
+                if isinstance(kg_goal, dict):
+                    goal_candidate = kg_goal.get("id")
+                    if isinstance(goal_candidate, str):
+                        kg_goal_id = goal_candidate
+
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": system_content},
-        {"role": "user", "content": user_msg},
     ]
+    if kg_context:
+        messages.append(
+            {
+                "role": "system",
+                "content": f"Relevant knowledge graph context:\n{kg_context}",
+            }
+        )
+    messages.append({"role": "user", "content": user_msg})
+
+    if kg_context:
+        snippet = kg_context if len(kg_context) <= 512 else f"{kg_context[:509]}..."
+        await event_bus.emit(
+            {
+                "type": "KnowledgeContextRetrieved",
+                "correlation_id": correlation_id,
+                "session_id": session_id,
+                "snippet": snippet,
+                "goal_id": kg_goal_id,
+            }
+        )
 
     llm_response_content = ""
 
@@ -513,18 +564,19 @@ async def execute_turn(
         messages.extend(tool_messages)
         # Inject assistant-visible tool_result blocks to advance FakeLLM phase
         for tm in tool_messages:
-            try:
+            with contextlib.suppress(Exception):
                 tname = tm.get("name")
                 tcontent = tm.get("content", "")
                 if tname and isinstance(tcontent, str):
+                    tool_result_block = (
+                        f'<tool_result tool="{tname}">' f"{tcontent}</tool_result>"
+                    )
                     messages.append(
                         {
                             "role": "assistant",
-                            "content": f'<tool_result tool="{tname}">{tcontent}</tool_result>',
+                            "content": tool_result_block,
                         }
                     )
-            except Exception:
-                pass
 
     def _enforce_output_contract_on_text(text: str) -> str:
         """Optionally normalize text to reduce formatting issues.
@@ -537,10 +589,8 @@ async def execute_turn(
             return text
         # Process fenced blocks only
         parts: list[str] = []
-        i = 0
         lines = text.split("\n")
         in_fence = False
-        fence_lang = ""
         buf: list[str] = []
 
         def norm_line(s: str) -> str:
@@ -556,11 +606,9 @@ async def execute_turn(
                     parts.append("\n".join(buf))
                     buf = []
                     in_fence = False
-                    fence_lang = ""
                     parts.append(line)
                 else:
                     in_fence = True
-                    fence_lang = line[3:].strip()
                     parts.append(line)
                 continue
             if in_fence:
@@ -614,6 +662,35 @@ async def execute_turn(
         "content": content_out,
         "citations": [],
     }
+
+    with contextlib.suppress(Exception):
+        atom_fn = getattr(kg, "create_atom", None)
+        if callable(atom_fn):
+            final_atom = await atom_fn("final_answer", final_answer)
+            atom_id = final_atom.get("id") if isinstance(final_atom, dict) else None
+            await event_bus.emit(
+                {
+                    "type": "KnowledgeAtomCreated",
+                    "correlation_id": correlation_id,
+                    "session_id": session_id,
+                    "atom_id": atom_id,
+                    "atom_type": "final_answer",
+                }
+            )
+            if atom_id and kg_goal_id and hasattr(kg, "create_bond"):
+                with contextlib.suppress(Exception):
+                    await kg.create_bond("ANSWERED", kg_goal_id, atom_id)
+                    await event_bus.emit(
+                        {
+                            "type": "KnowledgeBondCreated",
+                            "correlation_id": correlation_id,
+                            "session_id": session_id,
+                            "bond_type": "ANSWERED",
+                            "source_atom_id": kg_goal_id,
+                            "target_atom_id": atom_id,
+                        }
+                    )
+
     task_succeeded_event = {
         "type": "TaskSucceeded",
         "correlation_id": correlation_id,
@@ -710,11 +787,8 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
                     if hdr.lower().startswith("bearer ")
                     else hdr.strip()
                 )
-                ident = (
-                    f"key:{tok[:8]}"
-                    if tok
-                    else f"ip:{(request.client.host if request.client else 'unknown')}"
-                )
+                client_host = request.client.host if request.client else "unknown"
+                ident = f"key:{tok[:8]}" if tok else f"ip:{client_host}"
                 allowed, _ = await rl.is_allowed(ident, limit, window)
                 if not allowed:
                     from fastapi.responses import JSONResponse
