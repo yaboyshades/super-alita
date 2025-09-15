@@ -65,11 +65,13 @@ tests/runtime/test_router_circuit_breaker.py
 tests/runtime/test_router_config_limits.py
 tests/runtime/test_router_disconnect.py
 tests/runtime/test_router_dynamic_tool.py
+tests/runtime/test_router_knowledge_graph.py
 tests/runtime/test_router_model_stream_timeout.py
 tests/runtime/test_router_result_cap.py
 tests/runtime/test_router_retry.py
 tests/runtime/test_router_schema_bypass.py
 tests/runtime/test_router_smoke.py
+tests/runtime/test_router_tool_parsing.py
 tests/runtime/test_router_tools_git_patch.py
 tests/runtime/test_router_tools_io.py
 tests/runtime/test_router_tools_pytest_run.py
