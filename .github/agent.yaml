@@ -160,9 +160,9 @@ copilot_agent_mode:
       validate: "/sdd/validate"
     constitutional_threshold: 0.75
     templates:
-      - "templates/sdd/specification.md"
-      - "templates/sdd/plan.md"
-      - "templates/sdd/tasks.md"
+      - "templates/sdd/spec-template.md"
+      - "templates/sdd/plan-template.md"
+      - "templates/sdd/tasks-template.md"
     memory: "memory/sdd/constitutional_sdd_framework.md"
     validators: "src/sdd/validators.py"
     unified_orchestrator:

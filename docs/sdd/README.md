@@ -17,7 +17,7 @@ Spec-Driven Development (SDD) is a constitutional development methodology that i
 - **Article V (Clarity)**: Use unambiguous language and clear acceptance criteria
 - **Article VI (Counterfactual)**: Document alternatives considered and decisions made
 
-**Template**: `templates/sdd/specification.md` (alias: `spec-template.md`)
+**Template**: `templates/sdd/spec-template.md`
 
 **Validation**: Constitutional compliance threshold: 0.75
 
@@ -34,7 +34,7 @@ Spec-Driven Development (SDD) is a constitutional development methodology that i
 - **Article V (Clarity)**: Define clear architecture and technical decisions
 - **Article VI (Counterfactual)**: Document architectural alternatives and trade-offs
 
-**Template**: `templates/sdd/plan.md` (alias: `plan-template.md`)
+**Template**: `templates/sdd/plan-template.md`
 
 **Validation**: Constitutional compliance threshold: 0.75
 
@@ -51,7 +51,7 @@ Spec-Driven Development (SDD) is a constitutional development methodology that i
 - **Article V (Clarity)**: Define clear task acceptance criteria and definitions of done
 - **Article VI (Counterfactual)**: Include decision validation and alternative evaluation tasks
 
-**Template**: `templates/sdd/tasks.md` (alias: `tasks-template.md`)
+**Template**: `templates/sdd/tasks-template.md`
 
 **Validation**: Constitutional compliance threshold: 0.75
 
@@ -121,7 +121,7 @@ Each SDD phase undergoes constitutional validation against all six articles:
 
 ## Templates
 
-### Specification Template (`templates/sdd/specification.md`)
+### Specification Template (`templates/sdd/spec-template.md`)
 ```markdown
 # [Feature Name] Specification
 
@@ -143,7 +143,7 @@ Each SDD phase undergoes constitutional validation against all six articles:
 [Alternatives considered and justification for choices]
 ```
 
-### Plan Template (`templates/sdd/plan.md`)
+### Plan Template (`templates/sdd/plan-template.md`)
 ```markdown
 # [Feature Name] Implementation Plan
 
@@ -168,7 +168,7 @@ Each SDD phase undergoes constitutional validation against all six articles:
 [Breakdown with constitutional validation gates]
 ```
 
-### Tasks Template (`templates/sdd/tasks.md`)
+### Tasks Template (`templates/sdd/tasks-template.md`)
 ```markdown
 # [Feature Name] Task Breakdown
 
@@ -208,9 +208,9 @@ SDD integrates with the Mangle reasoning engine for:
 - `src/sdd/validators.py` - Constitutional validation utilities (planned)
 
 ### Templates
-- `templates/sdd/specification.md` - Specification phase template (legacy alias: `spec-template.md`)
-- `templates/sdd/plan.md` - Planning phase template (legacy alias: `plan-template.md`)
-- `templates/sdd/tasks.md` - Task breakdown phase template (legacy alias: `tasks-template.md`)
+- `templates/sdd/spec-template.md` - Specification phase template (legacy path `specification.md` retired)
+- `templates/sdd/plan-template.md` - Planning phase template (legacy path `plan.md` retired)
+- `templates/sdd/tasks-template.md` - Task breakdown phase template (legacy path `tasks.md` retired)
 
 ### Memory/Documentation
 - `memory/sdd/constitutional_sdd_framework.md` - Constitutional integration document
