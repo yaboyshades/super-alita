@@ -85,6 +85,45 @@ sdd_json_array() {
     printf ']'
 }
 
+# Emit a single-line JSON object for structured logging. Arguments are provided
+# as key=value pairs. The "message" key is reserved for human-readable text and
+# is omitted from the JSON output. When encountered, a warning is written to
+# stderr so callers can surface the drop in automation pipelines.
+log_json() {
+    printf '{'
+
+    local first=1
+    local kv key value
+    for kv in "$@"; do
+        if [[ "${kv}" != *=* ]]; then
+            printf 'WARN: log_json skipping malformed entry: %s\n' "${kv}" >&2
+            continue
+        fi
+
+        key=${kv%%=*}
+        value=${kv#*=}
+
+        if [[ "${key}" == "message" ]]; then
+            printf 'WARN: log_json skipping reserved message key (value=%s)\n' "${value}" >&2
+            continue
+        fi
+
+        if ((first)); then
+            first=0
+        else
+            printf ','
+        fi
+
+        printf '"'
+        sdd_json_escape "${key}"
+        printf '":"'
+        sdd_json_escape "${value}"
+        printf '"'
+    done
+
+    printf '}\n'
+}
+
 # Basic self-test when the script is executed directly.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     expected="my-feature-123"
