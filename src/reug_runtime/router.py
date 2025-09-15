@@ -148,8 +148,7 @@ class Orchestrator:
                             "owner": a.get("owner"),
                             "repo": a.get("repo"),
                             "path": a.get("path"),
-                            **({"ref": a.get("ref")} if a.get("ref") else {}),
-                        },
+                        } | ({"ref": a.get("ref")} if a.get("ref") else {}),
                     )
                     return cast(dict[str, Any], result)
 
