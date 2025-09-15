@@ -76,10 +76,14 @@ build_here_doc() {
     lines+=("    \"${escaped}\"${suffix}")
   done
 
+  local items_payload=""
+  if ((${#lines[@]} > 0)); then
+    items_payload=$(printf '%s\n' "${lines[@]}")
+  fi
   cat <<JSON
 {
   "items": [
-$(if ((${#lines[@]} > 0)); then printf '%s\n' "${lines[@]}"; fi)
+${items_payload}
   ]
 }
 JSON
