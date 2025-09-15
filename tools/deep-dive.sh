@@ -2,7 +2,10 @@
 set -euo pipefail
 
 OUT="docs/deep-dive"
-mkdir -p "$OUT"/{artifacts,graphs,logs}
+ARTIFACT_DIR="$OUT/artifacts"
+GRAPH_DIR="$OUT/graphs"
+LOG_DIR="$OUT/logs"
+mkdir -p "$ARTIFACT_DIR" "$GRAPH_DIR" "$LOG_DIR"
 
 echo "== super-alita Deep Dive ==" | tee "$OUT/summary.txt"
 
@@ -45,7 +48,7 @@ if [ "$HAS_JS" = "1" ]; then
     PKG_MGR="npm"
     [ -f pnpm-lock.yaml ] && PKG_MGR="pnpm"
     [ -f yarn.lock ] && PKG_MGR="yarn"
-    echo "Using $PKG_MGR" | tee -a "$OUT/logs/js.log"
+    echo "Using $PKG_MGR" | tee -a "$LOG_DIR/js.log"
 
     # Install (no scripts for safety)
     if [ -f package.json ]; then
@@ -59,18 +62,58 @@ if [ "$HAS_JS" = "1" ]; then
     # Lint (if present and config exists)
     if [ -f node_modules/.bin/eslint ]; then
       if [ -f .eslintrc ] || [ -f .eslintrc.js ] || [ -f .eslintrc.json ] || [ -f .eslintrc.yaml ] || [ -f .eslintrc.yml ] || grep -q '"eslintConfig"' package.json 2>/dev/null; then
-        npx eslint . -f json -o "$OUT/artifacts/eslint.json" || true
+        ESLINT_OUT="$ARTIFACT_DIR/ts_lint.json"
+        npx eslint . -f json | tee "$ESLINT_OUT" >/dev/null || true
+        ESLINT_STATUS=${PIPESTATUS[0]}
+        if [ "$ESLINT_STATUS" -ne 0 ] && [ ! -s "$ESLINT_OUT" ]; then
+          printf '{"error":"eslint failed","exit_code":%s}\n' "$ESLINT_STATUS" > "$ESLINT_OUT"
+        fi
       fi
     fi
 
     # Dep graph (dependency-cruiser if available)
-    npx --yes dependency-cruiser@latest -T dot -x "node_modules|dist|build" . > "$OUT/graphs/dep.dot" 2>>"$OUT/logs/js.log" || true
+    npx --yes dependency-cruiser@latest -T dot -x "node_modules|dist|build" . > "$GRAPH_DIR/dep.dot" 2>>"$LOG_DIR/js.log" || true
 
     # Vulnerabilities
+    AUDIT_OUT="$ARTIFACT_DIR/npm_audit.json"
+    DEPS_OUT="$ARTIFACT_DIR/npm_deps.json"
     case "$PKG_MGR" in
-      npm) npm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
-      yarn) yarn npm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
-      pnpm) pnpm audit --json > "$OUT/artifacts/npm-audit.json" || true ;;
+      npm)
+        npm audit --json | tee "$AUDIT_OUT" >/dev/null || true
+        AUDIT_STATUS=${PIPESTATUS[0]}
+        if [ "$AUDIT_STATUS" -ne 0 ] && [ ! -s "$AUDIT_OUT" ]; then
+          printf '{"error":"npm audit failed","exit_code":%s}\n' "$AUDIT_STATUS" > "$AUDIT_OUT"
+        fi
+        npm ls --json | tee "$DEPS_OUT" >/dev/null || true
+        NPM_LS_STATUS=${PIPESTATUS[0]}
+        if [ "$NPM_LS_STATUS" -ne 0 ] && [ ! -s "$DEPS_OUT" ]; then
+          printf '{"error":"npm ls failed","exit_code":%s}\n' "$NPM_LS_STATUS" > "$DEPS_OUT"
+        fi
+        ;;
+      yarn)
+        yarn npm audit --json | tee "$AUDIT_OUT" >/dev/null || true
+        YARN_AUDIT_STATUS=${PIPESTATUS[0]}
+        if [ "$YARN_AUDIT_STATUS" -ne 0 ] && [ ! -s "$AUDIT_OUT" ]; then
+          printf '{"error":"yarn npm audit failed","exit_code":%s}\n' "$YARN_AUDIT_STATUS" > "$AUDIT_OUT"
+        fi
+        yarn npm ls --json | tee "$DEPS_OUT" >/dev/null || true
+        YARN_LS_STATUS=${PIPESTATUS[0]}
+        if [ "$YARN_LS_STATUS" -ne 0 ] && [ ! -s "$DEPS_OUT" ]; then
+          printf '{"error":"yarn npm ls failed","exit_code":%s}\n' "$YARN_LS_STATUS" > "$DEPS_OUT"
+        fi
+        ;;
+      pnpm)
+        pnpm audit --json | tee "$AUDIT_OUT" >/dev/null || true
+        PNPM_AUDIT_STATUS=${PIPESTATUS[0]}
+        if [ "$PNPM_AUDIT_STATUS" -ne 0 ] && [ ! -s "$AUDIT_OUT" ]; then
+          printf '{"error":"pnpm audit failed","exit_code":%s}\n' "$PNPM_AUDIT_STATUS" > "$AUDIT_OUT"
+        fi
+        pnpm ls --json | tee "$DEPS_OUT" >/dev/null || true
+        PNPM_LS_STATUS=${PIPESTATUS[0]}
+        if [ "$PNPM_LS_STATUS" -ne 0 ] && [ ! -s "$DEPS_OUT" ]; then
+          printf '{"error":"pnpm ls failed","exit_code":%s}\n' "$PNPM_LS_STATUS" > "$DEPS_OUT"
+        fi
+        ;;
     esac
 
     # Tests: collect (don’t run full suite yet)
@@ -93,13 +136,18 @@ if [ "$HAS_PY" = "1" ]; then
     . "$VENV_DIR/bin/activate"
     PYBIN="$VENV_DIR/bin/python"
     "$PYBIN" -m pip install -q --upgrade pip
-    "$PYBIN" -m pip install -q pip-audit pipdeptree flake8 pytest || true
-    "$PYBIN" -m pipdeptree --json-tree > "$OUT/artifacts/pipdeptree.json" || true
-    "$PYBIN" -m pip_audit -f json -o "$OUT/artifacts/pip-audit.json" || true
-    "$VENV_DIR/bin/flake8" . --format=json --output-file "$OUT/artifacts/flake8.json" || true
+    "$PYBIN" -m pip install -q pip-audit pipdeptree flake8 flake8-json pytest || true
+    "$PYBIN" -m pipdeptree --json-tree > "$ARTIFACT_DIR/pipdeptree.json" || true
+    "$PYBIN" -m pip_audit -f json -o "$ARTIFACT_DIR/pip-audit.json" || true
+    PY_LINT_OUT="$ARTIFACT_DIR/python_lint.json"
+    "$VENV_DIR/bin/flake8" . --format=json | tee "$PY_LINT_OUT" >/dev/null || true
+    PY_LINT_STATUS=${PIPESTATUS[0]}
+    if [ "$PY_LINT_STATUS" -ne 0 ] && [ ! -s "$PY_LINT_OUT" ]; then
+      printf '{"error":"flake8 failed","exit_code":%s}\n' "$PY_LINT_STATUS" > "$PY_LINT_OUT"
+    fi
     # Test discovery
     if [ -d tests ] || ls -1 *test*.py >/dev/null 2>&1; then
-      "$PYBIN" -m pytest --collect-only -q > "$OUT/artifacts/pytest-collect.txt" || true
+      "$PYBIN" -m pytest --collect-only -q > "$ARTIFACT_DIR/pytest-collect.txt" || true
     fi
   fi
 fi
