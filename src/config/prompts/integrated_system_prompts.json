@@ -35,9 +35,9 @@
         "stages": ["specify", "plan", "tasks", "validate"],
         "enforcement": "All stages must achieve constitutional_compliance >= 0.75",
         "artifacts": {
-          "spec": "templates/sdd/specification.md",
-          "plan": "templates/sdd/plan.md",
-          "tasks": "templates/sdd/tasks.md"
+          "spec": "templates/sdd/spec-template.md",
+          "plan": "templates/sdd/plan-template.md",
+          "tasks": "templates/sdd/tasks-template.md"
         }
       },
       "constitutional_framework": {

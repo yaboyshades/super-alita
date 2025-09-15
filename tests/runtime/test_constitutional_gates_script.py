@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -49,3 +51,41 @@ def test_reports_success_when_requirements_present(tmp_path: Path) -> None:
     result = run_script(tmp_path, spec_content, plan_content)
 
     assert result == {"ok": True, "messages": []}
+
+
+def test_fails_with_clear_error_when_jq_missing(tmp_path: Path) -> None:
+    """The script should emit a helpful error when jq is unavailable."""
+    spec_file = tmp_path / "spec.md"
+    plan_file = tmp_path / "plan.md"
+    spec_file.write_text("## Spec content\n")
+    plan_file.write_text("## Plan content\n")
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+
+    for command_name in ("bash", "cat", "grep"):
+        command_path = shutil.which(command_name)
+        assert command_path is not None, f"{command_name} command not found"
+        (bin_dir / command_name).symlink_to(Path(command_path))
+
+    env = os.environ.copy()
+    env["PATH"] = str(bin_dir)
+
+    completed = subprocess.run(
+        [
+            str(SCRIPT_PATH),
+            "--spec",
+            str(spec_file),
+            "--plan",
+            str(plan_file),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+
+    assert completed.returncode != 0
+    stderr_lower = completed.stderr.lower()
+    assert "jq" in stderr_lower
+    assert "install" in stderr_lower

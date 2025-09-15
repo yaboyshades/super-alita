@@ -324,9 +324,9 @@ def demo_system_architecture():
             "file": "templates/sdd/",
             "description": "Markdown templates for SDD phases",
             "capabilities": [
-                "Specification template (specification.md)",
-                "Planning template (plan.md)",
-                "Task breakdown template (tasks.md)",
+                "Specification template (spec-template.md)",
+                "Planning template (plan-template.md)",
+                "Task breakdown template (tasks-template.md)",
                 "Constitutional validation integration",
             ],
         },

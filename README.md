@@ -1,5 +1,10 @@
 # Super Alita
 
+## Constitution and Addendum
+
+- [Project Constitution](.github/CONSTITUTION.md)
+- [Codecraft Addendum (CMA v5.3)](docs/cma-v5.3/codecraft-addendum.md)
+
 Advanced, event-driven AI agent system with modular plugins, MCP integration, knowledge graph, streaming orchestration, and adaptive LLM routing.
 
 Production-ready architecture with:
@@ -10,6 +15,13 @@ Production-ready architecture with:
 - Knowledge graph + cognitive fabric (Atoms / Bonds)
 - Modular plugin system
 - OpenAI-compatible local adapter option
+
+## Constitution and Addendum
+
+Super Alita follows a constitutional contract plus a Codecraft addendum that govern every change:
+
+- [Super-Alita Constitutional Framework](.github/CONSTITUTION.md)
+- [Codecraft Addendum (CMA v5.3)](docs/cma-v5.3/codecraft-addendum.md)
 
 ## Key Features
 
@@ -27,6 +39,14 @@ Production-ready architecture with:
 ## Quick Start
 
 Two equivalent setup paths are provided: Makefile workflow (recommended) or raw Python commands.
+
+### Default Workflow: Specification-Driven Development (SDD)
+
+SDD (Specification-Driven Development) is the default pipeline for feature work. Start every initiative with `specify → plan → tasks` using the constitutional gates that ship with `src/sdd/`.
+
+- Use the enhanced CLI: `python -m src.sdd.sdd_cli specify "..."` / `plan` / `tasks`.
+- Shell helpers in `scripts/lib/constitutional-gates.sh` and `scripts/lib/sdd-common.sh` keep bespoke automation aligned with the CMA rules.
+- Run `scripts/smoke_sdd_specify.py` against a running server to confirm the FastAPI router and gates are healthy before coding.
 
 ### 1. Environment file
 
@@ -361,3 +381,173 @@ Extension adds commands:
 Worker scaffold still includes `src/worker.ts` for future advanced component bindings.
 
 See docs for deeper patterns and roadmap enhancements.
+
+## SDD Quickstart (Scripts)
+
+Use the synchronous CLI wrappers in `src.sdd.sdd_cli` to drive the Spec-Driven Development workflow from the terminal.
+
+### 1. Specify
+
+```bash
+python -m src.sdd.sdd_cli specify "Implement streaming telemetry audit trail" \
+  --context '{"priority": "high", "owner": "platform"}' --format json
+```
+
+Sample output:
+
+```json
+{
+  "success": true,
+  "specification": "## Feature: Streaming telemetry audit trail\n- capture events for every tool call\n- persist summarized metrics per session",
+  "feature_id": "feat-streaming-telemetry",
+  "feature_path": "specs/feat-streaming-telemetry/spec.md",
+  "analysis_results": {
+    "mangle_enhanced": true,
+    "summary": "Identified telemetry bus hooks and fallback strategies."
+  },
+  "constitutional_compliance": {
+    "article_1": {
+      "article": "Article 1 — Safety",
+      "compliant": true,
+      "score": 0.92,
+      "violations": [],
+      "suggestions": []
+    }
+  },
+  "overall_compliance_score": 0.89,
+  "compliance_threshold_met": true,
+  "next_steps": [
+    "Review generated specification with product owner."
+  ],
+  "timestamp": "2024-XX-XXTXX:XX:XX.XXXXXX"
+}
+```
+
+### 2. Plan
+
+```bash
+python -m src.sdd.sdd_cli plan feat-streaming-telemetry --format json
+```
+
+Sample output:
+
+```json
+{
+  "success": true,
+  "implementation_plan": "1. Instrument event bus hooks\n2. Persist audit summaries\n3. Expose monitoring endpoint",
+  "plan": "1. Instrument event bus hooks\n2. Persist audit summaries\n3. Expose monitoring endpoint",
+  "plan_path": "specs/feat-streaming-telemetry/plan.md",
+  "supporting_documents": [
+    "specs/feat-streaming-telemetry/architecture.md"
+  ],
+  "analysis_results": {
+    "dependency_analysis": {
+      "total_dependencies": 4,
+      "critical_modules": [
+        "src/telemetry/event_bus.py",
+        "src/reug_runtime/router.py"
+      ]
+    }
+  },
+  "constitutional_compliance": {
+    "article_3": {
+      "article": "Article 3 — Reliability",
+      "compliant": true,
+      "score": 0.95,
+      "violations": [],
+      "suggestions": []
+    }
+  },
+  "overall_compliance_score": 0.93,
+  "compliance_threshold_met": true,
+  "technology_recommendations": [
+    "FastAPI background tasks",
+    "Redis stream for durable telemetry"
+  ],
+  "architecture_decisions": [
+    "Record telemetry snapshots before tool dispatch",
+    "Archive summaries nightly via batch worker"
+  ],
+  "next_steps": [
+    "Confirm retention policy with reliability team."
+  ],
+  "timestamp": "2024-05-10T14:23:04.118209"
+}
+```
+
+### 3. Tasks
+
+```bash
+python -m src.sdd.sdd_cli tasks feat-streaming-telemetry --format json
+```
+
+Sample output:
+
+```json
+{
+  "success": true,
+  "tasks_breakdown": "### Task List\n1. Wire telemetry interceptors\n2. Persist audit artifacts\n3. Ship monitoring endpoint",
+  "tasks_path": "specs/feat-streaming-telemetry/tasks.md",
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Wire telemetry interceptors",
+      "description": "Capture STATE_TRANSITION and Ability events before dispatch.",
+      "priority": "critical",
+      "estimated_hours": 6,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "All router events emit telemetry payloads",
+        "Unit tests validate event capture"
+      ],
+      "constitutional_requirements": [
+        "Article 3 — Reliability"
+      ]
+    },
+    {
+      "id": "task-2",
+      "title": "Persist audit artifacts",
+      "description": "Store summarized telemetry in Redis with 7-day retention.",
+      "priority": "high",
+      "estimated_hours": 5,
+      "dependencies": [
+        "task-1"
+      ],
+      "acceptance_criteria": [
+        "Redis persistence verified via integration test"
+      ],
+      "constitutional_requirements": [
+        "Article 4 — Accountability"
+      ]
+    }
+  ],
+  "analysis_results": {
+    "prioritization": {
+      "critical_path": [
+        "task-1",
+        "task-2"
+      ]
+    }
+  },
+  "constitutional_compliance": {
+    "article_4": {
+      "article": "Article 4 — Accountability",
+      "compliant": true,
+      "score": 0.9,
+      "violations": [],
+      "suggestions": []
+    }
+  },
+  "overall_compliance_score": 0.9,
+  "compliance_threshold_met": true,
+  "estimated_total_hours": 18,
+  "critical_path": [
+    "task-1",
+    "task-2"
+  ],
+  "next_steps": [
+    "Schedule load test for sustained event throughput."
+  ],
+  "timestamp": "2024-05-10T14:23:52.002771"
+}
+```

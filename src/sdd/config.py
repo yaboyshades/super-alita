@@ -64,7 +64,7 @@ DEFAULT_SDD_COMMANDS = {
             "not tech stack"
         ),
         phase="specify",
-        template="specification.md",
+        template="spec-template.md",
         validation_rules=[
             "must_define_user_stories",
             "must_define_acceptance_criteria",
@@ -84,7 +84,7 @@ DEFAULT_SDD_COMMANDS = {
             "and architecture choices"
         ),
         phase="plan",
-        template="plan.md",
+        template="plan-template.md",
         validation_rules=[
             "must_define_tech_stack",
             "must_define_architecture",
@@ -103,7 +103,7 @@ DEFAULT_SDD_COMMANDS = {
             "Break down implementation into actionable tasks with clear dependencies"
         ),
         phase="tasks",
-        template="tasks.md",
+        template="tasks-template.md",
         validation_rules=[
             "must_define_task_dependencies",
             "must_estimate_effort",
