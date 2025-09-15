@@ -138,6 +138,23 @@ sdd_json_array() {
 }
 
 
+# Emit a JSON payload to stdout. Allow callers (or tests) to override the
+# implementation by defining log_json in the environment before sourcing or
+# executing this script.
+if ! declare -F log_json >/dev/null 2>&1; then
+    log_json() {
+        local payload="${1:-}"
+
+        if [[ -z "${payload}" ]]; then
+            printf '\n'
+            return 0
+        fi
+
+        printf '%s\n' "${payload}"
+    }
+fi
+
+
 # Emit a single-line JSON object for structured logging. Arguments are provided
 # as key=value pairs. The "message" key is reserved for human-readable text and
 # is omitted from the JSON output. When encountered, a warning is written to
@@ -214,7 +231,7 @@ sdd_json_object_from_kv() {
     done
 
     printf '}\n'
-=======
+
         sdd_json_escape "${kv_store[$key]}"
         printf '"'
     done
@@ -262,6 +279,7 @@ print(json.dumps(payload, ensure_ascii=False))
 PY
 }
 
+
 # Basic self-test when the script is executed directly.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     expected="my-feature-123"
@@ -271,6 +289,15 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         echo "slugify self-test failed: expected '${expected}', got '${result}'" >&2
         exit 1
     fi
+
+    log_json '{"event":"sdd-common-self-test","slugify":"ok"}'
+    log_json_status=$?
+    if ((log_json_status != 0)); then
+        echo "log_json self-test failed with exit code ${log_json_status}" >&2
+        exit "${log_json_status}"
+    fi
+
+    echo "slugify self-test passed"
 
     object_expected='{"owner":"Platform Team","quote":"He said \"Hello\""}'
     object_result="$(sdd_json_object_from_kv 'owner=Platform Team' 'quote=He said "Hello"')"
