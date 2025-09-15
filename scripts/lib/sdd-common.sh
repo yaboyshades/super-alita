@@ -43,7 +43,7 @@ require_feature_branch() {
 # Escape a string for safe inclusion inside a JSON string literal. Only
 # covers the characters produced by our CLI tooling (ASCII + newlines).
 sdd_json_escape() {
-    local input="${1-}"
+    local input="${1:-}"
     local length=${#input}
     local i char
 
