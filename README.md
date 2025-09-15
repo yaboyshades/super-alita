@@ -45,7 +45,7 @@ Two equivalent setup paths are provided: Makefile workflow (recommended) or raw 
 SDD (Specification-Driven Development) is the default pipeline for feature work. Start every initiative with `specify → plan → tasks` using the constitutional gates that ship with `src/sdd/`.
 
 - Use the enhanced CLI: `python -m src.sdd.sdd_cli specify "..."` / `plan` / `tasks`.
-- Shell helpers in `scripts/lib/constitutional-gates.sh` and `scripts/lib/sdd-common.sh` keep bespoke automation aligned with the CMA rules.
+- Shell helpers in `scripts/lib/constitutional-gates.sh` and `scripts/lib/sdd-common.sh` keep bespoke automation aligned with the CMA rules. `sdd-common.sh` exposes `log_json`, which drops `message=` entries (with a stderr warning) so structured logs stay machine readable.
 - Run `scripts/smoke_sdd_specify.py` against a running server to confirm the FastAPI router and gates are healthy before coding.
 
 ### 1. Environment file

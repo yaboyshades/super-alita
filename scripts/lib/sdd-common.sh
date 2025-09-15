@@ -138,6 +138,30 @@ sdd_json_array() {
 }
 
 
+# Emit a single-line JSON object for structured logging. Arguments are provided
+# as key=value pairs. The "message" key is reserved for human-readable text and
+# is omitted from the JSON output. When encountered, a warning is written to
+# stderr so callers can surface the drop in automation pipelines.
+log_json() {
+    printf '{'
+
+    local first=1
+    local kv key value
+    for kv in "$@"; do
+        if [[ "${kv}" != *=* ]]; then
+            printf 'WARN: log_json skipping malformed entry: %s\n' "${kv}" >&2
+            continue
+        fi
+
+        key=${kv%%=*}
+        value=${kv#*=}
+
+        if [[ "${key}" == "message" ]]; then
+            printf 'WARN: log_json skipping reserved message key (value=[REDACTED])\n' >&2
+            continue
+        fi
+
+
 # Convert key=value pairs into a JSON object. Keys retain their first
 # occurrence order and both keys and values are escaped to ensure the
 # resulting JSON is safe even when values contain whitespace, quotes, or
@@ -185,11 +209,17 @@ sdd_json_object_from_kv() {
         printf '"'
         sdd_json_escape "${key}"
         printf '":"'
+        sdd_json_escape "${value}"
+        printf '"'
+    done
+
+    printf '}\n'
+=======
         sdd_json_escape "${kv_store[$key]}"
         printf '"'
     done
     printf '}'
-=======
+
 # Emit structured JSON log lines with optional key=value metadata.
 log_json() {
     local level="${1:-info}"
