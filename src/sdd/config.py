@@ -100,7 +100,7 @@ DEFAULT_SDD_COMMANDS = {
     "tasks": SDDCommand(
         name="tasks",
         description=(
-            "Break down implementation into actionable tasks with clear " "dependencies"
+            "Break down implementation into actionable tasks with clear dependencies"
         ),
         phase="tasks",
         template="tasks.md",
