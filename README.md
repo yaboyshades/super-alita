@@ -404,7 +404,7 @@ Sample output:
   "next_steps": [
     "Review generated specification with product owner."
   ],
-  "timestamp": "2024-05-10T14:22:13.457382"
+  "timestamp": "2024-XX-XXTXX:XX:XX.XXXXXX"
 }
 ```
 
