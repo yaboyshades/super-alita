@@ -24,15 +24,41 @@ import urllib.request
 import uuid
 from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from .config import SETTINGS
 from .message_mw import MessageContext, apply_all
 
 router = APIRouter(prefix="/v1", tags=["agent"])
+
+
+def parse_tool_calls(text: str) -> list[dict[str, Any]]:
+    """Parse serialized ``<tool_call>`` blocks from streamed text."""
+
+    calls: list[dict[str, Any]] = []
+    try:
+        for match in re.finditer(r"<tool_call>(.*?)</tool_call>", text, re.DOTALL):
+            inner = match.group(1)
+            payload = json.loads(inner)
+            name = payload.get("tool")
+            raw_args = payload.get("args", {})
+            if not isinstance(name, str) or not name:
+                continue
+            if not isinstance(raw_args, dict):
+                continue
+            call: dict[str, Any] = {
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "function": {"name": name, "arguments": json.dumps(raw_args)},
+            }
+            calls.append(call)
+    except Exception:
+        # best-effort parsing only
+        pass
+    return calls
 
 
 class Orchestrator:
@@ -43,6 +69,7 @@ class Orchestrator:
         self.correlation_id = correlation_id
         self._mcp_box_dir = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
         self._last_reasoning_result: tuple[str, list[dict[str, Any]]] = ("", [])
+        self._last_reasoning_result: tuple[str, list[Any]] = ("", [])
         self._last_acting_result: list[dict[str, Any]] = []
 
     def _persist_mcp_spec(self, spec: dict[str, Any]) -> None:
@@ -116,15 +143,15 @@ class Orchestrator:
                 }
 
                 async def _exec(a: dict[str, Any]) -> dict[str, Any]:  # proxy
-                    return await self.registry.execute(  # type: ignore[return-value]
+                    result = await self.registry.execute(
                         "fetch_github_raw",
                         {
                             "owner": a.get("owner"),
                             "repo": a.get("repo"),
                             "path": a.get("path"),
-                            **({"ref": a.get("ref")} if a.get("ref") else {}),
-                        },
+                        } | ({"ref": a.get("ref")} if a.get("ref") else {}),
                     )
+                    return cast(dict[str, Any], result)
 
                 self.registry.register_tool(contract=contract, executor=_exec)
                 # Persist spec for reuse
@@ -243,7 +270,7 @@ class Orchestrator:
         self, messages: list[dict[str, Any]], tool_schemas: list[dict[str, Any]]
     ) -> AsyncGenerator[dict[str, Any], None]:
         llm_response_content = ""
-        tool_calls = []
+        tool_calls: list[Any] = []
 
         # Call model.stream_chat with best-effort compatibility across providers
         async def _stream() -> AsyncGenerator[dict[str, Any], None]:
@@ -251,8 +278,8 @@ class Orchestrator:
                 # Preferred: pass tools and timeout if supported
                 async for ch in self.model.stream_chat(
                     messages,
-                    tools=tool_schemas,  # type: ignore[call-arg]
-                    timeout=SETTINGS.model_stream_timeout_s,  # type: ignore[arg-type]
+                    tools=tool_schemas,
+                    timeout=SETTINGS.model_stream_timeout_s,
                 ):
                     yield ch
                 return
@@ -262,7 +289,7 @@ class Orchestrator:
                 # Fallback: pass only timeout
                 async for ch in self.model.stream_chat(
                     messages,
-                    timeout=SETTINGS.model_stream_timeout_s,  # type: ignore[arg-type]
+                    timeout=SETTINGS.model_stream_timeout_s,
                 ):
                     yield ch
                 return
@@ -283,9 +310,9 @@ class Orchestrator:
         self._last_reasoning_result = (llm_response_content, tool_calls)
 
     async def _acting_step(
-        self, tool_calls: list[dict[str, Any]]
+        self, tool_calls: list[Any]
     ) -> AsyncGenerator[dict[str, Any], None]:
-        tool_messages = []
+        tool_messages: list[dict[str, Any]] = []
         for tool_call in tool_calls:
             # Support both OpenAI SDK objects and plain dicts
             if hasattr(tool_call, "function"):
@@ -314,13 +341,14 @@ class Orchestrator:
                 continue
 
             try:
-                tool_args = (
+                tool_args_obj: Any = (
                     json.loads(tool_args_raw)
                     if isinstance(tool_args_raw, str)
                     else (tool_args_raw or {})
                 )
             except Exception:
-                tool_args = {}
+                tool_args_obj = {}
+            tool_args: dict[str, Any] = tool_args_obj if isinstance(tool_args_obj, dict) else {}
             span_id = str(uuid.uuid4())
 
             ability_called_event = {
@@ -331,9 +359,7 @@ class Orchestrator:
             }
             # include args for UI visibility
             try:
-                ability_called_event["args"] = json.loads(
-                    tool_args if isinstance(tool_args, str) else json.dumps(tool_args)
-                )
+                ability_called_event["args"] = json.loads(json.dumps(tool_args))
             except Exception:
                 ability_called_event["args"] = tool_args
             await self.event_bus.emit(ability_called_event)
@@ -343,9 +369,12 @@ class Orchestrator:
             await self._ensure_tool(tool_name or "", tool_args)
 
             try:
-                result = await asyncio.wait_for(
-                    self.registry.execute(tool_name, tool_args),
-                    timeout=SETTINGS.tool_timeout_s,
+                result = cast(
+                    dict[str, Any],
+                    await asyncio.wait_for(
+                        self.registry.execute(tool_name, tool_args),
+                        timeout=SETTINGS.tool_timeout_s,
+                    ),
                 )
                 ability_succeeded_event = {
                     "type": "AbilitySucceeded",
@@ -505,51 +534,22 @@ async def execute_turn(
 
     llm_response_content = ""
 
-    def _parse_tool_calls(text: str) -> list[dict[str, Any]]:
-        calls: list[dict[str, Any]] = []
-        try:
-            for m in re.finditer(r"<tool_call>(.*?)</tool_call>", text, re.DOTALL):
-                inner = m.group(1)
-                payload = json.loads(inner)
-                name = payload.get("tool")
-                args = payload.get("args", {})
-                if not name:
-                    continue
-
-                # Minimal adapter object with .function.name/.function.arguments
-                class _Fn:
-                    def __init__(self, n: str, a: str) -> None:
-                        self.name = n
-                        self.arguments = a
-
-                class _Call:
-                    def __init__(self, i: str, fn: _Fn) -> None:
-                        self.id = i
-                        self.function = fn
-
-                calls.append(
-                    _Call(
-                        i=str(uuid.uuid4()),
-                        fn=_Fn(name, json.dumps(args)),
-                    )
-                )
-        except Exception:
-            # best-effort parsing only
-            pass
-        return calls
-
     for _ in range(SETTINGS.max_tool_calls):
-        tool_schemas = registry.get_available_tools_schema()
+        tool_schemas: list[dict[str, Any]] = registry.get_available_tools_schema()
 
         # Run reasoning step and get results
         async for event in orchestrator._reasoning_step(messages, tool_schemas):
             yield event
-        llm_response_content, tool_calls = orchestrator._last_reasoning_result
+        llm_response_content, tool_calls_raw = orchestrator._last_reasoning_result
+        tool_calls: list[Any] = list(tool_calls_raw)
         # Fallback: derive tool calls by parsing streamed content blocks
         if not tool_calls and "<tool_call>" in llm_response_content:
-            tool_calls = _parse_tool_calls(llm_response_content)
+            tool_calls = parse_tool_calls(llm_response_content)
 
-        assistant_message = {"role": "assistant", "content": llm_response_content}
+        assistant_message: dict[str, Any] = {
+            "role": "assistant",
+            "content": llm_response_content,
+        }
         if tool_calls:
             assistant_message["tool_calls"] = tool_calls
         messages.append(assistant_message)
@@ -723,14 +723,14 @@ async def sse_transformer(
 
     queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
 
-    async def _pump():
+    async def _pump() -> None:
         try:
             async for ev in event_generator:
                 await queue.put(ev)
         finally:
             await queue.put(None)
 
-    async def _pings():
+    async def _pings() -> None:
         if not use_hb:
             return
         try:
@@ -766,7 +766,7 @@ async def sse_transformer(
 
 
 @router.post("/chat/stream")
-async def chat_stream(request: Request):
+async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
     # Rate limit pre-check (optional)
     try:
         if os.getenv("ALITA_RATE_LIMIT_ENABLED", "false").lower() in {
@@ -798,17 +798,24 @@ async def chat_stream(request: Request):
                     )
     except Exception:
         pass
-    body = await request.json()
+    raw_body = await request.json()
+    body: dict[str, Any]
+    if isinstance(raw_body, dict):
+        body = raw_body
+    else:
+        body = {}
     user_msg = body.get("message", "")
     session_id = body.get("session_id", "default")
+
+    state = cast(Any, request.app.state)
 
     event_gen = execute_turn(
         user_msg,
         session_id,
-        request.app.state.event_bus,
-        request.app.state.ability_registry,
-        request.app.state.kg,
-        request.app.state.llm_model,
+        state.event_bus,
+        state.ability_registry,
+        state.kg,
+        state.llm_model,
     )
 
     sse_gen = sse_transformer(event_gen)
@@ -821,7 +828,7 @@ async def chat_stream(request: Request):
 
 
 @router.get("/chat/stream")
-async def chat_stream_get(request: Request):
+async def chat_stream_get(request: Request) -> StreamingResponse:
     """
     GET variant to support browsers using EventSource.
 
@@ -829,17 +836,19 @@ async def chat_stream_get(request: Request):
       - q or message
       - session or session_id
     """
-    qp = request.query_params  # type: ignore[attr-defined]
+    qp = request.query_params
     user_msg = qp.get("q") or qp.get("message") or ""
     session_id = qp.get("session") or qp.get("session_id") or "default"
+
+    state = cast(Any, request.app.state)
 
     event_gen = execute_turn(
         user_msg,
         session_id,
-        request.app.state.event_bus,
-        request.app.state.ability_registry,
-        request.app.state.kg,
-        request.app.state.llm_model,
+        state.event_bus,
+        state.ability_registry,
+        state.kg,
+        state.llm_model,
     )
 
     sse_gen = sse_transformer(event_gen)

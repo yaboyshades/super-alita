@@ -15,7 +15,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, Body, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -260,13 +260,14 @@ async def reug_start_turn(
     """
     message = body["message"]
     session_id = body.get("session_id", "default")
+    state = cast(Any, request.app.state)
     gen = execute_turn(
         message,
         session_id,
-        event_bus=request.app.state.event_bus,
-        registry=request.app.state.ability_registry,
-        kg=request.app.state.kg,
-        model=request.app.state.llm_model,
+        event_bus=state.event_bus,
+        registry=state.ability_registry,
+        kg=state.kg,
+        model=state.llm_model,
     )
     run_id = f"run_{hash((message, session_id)) & 0xffff_ffff:x}"
     _STREAMS[run_id] = gen.__aiter__()
@@ -429,7 +430,8 @@ async def execute_tool(
     if not isinstance(args, dict):
         raise HTTPException(status_code=400, detail="args must be an object")
 
-    registry = request.app.state.ability_registry  # type: ignore[attr-defined]
+    state = cast(Any, request.app.state)
+    registry = state.ability_registry
     # Allow longer time for heavier tools (e.g., consensus)
     _timeout = SETTINGS.tool_timeout_s
     if tid == "deepconf_consensus":
@@ -476,7 +478,8 @@ async def execute_tool_path(
         args = {}
     if not isinstance(args, dict):
         raise HTTPException(status_code=400, detail="args must be an object")
-    registry = request.app.state.ability_registry  # type: ignore[attr-defined]
+    state = cast(Any, request.app.state)
+    registry = state.ability_registry
     _timeout = SETTINGS.tool_timeout_s
     if tool_id == "deepconf_consensus":
         ns = 0
@@ -636,7 +639,7 @@ async def mcp_register(
       - echo_plan: split task into 3 bullet steps
     """
     action = spec.get("action") or ""
-    box_dir = os.getenv("MCP_BOX_DIR", ".mcp_box")
+    box_dir = os.getenv("MCP_BOX_DIR", ".mcp_box") or ".mcp_box"
 
     # Check if a canonical tool already exists for this action and schema
     # First, run the abstractor to ensure index.json is up to date
@@ -675,7 +678,8 @@ async def mcp_register(
         tool_id = _persist_spec(spec)
         print(f"🔍 DEBUG: Persisted new tool spec: {tool_id}")
 
-    registry = request.app.state.ability_registry  # type: ignore[attr-defined]
+    state = cast(Any, request.app.state)
+    registry = state.ability_registry
 
     async def _exec(args: dict[str, Any]) -> dict[str, Any]:
         if action == "fetch_url_text":
@@ -698,7 +702,7 @@ async def mcp_register(
                 return {"content": "", "truncated": False, "error": str(e)}
         if action == "fetch_github_raw":
             # Delegate to the built-in dynamic executor registered in SimpleAbilityRegistry
-            return await registry.execute(
+            result = await registry.execute(
                 "fetch_github_raw",
                 {
                     "owner": args.get("owner"),
@@ -707,6 +711,7 @@ async def mcp_register(
                     **({"ref": args.get("ref")} if args.get("ref") else {}),
                 },
             )
+            return cast(dict[str, Any], result)
         if action == "echo_plan":
             task = (args.get("task") or "").strip()
             steps = [f"Understand: {task}", "Identify resources", "Execute and verify"]
@@ -742,7 +747,14 @@ async def mcp_abstract(
     Input (optional): {"mcp_box_dir": ".mcp_box"}
     Output: index summary (as written to index.json)
     """
-    box_dir = body.get("mcp_box_dir") or os.getenv("MCP_BOX_DIR", ".mcp_box")
+    raw_dir = body.get("mcp_box_dir") if isinstance(body, dict) else None
+    box_dir: str | Path
+    if raw_dir is None:
+        box_dir = os.getenv("MCP_BOX_DIR", ".mcp_box") or ".mcp_box"
+    elif isinstance(raw_dir, (str, Path)):
+        box_dir = raw_dir
+    else:
+        raise HTTPException(status_code=400, detail="mcp_box_dir must be a path")
     result = abstract_mcp_box(box_dir)
     return JSONResponse(result)
 
@@ -754,7 +766,7 @@ async def mcp_catalog() -> JSONResponse:
     Returns the lightweight catalog.json for direct tool loading.
     If catalog.json doesn't exist, automatically abstracts and generates it.
     """
-    box_dir = os.getenv("MCP_BOX_DIR", ".mcp_box")
+    box_dir = os.getenv("MCP_BOX_DIR", ".mcp_box") or ".mcp_box"
     catalog_path = Path(box_dir) / "catalog.json"
 
     if not catalog_path.exists():

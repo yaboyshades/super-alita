@@ -41,4 +41,4 @@ def amplify_message(message: str, ctx: MessageContext) -> tuple[str, dict[str, s
 
 
 # Register on import so router can just import the module when enabled.
-register(amplify_message)  # type: ignore[arg-type]
+register(amplify_message)

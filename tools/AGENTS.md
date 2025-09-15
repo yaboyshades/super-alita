@@ -1054,6 +1054,11 @@ if __name__ == "__main__":
 ./tools/setup/bootstrap.sh                    # Bootstrap environment
 python tools/dev/env_manager.py               # Check/setup environment
 
+# Repository chunk manifests
+python tools/chunk_repo.py                    # Generate chunks/chunk manifests
+python tools/chunk_repo.py --dry-run          # Preview without writing files
+python tools/chunk_repo.py --output-dir tmp   # Customise manifest directory
+
 # Building and packaging
 python tools/build/builder.py --all           # Build everything
 python tools/build/builder.py --wheel         # Build wheel only
@@ -1073,6 +1078,16 @@ python tools/data/migration.py --source old --target new --from-version 1.0 --to
 python tools/maintenance/cleanup.py --all     # Full system cleanup
 python tools/maintenance/cleanup.py --logs    # Clean logs only
 ```
+
+### Chunk Manifest Generator
+- **Purpose** - Emits manifests of Python files grouped by top-level directory
+  while respecting the scope boundaries defined by `AGENTS.md` files.
+- **Output** - Creates (or updates) text files in `chunks/` (e.g.,
+  `chunks/core.txt` or `chunks/tests-runtime.txt`) listing repository-relative
+  paths.
+- **Options** - Use `--dry-run` to inspect the manifests without writing them
+  and `--output-dir` to target an alternate directory for the generated files.
+
 
 ### Best Practices
 

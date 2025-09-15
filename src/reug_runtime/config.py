@@ -117,7 +117,7 @@ class Settings:
     tool_registry_dir: str | None = _getenv("REUG_TOOL_REGISTRY_DIR")
 
     # HTTP server
-    api_prefix: str = _getenv("API_PREFIX", "/")
+    api_prefix: str = _getenv("API_PREFIX", "/") or "/"
 
     # Generation controls
     default_temperature: float = _getenv_float("REUG_DEFAULT_TEMPERATURE", 0.2)

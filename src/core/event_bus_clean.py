@@ -70,6 +70,9 @@ class EventBus:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
+            cls._instance._redis_host = host
+            cls._instance._redis_port = port
+            cls._instance._wire_format = wire_format
         return cls._instance
 
     def __init__(
@@ -104,7 +107,9 @@ class EventBus:
         }
 
         logger.info(
-            f"EventBus configured for Memurai at {host}:{port} with throughput optimization"
+            "EventBus configured for Memurai at %s:%s with throughput optimization",
+            host,
+            port,
         )
 
     @property
@@ -163,7 +168,10 @@ class EventBus:
             logger.info("EventBus successfully connected to Memurai.")
         except Exception as e:
             logger.critical(
-                f"Could not connect to Memurai at {self._redis_host}:{self._redis_port}. Is Memurai running? Error: {e}"
+                "Could not connect to Memurai at %s:%s. Is Memurai running? Error: %s",
+                self._redis_host,
+                self._redis_port,
+                e,
             )
             raise
 
@@ -179,15 +187,16 @@ class EventBus:
         if self._redis is not None:
             self._pubsub = self._redis.pubsub(ignore_subscribe_messages=True)
 
-        # CRITICAL FIX: Subscribe to all registered channels BEFORE starting listener
-        # This prevents the race condition where events are published before subscription
+        # CRITICAL FIX: Subscribe to all registered channels BEFORE starting the
+        # listener. This prevents events from publishing before subscriptions
         if self._subscribers and self._pubsub is not None:
             channels_to_subscribe = list(self._subscribers.keys())
 
             # Handle wildcard subscription using pattern subscription for robust support
             if "*" in channels_to_subscribe:
                 channels_to_subscribe.remove("*")
-                # Use psubscribe for true wildcard support - receives ALL published events
+                # Use psubscribe for true wildcard support. This receives all
+                # published events
                 try:
                     await self._pubsub.psubscribe("*")
                     logger.info(
@@ -202,10 +211,14 @@ class EventBus:
                 try:
                     await self._pubsub.subscribe(*channels_to_subscribe)
                     logger.info(
-                        f"✅ Pre-subscribed to Memurai channels: {channels_to_subscribe}"
+                        "✅ Pre-subscribed to Memurai channels: %s",
+                        channels_to_subscribe,
                     )
                 except Exception as e:
-                    logger.exception(f"❌ Failed to pre-subscribe to channels: {e}")
+                    logger.exception(
+                        "❌ Failed to pre-subscribe to channels: %s",
+                        e,
+                    )
                     raise
 
         # Start listener task
@@ -217,7 +230,7 @@ class EventBus:
         await asyncio.sleep(0.1)
 
     async def publish(self, event: BaseEvent) -> None:
-        """Serializes and publishes a Pydantic event to the corresponding Redis channel."""
+        """Serialize and publish a Pydantic event to its Redis channel."""
         if not self._redis:
             await self.connect()
 
@@ -228,10 +241,12 @@ class EventBus:
             if self._redis is not None:
                 await self._redis.publish(channel, serialized_data)
             logger.debug(
-                f"Published event of type '{channel}' to Memurai (wire_format: {self._wire_format})."
+                "Published event of type '%s' to Memurai (wire_format: %s).",
+                channel,
+                self._wire_format,
             )
         except Exception as e:
-            logger.exception(f"Failed to serialize/publish event: {e}")
+            logger.exception("Failed to serialize/publish event: %s", e)
             raise
 
     async def subscribe(
@@ -251,7 +266,9 @@ class EventBus:
         handler_key = (event_type, callback.__name__)
         if handler_key in self._registered_handlers:
             logger.info(
-                f"Skipping duplicate handler '{callback.__name__}' for event type '{event_type}'."
+                "Skipping duplicate handler '%s' for event type '%s'.",
+                callback.__name__,
+                event_type,
             )
             return
         self._registered_handlers.add(handler_key)
@@ -261,7 +278,9 @@ class EventBus:
             self._subscribers[event_type] = []
         self._subscribers[event_type].append(callback)
         logger.info(
-            f"Handler '{callback.__name__}' registered for event type '{event_type}'."
+            "Handler '%s' registered for event type '%s'.",
+            callback.__name__,
+            event_type,
         )
 
         # CRITICAL FIX: Always subscribe to Memurai channel when handler is added
@@ -285,7 +304,7 @@ class EventBus:
                     if "*" not in current_patterns:
                         await self._pubsub.psubscribe("*")
                         logger.info(
-                            "✅ Successfully pattern subscribed to Memurai: * (all channels)"
+                            "✅ Pattern subscribed to Memurai: * (all channels)"
                         )
                     else:
                         logger.debug("Already pattern subscribed to: *")
@@ -301,12 +320,13 @@ class EventBus:
                     if event_type not in current_channels:
                         await self._pubsub.subscribe(event_type)
                         logger.info(
-                            f"✅ Successfully subscribed to Memurai channel: {event_type}"
+                            "✅ Subscribed to Memurai channel: %s",
+                            event_type,
                         )
                     else:
-                        logger.debug(f"Already subscribed to channel: {event_type}")
+                        logger.debug("Already subscribed to channel: %s", event_type)
             except Exception as e:
-                logger.exception(f"❌ Failed to subscribe to '{event_type}': {e}")
+                logger.exception("❌ Failed to subscribe to '%s': %s", event_type, e)
                 raise  # Re-raise to ensure caller knows subscription failed
 
     async def _subscribe_to_new_channel(self, channel: str) -> None:
@@ -314,10 +334,12 @@ class EventBus:
         try:
             if self._pubsub is not None:
                 await self._pubsub.subscribe(channel)
-                logger.info(f"Dynamically subscribed to new channel: {channel}")
+                logger.info("Dynamically subscribed to new channel: %s", channel)
         except Exception as e:
             logger.exception(
-                f"Failed to dynamically subscribe to channel '{channel}': {e}"
+                "Failed to dynamically subscribe to channel '%s': %s",
+                channel,
+                e,
             )
 
     async def _listener_loop(self) -> None:
@@ -349,7 +371,11 @@ class EventBus:
                     channel = message["channel"].decode("utf-8")
                     # For pmessage, we could also access pattern with message['pattern']
 
-                logger.debug(f"📨 Received {message['type']} on channel '{channel}'")
+                logger.debug(
+                    "📨 Received %s on channel '%s'",
+                    message["type"],
+                    channel,
+                )
 
                 # Collect all handlers that should receive this event
                 handlers_to_dispatch: list[
@@ -357,29 +383,32 @@ class EventBus:
                 ] = []
 
                 # ANTI-DUPLICATE STRATEGY:
-                # If we have wildcard subscribers, prioritize pmessage and ignore regular messages
-                # This prevents the same event from being processed twice
+                # If we have wildcard subscribers, prioritize pmessage and
+                # ignore regular messages. This prevents the same event from
+                # being processed twice
                 has_wildcard_subscribers = "*" in self._subscribers
 
                 if message["type"] == "pmessage":
                     # Pattern message - dispatch to wildcard handlers
                     if has_wildcard_subscribers:
                         handlers_to_dispatch.extend(self._subscribers["*"])
-                    # Also add specific handlers for this channel (they should get the event)
+                    # Also add specific handlers for this channel (they should
+                    # get the event)
                     if channel in self._subscribers:
                         for specific_handler in self._subscribers[channel]:
                             if specific_handler not in handlers_to_dispatch:
                                 handlers_to_dispatch.append(specific_handler)
 
                 elif message["type"] == "message":
-                    # Regular message - only process if we DON'T have wildcard subscribers
-                    # (because wildcard subscribers already got this via pmessage)
+                    # Regular message - only process if we DON'T have wildcard
+                    # subscribers (wildcard subscribers already saw pmessage)
                     if not has_wildcard_subscribers:
                         # No wildcard subscribers, so process specific handlers normally
                         if channel in self._subscribers:
                             handlers_to_dispatch.extend(self._subscribers[channel])
                     else:
-                        # Has wildcard subscribers, process both specific and wildcard handlers
+                        # Has wildcard subscribers, process both specific and
+                        # wildcard handlers
                         if channel in self._subscribers:
                             handlers_to_dispatch.extend(self._subscribers[channel])
 
@@ -395,7 +424,9 @@ class EventBus:
                     )
 
                     logger.debug(
-                        f"🚀 Dispatching {event_type} to {len(handlers_to_dispatch)} handlers"
+                        "🚀 Dispatching %s to %s handlers",
+                        event_type,
+                        len(handlers_to_dispatch),
                     )
 
                     # Dispatch to all handlers asynchronously
@@ -405,13 +436,14 @@ class EventBus:
                         task.add_done_callback(background_tasks.discard)
 
             except Exception as e:
-                logger.error(f"❌ Error in event listener loop: {e}")
+                logger.error("❌ Error in event listener loop: %s", e)
                 await asyncio.sleep(1.0)  # Brief pause before retrying
 
         # Wait for any remaining background tasks to complete
         if background_tasks:
             logger.info(
-                f"⏳ Waiting for {len(background_tasks)} background tasks to complete..."
+                "⏳ Waiting for %s background tasks to complete...",
+                len(background_tasks),
             )
             await asyncio.gather(*background_tasks, return_exceptions=True)
 
