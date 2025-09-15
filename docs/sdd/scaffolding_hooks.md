@@ -5,7 +5,13 @@ This guide explains how automation or project scaffolding scripts can drive the 
 
 ## Pipeline Surfaces
 ### ConstitutionalSDDPipeline
-The base async pipeline (`ConstitutionalSDDPipeline`) writes artifacts into a workspace `specs/` tree and exposes `specify`, `plan`, and `tasks` coroutines. Each coroutine accepts a Pydantic request model and returns the matching response model with generated files, metadata, and compliance scores. The pipeline only executes constitutional scoring when the request sets `constitutional_gates=True` (default) and marks success via `compliance_threshold_met` once the `0.75` threshold is satisfied. The scorer instance is shared across phases so downstream calls inherit the same gate threshold.
+The base async pipeline (`ConstitutionalSDDPipeline`) provides the following features:
+- Writes artifacts into a workspace `specs/` tree.
+- Exposes `specify`, `plan`, and `tasks` coroutines.
+- Each coroutine accepts a Pydantic request model and returns the matching response model, which includes generated files, metadata, and compliance scores.
+- Constitutional scoring is executed only when the request sets `constitutional_gates=True` (default).
+- Success is marked via `compliance_threshold_met` once the `0.75` threshold is satisfied.
+- The scorer instance is shared across phases, so downstream calls inherit the same gate threshold.
 
 **Hook it when:**
 - A script wants to run the SDD phases in-process without Mangle reasoning.
