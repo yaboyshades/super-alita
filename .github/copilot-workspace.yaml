@@ -71,9 +71,9 @@ workspace:
       - "POST /sdd/tasks"
       - "POST /sdd/validate"
     templates:
-      - "templates/sdd/specification.md"
-      - "templates/sdd/plan.md"
-      - "templates/sdd/tasks.md"
+      - "templates/sdd/spec-template.md"
+      - "templates/sdd/plan-template.md"
+      - "templates/sdd/tasks-template.md"
     memory: "memory/sdd/constitutional_sdd_framework.md"
     validators: "src/sdd/validators.py"
     constitutional_gates:

@@ -37,7 +37,7 @@ Only the SDD tree ships a tasks template; no minimal counterpart exists under th
 | `src/sdd` runtime config | `templates/sdd/spec-template.md`, `plan-template.md`, `tasks-template.md` via `templates_dir="templates/sdd"` | Canonical for streaming pipeline and constitutional scoring.【F:src/sdd/config.py†L25-L110】 |
 | `extensions/alita-language-tools` scripts | Copy `templates/spec-template.md` and `templates/plan-template.md` into new feature branches | Keeps CLI/bootstrap flows aligned with minimal templates.【F:extensions/alita-language-tools/scripts/create-new-feature.sh†L70-L96】【F:extensions/alita-language-tools/scripts/setup-plan.sh†L1-L44】 |
 | `detect_ai_cli.py` helper | Requests `spec-template.md`, `plan-template.md`, and `tasks-template.md` from root `templates/` | Needs consistent naming or fallback to the SDD directory for tasks.【F:detect_ai_cli.py†L160-L259】 |
-| Prompt configuration | `src/config/prompts/integrated_system_prompts.json` references `templates/sdd/specification.md`/`plan.md`/`tasks.md` | These filenames no longer exist, indicating another cleanup opportunity when templates are consolidated.【F:src/config/prompts/integrated_system_prompts.json†L31-L61】 |
+| Prompt configuration | `src/config/prompts/integrated_system_prompts.json` references `templates/sdd/spec-template.md`/`plan-template.md`/`tasks-template.md` | References now align with the canonical SDD templates after removing the legacy files.【F:src/config/prompts/integrated_system_prompts.json†L30-L41】 |
 
 ## Recommendations
 

@@ -59,9 +59,9 @@ Spec‑Driven Development (Spec‑Kit) is a first‑class workflow in this repo.
   - `src/sdd/validators.py` — Constitutional compliance checks
   - `src/orchestration/unified_orchestrator.py` — Orchestrator wired for SDD + reliability
 - Templates & memory:
-  - `templates/sdd/specification.md`
-  - `templates/sdd/plan.md`
-  - `templates/sdd/tasks.md`
+  - `templates/sdd/spec-template.md`
+  - `templates/sdd/plan-template.md`
+  - `templates/sdd/tasks-template.md`
   - `memory/sdd/constitutional_sdd_framework.md`
 
 ### How to run (Windows PowerShell)
