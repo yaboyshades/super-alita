@@ -347,11 +347,7 @@ class Orchestrator:
                 )
             except Exception:
                 tool_args_obj = {}
-            tool_args: dict[str, Any]
-            if isinstance(tool_args_obj, dict):
-                tool_args = tool_args_obj
-            else:
-                tool_args = {}
+            tool_args: dict[str, Any] = tool_args_obj if isinstance(tool_args_obj, dict) else {}
             span_id = str(uuid.uuid4())
 
             ability_called_event = {
