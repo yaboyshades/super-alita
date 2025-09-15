@@ -11,6 +11,13 @@ Production-ready architecture with:
 - Modular plugin system
 - OpenAI-compatible local adapter option
 
+## Constitution and Addendum
+
+Super Alita follows a constitutional contract plus a Codecraft addendum that govern every change:
+
+- [Super-Alita Constitutional Framework](.github/CONSTITUTION.md)
+- [Codecraft Addendum (CMA v5.3)](docs/cma-v5.3/codecraft-addendum.md)
+
 ## Key Features
 
 - Event bus with Redis optional backend
@@ -27,6 +34,14 @@ Production-ready architecture with:
 ## Quick Start
 
 Two equivalent setup paths are provided: Makefile workflow (recommended) or raw Python commands.
+
+### Default Workflow: Specification-Driven Development (SDD)
+
+SDD (Specification-Driven Development) is the default pipeline for feature work. Start every initiative with `specify → plan → tasks` using the constitutional gates that ship with `src/sdd/`.
+
+- Use the enhanced CLI: `python -m src.sdd.sdd_cli specify "..."` / `plan` / `tasks`.
+- Shell helpers in `scripts/lib/constitutional-gates.sh` and `scripts/lib/sdd-common.sh` keep bespoke automation aligned with the CMA rules.
+- Run `scripts/smoke_sdd_specify.py` against a running server to confirm the FastAPI router and gates are healthy before coding.
 
 ### 1. Environment file
 
