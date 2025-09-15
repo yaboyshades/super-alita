@@ -109,7 +109,8 @@ log_json() {
     local timestamp
     timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-    "${_python_path}" - "${level}" "${message}" "${timestamp}" "$@" <<'PY'
+    local args=("${level}" "${message}" "${timestamp}" "$@")
+    "${_python_path}" - "${args[@]}" <<'PY'
 import json
 import sys
 
