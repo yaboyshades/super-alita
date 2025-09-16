@@ -104,7 +104,15 @@ export function toVscodeDiagnostics(
   const diagnostics: vscode.Diagnostic[] = [];
 
   for (const diag of arr) {
-    if (!diag?.range) {
+    if (
+      !diag?.range ||
+      !diag.range.start ||
+      !diag.range.end ||
+      typeof diag.range.start.line !== 'number' ||
+      typeof diag.range.start.character !== 'number' ||
+      typeof diag.range.end.line !== 'number' ||
+      typeof diag.range.end.character !== 'number'
+    ) {
       continue;
     }
 
