@@ -1,5 +1,5 @@
 # super-alita — Deep Dive Report
-**Date:** 2025-09-15 | **Commit:** 643e8a1 | **Repo Size:** 1855 files / 560790 LOC
+**Date:** <fill> | **Commit:** <sha> | **Repo Size:** <files/LOC>
 
 ## Executive Summary
 - Architecture & key components:
