@@ -51,7 +51,7 @@ echo "JS/TS=$HAS_JS PY=$HAS_PY GO=$HAS_GO RUST=$HAS_RS" | tee "$OUT/artifacts/la
 if [ "$HAS_JS" = "1" ]; then
   echo "[3/9] JS/TS checks..."
   if command -v node >/dev/null 2>&1; then
-    if ! ensure_tools "js"; then
+    if ! ensure_tools; then
       echo "Skipping JS/TS dependency installation (ensure_tools disabled)" | tee -a "$OUT/logs/js.log"
     else
       PKG_MGR="npm"
