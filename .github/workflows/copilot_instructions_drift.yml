@@ -1,0 +1,43 @@
+name: Copilot Instructions Drift Guard
+
+on:
+  push:
+    paths:
+      - '.github/copilot-instructions.md'
+      - '.github/copilot-instructions.json'
+      - 'scripts/generate_copilot_instructions.py'
+      - 'scripts/unified_sdd_mangle.py'
+      - 'src/**'
+      - 'templates/sdd/**'
+      - 'docs/**'
+  pull_request:
+    paths:
+      - '.github/copilot-instructions.md'
+      - '.github/copilot-instructions.json'
+      - 'scripts/generate_copilot_instructions.py'
+      - 'scripts/unified_sdd_mangle.py'
+      - 'src/**'
+      - 'templates/sdd/**'
+      - 'docs/**'
+  schedule:
+    - cron: '0 8 * * 1'
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Regenerate instructions
+        run: python scripts/generate_copilot_instructions.py --write
+      - name: Fail on drift
+        run: git diff --exit-code -- .github/copilot-instructions.md .github/copilot-instructions.json
+      - name: Upload instructions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-instructions
+          path: |
+            .github/copilot-instructions.md
+            .github/copilot-instructions.json

@@ -1,0 +1,53 @@
+# Constitutional Rule: Simplicity
+id: RULE-3.1
+version: "1.0.0"
+article: "Article III: Simplicity"
+severity: WARNING
+category: "code_quality"
+description: "Functions should be simple and focused"
+
+checks:
+  - type: "complexity"
+    name: "cyclomatic_complexity"
+    threshold: 10
+    targets:
+      - "src/**/*.py"
+      - "src/**/*.js"
+      - "src/**/*.ts"
+
+  - type: "line_count"
+    name: "function_length"
+    threshold: 50
+    targets:
+      - "src/**/*.py"
+      - "src/**/*.js"
+      - "src/**/*.ts"
+
+  - type: "parameter_count"
+    name: "parameter_complexity"
+    threshold: 5
+    targets:
+      - "src/**/*.py"
+      - "src/**/*.js"
+      - "src/**/*.ts"
+
+validation:
+  message: "Function '{function_name}' exceeds complexity threshold ({metric}: {actual}/{threshold})"
+  suggestion: "Break down complex functions into smaller, focused functions"
+  auto_fix: false
+
+remediation:
+  patterns:
+    - "Extract method: Move complex logic to separate function"
+    - "Split conditional: Use early returns to reduce nesting"
+    - "Parameter object: Group related parameters into a class/object"
+
+exceptions:
+  - path: "tests/"
+    reason: "Test functions may be longer for comprehensive coverage"
+  - pattern: "main()"
+    reason: "Main functions may coordinate multiple operations"
+
+references:
+  - "Constitutional Article III: Simplicity"
+  - "https://refactoring.guru/refactoring/smells/long-method"

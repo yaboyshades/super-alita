@@ -103,6 +103,7 @@ Your expertise spans:
 - **Test-First Development**: Generate tests before implementation (Article II)
 - **Library-First Research**: Search for existing solutions before coding (Article I)
 - **Simplicity Enforcement**: Functions <50 lines, clear interfaces (Article III)
+- **Elite Code Quality Patterns**: Chain symbolic execution, property-based invariants, formal contracts, performance profiling, invariant enforcement, and complexity monitoring via the `.vscode/copilot-middleware/*` injectors (`inject_*`) and validation hooks (`_check_*`).
 
 ### Communication Patterns
 - **Markdown Formatting**: Use proper headers, code blocks, and bullet points

@@ -111,9 +111,25 @@ class MangleReasoner:
         # Cache for facts to avoid regeneration
         self._facts_cache: str | None = None
         self._facts_cache_valid = False
+        self._injected_facts: list[str] = []
 
         # Query result cache
         self._query_cache: dict[str, MangleQueryResult] = {}
+
+
+    def add_fact(self, fact: str) -> None:
+        """Inject an additional fact into the knowledge base."""
+        if not fact:
+            return
+        self._injected_facts.append(fact)
+        self._facts_cache_valid = False
+
+
+    def clear_injected_facts(self) -> None:
+        """Clear all injected facts and invalidate cache."""
+        if self._injected_facts:
+            self._injected_facts.clear()
+            self._facts_cache_valid = False
 
     def query(self, query: str, use_cache: bool = True) -> MangleQueryResult:
         """
@@ -300,7 +316,12 @@ class MangleReasoner:
         if self._facts_cache is None or not self._facts_cache_valid:
             logger.debug("Regenerating facts cache")
             facts = self.fact_generator.generate_all_facts()
-            self._facts_cache = facts + "\n\n" + MANGLE_RULES
+            injected = "\n".join(self._injected_facts) if self._injected_facts else ""
+            if injected:
+                combined = "\n".join([facts, injected])
+            else:
+                combined = facts
+            self._facts_cache = combined + "\n\n" + MANGLE_RULES
             self._facts_cache_valid = True
 
         return self._facts_cache

@@ -1,0 +1,184 @@
+# DeepCode Constitutional Governance Rules
+# Ensures all generated code meets quality and compliance standards
+
+version: "2.1"
+rule_set: "deepcode_integration"
+classification: "BLOCKER"
+description: "Constitutional compliance rules for DeepCode-generated code"
+
+rules:
+  # Code Quality Standards
+  - id: "DC001"
+    name: "Generated Code Quality"
+    classification: "BLOCKER"
+    description: "All generated code must meet quality standards"
+    validation:
+      - requirement: "Code must have > 80% test coverage"
+        check: "pytest --cov=src --cov-report=term"
+        threshold: 80
+      - requirement: "Code must pass static analysis"
+        check: "ruff check src && mypy src"
+        exit_code: 0
+      - requirement: "Code must include comprehensive docstrings"
+        check: "grep -r '\"\"\"' src/ | wc -l"
+        threshold: 10
+      - requirement: "Performance complexity must be documented"
+        check: "grep -r 'O(' src/ | wc -l"
+        threshold: 1
+
+  # Paper2Code Accuracy
+  - id: "DC002"
+    name: "Paper2Code Mathematical Accuracy"
+    classification: "BLOCKER"
+    description: "Research paper implementations must be mathematically accurate"
+    validation:
+      - requirement: "Mathematical formulas must match paper specifications"
+        check: "grep -r -E '(\\+|\\*|/|-|\\^|sqrt|log|exp)' src/"
+        threshold: 1
+      - requirement: "Algorithm complexity must be preserved"
+        check: "grep -r -i 'complexity\\|runtime\\|space' src/"
+        threshold: 1
+      - requirement: "Citations and references must be included"
+        check: "grep -r -i 'reference\\|citation\\|paper\\|arxiv' src/"
+        threshold: 1
+      - requirement: "Experimental validation must be possible"
+        check: "find src/ -name '*test*' -o -name '*experiment*' | wc -l"
+        threshold: 1
+
+  # Multi-Agent Coordination
+  - id: "DC003"
+    name: "Multi-Agent System Transparency"
+    classification: "WARNING"
+    description: "Agent interactions must be transparent and traceable"
+    validation:
+      - requirement: "Agent decision paths must be logged"
+        check: "grep -r 'logging\\|logger\\|log' src/"
+        threshold: 5
+      - requirement: "Inter-agent communication must be validated"
+        check: "grep -r 'validate\\|verify\\|check' src/"
+        threshold: 3
+      - requirement: "Failure modes must have graceful degradation"
+        check: "grep -r 'try:\\|except\\|finally:' src/"
+        threshold: 2
+      - requirement: "Performance metrics must be tracked"
+        check: "grep -r 'metric\\|performance\\|timing' src/"
+        threshold: 1
+
+  # Security & Privacy
+  - id: "DC004"
+    name: "Security Standards Compliance"
+    classification: "BLOCKER"
+    description: "Generated code must meet security standards"
+    validation:
+      - requirement: "No hardcoded secrets or credentials"
+        check: "grep -r -E '(password|secret|key|token)\\s*=\\s*[\"\\'][^\"\\']' src/"
+        invert: true
+      - requirement: "Input validation must be comprehensive"
+        check: "grep -r -E '(validate|sanitize|escape)' src/"
+        threshold: 1
+      - requirement: "Security scanning must pass"
+        check: "bandit -r src/ -f json"
+        exit_code: 0
+      - requirement: "Privacy considerations must be documented"
+        check: "grep -r -i 'privacy\\|gdpr\\|pii\\|personal' src/"
+        threshold: 0
+
+  # Text2Web Specific Rules
+  - id: "DC005"
+    name: "Frontend Code Standards"
+    classification: "WARNING"
+    description: "Text2Web generated frontend must meet web standards"
+    applies_to: ["text2web"]
+    validation:
+      - requirement: "Components must be responsive"
+        check: "grep -r -E '(responsive|mobile|@media)' src/"
+        threshold: 1
+      - requirement: "Accessibility standards must be met"
+        check: "grep -r -E '(aria-|alt=|role=)' src/"
+        threshold: 1
+      - requirement: "Modern JavaScript patterns must be used"
+        check: "grep -r -E '(const|let|=>|async)' src/"
+        threshold: 5
+      - requirement: "Component structure must be modular"
+        check: "find src/ -name '*.jsx' -o -name '*.tsx' -o -name '*.vue' | wc -l"
+        threshold: 2
+
+  # Text2Backend Specific Rules
+  - id: "DC006"
+    name: "Backend Architecture Standards"
+    classification: "WARNING"
+    description: "Text2Backend generated systems must follow architecture best practices"
+    applies_to: ["text2backend"]
+    validation:
+      - requirement: "API design must be RESTful"
+        check: "grep -r -E '(GET|POST|PUT|DELETE|PATCH)' src/"
+        threshold: 2
+      - requirement: "Data validation must be comprehensive"
+        check: "grep -r -E '(validate|schema|pydantic)' src/"
+        threshold: 1
+      - requirement: "Error handling must be robust"
+        check: "grep -r -E '(HTTPException|ValidationError|try:)' src/"
+        threshold: 2
+      - requirement: "Database operations must be secure"
+        check: "grep -r -E '(query|execute|cursor)' src/"
+        threshold: 1
+
+  # Documentation Requirements
+  - id: "DC007"
+    name: "Documentation Completeness"
+    classification: "WARNING"
+    description: "Generated code must include comprehensive documentation"
+    validation:
+      - requirement: "README must exist and be comprehensive"
+        check: "test -f README.md && wc -l README.md | awk '{print $1}'"
+        threshold: 20
+      - requirement: "API documentation must be generated"
+        check: "find . -name '*.md' -path '*/docs/*' | wc -l"
+        threshold: 1
+      - requirement: "Inline documentation must be adequate"
+        check: "grep -r '\"\"\"' src/ | wc -l"
+        threshold: 5
+      - requirement: "Usage examples must be provided"
+        check: "grep -r -i 'example\\|usage\\|demo' . | wc -l"
+        threshold: 3
+
+  # Performance Requirements
+  - id: "DC008"
+    name: "Performance Standards"
+    classification: "WARNING"
+    description: "Generated code must meet performance expectations"
+    validation:
+      - requirement: "Time complexity must be documented"
+        check: "grep -r 'O(' src/ | wc -l"
+        threshold: 1
+      - requirement: "Resource usage must be reasonable"
+        check: "grep -r -E '(memory|cpu|resource)' src/"
+        threshold: 0
+      - requirement: "Caching strategies must be implemented where appropriate"
+        check: "grep -r -E '(cache|memoize|redis)' src/"
+        threshold: 0
+      - requirement: "Database queries must be optimized"
+        check: "grep -r -E '(index|optimize|explain)' src/"
+        threshold: 0
+
+enforcement:
+  pre_commit: true
+  ci_integration: true
+  blocking_rules: ["DC001", "DC002", "DC004"]
+  warning_rules: ["DC003", "DC005", "DC006", "DC007", "DC008"]
+  
+reporting:
+  format: "json"
+  include_suggestions: true
+  include_fix_recommendations: true
+  
+governance:
+  review_required_for: ["BLOCKER"]
+  auto_fix_allowed_for: ["WARNING"]
+  escalation_path: "tech_lead -> architect -> cto"
+
+metadata:
+  created_by: "super_alita_framework"
+  version: "1.0"
+  last_updated: "2025-09-22"
+  applies_to: ["paper2code", "text2web", "text2backend"]

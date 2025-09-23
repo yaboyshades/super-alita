@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import json
 import time
+from collections import deque
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -13,6 +14,20 @@ from typing import Any
 
 from src.cortex.markers import PerformanceMarker
 from src.events import BaseEvent
+
+
+@dataclass
+class TelemetryEvent:
+    """Telemetry event for compatibility with grpc server expectations"""
+
+    timestamp: float
+    event_type: str
+    data: dict[str, Any]
+    metadata: dict[str, Any] | None = None
+
+    def __post_init__(self):
+        if self.metadata is None:
+            self.metadata = {}
 
 
 @dataclass
@@ -40,6 +55,8 @@ class TelemetryCollector:
         self.collection_enabled = True
         self.buffer_size = 1000
         self.auto_flush_interval = 60.0  # seconds
+        self._current_canonical_runs: dict[str, dict[str, Any]] = {}
+        self.canonical_history: deque[dict[str, Any]] = deque(maxlen=50)
 
         # Start auto-flush task
         self._flush_task: asyncio.Task | None = None
@@ -47,8 +64,14 @@ class TelemetryCollector:
 
     def _start_auto_flush(self) -> None:
         """Start the auto-flush background task"""
-        if self._flush_task is None or self._flush_task.done():
-            self._flush_task = asyncio.create_task(self._auto_flush_loop())
+        if self._flush_task is not None and not self._flush_task.done():
+            return
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._flush_task = None
+            return
+        self._flush_task = loop.create_task(self._auto_flush_loop())
 
     async def _auto_flush_loop(self) -> None:
         """Background task to periodically flush telemetry data"""
@@ -92,6 +115,56 @@ class TelemetryCollector:
                 self._create_snapshot_for_event(event)
         except Exception as e:
             print(f"Error recording event: {e}")
+
+    def record_canonical_event(self, event: dict[str, Any]) -> None:
+        """Aggregate canonical orchestrator events into compact summaries."""
+        if not self.collection_enabled or not isinstance(event, dict):
+            return
+        run_id = event.get("run_id")
+        kind = event.get("kind")
+        if not run_id or not kind:
+            return
+
+        stats = self._current_canonical_runs.setdefault(
+            run_id,
+            {
+                "run_id": run_id,
+                "counts": {"events": 0, "abilities": 0},
+                "stages": {},
+                "errors": [],
+                "started_at": event.get("timestamp"),
+            },
+        )
+        stats["counts"]["events"] += 1
+        data = event.get("data") or {}
+
+        if kind == "RunStarted":
+            stats["started_at"] = event.get("timestamp")
+        elif kind == "StageCompleted":
+            stage_name = data.get("name", "unknown")
+            stage_info = stats["stages"].setdefault(stage_name, {
+                "duration_ms": 0,
+                "status": "started",
+            })
+            stage_info["duration_ms"] = int(data.get("duration_ms", 0))
+            stage_info["status"] = data.get("status", "ok")
+        elif kind in {"AbilityInvocationStarted", "AbilityInvocationCompleted"}:
+            stats["counts"]["abilities"] += 1
+        elif kind == "RunError":
+            error_type = data.get("error_type") or "UNKNOWN"
+            stats["errors"].append(error_type)
+        elif kind in {"RunTerminated", "RunFailed"}:
+            summary = {
+                "run_id": run_id,
+                "success": bool(data.get("success", kind == "RunTerminated")),
+                "total_duration_ms": data.get("total_duration_ms"),
+                "stages": stats["stages"],
+                "errors": stats["errors"],
+                "abilities_invoked": data.get("abilities_invoked", stats["counts"]["abilities"]),
+                "constitutional_score": event.get("constitutional_score"),
+            }
+            self.canonical_history.append(summary)
+            self._current_canonical_runs.pop(run_id, None)
 
     def _create_snapshot_for_event(self, event: BaseEvent) -> None:
         """Create a telemetry snapshot for an event"""

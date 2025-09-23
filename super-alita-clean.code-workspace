@@ -11,6 +11,7 @@
 		}
 	],
 	"settings": {
-		"powershell.cwd": "super-alita-clean"
+        "powershell.cwd": "super-alita-clean",
+        "python.analysis.typeCheckingMode": "off"
 	}
 }

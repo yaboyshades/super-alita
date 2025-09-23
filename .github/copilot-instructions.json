@@ -1,0 +1,65 @@
+{
+  "repo": "super-alita-clean",
+  "services": [
+    {
+      "name": "orchestrator",
+      "path": "src/orchestration",
+      "language": "python"
+    },
+    {
+      "name": "sdd-api",
+      "path": "src/sdd",
+      "language": "python"
+    },
+    {
+      "name": "unified-intelligence",
+      "path": "src/unified_intelligence",
+      "language": "python"
+    }
+  ],
+  "scripts": [
+    {
+      "name": "run-runtime",
+      "cmd": "python -m src.main"
+    },
+    {
+      "name": "dev-server",
+      "cmd": "uvicorn app:app --reload --port 8080"
+    },
+    {
+      "name": "tests",
+      "cmd": "pytest -q"
+    },
+    {
+      "name": "lint",
+      "cmd": "ruff check src tests"
+    }
+  ],
+  "env": [
+    {
+      "name": "SUPER_ALITA_MODE",
+      "required": false,
+      "default": "shadow"
+    },
+    {
+      "name": "ALITA_RUNTIME_HOST",
+      "required": false,
+      "default": "http://127.0.0.1:8080"
+    },
+    {
+      "name": "LLM_RETRY_MULTIPLIER",
+      "required": false,
+      "default": "1.0"
+    }
+  ],
+  "recipes": [
+    "add_sdd_endpoint",
+    "introduce_ability_module",
+    "adjust_unified_orchestrator_scoring",
+    "ship_spec_driven_feature",
+    "update_constitutional_gate"
+  ],
+  "generated_at": "2025-09-19T08:35:19.203876+00:00",
+  "schema_version": "1.0",
+  "last_reviewed": "2025-09-18"
+}

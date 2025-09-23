@@ -1,0 +1,32 @@
+{
+  "db": "/mnt/data/mangle_code_scaffold_v2/facts.sqlite",
+  "rules": {
+    "untested_function": [
+      {
+        "symbol": "a::compute",
+        "file": "a.py",
+        "complexity": 0.5
+      }
+    ],
+    "orphan_complex": [],
+    "cycle": [
+      {
+        "fileA": "b.py",
+        "fileB": "a.py"
+      },
+      {
+        "fileA": "a.py",
+        "fileB": "b.py"
+      }
+    ],
+    "hot_path": [],
+    "reinvention_json": []
+  },
+  "summary": {
+    "untested_function": 1,
+    "orphan_complex": 0,
+    "cycle": 2,
+    "hot_path": 0,
+    "reinvention_json": 0
+  }
+}

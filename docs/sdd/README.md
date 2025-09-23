@@ -1,5 +1,8 @@
 # SDD (Spec-Driven Development) Documentation
 
+> **Master Blueprint:** The complete Constitutional Mastery Architect v5.3 instructions live in [`constitutional_mastery_architect_v5_3.md`](constitutional_mastery_architect_v5_3.md). Use it as the authoritative reference for persona, workflow, and templates.
+
+
 ## Overview
 
 Spec-Driven Development (SDD) is a constitutional development methodology that integrates the six constitutional articles into every phase of software development. The SDD workflow transforms specifications directly into executable implementations through constitutional validation gates.
@@ -238,6 +241,10 @@ SDD integrates with the Mangle reasoning engine for:
 curl -X POST http://localhost:8080/sdd/specify -d '{"content": "Build user authentication"}'
 curl -X POST http://localhost:8080/sdd/plan -d '{"spec_content": "..."}'
 curl -X POST http://localhost:8080/sdd/tasks -d '{"plan_content": "..."}'
+
+# Enable canonical telemetry during local runs
+export CANONICAL_EVENTS_ENABLED=true
+python -m src.main --prompt "Summarize aggregator rollout"
 ```
 
 ### Agent Mode
@@ -310,3 +317,10 @@ curl -X POST http://localhost:8080/tools/sdd_validate -d '{"content": "...", "ph
 # View constitutional compliance details
 curl http://localhost:8080/sdd/compliance -d '{"artifact_id": "..."}'
 ```
+
+## Research Agent Add-on
+- Use `scripts/cma/research_specify.sh "<goal>"` to bootstrap a research-focused feature branch.
+- Run `python scripts/cma/research_plan_hook.py specs/<branch>/spec.md` during `/plan` Phase 0 to consolidate evidence into `research.md`.
+- Before `/tasks`, execute `python scripts/cma/research_tasks_hook.py specs/<branch>` to surface verification work.
+- In VS Code, enable the "Deep Research" participant from `tools/vscode-deep-research` for Copilot-integrated research runs (writes to `specs/research-agent/latest.md`).
+

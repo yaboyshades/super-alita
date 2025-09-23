@@ -1,0 +1,26 @@
+feature_id: 038
+generated_at: 2025-09-17 19:26:48.446106
+clarifications: []
+artefacts: []
+commands:
+- action: Run /plan 038 once clarifications are resolved
+  owner: unassigned
+  linked_artifact: specs/038/spec.md
+  gate: test_first
+  status: complete
+  rationale: Planning must wait until specification is unambiguous
+  source: command
+- action: Invoke /tasks 038 after the plan passes constitutional checks
+  owner: unassigned
+  linked_artifact: specs/038/spec.md
+  gate: integration_first
+  status: in_progress
+  rationale: Tasks phase depends on validated plan
+  source: command
+constitutional_alignment:
+- gate: test_first
+  summary: 1 item(s) pending to satisfy Article II - Test-First Development.
+  evidence: specs\038-test-tasks-feature\next_steps.yaml#test_first
+- gate: integration_first
+  summary: 1 item(s) pending to satisfy Article IV - Integration-First Testing.
+  evidence: specs\038-test-tasks-feature\next_steps.yaml#integration_first

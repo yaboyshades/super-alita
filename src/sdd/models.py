@@ -1,7 +1,7 @@
 """Pydantic models for SDD API endpoints."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -22,7 +22,15 @@ class SpecifyRequest(BaseModel):
     constitutional_gates: bool = Field(
         default=True, description="Whether to apply constitutional validation gates"
     )
-
+    spec_file: str | None = Field(
+        default=None, description="Optional pre-created specification file to populate"
+    )
+    branch_name: str | None = Field(
+        default=None, description="Git branch created for the feature"
+    )
+    feature_dir: str | None = Field(
+        default=None, description="Directory containing feature artifacts"
+    )
 
 class ConstitutionalValidation(BaseModel):
     """Constitutional validation result."""
@@ -37,6 +45,80 @@ class ConstitutionalValidation(BaseModel):
         default_factory=list, description="Suggested improvements"
     )
 
+class NextStepItem(BaseModel):
+    """Structured representation of an actionable next step."""
+
+    action: str = Field(..., description="Imperative statement for the follow-up item")
+    owner: str = Field(
+        default="unassigned",
+        description="Owner responsible for resolving the item",
+    )
+    linked_artifact: str = Field(
+        ..., description="Path or identifier of supporting evidence"
+    )
+    gate: Literal[
+        "library_first",
+        "test_first",
+        "simplicity",
+        "integration_first",
+        "clarity",
+        "counterfactual",
+    ] = Field(
+        ..., description="Constitutional gate the item helps to satisfy"
+    )
+    status: Literal["pending", "in_progress", "complete"] = Field(
+        default="pending",
+        description="Workflow status for the item",
+    )
+    rationale: str | None = Field(
+        default=None, description="Reason the item exists"
+    )
+    source: Literal["clarification", "artefact", "command", "reminder"] = Field(
+        ..., description="Category of the next step"
+    )
+
+
+class ConstitutionalAlignment(BaseModel):
+    """Narrative summary of gate alignment for next steps."""
+
+    gate: Literal[
+        "library_first",
+        "test_first",
+        "simplicity",
+        "integration_first",
+        "clarity",
+        "counterfactual",
+    ] = Field(..., description="Constitutional gate name")
+    summary: str = Field(..., description="How the listed steps satisfy the gate")
+    evidence: str | None = Field(
+        default=None,
+        description="Pointer to supporting artefact or decision log",
+    )
+
+
+class NextStepGuidance(BaseModel):
+    """Machine-readable bundle of next-step metadata."""
+
+    feature_id: str = Field(..., description="Feature identifier for the guidance")
+    generated_at: datetime = Field(
+        default_factory=datetime.now,
+        description="Timestamp guidance was produced",
+    )
+    clarifications: list[NextStepItem] = Field(
+        default_factory=list, description="Outstanding clarification items"
+    )
+    artefacts: list[NextStepItem] = Field(
+        default_factory=list, description="Required artefact creation items"
+    )
+    commands: list[NextStepItem] = Field(
+        default_factory=list, description="Recommended command checklist"
+    )
+    constitutional_alignment: list[ConstitutionalAlignment] = Field(
+        default_factory=list,
+        description="Gate summaries describing compliance coverage",
+    )
+
+
 
 class SpecifyResponse(BaseModel):
     """Response model for /specify endpoint."""
@@ -45,6 +127,18 @@ class SpecifyResponse(BaseModel):
     specification: str = Field(..., description="Generated specification content")
     feature_id: str = Field(..., description="Unique identifier for the feature")
     feature_path: str = Field(..., description="Path to the generated specification")
+    branch_name: str | None = Field(
+        default=None, description="Git branch associated with the feature"
+    )
+    feature_name: str | None = Field(
+        default=None, description="Human-friendly feature name or slug"
+    )
+    spec_file_path: str | None = Field(
+        default=None, description="Alias for feature_path (kept for compatibility)"
+    )
+    feature_dir: str | None = Field(
+        default=None, description="Directory containing specification artifacts"
+    )
     analysis_results: dict[str, Any] = Field(
         default_factory=dict,
         description="Additional analysis and Mangle-enhanced reasoning artifacts",
@@ -60,6 +154,14 @@ class SpecifyResponse(BaseModel):
     )
     next_steps: list[str] = Field(
         default_factory=list, description="Recommended next steps"
+    )
+    next_step_guidance: NextStepGuidance | None = Field(
+        default=None,
+        description="Structured guidance for downstream tooling",
+    )
+    next_step_metadata_path: str | None = Field(
+        default=None,
+        description="Location of the persisted next-step guidance file",
     )
     timestamp: datetime = Field(
         default_factory=datetime.now, description="When the specification was generated"
@@ -101,6 +203,9 @@ class PlanResponse(BaseModel):
     """Response model for /plan endpoint."""
 
     success: bool = Field(..., description="Whether plan generation succeeded")
+    feature_id: str | None = Field(
+        default=None, description="Feature identifier associated with the plan"
+    )
     implementation_plan: str = Field(..., description="Generated implementation plan")
     # Back-compat alias expected by some callers/tests
     plan: str = Field(..., description="Alias of implementation_plan for compatibility")
@@ -131,6 +236,12 @@ class PlanResponse(BaseModel):
     )
     next_steps: list[str] = Field(
         default_factory=list, description="Recommended next steps"
+    )
+    next_step_guidance: NextStepGuidance | None = Field(
+        default=None, description="Structured next steps carried into the plan phase"
+    )
+    next_step_metadata_path: str | None = Field(
+        default=None, description="Path to the persisted next-step guidance file"
     )
     timestamp: datetime = Field(
         default_factory=datetime.now, description="When the plan was generated"
@@ -193,6 +304,9 @@ class TasksResponse(BaseModel):
     """Response model for /tasks endpoint."""
 
     success: bool = Field(..., description="Whether task generation succeeded")
+    feature_id: str | None = Field(
+        default=None, description="Feature identifier associated with the tasks"
+    )
     tasks_breakdown: str = Field(..., description="Generated tasks breakdown content")
     tasks_path: str = Field(..., description="Path to the generated tasks file")
     tasks: list[TaskBreakdown] = Field(
@@ -220,6 +334,12 @@ class TasksResponse(BaseModel):
     next_steps: list[str] = Field(
         default_factory=list, description="Recommended next steps"
     )
+    next_step_guidance: NextStepGuidance | None = Field(
+        default=None, description="Structured next steps reused during tasks phase"
+    )
+    next_step_metadata_path: str | None = Field(
+        default=None, description="Path to the persisted next-step guidance file"
+    )
     timestamp: datetime = Field(
         default_factory=datetime.now, description="When the tasks were generated"
     )
@@ -240,3 +360,4 @@ class ConstitutionalGateResult(BaseModel):
     timestamp: datetime = Field(
         default_factory=datetime.now, description="When the gate was evaluated"
     )
+

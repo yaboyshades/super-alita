@@ -18,8 +18,27 @@ import click
 
 from .enhanced_sdd_framework import EnhancedSDDFramework
 from .models import PlanRequest, SpecifyRequest, TasksRequest
+from .session.factory import FeatureSessionFactory
 
 logger = logging.getLogger(__name__)
+
+
+def _derive_feature_id_from_path(path: str) -> str:
+    """Derive feature ID from a specification or plan path."""
+    from pathlib import Path
+
+    path_obj = Path(path)
+    # Look for pattern like specs/020-feature-name/feature-spec.md
+    if "specs" in path_obj.parts:
+        specs_index = path_obj.parts.index("specs")
+        if specs_index + 1 < len(path_obj.parts):
+            feature_dir = path_obj.parts[specs_index + 1]
+            # Extract feature ID (first 3 digits)
+            if len(feature_dir) >= 3 and feature_dir[:3].isdigit():
+                return feature_dir[:3]
+
+    # Fallback to default
+    return "001"
 
 
 class CLIFormatter:
@@ -106,8 +125,10 @@ def cli(ctx, workspace, verbose):
     # Initialize framework
     try:
         framework = EnhancedSDDFramework(workspace_root=Path(workspace))
+        session_factory = FeatureSessionFactory(workspace_root=Path(workspace))
         ctx.ensure_object(dict)
         ctx.obj["framework"] = framework
+        ctx.obj["session_factory"] = session_factory
         ctx.obj["workspace"] = workspace
     except Exception as e:
         click.echo(f"Error initializing framework: {e}", err=True)
@@ -410,7 +431,7 @@ def clear_cache(ctx):
 @click.pass_context
 def specify(ctx, description, context, output_format):
     """Create a new feature specification with enhanced analysis."""
-    framework = ctx.obj["framework"]
+    session_factory = ctx.obj["session_factory"]
 
     try:
         # Coerce --context (string) into a dict expected by the model
@@ -428,32 +449,36 @@ def specify(ctx, description, context, output_format):
         request = SpecifyRequest(user_input=description, context=ctx_dict)
 
         click.echo("Creating feature specification with enhanced analysis...")
-        # Framework methods are async; run them from sync Click command
-        result = asyncio.run(framework.specify(request))
+        # Create session and run specify phase
+        session = session_factory.for_description(description, ctx_dict)
+        result = asyncio.run(session.specify(request))
 
         if output_format == "json":
-            click.echo(result.model_dump_json(indent=2))
+            click.echo(json.dumps(result.to_dict(), indent=2))
         else:
             click.echo(f"Feature ID: {result.feature_id}")
-            click.echo(f"Feature Name: {result.feature_name}")
-            click.echo(f"Specification File: {result.spec_file_path}")
-
-            # Show enhanced analysis
-            if result.analysis_results.get("mangle_enhanced"):
-                click.echo("\nEnhanced Analysis:")
-                existing = result.analysis_results.get("existing_solutions", {})
-                click.echo(
-                    f"  Existing Functions: {existing.get('existing_functions', 0)}"
-                )
-
-                similar = result.analysis_results.get("similar_features", {})
-                click.echo(f"  Existing Specs: {similar.get('existing_specs', 0)}")
+            click.echo(f"Specification File: {result.artifact_path}")
+            if result.metadata_path:
+                click.echo(f"Next-Step Metadata: {result.metadata_path}")
+            if result.guidance:
+                click.echo("\nNext Steps Guidance:")
+                click.echo(f"  Clarifications: {len(result.guidance.clarifications)}")
+                click.echo(f"  Artefacts: {len(result.guidance.artefacts)}")
+                click.echo(f"  Commands: {len(result.guidance.commands)}")
 
             # Show constitutional validation
-            validation = result.constitutional_validation
-            click.echo(f"\nConstitutional Compliance: {validation.overall_score:.2f}")
-            if validation.violations:
-                click.echo(f"Violations: {len(validation.violations)}")
+            click.echo(
+                f"\nConstitutional Compliance: {result.overall_compliance_score:.2f}"
+            )
+            if not result.compliance_threshold_met:
+                click.echo("  ⚠️  Compliance threshold not met")
+
+            if result.next_steps:
+                click.echo("\nNext Steps:")
+                for step in result.next_steps[:3]:
+                    click.echo(f"  - {step}")
+                if len(result.next_steps) > 3:
+                    click.echo(f"  ... and {len(result.next_steps) - 3} more")
 
     except Exception as e:  # noqa: BLE001
         click.echo(f"Error creating specification: {e}", err=True)
@@ -461,7 +486,7 @@ def specify(ctx, description, context, output_format):
 
 
 @cli.command()
-@click.argument("feature_id")
+@click.argument("specification_path")
 @click.option(
     "--format",
     "output_format",
@@ -470,33 +495,45 @@ def specify(ctx, description, context, output_format):
     help="Output format",
 )
 @click.pass_context
-def plan(ctx, feature_id, output_format):
+def plan(ctx, specification_path, output_format):
     """Generate implementation plan with enhanced dependency analysis."""
-    framework = ctx.obj["framework"]
+    session_factory = ctx.obj["session_factory"]
 
     try:
-        request = PlanRequest(feature_id=feature_id)
+        request = PlanRequest(specification_path=specification_path)
 
         click.echo("Generating implementation plan with enhanced analysis...")
-        result = asyncio.run(framework.plan(request))
+        # Load existing session by deriving feature ID from spec path
+        feature_id = _derive_feature_id_from_path(specification_path)
+        session = session_factory.for_feature_id(feature_id)
+        result = asyncio.run(session.plan(request))
 
         if output_format == "json":
-            click.echo(result.model_dump_json(indent=2))
+            click.echo(json.dumps(result.to_dict(), indent=2))
         else:
             click.echo(f"Feature ID: {result.feature_id}")
-            click.echo(f"Implementation Plan: {result.implementation_plan}")
+            click.echo(f"Implementation Plan: {result.artifact_path}")
+            if result.metadata_path:
+                click.echo(f"Next-Step Metadata: {result.metadata_path}")
+            if result.guidance:
+                click.echo("\nNext Steps Guidance:")
+                click.echo(f"  Clarifications: {len(result.guidance.clarifications)}")
+                click.echo(f"  Artefacts: {len(result.guidance.artefacts)}")
+                click.echo(f"  Commands: {len(result.guidance.commands)}")
 
-            # Show enhanced analysis
-            if result.analysis_results.get("mangle_enhanced"):
-                click.echo("\nEnhanced Analysis:")
-                deps = result.analysis_results.get("dependency_analysis", {})
-                click.echo(f"  Dependencies: {deps.get('total_dependencies', 0)}")
+            # Show constitutional validation
+            click.echo(
+                f"\nConstitutional Compliance: {result.overall_compliance_score:.2f}"
+            )
+            if not result.compliance_threshold_met:
+                click.echo("  ⚠️  Compliance threshold not met")
 
-                reuse = result.analysis_results.get("reuse_opportunities", [])
-                if reuse:
-                    click.echo(f"  Reuse Opportunities: {len(reuse)}")
-                    for op in reuse[:3]:
-                        click.echo(f"    - {op}")
+            if result.next_steps:
+                click.echo("\nNext Steps:")
+                for step in result.next_steps[:3]:
+                    click.echo(f"  - {step}")
+                if len(result.next_steps) > 3:
+                    click.echo(f"  ... and {len(result.next_steps) - 3} more")
 
     except Exception as e:  # noqa: BLE001
         click.echo(f"Error generating plan: {e}", err=True)
@@ -504,7 +541,7 @@ def plan(ctx, feature_id, output_format):
 
 
 @cli.command()
-@click.argument("feature_id")
+@click.argument("plan_path")
 @click.option(
     "--format",
     "output_format",
@@ -513,31 +550,45 @@ def plan(ctx, feature_id, output_format):
     help="Output format",
 )
 @click.pass_context
-def tasks(ctx, feature_id, output_format):
+def tasks(ctx, plan_path, output_format):
     """Generate implementation tasks with enhanced prioritization."""
-    framework = ctx.obj["framework"]
+    session_factory = ctx.obj["session_factory"]
 
     try:
-        request = TasksRequest(feature_id=feature_id)
+        request = TasksRequest(plan_path=plan_path)
 
         click.echo("Generating implementation tasks with enhanced prioritization...")
-        result = asyncio.run(framework.tasks(request))
+        # Load existing session by deriving feature ID from plan path
+        feature_id = _derive_feature_id_from_path(plan_path)
+        session = session_factory.for_feature_id(feature_id)
+        result = asyncio.run(session.tasks(request))
 
         if output_format == "json":
-            click.echo(result.model_dump_json(indent=2))
+            click.echo(json.dumps(result.to_dict(), indent=2))
         else:
             click.echo(f"Feature ID: {result.feature_id}")
-            click.echo(f"Generated {len(result.tasks)} tasks")
+            click.echo(f"Generated {len(result.next_steps)} tasks")
+            if result.metadata_path:
+                click.echo(f"Next-Step Metadata: {result.metadata_path}")
+            if result.guidance:
+                click.echo("\nNext Steps Guidance:")
+                click.echo(f"  Clarifications: {len(result.guidance.clarifications)}")
+                click.echo(f"  Artefacts: {len(result.guidance.artefacts)}")
+                click.echo(f"  Commands: {len(result.guidance.commands)}")
 
-            for i, task in enumerate(result.tasks[:5], 1):  # Show first 5 tasks
-                click.echo(f"\n{i}. {task.title}")
-                click.echo(f"   Priority: {task.priority}")
-                click.echo(f"   Estimated: {task.estimated_hours}h")
-                if hasattr(task, "description"):
-                    click.echo(f"   Description: {task.description}")
+            # Show constitutional validation
+            click.echo(
+                f"\nConstitutional Compliance: {result.overall_compliance_score:.2f}"
+            )
+            if not result.compliance_threshold_met:
+                click.echo("  ⚠️  Compliance threshold not met")
 
-            if len(result.tasks) > 5:
-                click.echo(f"\n... and {len(result.tasks) - 5} more tasks")
+            if result.next_steps:
+                click.echo("\nNext Steps:")
+                for step in result.next_steps[:3]:
+                    click.echo(f"  - {step}")
+                if len(result.next_steps) > 3:
+                    click.echo(f"  ... and {len(result.next_steps) - 3} more")
 
     except Exception as e:  # noqa: BLE001
         click.echo(f"Error generating tasks: {e}", err=True)

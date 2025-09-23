@@ -29,6 +29,15 @@ from typing import Any, cast
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from src.core.settings import (
+    CANONICAL_EVENTS_ENABLED,
+    RUN_LEDGER_ENABLED,
+    RUN_LEDGER_PATH,
+)
+from src.orchestration.observability import get_observer
+from src.orchestration.run_ledger import RunLedgerWriter
+from src.reug_runtime.canonical_event_adapter import canonicalize_legacy_stream
+
 from .config import SETTINGS
 from .message_mw import MessageContext, apply_all
 
@@ -433,6 +442,11 @@ async def execute_turn(
         answer payload. Consumers forward these as SSE frames or use them for
         observability pipelines.
     """
+    legacy_log: list[dict[str, Any]] = []
+    ledger_writer = None
+    if RUN_LEDGER_ENABLED:
+        ledger_writer = RunLedgerWriter(RUN_LEDGER_PATH, enable_shadow=not CANONICAL_EVENTS_ENABLED)
+
     correlation_id = f"{session_id}-{int(time.time()*1000)}"
 
     # Optional message optimization/amplification
@@ -465,6 +479,7 @@ async def execute_turn(
         "session_id": session_id,
     }
     await event_bus.emit(start_event)
+    legacy_log.append(start_event)
     yield start_event
 
     # Build system prompt with optional output contract
@@ -539,6 +554,7 @@ async def execute_turn(
 
         # Run reasoning step and get results
         async for event in orchestrator._reasoning_step(messages, tool_schemas):
+            legacy_log.append(event)
             yield event
         llm_response_content, tool_calls_raw = orchestrator._last_reasoning_result
         tool_calls: list[Any] = list(tool_calls_raw)
@@ -559,6 +575,7 @@ async def execute_turn(
 
         # Run acting step and get results
         async for event in orchestrator._acting_step(tool_calls):
+            legacy_log.append(event)
             yield event
         tool_messages = orchestrator._last_acting_result
         messages.extend(tool_messages)
@@ -698,7 +715,35 @@ async def execute_turn(
         "session_id": session_id,
     }
     await event_bus.emit(task_succeeded_event)
+    legacy_log.append(task_succeeded_event)
     yield task_succeeded_event
+
+    await _emit_canonical_shadow(legacy_log, event_bus, correlation_id, ledger_writer)
+
+
+async def _emit_canonical_shadow(
+    legacy_events: list[dict[str, Any]],
+    event_bus: Any,
+    run_id: str,
+    ledger_writer: RunLedgerWriter | None,
+) -> None:
+    if not (CANONICAL_EVENTS_ENABLED or ledger_writer):
+        return
+    observer = get_observer()
+    try:
+        for canonical in canonicalize_legacy_stream(run_id, legacy_events):
+            payload = canonical.to_dict()
+            if CANONICAL_EVENTS_ENABLED:
+                await event_bus.emit({"type": "CanonicalEventShadow", "event": payload})
+            if ledger_writer is not None:
+                ledger_writer.append(canonical)
+            if observer is not None:
+                try:
+                    observer.record_canonical_event(payload)
+                except Exception:
+                    pass
+    except Exception:  # pragma: no cover - shadow path best-effort
+        pass
 
 
 async def sse_transformer(
@@ -765,7 +810,7 @@ async def sse_transformer(
             t2.cancel()
 
 
-@router.post("/chat/stream")
+@router.post("/chat/stream", response_model=None)
 async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
     # Rate limit pre-check (optional)
     try:
@@ -827,7 +872,7 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
     )
 
 
-@router.get("/chat/stream")
+@router.get("/chat/stream", response_model=None)
 async def chat_stream_get(request: Request) -> StreamingResponse:
     """
     GET variant to support browsers using EventSource.

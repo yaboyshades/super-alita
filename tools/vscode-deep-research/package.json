@@ -1,0 +1,41 @@
+{
+  "name": "deep-research",
+  "displayName": "Deep Research (CMA v5.3)",
+  "version": "0.1.0",
+  "publisher": "super-alita",
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Deep Research",
+      "properties": {
+        "deepResearch.searx.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "Base URL of the SearxNG instance"
+        }
+      }
+    },
+    "chatParticipants": [
+      {
+        "id": "deep-research",
+        "fullName": "Deep Research",
+        "description": "CMA v5.3-aligned research agent with SearxNG grounding",
+        "isSticky": true
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5.4.0"
+  }
+}

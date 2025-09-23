@@ -393,7 +393,7 @@ def get_llm_client(model_name: str | None) -> LLMClient:
             return SuperAlitaFallbackClient()
     if m.startswith("gpt") or m.startswith("openai"):
         return OpenAIClient(model_name)
-    if m.startswith("claude"):
+    if m.startswith("claude") or m == "claude-3-sonnet":
         return AnthropicClient(model_name)
     if m in {"super-alita", "super_alita", "alita"}:
         return SuperAlitaFallbackClient()

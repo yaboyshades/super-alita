@@ -1,0 +1,90 @@
+version: 1
+workspace:
+  sources:
+    - type: repository
+      include:
+        - "**/*"
+      exclude:
+        - "**/node_modules/**"
+        - "**/.venv/**"
+        - "**/venv/**"
+        - "**/out/**"
+        - "**/dist/**"
+  preferences:
+    repositoryFirst: true
+    allowInternet: true
+    webSearchFallback: true
+  exemplars:
+    - path: "src/core/reliability.py"
+      rationale: "High-reliability async retry orchestration pattern with precise typing."
+    - path: "src/sdd/enhanced_sdd_framework.py"
+      rationale: "Reference implementation of the SDD pipeline using composable services and validators."
+    - path: "tests/test_orchestrator_basic.py"
+      rationale: "Pytest-based system exercise demonstrating fixture layering and coverage expectations."
+  goals:
+    - name: "SDD Workflow"
+      steps:
+        - "Use /sdd/specify → /sdd/plan → /sdd/tasks → /sdd/validate"
+        - "Prefer repo code and docs before external"
+        - "Use runtime at ${ALITA_RUNTIME_HOST:-http://127.0.0.1:8080}"
+        - "Constitutional validation at each stage (threshold: 0.75)"
+        - "Leverage unified orchestrator for stage-based execution"
+    - name: "Unified Orchestration"
+      steps:
+        - "Use unified orchestrator for stage-based pipeline execution"
+        - "Event emission and observability across all workflow stages"
+        - "Integration with Enhanced Consensus for decision-making"
+        - "Run ledger for audit trails and replay capabilities"
+    - name: "Constitutional Compliance"
+      steps:
+        - "All development must adhere to Constitutional Framework"
+        - "Six core articles: Library-First, Test-First, Simplicity, Integration, Clarity, Counterfactual"
+        - "Constitutional compliance monitoring and scoring required"
+        - "Quality gates at specification, planning, implementation, and integration phases"
+
+  unified_orchestrator:
+    enabled: true
+    stages:
+      - name: "sdd_specify_stage"
+        description: "Constitutional specification generation with existing solution research"
+        validation: true
+        constitutional_threshold: 0.75
+      - name: "sdd_plan_stage"
+        description: "Plan creation with constitutional compliance validation"
+        validation: true
+        constitutional_threshold: 0.75
+      - name: "sdd_tasks_stage"
+        description: "Task breakdown with simplicity and testability gates"
+        validation: true
+        constitutional_threshold: 0.75
+      - name: "sdd_validate_stage"
+        description: "End-to-end constitutional compliance verification"
+        validation: true
+        constitutional_threshold: 0.75
+    observability:
+      enabled: true
+      structured_logging: true
+      metrics_collection: true
+      event_emission: true
+    run_ledger:
+      enabled: true
+      audit_trails: true
+      replay_capabilities: true
+
+  sdd_workflow:
+    endpoints:
+      - "POST /sdd/specify"
+      - "POST /sdd/plan"
+      - "POST /sdd/tasks"
+      - "POST /sdd/validate"
+    templates:
+      - "templates/sdd/spec-template.md"
+      - "templates/sdd/plan-template.md"
+      - "templates/sdd/tasks-template.md"
+    memory: "memory/sdd/constitutional_sdd_framework.md"
+    validators: "src/sdd/validators.py"
+    constitutional_gates:
+      - "Specification_Gate"
+      - "Planning_Gate"
+      - "Implementation_Gate"
+      - "Integration_Gate"

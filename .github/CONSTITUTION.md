@@ -190,6 +190,72 @@ def calculate_constitutional_score(artifact: Dict[str, Any]) -> float:
     return total_score
 ```
 
+---
+
+#### Article XXI: Calculus Gate (Mathematical Quality Assurance)
+**Principle**: All critical code paths must maintain documented mathematical bounds on performance derivatives and complexity evolution.
+
+**Mathematical Requirements**:
+- **Slope Limits**: First derivative |df/dn| must not exceed documented thresholds (prevents constant-time violations)
+- **Curvature Bounds**: Second derivative |d²f/dn²| changes indicate complexity class transitions (O(n) → O(n log n))
+- **Lipschitz Constants**: Sensitivity bounds |f(n₁) - f(n₂)| / |n₁ - n₂| must remain stable across commits
+- **Monotonicity Preservation**: Performance should not regress without explicit justification
+
+**Implementation Guidelines**:
+- Runtime curve sampling across exponentially spaced input sizes
+- Cubic spline interpolation for smooth derivative analysis
+- Finite difference estimation with accuracy validation
+- Performance certificates stored as versioned artifacts
+
+**Integration Requirements**:
+- **Mutation Gate Extension**: Derivative checks on surviving mutants
+- **CFG Hash Correlation**: Performance changes with unchanged control flow flagged
+- **SyGuS Validation**: Complexity analysis on expression simplifications
+- **CI/CD Integration**: Automated derivative analysis in build pipeline
+
+**Quality Gates**:
+```python
+# Performance bounds enforcement
+assert abs(first_derivative) <= slope_limit, "Constant-time guarantee violated"
+assert abs(second_derivative) <= curvature_limit, "Complexity class change detected"
+assert lipschitz_constant <= sensitivity_limit, "Performance stability degraded"
+```
+
+**Violation Response**:
+- **Minor Violations** (≤10% threshold exceeded): Warning + documentation requirement
+- **Major Violations** (>10% threshold exceeded): Build failure + mandatory review
+- **Stability Loss** (Lipschitz constant increase): Performance regression investigation
+- **Complexity Transitions**: Architectural review for algorithmic changes
+
+**Calculus Inspector Integration**:
+- MCP server endpoints for real-time derivative analysis
+- Copilot Chat integration for performance curve visualization
+- Historical trend analysis and regression detection
+- Mathematical proofs of performance guarantees
+
+**Constitutional Scoring Update**:
+```python
+def calculate_constitutional_score(artifact: Dict[str, Any]) -> float:
+    """Calculate constitutional compliance score including calculus gate"""
+
+    scores = {
+        'library_first': assess_library_usage(artifact),
+        'test_first': assess_test_coverage(artifact),
+        'simplicity_gate': assess_complexity_metrics(artifact),
+        'integration_testing': assess_integration_coverage(artifact),
+        'clarity_unambiguity': assess_clarity_metrics(artifact),
+        'counterfactual_justification': assess_decision_documentation(artifact),
+        'calculus_gate': assess_performance_derivatives(artifact)  # NEW
+    }
+
+    # Weighted average with equal weights for all articles
+    total_score = sum(scores.values()) / len(scores)
+
+    return total_score
+```
+
+---
+
 ### Implementation Checklist
 
 #### Phase 1: Foundation (Week 1-2)

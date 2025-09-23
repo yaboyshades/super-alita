@@ -276,6 +276,7 @@ OLLAMA_MODEL=llama3.1:8b
 LOCAL_MODEL_PATH=models/Meta-Llama-3-8B-Instruct
 ```
 
+
 Force specific providers explicitly:
 
 ```dotenv
@@ -288,7 +289,17 @@ OLLAMA_MODEL=llama3.1:8b
 
 # Force direct HF model load
 LLM_MODEL=hf:meta-llama/Meta-Llama-3-8B-Instruct
+
+# Enable Claude Sonnet 3.5 (Anthropic)
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+LLM_MODEL=claude-3-sonnet
 ```
+
+### Claude Sonnet 3.5 Quick Start
+
+1. Get your Anthropic API key and set `ANTHROPIC_API_KEY` in your `.env`.
+2. Set `LLM_MODEL=claude-3-sonnet` to use Claude Sonnet 3.5 for all clients.
+3. Claude Sonnet 3.5 will now be available in all model selection UIs and API calls.
 
 ### Ollama Quick Start
 

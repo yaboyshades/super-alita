@@ -1,0 +1,26 @@
+feature_id: 049
+generated_at: 2025-09-17 20:05:21.702126
+clarifications: []
+artefacts: []
+commands:
+- action: Run /plan 049 once clarifications are resolved
+  owner: unassigned
+  linked_artifact: specs/049/spec.md
+  gate: test_first
+  status: pending
+  rationale: Planning must wait until specification is unambiguous
+  source: command
+- action: Invoke /tasks 049 after the plan passes constitutional checks
+  owner: unassigned
+  linked_artifact: specs/049/spec.md
+  gate: integration_first
+  status: pending
+  rationale: Tasks phase depends on validated plan
+  source: command
+constitutional_alignment:
+- gate: test_first
+  summary: 1 item(s) pending to satisfy Article II - Test-First Development.
+  evidence: specs\049-test-constitutional-feature\next_steps.yaml#test_first
+- gate: integration_first
+  summary: 1 item(s) pending to satisfy Article IV - Integration-First Testing.
+  evidence: specs\049-test-constitutional-feature\next_steps.yaml#integration_first

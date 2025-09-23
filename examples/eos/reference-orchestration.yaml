@@ -1,0 +1,252 @@
+eos_version: "0.9"
+meta:
+  run_id: "2025-09-22T00-00-01Z"
+  owner: "team-eupusf"
+  provenance: ["doc://E-UPUSF-v1.0", "policy://constitution-3.2"]
+  reproducibility: 
+    seed: 1337
+    cache_mode: "warm"
+    container: "ghcr.io/org/eos:0.9"
+
+problem:
+  title: "Context-adaptive planner for Super Alita agents"
+  statement: >
+    Build a planner that selects problem-solving methods contextually, integrates
+    LADDER reasoning, and routes to experts under compute budget constraints.
+  objectives:
+    - "Reduce time-to-insight by 30% vs. baseline"
+    - "Increase solution breadth (≥5 credible alternatives) in complex cases"
+    - "Maintain governance compliance score ≥ 0.95"
+  constraints:
+    - "No PII leakage"
+    - "Max GPU-hours per run: 3.0"
+    - "Max wall-clock per cycle: 20 minutes"
+  stakeholders: ["research", "platform", "safety", "ops"]
+  risk_tolerance: 
+    technical: "medium"
+    safety: "low"
+    business: "medium"
+
+context:
+  cynefin_prior:
+    simple: 0.10
+    complicated: 0.35
+    complex: 0.45
+    chaotic: 0.10
+  domain_hints: ["AI-planning", "multi-agent", "tool-orchestration"]
+  uncertainty_thresholds:
+    entropy_promote_lift: 0.9
+    chaotic_emergency: 0.4
+
+resources:
+  budgets:
+    compute_gh: 3.0          # GPU hours
+    cpu_core_min: 8
+    memory_gb: 32
+  time_limits:
+    per_state_minutes: 
+      Observe: 5
+      Analyze: 7
+      Synthesize: 6
+      Implement: 6
+      Evaluate: 3
+  data_access:
+    allow_external_web: false
+    graph_endpoint: "bolt://oak-kg.internal:7687"
+  hil_checkpoints:
+    - state: "Synthesize"
+      rationale_required: true
+      approvers: ["safety", "platform"]
+
+methods_registry:
+  - id: "POLYA"
+    states: ["Observe","Analyze","Synthesize","Implement","Evaluate"]
+    entry_criteria: 
+      max_complexity: "simple"
+      max_entropy: 0.6
+    operators: ["Decompose","Synthesize","Descend"]
+    artifacts_out: ["problem_formulation","candidate_solutions","test_plan"]
+  - id: "DMAIC"
+    states: ["Analyze","Implement","Evaluate"]
+    entry_criteria: 
+      min_complicated: 0.3
+    operators: ["Decompose","Descend"]
+    artifacts_out: ["measure_spec","improvement_plan","control_chart"]
+  - id: "TRIZ"
+    states: ["Analyze","Synthesize"]
+    entry_criteria: 
+      min_complicated: 0.3
+      contradictions_present: true
+    operators: ["Decompose","Synthesize"]
+    artifacts_out: ["contradiction_matrix","inventive_principles_map"]
+  - id: "SYSTEMS"
+    states: ["Observe","Analyze"]
+    entry_criteria: 
+      min_complex: 0.3
+    operators: ["Lift","Decompose"]
+    artifacts_out: ["causal_loop_diagram","boundary_map"]
+  - id: "DESIGN"
+    states: ["Observe","Synthesize","Implement"]
+    entry_criteria: 
+      min_complex: 0.3
+    operators: ["Lift","Synthesize","Descend"]
+    artifacts_out: ["personas","journey_maps","prototype_plan"]
+  - id: "CYNEFIN_EMERGENCY"
+    states: ["Implement","Observe"]
+    entry_criteria: 
+      min_chaotic: 0.3
+    operators: ["Descend"]
+    artifacts_out: ["stabilization_actions","triage_report"]
+
+ladder:
+  enable_semantic_lifting: true
+  lifting_triggers:
+    - condition: "entropy(context) > entropy_promote_lift"
+    - condition: "evidence_score < 0.5 and state == 'Analyze'"
+  descent_triggers:
+    - condition: "sufficiency_score >= 0.7 or time_exceeded(Analyze)"
+  dimensional_axes: ["stakeholders","time_horizons","feedback_loops","spatial_scales","assumptions"]
+  max_lift_depth: 3
+
+experts:
+  - id: "kg_mapper"
+    kind: "tool"
+    inputs: ["raw_text","observations"]
+    outputs: ["graph_updates","boundary_map"]
+    cost: 
+      cpu: 1
+      gpu: 0
+      time_s: 20
+    risk: 
+      safety: 0.05
+      privacy: 0.1
+    quality_prior: 0.75
+    fit_hints: ["Observe","Analyze","SYSTEMS","Lift"]
+  - id: "triz_solver"
+    kind: "agent"
+    inputs: ["contradictions","function_requirements"]
+    outputs: ["inventive_principles_map","solution_patterns"]
+    cost: 
+      cpu: 2
+      gpu: 0
+      time_s: 45
+    risk: 
+      safety: 0.1
+      privacy: 0.05
+    quality_prior: 0.7
+    fit_hints: ["Analyze","TRIZ"]
+  - id: "dmaic_stat"
+    kind: "tool"
+    inputs: ["dataset_specs","metrics"]
+    outputs: ["measure_spec","control_chart"]
+    cost: 
+      cpu: 4
+      gpu: 0
+      time_s: 60
+    risk: 
+      safety: 0.05
+      privacy: 0.2
+    quality_prior: 0.8
+    fit_hints: ["Analyze","Evaluate","DMAIC"]
+  - id: "diverge_converge"
+    kind: "agent"
+    inputs: ["requirements","constraints","principles_map"]
+    outputs: ["candidate_solutions","ranked_options"]
+    cost: 
+      cpu: 3
+      gpu: 1
+      time_s: 120
+    risk: 
+      safety: 0.15
+      privacy: 0.1
+    quality_prior: 0.78
+    fit_hints: ["Synthesize","DESIGN","TRIZ"]
+
+routing:
+  scoring:
+    weights: 
+      fit: 0.4
+      expected_utility: 0.3
+      cost: 0.2
+      risk: 0.1
+    top_k: 3
+    exploration_policy: 
+      type: "ucb1"
+      c: 1.2
+      epsilon: 0.05
+  budgets:
+    reserve_fraction: 0.2       # hold back 20% for late-stage surprises
+  gating_rules:
+    - if: "risk.safety > 0.2"
+      then: "require_hil_approval"
+    - if: "time_remaining < 5m"
+      then: "force_low_cost_only"
+
+pipeline:
+  states:
+    - name: "Observe"
+      timebox_min: 3
+      operators: ["Lift"]
+      methods_candidates: ["SYSTEMS","DESIGN","POLYA"]
+      entry_guard: "true"
+      exit_guard: "evidence_score >= 0.5 or time_exceeded(Observe)"
+    - name: "Analyze"
+      timebox_min: 7
+      operators: ["Decompose"]
+      methods_candidates: ["DMAIC","TRIZ","POLYA"]
+      entry_guard: "not chaotic_mode"
+      exit_guard: "contradiction_debt <= 0.3 or time_exceeded(Analyze)"
+    - name: "Synthesize"
+      timebox_min: 6
+      operators: ["Synthesize"]
+      methods_candidates: ["DESIGN","TRIZ","POLYA"]
+      hil_required: true
+      exit_guard: "breadth >= 5 and quality >= 0.7"
+    - name: "Implement"
+      timebox_min: 6
+      operators: ["Descend"]
+      methods_candidates: ["DMAIC","DESIGN","CYNEFIN_EMERGENCY"]
+      exit_guard: "rollout_plan_ready == true"
+    - name: "Evaluate"
+      timebox_min: 3
+      operators: []
+      methods_candidates: ["DMAIC","POLYA"]
+      exit_guard: "success_kpis >= targets or retries_exhausted"
+
+evaluation:
+  metrics:
+    - id: "time_to_insight"
+      target: 
+        max_minutes: 20
+    - id: "breadth"
+      target: 
+        min_alternatives: 5
+    - id: "causal_depth"
+      target: 
+        min_layers: 2
+    - id: "governance_score"
+      target: 
+        min: 0.95
+  stopping:
+    - condition: "all_targets_met"
+    - condition: "budget_exhausted and marginal_gain < 0.02"
+
+governance:
+  rulesets: ["rules://constitution-3.2", "rules://privacy-1.4"]
+  enforcement:
+    pre: ["lint:eos_schema","lint:policy_tags"]
+    mid: ["scan:pii","scan:safety"]
+    post: ["audit:traceability","audit:artifact_integrity"]
+  exceptions:
+    allowlist_paths: ["tests/fixtures/**"]
+    expiry_days: 14
+
+telemetry:
+  trace:
+    fields: ["run_id","state","method_id","expert_id","operator","duration_ms","status","error_type"]
+  logs:
+    redact: ["pii.email","pii.person_name"]
+    payload_cap_bytes: 5120
+  dashboards:
+    - "grafana://eos/state-latency"
+    - "grafana://eos/method-success"

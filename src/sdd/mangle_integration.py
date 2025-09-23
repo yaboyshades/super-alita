@@ -47,8 +47,7 @@ class MangleFactGenerator:
         self._generated_facts: set[str] = set()
 
     def generate_all_facts(self) -> str:
-        """
-        Generate all Mangle facts from specs, code, and constitution.
+        """Generate all Mangle facts from specs, code, and constitution.
 
         Returns:
             String containing all generated Mangle facts
@@ -84,6 +83,12 @@ class MangleFactGenerator:
         result = "\n".join(all_facts)
         logger.info(f"Generated {len(self._generated_facts)} unique facts")
         return result
+
+
+    def generate_facts(self) -> list[str]:
+        """Return unique fact strings for compatibility with MangleBridge."""
+        all_facts = self.generate_all_facts()
+        return [line for line in all_facts.splitlines() if line and not line.startswith('//')]
 
     def generate_spec_facts(self) -> str:
         """
@@ -516,7 +521,7 @@ class MangleFactGenerator:
             fact: The fact string to add
 
         Returns:
-            The fact string if it's new, empty string if duplicate
+            The fact string if it is new, empty string if duplicate
         """
         if fact not in self._generated_facts:
             self._generated_facts.add(fact)

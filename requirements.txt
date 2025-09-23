@@ -48,7 +48,7 @@ websockets>=11.0
 # LLM integrations
 google-generativeai>=0.5.0
 
-# Utilities
+# Utilities `njsonschema>=4.19.0 
 requests>=2.31.0
 
 # ACP server and search tooling

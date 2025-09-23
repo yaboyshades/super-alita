@@ -1,0 +1,211 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🎯 Debug Super Alita Main",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/main.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG",
+        "SUPER_ALITA_MODE": "shadow",
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "args": [],
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "🌐 Debug FastAPI App",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app:app", "--reload", "--port", "8080", "--log-level", "debug"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG",
+        "ALITA_RUNTIME_HOST": "http://127.0.0.1:8080"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "📝 Debug SDD CLI",
+      "type": "python",
+      "request": "launch",
+      "module": "src.sdd.sdd_cli",
+      "args": ["specify", "test-feature"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "✅ Debug SDD Validation",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/validate_sdd_epic.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "⚖️ Debug Constitutional Validation",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/unified_sdd_mangle.py",
+      "args": [
+        "--repo",
+        ".",
+        "--spec",
+        ".spec",
+        "--db",
+        ".ai/facts.sqlite",
+        "--report",
+        ".ai/report.json",
+        "--advice",
+        ".ai/advice.json"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "🎼 Debug Unified Orchestrator",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/demo_unified_orchestrator.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "🤖 Debug Agent Demo",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/complete_agent_demo.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "🚀 Debug MCP Server",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/mcp_server.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG",
+        "MCP_PORT": "3000"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "🧪 Debug Test Suite",
+      "type": "python",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-v", "-s", "${workspaceFolder}/tests/"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "🔍 Debug Current File",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG",
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "🧬 Debug Mangle Integration",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/demo_mangle_integration.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG",
+        "MANGLE_DB_PATH": ".cache/mangle/mangle.db"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    },
+    {
+      "name": "🔬 Debug Code Reasoning",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/unified_intelligence/code_reasoning/ingester.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "justMyCode": false,
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "🎯 Debug Full Stack",
+      "configurations": ["🌐 Debug FastAPI App", "🚀 Debug MCP Server"],
+      "stopAll": true
+    },
+    {
+      "name": "⚖️ Debug SDD Pipeline",
+      "configurations": [
+        "📝 Debug SDD CLI",
+        "✅ Debug SDD Validation",
+        "⚖️ Debug Constitutional Validation"
+      ],
+      "stopAll": true
+    }
+  ]
+}

@@ -2,8 +2,9 @@
 """Client and server classes corresponding to protobuf-defined services."""
 
 import grpc
-import super_alita_pb2 as super__alita__pb2
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
+
+from . import super_alita_pb2 as super__alita__pb2
 
 GRPC_GENERATED_VERSION = "1.74.0"
 GRPC_VERSION = grpc.__version__

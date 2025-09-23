@@ -1,3 +1,5 @@
+import pytest
+
 from src.orchestration.unified_orchestrator import (
     UnifiedOrchestrator,
     UnifiedRunConfig,
@@ -6,7 +8,7 @@ from src.orchestration.unified_orchestrator import (
 
 class DummyRegistry:
     def __init__(self):
-        self._tools = set()
+        self._tools = {"task_planner", "deepconf_consensus"}
 
     def knows(self, name: str) -> bool:  # minimal interface
         return name in self._tools
@@ -24,31 +26,23 @@ class DummyRegistry:
 
 
 class DummyBus:
-    async def emit(self, _):  # pragma: no cover - simple
+    async def emit(self, event):  # pragma: no cover - simple
         return None
 
 
-async def _collect(gen):
-    out = []
-    async for ev in gen:
-        out.append(ev)
-    return out
-
-
-def test_unified_basic_event_loop(event_loop):  # type: ignore
+@pytest.mark.asyncio
+async def test_unified_basic_event_loop():  # type: ignore
     reg = DummyRegistry()
-    # Register minimal tools
-    reg._tools.update({"task_planner", "deepconf_consensus"})
     orch = UnifiedOrchestrator(reg, DummyBus())
     cfg = UnifiedRunConfig.from_args(
         "Test prompt",
         {"enable_planning": True, "enable_consensus": True},
     )
-    events = event_loop.run_until_complete(_collect(orch.run_stream(cfg)))
-    # Ensure start and done events exist
-    kinds = {e.get("type") for e in events}
-    assert "UnifiedRunStarted" in kinds
-    assert "UnifiedRunCompleted" in kinds
-    # Validate aggregate consensus
-    done = [e for e in events if e.get("type") == "UnifiedRunCompleted"][0]
-    assert done["aggregate"].get("consensus_text")
+    events = [event async for event in orch.run_stream(cfg)]
+    kinds = [e.get("kind") for e in events]
+    assert kinds[0] == "RunStarted"
+    assert kinds[-1] == "RunTerminated"
+    terminated = events[-1]
+    assert terminated["data"]["success"] is True
+    assert terminated.get("constitutional_score") is not None
+    assert any(e.get("kind") == "StageStarted" for e in events)

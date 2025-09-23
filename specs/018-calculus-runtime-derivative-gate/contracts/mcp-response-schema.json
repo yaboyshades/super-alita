@@ -1,0 +1,220 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://super-alita.dev/schemas/calculus-gate/mcp-response.json",
+  "title": "Calculus Gate MCP Response",
+  "description": "MCP endpoint response for calculus gate analysis",
+  "type": "object",
+  "required": ["status", "timestamp", "function_name", "build_id"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["success", "error", "warning"],
+      "description": "Analysis status"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Response timestamp"
+    },
+    "function_name": {
+      "type": "string",
+      "description": "Target function name"
+    },
+    "build_id": {
+      "type": "string",
+      "description": "Build or commit identifier"
+    },
+    "analysis_summary": {
+      "type": "object",
+      "properties": {
+        "overall_grade": {
+          "type": "string",
+          "enum": ["A", "B", "F"]
+        },
+        "gates_passed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "gates_total": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 3
+        },
+        "critical_violations": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "gate_results": {
+      "type": "object",
+      "properties": {
+        "slope_gate": {
+          "$ref": "#/definitions/GateResult"
+        },
+        "curvature_gate": {
+          "$ref": "#/definitions/GateResult"
+        },
+        "lipschitz_gate": {
+          "$ref": "#/definitions/GateResult"
+        }
+      }
+    },
+    "performance_metrics": {
+      "type": "object",
+      "properties": {
+        "sample_count": {
+          "type": "integer",
+          "minimum": 3
+        },
+        "input_size_range": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[min_size, max_size]"
+        },
+        "runtime_range": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[min_time, max_time] in seconds"
+        },
+        "lipschitz_constant": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "trending": {
+      "type": "object",
+      "properties": {
+        "slope_trend": {
+          "type": "string",
+          "enum": ["improving", "stable", "degrading", "unknown"]
+        },
+        "performance_change": {
+          "type": "number",
+          "description": "Percentage change vs baseline"
+        },
+        "baseline_available": {
+          "type": "boolean"
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["optimization", "investigation", "monitoring"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "description": {
+            "type": "string"
+          },
+          "suggested_actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["type", "priority", "description"]
+      }
+    },
+    "certificate_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to full certificate artifact"
+    },
+    "error_details": {
+      "type": "object",
+      "properties": {
+        "error_code": {
+          "type": "string"
+        },
+        "error_message": {
+          "type": "string"
+        },
+        "recovery_suggestions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Present only when status is 'error'"
+    }
+  },
+  "definitions": {
+    "GateResult": {
+      "type": "object",
+      "required": ["passed", "threshold", "measured_value"],
+      "properties": {
+        "passed": {
+          "type": "boolean",
+          "description": "Whether this gate passed"
+        },
+        "threshold": {
+          "type": "number",
+          "description": "Configured threshold value"
+        },
+        "measured_value": {
+          "type": "number",
+          "description": "Actual measured value"
+        },
+        "violation_magnitude": {
+          "type": "number",
+          "description": "How much threshold was exceeded (if applicable)"
+        },
+        "confidence_interval": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[lower_bound, upper_bound] for measurement"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "error"
+          }
+        }
+      },
+      "then": {
+        "required": ["error_details"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["success", "warning"]
+          }
+        }
+      },
+      "then": {
+        "required": ["analysis_summary", "gate_results", "performance_metrics"]
+      }
+    }
+  ]
+}

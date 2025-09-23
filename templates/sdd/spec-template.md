@@ -170,6 +170,25 @@
 
 ---
 
+## Next Steps Guidance
+
+> **Constitutional directive:** resolve outstanding clarifications and collect evidence before invoking `/plan`.
+> Ensure every item ties back to the constitutional gates and keeps the specification scoped to the WHAT and WHY.
+
+### Outstanding Clarifications
+{next_step_outstanding_clarifications}
+
+### Required Artefacts & Evidence
+{next_step_required_artifacts}
+
+### Constitutional Gate Alignment
+{next_step_gate_alignment}
+
+### Command Checklist
+{next_step_command_checklist}
+
+---
+
 ## Additional Notes
 
 {additional_notes}
@@ -183,8 +202,3 @@
 | 1.0 | {created_date} | {author} | Initial specification |
 
 ---
-
-**Next Steps:**
-1. Review and refine this specification
-2. Validate all checklist items
-3. Proceed with `/plan` command when ready

@@ -1542,6 +1542,15 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         allow_credentials=True,
     )
 
+    # Telemetry middleware for unified intelligence layer
+    try:
+        from src.unified_intelligence.telemetry import TelemetryMiddleware
+
+        app.add_middleware(TelemetryMiddleware)  # type: ignore
+        print("✅ Telemetry middleware integrated")
+    except Exception as e:
+        print(f"⚠️  Telemetry middleware not loaded: {e}")
+
     # Health for Dockerfile/compose
     from reug_runtime.health import check_health
 
@@ -3508,14 +3517,15 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         # Register Security & Resilience components
         try:
             from src.security.integration import integrate_security_resilience
-            
+
             # Integrate security and resilience features
             security_middleware = integrate_security_resilience(app)
-            
+
             print("? DEBUG: Security & Resilience components integrated")
         except Exception as e:
             print(f"? DEBUG: Failed to integrate security & resilience: {e}")
             import traceback
+
             traceback.print_exc()
 
         # Emit startup events

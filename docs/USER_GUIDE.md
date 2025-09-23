@@ -75,6 +75,21 @@ Key management via CLI:
 - List: `python -m tools.alita_cli keys list --admin-key admin`
 
 Env:
+
+## Claude Sonnet 3.5 (Anthropic)
+
+To enable Claude Sonnet 3.5 for all clients:
+
+1. Get your Anthropic API key and set `ANTHROPIC_API_KEY` in your `.env`.
+2. Set `LLM_MODEL=claude-3-sonnet` to use Claude Sonnet 3.5 for all clients.
+3. Claude Sonnet 3.5 will now be available in all model selection UIs and API calls.
+
+Example `.env`:
+
+```dotenv
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+LLM_MODEL=claude-3-sonnet
+```
 - `ALITA_BASE_URL` (default `http://127.0.0.1:8080`)
 - `ALITA_API_KEY` (optional unless required by server)
 - `ALITA_API_HEADER` (default `Authorization`)

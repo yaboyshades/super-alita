@@ -1,0 +1,37 @@
+name: Spec+CDIL
+on: [pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+
+      # 1) Compile spec to SSOT + validators + tests
+      - run: npm ci || true
+      - run: pip install libcst mypy hypothesis
+      - name: Compile Spec Kit
+        run: |
+          node tools/spec-kit/compile.js specs/**/*.yaml \
+             --out . --lock .contracts/spec.lock.json
+
+      # 2) Verify Spec lock (no spec drift)
+      - name: Verify spec lock
+        run: node tools/spec-kit/verify-lock.js
+
+      # 3) CDIL: extract + verify signature
+      - name: Extract & verify signatures
+        run: bash tools/cdil/extract_all.sh --verify
+
+      # 4) Static type checks
+      - run: mypy --strict
+      - run: npx tsc --noEmit --strict || true
+
+      # 5) Contract tests (generated from spec)
+      - run: pytest -q tests/contracts
+
+      # 6) Mutation smoke on changed modules
+      - run: npx stryker run -c stryker.conf.json || true

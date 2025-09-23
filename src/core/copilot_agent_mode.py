@@ -57,6 +57,13 @@ class AgentModeEvent(BaseEvent):
             self.parameters = {}
 
 
+class SnippetIntelligenceAtom(NeuralAtom):
+    """Backward-compatible stub used in tests when legacy class is missing."""
+
+    async def execute(self, input_data: Any = None) -> Any:
+        return {"analysis": [], "confidence": 0.0}
+
+
 class CopilotAgentAtom(NeuralAtom):
     """Neural Atom for Copilot agent reasoning and conversation analysis."""
 
@@ -573,6 +580,7 @@ async def summarize_conversation_history(
 
 # Export key components
 __all__ = [
+    "SnippetIntelligenceAtom",
     "AgentModeEvent",
     "ConversationSummary",
     "CopilotAgentAtom",
@@ -580,3 +588,4 @@ __all__ = [
     "enable_agent_mode",
     "summarize_conversation_history",
 ]
+

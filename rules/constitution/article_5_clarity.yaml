@@ -1,0 +1,70 @@
+# Constitutional Rule: Clarity
+id: RULE-5.1
+version: "1.0.0"
+article: "Article V: Clarity"
+severity: WARNING
+category: "documentation"
+description: "All public interfaces must have clear documentation"
+
+checks:
+  - type: "docstring_coverage"
+    name: "public_function_documentation"
+    pattern: |
+      # Check for missing docstrings on public functions/classes
+      ^(class|def)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*[\(\:]
+    targets:
+      - "src/**/*.py"
+    exclude:
+      - "src/**/test_*.py"
+
+  - type: "naming_convention"
+    name: "descriptive_naming"
+    patterns:
+      - "^[a-z][a-z0-9_]*$"  # snake_case for functions/variables
+      - "^[A-Z][a-zA-Z0-9]*$"  # PascalCase for classes
+    targets:
+      - "src/**/*.py"
+
+  - type: "comment_quality"
+    name: "meaningful_comments"
+    anti_patterns:
+      - "# TODO"
+      - "# FIXME"
+      - "# HACK"
+    targets:
+      - "src/**/*.py"
+
+validation:
+  message: "'{name}' lacks clear documentation or uses unclear naming"
+  suggestion: "Add docstring explaining purpose, parameters, and return value"
+  auto_fix: false
+
+remediation:
+  docstring_template: |
+    '''
+    {brief_description}
+    
+    Args:
+        {parameters}
+    
+    Returns:
+        {return_description}
+    
+    Raises:
+        {exceptions}
+    '''
+
+quality_metrics:
+  min_docstring_length: 20
+  max_line_length: 88
+  naming_clarity_score: 0.8
+
+exceptions:
+  - pattern: "^_"
+    reason: "Private functions don't require detailed public documentation"
+  - path: "tests/"
+    reason: "Test functions are self-documenting"
+
+references:
+  - "Constitutional Article V: Clarity"
+  - "https://peps.python.org/pep-0257/"

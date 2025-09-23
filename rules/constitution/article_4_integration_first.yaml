@@ -1,0 +1,55 @@
+# Constitutional Rule: Integration-First
+id: RULE-4.1
+version: "1.0.0"
+article: "Article IV: Integration-First"
+severity: BLOCKER
+category: "integration"
+description: "All modules must have end-to-end integration tests"
+
+checks:
+  - type: "integration_test"
+    name: "module_integration_coverage"
+    pattern: |
+      # Check for integration test files
+      test_.*integration.*\.py$|integration.*test.*\.py$
+    targets:
+      - "tests/"
+
+  - type: "api_contract"
+    name: "api_contract_validation"
+    pattern: |
+      # Check for API contract definitions
+      @app\.route|@router\.|def\s+.*_handler\(|class.*Handler
+    targets:
+      - "src/**/*.py"
+
+validation:
+  message: "Module '{module_name}' lacks integration tests"
+  suggestion: "Create integration test: tests/integration/test_{module_name}_integration.py"
+  auto_fix: false
+
+remediation:
+  template: |
+    # tests/integration/test_{module_name}_integration.py
+    import pytest
+    from {module_path} import {module_name}
+    
+    @pytest.mark.integration
+    def test_{module_name}_end_to_end():
+        '''Test complete workflow of {module_name}.'''
+        # TODO: Implement end-to-end test
+        pass
+
+dependencies:
+  - integration_test_framework: "pytest"
+  - mock_framework: "unittest.mock"
+
+exceptions:
+  - path: "src/utils/"
+    reason: "Utility modules are tested through dependent module tests"
+  - type: "data_model"
+    reason: "Pure data models are tested through business logic tests"
+
+references:
+  - "Constitutional Article IV: Integration-First"
+  - "https://martinfowler.com/articles/practical-test-pyramid.html"

@@ -53,3 +53,63 @@ DecisionRegistryEntry example:
     - "alice"
   date: "2025-09-16"
 ```
+### NextStepItem
+
+Represents a single actionable follow-up entry surfaced during `/specify`.
+
+- action: string (imperative statement captured in the spec)
+- owner: string (assigned owner or `unassigned` if not yet claimed)
+- linked_artifact: string (path or identifier for the supporting evidence)
+- gate: enum [`library_first`, `test_first`, `simplicity`, `integration_first`, `clarity`, `counterfactual`]
+- status: enum [`pending`, `in_progress`, `complete`]
+- rationale: string (context for why the action matters)
+- source: enum [`clarification`, `artefact`, `command`, `reminder`]
+
+### NextStepGuidance
+
+Structured metadata persisted alongside the spec (e.g. `specs/<feature>/next_steps.yaml`).
+
+- generated_at: iso8601 timestamp
+- feature_id: string (matches spec directory prefix)
+- clarifications: list of NextStepItem with `source = clarification`
+- artefacts: list of NextStepItem with `source = artefact`
+- commands: list of NextStepItem with `source = command`
+- constitutional_alignment: list of objects
+  - gate: enum (same as `NextStepItem.gate`)
+  - summary: string describing how the next steps close the gate
+  - evidence: string (pointer to the artefact or decision log)
+
+Example YAML:
+
+```yaml
+feature_id: "020"
+generated_at: "2025-09-16T10:03:21Z"
+clarifications:
+  - action: "Confirm which authentication providers must be supported"
+    owner: "unassigned"
+    linked_artifact: "specs/020-constitutional-mastery-architect/spec.md#clarifications"
+    gate: clarity
+    status: pending
+    rationale: "Spec contains [NEEDS CLARIFICATION: auth method] marker"
+    source: clarification
+artefacts:
+  - action: "Create data model sketch for FeatureSpec entity"
+    owner: "platform-architecture"
+    linked_artifact: "specs/020-constitutional-mastery-architect/data-model.md"
+    gate: simplicity
+    status: pending
+    rationale: "Research file requested a data-model mapping"
+    source: artefact
+commands:
+  - action: "Run `/plan` once clarifications are resolved and evidence is linked"
+    owner: "feature-owner"
+    linked_artifact: "specs/020-constitutional-mastery-architect/spec.md"
+    gate: test_first
+    status: pending
+    rationale: "Test-first gate requires verified acceptance criteria"
+    source: command
+constitutional_alignment:
+  - gate: library_first
+    summary: "Clarify reuse opportunities before committing to new tooling"
+    evidence: "research.md#resolved-decisions"
+```

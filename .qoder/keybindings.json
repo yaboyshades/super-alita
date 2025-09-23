@@ -1,0 +1,397 @@
+[
+  // MCP Operations
+  {
+    "key": "ctrl+alt+m",
+    "command": "tasks.runTask",
+    "args": "alita:mcp:start"
+  },
+  {
+    "key": "ctrl+alt+shift+m",
+    "command": "tasks.runTask",
+    "args": "alita:mcp:stop"
+  },
+  {
+    "key": "ctrl+alt+t",
+    "command": "tasks.runTask",
+    "args": "alita:mcp:test"
+  },
+
+  // AI Assistant and Code Intelligence
+  {
+    "key": "ctrl+shift+alt+i",
+    "command": "ai.chat.open"
+  },
+  {
+    "key": "ctrl+shift+a",
+    "command": "ai.chat.openWithSelection",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+alt+space",
+    "command": "ai.suggestions.trigger",
+    "when": "editorTextFocus"
+  },
+
+  // Snippet Optimization Shortcuts
+  {
+    "key": "ctrl+shift+alt+s",
+    "command": "editor.insertSnippet",
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+shift+alt+o",
+    "command": "tasks.runTask",
+    "args": "snippet:optimize:current",
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+shift+alt+e",
+    "command": "tasks.runTask",
+    "args": "token:efficiency:report"
+  },
+
+  // Quick Python snippet insertion
+  {
+    "key": "ctrl+alt+d",
+    "command": "editor.insertSnippet",
+    "args": { "name": "def-" },
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+alt+c",
+    "command": "editor.insertSnippet",
+    "args": { "name": "class-" },
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+alt+f",
+    "command": "editor.insertSnippet",
+    "args": { "name": "for-" },
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+alt+try",
+    "command": "editor.insertSnippet",
+    "args": { "name": "try-" },
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+
+  // Spec Kit Integration - GitHub Spec Kit CLI
+  {
+    "key": "ctrl+s ctrl+c",
+    "command": "tasks.runTask",
+    "args": "spec-kit:check"
+  },
+  {
+    "key": "ctrl+s ctrl+s",
+    "command": "tasks.runTask",
+    "args": "spec-kit:create-feature"
+  },
+  {
+    "key": "ctrl+s ctrl+p",
+    "command": "tasks.runTask",
+    "args": "spec-kit:plan-feature"
+  },
+  {
+    "key": "ctrl+s ctrl+t",
+    "command": "tasks.runTask",
+    "args": "spec-kit:create-tasks"
+  },
+  {
+    "key": "ctrl+s ctrl+i",
+    "command": "tasks.runTask",
+    "args": "spec-kit:init"
+  },
+  {
+    "key": "ctrl+s ctrl+shift+c",
+    "command": "tasks.runTask",
+    "args": "spec-kit:constitution"
+  },
+
+  // Super Alita Specific Actions
+  {
+    "key": "ctrl+alt+p",
+    "command": "tasks.runTask",
+    "args": "sdd:new-plan"
+  },
+  {
+    "key": "ctrl+alt+shift+p",
+    "command": "tasks.runTask",
+    "args": "sdd:open-spec"
+  },
+
+  // Agent Development Quick Actions
+  {
+    "key": "ctrl+shift+alt+a",
+    "command": "tasks.runTask",
+    "args": "agents:dev"
+  },
+  {
+    "key": "ctrl+shift+alt+v",
+    "command": "tasks.runTask",
+    "args": "alita:validate"
+  },
+  {
+    "key": "ctrl+shift+alt+h",
+    "command": "tasks.runTask",
+    "args": "health:check"
+  },
+  {
+    "key": "ctrl+shift+alt+r",
+    "command": "tasks.runTask",
+    "args": "redis:start"
+  },
+
+  // Quality Pipeline
+  {
+    "key": "ctrl+shift+alt+q",
+    "command": "tasks.runTask",
+    "args": "quality:full"
+  },
+  {
+    "key": "ctrl+shift+alt+l",
+    "command": "tasks.runTask",
+    "args": "alita:lint"
+  },
+  {
+    "key": "ctrl+shift+alt+y",
+    "command": "tasks.runTask",
+    "args": "alita:type"
+  },
+
+  // Testing shortcuts
+  {
+    "key": "ctrl+shift+alt+t",
+    "command": "tasks.runTask",
+    "args": "alita:test"
+  },
+  {
+    "key": "ctrl+alt+shift+t",
+    "command": "tasks.runTask",
+    "args": "coverage"
+  },
+  {
+    "key": "f5",
+    "command": "debug.start",
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "shift+f5",
+    "command": "debug.stop"
+  },
+  {
+    "key": "f9",
+    "command": "debug.toggleBreakpoint",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "f10",
+    "command": "debug.stepOver"
+  },
+  {
+    "key": "f11",
+    "command": "debug.stepInto"
+  },
+  {
+    "key": "shift+f11",
+    "command": "debug.stepOut"
+  },
+
+  // Focus and Navigation
+  {
+    "key": "ctrl+shift+`",
+    "command": "terminal.focus"
+  },
+  {
+    "key": "ctrl+shift+e",
+    "command": "explorer.focus"
+  },
+  {
+    "key": "ctrl+shift+f",
+    "command": "search.focus"
+  },
+
+  // Quick File Navigation for Agent Development
+  {
+    "key": "ctrl+shift+alt+1",
+    "command": "quickOpen",
+    "args": "src/core/"
+  },
+  {
+    "key": "ctrl+shift+alt+2",
+    "command": "quickOpen",
+    "args": "src/plugins/"
+  },
+  {
+    "key": "ctrl+shift+alt+3",
+    "command": "quickOpen",
+    "args": "tests/"
+  },
+  {
+    "key": "ctrl+shift+alt+4",
+    "command": "quickOpen",
+    "args": "src/sdd/"
+  },
+  {
+    "key": "ctrl+shift+alt+5",
+    "command": "quickOpen",
+    "args": "src/unified_intelligence/"
+  },
+
+  // Professional Python Tooling Shortcuts
+  {
+    "key": "ctrl+shift+alt+f",
+    "command": "tasks.runTask",
+    "args": "format:all"
+  },
+  {
+    "key": "ctrl+shift+alt+r",
+    "command": "tasks.runTask",
+    "args": "lint:ruff-fix"
+  },
+  {
+    "key": "ctrl+shift+alt+m",
+    "command": "tasks.runTask",
+    "args": "typecheck:mypy"
+  },
+  {
+    "key": "ctrl+shift+alt+s",
+    "command": "tasks.runTask",
+    "args": "security:bandit"
+  },
+  {
+    "key": "ctrl+shift+alt+p",
+    "command": "tasks.runTask",
+    "args": "precommit:run"
+  },
+  {
+    "key": "ctrl+shift+alt+x",
+    "command": "tasks.runTask",
+    "args": "toolchain:full"
+  },
+  {
+    "key": "ctrl+shift+alt+k",
+    "command": "tasks.runTask",
+    "args": "clean:cache"
+  },
+
+  // Constitutional and SDD specific
+  {
+    "key": "ctrl+alt+shift+c",
+    "command": "tasks.runTask",
+    "args": "constitutional:validate"
+  },
+  {
+    "key": "ctrl+alt+shift+s",
+    "command": "tasks.runTask",
+    "args": "sdd:validate"
+  },
+  {
+    "key": "ctrl+alt+shift+u",
+    "command": "tasks.runTask",
+    "args": "unified:orchestrator"
+  },
+
+  // EOS (E-UPUSF Orchestration Schema) Operations
+  {
+    "key": "ctrl+alt+shift+e",
+    "command": "tasks.runTask",
+    "args": "eos:validate"
+  },
+  {
+    "key": "ctrl+alt+shift+o",
+    "command": "tasks.runTask",
+    "args": "eos:orchestrate"
+  },
+  {
+    "key": "ctrl+alt+shift+d",
+    "command": "tasks.runTask",
+    "args": "eos:demo"
+  },
+  {
+    "key": "ctrl+alt+shift+l",
+    "command": "tasks.runTask",
+    "args": "eos:pipeline"
+  },
+
+  // EOS-Mangle Integration
+  {
+    "key": "ctrl+alt+shift+m",
+    "command": "tasks.runTask",
+    "args": "eos:mangle:orchestrate"
+  },
+  {
+    "key": "ctrl+alt+shift+v",
+    "command": "tasks.runTask",
+    "args": "eos:mangle:validate"
+  },
+  {
+    "key": "ctrl+alt+shift+p",
+    "command": "tasks.runTask",
+    "args": "eos:mangle:pipeline"
+  },
+
+  // Git operations
+  {
+    "key": "ctrl+shift+g",
+    "command": "git.focus"
+  },
+  {
+    "key": "ctrl+shift+alt+g",
+    "command": "git.commitAll"
+  },
+
+  // Advanced Qoder IDE Features
+  {
+    "key": "ctrl+alt+shift+w",
+    "command": "tasks.runTask",
+    "args": "qoder:constitutional:live-validate"
+  },
+  {
+    "key": "ctrl+alt+shift+p",
+    "command": "tasks.runTask",
+    "args": "qoder:sdd:visual-pipeline"
+  },
+  {
+    "key": "ctrl+alt+shift+r",
+    "command": "tasks.runTask",
+    "args": "qoder:ai:context-refresh"
+  },
+  {
+    "key": "ctrl+alt+shift+d",
+    "command": "tasks.runTask",
+    "args": "qoder:debug:constitutional-trace"
+  },
+  {
+    "key": "ctrl+shift+alt+z",
+    "command": "ai.constitutional.analyze",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+alt+shift+v",
+    "command": "ai.sdd.visualize",
+    "when": "editorTextFocus && resourceExtname == '.py'"
+  },
+  {
+    "key": "ctrl+alt+shift+m",
+    "command": "ai.mangle.analyze",
+    "when": "editorTextFocus"
+  },
+
+  // Auto-Framework Control
+  {
+    "key": "ctrl+f12",
+    "command": "tasks.runTask",
+    "args": "framework:auto:enable"
+  },
+  {
+    "key": "ctrl+shift+f12",
+    "command": "tasks.runTask",
+    "args": "framework:auto:disable"
+  },
+  {
+    "key": "ctrl+alt+f12",
+    "command": "tasks.runTask",
+    "args": "framework:auto:status"
+  }
+]

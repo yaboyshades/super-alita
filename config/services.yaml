@@ -1,0 +1,25 @@
+# LLM Provider Configuration
+llm_providers:
+	gemini:
+		api_key: "${GEMINI_API_KEY}"
+		model: "gemini-1.5-pro"
+		timeout: 30
+
+	openai:
+		api_key: "${OPENAI_API_KEY}"
+		model: "gpt-4"
+		timeout: 30
+
+	anthropic:
+		api_key: "${ANTHROPIC_API_KEY}"
+		model: "claude-3-sonnet"
+		timeout: 30
+
+external_services:
+	redis:
+		url: "${REDIS_URL}"
+		timeout: 5
+
+	puter:
+		base_url: "${PUTER_BASE_URL}"
+		api_key: "${PUTER_API_KEY}"

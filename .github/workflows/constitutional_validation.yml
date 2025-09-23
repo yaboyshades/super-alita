@@ -1,0 +1,294 @@
+name: Constitutional Compliance Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  constitutional-validation:
+    name: Constitutional Rule Validation
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: true
+      matrix:
+        target:
+          - path: "src/"
+            name: "Source Code"
+          - path: "tests/"
+            name: "Test Code"
+          - path: "scripts/"
+            name: "Scripts"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for version analysis
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+          
+          # Install project dependencies if requirements file exists
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          fi
+
+      - name: Validate Constitutional Rules - ${{ matrix.target.name }}
+        id: constitutional_check
+        run: |
+          echo "Validating ${{ matrix.target.name }} at ${{ matrix.target.path }}"
+          
+          # Run constitutional validation with JSON output
+          python scripts/rule_validator.py \
+            --format json \
+            --rules rules/constitution \
+            ${{ matrix.target.path }} > constitutional_report_${{ matrix.target.name }}.json
+          
+          # Also run with human-readable output for logs
+          echo "=== Constitutional Validation Report ==="
+          python scripts/rule_validator.py \
+            --format human \
+            --rules rules/constitution \
+            ${{ matrix.target.path }} || true
+
+      - name: Upload Constitutional Report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: constitutional-report-${{ matrix.target.name }}
+          path: constitutional_report_${{ matrix.target.name }}.json
+          retention-days: 30
+
+      - name: Check for Blocking Violations
+        run: |
+          # Parse JSON report and check for blockers
+          BLOCKER_COUNT=$(python -c "
+          import json
+          with open('constitutional_report_${{ matrix.target.name }}.json') as f:
+              data = json.load(f)
+              print(data.get('blocker_count', 0))
+          ")
+          
+          echo "Blocker violations found: $BLOCKER_COUNT"
+          
+          if [ "$BLOCKER_COUNT" -gt 0 ]; then
+            echo "❌ BLOCKING VIOLATIONS FOUND - Pipeline must fail"
+            exit 2
+          else
+            echo "✅ No blocking violations found"
+          fi
+
+  aggregate-results:
+    name: Aggregate Constitutional Results
+    needs: constitutional-validation
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Download all reports
+        uses: actions/download-artifact@v3
+
+      - name: Aggregate Constitutional Reports
+        run: |
+          # Create aggregated report
+          python << 'EOF'
+          import json
+          import os
+          from pathlib import Path
+          
+          all_reports = []
+          total_files = 0
+          total_violations = 0
+          total_blockers = 0
+          total_warnings = 0
+          
+          # Find all report files
+          for report_dir in Path('.').glob('constitutional-report-*'):
+              report_file = report_dir / f"constitutional_report_{report_dir.name.split('-')[-1]}.json"
+              if report_file.exists():
+                  with open(report_file) as f:
+                      report = json.load(f)
+                      all_reports.append(report)
+                      total_files += report.get('total_files_checked', 0)
+                      total_violations += report.get('total_violations', 0)
+                      total_blockers += report.get('blocker_count', 0)
+                      total_warnings += report.get('warning_count', 0)
+          
+          # Create aggregate summary
+          aggregate = {
+              "pipeline_run": {
+                  "timestamp": "$(date -Iseconds)",
+                  "commit_sha": "${{ github.sha }}",
+                  "branch": "${{ github.ref_name }}",
+                  "actor": "${{ github.actor }}"
+              },
+              "aggregate_summary": {
+                  "total_files_checked": total_files,
+                  "total_violations": total_violations,
+                  "blocker_count": total_blockers,
+                  "warning_count": total_warnings,
+                  "success": total_blockers == 0
+              },
+              "individual_reports": all_reports
+          }
+          
+          with open('constitutional_aggregate_report.json', 'w') as f:
+              json.dump(aggregate, f, indent=2)
+          
+          print(f"📊 Aggregate Report Generated:")
+          print(f"  Files checked: {total_files}")
+          print(f"  Total violations: {total_violations}")
+          print(f"  Blockers: {total_blockers}")
+          print(f"  Warnings: {total_warnings}")
+          print(f"  Overall success: {total_blockers == 0}")
+          EOF
+
+      - name: Upload Aggregate Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: constitutional-aggregate-report
+          path: constitutional_aggregate_report.json
+          retention-days: 90
+
+      - name: Generate PR Comment
+        if: github.event_name == 'pull_request'
+        run: |
+          # Generate markdown comment for PR
+          python << 'EOF'
+          import json
+          
+          with open('constitutional_aggregate_report.json') as f:
+              data = json.load(f)
+          
+          summary = data['aggregate_summary']
+          status_icon = "✅" if summary['success'] else "❌"
+          
+          comment = f"""
+          ## {status_icon} Constitutional Compliance Report
+          
+          **Summary:**
+          - Files checked: {summary['total_files_checked']}
+          - Total violations: {summary['total_violations']}
+          - 🚫 Blockers: {summary['blocker_count']}
+          - ⚠️ Warnings: {summary['warning_count']}
+          
+          **Status:** {"PASS" if summary['success'] else "FAIL - Blockers must be resolved"}
+          
+          <details>
+          <summary>📋 Detailed Reports</summary>
+          
+          """
+          
+          for report in data['individual_reports']:
+              comment += f"""
+          ### {report.get('target_name', 'Unknown Target')}
+          - Files: {report['total_files_checked']}
+          - Violations: {report['total_violations']}
+          - Blockers: {report['blocker_count']}
+          - Warnings: {report['warning_count']}
+          """
+          
+          comment += """
+          </details>
+          
+          ---
+          *Constitutional validation powered by [Super Alita Constitutional Framework](rules/constitution/)*
+          """
+          
+          with open('pr_comment.md', 'w') as f:
+              f.write(comment)
+          EOF
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const comment = fs.readFileSync('pr_comment.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Final Status Check
+        run: |
+          TOTAL_BLOCKERS=$(python -c "
+          import json
+          with open('constitutional_aggregate_report.json') as f:
+              data = json.load(f)
+              print(data['aggregate_summary']['blocker_count'])
+          ")
+          
+          if [ "$TOTAL_BLOCKERS" -gt 0 ]; then
+            echo "❌ PIPELINE FAILED: $TOTAL_BLOCKERS blocking violations found"
+            echo "Please resolve all BLOCKER-level violations before merging."
+            exit 1
+          else
+            echo "✅ PIPELINE PASSED: No blocking violations"
+          fi
+
+  performance-monitoring:
+    name: Performance Monitoring Integration
+    needs: constitutional-validation
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Test Telemetry Integration
+        run: |
+          # Test that telemetry components are working
+          python -c "
+          try:
+              from src.performance_monitoring.telemetry.opentelemetry_config import get_telemetry_collector
+              from src.performance_monitoring.middleware.extension_interceptors import get_extension_middleware
+              print('✅ Telemetry integration working')
+          except ImportError as e:
+              print(f'⚠️ Telemetry integration issue: {e}')
+          " || echo "⚠️ Telemetry components not available"
+
+      - name: Performance Metrics Collection
+        run: |
+          # This would integrate with actual performance monitoring
+          echo "📊 Performance monitoring integration placeholder"
+          echo "  - Telemetry collection: Ready"
+          echo "  - Prometheus metrics: Ready"
+          echo "  - SLO monitoring: Ready"

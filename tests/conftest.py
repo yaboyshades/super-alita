@@ -25,8 +25,10 @@ import pytest
 
 # Ensure project src is importable when running tests standalone
 repo_root = Path(__file__).resolve().parents[1]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
 src_path = repo_root / "src"
-if src_path.exists():
+if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 # --- Discovery: locate a MetricsRegistry class/instance if present ---

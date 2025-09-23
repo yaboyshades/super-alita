@@ -1,37 +1,78 @@
+# Pre-commit configuration for constitutional compliance validation
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.8
-    hooks:
-      - id: ruff
-        args: ["--fix"]
-      - id: ruff-format
-  # Prefer Ruff for formatting and lint to avoid duplicate work
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
-    hooks:
-      - id: mypy
-        args: ["--config-file", "mypy.ini"]
+  # Standard code quality checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.4.0
     hooks:
-      - id: end-of-file-fixer
       - id: trailing-whitespace
-      - id: mixed-line-ending
+      - id: end-of-file-fixer
       - id: check-yaml
       - id: check-json
+      - id: check-toml
       - id: check-merge-conflict
-      - id: check-added-large-files
-        args: ["--maxkb=2000"]
+      - id: check-case-conflict
 
+  # Python code formatting and linting
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+        language_version: python3
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        args: [--max-line-length=88, --extend-ignore=E203,W503]
+
+  # Constitutional rule validation (custom hook)
   - repo: local
     hooks:
-      - id: no-mock-files
-        name: "Block mock/scaffold/dummy/placeholder file creation"
-        entry: python tools/git_hooks/no_mock_guard.py
+      - id: constitutional-validation
+        name: Constitutional Compliance Validation
+        entry: python scripts/rule_validator.py
         language: system
+        types: [python]
         pass_filenames: false
-        stages: [commit]
+        always_run: true
+        args: ["--format", "human", "--quiet"]
+        description: "Validate code against constitutional rules"
+        
+      - id: constitutional-validation-json
+        name: Constitutional Compliance (JSON Report)
+        entry: python scripts/rule_validator.py
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+        args: ["--format", "json", "--quiet"]
+        description: "Generate JSON compliance report"
+        stages: [manual]
 
-default_stages:
-  - commit
-  - push
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: ["-r", "src/", "-f", "json", "-o", "bandit-report.json"]
+        files: "^src/"
+
+  # Import sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+# Global configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

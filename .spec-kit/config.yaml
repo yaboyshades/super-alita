@@ -1,0 +1,149 @@
+version: "1.0"
+spec_kit:
+  # Core Configuration
+  project_name: "super-alita-clean"
+  project_type: "ai-orchestration"
+  constitutional_framework: true
+
+  # Constitutional Framework Configuration
+  constitutional:
+    enabled: true
+    threshold: 0.75
+    articles:
+      - name: "Library-First"
+        weight: 1.0
+        description: "Prefer existing libraries and established patterns"
+      - name: "Test-First"
+        weight: 1.0
+        description: "Comprehensive testing for all components"
+      - name: "Simplicity"
+        weight: 1.0
+        description: "Single responsibility, minimal complexity"
+      - name: "Integration"
+        weight: 1.0
+        description: "Compatible with existing architecture"
+      - name: "Clarity"
+        weight: 1.0
+        description: "Clear purpose and documentation"
+      - name: "Counterfactual"
+        weight: 1.0
+        description: "Robust error handling and edge cases"
+
+  # Workflow Configuration
+  workflow:
+    phases:
+      - name: "constitution"
+        description: "Constitutional framework establishment"
+        required: true
+        threshold: 0.75
+      - name: "specify"
+        description: "Feature specification generation"
+        required: true
+        threshold: 0.75
+      - name: "plan"
+        description: "Implementation planning"
+        required: true
+        threshold: 0.75
+      - name: "tasks"
+        description: "Task breakdown and assignment"
+        required: true
+        threshold: 0.75
+      - name: "implement"
+        description: "Implementation and coding"
+        required: true
+        threshold: 0.75
+      - name: "validate"
+        description: "Validation and testing"
+        required: true
+        threshold: 0.75
+
+  # Templates Configuration
+  templates:
+    specification: "${workspaceFolder}/.specify/templates/feature-spec.md"
+    plan: "${workspaceFolder}/.specify/templates/implementation-plan.md"
+    tasks: "${workspaceFolder}/.specify/templates/task-breakdown.md"
+    validation: "${workspaceFolder}/.specify/templates/validation-checklist.md"
+
+  # Integration Points
+  integrations:
+    sdd_pipeline:
+      enabled: true
+      endpoint_base: "http://127.0.0.1:8080/sdd"
+      constitutional_validation: true
+
+    unified_orchestrator:
+      enabled: true
+      event_emission: true
+      observability: true
+
+    mangle_rules:
+      enabled: true
+      db_path: ".cache/mangle/mangle.db"
+      rules:
+        - "circular_dependencies"
+        - "untested_complex_functions"
+        - "hot_paths"
+        - "config_cascade_breaks"
+
+    github_sync:
+      enabled: true
+      branch_protection: true
+      constitutional_checks: true
+
+  # Quality Gates
+  quality_gates:
+    constitutional_compliance:
+      threshold: 0.75
+      blocking: true
+
+    test_coverage:
+      threshold: 85
+      blocking: true
+
+    code_quality:
+      ruff_check: true
+      mypy_strict: true
+      black_format: true
+      blocking: true
+
+  # AI Assistant Configuration
+  ai_assistant:
+    constitutional_guidance: true
+    spec_aware_completions: true
+    workflow_suggestions: true
+    quality_recommendations: true
+
+  # Output Configuration
+  output:
+    specifications_dir: "${workspaceFolder}/specs"
+    plans_dir: "${workspaceFolder}/plans"
+    tasks_dir: "${workspaceFolder}/tasks"
+    artifacts_dir: "${workspaceFolder}/artifacts"
+
+  # Validation Configuration
+  validation:
+    auto_validate: true
+    continuous_monitoring: true
+    real_time_feedback: true
+    constitutional_scoring: true
+
+# Super Alita Specific Extensions
+super_alita:
+  # SDD Integration
+  sdd:
+    auto_generate_specs: true
+    constitutional_gates: true
+    unified_orchestration: true
+
+  # Abilities Integration
+  abilities:
+    mangle_validation: true
+    constitutional_checking: true
+    spec_kit_workflow: true
+
+  # Orchestration Integration
+  orchestration:
+    event_driven: true
+    observability: true
+    reliability_management: true
+    run_ledger: true

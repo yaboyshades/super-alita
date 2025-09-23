@@ -1,0 +1,103 @@
+{
+  "folders": [
+    {
+      "name": "Super Alita (Root)",
+      "path": "."
+    },
+    {
+      "name": "Core SDD",
+      "path": "./src/sdd"
+    },
+    {
+      "name": "Unified Intelligence",
+      "path": "./src/unified_intelligence"
+    },
+    {
+      "name": "Orchestration",
+      "path": "./src/orchestration"
+    },
+    {
+      "name": "Abilities",
+      "path": "./src/abilities"
+    },
+    {
+      "name": "Tests",
+      "path": "./tests"
+    },
+    {
+      "name": "Documentation",
+      "path": "./docs"
+    },
+    {
+      "name": "Scripts",
+      "path": "./scripts"
+    },
+    {
+      "name": "Templates",
+      "path": "./templates"
+    }
+  ],
+  "settings": {
+    "qoder.workspace.enableVirtualFolders": true,
+    "qoder.workspace.constitutionalCompliance": true,
+    "qoder.workspace.sddIntegration": true,
+    "qoder.workspace.rootPath": "${workspaceFolder}",
+
+    // Apply settings from .qoder/settings.json
+    "qoder.includeSettingsFrom": ".qoder/settings.json",
+
+    // Workspace-specific overrides
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+      "*.py": "${capture}.pyi, ${capture}_test.py, test_${capture}.py",
+      "*.yaml": "${capture}.yml",
+      "*.json": "${capture}.schema.json"
+    },
+
+    "search.exclude": {
+      "**/.venv/**": true,
+      "**/__pycache__/**": true,
+      "**/*.pyc": true,
+      "**/node_modules/**": true,
+      "**/.git/**": true,
+      "**/.cache/**": true,
+      "**/artifacts/**": true,
+      "**/logs/**": true
+    },
+
+    "files.exclude": {
+      "**/__pycache__/**": true,
+      "**/*.pyc": true,
+      "**/.pytest_cache/**": true,
+      "**/.coverage": true,
+      "**/htmlcov/**": true
+    },
+
+    "files.watcherExclude": {
+      "**/.venv/**": true,
+      "**/__pycache__/**": true,
+      "**/.git/**": true,
+      "**/node_modules/**": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "qoder-ai-assistant",
+      "python-language-server",
+      "constitutional-validator",
+      "sdd-language-support",
+      "mcp-protocol-support"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "options": {
+      "cwd": "${workspaceFolder}"
+    },
+    "tasks": []
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": []
+  }
+}

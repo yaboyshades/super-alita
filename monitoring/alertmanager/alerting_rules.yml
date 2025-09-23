@@ -1,0 +1,251 @@
+# Prometheus Alerting Rules for Super Alita Performance Monitoring
+# Implements SLO-based alerting with escalation paths
+
+groups:
+  - name: super_alita_slo_alerts
+    interval: 30s
+    rules:
+      # Latency SLO Violations
+      - alert: ExtensionLatencyP95High
+        expr: extension_latency_p95_ms > 1000
+        for: 5m
+        labels:
+          severity: critical
+          component: extension_performance
+          slo: latency
+        annotations:
+          summary: "Extension p95 latency exceeds SLO threshold"
+          description: "Extension {{$labels.extension_id}} p95 latency is {{$value}}ms, exceeding 1000ms SLO for 5 minutes"
+          runbook_url: "https://docs.super-alita.dev/runbooks/latency-slo-violation"
+          dashboard_url: "http://grafana:3000/d/super-alita-performance"
+
+      # Error Rate SLO Violations  
+      - alert: ExtensionErrorRateHigh
+        expr: (rate(extension_errors_total[10m]) / rate(extension_requests_total[10m])) * 100 > 2
+        for: 10m
+        labels:
+          severity: critical
+          component: extension_reliability
+          slo: error_rate
+        annotations:
+          summary: "Extension error rate exceeds SLO threshold"
+          description: "Extension {{$labels.extension_id}} error rate is {{$value}}%, exceeding 2% SLO for 10 minutes"
+          runbook_url: "https://docs.super-alita.dev/runbooks/error-rate-slo-violation"
+
+      # System Resource Alerts
+      - alert: SystemCPUHigh
+        expr: cpu_usage_percent > 85
+        for: 10m
+        labels:
+          severity: warning
+          component: system_resources
+          resource: cpu
+        annotations:
+          summary: "System CPU utilization is high"
+          description: "CPU usage has been above 85% for 10 minutes (current: {{$value}}%)"
+          runbook_url: "https://docs.super-alita.dev/runbooks/high-cpu-usage"
+
+      - alert: SystemMemoryHigh
+        expr: memory_usage_percent > 70
+        for: 15m
+        labels:
+          severity: warning
+          component: system_resources
+          resource: memory
+        annotations:
+          summary: "System memory utilization is high"
+          description: "Memory usage has been above 70% for 15 minutes (current: {{$value}}%)"
+          runbook_url: "https://docs.super-alita.dev/runbooks/high-memory-usage"
+
+      # Constitutional Compliance Alerts
+      - alert: ConstitutionalComplianceLow
+        expr: constitutional_compliance_score < 0.75
+        for: 5m
+        labels:
+          severity: warning
+          component: constitutional_compliance
+        annotations:
+          summary: "Constitutional compliance score is below threshold"
+          description: "Overall constitutional compliance score is {{$value}}, below 0.75 threshold"
+          runbook_url: "https://docs.super-alita.dev/runbooks/constitutional-compliance"
+
+      # Throughput Monitoring
+      - alert: ExtensionThroughputLow
+        expr: rate(extension_requests_total[5m]) < 1
+        for: 15m
+        labels:
+          severity: warning
+          component: extension_performance
+          metric: throughput
+        annotations:
+          summary: "Extension throughput is unusually low"
+          description: "Extension {{$labels.extension_id}} throughput is {{$value}} req/sec, below expected minimum"
+
+      # Prometheus Monitoring System Health
+      - alert: PrometheusScrapeFailing
+        expr: up{job="super-alita"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: monitoring
+        annotations:
+          summary: "Prometheus cannot scrape Super Alita metrics"
+          description: "Prometheus has been unable to scrape metrics from {{$labels.instance}} for 2 minutes"
+
+      # Telemetry System Health
+      - alert: TelemetryCollectorDown
+        expr: absent(extension_requests_total)
+        for: 5m
+        labels:
+          severity: critical
+          component: telemetry
+        annotations:
+          summary: "Telemetry collector appears to be down"
+          description: "No telemetry metrics have been received for 5 minutes"
+
+  - name: super_alita_performance_degradation
+    interval: 60s
+    rules:
+      # Performance Degradation Detection
+      - alert: PerformanceDegradationDetected
+        expr: |
+          (
+            increase(extension_latency_p95_ms[1h]) > 
+            increase(extension_latency_p95_ms[1h] offset 24h) * 1.5
+          ) and (
+            rate(extension_requests_total[1h]) > 0.1
+          )
+        for: 30m
+        labels:
+          severity: warning
+          component: performance_regression
+        annotations:
+          summary: "Performance degradation detected"
+          description: "Extension {{$labels.extension_id}} performance has degraded significantly compared to 24h ago"
+          runbook_url: "https://docs.super-alita.dev/runbooks/performance-degradation"
+
+      # SLO Budget Burn Rate Alerts (Fast/Slow Burn)
+      - alert: SLOBudgetFastBurn
+        expr: |
+          (
+            (rate(extension_errors_total[5m]) / rate(extension_requests_total[5m])) > (0.02 * 14.4)
+          ) and (
+            rate(extension_requests_total[5m]) > 0.1
+          )
+        for: 2m
+        labels:
+          severity: critical
+          component: slo_budget
+          burn_rate: fast
+        annotations:
+          summary: "SLO error budget burning fast"
+          description: "Error budget will be exhausted in <1 hour at current rate"
+          runbook_url: "https://docs.super-alita.dev/runbooks/slo-budget-burn"
+
+      - alert: SLOBudgetSlowBurn
+        expr: |
+          (
+            (rate(extension_errors_total[1h]) / rate(extension_requests_total[1h])) > (0.02 * 6)
+          ) and (
+            rate(extension_requests_total[1h]) > 0.1
+          )
+        for: 15m
+        labels:
+          severity: warning
+          component: slo_budget
+          burn_rate: slow
+        annotations:
+          summary: "SLO error budget burning slowly"
+          description: "Error budget will be exhausted in <6 hours at current rate"
+
+  - name: super_alita_business_impact
+    interval: 60s
+    rules:
+      # Business Impact Alerts
+      - alert: HighErrorRateBusinessImpact
+        expr: |
+          (
+            rate(extension_errors_total[15m]) / rate(extension_requests_total[15m])
+          ) > 0.05 and rate(extension_requests_total[15m]) > 1
+        for: 10m
+        labels:
+          severity: critical
+          component: business_impact
+          impact_level: high
+        annotations:
+          summary: "High error rate causing business impact"
+          description: "Extension {{$labels.extension_id}} error rate {{$value}}% is causing significant user impact"
+          escalation: "page"
+
+      # Service Availability
+      - alert: ServiceUnavailable
+        expr: |
+          (
+            rate(extension_requests_total[5m]) == 0
+          ) and (
+            rate(extension_requests_total[5m] offset 1h) > 0.1
+          )
+        for: 5m
+        labels:
+          severity: critical
+          component: availability
+          impact_level: total
+        annotations:
+          summary: "Service appears completely unavailable"
+          description: "No requests processed for extension {{$labels.extension_id}} in 5 minutes"
+          escalation: "page"
+
+# Alertmanager Configuration for Routing
+alertmanager_config: |
+  global:
+    smtp_smarthost: 'localhost:587'
+    smtp_from: 'alerts@super-alita.dev'
+    slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+
+  route:
+    group_by: ['alertname', 'component']
+    group_wait: 10s
+    group_interval: 10s
+    repeat_interval: 1h
+    receiver: 'web.hook'
+    routes:
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      continue: true
+    - match:
+        escalation: page
+      receiver: 'pager-duty'
+    - match:
+        component: constitutional_compliance
+      receiver: 'constitutional-alerts'
+
+  receivers:
+  - name: 'web.hook'
+    webhook_configs:
+    - url: 'http://localhost:5001/alerts'
+
+  - name: 'critical-alerts'
+    slack_configs:
+    - channel: '#ops-critical'
+      title: 'Critical Alert: {{range .Alerts}}{{.Annotations.summary}}{{end}}'
+      text: '{{range .Alerts}}{{.Annotations.description}}{{end}}'
+      send_resolved: true
+
+  - name: 'constitutional-alerts'
+    slack_configs:
+    - channel: '#constitutional-compliance'
+      title: 'Constitutional Compliance Alert'
+      send_resolved: true
+
+  - name: 'pager-duty'
+    pagerduty_configs:
+    - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
+      description: '{{range .Alerts}}{{.Annotations.summary}}{{end}}'
+
+  inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'component']

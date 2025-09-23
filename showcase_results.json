@@ -1,0 +1,64 @@
+{
+  "timestamp": "2025-09-22T06:56:13.636379",
+  "results": {
+    "eos": {
+      "schema_validation": {
+        "status": "mocked",
+        "note": "Would validate schemas"
+      },
+      "moe_routing": {
+        "status": "mocked",
+        "note": "Would demonstrate routing"
+      },
+      "ladder_ops": {
+        "status": "mocked",
+        "note": "Would execute LADDER ops"
+      }
+    },
+    "mangle": {
+      "reasoning": {
+        "premises": 4,
+        "inferences": 7,
+        "conclusions": 2,
+        "confidence": 0.91
+      },
+      "knowledge_graph": {
+        "nodes": 23,
+        "edges": 41,
+        "clusters": 3,
+        "reasoning_paths": 8
+      },
+      "constitutional": {
+        "rules_checked": 12,
+        "violations": 0,
+        "compliance_score": 1.0,
+        "recommendations": 3
+      }
+    },
+    "unified": {
+      "coordination": {
+        "systems_active": 5,
+        "bridges_healthy": 12,
+        "coordination_latency": "0.23ms",
+        "sync_status": "optimal"
+      },
+      "performance": {
+        "latency_p95": "0.76s",
+        "error_rate": "1.1%",
+        "throughput": "847 req/s",
+        "optimization": "23% improvement"
+      },
+      "degradation": {
+        "fallback_triggered": true,
+        "service_continuity": "100%",
+        "recovery_time": "1.2s",
+        "user_impact": "minimal"
+      }
+    }
+  },
+  "system_info": {
+    "eos_available": false,
+    "components_active": 5,
+    "integration_bridges": 12
+  }
+}

@@ -118,6 +118,13 @@ class WorkflowDetector:
                 r"\bend[-_]to[-_]end\b",
                 r"\be2e\b",
             ],
+            WorkflowPattern.GENERAL: [
+                r"\bgeneral\b",
+                r"\bhelp\b",
+                r"\bquestion\b",
+                r"\bhow\s+to\b",
+                r"\bwhat\s+is\b",
+            ],
         }
 
         # Pattern priority order (higher priority patterns checked first)

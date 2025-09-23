@@ -1,0 +1,33 @@
+# Constitutional Rule: Library-First Development
+id: RULE-1.1
+version: "1.0.0"
+article: "Article I: Library-First"
+severity: WARNING
+category: "development_practice"
+description: "Favor established libraries over custom implementations"
+
+checks:
+  - type: "code_pattern"
+    name: "custom_implementation_detection"
+    pattern: |
+      # Detect custom implementations of common functions
+      # Look for reinventing wheel patterns
+    targets:
+      - "*.py"
+      - "*.js"
+      - "*.ts"
+
+validation:
+  message: "Consider using established libraries instead of custom implementations"
+  suggestion: "Review if established libraries (requests, lodash, etc.) can replace custom code"
+  auto_fix: false
+
+exceptions:
+  - path: "tests/"
+    reason: "Test utilities may require custom implementations"
+  - path: "examples/"
+    reason: "Examples may show custom implementations for educational purposes"
+
+references:
+  - "Constitutional Article I: Library-First"
+  - "https://12factor.net/dependencies"

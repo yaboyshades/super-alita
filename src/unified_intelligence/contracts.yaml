@@ -1,0 +1,136 @@
+# Unified Intelligence Layer Contracts
+# Version: 1
+# Defines explicit request/response types for all components
+# Keep serializable and versioned for API stability
+
+version: 1
+
+# Base Request Schema
+Request:
+  fields:
+    request_id: str
+    ts: str  # ISO8601 timestamp
+    intent_text: str
+    code_refs: [str]        # optional file paths / symbols
+    context: object         # freeform context
+
+# Mangle Bridge Result
+MangleResult:
+  fields:
+    ok: bool
+    facts: [object]         # normalized fact triples or typed facts
+    metrics:
+      complexity: float?    # 0..1 normalized
+      coverage_gap: float?  # 0..1 (1 = huge gap)
+    findings: [object]      # issues with severity {low,med,high}
+    confidence: float       # 0..1
+    errors: [string]
+
+# Constitutional Engine Result
+ConstitutionResult:
+  fields:
+    ok: bool
+    article_scores:         # each 0..1
+      library_first: float
+      test_first: float
+      simplicity_gate: float
+      integration_first: float
+      clarity_unambiguity: float
+      counterfactual_justification: float
+      documentation_driven: float
+      template_driven: float
+      cli_interface: float
+    overall: float          # 0..1 (weighted average)
+    infractions: [object]   # {article, severity, note}
+    confidence: float       # 0..1
+    errors: [string]
+
+# Workflow Detector Result
+WorkflowResult:
+  fields:
+    label: string           # e.g. new_feature | refactor | constitutional | debug | general
+    confidence: float       # 0..1
+    features: [string]      # detected cues
+    errors: [string]
+
+# Copilot Enhancement Result
+CopilotEnhancement:
+  fields:
+    ok: bool
+    templates_applied: [string]
+    guidance: [object]      # {section, text}
+    errors: [string]
+
+# Unified Advice (Final Orchestrator Output)
+UnifiedAdvice:
+  fields:
+    ok: bool
+    decision: string        # proceed | revise | block
+    reasons: [string]
+    recommendations: [object] # {action, rationale, refs}
+    scores:
+      fused: float
+      contributors:          # transparency
+        mangle: float
+        constitution: float
+        workflow: float
+    telemetry:
+      request_id: str
+      components: [string]
+      timings_ms: object
+    errors: [string]
+
+# Score Fusion Configuration
+FusionConfig:
+  fields:
+    weights:
+      mangle_base: float     # 0.35
+      constitution_base: float  # 0.45
+      workflow_base: float   # 0.20
+    modifiers:
+      code_task_boost: float # 0.15 (for new_feature, refactor, debug)
+      constitutional_boost: float # 0.15 (for constitutional workflow)
+    confidence_floor: float # 0.5 (minimum confidence multiplier)
+    decision_thresholds:
+      proceed: float        # 0.7
+      revise: float         # 0.5
+      block: float          # 0.0 (below revise)
+    constitution_gate: float # 0.4 (hard gate for quality)
+
+# Code Analysis Request/Response (added for mangle_code_scaffold_v2 integration)
+CodeAnalysisRequest:
+  fields:
+    repo_path: str
+    include_tests: bool
+    rules_to_run: [str]      # optional list of rules, can be null
+
+CodeAnalysisResponse:
+  fields:
+    repo_path: str
+    total_files: int
+    total_symbols: int
+    findings: object         # {rule_name: [finding_objects]}
+    summary: object          # {rule_name: count}
+    analysis_time: float
+    success: bool
+    error_message: str?
+
+Finding:
+  fields:
+    rule_name: str
+    symbol: str?
+    file: str?
+    complexity: float?
+    indegree: int?
+    file_a: str?
+    file_b: str?
+    metadata: object
+
+# Telemetry Headers Schema
+TelemetryHeaders:
+  fields:
+    X-UI-Decision: string   # proceed|revise|block
+    X-UI-Fused-Score: string # "0.75" (as string for header)
+    X-UI-Workflow: string   # workflow label
+    X-UI-Constitution: string # "0.68" (overall score)
+    X-UI-Mangle-Conf: string # "0.77" (confidence)

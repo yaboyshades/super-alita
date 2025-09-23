@@ -32,6 +32,8 @@ from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any
 
+from .error_taxonomy import ErrorCode, classify_exception, normalize_error_code
+
 # ----------------------------- Configuration ---------------------------- #
 
 
@@ -104,6 +106,8 @@ class ReliabilityManager:
         coro_fn: Callable[[], Awaitable[Any]],
         timeout_s: int,
         emit_cb: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
+        *,
+        correlation_id: str | None = None,
     ) -> dict[str, Any]:
         stats = self._stats.setdefault(stage, StageStats())
         now = time.time()
@@ -114,6 +118,7 @@ class ReliabilityManager:
                 "retries": 0,
                 "circuit_state": "open",
                 "reason": "circuit_open",
+                "correlation_id": correlation_id,
             }
 
         if stats.maybe_close_circuit(now) and emit_cb:
@@ -124,6 +129,7 @@ class ReliabilityManager:
                     "stage": stage,
                     "time": now,
                 },
+                correlation_id=correlation_id,
             )
 
         attempts = 0
@@ -144,6 +150,7 @@ class ReliabilityManager:
                         "attempt": attempts,
                         "max_attempts": total_allowed,
                     },
+                    correlation_id=correlation_id,
                 )
             try:
                 async with asyncio.timeout(timeout_s):  # per-attempt timeout
@@ -158,6 +165,7 @@ class ReliabilityManager:
                     "classified_error": None,
                     "latency_ms": latency_ms,
                     "circuit_state": "closed",
+                    "correlation_id": correlation_id,
                 }
             except Exception as exc:  # noqa: BLE001
                 last_error = exc
@@ -182,6 +190,7 @@ class ReliabilityManager:
                             "delay_s": backoff_s,
                             "classified_error": classified_error,
                         },
+                        correlation_id=correlation_id,
                     )
                 await asyncio.sleep(backoff_s)
 
@@ -197,6 +206,7 @@ class ReliabilityManager:
                         "open_until": stats.circuit_open_until,
                         "failures": stats.consecutive_failures,
                     },
+                    correlation_id=correlation_id,
                 )
 
         total_latency_ms = int((time.time() - t_start) * 1000)
@@ -210,6 +220,7 @@ class ReliabilityManager:
             "circuit_state": (
                 "open" if stats.is_circuit_open(time.time()) else "closed"
             ),
+            "correlation_id": correlation_id,
         }
 
     # Internals ---------------------------------------------------------- #
@@ -217,8 +228,11 @@ class ReliabilityManager:
         self,
         emit_cb: Callable[[dict[str, Any]], Awaitable[None]],
         event: dict[str, Any],
+        correlation_id: str | None = None,
     ) -> None:
         # Swallow any emission errors; reliability shouldn't cascade
+        if correlation_id is not None and "correlation_id" not in event:
+            event["correlation_id"] = correlation_id
         with suppress(Exception):  # pragma: no cover - defensive
             await emit_cb(event)
 
@@ -228,28 +242,20 @@ class ReliabilityManager:
         attempts: int,
         total_allowed: int,
     ) -> bool:
-        return attempts < total_allowed and classified_error == "transient"
+        if attempts >= total_allowed or classified_error is None:
+            return False
+        code = normalize_error_code(classified_error)
+        if code == ErrorCode.TIMEOUT:
+            return self.config.classify_timeout_as_transient
+        if code == ErrorCode.NETWORK_FAILURE:
+            return self.config.classify_oserror_as_transient
+        if code in {ErrorCode.RATE_LIMIT, ErrorCode.ABILITY_FAILURE}:
+            return True
+        return False
 
     def _classify_error(self, exc: Exception) -> str:
-        name = exc.__class__.__name__
-        if self.config.classify_timeout_as_transient and name in {
-            "TimeoutError",
-            "asyncio.TimeoutError",
-        }:
-            return "transient"
-        if self.config.classify_oserror_as_transient and isinstance(
-            exc,
-            OSError,
-        ):
-            return "transient"
-        msg = str(exc).lower()
-        network_markers = [
-            "temporarily",
-            "unreachable",
-            "connection reset",
-            "timeout",
-        ]
-        return "transient" if any(m in msg for m in network_markers) else "permanent"
+        code = classify_exception(exc)
+        return code.value
 
     def _compute_backoff(self, attempts: int) -> float:
         retry_index = max(1, attempts - 1)

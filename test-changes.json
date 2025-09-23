@@ -1,0 +1,12 @@
+{
+  "spec_diff": {
+    "description_changes": true
+  },
+  "signature_changes": [
+    {
+      "function": "create_user",
+      "type": "additive",
+      "description": "Added optional parameter"
+    }
+  ]
+}

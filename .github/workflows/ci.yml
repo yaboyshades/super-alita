@@ -7,10 +7,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: pip install -U pip pytest coverage black ruff bandit pyyaml
+      - run: pip install -U pip pytest coverage black ruff bandit pyyaml pydocstyle
       - run: ruff check .
+      - run: pydocstyle src
       - run: black --check .
-      - run: pytest -q || true
+      - run: |
+          coverage run -m pytest -q
+          coverage report --fail-under=80
       - run: |
           for f in features/**/spec.md; do
             [ -f "$f" ] || continue

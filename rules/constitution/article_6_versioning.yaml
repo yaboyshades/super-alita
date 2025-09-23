@@ -1,0 +1,84 @@
+# Constitutional Rule: Versioning
+id: RULE-6.1
+version: "1.0.0"
+article: "Article VI: Versioning"
+severity: BLOCKER
+category: "versioning"
+description: "All breaking changes must be properly versioned and documented"
+
+checks:
+  - type: "breaking_change_detection"
+    name: "api_signature_changes"
+    patterns:
+      - "function signature modification"
+      - "class interface changes"
+      - "module import changes"
+    targets:
+      - "src/**/*.py"
+      - "src/**/*.js"
+      - "src/**/*.ts"
+
+  - type: "version_consistency"
+    name: "semantic_versioning"
+    files:
+      - "pyproject.toml"
+      - "package.json"
+      - "setup.py"
+      - "__init__.py"
+
+  - type: "changelog_requirement"
+    name: "change_documentation"
+    required_sections:
+      - "Added"
+      - "Changed"  
+      - "Deprecated"
+      - "Removed"
+      - "Fixed"
+      - "Security"
+    files:
+      - "CHANGELOG.md"
+      - "HISTORY.md"
+
+validation:
+  message: "Breaking change detected without proper versioning"
+  suggestion: "Update version number and document changes in CHANGELOG.md"
+  auto_fix: false
+
+remediation:
+  version_bump_rules:
+    major: "Breaking changes, API incompatibility"
+    minor: "New features, backwards compatible"
+    patch: "Bug fixes, no API changes"
+  
+  changelog_template: |
+    ## [{version}] - {date}
+    
+    ### Changed
+    - {change_description}
+    
+    ### Migration Guide
+    - {migration_steps}
+
+breaking_change_indicators:
+  - "removed function"
+  - "changed function signature"
+  - "removed class"
+  - "changed class interface"
+  - "removed module"
+  - "changed import path"
+
+compatibility_checks:
+  - backwards_compatibility: true
+  - forward_compatibility: false
+  - deprecation_warnings: true
+
+exceptions:
+  - version: "0.x.x"
+    reason: "Pre-1.0 versions may have breaking changes"
+  - path: "internal/"
+    reason: "Internal APIs don't follow public versioning rules"
+
+references:
+  - "Constitutional Article VI: Versioning"
+  - "https://semver.org/"
+  - "https://keepachangelog.com/"

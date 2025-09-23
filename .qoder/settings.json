@@ -1,0 +1,335 @@
+{
+  "workspace": {
+    "name": "super-alita-clean",
+    "type": "python-ai-orchestration",
+    "root": "${workspaceFolder}"
+  },
+
+  // Python Environment and Interpreter
+  "python": {
+    "defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "envFile": "${workspaceFolder}/.env",
+    "terminal": {
+      "activateEnvironment": true,
+      "activateEnvInCurrentTerminal": true
+    },
+    "experiments": {
+      "enabled": true,
+      "optInto": ["pythonTerminalEnvVarActivation"]
+    }
+  },
+
+  // Enhanced Python Analysis
+  "analysis": {
+    "diagnosticMode": "workspace",
+    "typeCheckingMode": "strict",
+    "completeFunctionParens": true,
+    "autoSearchPaths": true,
+    "autoImportCompletions": true,
+    "indexing": true,
+    "packageIndexDepths": [
+      { "name": "sklearn", "depth": 2 },
+      { "name": "matplotlib", "depth": 2 },
+      { "name": "scipy", "depth": 2 },
+      { "name": "django", "depth": 2 }
+    ],
+    "bracketMatcher": true
+  },
+
+  // Code Formatting and Quality
+  "formatting": {
+    "formatOnSave": true,
+    "codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll.ruff": "explicit"
+    },
+    "defaultFormatter": "black-formatter",
+    "blackFormatter": {
+      "args": ["--line-length=79", "--target-version=py39"]
+    },
+    "isort": {
+      "args": [
+        "--profile=black",
+        "--line-length=79",
+        "--multi-line=3",
+        "--trailing-comma"
+      ]
+    }
+  },
+
+  // Linting and Type Checking
+  "linting": {
+    "enabled": false,
+    "pylintEnabled": false,
+    "ruff": {
+      "enable": true,
+      "importStrategy": "fromEnvironment",
+      "path": ["${workspaceFolder}\\.venv\\Scripts\\ruff.exe"],
+      "lintEnable": true
+    },
+    "flake8": {
+      "args": ["--max-line-length=79", "--extend-ignore=E203,W503"]
+    },
+    "mypyTypeChecker": {
+      "args": ["--strict", "--ignore-missing-imports", "--show-error-codes"],
+      "reportingScope": "workspace"
+    }
+  },
+
+  // Testing Configuration
+  "testing": {
+    "unittestEnabled": false,
+    "pytestEnabled": true,
+    "pytestArgs": ["."],
+    "autoTestDiscoverOnSaveEnabled": true
+  },
+
+  // Jupyter/Notebook Support
+  "jupyter": {
+    "askForKernelRestart": false,
+    "alwaysTrustNotebooks": true,
+    "enableCellCodeLens": true,
+    "sendSelectionToInteractiveWindow": true,
+    "interactiveWindowMode": "perFile",
+    "generateSVGPlots": true,
+    "enableScrollingForCellOutputs": true,
+    "maxOutputSize": 400,
+    "enableExtendedKernelCompletions": true
+  },
+
+  // Editor Preferences
+  "editor": {
+    "indentSize": 4,
+    "tabSize": 4,
+    "insertSpaces": true,
+    "detectIndentation": false,
+    "snippetSuggestions": "top",
+    "tabCompletion": "on",
+    "wordBasedSuggestions": "matchingDocuments",
+    "quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    },
+    "showSnippets": true,
+    "includeLanguageSuggestions": true,
+    "acceptSuggestionOnEnter": "on"
+  },
+
+  // Super Alita Specific Configuration
+  "superAlita": {
+    "ollama": {
+      "host": "http://127.0.0.1:11434",
+      "model": "gpt-oss:20b"
+    },
+    "snippets": {
+      "autoOptimize": true,
+      "showSavingsInfo": true,
+      "preferredApproach": "snippet",
+      "minimumSavingsThreshold": 30
+    },
+    "toolchain": {
+      "autoDetectEnvironments": true,
+      "enableJupyterIntegration": true,
+      "enableDebuggingEnhancements": true
+    },
+    "agent": {
+      "tokenOptimization": {
+        "enabled": true,
+        "snippetFirst": true,
+        "targetReduction": 0.8,
+        "showEfficiencyMetrics": true,
+        "enableToolchainIntegration": true,
+        "optimizeDebugging": true,
+        "optimizeJupyterWorkflows": true
+      }
+    }
+  },
+
+  // Error Lens and Diagnostics
+  "errorLens": {
+    "enabledDiagnosticLevels": ["error", "warning", "info"],
+    "gutterIconsEnabled": true,
+    "statusBarIconsEnabled": true
+  },
+
+  // Shell and Terminal
+  "shell": {
+    "enable": true,
+    "executablePath": "shellcheck",
+    "run": "onType",
+    "exclude": [],
+    "customArgs": ["--severity=warning"]
+  },
+  "terminal": {
+    "defaultProfile": "PowerShell",
+    "profiles": {
+      "PowerShell": {
+        "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+        "args": ["-NoLogo"]
+      }
+    }
+  },
+
+  // AI Assistant Configuration
+  "ai": {
+    "copilot": {
+      "enableAutoCompletions": true,
+      "enableCodeActions": true,
+      "contextAware": true
+    },
+    "assistant": {
+      "rulesPath": "specs/071-rules-for-ai/spec.md",
+      "constitutionalCompliance": {
+        "enabled": true,
+        "threshold": 0.75,
+        "enforceAllArticles": true,
+        "validationMode": "realtime",
+        "articles": [
+          "Library-First Principle",
+          "Test-First Imperative",
+          "Simplicity Gate",
+          "Integration-First Testing",
+          "Clarity and Unambiguity",
+          "Implicit Knowledge Codification"
+        ]
+      },
+      "ruleEnforcement": {
+        "aiAssistantBehavior": true,
+        "codeQuality": true,
+        "constitutionalCompliance": true,
+        "specKitWorkflow": true,
+        "developmentProcess": true,
+        "mangleIntegration": true
+      },
+      "codeGeneration": {
+        "libraryFirst": true,
+        "testFirst": true,
+        "simplicityGate": true,
+        "antiAbstraction": true,
+        "integrationFirst": true,
+        "clarityFirst": true
+      },
+      "qualityStandards": {
+        "python": {
+          "pep8Compliance": true,
+          "typeHints": "required",
+          "docstrings": "required",
+          "blackFormatting": true,
+          "isortImports": true,
+          "pylintCompliance": true,
+          "lineLength": 100
+        },
+        "typescript": {
+          "eslintCompliance": true,
+          "prettierFormatting": true,
+          "typeDefinitions": "required",
+          "jsdocComments": "required"
+        }
+      }
+    },
+    "codeIntelligence": {
+      "enabled": true,
+      "languageServers": [
+        {
+          "language": "python",
+          "server": "pylsp",
+          "config": {
+            "pylsp.plugins.jedi.enabled": true,
+            "pylsp.plugins.mypy.enabled": true,
+            "pylsp.plugins.rope.enabled": true
+          }
+        }
+      ],
+      "indexing": {
+        "enabled": true,
+        "paths": ["src/", "tests/", "sdd/"],
+        "excludePatterns": ["**/__pycache__/**", "**/*.pyc", ".git/**"]
+      }
+    }
+  },
+
+  // MCP Configuration
+  "mcp": {
+    "enabled": true,
+    "servers": {
+      "alita-mcp": {
+        "host": "127.0.0.1",
+        "port": 3000,
+        "secure": false
+      }
+    }
+  },
+
+  // Project-specific settings
+  "project": {
+    "specKit": {
+      "enabled": true,
+      "autoInstall": true,
+      "version": "latest",
+      "configPath": "${workspaceFolder}/.spec-kit/config.yaml",
+      "templatesPath": "${workspaceFolder}/.specify/templates",
+      "constitutionalFramework": {
+        "enabled": true,
+        "threshold": 0.75,
+        "articles": [
+          "Library-First",
+          "Test-First",
+          "Simplicity",
+          "Integration",
+          "Clarity",
+          "Counterfactual"
+        ]
+      },
+      "workflow": {
+        "phases": [
+          "constitution",
+          "specify",
+          "plan",
+          "tasks",
+          "implement",
+          "validate"
+        ],
+        "autoValidation": true,
+        "constitutionalGates": true
+      },
+      "integration": {
+        "sddPipeline": true,
+        "unifiedOrchestrator": true,
+        "mangleRules": true,
+        "githubSync": true
+      }
+    },
+    "sdd": {
+      "enabled": true,
+      "validateSyntax": true,
+      "checkReferences": true,
+      "showGraph": true,
+      "highlightDependencies": true,
+      "specKitIntegration": true
+    },
+    "constitutional": {
+      "enabled": true,
+      "validateOnChange": true,
+      "showComplianceScores": true,
+      "highlightViolations": true,
+      "suggestFixes": true,
+      "autoFormat": false
+    },
+    "performance": {
+      "enabled": true,
+      "metrics": [
+        "response_time",
+        "memory_usage",
+        "cpu_usage",
+        "database_queries",
+        "external_api_calls"
+      ],
+      "alerts": {
+        "slowQueryThreshold": "100ms",
+        "highMemoryThreshold": "512MB",
+        "highCpuThreshold": "80%"
+      }
+    }
+  }
+}

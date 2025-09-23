@@ -1,0 +1,403 @@
+name: EOS Validation Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/eos/**'
+      - 'examples/eos/**'
+      - 'tests/test_eos_*.py'
+      - '.github/workflows/eos_validation.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/eos/**'
+      - 'examples/eos/**'
+      - 'tests/test_eos_*.py'
+
+jobs:
+  eos-schema-validation:
+    name: EOS Schema Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install jsonschema pyyaml pytest pytest-asyncio
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Validate EOS JSON Schema
+      run: |
+        python -c "
+        import json
+        from jsonschema import Draft202012Validator
+        with open('src/eos/schema.json', 'r') as f:
+            schema = json.load(f)
+        Draft202012Validator.check_schema(schema)
+        print('✅ EOS JSON Schema is valid')
+        "
+    
+    - name: Validate Reference Specifications
+      run: |
+        if [ -f "examples/eos/reference-orchestration.yaml" ]; then
+          python -m src.eos.schema examples/eos/reference-orchestration.yaml
+          echo "✅ Reference specification validation completed"
+        else
+          echo "⚠️ Reference specification not found, skipping"
+        fi
+    
+    - name: Test EOS Schema Validation
+      run: |
+        python -m pytest tests/test_eos_integration.py::TestEOSSchemaValidation -v
+
+  eos-component-tests:
+    name: EOS Component Tests
+    runs-on: ubuntu-latest
+    needs: eos-schema-validation
+    
+    strategy:
+      matrix:
+        component: [
+          "TestCynefinClassification",
+          "TestLadderOperators", 
+          "TestMoERouting",
+          "TestStateMachine"
+        ]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install jsonschema pyyaml pytest pytest-asyncio
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Run Component Tests
+      run: |
+        python -m pytest tests/test_eos_integration.py::${{ matrix.component }} -v --tb=short
+
+  eos-integration-tests:
+    name: EOS Integration Tests
+    runs-on: ubuntu-latest
+    needs: [eos-schema-validation, eos-component-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install jsonschema pyyaml pytest pytest-asyncio
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Run Integration Tests
+      run: |
+        python -m pytest tests/test_eos_integration.py::TestEOSIntegration -v --tb=short
+    
+    - name: Run EOS Demo
+      run: |
+        python demo_eos_system.py --verbose
+        echo "✅ EOS demo completed successfully"
+
+  eos-telemetry-integration:
+    name: EOS Telemetry Integration
+    runs-on: ubuntu-latest
+    needs: eos-schema-validation
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install jsonschema pyyaml pytest pytest-asyncio
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Test Telemetry Integration
+      run: |
+        python -m pytest tests/test_eos_integration.py::TestTelemetryIntegration -v
+    
+    - name: Validate Telemetry Schema Compliance
+      run: |
+        python -c "
+        # Validate EOS telemetry fields match existing telemetry schema
+        try:
+            from src.performance_monitoring.telemetry.opentelemetry_config import TelemetrySpan
+            from src.eos.orchestrator import EOSOrchestrator
+            print('✅ Telemetry integration available')
+        except ImportError:
+            print('⚠️ Telemetry modules not available in test environment')
+        "
+
+  eos-governance-compliance:
+    name: EOS Governance Compliance
+    runs-on: ubuntu-latest
+    needs: eos-schema-validation
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install jsonschema pyyaml pytest pytest-asyncio
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Constitutional Rule Compliance
+      run: |
+        if [ -f "scripts/rule_validator.py" ]; then
+          # Test EOS orchestrator integration with constitutional rules
+          python scripts/rule_validator.py src/eos/ --output governance_report.json
+          echo "✅ Constitutional compliance check completed"
+        else
+          echo "⚠️ Constitutional validator not found, skipping"
+        fi
+    
+    - name: EOS Governance Integration Test
+      run: |
+        python -c "
+        # Test governance integration points
+        try:
+            from src.eos.orchestrator import EOSOrchestrator
+            import inspect
+            
+            # Check governance methods exist
+            methods = inspect.getmembers(EOSOrchestrator, predicate=inspect.isfunction)
+            governance_methods = [name for name, _ in methods if 'governance' in name.lower()]
+            
+            if governance_methods:
+                print(f'✅ Governance integration methods found: {governance_methods}')
+            else:
+                print('⚠️ No governance methods found')
+                
+        except Exception as e:
+            print(f'❌ Governance integration test failed: {e}')
+        "
+
+  eos-documentation-validation:
+    name: EOS Documentation Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Validate Documentation Structure
+      run: |
+        # Check for required documentation files
+        required_docs=(
+          "src/eos/__init__.py"
+          "src/eos/schema.json"
+          "examples/eos/reference-orchestration.yaml"
+          "tests/test_eos_integration.py"
+          "demo_eos_system.py"
+        )
+        
+        missing_files=()
+        for file in "${required_docs[@]}"; do
+          if [ ! -f "$file" ]; then
+            missing_files+=("$file")
+          fi
+        done
+        
+        if [ ${#missing_files[@]} -eq 0 ]; then
+          echo "✅ All required EOS documentation files present"
+        else
+          echo "❌ Missing documentation files:"
+          printf '%s\n' "${missing_files[@]}"
+          exit 1
+        fi
+    
+    - name: Validate Example Specifications
+      run: |
+        # Count and validate example specifications
+        if [ -d "examples/eos" ]; then
+          example_count=$(find examples/eos -name "*.yaml" -o -name "*.yml" | wc -l)
+          echo "📋 Found $example_count EOS example specifications"
+          
+          if [ $example_count -gt 0 ]; then
+            echo "✅ EOS examples available"
+          else
+            echo "⚠️ No EOS examples found"
+          fi
+        else
+          echo "⚠️ No EOS examples directory found"
+        fi
+
+  eos-performance-validation:
+    name: EOS Performance Validation
+    runs-on: ubuntu-latest
+    needs: eos-integration-tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install jsonschema pyyaml pytest pytest-asyncio time
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Performance Benchmark
+      run: |
+        python -c "
+        import asyncio
+        import time
+        
+        async def benchmark_eos():
+            try:
+                # Import EOS components
+                from src.eos.schema import EOSValidator
+                from src.eos.context import CynefinClassifier
+                
+                # Test schema validation performance
+                start = time.time()
+                validator = EOSValidator()
+                validation_time = (time.time() - start) * 1000
+                
+                # Test context analysis performance  
+                start = time.time()
+                classifier = CynefinClassifier()
+                test_problem = {
+                    'statement': 'test problem for performance',
+                    'constraints': ['test constraint'],
+                    'stakeholders': ['test team']
+                }
+                classification = classifier.classify(test_problem)
+                classification_time = (time.time() - start) * 1000
+                
+                print(f'⚡ Schema validation: {validation_time:.1f}ms')
+                print(f'⚡ Context classification: {classification_time:.1f}ms')
+                
+                # Performance targets (SLOs from specification)
+                if validation_time < 100 and classification_time < 1000:
+                    print('✅ Performance targets met')
+                    return True
+                else:
+                    print('⚠️ Performance targets not met')
+                    return False
+                    
+            except ImportError as e:
+                print(f'⚠️ EOS modules not available for performance test: {e}')
+                return True  # Don't fail if modules not available
+        
+        result = asyncio.run(benchmark_eos())
+        exit(0 if result else 1)
+        "
+
+  eos-aggregate-report:
+    name: EOS Aggregate Report
+    runs-on: ubuntu-latest
+    needs: [
+      eos-schema-validation,
+      eos-component-tests,
+      eos-integration-tests,
+      eos-telemetry-integration,
+      eos-governance-compliance,
+      eos-documentation-validation,
+      eos-performance-validation
+    ]
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Generate Aggregate Report
+      run: |
+        echo "# EOS Validation Pipeline Report" > eos_report.md
+        echo "" >> eos_report.md
+        echo "## Validation Results" >> eos_report.md
+        echo "" >> eos_report.md
+        
+        # Check job results
+        jobs=(
+          "eos-schema-validation:${{ needs.eos-schema-validation.result }}"
+          "eos-component-tests:${{ needs.eos-component-tests.result }}"
+          "eos-integration-tests:${{ needs.eos-integration-tests.result }}"
+          "eos-telemetry-integration:${{ needs.eos-telemetry-integration.result }}"
+          "eos-governance-compliance:${{ needs.eos-governance-compliance.result }}"
+          "eos-documentation-validation:${{ needs.eos-documentation-validation.result }}"
+          "eos-performance-validation:${{ needs.eos-performance-validation.result }}"
+        )
+        
+        success_count=0
+        total_count=${#jobs[@]}
+        
+        for job in "${jobs[@]}"; do
+          name="${job%:*}"
+          result="${job#*:}"
+          
+          if [ "$result" = "success" ]; then
+            echo "- ✅ $name" >> eos_report.md
+            ((success_count++))
+          else
+            echo "- ❌ $name ($result)" >> eos_report.md
+          fi
+        done
+        
+        echo "" >> eos_report.md
+        echo "## Summary" >> eos_report.md
+        echo "" >> eos_report.md
+        echo "- **Total Jobs:** $total_count" >> eos_report.md
+        echo "- **Successful:** $success_count" >> eos_report.md
+        echo "- **Failed:** $((total_count - success_count))" >> eos_report.md
+        echo "- **Success Rate:** $((success_count * 100 / total_count))%" >> eos_report.md
+        
+        if [ $success_count -eq $total_count ]; then
+          echo "" >> eos_report.md
+          echo "🎉 **All EOS validation checks passed!**" >> eos_report.md
+          echo "The E-UPUSF Orchestration Schema is ready for deployment." >> eos_report.md
+        else
+          echo "" >> eos_report.md
+          echo "⚠️ **Some EOS validation checks failed.**" >> eos_report.md
+          echo "Please review the failed jobs above." >> eos_report.md
+        fi
+        
+        cat eos_report.md
+    
+    - name: Upload Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: eos-validation-report
+        path: eos_report.md

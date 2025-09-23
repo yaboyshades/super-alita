@@ -1,0 +1,55 @@
+# Codex runtime configuration aligned with Copilot setup
+# Mirrors workspace, instructions, and constitutional requirements defined under .github.
+
+[runtime]
+name = "super-alita"
+pythonpath = "./src"
+entrypoint = "mcp_server_entrypoint.py"
+setup_script = "./.codex/setup.sh"
+
+[server]
+host = "127.0.0.1"
+port = 8765
+use_stdio = true
+
+[logging]
+level = "INFO"
+
+[workspace]
+workspace_file = "./workspace.yaml"
+instructions_file = "./instructions.md"
+prompts_dir = "../.github/prompts"
+chatmodes_dir = "../.github/chatmodes"
+agent_manifest = "../.github/agent.yaml"
+constitution = "../.github/CONSTITUTION.md"
+
+[features]
+knowledge_graph = true
+ladder_planner = true
+consensus = true
+mangle = true
+shadow_reward = true
+snippet_optimizer = true
+constitutional_validation = true
+sdd = true
+sdd_cli = true
+
+[paths]
+temp_dir = "./.codex/tmp"
+reports_dir = "./.codex/reports"
+
+[commands]
+sdd_specify = ["python", "-m", "src.sdd", "specify"]
+sdd_plan    = ["python", "-m", "src.sdd", "plan"]
+sdd_tasks   = ["python", "-m", "src.sdd", "tasks"]
+sdd_validate= ["python", "-m", "src.sdd", "validate"]
+
+[security]
+sandbox = false
+
+[tools]
+enable_dynamic_tools = true
+
+[env]
+ALITA_REQUIRE_API_KEY = "false"
+PYTHONPATH = "./src"

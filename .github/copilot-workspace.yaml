@@ -14,6 +14,13 @@ workspace:
     repositoryFirst: true
     allowInternet: true
     webSearchFallback: true
+  exemplars:
+    - path: "src/core/reliability.py"
+      rationale: "High-reliability async retry orchestration pattern with precise typing."
+    - path: "src/sdd/enhanced_sdd_framework.py"
+      rationale: "Reference implementation of the SDD pipeline using composable services and validators."
+    - path: "tests/test_orchestrator_basic.py"
+      rationale: "Pytest-based system exercise demonstrating fixture layering and coverage expectations."
   goals:
     - name: "SDD Workflow"
       steps:

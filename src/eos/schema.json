@@ -1,0 +1,429 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eupusf.org/schema/eos-0.9.json",
+  "title": "E-UPUSF Orchestration Schema v0.9",
+  "description": "Formal specification for context-adaptive problem solving orchestration",
+  "type": "object",
+  "required": [
+    "eos_version",
+    "meta",
+    "problem",
+    "context",
+    "resources",
+    "methods_registry",
+    "ladder",
+    "experts",
+    "routing",
+    "pipeline",
+    "evaluation",
+    "governance",
+    "telemetry"
+  ],
+  "properties": {
+    "eos_version": {
+      "type": "string",
+      "pattern": "^0\\.9(\\.\\d+)?$",
+      "description": "EOS schema version"
+    },
+    "meta": {
+      "type": "object",
+      "required": ["run_id", "owner"],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Unique identifier for this orchestration run"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Owning team or user"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Source documents and policies"
+        },
+        "reproducibility": {
+          "type": "object",
+          "properties": {
+            "seed": {"type": "integer"},
+            "cache_mode": {"type": "string", "enum": ["warm", "cold", "none"]},
+            "container": {"type": "string"}
+          }
+        }
+      }
+    },
+    "problem": {
+      "type": "object",
+      "required": ["title", "statement", "objectives"],
+      "properties": {
+        "title": {"type": "string"},
+        "statement": {"type": "string"},
+        "objectives": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1
+        },
+        "constraints": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "stakeholders": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "risk_tolerance": {
+          "type": "object",
+          "properties": {
+            "technical": {"type": "string", "enum": ["low", "medium", "high"]},
+            "safety": {"type": "string", "enum": ["low", "medium", "high"]},
+            "business": {"type": "string", "enum": ["low", "medium", "high"]}
+          }
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "required": ["cynefin_prior"],
+      "properties": {
+        "cynefin_prior": {
+          "type": "object",
+          "required": ["simple", "complicated", "complex", "chaotic"],
+          "properties": {
+            "simple": {"type": "number", "minimum": 0, "maximum": 1},
+            "complicated": {"type": "number", "minimum": 0, "maximum": 1},
+            "complex": {"type": "number", "minimum": 0, "maximum": 1},
+            "chaotic": {"type": "number", "minimum": 0, "maximum": 1}
+          },
+          "additionalProperties": false
+        },
+        "domain_hints": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "uncertainty_thresholds": {
+          "type": "object",
+          "properties": {
+            "entropy_promote_lift": {"type": "number", "minimum": 0, "maximum": 2},
+            "chaotic_emergency": {"type": "number", "minimum": 0, "maximum": 1}
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "required": ["budgets"],
+      "properties": {
+        "budgets": {
+          "type": "object",
+          "properties": {
+            "compute_gh": {"type": "number", "minimum": 0},
+            "cpu_core_min": {"type": "integer", "minimum": 1},
+            "memory_gb": {"type": "number", "minimum": 0}
+          }
+        },
+        "time_limits": {
+          "type": "object",
+          "properties": {
+            "per_state_minutes": {
+              "type": "object",
+              "properties": {
+                "Observe": {"type": "number", "minimum": 0},
+                "Analyze": {"type": "number", "minimum": 0},
+                "Synthesize": {"type": "number", "minimum": 0},
+                "Implement": {"type": "number", "minimum": 0},
+                "Evaluate": {"type": "number", "minimum": 0}
+              }
+            }
+          }
+        },
+        "data_access": {
+          "type": "object",
+          "properties": {
+            "allow_external_web": {"type": "boolean"},
+            "graph_endpoint": {"type": "string", "format": "uri"}
+          }
+        },
+        "hil_checkpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["state"],
+            "properties": {
+              "state": {"type": "string", "enum": ["Observe", "Analyze", "Synthesize", "Implement", "Evaluate"]},
+              "rationale_required": {"type": "boolean"},
+              "approvers": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "methods_registry": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "states", "entry_criteria", "operators", "artifacts_out"],
+        "properties": {
+          "id": {"type": "string"},
+          "states": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["Observe", "Analyze", "Synthesize", "Implement", "Evaluate"]}
+          },
+          "entry_criteria": {"type": "object"},
+          "operators": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["Lift", "Decompose", "Synthesize", "Descend"]}
+          },
+          "artifacts_out": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "ladder": {
+      "type": "object",
+      "required": ["enable_semantic_lifting"],
+      "properties": {
+        "enable_semantic_lifting": {"type": "boolean"},
+        "lifting_triggers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["condition"],
+            "properties": {
+              "condition": {"type": "string"}
+            }
+          }
+        },
+        "descent_triggers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["condition"],
+            "properties": {
+              "condition": {"type": "string"}
+            }
+          }
+        },
+        "dimensional_axes": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "max_lift_depth": {"type": "integer", "minimum": 1}
+      }
+    },
+    "experts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "inputs", "outputs", "cost", "risk", "quality_prior"],
+        "properties": {
+          "id": {"type": "string"},
+          "kind": {"type": "string", "enum": ["tool", "agent", "human"]},
+          "inputs": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "outputs": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "cost": {
+            "type": "object",
+            "properties": {
+              "cpu": {"type": "number", "minimum": 0},
+              "gpu": {"type": "number", "minimum": 0},
+              "time_s": {"type": "number", "minimum": 0}
+            }
+          },
+          "risk": {
+            "type": "object",
+            "properties": {
+              "safety": {"type": "number", "minimum": 0, "maximum": 1},
+              "privacy": {"type": "number", "minimum": 0, "maximum": 1}
+            }
+          },
+          "quality_prior": {"type": "number", "minimum": 0, "maximum": 1},
+          "fit_hints": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "routing": {
+      "type": "object",
+      "required": ["scoring"],
+      "properties": {
+        "scoring": {
+          "type": "object",
+          "required": ["weights", "top_k"],
+          "properties": {
+            "weights": {
+              "type": "object",
+              "required": ["fit", "expected_utility", "cost", "risk"],
+              "properties": {
+                "fit": {"type": "number", "minimum": 0, "maximum": 1},
+                "expected_utility": {"type": "number", "minimum": 0, "maximum": 1},
+                "cost": {"type": "number", "minimum": 0, "maximum": 1},
+                "risk": {"type": "number", "minimum": 0, "maximum": 1}
+              }
+            },
+            "top_k": {"type": "integer", "minimum": 1},
+            "exploration_policy": {
+              "type": "object",
+              "properties": {
+                "type": {"type": "string", "enum": ["ucb1", "thompson", "epsilon_greedy"]},
+                "c": {"type": "number"},
+                "epsilon": {"type": "number", "minimum": 0, "maximum": 1}
+              }
+            }
+          }
+        },
+        "budgets": {
+          "type": "object",
+          "properties": {
+            "reserve_fraction": {"type": "number", "minimum": 0, "maximum": 1}
+          }
+        },
+        "gating_rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["if", "then"],
+            "properties": {
+              "if": {"type": "string"},
+              "then": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "pipeline": {
+      "type": "object",
+      "required": ["states"],
+      "properties": {
+        "states": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "timebox_min", "operators", "methods_candidates", "exit_guard"],
+            "properties": {
+              "name": {"type": "string", "enum": ["Observe", "Analyze", "Synthesize", "Implement", "Evaluate"]},
+              "timebox_min": {"type": "number", "minimum": 0},
+              "operators": {
+                "type": "array",
+                "items": {"type": "string", "enum": ["Lift", "Decompose", "Synthesize", "Descend"]}
+              },
+              "methods_candidates": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "entry_guard": {"type": "string"},
+              "exit_guard": {"type": "string"},
+              "hil_required": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "required": ["metrics", "stopping"],
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "target"],
+            "properties": {
+              "id": {"type": "string"},
+              "target": {"type": "object"}
+            }
+          }
+        },
+        "stopping": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["condition"],
+            "properties": {
+              "condition": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "required": ["rulesets", "enforcement"],
+      "properties": {
+        "rulesets": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "enforcement": {
+          "type": "object",
+          "properties": {
+            "pre": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "mid": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "post": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          }
+        },
+        "exceptions": {
+          "type": "object",
+          "properties": {
+            "allowlist_paths": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "expiry_days": {"type": "integer", "minimum": 1}
+          }
+        }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "required": ["trace", "logs"],
+      "properties": {
+        "trace": {
+          "type": "object",
+          "required": ["fields"],
+          "properties": {
+            "fields": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          }
+        },
+        "logs": {
+          "type": "object",
+          "properties": {
+            "redact": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "payload_cap_bytes": {"type": "integer", "minimum": 0}
+          }
+        },
+        "dashboards": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    }
+  }
+}

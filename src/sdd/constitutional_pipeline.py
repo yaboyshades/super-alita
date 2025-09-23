@@ -4,13 +4,18 @@ Implements the Specification-Driven Development workflow with integrated
 constitutional validation at each stage: specify, plan, and tasks.
 """
 
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from ..constitutional import ConstitutionalScorer
+from ..core.yaml_utils import safe_dump, safe_load
 from .models import (
+    ConstitutionalAlignment,
     ConstitutionalValidation,
+    NextStepGuidance,
+    NextStepItem,
     PlanRequest,
     PlanResponse,
     SpecifyRequest,
@@ -36,23 +41,75 @@ class ConstitutionalSDDPipeline:
 
     async def specify(self, request: SpecifyRequest) -> SpecifyResponse:
         """Execute the /specify phase with constitutional validation."""
-        # Generate feature metadata
-        feature_id = self._generate_feature_id(request.user_input)
-        feature_name = self._slugify(request.user_input)
-        feature_dir = self.specs_dir / f"{feature_id}-{feature_name}"
-        feature_dir.mkdir(parents=True, exist_ok=True)
+        branch_name = request.branch_name
+        feature_dir: Path
+        spec_file: Path
+        feature_id: str
+        feature_name: str
 
-        # Generate specification content
+        if request.spec_file:
+            spec_file = Path(request.spec_file)
+            feature_dir = spec_file.parent
+            feature_dir.mkdir(parents=True, exist_ok=True)
+        elif request.feature_dir:
+            feature_dir = Path(request.feature_dir)
+            feature_dir.mkdir(parents=True, exist_ok=True)
+            spec_file = feature_dir / "spec.md"
+        else:
+            feature_id = self._generate_feature_id(request.user_input)
+            feature_name = self._slugify(request.user_input)
+            feature_dir = self.specs_dir / f"{feature_id}-{feature_name}"
+            feature_dir.mkdir(parents=True, exist_ok=True)
+            spec_file = feature_dir / "spec.md"
+            branch_name = branch_name or f"{feature_id}-{feature_name}"
+
+        if not request.spec_file and request.feature_dir and not spec_file.exists():
+            spec_file.touch()
+
+        if request.spec_file is None and request.feature_dir is None:
+            feature_id_val = (
+                feature_dir.name[:3] if feature_dir.name[:3].isdigit() else None
+            )
+            feature_id = feature_id_val or self._generate_feature_id(request.user_input)
+            feature_name = (
+                feature_dir.name.split("-", 1)[1]
+                if "-" in feature_dir.name
+                else self._slugify(request.user_input)[:50]
+            )
+        else:
+            if branch_name and branch_name[:3].isdigit():
+                feature_id = branch_name[:3]
+            else:
+                feature_id = self._generate_feature_id(request.user_input)
+            if branch_name and "-" in branch_name:
+                feature_name = branch_name.split("-", 1)[1]
+            else:
+                feature_name = (
+                    feature_dir.name.split("-", 1)[1]
+                    if "-" in feature_dir.name
+                    else self._slugify(request.user_input)[:50]
+                )
+                branch_name = branch_name or f"{feature_id}-{feature_name}"
+
+        guidance = self._collect_next_step_guidance(
+            feature_id=feature_id,
+            feature_dir=feature_dir,
+            spec_file=spec_file,
+            context=request.context,
+            user_input=request.user_input,
+        )
         specification = self._generate_specification(
-            request.user_input, request.context
+            user_input=request.user_input,
+            context=request.context,
+            feature_id=feature_id,
+            guidance=guidance,
         )
 
-        # Write specification file
-        spec_file = feature_dir / "spec.md"
         spec_file.write_text(specification, encoding="utf-8")
+        metadata_path = feature_dir / "next_steps.yaml"
+        metadata_path.write_text(safe_dump(guidance.model_dump()), encoding="utf-8")
 
-        # Constitutional validation if requested
-        constitutional_compliance = {}
+        constitutional_compliance: dict[str, ConstitutionalValidation] = {}
         overall_score = 1.0
         threshold_met = True
 
@@ -66,10 +123,16 @@ class ConstitutionalSDDPipeline:
             specification=specification,
             feature_id=feature_id,
             feature_path=str(spec_file),
+            branch_name=branch_name,
+            feature_name=feature_name,
+            spec_file_path=str(spec_file),
+            feature_dir=str(feature_dir),
             constitutional_compliance=constitutional_compliance,
             overall_compliance_score=overall_score,
             compliance_threshold_met=threshold_met,
-            next_steps=self._get_specify_next_steps(threshold_met),
+            next_steps=self._summarize_next_step_guidance(guidance, threshold_met),
+            next_step_guidance=guidance,
+            next_step_metadata_path=self._relative_to_workspace(metadata_path),
             timestamp=datetime.now(),
         )
 
@@ -84,6 +147,21 @@ class ConstitutionalSDDPipeline:
             raise FileNotFoundError(f"Specification not found: {spec_path}")
 
         specification = spec_path.read_text(encoding="utf-8")
+        feature_dir = spec_path.parent
+        feature_id = (
+            request.feature_id
+            if getattr(request, "feature_id", None)
+            else self._derive_feature_id_from_path(str(spec_path))
+        )
+        raw_guidance = self._load_next_step_guidance(feature_dir, feature_id)
+        metadata_rel = None
+        if raw_guidance:
+            raw_guidance = self._advance_guidance_for_plan(raw_guidance)
+            metadata_rel = self._persist_guidance(feature_dir, raw_guidance)
+        else:
+            metadata_path = feature_dir / "next_steps.yaml"
+            if metadata_path.exists():
+                metadata_rel = self._relative_to_workspace(metadata_path)
 
         # Generate implementation plan
         implementation_plan = self._generate_implementation_plan(
@@ -91,16 +169,16 @@ class ConstitutionalSDDPipeline:
         )
 
         # Write plan file
-        plan_file = spec_path.parent / "implementation-plan.md"
+        plan_file = feature_dir / "implementation-plan.md"
         plan_file.write_text(implementation_plan, encoding="utf-8")
 
         # Generate supporting documents
         supporting_docs = self._generate_supporting_documents(
-            spec_path.parent, specification, request.technology_stack
+            feature_dir, specification, request.technology_stack
         )
 
         # Constitutional validation if requested
-        constitutional_compliance = {}
+        constitutional_compliance: dict[str, ConstitutionalValidation] = {}
         overall_score = 1.0
         threshold_met = True
 
@@ -111,8 +189,18 @@ class ConstitutionalSDDPipeline:
             overall_score = self._calculate_overall_score(constitutional_compliance)
             threshold_met = overall_score >= self.compliance_threshold
 
+        guidance_summary: list[str] = []
+        if raw_guidance:
+            guidance_summary = self._summarize_next_step_guidance(
+                raw_guidance, threshold_met
+            )
+        plan_next_steps = self._merge_next_step_summaries(
+            guidance_summary, self._get_plan_next_steps(threshold_met)
+        )
+
         return PlanResponse(
             success=True,
+            feature_id=feature_id,
             implementation_plan=implementation_plan,
             plan=implementation_plan,
             plan_path=str(plan_file),
@@ -126,7 +214,9 @@ class ConstitutionalSDDPipeline:
             architecture_decisions=self._extract_architecture_decisions(
                 implementation_plan
             ),
-            next_steps=self._get_plan_next_steps(threshold_met),
+            next_steps=plan_next_steps,
+            next_step_guidance=raw_guidance,
+            next_step_metadata_path=metadata_rel,
             timestamp=datetime.now(),
         )
 
@@ -154,21 +244,47 @@ class ConstitutionalSDDPipeline:
             raise FileNotFoundError(f"Implementation plan not found: {plan_path}")
 
         implementation_plan = plan_path.read_text(encoding="utf-8")
+        feature_dir = plan_path.parent
+        feature_id = (
+            request.feature_id
+            if getattr(request, "feature_id", None)
+            else self._derive_feature_id_from_path(str(plan_path))
+        )
+        raw_guidance = self._load_next_step_guidance(feature_dir, feature_id)
+        metadata_rel = None
+        if raw_guidance:
+            raw_guidance = self._advance_guidance_for_tasks(raw_guidance)
+            metadata_rel = self._persist_guidance(feature_dir, raw_guidance)
+        else:
+            metadata_path = feature_dir / "next_steps.yaml"
+            if metadata_path.exists():
+                metadata_rel = self._relative_to_workspace(metadata_path)
 
         # Generate task breakdown
         tasks_breakdown = self._generate_task_breakdown(
             implementation_plan, request.priority_focus, request.team_size
         )
 
-        # Write tasks file
-        tasks_file = plan_path.parent / "tasks.md"
-        tasks_file.write_text(tasks_breakdown, encoding="utf-8")
-
         # Parse structured tasks
         structured_tasks = self._parse_structured_tasks(tasks_breakdown)
 
+        guidance_tasks: list[TaskBreakdown] = []
+        if raw_guidance:
+            guidance_tasks = self._convert_guidance_to_tasks(
+                raw_guidance, [task.id for task in structured_tasks]
+            )
+            if guidance_tasks:
+                structured_tasks.extend(guidance_tasks)
+                tasks_breakdown = self._append_guidance_markdown(
+                    tasks_breakdown, guidance_tasks
+                )
+
+        # Write tasks file (after appending guidance follow-ups if any)
+        tasks_file = feature_dir / "tasks.md"
+        tasks_file.write_text(tasks_breakdown, encoding="utf-8")
+
         # Constitutional validation if requested
-        constitutional_compliance = {}
+        constitutional_compliance: dict[str, ConstitutionalValidation] = {}
         overall_score = 1.0
         threshold_met = True
 
@@ -181,8 +297,18 @@ class ConstitutionalSDDPipeline:
         total_hours = sum(task.estimated_hours for task in structured_tasks)
         critical_path = self._calculate_critical_path(structured_tasks)
 
+        guidance_summary: list[str] = []
+        if raw_guidance:
+            guidance_summary = self._summarize_next_step_guidance(
+                raw_guidance, threshold_met
+            )
+        task_next_steps = self._merge_next_step_summaries(
+            guidance_summary, self._get_tasks_next_steps(threshold_met)
+        )
+
         return TasksResponse(
             success=True,
+            feature_id=feature_id,
             tasks_breakdown=tasks_breakdown,
             tasks_path=str(tasks_file),
             tasks=structured_tasks,
@@ -191,9 +317,22 @@ class ConstitutionalSDDPipeline:
             compliance_threshold_met=threshold_met,
             estimated_total_hours=total_hours,
             critical_path=critical_path,
-            next_steps=self._get_tasks_next_steps(threshold_met),
+            next_steps=task_next_steps,
+            next_step_guidance=raw_guidance,
+            next_step_metadata_path=metadata_rel,
             timestamp=datetime.now(),
         )
+
+    def _derive_feature_id_from_path(self, path_str: str) -> str:
+        """Derive a feature identifier from a spec/plan/tasks path."""
+        try:
+            resolved = Path(path_str).resolve()
+            parent_name = resolved.parent.name
+            if len(parent_name) >= 3 and parent_name[:3].isdigit():
+                return parent_name[:3]
+            return parent_name.split("-", 1)[0] if "-" in parent_name else parent_name
+        except Exception:  # noqa: BLE001
+            return "unknown"
 
     def _generate_feature_id(self, _user_input: str) -> str:
         """Generate a unique feature ID."""
@@ -206,57 +345,692 @@ class ConstitutionalSDDPipeline:
 
     def _slugify(self, text: str) -> str:
         """Convert text to URL-safe slug."""
-        import re
 
         slug = re.sub(r"[^\w\s-]", "", text.lower())
         slug = re.sub(r"[-\s]+", "-", slug)
         return slug.strip("-")[:50]
 
-    def _generate_specification(self, user_input: str, context: dict[str, Any]) -> str:
-        """Generate specification content."""
-        return f"""# Feature Specification
+    TASK_PRIORITY_BY_GATE = {
+        "library_first": "high",
+        "test_first": "critical",
+        "simplicity": "high",
+        "integration_first": "high",
+        "clarity": "medium",
+        "counterfactual": "medium",
+    }
 
-## Overview
-{user_input}
+    GATE_TO_ARTICLE = {
+        "library_first": "Article I - Library-First Development",
+        "test_first": "Article II - Test-First Development",
+        "simplicity": "Article III - Simplicity Gate",
+        "integration_first": "Article IV - Integration-First Testing",
+        "clarity": "Article V - Clarity and Unambiguity",
+        "counterfactual": "Article VI - Counterfactual Justification",
+    }
 
-## Context
-{context.get('description', 'Additional context not provided')}
+    def _collect_next_step_guidance(
+        self,
+        feature_id: str,
+        feature_dir: Path,
+        spec_file: Path,
+        context: dict[str, Any],
+        user_input: str,
+    ) -> NextStepGuidance:
+        """Derive structured next-step guidance for the specification."""
+        default_owner = str(
+            context.get("owner")
+            or context.get("feature_owner")
+            or context.get("primary_owner")
+            or "unassigned"
+        )
 
-## Functional Requirements
-- [ ] Requirement 1: Core functionality
-- [ ] Requirement 2: User interface
-- [ ] Requirement 3: Data persistence
+        clarifications = self._gather_clarifications(
+            spec_file=spec_file,
+            context=context,
+            user_input=user_input,
+            default_owner=default_owner,
+        )
+        artefacts = self._gather_research_artefacts(
+            feature_dir=feature_dir,
+            default_owner=default_owner,
+        )
+        commands = self._build_command_items(
+            feature_id=feature_id,
+            default_owner=default_owner,
+        )
+        metadata_reference = self._relative_to_workspace(
+            feature_dir / "next_steps.yaml"
+        )
+        alignment = self._build_alignment(
+            clarifications, artefacts, commands, metadata_reference
+        )
 
-## Non-Functional Requirements
-- [ ] Performance: Response time < 200ms
-- [ ] Security: Authentication and authorization
-- [ ] Scalability: Support 1000+ concurrent users
+        return NextStepGuidance(
+            feature_id=feature_id,
+            clarifications=clarifications,
+            artefacts=artefacts,
+            commands=commands,
+            constitutional_alignment=alignment,
+        )
 
-## Acceptance Criteria
-- [ ] All functional requirements implemented
-- [ ] All tests passing (minimum 80% coverage)
-- [ ] Documentation complete
+    def _advance_guidance_for_plan(
+        self, guidance: NextStepGuidance
+    ) -> NextStepGuidance:
+        """Mark clarifications complete and refresh command status after planning."""
+        updated = guidance.model_copy(deep=True)
+        for item in updated.clarifications:
+            if item.status != "complete":
+                item.status = "complete"
+                if not item.rationale:
+                    item.rationale = "Clarification resolved during planning phase."
+        for item in updated.commands:
+            action_lower = item.action.lower()
+            if "/plan" in action_lower and item.status != "complete":
+                item.status = "complete"
+                if not item.rationale:
+                    item.rationale = "Planning command executed."
+            if "/tasks" in action_lower and item.status == "complete":
+                item.status = "pending"
+        updated.generated_at = datetime.now()
+        return updated
 
-## Constitutional Compliance
-- [ ] Library-First: Reuses existing libraries where possible
-- [ ] Test-First: Tests written before implementation
-- [ ] Simplicity: Maintains low complexity
-- [ ] Integration-First: Real environment testing
-- [ ] Clarity: Clear and unambiguous requirements
-- [ ] Counterfactual: Decision rationale documented
+    def _advance_guidance_for_tasks(
+        self, guidance: NextStepGuidance
+    ) -> NextStepGuidance:
+        """Update guidance statuses when generating tasks."""
+        updated = guidance.model_copy(deep=True)
+        for item in updated.commands:
+            if "/tasks" in item.action.lower() and item.status != "complete":
+                item.status = "in_progress"
+                if not item.rationale:
+                    item.rationale = "Tasks are being generated."
+        updated.generated_at = datetime.now()
+        return updated
 
-## API Contracts
-TBD - Define API endpoints and data models
+    def _persist_guidance(self, feature_dir: Path, guidance: NextStepGuidance) -> str:
+        """Write guidance back to disk and return workspace-relative path."""
+        metadata_path = feature_dir / "next_steps.yaml"
+        metadata_path.write_text(safe_dump(guidance.model_dump()), encoding="utf-8")
+        return self._relative_to_workspace(metadata_path)
 
-## Review Checklist
-- [ ] Specification reviewed for clarity
-- [ ] Requirements validated with stakeholders
-- [ ] Constitutional compliance verified
-- [ ] Ready for planning phase
+    def _append_guidance_markdown(
+        self,
+        base_content: str,
+        tasks: list[TaskBreakdown],
+    ) -> str:
+        """Append guidance-derived tasks to markdown representation."""
+        lines = [base_content.rstrip(), "", "## Guidance Follow-ups"]
+        for task in tasks:
+            lines.append(f"### {task.title}")
+            lines.append(f"- Priority: {task.priority}")
+            if task.constitutional_requirements:
+                lines.append(
+                    f"- Constitutional Focus: {task.constitutional_requirements[0]}"
+                )
+            if task.description:
+                lines.append(f"- Notes: {task.description}")
+        return "\n".join(lines) + "\n\n"
+
+    def _convert_guidance_to_tasks(
+        self,
+        guidance: NextStepGuidance,
+        existing_ids: list[str],
+    ) -> list[TaskBreakdown]:
+        """Transform outstanding guidance items into supplemental task entries."""
+        if not guidance:
+            return []
+
+        tasks: list[TaskBreakdown] = []
+        counter = 0
+        seen_ids = set(existing_ids)
+
+        def next_identifier() -> str:
+            nonlocal counter
+            counter += 1
+            candidate = f"NS-{counter:02d}"
+            while candidate in seen_ids:
+                counter += 1
+                candidate = f"NS-{counter:02d}"
+            seen_ids.add(candidate)
+            return candidate
+
+        def determine_priority(gate: str) -> str:
+            return self.TASK_PRIORITY_BY_GATE.get(gate, "medium")
+
+        actionable = guidance.artefacts + guidance.commands
+        for item in actionable:
+            if item.status == "complete":
+                continue
+            article = self.GATE_TO_ARTICLE.get(
+                item.gate, item.gate.replace("_", " ").title()
+            )
+            description_parts: list[str] = []
+            if item.rationale:
+                description_parts.append(item.rationale)
+            if item.linked_artifact:
+                description_parts.append(f"Linked artefact: {item.linked_artifact}")
+            description = (
+                "\n".join(description_parts)
+                or "Follow up on outstanding guidance item."
+            )
+            acceptance = (
+                f"Evidence captured at {item.linked_artifact}"
+                if item.linked_artifact
+                else "Evidence documented"
+            )
+            tasks.append(
+                TaskBreakdown(
+                    id=next_identifier(),
+                    title=item.action,
+                    description=description,
+                    priority=determine_priority(item.gate),
+                    estimated_hours=2,
+                    dependencies=[],
+                    acceptance_criteria=[acceptance],
+                    constitutional_requirements=[article],
+                )
+            )
+        return tasks
+
+    def _load_next_step_guidance(
+        self,
+        feature_dir: Path,
+        feature_id: str,
+    ) -> NextStepGuidance | None:
+        """Load persisted next-step guidance if available."""
+        metadata_path = feature_dir / "next_steps.yaml"
+        if not metadata_path.exists():
+            return None
+
+        try:
+            raw_data = safe_load(metadata_path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            return None
+
+        if not raw_data:
+            return None
+
+        if "feature_id" not in raw_data:
+            raw_data["feature_id"] = feature_id
+
+        try:
+            return NextStepGuidance(**raw_data)
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _gather_clarifications(
+        self,
+        spec_file: Path,
+        context: dict[str, Any],
+        user_input: str,
+        default_owner: str,
+    ) -> list[NextStepItem]:
+        """Collect clarification items from context hints."""
+        clarifications_input = context.get("clarifications") or []
+        if isinstance(clarifications_input, str):
+            clarifications_input = [clarifications_input]
+        rel_spec = self._relative_to_workspace(spec_file)
+        items: list[NextStepItem] = []
+        for entry in clarifications_input:
+            text = str(entry).strip()
+            if not text:
+                continue
+            items.append(
+                NextStepItem(
+                    action=f"Resolve clarification: {text}",
+                    owner=default_owner,
+                    linked_artifact=f"{rel_spec}#clarifications",
+                    gate="clarity",
+                    status="pending",
+                    rationale="Provided via /specify context clarifications",
+                    source="clarification",
+                )
+            )
+        return items
+
+    def _gather_research_artefacts(
+        self,
+        feature_dir: Path,
+        default_owner: str,
+    ) -> list[NextStepItem]:
+        """Derive artefact follow-ups from research notes."""
+        research_path = feature_dir / "research.md"
+        if not research_path.exists():
+            return []
+
+        tasks = self._parse_research_next_steps(research_path)
+        items: list[NextStepItem] = []
+        for task in tasks:
+            gate = self._infer_gate_for_text(task)
+            linked = self._infer_linked_artifact(task, feature_dir)
+            items.append(
+                NextStepItem(
+                    action=task,
+                    owner=default_owner,
+                    linked_artifact=linked,
+                    gate=gate,
+                    status="pending",
+                    rationale="Research next-step recommendation",
+                    source="artefact",
+                )
+            )
+        return items
+
+    def _build_command_items(
+        self,
+        feature_id: str,
+        default_owner: str,
+    ) -> list[NextStepItem]:
+        """Recommend workflow commands that keep SDD aligned."""
+        items = [
+            NextStepItem(
+                action=f"Run /plan {feature_id} once clarifications are resolved",
+                owner=default_owner or "feature-owner",
+                linked_artifact=f"specs/{feature_id}/spec.md",
+                gate="test_first",
+                status="pending",
+                rationale="Planning must wait until specification is unambiguous",
+                source="command",
+            ),
+            NextStepItem(
+                action=f"Invoke /tasks {feature_id} after the plan passes constitutional checks",
+                owner=default_owner or "feature-owner",
+                linked_artifact=f"specs/{feature_id}/spec.md",
+                gate="integration_first",
+                status="pending",
+                rationale="Tasks phase depends on validated plan",
+                source="command",
+            ),
+        ]
+        return items
+
+    def _parse_research_next_steps(self, research_path: Path) -> list[str]:
+        text = research_path.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        tasks: list[str] = []
+        in_section = False
+        for line in lines:
+            stripped = line.strip()
+            if stripped.lower().startswith("## next steps"):
+                in_section = True
+                continue
+            if in_section and stripped.startswith("## "):
+                break
+            if in_section and stripped.startswith("- "):
+                tasks.append(stripped[2:].strip())
+        return tasks
+
+    def _infer_gate_for_text(self, text: str) -> str:
+        lowered = text.lower()
+        if any(keyword in lowered for keyword in ("contract", "test", "coverage")):
+            return "test_first"
+        if any(keyword in lowered for keyword in ("data model", "model", "schema")):
+            return "simplicity"
+        if any(keyword in lowered for keyword in ("documentation", "doc", "clarify")):
+            return "clarity"
+        if any(keyword in lowered for keyword in ("integration", "environment")):
+            return "integration_first"
+        if any(keyword in lowered for keyword in ("research", "reuse", "library")):
+            return "library_first"
+        return "counterfactual"
+
+    def _infer_linked_artifact(self, text: str, feature_dir: Path) -> str:
+        rel_dir = self._relative_to_workspace(feature_dir)
+        if "data-model" in text:
+            return f"{rel_dir}/data-model.md"
+        if "quickstart" in text:
+            return f"{rel_dir}/quickstart.md"
+        if "contract" in text:
+            return f"{rel_dir}/contracts"
+        return f"{rel_dir}/spec.md"
+
+    def _build_alignment(
+        self,
+        clarifications: list[NextStepItem],
+        artefacts: list[NextStepItem],
+        commands: list[NextStepItem],
+        metadata_reference: str,
+    ) -> list[ConstitutionalAlignment]:
+        items_by_gate: dict[str, list[NextStepItem]] = {}
+        for item in clarifications + artefacts + commands:
+            items_by_gate.setdefault(item.gate, []).append(item)
+
+        alignments: list[ConstitutionalAlignment] = []
+        for gate, gate_items in items_by_gate.items():
+            article = self.GATE_TO_ARTICLE.get(gate, gate.replace("_", " ").title())
+            summary = f"{len(gate_items)} item(s) pending to satisfy {article}."
+            evidence = f"{metadata_reference}#{gate}"
+            alignments.append(
+                ConstitutionalAlignment(gate=gate, summary=summary, evidence=evidence)
+            )
+        return alignments
+
+    def _relative_to_workspace(self, path: Path) -> str:
+        try:
+            return str(path.resolve().relative_to(self.workspace_root.resolve()))
+        except ValueError:
+            return str(path)
+
+    def _safe_format_value(self, value: str) -> str:
+        return str(value).replace("{", "{{").replace("}", "}}").strip()
+
+    def _format_checkbox_list(
+        self, items: list[NextStepItem], default_message: str
+    ) -> str:
+        if not items:
+            return f"- [x] {self._safe_format_value(default_message)}"
+        lines: list[str] = []
+        for item in items:
+            article = self.GATE_TO_ARTICLE.get(
+                item.gate, item.gate.replace("_", " ").title()
+            )
+            owner = item.owner or "unassigned"
+            lines.append(
+                f"- [ ] Owner: {self._safe_format_value(owner)} — {self._safe_format_value(item.action)} (supports {article})"
+            )
+        return "\n".join(lines)
+
+    def _format_alignment_list(
+        self, items: list[ConstitutionalAlignment], default_message: str
+    ) -> str:
+        if not items:
+            return f"- {self._safe_format_value(default_message)}"
+        lines: list[str] = []
+        for item in items:
+            article = self.GATE_TO_ARTICLE.get(
+                item.gate, item.gate.replace("_", " ").title()
+            )
+            evidence = item.evidence or "next_steps.yaml"
+            lines.append(
+                f"- {article}: {self._safe_format_value(item.summary)} (evidence: {self._safe_format_value(evidence)})"
+            )
+        return "\n".join(lines)
+
+    def _format_command_list(
+        self, items: list[NextStepItem], default_message: str
+    ) -> str:
+        if not items:
+            return f"1. {self._safe_format_value(default_message)}"
+        lines: list[str] = []
+        for index, item in enumerate(items, start=1):
+            lines.append(f"{index}. {self._safe_format_value(item.action)}")
+        return "\n".join(lines)
+
+    def _generate_specification(
+        self,
+        user_input: str,
+        context: dict[str, Any],
+        feature_id: str,
+        guidance: NextStepGuidance,
+    ) -> str:
+        created_date = datetime.now().strftime("%Y-%m-%d")
+        author = self._safe_format_value(context.get("author") or "SDD Framework")
+        problem_description = self._safe_format_value(
+            context.get("problem_description") or user_input
+        )
+        additional_notes = self._safe_format_value(
+            context.get("notes") or "None provided"
+        )
+        clarifications_text = self._format_checkbox_list(
+            guidance.clarifications,
+            "No outstanding clarifications. Ready for /plan.",
+        )
+        artefacts_text = self._format_checkbox_list(
+            guidance.artefacts,
+            "No supporting artefacts requested.",
+        )
+        alignment_text = self._format_alignment_list(
+            guidance.constitutional_alignment,
+            "Gate coverage will be generated once clarifications exist.",
+        )
+        commands_text = self._format_command_list(
+            guidance.commands,
+            "Specification is ready; run /plan when stakeholders approve.",
+        )
+        template = """# Feature Specification Template
+
+**Feature ID:** {feature_id}
+**Created:** {created_date}
+**Status:** Draft
+**Constitutional Compliance Score:** _To be calculated_
 
 ---
-Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## Problem Statement
+
+> **Focus on the WHAT and WHY, not the HOW**
+> Be explicit about what you are trying to build and why.
+
+{problem_description}
+
+---
+
+## User Stories
+
+### Primary User Stories
+
+> Each user story should follow the format: "As a [user type], I want [goal] so that [benefit]"
+
+1. **User Story 1**
+   - **As a** [user type]
+   - **I want** [goal]
+   - **So that** [benefit]
+
+   **Acceptance Criteria:**
+   - [ ] Criterion 1
+   - [ ] Criterion 2
+   - [ ] Criterion 3
+
+2. **User Story 2**
+   - **As a** [user type]
+   - **I want** [goal]
+   - **So that** [benefit]
+
+   **Acceptance Criteria:**
+   - [ ] Criterion 1
+   - [ ] Criterion 2
+   - [ ] Criterion 3
+
+3. **User Story 3**
+   - **As a** [user type]
+   - **I want** [goal]
+   - **So that** [benefit]
+
+   **Acceptance Criteria:**
+   - [ ] Criterion 1
+   - [ ] Criterion 2
+   - [ ] Criterion 3
+
+### Secondary User Stories
+
+> Additional user stories for edge cases or future considerations
+
+---
+
+## Functional Requirements
+
+### Core Functionality
+
+1. **Requirement 1:** [Description]
+   - **Given** [context]
+   - **When** [action]
+   - **Then** [expected result]
+
+2. **Requirement 2:** [Description]
+   - **Given** [context]
+   - **When** [action]
+   - **Then** [expected result]
+
+### Business Rules
+
+1. [Business rule 1]
+2. [Business rule 2]
+3. [Business rule 3]
+
+---
+
+## Non-Functional Requirements
+
+### Performance Requirements
+- [Performance requirement 1]
+- [Performance requirement 2]
+
+### Security Requirements
+- [Security requirement 1]
+- [Security requirement 2]
+
+### Usability Requirements
+- [Usability requirement 1]
+- [Usability requirement 2]
+
+---
+
+## Constraints & Assumptions
+
+### Constraints
+- [Constraint 1]
+- [Constraint 2]
+- [Constraint 3]
+
+### Assumptions
+- [Assumption 1]
+- [Assumption 2]
+- [Assumption 3]
+
+---
+
+## Success Criteria
+
+### Definition of Done
+- [ ] All user stories implemented and tested
+- [ ] All acceptance criteria verified
+- [ ] Performance requirements met
+- [ ] Security requirements validated
+- [ ] Constitutional compliance score >= 0.75
+
+### Success Metrics
+- [Metric 1]: [Target value]
+- [Metric 2]: [Target value]
+- [Metric 3]: [Target value]
+
+---
+
+## Review & Acceptance Checklist
+
+> **Constitutional Framework Validation**
+
+### Article I: Library-First Development
+- [ ] Existing solutions researched and documented
+- [ ] Decision to build vs. adopt existing libraries justified
+- [ ] Library dependencies identified and evaluated
+
+### Article II: Test-First Development
+- [ ] Testable acceptance criteria defined
+- [ ] Test strategy outlined
+- [ ] Quality gates specified
+
+### Article III: Simplicity Gate
+- [ ] Scope is clearly bounded and minimal
+- [ ] Complex requirements broken into simpler components
+- [ ] Feature avoids unnecessary complexity
+
+### Article IV: Integration-First Testing
+- [ ] Integration points identified
+- [ ] End-to-end testing scenarios defined
+- [ ] Integration requirements specified
+
+### Article V: Clarity and Unambiguity
+- [ ] Requirements are clear and unambiguous
+- [ ] Terms and concepts are well-defined
+- [ ] No contradictory requirements
+
+### Article VI: Counterfactual Justification
+- [ ] Alternative approaches considered
+- [ ] Decision rationale documented
+- [ ] Trade-offs explicitly stated
+
+### General Quality Checks
+- [ ] User stories follow standard format
+- [ ] Acceptance criteria are testable
+- [ ] Requirements are prioritized
+- [ ] Dependencies on other features identified
+- [ ] Assumptions and constraints documented
+- [ ] Success criteria defined and measurable
+
+---
+
+## Next Steps Guidance
+
+> **Constitutional directive:** resolve outstanding clarifications and collect evidence before invoking /plan.
+> Ensure every item ties back to the constitutional gates and keeps the specification scoped to the WHAT and WHY.
+
+### Outstanding Clarifications
+{clarifications_text}
+
+### Required Artefacts & Evidence
+{artefacts_text}
+
+### Constitutional Gate Alignment
+{alignment_text}
+
+### Command Checklist
+{commands_text}
+
+---
+
+## Additional Notes
+
+{additional_notes}
+
+---
+
+## Revision History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | {created_date} | {author} | Initial specification |
+
+---
 """
+        return template.format(
+            feature_id=self._safe_format_value(feature_id),
+            created_date=created_date,
+            problem_description=problem_description,
+            additional_notes=additional_notes,
+            clarifications_text=clarifications_text,
+            artefacts_text=artefacts_text,
+            alignment_text=alignment_text,
+            commands_text=commands_text,
+            author=author,
+        )
+
+    def _merge_next_step_summaries(self, *collections: list[str]) -> list[str]:
+        """Merge step summaries while preserving order and removing duplicates."""
+        seen: set[str] = set()
+        merged: list[str] = []
+        for collection in collections:
+            for item in collection:
+                if item and item not in seen:
+                    seen.add(item)
+                    merged.append(item)
+        return merged
+
+    def _summarize_next_step_guidance(
+        self, guidance: NextStepGuidance, threshold_met: bool
+    ) -> list[str]:
+        summary: list[str] = []
+        if guidance.clarifications:
+            summary.append(
+                f"Resolve {len(guidance.clarifications)} outstanding clarification item(s)."
+            )
+        if guidance.artefacts:
+            summary.append(
+                f"Produce {len(guidance.artefacts)} supporting artefact(s) before planning."
+            )
+        summary.extend(item.action for item in guidance.commands[:2])
+        if not summary:
+            summary = self._get_specify_next_steps(threshold_met)
+        return summary
 
     def _generate_implementation_plan(
         self, _specification: str, tech_stack: str, _constraints: dict[str, Any]
@@ -271,7 +1045,7 @@ Based on the specification, this implementation follows constitutional principle
 {tech_stack or 'To be determined based on requirements'}
 
 ## Project Structure
-Following the Simplicity Gate (≤3 projects):
+Following the Simplicity Gate (<=3 projects):
 1. Core Library
 2. API/CLI Interface
 3. Tests and Documentation
@@ -347,7 +1121,7 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 - **Description**: Implement main feature functionality
 - **Acceptance Criteria**:
   - [ ] All requirements implemented
-  - [ ] Test coverage ≥ 80%
+  - [ ] Test coverage >= 80%
   - [ ] Performance benchmarks met
 
 ### Task 2.2: CLI Interface

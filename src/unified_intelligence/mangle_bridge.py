@@ -118,7 +118,14 @@ class MangleBridge:
                 self.reasoner.add_fact(fact)
 
             # Query the reasoner
-            return self.reasoner.query(question)
+            result = self.reasoner.query(question)
+            if hasattr(self.reasoner, 'clear_injected_facts'):
+                self.reasoner.clear_injected_facts()
+            if hasattr(result, 'success'):
+                if result.success:
+                    return result.format_for_display()
+                return f"Query failed: {result.error_message}"
+            return str(result)
 
         except Exception as e:
             logger.warning(f"Knowledge base query failed: {e}")

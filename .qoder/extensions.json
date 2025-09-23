@@ -1,0 +1,70 @@
+{
+  "recommendations": [
+    // Core Python Development
+    "python-language-server",
+    "python-debugger",
+    "python-formatter",
+    "python-linter",
+    "python-test-runner",
+
+    // AI and Code Intelligence
+    "qoder-ai-assistant",
+    "code-intelligence",
+    "smart-completions",
+    "context-aware-suggestions",
+
+    // Quality and Formatting
+    "ruff-linter",
+    "black-formatter",
+    "mypy-type-checker",
+    "isort-import-organizer",
+    "bandit-security-scanner",
+
+    // Version Control and Collaboration
+    "git-integration",
+    "git-lens-enhanced",
+    "diff-viewer",
+
+    // Documentation and Markup
+    "markdown-support",
+    "yaml-language-support",
+    "json-language-support",
+    "mermaid-diagram-support",
+
+    // Development Tools
+    "docker-support",
+    "makefile-tools",
+    "shell-script-support",
+    "terminal-enhancements",
+
+    // Testing and Debugging
+    "pytest-integration",
+    "coverage-gutters",
+    "debug-visualizer",
+    "error-lens",
+
+    // Super Alita Specific
+    "sdd-language-support",
+    "constitutional-validator",
+    "mcp-protocol-support",
+    "ollama-integration",
+
+    // Productivity
+    "code-spell-checker",
+    "snippet-creator",
+    "bracket-pair-colorizer",
+    "indent-rainbow",
+    "todo-highlight",
+
+    // Jupyter and Data Science
+    "jupyter-notebooks",
+    "data-viewer",
+    "plot-viewer"
+  ],
+
+  "unwantedRecommendations": [
+    "pylint-legacy",
+    "flake8-legacy",
+    "outdated-python-extensions"
+  ]
+}

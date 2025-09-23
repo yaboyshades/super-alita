@@ -1,0 +1,79 @@
+{
+  "name": "Super ALITA Auto-Framework Configuration",
+  "version": "1.0",
+  "description": "Automatic application of EOS + Mangle framework for all user interactions",
+  "enabled": true,
+  "framework_components": {
+    "eos_orchestration": {
+      "enabled": true,
+      "auto_apply": true,
+      "components": [
+        "mixture_of_experts_routing",
+        "ladder_operators",
+        "cynefin_classification",
+        "context_adaptation"
+      ]
+    },
+    "mangle_reasoning": {
+      "enabled": true,
+      "auto_apply": true,
+      "graceful_degradation": true,
+      "components": [
+        "deductive_reasoning",
+        "knowledge_graphs",
+        "logical_inference",
+        "premise_validation"
+      ]
+    },
+    "constitutional_compliance": {
+      "enabled": true,
+      "auto_apply": true,
+      "enforcement_level": "strict",
+      "components": [
+        "yaml_rule_validation",
+        "governance_checks",
+        "compliance_scoring",
+        "violation_prevention"
+      ]
+    },
+    "unified_intelligence": {
+      "enabled": true,
+      "auto_apply": true,
+      "components": [
+        "multi_system_coordination",
+        "performance_optimization",
+        "error_handling",
+        "resource_management"
+      ]
+    },
+    "telemetry_monitoring": {
+      "enabled": true,
+      "auto_apply": true,
+      "components": [
+        "performance_tracking",
+        "health_monitoring",
+        "metrics_collection",
+        "alert_generation"
+      ]
+    }
+  },
+  "auto_application_rules": {
+    "trigger_on_user_message": true,
+    "apply_to_code_changes": true,
+    "apply_to_problem_solving": true,
+    "apply_to_analysis_tasks": true,
+    "apply_to_planning_tasks": true,
+    "require_explicit_override": false
+  },
+  "performance_targets": {
+    "response_latency_p95": "< 1.0s",
+    "error_rate": "< 2.0%",
+    "constitutional_compliance": "100%",
+    "system_availability": "> 99.9%"
+  },
+  "operational_modes": {
+    "default": "full_framework",
+    "fallback": "graceful_degradation",
+    "override": "user_specified"
+  }
+}

@@ -2,29 +2,55 @@
   "servers": {
     "myCustomPythonAgent": {
       "type": "stdio",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "command": "\\.venv\\Scripts\\python.exe",
       "args": [
-        "${workspaceFolder}\\mcp_server_wrapper.py"
+        "\\mcp_server_wrapper.py"
       ],
       "env": {
-        "GEMINI_API_KEY": "${env:GEMINI_API_KEY}",
-        "MCP_AGENT_API_KEY": "${env:GEMINI_API_KEY}",
+        "GEMINI_API_KEY": "",
+        "MCP_AGENT_API_KEY": "",
         "PYTHONPATH": ""
       },
-      "cwd": "${workspaceFolder}"
+      "cwd": ""
     },
     "superAlitaBuiltinAgent": {
       "type": "stdio",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "command": "\\.venv\\Scripts\\python.exe",
       "args": [
-        "${workspaceFolder}\\src\\vscode_integration\\agent_mcp_server.py"
+        "\\src\\vscode_integration\\agent_mcp_server.py"
       ],
       "env": {
-        "WORKSPACE_FOLDER": "${workspaceFolder}",
+        "WORKSPACE_FOLDER": "",
         "VSCODE_EXTENSION_MODE": "mcp-provider",
-        "PYTHONPATH": "${workspaceFolder}"
+        "PYTHONPATH": ""
       },
-      "cwd": "${workspaceFolder}"
+      "cwd": ""
+    },
+    "super-alita-github": {
+      "type": "stdio",
+      "command": "\\.venv\\Scripts\\python.exe",
+      "args": [
+        "\\src\\mcp_server\\main.py"
+      ],
+      "env": {
+        "PYTHONPATH": "\\src",
+        "GITHUB_TOKEN": "",
+        "MCP_SERVER_NAME": "super-alita-github",
+        "LLM_MODEL": "auto"
+      },
+      "cwd": ""
+    },
+    "github-official": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_TOKEN=",
+        "mcp/github-mcp-server"
+      ]
     }
   }
 }

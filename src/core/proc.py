@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import subprocess
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 
 
 class ProcError(RuntimeError):
@@ -29,6 +30,7 @@ def run(
     *,
     timeout: float | None = None,
     env: Mapping[str, str] | None = None,
+    cwd: str | Path | None = None,
 ) -> str:
     """
     Run command with sanitized arguments. shell=False enforced.
@@ -43,6 +45,7 @@ def run(
         text=True,
         timeout=timeout,
         env=dict(env) if env else None,
+        cwd=str(cwd) if cwd is not None else None,
     )
     if p.returncode != 0:
         raise ProcError(argv, p.returncode, p.stdout, p.stderr)
@@ -54,6 +57,7 @@ async def arun(
     *,
     timeout: float | None = None,
     env: Mapping[str, str] | None = None,
+    cwd: str | Path | None = None,
 ) -> str:
     """
     Async counterpart to run(). Executes subprocess.run in a thread so existing
@@ -71,6 +75,7 @@ async def arun(
             text=True,
             timeout=timeout,
             env=dict(env) if env else None,
+            cwd=str(cwd) if cwd is not None else None,
         )
 
     p: subprocess.CompletedProcess[str] = await asyncio.to_thread(_call)

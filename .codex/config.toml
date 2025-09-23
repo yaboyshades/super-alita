@@ -1,6 +1,5 @@
-# Codex runtime configuration for Super Alita
-# Generated to unify local MCP + Agent runtime expectations.
-# Adjust endpoints or feature flags as needed.
+# Codex runtime configuration aligned with Copilot setup
+# Mirrors workspace, instructions, and constitutional requirements defined under .github.
 
 [runtime]
 name = "super-alita"
@@ -9,58 +8,46 @@ entrypoint = "mcp_server_entrypoint.py"
 setup_script = "./.codex/setup.sh"
 
 [server]
-# Host/port pair used when running an HTTP bridge (if applicable)
 host = "127.0.0.1"
 port = 8765
-# Enable stdio MCP (primary integration path)
 use_stdio = true
 
 [logging]
 level = "INFO"
-# Alternate values: DEBUG, WARNING, ERROR
+
+[workspace]
+workspace_file = "./workspace.yaml"
+instructions_file = "./instructions.md"
+prompts_dir = "../.github/prompts"
+chatmodes_dir = "../.github/chatmodes"
+agent_manifest = "../.github/agent.yaml"
+constitution = "../.github/CONSTITUTION.md"
 
 [features]
-# Toggle experimental capabilities exposed to Codex
 knowledge_graph = true
 ladder_planner = true
 consensus = true
 mangle = true
 shadow_reward = true
 snippet_optimizer = true
-
-# SDD + Constitutional features
 constitutional_validation = true
 sdd = true
 sdd_cli = true
 
 [paths]
-# Directory where temporary artifacts for Codex tasks may be stored
 temp_dir = "./.codex/tmp"
-# Location for generated reports
 reports_dir = "./.codex/reports"
 
 [commands]
-# These commands are convenience wrappers Codex-aware tooling may call.
-# They are shell-invoked; adjust paths if your venv differs.
 sdd_specify = ["python", "-m", "src.sdd", "specify"]
-sdd_plan    = ["python", "-m", "src.sdd", "plan"]
-sdd_tasks   = ["python", "-m", "src.sdd", "tasks"]
-sdd_validate= ["python", "-m", "src.sdd", "validate"]
+sdd_plan = ["python", "-m", "src.sdd", "plan"]
+sdd_tasks = ["python", "-m", "src.sdd", "tasks"]
+sdd_validate = ["python", "-m", "src.sdd", "validate"]
 
 [security]
-# If true, restricts tool execution to a vetted allowlist
 sandbox = false
 
 [tools]
-# Example: enable or disable certain tool groups dynamically
 enable_dynamic_tools = true
 
 [env]
-# Keys will be appended / ensured in .env by setup script if present
-# OPENAI_API_KEY = ""
-# ANTHROPIC_API_KEY = ""
-# GEMINI_API_KEY = ""
-ALITA_REQUIRE_API_KEY = "false"
-PYTHONPATH = "./src"
-
-# End of config.toml

@@ -1,11 +1,59 @@
 {
   "recommendations": [
+    // Primary AI and Copilot Extensions
+    "github.copilot",
+    "GitHub.copilot-labs",
+    
+    // Python Development Stack
     "ms-python.python",
     "ms-python.vscode-pylance",
     "ms-python.black-formatter",
     "charliermarsh.ruff",
     "matangover.mypy",
-    "github.copilot"
+    "ms-python.isort",
+    
+    // Code Quality and Linting
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    "timonwong.shellcheck",
+    
+    // Git and Version Control
+    "eamodio.gitlens",
+    
+    // Language Support
+    "ms-vscode.vscode-typescript-next",
+    "redhat.vscode-yaml",
+    "esbenp.prettier-vscode",
+    
+    // Documentation and Visualization
+    "bierner.markdown-mermaid",
+    "yzane.markdown-pdf",
+    
+    // Development Tools
+    "ms-azuretools.vscode-docker",
+    "ms-vscode.makefile-tools",
+    "ms-vscode.powershell",
+    
+    // Super Alita Specific (Local Extensions)
+    // Note: These are local extensions in the ./extensions/ directory
+    // Install manually using: code --install-extension ./extensions/[extension-name]
+    // "alita.language-tools",  // Primary Alita integration
+    // "alita.deep-research",   // Research capabilities
+    // "alita.prompt-optimizer" // Conditional optimization
+  ],
+  
+  "unwantedRecommendations": [
+    // Deprecated or conflicting extensions
+    "alita.mangle-integration",  // Replaced by alita.language-tools
+    "alita.refactor-tools",      // Merged into alita.language-tools
+    
+    // Extensions that conflict with our setup
+    "ms-python.flake8",          // Using Ruff instead
+    "ms-python.pylint",          // Using Ruff instead
+    "formulahendry.auto-rename-tag", // Can conflict with language servers
+    
+    // Heavy extensions that may impact performance
+    "ms-vscode.vscode-json",     // Basic JSON support is sufficient
+    "redhat.vscode-xml"          // Only if XML support not needed
   ]
 }
-

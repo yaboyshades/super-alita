@@ -1,0 +1,26 @@
+feature_id: '043'
+generated_at: 2025-09-17 20:02:48.083069
+clarifications: []
+artefacts: []
+commands:
+- action: Run /plan 043 once clarifications are resolved
+  owner: unassigned
+  linked_artifact: specs/043/spec.md
+  gate: test_first
+  status: complete
+  rationale: Planning must wait until specification is unambiguous
+  source: command
+- action: Invoke /tasks 043 after the plan passes constitutional checks
+  owner: unassigned
+  linked_artifact: specs/043/spec.md
+  gate: integration_first
+  status: pending
+  rationale: Tasks phase depends on validated plan
+  source: command
+constitutional_alignment:
+- gate: test_first
+  summary: 1 item(s) pending to satisfy Article II - Test-First Development.
+  evidence: specs\043-test-plan-feature\next_steps.yaml#test_first
+- gate: integration_first
+  summary: 1 item(s) pending to satisfy Article IV - Integration-First Testing.
+  evidence: specs\043-test-plan-feature\next_steps.yaml#integration_first

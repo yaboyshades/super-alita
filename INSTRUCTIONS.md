@@ -101,7 +101,23 @@ Each directory contains its own `INSTRUCTIONS.md` file for specific guidance.
 
 ## LLM Configuration
 
+
 Set `LLM_MODEL=auto` to enable automatic provider selection.
+
+## Claude Sonnet 3.5 (Anthropic)
+
+To enable Claude Sonnet 3.5 for all clients:
+
+1. Get your Anthropic API key and set `ANTHROPIC_API_KEY` in your `.env`.
+2. Set `LLM_MODEL=claude-3-sonnet` to use Claude Sonnet 3.5 for all clients.
+3. Claude Sonnet 3.5 will now be available in all model selection UIs and API calls.
+
+Example `.env`:
+
+```dotenv
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+LLM_MODEL=claude-3-sonnet
+```
 
 Environment variables:
 - `GEMINI_API_KEY` or `GOOGLE_API_KEY` - For Gemini provider

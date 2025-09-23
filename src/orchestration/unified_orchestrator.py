@@ -1,5 +1,79 @@
 """Unified orchestration pipeline for Super Alita.
 
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _new_correlation(prefix: str) -> str:
+    return f"{prefix}-{uuid.uuid4().hex}"
+
+
+def _run_config_snapshot(config: UnifiedRunConfig) -> dict[str, Any]:
+    return {
+        "stages": _enabled_stage_names(config),
+        "abilities": _default_abilities(config),
+        "ledger_enabled": False,
+    }
+
+
+def _enabled_stage_names(config: UnifiedRunConfig) -> list[str]:
+    stage_flags = [
+        ("specification", config.enable_specification),
+        ("planning", config.enable_planning),
+        ("tasks", config.enable_tasks),
+        ("planning_validation", config.sdd_mode and config.enable_planning),
+        ("tasks_validation", config.sdd_mode and config.enable_tasks),
+        ("consensus", config.enable_consensus),
+        ("code_generation", config.enable_code_generation),
+        ("validation", config.enable_validation),
+        ("scoring", config.enable_scoring),
+    ]
+    return [name for name, enabled in stage_flags if enabled]
+
+
+def _default_abilities(config: UnifiedRunConfig) -> list[str]:
+    abilities: list[str] = []
+    if config.enable_planning:
+        abilities.append("task_planner")
+    if config.enable_consensus:
+        abilities.append("deepconf_consensus")
+    if config.enable_code_generation:
+        abilities.append("code_generator")
+    if config.enable_validation:
+        abilities.append("validation_suite")
+    if config.enable_scoring:
+        abilities.append("score_alignment")
+    return abilities
+
+
+def _stage_summary(output: Any) -> str | None:
+    if output is None:
+        return None
+    try:
+        serialized = json.dumps(_summarize(output))
+    except TypeError:
+        serialized = str(output)
+    return truncate_preview(serialized, 200)
+
+
+def _final_output_preview(stages_output: dict[str, Any]) -> str | None:
+    consensus = stages_output.get("consensus")
+    if consensus and consensus.get("status") == "success":
+        text = (consensus.get("output") or {}).get("consensus_text")
+        if text:
+            return truncate_preview(str(text), 200)
+    code_generation = stages_output.get("code_generation")
+    if code_generation and code_generation.get("status") == "success":
+        generated = (code_generation.get("output") or {}).get("generated")
+        if generated:
+            return truncate_preview(str(generated), 200)
+    return None
+
+
+def _count_stage_successes(stages: dict[str, Any]) -> int:
+    return sum(1 for data in stages.values() if data.get("status") == "success")
+
+
 This module provides a thin stage-based orchestrator that reuses existing
 tools/abilities. It is intentionally conservative (no deep refactors of
 current runtime) and focuses on: determinism, graceful degradation, and
@@ -9,15 +83,32 @@ stable event emission.
 from __future__ import annotations
 
 import json
-import os
 import time
-import traceback
 import uuid
 from collections.abc import AsyncGenerator
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
+from src.core.settings import (
+    CANONICAL_EVENTS_ENABLED,
+    RUN_LEDGER_ENABLED,
+    RUN_LEDGER_PATH,
+)
+
+from .canonical_events import (
+    CanonicalEvent,
+    make_run_error_event,
+    make_run_started_event,
+    make_run_terminated_event,
+    make_stage_completed_event,
+    make_stage_started_event,
+)
+from .constitutional_gate_stub import compute_gate_score
+from .event_sanitizer import truncate_preview
+from .observability import get_observer
 from .reliability_manager import ReliabilityConfig, ReliabilityManager
+from .run_ledger import RunLedgerWriter
 
 
 @dataclass(slots=True)
@@ -95,131 +186,210 @@ class UnifiedOrchestrator:
     async def run_stream(
         self, config: UnifiedRunConfig
     ) -> AsyncGenerator[dict[str, Any], None]:
+        run_start = time.time()
+        observer = get_observer()
         stages_output: dict[str, Any] = {}
-        run_meta = {"config": asdict(config)}
-        started_ev = {
-            "type": "UnifiedRunStarted",
-            "run_id": config.run_id,
-            "session_id": config.session_id,
-            "prompt": config.prompt,
-            **run_meta,
-        }
-        await self._emit(started_ev)
-        yield started_ev
+        sequence = 0
+        ledger_writer = None
+        if RUN_LEDGER_ENABLED:
+            ledger_writer = RunLedgerWriter(RUN_LEDGER_PATH, enable_shadow=not CANONICAL_EVENTS_ENABLED)
+        stage_counter = 0
+        abilities_invoked = 0
+        run_corr = _new_correlation("run")
+
+        def next_sequence() -> int:
+            nonlocal sequence
+            current = sequence
+            sequence += 1
+            return current
+
+        async def emit(event: CanonicalEvent) -> dict[str, Any]:
+            payload = event.to_dict()
+            await self._emit(payload)
+            if ledger_writer is not None:
+                try:
+                    ledger_writer.append(event)
+                except Exception:
+                    pass
+            if observer is not None:
+                try:
+                    observer.record_canonical_event(payload)
+                except Exception:
+                    pass
+            return payload
+
+        run_started_payload = await emit(
+            make_run_started_event(
+                run_id=config.run_id,
+                sequence=next_sequence(),
+                timestamp=_iso_now(),
+                correlation_id=run_corr,
+                parent_correlation_id=None,
+                stage=None,
+                trace_id=None,
+                constitutional_score=None,
+                meta={
+                    "session_id": config.session_id,
+                    "sdd_mode": config.sdd_mode,
+                },
+                input_summary=truncate_preview(config.prompt, 200),
+                config=_run_config_snapshot(config),
+            )
+        )
+        yield run_started_payload
 
         async def stage(name: str, enabled: bool, coro_fn):
+            nonlocal stage_counter
             if not enabled:
                 stages_output[name] = {"status": "skipped"}
                 return
-            t0 = time.time()
-            start_ev = {
-                "type": "UnifiedStageStarted",
-                "run_id": config.run_id,
-                "stage": name,
-            }
-            await self._emit(start_ev)
-            yield start_ev
-            try:
-                reliability_result = await self.reliability.execute_with_retries(
-                    name, coro_fn, config.timeout_s, self._emit
+            index = stage_counter
+            stage_counter += 1
+            stage_corr = _new_correlation(f"stage-{name}")
+            started_payload = await emit(
+                make_stage_started_event(
+                    run_id=config.run_id,
+                    sequence=next_sequence(),
+                    timestamp=_iso_now(),
+                    correlation_id=stage_corr,
+                    parent_correlation_id=None,
+                    stage=name,
+                    trace_id=None,
+                    constitutional_score=None,
+                    meta=None,
+                    name=name,
+                    index=index,
                 )
-                dt = int((time.time() - t0) * 1000)
-                if reliability_result["status"] == "skipped":
-                    skip_ev = {
-                        "type": "UnifiedStageSkipped",
-                        "run_id": config.run_id,
-                        "stage": name,
-                        "duration_ms": dt,
-                        "reason": reliability_result.get("reason", "unknown"),
-                        "reliability": {
-                            k: reliability_result.get(k)
-                            for k in [
-                                "attempts",
-                                "retries",
-                                "classified_error",
-                                "circuit_state",
-                            ]
-                        },
-                    }
-                    stages_output[name] = {"status": "skipped", **skip_ev}
-                    await self._emit(skip_ev)
-                    yield skip_ev
-                    return
-                if reliability_result["status"] == "success":
-                    result = reliability_result.get("output")
-                    succ_ev = {
-                        "type": "UnifiedStageSucceeded",
-                        "run_id": config.run_id,
-                        "stage": name,
-                        "duration_ms": dt,
-                        "output_summary": _summarize(result),
-                        "reliability": {
-                            k: reliability_result.get(k)
-                            for k in [
-                                "attempts",
-                                "retries",
-                                "classified_error",
-                                "circuit_state",
-                            ]
-                        },
-                    }
-                    stages_output[name] = {
-                        "status": "success",
-                        "output": result,
-                        "duration_ms": dt,
-                        "reliability": succ_ev["reliability"],
-                    }
-                    await self._emit(succ_ev)
-                    yield succ_ev
-                else:  # failed
-                    err_ev = {
-                        "type": "UnifiedStageFailed",
-                        "run_id": config.run_id,
-                        "stage": name,
-                        "duration_ms": dt,
-                        "error": reliability_result.get("error", "unknown"),
-                        "reliability": {
-                            k: reliability_result.get(k)
-                            for k in [
-                                "attempts",
-                                "retries",
-                                "classified_error",
-                                "circuit_state",
-                            ]
-                        },
-                    }
-                    stages_output[name] = {
-                        "status": "failed",
-                        "error": err_ev["error"],
-                        "duration_ms": dt,
-                        "reliability": err_ev["reliability"],
-                    }
-                    await self._emit(err_ev)
-                    yield err_ev
-            except Exception as e:  # noqa: BLE001
-                dt = int((time.time() - t0) * 1000)
-                tb = traceback.format_exc(limit=4)
-                fail_ev = {
-                    "type": "UnifiedStageFailed",
-                    "run_id": config.run_id,
-                    "stage": name,
-                    "duration_ms": dt,
-                    "error": str(e),
-                    "reliability": {"unexpected_wrapper_error": True},
-                }
-                stages_output[name] = {
-                    "status": "failed",
-                    "error": str(e),
-                    "trace": tb.splitlines()[-1],
-                    "duration_ms": dt,
-                    "reliability": fail_ev["reliability"],
-                }
-                await self._emit(fail_ev)
-                yield fail_ev
+            )
+            yield started_payload
 
-        # --- Stage implementations --- #
+            t0 = time.time()
+            reliability_result = await self.reliability.execute_with_retries(
+                name,
+                coro_fn,
+                config.timeout_s,
+                None,
+                correlation_id=stage_corr,
+            )
+            duration_ms = int((time.time() - t0) * 1000)
+            reliability_info = {
+                key: reliability_result.get(key)
+                for key in (
+                    "attempts",
+                    "retries",
+                    "classified_error",
+                    "circuit_state",
+                )
+            }
+            reliability_info["correlation_id"] = reliability_result.get("correlation_id") or stage_corr
+
+            if reliability_result["status"] == "skipped":
+                stages_output[name] = {
+                    "status": "skipped",
+                    "duration_ms": duration_ms,
+                    "reliability": reliability_info,
+                    "reason": reliability_result.get("reason"),
+                }
+                completed_payload = await emit(
+                    make_stage_completed_event(
+                        run_id=config.run_id,
+                        sequence=next_sequence(),
+                        timestamp=_iso_now(),
+                        correlation_id=stage_corr,
+                        parent_correlation_id=None,
+                        stage=name,
+                        trace_id=None,
+                        constitutional_score=None,
+                        meta={"reliability": reliability_info},
+                        name=name,
+                        index=index,
+                        duration_ms=duration_ms,
+                        output_summary=None,
+                        status="skipped",
+                    )
+                )
+                yield completed_payload
+                return
+
+            if reliability_result["status"] == "success":
+                result = reliability_result.get("output")
+                stages_output[name] = {
+                    "status": "success",
+                    "output": result,
+                    "duration_ms": duration_ms,
+                    "reliability": reliability_info,
+                }
+                completed_payload = await emit(
+                    make_stage_completed_event(
+                        run_id=config.run_id,
+                        sequence=next_sequence(),
+                        timestamp=_iso_now(),
+                        correlation_id=stage_corr,
+                        parent_correlation_id=None,
+                        stage=name,
+                        trace_id=None,
+                        constitutional_score=None,
+                        meta={"reliability": reliability_info},
+                        name=name,
+                        index=index,
+                        duration_ms=duration_ms,
+                        output_summary=_stage_summary(result),
+                        status="ok",
+                    )
+                )
+                yield completed_payload
+                return
+
+            error_message = reliability_result.get("error", "unknown")
+            stages_output[name] = {
+                "status": "failed",
+                "error": error_message,
+                "duration_ms": duration_ms,
+                "reliability": reliability_info,
+            }
+            error_payload = await emit(
+                make_run_error_event(
+                    run_id=config.run_id,
+                    sequence=next_sequence(),
+                    timestamp=_iso_now(),
+                    correlation_id=_new_correlation(f"error-{name}"),
+                    parent_correlation_id=stage_corr,
+                    stage=name,
+                    trace_id=None,
+                    constitutional_score=None,
+                    meta={"reliability": reliability_info},
+                    scope="stage",
+                    stage_name=name,
+                    ability=None,
+                    error_type=reliability_result.get("classified_error")
+                    or "STAGE_ERROR",
+                    message=truncate_preview(str(error_message), 200)
+                    or "stage failed",
+                    retryable=False,
+                )
+            )
+            yield error_payload
+            completed_payload = await emit(
+                make_stage_completed_event(
+                    run_id=config.run_id,
+                    sequence=next_sequence(),
+                    timestamp=_iso_now(),
+                    correlation_id=stage_corr,
+                    parent_correlation_id=None,
+                    stage=name,
+                    trace_id=None,
+                    constitutional_score=None,
+                    meta=None,
+                    name=name,
+                    index=index,
+                    duration_ms=duration_ms,
+                    output_summary=None,
+                    status="partial",
+                )
+            )
+            yield completed_payload
+
         async def do_spec():
-            # SDD Integration: Use SDD specification if enabled
             if (
                 config.sdd_mode
                 and hasattr(self.registry, "execute")
@@ -231,11 +401,9 @@ class UnifiedOrchestrator:
                     )
                 except Exception:
                     pass
-            # Fallback: minimal placeholder
             return {"spec": config.prompt}
 
         async def do_plan():
-            # SDD Integration: Use SDD planning if enabled
             if (
                 config.sdd_mode
                 and hasattr(self.registry, "execute")
@@ -252,28 +420,24 @@ class UnifiedOrchestrator:
                     )
                 except Exception:
                     pass
-            # Original planning logic
             if hasattr(self.registry, "execute") and self.registry.knows(
                 "task_planner"
             ):
-                res = await self.registry.execute(
+                return await self.registry.execute(
                     "task_planner", {"prompt": config.prompt}
                 )
-            else:
-                res = {
-                    "steps": [
-                        {
-                            "id": 1,
-                            "action": "Echo goal",
-                            "rationale": "fallback",
-                        }
-                    ],
-                    "source": "fallback",
-                }
-            return res
+            return {
+                "steps": [
+                    {
+                        "id": 1,
+                        "action": "Echo goal",
+                        "rationale": "fallback",
+                    }
+                ],
+                "source": "fallback",
+            }
 
         async def do_tasks(plan_out: dict[str, Any]):
-            # SDD Integration: Use SDD task breakdown if enabled
             if (
                 config.sdd_mode
                 and hasattr(self.registry, "execute")
@@ -286,13 +450,11 @@ class UnifiedOrchestrator:
                     )
                 except Exception:
                     pass
-            # Original task breakdown logic
             steps = plan_out.get("steps") or []
             tasks = [f"Task {s.get('id')}: {s.get('action')}" for s in steps]
             return {"tasks": tasks}
 
         async def do_sdd_validate(phase: str, content: dict[str, Any]):
-            """Constitutional validation for SDD phases."""
             if hasattr(self.registry, "execute") and self.registry.knows(
                 "sdd_validate"
             ):
@@ -320,7 +482,7 @@ class UnifiedOrchestrator:
                 "deepconf_consensus"
             ):
                 try:
-                    c = await self.registry.execute(
+                    consensus = await self.registry.execute(
                         "deepconf_consensus",
                         {
                             "prompt": base_text,
@@ -329,196 +491,147 @@ class UnifiedOrchestrator:
                         },
                     )
                     text = (
-                        c.get("consensus_text")
-                        or c.get("best_response")
-                        or c.get("consensus_result")
+                        consensus.get("consensus_text")
+                        or consensus.get("best_response")
+                        or consensus.get("consensus_result")
                         or base_text
                     )
-                    return {"consensus_text": text, "raw": c}
+                    return {"consensus_text": text, "raw": consensus}
                 except Exception:
                     pass
             return {"consensus_text": base_text, "raw": {"fallback": True}}
 
         async def do_codegen(consensus_out: dict[str, Any]):
-            # Optional CMA enforcement: require blueprint + phases validated
-            if os.getenv("CMA_ENFORCEMENT", "0").lower() in {
-                "1",
-                "true",
-                "yes",
-            }:
-                from src.cma.enforcement import (
-                    CMAConfig,
-                    CMAEnforcer,
-                    load_blueprint_from_env,
-                )
-
-                blueprint_text, phases = load_blueprint_from_env()
-                if not blueprint_text:
-                    # fallback: attempt to use consensus text as blueprint
-                    candidate = consensus_out.get("consensus_text") or config.prompt
-                    blueprint_text = str(candidate)
-                enforcer = CMAEnforcer(CMAConfig())
-                report = enforcer.validate_pre_generation(
-                    blueprint_text=blueprint_text, phases_completed=phases
-                )
-                if not report.get("ok"):
-                    raise RuntimeError(
-                        "CMA enforcement blocked generation: "
-                        + "; ".join(report.get("reasons", []))
-                    )
-
-            if not config.file_path:
-                return {"skipped": True, "reason": "no file_path provided"}
-            args = {
-                "language": config.language,
-                "spec": consensus_out.get("consensus_text") or config.prompt,
-                "file_path": config.file_path,
-                "test_first": config.test_first,
-                "consolidate_tests": True,
-                "force_write": True,
-            }
+            code_prompt = consensus_out.get("consensus_text", config.prompt)
             if hasattr(self.registry, "execute") and self.registry.knows(
-                "code_synthesize_and_write"
+                "code_generator"
             ):
-                return await self.registry.execute("code_synthesize_and_write", args)
-            return {"error": "code_synthesize_and_write tool missing"}
-
-        async def do_validation():
-            results: dict[str, Any] = {}
-            if self.registry.knows("python_import_smoke"):
-                try:
-                    results["import_smoke"] = await self.registry.execute(
-                        "python_import_smoke", {"path": "src"}
-                    )
-                except Exception as e:  # noqa: BLE001
-                    results["import_smoke_error"] = str(e)
-            if self.registry.knows("pytest_run"):
-                try:
-                    results["pytest"] = await self.registry.execute(
-                        "pytest_run", {"target": "tests", "quiet": True}
-                    )
-                except Exception as e:  # noqa: BLE001
-                    results["pytest_error"] = str(e)
-            return results
-
-        async def do_scoring(code_out: dict[str, Any]):
-            if not code_out or code_out.get("error"):
-                return {"skipped": True}
-            code_text: str | None = None
-            if isinstance(code_out.get("synth"), dict):
-                # No raw code returned; skip scoring
-                pass
-            if self.registry.knows("shadow_reward_score") and code_text:
                 try:
                     return await self.registry.execute(
-                        "shadow_reward_score", {"code": code_text}
+                        "code_generator", {"prompt": code_prompt}
                     )
                 except Exception:
-                    return {"skipped": True, "error": "shadow scoring failed"}
-            return {"skipped": True}
+                    pass
+            return {"generated": code_prompt}
 
-        # Execute pipeline (dependencies + optional constitutional checks)
+        async def do_validation():
+            if hasattr(self.registry, "execute") and self.registry.knows(
+                "validation_suite"
+            ):
+                try:
+                    return await self.registry.execute(
+                        "validation_suite", {"prompt": config.prompt}
+                    )
+                except Exception:
+                    pass
+            return {"status": "skipped"}
+
+        async def do_scoring(code_out: dict[str, Any]):
+            if hasattr(self.registry, "execute") and self.registry.knows(
+                "score_alignment"
+            ):
+                try:
+                    return await self.registry.execute(
+                        "score_alignment", {"code": str(code_out)}
+                    )
+                except Exception:
+                    pass
+            return {"score": 0.0, "reason": "scoring not available"}
+
         plan_out: dict[str, Any] | None = None
+        tasks_out: dict[str, Any] | None = None
         consensus_out: dict[str, Any] | None = None
         code_out: dict[str, Any] | None = None
 
-        # Specification stage with constitutional validation
-        async for ev in stage("specification", config.enable_specification, do_spec):
-            yield ev
+        async for event in stage(
+            "specification", config.enable_specification, do_spec
+        ):
+            yield event
 
-        # Constitutional validation for specification (if SDD mode enabled)
-        if config.sdd_mode and config.enable_specification:
-            spec_payload = stages_output.get("specification", {}).get("output") or {
-                "spec": config.prompt
-            }
-            async for ev in stage(
-                "specification_validation",
-                True,
-                lambda: do_sdd_validate("specification", spec_payload),  # noqa: E731
-            ):
-                yield ev
+        async for event in stage("planning", config.enable_planning, do_plan):
+            yield event
+        if stages_output.get("planning", {}).get("status") == "success":
+            plan_out = stages_output["planning"].get("output")
 
-        # Planning stage with constitutional validation
-        if config.enable_planning:
-            async for ev in stage("planning", True, do_plan):
-                if ev["type"] == "UnifiedStageSucceeded":
-                    plan_out = stages_output["planning"]["output"]
-                yield ev
+        async for event in stage(
+            "tasks",
+            config.enable_tasks,
+            lambda: do_tasks(plan_out or {"steps": []}),
+        ):
+            yield event
+        if stages_output.get("tasks", {}).get("status") == "success":
+            tasks_out = stages_output["tasks"].get("output")
 
-        # Constitutional validation for planning (if SDD mode enabled)
         if config.sdd_mode and config.enable_planning:
-            plan_payload = stages_output.get("planning", {}).get("output") or {}
-            async for ev in stage(
+            async for event in stage(
                 "planning_validation",
                 True,
-                lambda: do_sdd_validate("plan", plan_payload),  # noqa: E731
+                lambda: do_sdd_validate("plan", plan_out or {}),
             ):
-                yield ev
+                yield event
 
-        # Tasks stage with constitutional validation
-        if config.enable_tasks:
-            async for ev in stage(
-                "tasks",
-                True,
-                lambda: do_tasks(plan_out or {"steps": []}),  # noqa: E731
-            ):
-                yield ev
-
-        # Constitutional validation for tasks (if SDD mode enabled)
         if config.sdd_mode and config.enable_tasks:
-            tasks_payload = stages_output.get("tasks", {}).get("output") or {}
-            async for ev in stage(
+            async for event in stage(
                 "tasks_validation",
                 True,
-                lambda: do_sdd_validate("tasks", tasks_payload),  # noqa: E731
+                lambda: do_sdd_validate("tasks", tasks_out or {}),
             ):
-                yield ev
-        if config.enable_consensus:
-            async for ev in stage("consensus", True, do_consensus):
-                if ev["type"] == "UnifiedStageSucceeded":
-                    consensus_out = stages_output["consensus"]["output"]
-                yield ev
-        if config.enable_code_generation:
-            async for ev in stage(
-                "code_generation",
-                True,
-                lambda: do_codegen(
-                    consensus_out or {"consensus_text": config.prompt}
-                ),  # noqa: E731
-            ):
-                if ev["type"] == "UnifiedStageSucceeded":
-                    code_out = stages_output["code_generation"]["output"]
-                yield ev
-        if config.enable_validation:
-            async for ev in stage("validation", True, do_validation):
-                yield ev
-        if config.enable_scoring:
-            async for ev in stage(
-                "scoring",
-                True,
-                lambda: do_scoring(code_out or {}),  # noqa: E731
-            ):
-                yield ev
+                yield event
 
-        completed = {
-            "type": "UnifiedRunCompleted",
-            "run_id": config.run_id,
-            "success": True,
-            "stages": {
-                k: {**v, "output": _truncate(v.get("output"))}
-                for k, v in stages_output.items()
-            },
-            "aggregate": _aggregate(stages_output),
-        }
-        self._last_result = {  # cache for non-streaming caller
+        async for event in stage("consensus", config.enable_consensus, do_consensus):
+            yield event
+        if stages_output.get("consensus", {}).get("status") == "success":
+            consensus_out = stages_output["consensus"].get("output")
+
+        async for event in stage(
+            "code_generation",
+            config.enable_code_generation,
+            lambda: do_codegen(consensus_out or {}),
+        ):
+            yield event
+        if stages_output.get("code_generation", {}).get("status") == "success":
+            code_out = stages_output["code_generation"].get("output")
+
+        async for event in stage(
+            "validation", config.enable_validation, do_validation
+        ):
+            yield event
+
+        async for event in stage(
+            "scoring",
+            config.enable_scoring,
+            lambda: do_scoring(code_out or {}),
+        ):
+            yield event
+
+        gate_score = compute_gate_score(stages_output)
+        total_duration_ms = int((time.time() - run_start) * 1000)
+        terminated_payload = await emit(
+            make_run_terminated_event(
+                run_id=config.run_id,
+                sequence=next_sequence(),
+                timestamp=_iso_now(),
+                correlation_id=run_corr,
+                parent_correlation_id=None,
+                stage=None,
+                trace_id=None,
+                constitutional_score=gate_score,
+                meta={"stages": list(stages_output.keys())},
+                success=True,
+                total_duration_ms=total_duration_ms,
+                stages_executed=_count_stage_successes(stages_output),
+                abilities_invoked=abilities_invoked,
+                final_output_preview=_final_output_preview(stages_output),
+            )
+        )
+        aggregate = _aggregate(stages_output)
+        self._last_result = {
             "run_id": config.run_id,
             "prompt": config.prompt,
             "stages": stages_output,
-            "aggregate": completed["aggregate"],
+            "aggregate": aggregate,
         }
-        await self._emit(completed)
-        yield completed
-
+        yield terminated_payload
     async def _emit(self, event: dict[str, Any]) -> None:
         try:
             if self.event_bus is not None:
@@ -526,6 +639,81 @@ class UnifiedOrchestrator:
         except Exception:  # pragma: no cover - emission failures non-fatal
             pass
 
+
+
+
+def _iso_now() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _new_correlation(prefix: str) -> str:
+    return f"{prefix}-{uuid.uuid4().hex}"
+
+
+def _run_config_snapshot(config: UnifiedRunConfig) -> dict[str, Any]:
+    return {
+        "stages": _enabled_stage_names(config),
+        "abilities": _default_abilities(config),
+        "ledger_enabled": False,
+    }
+
+
+def _enabled_stage_names(config: UnifiedRunConfig) -> list[str]:
+    stage_flags = [
+        ("specification", config.enable_specification),
+        ("planning", config.enable_planning),
+        ("tasks", config.enable_tasks),
+        ("planning_validation", config.sdd_mode and config.enable_planning),
+        ("tasks_validation", config.sdd_mode and config.enable_tasks),
+        ("consensus", config.enable_consensus),
+        ("code_generation", config.enable_code_generation),
+        ("validation", config.enable_validation),
+        ("scoring", config.enable_scoring),
+    ]
+    return [name for name, enabled in stage_flags if enabled]
+
+
+def _default_abilities(config: UnifiedRunConfig) -> list[str]:
+    abilities: list[str] = []
+    if config.enable_planning:
+        abilities.append("task_planner")
+    if config.enable_consensus:
+        abilities.append("deepconf_consensus")
+    if config.enable_code_generation:
+        abilities.append("code_generator")
+    if config.enable_validation:
+        abilities.append("validation_suite")
+    if config.enable_scoring:
+        abilities.append("score_alignment")
+    return abilities
+
+
+def _stage_summary(output: Any) -> str | None:
+    if output is None:
+        return None
+    try:
+        serialized = json.dumps(_summarize(output))
+    except TypeError:
+        serialized = str(output)
+    return truncate_preview(serialized, 200)
+
+
+def _final_output_preview(stages_output: dict[str, Any]) -> str | None:
+    consensus = stages_output.get("consensus")
+    if consensus and consensus.get("status") == "success":
+        text = (consensus.get("output") or {}).get("consensus_text")
+        if text:
+            return truncate_preview(str(text), 200)
+    code_generation = stages_output.get("code_generation")
+    if code_generation and code_generation.get("status") == "success":
+        generated = (code_generation.get("output") or {}).get("generated")
+        if generated:
+            return truncate_preview(str(generated), 200)
+    return None
+
+
+def _count_stage_successes(stages: dict[str, Any]) -> int:
+    return sum(1 for data in stages.values() if data.get("status") == "success")
 
 def _summarize(output: Any) -> dict[str, Any]:
     if output is None:

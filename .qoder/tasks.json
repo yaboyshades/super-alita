@@ -1,0 +1,888 @@
+{
+  "version": "1.0.0",
+  "inputs": [
+    {
+      "id": "featureName",
+      "description": "Enter feature name for Spec Kit workflow (e.g., 'user authentication system')",
+      "default": "new-feature",
+      "type": "promptString"
+    },
+    {
+      "id": "constitutionDescription",
+      "description": "Enter constitutional framework description",
+      "default": "Create principles focused on code quality, testing standards, user experience consistency, and performance requirements",
+      "type": "promptString"
+    },
+    {
+      "id": "specKitPhase",
+      "description": "Select Spec Kit phase",
+      "default": "specify",
+      "type": "pickString",
+      "options": ["constitution", "specify", "plan", "tasks", "all"]
+    }
+  ],
+  "problemMatchers": [
+    {
+      "name": "$spec-kit",
+      "owner": "spec-kit",
+      "fileLocation": "relative",
+      "pattern": {
+        "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error|info):\\s+(.*)$",
+        "file": 1,
+        "line": 2,
+        "column": 3,
+        "severity": 4,
+        "message": 5
+      }
+    },
+    {
+      "name": "$spec-kit-constitutional",
+      "owner": "spec-kit-constitutional",
+      "fileLocation": "relative",
+      "pattern": {
+        "regexp": "^(.*):(\\d+):\\s+(warning|error|info):\\s+Constitutional\\s+(.*):\\s+(.*)$",
+        "file": 1,
+        "line": 2,
+        "severity": 3,
+        "code": 4,
+        "message": 5
+      }
+    }
+  ],
+  "tasks": {
+    // MCP Server Operations
+    "alita:mcp:start": {
+      "label": "🚀 Start MCP Server",
+      "type": "shell",
+      "command": "python",
+      "args": ["mcp_server.py"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "alita:mcp:stop": {
+      "label": "🛑 Stop MCP Server",
+      "type": "shell",
+      "command": "pkill",
+      "args": ["-f", "mcp_server.py"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    "alita:mcp:test": {
+      "label": "🧪 Test MCP Connection",
+      "type": "shell",
+      "command": "python",
+      "args": ["test_mcp_functionality.py"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    // Core Super Alita Operations
+    "alita:start": {
+      "label": "🎯 Start Super Alita",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "src.main"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "alita:dev-server": {
+      "label": "🌐 Start Dev Server",
+      "type": "shell",
+      "command": "uvicorn",
+      "args": ["app:app", "--reload", "--port", "8080"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "alita:validate": {
+      "label": "✅ Validate Deployment",
+      "type": "shell",
+      "command": "python",
+      "args": ["validate_deployment.py"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "health:check": {
+      "label": "🏥 Health Check",
+      "type": "shell",
+      "command": "curl",
+      "args": ["-fsS", "http://127.0.0.1:8080/health/simple"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    // Quality Pipeline
+    "quality:full": {
+      "label": "🔍 Full Quality Pipeline",
+      "dependsOrder": "sequence",
+      "dependsOn": ["alita:lint", "alita:type", "alita:test", "format:all", "eos:validate"]
+    },
+
+    "alita:lint": {
+      "label": "🧹 Lint with Ruff",
+      "type": "shell",
+      "command": "ruff",
+      "args": ["check", "src", "tests"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$ruff"
+    },
+
+    "alita:type": {
+      "label": "🔬 Type Check with MyPy",
+      "type": "shell",
+      "command": "mypy",
+      "args": ["--strict", "src"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$mypy"
+    },
+
+    "alita:test": {
+      "label": "🧪 Run Tests",
+      "type": "shell",
+      "command": "pytest",
+      "args": ["-q"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$pytest"
+    },
+
+    "coverage": {
+      "label": "📊 Coverage Report",
+      "type": "shell",
+      "command": "pytest",
+      "args": ["--cov=src", "--cov-report=html", "--cov-report=term"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$pytest"
+    },
+
+    // Formatting Tasks
+    "format:all": {
+      "label": "🎨 Format All Code",
+      "dependsOrder": "sequence",
+      "dependsOn": ["format:black", "format:isort", "lint:ruff-fix"]
+    },
+
+    "format:black": {
+      "label": "⚫ Format with Black",
+      "type": "shell",
+      "command": "black",
+      "args": [".", "-l", "79"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    "format:isort": {
+      "label": "📂 Sort Imports",
+      "type": "shell",
+      "command": "isort",
+      "args": [".", "--profile=black", "--line-length=79"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    "lint:ruff-fix": {
+      "label": "🔧 Ruff Auto-fix",
+      "type": "shell",
+      "command": "ruff",
+      "args": ["check", "src", "tests", "--fix"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    // Spec Kit Integration - GitHub Spec Kit CLI Support
+    "spec-kit:install": {
+      "label": "📦 Install/Update Spec Kit",
+      "type": "shell",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/github/spec-kit.git",
+        "specify",
+        "--help"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    "spec-kit:check": {
+      "label": "🔍 Check Spec Kit Setup",
+      "type": "shell",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/github/spec-kit.git",
+        "specify",
+        "check"
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    "spec-kit:init": {
+      "label": "🌱 Initialize Spec Kit Project",
+      "type": "shell",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/github/spec-kit.git",
+        "specify",
+        "init",
+        "--here",
+        "--ai",
+        "claude"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      }
+    },
+
+    "spec-kit:create-feature": {
+      "label": "📝 Create New Feature Spec",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        ".specify/scripts/powershell/create-new-feature.ps1",
+        "-Json",
+        "${input:featureName}"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+
+    "spec-kit:plan-feature": {
+      "label": "📋 Plan Feature Implementation",
+      "type": "shell",
+      "command": "bash",
+      "args": [".specify/scripts/plan.sh"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+
+    "spec-kit:create-tasks": {
+      "label": "📋 Generate Implementation Tasks",
+      "type": "shell",
+      "command": "bash",
+      "args": [".specify/scripts/tasks.sh"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+
+    "spec-kit:constitution": {
+      "label": "⚖️ Constitutional Framework Setup",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        ".specify/scripts/constitution.sh",
+        "${input:constitutionDescription}"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    "sdd:specify": {
+      "label": "📝 SDD Specify",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "src.sdd.sdd_cli", "specify"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "sdd:plan": {
+      "label": "📋 SDD Plan",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "src.sdd.sdd_cli", "plan"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "sdd:tasks": {
+      "label": "📋 SDD Tasks",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "src.sdd.sdd_cli", "tasks"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "sdd:validate": {
+      "label": "✅ SDD Validate",
+      "type": "shell",
+      "command": "python",
+      "args": ["validate_sdd_epic.py"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    // EOS (E-UPUSF Orchestration Schema) Operations
+    "eos:validate": {
+      "label": "🎯 EOS Schema Validation",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "src.eos.schema", "examples/eos/reference-orchestration.yaml"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "eos:orchestrate": {
+      "label": "🚀 EOS Orchestration",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "src.eos.orchestrator", "examples/eos/reference-orchestration.yaml"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "eos:demo": {
+      "label": "🎪 EOS System Demo",
+      "type": "shell",
+      "command": "python",
+      "args": ["demo_eos_system.py", "--verbose"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "eos:test": {
+      "label": "🧪 EOS Integration Tests",
+      "type": "shell",
+      "command": "pytest",
+      "args": ["tests/test_eos_integration.py", "-v"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$pytest"
+    },
+
+    "eos:constitutional": {
+      "label": "⚖️ EOS Constitutional Compliance",
+      "type": "shell",
+      "command": "python",
+      "args": ["scripts/rule_validator.py", "src/eos/", "--output", "eos_governance_report.json"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$spec-kit-constitutional"
+    },
+
+    "eos:pipeline": {
+      "label": "🎼 EOS Full Pipeline",
+      "dependsOrder": "sequence",
+      "dependsOn": ["eos:validate", "eos:test", "eos:constitutional", "eos:demo"]
+    },
+    "constitutional:validate": {
+      "label": "⚖️ Constitutional Validate",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/unified_sdd_mangle.py",
+        "--repo",
+        ".",
+        "--spec",
+        ".spec",
+        "--db",
+        ".ai/facts.sqlite",
+        "--report",
+        ".ai/report.json",
+        "--advice",
+        ".ai/advice.json"
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    // Unified Orchestrator
+    "unified:orchestrator": {
+      "label": "🎼 Unified Orchestrator",
+      "type": "shell",
+      "command": "python",
+      "args": ["demo_unified_orchestrator.py"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    // Agent Development
+    "agents:dev": {
+      "label": "🤖 Agent Development",
+      "type": "shell",
+      "command": "python",
+      "args": ["complete_agent_demo.py"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    // Redis Operations
+    "redis:start": {
+      "label": "🔴 Start Redis",
+      "type": "shell",
+      "command": "redis-server",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    // Security and Tools
+    "security:bandit": {
+      "label": "🛡️ Security Scan",
+      "type": "shell",
+      "command": "bandit",
+      "args": ["-r", "src/", "-f", "json"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    "precommit:run": {
+      "label": "🏁 Pre-commit",
+      "type": "shell",
+      "command": "pre-commit",
+      "args": ["run", "--all-files"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    "toolchain:full": {
+      "label": "🧰 Full Toolchain",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "quality:full",
+        "security:bandit",
+        "constitutional:validate"
+      ]
+    },
+
+    "clean:cache": {
+      "label": "🧹 Clean Cache",
+      "type": "shell",
+      "command": "find",
+      "args": [
+        ".",
+        "-type",
+        "d",
+        "-name",
+        "__pycache__",
+        "-exec",
+        "rm",
+        "-rf",
+        "{}",
+        "+"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+
+    // Snippet and Token Optimization
+    "snippet:optimize:current": {
+      "label": "🎯 Optimize Current File Snippets",
+      "type": "shell",
+      "command": "python",
+      "args": ["scripts/optimize_snippets.py", "${file}"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "token:efficiency:report": {
+      "label": "📈 Token Efficiency Report",
+      "type": "shell",
+      "command": "python",
+      "args": ["scripts/token_efficiency_report.py"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "toolchain:full": {
+      "label": "🧰 Full Toolchain",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "quality:full",
+        "security:bandit",
+        "constitutional:validate",
+        "eos:constitutional",
+        "eos:mangle:pipeline"
+      ]
+    },
+
+    // EOS (E-UPUSF Orchestration Schema) Operations
+    "eos:validate": {
+      "label": "🎯 EOS Schema Validation",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "src.eos.schema", "examples/eos/reference-orchestration.yaml"]
+    },
+    "eos:orchestrate": {
+      "label": "🚀 EOS Orchestration", 
+      "command": "python",
+      "args": ["-m", "src.eos.orchestrator", "examples/eos/reference-orchestration.yaml"]
+    },
+    "eos:demo": {
+      "label": "🎪 EOS System Demo",
+      "command": "python", 
+      "args": ["demo_eos_system.py", "--verbose"]
+    },
+    "eos:pipeline": {
+      "label": "🎼 EOS Full Pipeline",
+      "dependsOrder": "sequence",
+      "dependsOn": ["eos:validate", "eos:test", "eos:constitutional", "eos:demo"]
+    },
+    "eos:constitutional": {
+      "label": "⚖️ EOS Constitutional Validation",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "pytest", "tests/test_eos_integration.py::TestEOSConstitutional", "-v"]
+    },
+    "eos:test": {
+      "label": "🧪 EOS Integration Tests",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "pytest", "tests/test_eos_integration.py", "-v"]
+    },
+    
+    // EOS-Mangle Integration
+    "eos:mangle:orchestrate": {
+      "label": "🧠 EOS-Mangle Orchestration",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "src.eos.mangle_integration", "examples/eos/reference-orchestration.yaml", "--verbose"]
+    },
+    "eos:mangle:validate": {
+      "label": "✅ EOS-Mangle Validation",
+      "type": "shell",
+      "command": "python",
+      "args": ["-c", "from src.unified_intelligence import UnifiedIntelligenceEngine; engine = UnifiedIntelligenceEngine(); print('✅ EOS-Mangle integration:', 'AVAILABLE' if engine.enable_eos else 'DISABLED')"]
+    },
+    "eos:mangle:demo": {
+      "label": "🎭 EOS-Mangle Demo",
+      "type": "shell",
+      "command": "python",
+      "args": ["-c", "import asyncio; from src.unified_intelligence import UnifiedIntelligenceEngine; engine = UnifiedIntelligenceEngine(enable_eos=True); result = asyncio.run(engine.enhance_interaction('Create a user authentication system using EOS-Mangle integration')); print('Demo result:', result)"]
+    },
+    "eos:mangle:pipeline": {
+      "label": "🔗 EOS-Mangle Full Pipeline",
+      "dependsOrder": "sequence",
+      "dependsOn": ["eos:mangle:validate", "eos:mangle:orchestrate", "eos:mangle:demo"]
+    },
+
+    // Advanced Qoder IDE Integration
+    "qoder:constitutional:live-validate": {
+      "label": "⚖️ Live Constitutional Validation",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "-m",
+        "src.constitutional.live_validator",
+        "--watch",
+        "${workspaceFolder}/src"
+      ],
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "problemMatcher": {
+        "owner": "constitutional",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    },
+
+    "qoder:sdd:visual-pipeline": {
+      "label": "🎨 Visual SDD Pipeline",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "src.sdd.visual_pipeline", "--port", "3001"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "qoder:ai:context-refresh": {
+      "label": "🧠 Refresh AI Context",
+      "type": "shell",
+      "command": "python",
+      "args": ["scripts/refresh_ai_context.py", "--full-reindex"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": "$python"
+    },
+
+    "qoder:debug:constitutional-trace": {
+      "label": "🔍 Constitutional Trace Debug",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "src.debug.constitutional_tracer", "${file}"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$python"
+    },
+
+    // Auto-Framework Tasks
+    "framework:auto:enable": {
+      "label": "🤖 Enable Auto-Framework",
+      "type": "shell",
+      "command": "python",
+      "args": ["-c", "import json; config = json.load(open('.qoder/auto_framework_config.json')); config['enabled'] = True; json.dump(config, open('.qoder/auto_framework_config.json', 'w'), indent=2); print('✅ Auto-framework enabled - Super ALITA will be applied to all interactions')"]
+    },
+    "framework:auto:disable": {
+      "label": "⏸️ Disable Auto-Framework",
+      "type": "shell",
+      "command": "python",
+      "args": ["-c", "import json; config = json.load(open('.qoder/auto_framework_config.json')); config['enabled'] = False; json.dump(config, open('.qoder/auto_framework_config.json', 'w'), indent=2); print('⏸️ Auto-framework disabled')"]
+    },
+    "framework:auto:status": {
+      "label": "📊 Framework Status",
+      "type": "shell",
+      "command": "python",
+      "args": ["-c", "import json; config = json.load(open('.qoder/auto_framework_config.json')); print(f'Framework Status: {'Enabled' if config['enabled'] else 'Disabled'}'); print(f'Components Active: {sum(1 for comp in config['framework_components'].values() if comp['enabled'])}')"]
+    }
+  }
+}

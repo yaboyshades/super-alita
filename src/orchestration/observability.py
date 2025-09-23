@@ -6,9 +6,15 @@ Provides structured logging, metrics, and event schemas for monitoring.
 import json
 import logging
 import time
+from collections import deque
 from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Any
+
+try:
+    from src.core.telemetry.collector import TelemetryCollector
+except Exception:  # pragma: no cover - optional dependency
+    TelemetryCollector = None
 
 
 class LogLevel(Enum):
@@ -72,7 +78,71 @@ class OrchestatorObserver:
         self.logger = logging.getLogger(logger_name)
         self.metrics = []
         self.log_entries = []
+        self._telemetry_collector: TelemetryCollector | None = None
+        self._current_runs: dict[str, dict[str, Any]] = {}
+        self._recent_runs: deque[dict[str, Any]] = deque(maxlen=50)
         self._setup_logger()
+
+    def record_canonical_event(self, event: dict[str, Any]) -> None:
+        """Aggregate canonical events without emitting verbose logs."""
+        if not isinstance(event, dict):
+            return
+        run_id = event.get("run_id")
+        kind = event.get("kind")
+        if not run_id or not kind:
+            return
+
+        stats = self._current_runs.setdefault(
+            run_id,
+            {
+                "run_id": run_id,
+                "session_id": (event.get("meta") or {}).get("session_id") or (event.get("meta") or {}).get("session"),
+                "counts": {"events": 0, "abilities": 0},
+                "stages": {},
+                "errors": [],
+                "started_at": event.get("timestamp"),
+            },
+        )
+        stats["counts"]["events"] += 1
+
+        data = event.get("data") or {}
+        if kind == "RunStarted":
+            stats["started_at"] = event.get("timestamp")
+        elif kind == "StageCompleted":
+            stage_name = data.get("name", "unknown")
+            stage_info = stats["stages"].setdefault(stage_name, {
+                "duration_ms": 0,
+                "status": "started",
+            })
+            stage_info["duration_ms"] = int(data.get("duration_ms", 0))
+            stage_info["status"] = data.get("status", "ok")
+        elif kind in {"AbilityInvocationStarted", "AbilityInvocationCompleted"}:
+            stats["counts"]["abilities"] += 1
+        elif kind == "RunError":
+            error_type = data.get("error_type") or "UNKNOWN"
+            stats["errors"].append(error_type)
+        elif kind in {"RunTerminated", "RunFailed"}:
+            summary = {
+                "run_id": run_id,
+                "success": bool(data.get("success", kind == "RunTerminated")),
+                "total_duration_ms": data.get("total_duration_ms"),
+                "stages": stats["stages"],
+                "errors": stats["errors"],
+                "abilities_invoked": data.get("abilities_invoked", stats["counts"]["abilities"]),
+                "constitutional_score": event.get("constitutional_score"),
+            }
+            self._recent_runs.append(summary)
+            self.logger.info(
+                "Run %s finished (success=%s, stages=%d, errors=%d, duration_ms=%s)",
+                run_id,
+                summary["success"],
+                len(summary["stages"]),
+                len(summary["errors"]),
+                summary["total_duration_ms"],
+            )
+            self._current_runs.pop(run_id, None)
+
+        self._record_to_collector(event)
 
     def _setup_logger(self):
         """Configure structured logging."""
@@ -370,6 +440,20 @@ class OrchestatorObserver:
             return "generation"
         else:
             return "other"
+
+    def _record_to_collector(self, event: dict[str, Any]) -> None:
+        if TelemetryCollector is None:
+            return
+        if self._telemetry_collector is None:
+            try:
+                self._telemetry_collector = TelemetryCollector()
+            except Exception:  # pragma: no cover - optional collector
+                self._telemetry_collector = None
+                return
+        try:
+            self._telemetry_collector.record_canonical_event(event)
+        except Exception:  # pragma: no cover - telemetry best-effort
+            pass
 
     def _emit_log(self, entry: LogEntry) -> None:
         """Emit structured log entry."""

@@ -138,45 +138,7 @@ sdd_json_array() {
 }
 
 
-# Emit a JSON payload to stdout. Allow callers (or tests) to override the
-# implementation by defining log_json in the environment before sourcing or
-# executing this script.
-if ! declare -F log_json >/dev/null 2>&1; then
-    log_json() {
-        local payload="${1:-}"
-
-        if [[ -z "${payload}" ]]; then
-            printf '\n'
-            return 0
-        fi
-
-        printf '%s\n' "${payload}"
-    }
-fi
-
-
-# Emit a single-line JSON object for structured logging. Arguments are provided
-# as key=value pairs. The "message" key is reserved for human-readable text and
-# is omitted from the JSON output. When encountered, a warning is written to
-# stderr so callers can surface the drop in automation pipelines.
-log_json() {
-    printf '{'
-
-    local first=1
-    local kv key value
-    for kv in "$@"; do
-        if [[ "${kv}" != *=* ]]; then
-            printf 'WARN: log_json skipping malformed entry: %s\n' "${kv}" >&2
-            continue
-        fi
-
-        key=${kv%%=*}
-        value=${kv#*=}
-
-        if [[ "${key}" == "message" ]]; then
-            printf 'WARN: log_json skipping reserved message key (value=[REDACTED])\n' >&2
-            continue
-        fi
+# (Removed older log_json helpers.)
 
 
 # Convert key=value pairs into a JSON object. Keys retain their first
@@ -226,16 +188,11 @@ sdd_json_object_from_kv() {
         printf '"'
         sdd_json_escape "${key}"
         printf '":"'
-        sdd_json_escape "${value}"
-        printf '"'
-    done
-
-    printf '}\n'
-
         sdd_json_escape "${kv_store[$key]}"
         printf '"'
     done
-    printf '}'
+    printf '}\n'
+}
 
 # Emit structured JSON log lines with optional key=value metadata.
 log_json() {

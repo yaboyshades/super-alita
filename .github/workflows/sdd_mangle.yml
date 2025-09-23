@@ -1,0 +1,26 @@
+name: SDD+Mangle Guard
+
+on:
+  pull_request:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pyyaml
+      - run: python scripts/unified_sdd_mangle.py --repo . --spec .spec --db facts.sqlite --report report.json --advice advice.json --workflow refactor
+      - name: Fail on low score / hard issues
+        run: |
+          python - <<'PY'
+          import json, sys
+          adv = json.load(open('advice.json'))
+          rep = json.load(open('report.json'))
+          if adv['decision'] == 'block':
+              sys.exit('Decision=block')
+          if rep['summary'].get('cycle', 0) > 0 or rep['summary'].get('cycle_spec', 0) > 0:
+              sys.exit('Module cycle detected')
+          PY

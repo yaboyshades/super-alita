@@ -1,0 +1,73 @@
+# Constitutional Ruleset Metadata
+ruleset:
+  name: "Super Alita Constitutional Framework"
+  version: "1.0.0"
+  description: "Comprehensive constitutional compliance rules for Super Alita project"
+  
+governance:
+  maintainers:
+    - "constitutional-committee"
+  approval_required: true
+  change_process: "RFC"
+  
+versioning:
+  scheme: "semantic"
+  compatibility: "backwards"
+  deprecation_policy: "6-month notice"
+
+articles:
+  - id: "RULE-1.1"
+    article: "Article I: Library-First" 
+    file: "article_1_library_first.yaml"
+    severity: "WARNING"
+    
+  - id: "RULE-2.1"
+    article: "Article II: Test-First"
+    file: "article_2_test_first.yaml"
+    severity: "BLOCKER"
+    
+  - id: "RULE-3.1"
+    article: "Article III: Simplicity"
+    file: "article_3_simplicity.yaml"
+    severity: "WARNING"
+    
+  - id: "RULE-4.1"
+    article: "Article IV: Integration-First"
+    file: "article_4_integration_first.yaml"
+    severity: "BLOCKER"
+    
+  - id: "RULE-5.1"
+    article: "Article V: Clarity"
+    file: "article_5_clarity.yaml"
+    severity: "WARNING"
+    
+  - id: "RULE-6.1"
+    article: "Article VI: Versioning"
+    file: "article_6_versioning.yaml"
+    severity: "BLOCKER"
+
+enforcement:
+  pre_commit: true
+  ci_pipeline: true
+  merge_blocking: true
+  
+severity_levels:
+  BLOCKER:
+    description: "Must be resolved before merge"
+    exit_code: 2
+    action: "block"
+    
+  WARNING:
+    description: "Should be resolved, advisory"
+    exit_code: 1
+    action: "warn"
+    
+  INFO:
+    description: "Informational only"
+    exit_code: 0
+    action: "log"
+
+validation:
+  schema_version: "1.0"
+  last_updated: "2024-01-01"
+  review_cycle: "quarterly"

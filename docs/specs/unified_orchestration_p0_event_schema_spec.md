@@ -330,6 +330,11 @@ Metrics (counter / timer names):
 - `orchestrator_errors_total{error_type}`
 - `constitutional_score_gauge`
 
+Telemetry Aggregation:
+
+- Canonical telemetry aggregator condenses RunStarted/StageCompleted/RunTerminated events into rolling summaries (counts, stage durations) before handing data to the telemetry collector.
+- Reliability metadata (attempts, retries, circuit state, correlation IDs) is embedded in each stage completion event for downstream analysis.
+
 Tracing:
 
 - Inject `trace_id` from inbound request header `X-Trace-Id` if present

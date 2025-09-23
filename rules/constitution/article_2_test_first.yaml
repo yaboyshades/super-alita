@@ -1,0 +1,42 @@
+# Constitutional Rule: Test-First Development
+id: RULE-2.1
+version: "1.0.0"
+article: "Article II: Test-First"
+severity: BLOCKER
+category: "testing"
+description: "All public functions must have corresponding unit tests"
+
+checks:
+  - type: "test_coverage"
+    name: "function_test_coverage"
+    pattern: |
+      # Check if public functions have corresponding tests
+      def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(
+    targets:
+      - "src/**/*.py"
+    exclude:
+      - "src/**/test_*.py"
+      - "src/**/*_test.py"
+
+validation:
+  message: "Public function '{function_name}' is missing unit tests"
+  suggestion: "Create test file: tests/test_{module_name}.py with test_{function_name}()"
+  auto_fix: false
+
+remediation:
+  template: |
+    # Add to tests/test_{module_name}.py
+    def test_{function_name}():
+        '''Test {function_name} function.'''
+        # TODO: Implement test
+        pass
+
+exceptions:
+  - path: "src/**/migrations/"
+    reason: "Database migrations are tested through integration tests"
+  - pattern: "^_"
+    reason: "Private functions (starting with _) don't require individual tests"
+
+references:
+  - "Constitutional Article II: Test-First"
+  - "https://docs.python.org/3/library/unittest.html"
