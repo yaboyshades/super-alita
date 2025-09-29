@@ -5,6 +5,10 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
+<!-- NOTE: Canonical generator mode -->
+<!-- The project uses a single canonical spec generation mode ("canonical") by default. -->
+<!-- Generators should include Implementation Readiness, Test Scenarios, and a clearly-marked non-normative section titled "Implementation Hints (non-normative)" if implementation suggestions are provided. -->
+
 ## Execution Flow (main)
 ```
 1. Parse user description from Input
