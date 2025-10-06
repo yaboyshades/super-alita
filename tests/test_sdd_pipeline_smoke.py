@@ -54,3 +54,29 @@ async def test_sdd_pipeline_spec_plan_tasks(tmp_path: Path):
     assert tasks_file.exists()
     assert tasks_res.estimated_total_hours >= 0
 
+    # Agent-specific task expectations
+    expected_task_ids = {
+        "ARCH-001",
+        "SEC-001",
+        "IMPL-001",
+        "TEST-001",
+        "DOC-001",
+        "INT-001",
+        "VAL-001",
+    }
+
+    actual_task_ids = {task.id for task in tasks_res.tasks}
+    assert actual_task_ids == expected_task_ids
+
+    # Ensure markdown breakdown includes agent context
+    assert "Architecture Agent" in tasks_res.tasks_breakdown
+    assert "Security Agent" in tasks_res.tasks_breakdown
+    assert "Priority Focus" in tasks_res.tasks_breakdown
+
+    # Critical path should include all critical-priority tasks
+    critical_ids = {task.id for task in tasks_res.tasks if task.priority == "critical"}
+    assert set(tasks_res.critical_path) == critical_ids
+
+    # Acceptance criteria should be present for every task definition
+    assert all(task.acceptance_criteria for task in tasks_res.tasks)
+

@@ -4,6 +4,7 @@ Implements the Specification-Driven Development workflow with integrated
 constitutional validation at each stage: specify, plan, and tasks.
 """
 
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,23 @@ from .models import (
     TasksRequest,
     TasksResponse,
 )
+
+
+@dataclass
+class AgentTaskDefinition:
+    """Static metadata for a delegated agent task."""
+
+    id: str
+    agent: str
+    title: str
+    priority: str
+    estimated_hours: int
+    dependencies: list[str]
+    context: list[str]
+    responsibilities: list[str]
+    deliverables: list[str]
+    acceptance_criteria: list[str]
+    constitutional_requirements: list[str]
 
 
 class ConstitutionalSDDPipeline:
@@ -155,9 +173,14 @@ class ConstitutionalSDDPipeline:
 
         implementation_plan = plan_path.read_text(encoding="utf-8")
 
-        # Generate task breakdown
+        # Generate task definitions and markdown breakdown aligned to agents
+        task_definitions = self._get_agent_task_definitions(
+            request.priority_focus, request.team_size
+        )
         tasks_breakdown = self._generate_task_breakdown(
-            implementation_plan, request.priority_focus, request.team_size
+            request.priority_focus,
+            request.team_size,
+            task_definitions,
         )
 
         # Write tasks file
@@ -165,7 +188,7 @@ class ConstitutionalSDDPipeline:
         tasks_file.write_text(tasks_breakdown, encoding="utf-8")
 
         # Parse structured tasks
-        structured_tasks = self._parse_structured_tasks(tasks_breakdown)
+        structured_tasks = self._build_structured_tasks(task_definitions)
 
         # Constitutional validation if requested
         constitutional_compliance = {}
@@ -310,91 +333,384 @@ Following the Simplicity Gate (≤3 projects):
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
 
+    def _priority_focus_details(self, priority_focus: str) -> dict[str, Any]:
+        """Return narrative guidance for the requested priority focus."""
+
+        focus_map: dict[str, dict[str, Any]] = {
+            "test-first": {
+                "summary": (
+                    "Lead with failing tests, enforce ≥70% coverage, and gate merges "
+                    "on CI reliability."
+                ),
+                "guardrails": [
+                    "Codify property-based tests for deterministic components.",
+                    "Extend regression suites before modifying runtime atoms.",
+                    "Instrument CI to fail fast when coverage regresses.",
+                ],
+            },
+            "library-first": {
+                "summary": (
+                    "Prefer existing battle-tested libraries before authoring new "
+                    "code paths."
+                ),
+                "guardrails": [
+                    "Evaluate ecosystem options and capture reuse decisions.",
+                    "Document licensing and maintenance posture for dependencies.",
+                    "Avoid custom forks unless a mitigation plan exists.",
+                ],
+            },
+            "integration-first": {
+                "summary": (
+                    "Optimize for seamless runtime integration, streaming fidelity, "
+                    "and telemetry completeness."
+                ),
+                "guardrails": [
+                    "Validate streaming contracts end-to-end.",
+                    "Test load/backpressure scenarios on the EventBus.",
+                    "Ensure telemetry atoms bond into the knowledge graph.",
+                ],
+            },
+        }
+
+        return focus_map.get(priority_focus.lower(), focus_map["test-first"])
+
+    def _get_agent_task_definitions(
+        self, priority_focus: str, team_size: int
+    ) -> list[AgentTaskDefinition]:
+        """Create canonical tasks for each specialized agent."""
+
+        focus_lower = priority_focus.lower()
+        focus_emphasis = {
+            "test-first": (
+                "Embed failing tests and instrumentation before feature code."
+            ),
+            "library-first": (
+                "Inventory reusable libraries and only author code when no "
+                "hardened option exists."
+            ),
+            "integration-first": (
+                "Prove integration points and streaming flows before expanding "
+                "feature scope."
+            ),
+        }.get(focus_lower, "Embed failing tests and instrumentation before feature code.")
+
+        team_context = (
+            f"Coordinate across {team_size} engineer(s) while preserving the closed-loop "
+            "cognitive model (Event → Atom/Bond → Energy → TODO → Bandit → Reward)."
+        )
+
+        return [
+            AgentTaskDefinition(
+                id="ARCH-001",
+                agent="Architecture Agent",
+                title="SDD specification & decomposition refresh",
+                priority="critical",
+                estimated_hours=6,
+                dependencies=[],
+                context=[
+                    team_context,
+                    "Operate in code mode with production constraints and streaming telemetry maintained.",
+                    "Leverage the existing implementation plan and PATCHMAP.md guidance to prevent drift.",
+                ],
+                responsibilities=[
+                    "Regenerate or update the SDD specification via /specify to reflect current feature goals.",
+                    "Break work into atomic tasks mapped to agent specializations with dependency graphing.",
+                    "Document risk and fallback strategies for orchestration changes.",
+                ],
+                deliverables=[
+                    "Updated spec.md and architecture decision records.",
+                    "JSON task graph hand-off for downstream agents.",
+                    "Risk register highlighting integration and reliability concerns.",
+                ],
+                acceptance_criteria=[
+                    "Specification validated by constitutional scorer ≥ 0.75.",
+                    "Task graph references streaming contract checkpoints.",
+                    "Risks include mitigation owners and timelines.",
+                ],
+                constitutional_requirements=[
+                    "Article I – Library-First Planning",
+                    "Article III – Simplicity Gate",
+                    "Article V – Clarity & Unambiguity",
+                ],
+            ),
+            AgentTaskDefinition(
+                id="SEC-001",
+                agent="Security Agent",
+                title="Runtime threat modeling & sandbox policy",
+                priority="critical",
+                estimated_hours=5,
+                dependencies=["ARCH-001"],
+                context=[
+                    team_context,
+                    "Assess sandboxed execution paths, especially reug_runtime.router tooling.",
+                    "Ensure env-var based credential handling; forbid shell=True subprocess usage.",
+                ],
+                responsibilities=[
+                    "Perform threat modeling on new orchestration and tool delegation flows.",
+                    "Define sandbox guardrails, resource limits, and monitoring hooks.",
+                    "Review dependency list for CVEs and license posture.",
+                ],
+                deliverables=[
+                    "Security assessment report with residual risk scoring.",
+                    "Sandbox policy updates or confirmations in src/sandbox/ exec tooling.",
+                    "Dependency vulnerability scan summary with action items.",
+                ],
+                acceptance_criteria=[
+                    "All dynamic execution paths mapped with mitigations.",
+                    "Resource and retry limits documented via REUG_* toggles.",
+                    "No high/critical unresolved CVEs remain.",
+                ],
+                constitutional_requirements=[
+                    "Article IV – Integration Reliability",
+                    "Article VI – Counterfactual Safety",
+                ],
+            ),
+            AgentTaskDefinition(
+                id="IMPL-001",
+                agent="Implementation Agent",
+                title="Production-grade feature implementation",
+                priority="critical",
+                estimated_hours=14,
+                dependencies=["ARCH-001", "SEC-001"],
+                context=[
+                    team_context,
+                    focus_emphasis,
+                    "Maintain streaming response contract (<tool_call>, <tool_result>, <final_answer>).",
+                ],
+                responsibilities=[
+                    "Author modular, testable code that wires into reug_runtime.router and telemetry emissions.",
+                    "Respect sandbox policies and leverage src/core/proc.py for subprocess orchestration.",
+                    "Instrument feature code with atoms/bonds to propagate energy and TODO scoring.",
+                ],
+                deliverables=[
+                    "Production-ready Python modules under src/ with absolute imports.",
+                    "Configuration updates or feature toggles scoped to new behavior.",
+                    "Inline docs and type hints supporting mypy --strict.",
+                ],
+                acceptance_criteria=[
+                    "Feature passes pytest focus suites with new tests.",
+                    "Mypy --strict and ruff check show no regressions.",
+                    "Energy propagation and telemetry hooks verified via local runs.",
+                ],
+                constitutional_requirements=[
+                    "Article II – Test-First Development",
+                    "Article IV – Integration Reliability",
+                ],
+            ),
+            AgentTaskDefinition(
+                id="TEST-001",
+                agent="Testing Agent",
+                title="Coverage, regression, and stress harness",
+                priority="critical",
+                estimated_hours=10,
+                dependencies=["IMPL-001"],
+                context=[
+                    team_context,
+                    "Use tests/runtime/ fakes for deterministic coverage; gate integration tests appropriately.",
+                    "Target ≥70% coverage and include property-based scenarios where applicable.",
+                ],
+                responsibilities=[
+                    "Design unit, regression, and stress tests covering new runtime paths.",
+                    "Validate streaming transcripts and telemetry atoms for new events.",
+                    "Ensure CI commands (pytest, pre-commit) remain green.",
+                ],
+                deliverables=[
+                    "New or updated pytest modules under tests/ mirroring src structure.",
+                    "Stress harness scripts or marks for load-sensitive flows.",
+                    "Coverage report diff demonstrating thresholds maintained.",
+                ],
+                acceptance_criteria=[
+                    "Pytest suites pass locally and in CI tasks.",
+                    "Coverage ≥ 70% for touched modules.",
+                    "Stress harness shows no dropped events or backpressure failures.",
+                ],
+                constitutional_requirements=[
+                    "Article II – Test-First Development",
+                    "Article IV – Integration Reliability",
+                ],
+            ),
+            AgentTaskDefinition(
+                id="DOC-001",
+                agent="Documentation Agent",
+                title="Operational & API documentation updates",
+                priority="high",
+                estimated_hours=6,
+                dependencies=["IMPL-001", "TEST-001"],
+                context=[
+                    team_context,
+                    "Document runtime toggles, telemetry schemas, and agent delegation rationale.",
+                    "Ensure docs reflect updated closed-loop cognitive operations.",
+                ],
+                responsibilities=[
+                    "Update docs/, PATCHMAP.md, and AGENTS.md where scope changed.",
+                    "Capture API and CLI changes introduced by implementation.",
+                    "Record testing strategy and rollback playbooks.",
+                ],
+                deliverables=[
+                    "Doc updates with change logs and operator guidance.",
+                    "Revised onboarding instructions for agent delegation.",
+                    "Rollback and verification checklist entries.",
+                ],
+                acceptance_criteria=[
+                    "Docs reviewed for clarity and completeness.",
+                    "Operational steps align with integration agent runbooks.",
+                    "Rollback procedure validated against implementation reality.",
+                ],
+                constitutional_requirements=[
+                    "Article V – Clarity & Unambiguity",
+                    "Article VI – Counterfactual Safety",
+                ],
+            ),
+            AgentTaskDefinition(
+                id="INT-001",
+                agent="Integration Agent",
+                title="CI/CD & environment orchestration",
+                priority="high",
+                estimated_hours=8,
+                dependencies=["IMPL-001", "TEST-001"],
+                context=[
+                    team_context,
+                    "Maintain VS Code tasks, CI pipelines, and deployment scripts.",
+                    "Verify toggles: REUG_MAX_TOOL_CALLS, REUG_EXEC_TIMEOUT_S, retry configuration.",
+                ],
+                responsibilities=[
+                    "Update CI workflows to run new lint/test gates and publish telemetry artifacts.",
+                    "Validate environment parity across local, staging, and production.",
+                    "Instrument runtime metrics for latency, retries, and schema enforcement.",
+                ],
+                deliverables=[
+                    "CI/CD configuration diffs with verification steps.",
+                    "Environment validation scripts and task definitions.",
+                    "Metrics dashboards or log aggregation queries for new events.",
+                ],
+                acceptance_criteria=[
+                    "Pipelines execute successfully with new stages.",
+                    "Environment validation scripts pass with documented outputs.",
+                    "Runtime telemetry confirms schema adherence and acceptable latency.",
+                ],
+                constitutional_requirements=[
+                    "Article IV – Integration Reliability",
+                    "Article VI – Counterfactual Safety",
+                ],
+            ),
+            AgentTaskDefinition(
+                id="VAL-001",
+                agent="Validation Agent",
+                title="Constitutional & quality gate enforcement",
+                priority="medium",
+                estimated_hours=6,
+                dependencies=["IMPL-001", "TEST-001", "INT-001"],
+                context=[
+                    team_context,
+                    "Aggregate compliance metrics (mypy --strict, ruff, pytest, coverage, benchmarks).",
+                    "Ensure Mangle-based constitutional checks and knowledge graph updates succeed.",
+                ],
+                responsibilities=[
+                    "Run constitutional scorers and enhanced validation via Mangle integration.",
+                    "Certify quality gates: lint, type-check, tests, performance, documentation completeness.",
+                    "Coordinate rollback readiness and release notes approvals.",
+                ],
+                deliverables=[
+                    "Validation report with compliance scoring and outstanding actions.",
+                    "Performance benchmark results with pass/fail annotations.",
+                    "Final release go/no-go recommendation with rollback trigger conditions.",
+                ],
+                acceptance_criteria=[
+                    "Constitutional compliance ≥ 0.75 with no critical violations.",
+                    "All quality gates documented with evidence artifacts.",
+                    "Rollback procedure rehearsed or simulated.",
+                ],
+                constitutional_requirements=[
+                    "Article II – Test-First Development",
+                    "Article IV – Integration Reliability",
+                    "Article VI – Counterfactual Safety",
+                ],
+            ),
+        ]
+
     def _generate_task_breakdown(
-        self, _implementation_plan: str, priority_focus: str, team_size: int
+        self,
+        priority_focus: str,
+        team_size: int,
+        task_definitions: list[AgentTaskDefinition],
     ) -> str:
-        """Generate task breakdown."""
-        return f"""# Task Breakdown
+        """Generate an agent-aligned task breakdown document."""
 
-## Priority Focus: {priority_focus.title()}
+        focus_details = self._priority_focus_details(priority_focus)
 
-## Epic 1: Foundation & Infrastructure
-### Task 1.1: Test Infrastructure Setup
-- **Priority**: Critical
-- **Estimated Hours**: 8
-- **Dependencies**: None
-- **Description**: Set up pytest, coverage, CI/CD pipeline
-- **Acceptance Criteria**:
-  - [ ] Test framework configured
-  - [ ] Coverage reporting enabled
-  - [ ] CI/CD pipeline functional
+        lines: list[str] = [
+            "# Agent Task Assignments",
+            "",
+            f"**Priority Focus:** {priority_focus.title()}",
+            f"**Team Size:** {team_size} engineer(s)",
+            "",
+            "## Priority Guidance",
+            "",
+            f"- {focus_details['summary']}",
+            "",
+            "### Guardrails",
+        ]
 
-### Task 1.2: Core Data Models
-- **Priority**: Critical
-- **Estimated Hours**: 12
-- **Dependencies**: 1.1
-- **Description**: Implement core data structures with tests first
-- **Acceptance Criteria**:
-  - [ ] All models tested (TDD)
-  - [ ] Validation logic complete
-  - [ ] Documentation generated
+        for guardrail in focus_details["guardrails"]:
+            lines.append(f"- {guardrail}")
 
-## Epic 2: Core Implementation
-### Task 2.1: Business Logic
-- **Priority**: High
-- **Estimated Hours**: 20
-- **Dependencies**: 1.2
-- **Description**: Implement main feature functionality
-- **Acceptance Criteria**:
-  - [ ] All requirements implemented
-  - [ ] Test coverage ≥ 80%
-  - [ ] Performance benchmarks met
+        lines.extend([
+            "",
+            "## Agent Task Matrix",
+            "",
+        ])
 
-### Task 2.2: CLI Interface
-- **Priority**: High
-- **Estimated Hours**: 10
-- **Dependencies**: 2.1
-- **Description**: Constitutional requirement for CLI interface
-- **Acceptance Criteria**:
-  - [ ] Text-in, text-out interface
-  - [ ] Help documentation complete
-  - [ ] Error handling robust
+        for definition in task_definitions:
+            dependency_label = (
+                ", ".join(definition.dependencies)
+                if definition.dependencies
+                else "None"
+            )
+            lines.extend(
+                [
+                    f"### {definition.agent} — {definition.title} ({definition.id})",
+                    (
+                        f"- **Priority:** {definition.priority.title()} | **Estimated Effort:** "
+                        f"{definition.estimated_hours}h | **Dependencies:** {dependency_label}"
+                    ),
+                    "",
+                    "**Context**",
+                ]
+            )
 
-## Epic 3: Integration & Quality
-### Task 3.1: Integration Testing
-- **Priority**: Medium
-- **Estimated Hours**: 16
-- **Dependencies**: 2.2
-- **Description**: Real environment testing (not mocks)
-- **Acceptance Criteria**:
-  - [ ] End-to-end workflows tested
-  - [ ] Real data integration verified
-  - [ ] Performance under load validated
+            for item in definition.context:
+                lines.append(f"- {item}")
 
-### Task 3.2: Documentation & Review
-- **Priority**: Medium
-- **Estimated Hours**: 12
-- **Dependencies**: 3.1
-- **Description**: Complete documentation and constitutional review
-- **Acceptance Criteria**:
-  - [ ] All documentation complete
-  - [ ] Constitutional compliance verified
-  - [ ] Ready for deployment
+            lines.extend(["", "**Responsibilities**"])
 
-## Team Size Optimization
-Team Size: {team_size} developer(s)
-Estimated Timeline: {78 // team_size} days (assuming 6 hours/day)
+            for item in definition.responsibilities:
+                lines.append(f"- {item}")
 
-## Constitutional Requirements per Task
-- All tasks must maintain constitutional compliance
-- Test-first development required
-- Library-first research before custom implementation
-- Integration testing with real environments
-- Clear documentation and decision rationale
+            lines.extend(["", "**Expected Deliverables**"])
 
----
-Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-"""
+            for item in definition.deliverables:
+                lines.append(f"- {item}")
+
+            lines.extend(["", "**Acceptance Criteria**"])
+
+            for item in definition.acceptance_criteria:
+                lines.append(f"- [ ] {item}")
+
+            lines.extend(["", "**Constitutional Alignment**"])
+
+            for item in definition.constitutional_requirements:
+                lines.append(f"- {item}")
+
+            lines.append("")
+
+        lines.extend(
+            [
+                "---",
+                f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            ]
+        )
+
+        return "\n".join(lines)
 
     def _validate_specification(
         self, specification: str
@@ -548,40 +864,33 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             "Integration testing with real environments",
         ]
 
-    def _parse_structured_tasks(self, _tasks_content: str) -> list[TaskBreakdown]:
-        """Parse tasks content into structured format."""
-        # Simple parsing - in production this would be more sophisticated
-        tasks = [
-            TaskBreakdown(
-                id="1.1",
-                title="Test Infrastructure Setup",
-                description="Set up pytest, coverage, CI/CD pipeline",
-                priority="critical",
-                estimated_hours=8,
-                dependencies=[],
-                acceptance_criteria=[
-                    "Test framework configured",
-                    "Coverage reporting enabled",
-                    "CI/CD pipeline functional",
-                ],
-                constitutional_requirements=["Test-First development"],
-            ),
-            TaskBreakdown(
-                id="1.2",
-                title="Core Data Models",
-                description="Implement core data structures with tests first",
-                priority="critical",
-                estimated_hours=12,
-                dependencies=["1.1"],
-                acceptance_criteria=[
-                    "All models tested (TDD)",
-                    "Validation logic complete",
-                    "Documentation generated",
-                ],
-                constitutional_requirements=["Test-First", "Clarity"],
-            ),
-        ]
-        return tasks
+    def _build_structured_tasks(
+        self, task_definitions: list[AgentTaskDefinition]
+    ) -> list[TaskBreakdown]:
+        """Convert agent definitions into structured TaskBreakdown objects."""
+
+        structured_tasks: list[TaskBreakdown] = []
+        for definition in task_definitions:
+            description_parts = [
+                "Context: " + "; ".join(definition.context),
+                "Responsibilities: " + "; ".join(definition.responsibilities),
+                "Deliverables: " + "; ".join(definition.deliverables),
+            ]
+
+            structured_tasks.append(
+                TaskBreakdown(
+                    id=definition.id,
+                    title=definition.title,
+                    description="\n".join(description_parts),
+                    priority=definition.priority,
+                    estimated_hours=definition.estimated_hours,
+                    dependencies=definition.dependencies,
+                    acceptance_criteria=definition.acceptance_criteria,
+                    constitutional_requirements=definition.constitutional_requirements,
+                )
+            )
+
+        return structured_tasks
 
     def _calculate_critical_path(self, tasks: list[TaskBreakdown]) -> list[str]:
         """Calculate critical path through tasks."""
