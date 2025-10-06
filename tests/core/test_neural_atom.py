@@ -115,5 +115,38 @@ def test_factory_memory_chunk_atom_instantiation():
     assert atom.value["hierarchy_path"] == ["root", "child"]
 
 
+import pytest
+
+def test_factory_memory_chunk_atom_invalid_vector_shape():
+    # Vector with wrong shape
+    vector = np.zeros(7, dtype=np.float32)
+    with pytest.raises(ValueError):
+        create_memory_chunk_atom(
+            key="memory:chunk:bad-shape",
+            content={"data": "bad"},
+            hierarchy_path=["root"],
+            vector=vector,
+        )
+
+def test_factory_memory_chunk_atom_invalid_vector_dtype():
+    # Vector with wrong dtype
+    vector = np.zeros(8, dtype=np.float64)
+    with pytest.raises(ValueError):
+        create_memory_chunk_atom(
+            key="memory:chunk:bad-dtype",
+            content={"data": "bad"},
+            hierarchy_path=["root"],
+            vector=vector,
+        )
+
+def test_factory_memory_chunk_atom_vector_none():
+    # Vector is None
+    with pytest.raises(ValueError):
+        create_memory_chunk_atom(
+            key="memory:chunk:none-vector",
+            content={"data": "bad"},
+            hierarchy_path=["root"],
+            vector=None,
+        )
 if __name__ == "__main__":  # pragma: no cover
     pytest.main([__file__])
