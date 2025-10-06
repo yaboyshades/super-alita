@@ -73,7 +73,6 @@ class NeuralAtom(Generic[T]):
 
         self.key = key
         self.value = value
-        self.default_value = value
 
         if vector is not None:
             arr = np.asarray(vector, dtype=np.float32)
