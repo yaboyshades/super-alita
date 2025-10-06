@@ -82,6 +82,11 @@ class NeuralAtom(ABC):
         # Graph-facing attributes for NeuralStore compatibility
         self.key = key or metadata.name
         self.vector = self._initialize_vector(vector, vector_dim)
+        if self.vector is not None and vector_dim is not None:
+            if len(self.vector) != vector_dim:
+                raise ValueError(
+                    f"Vector length {len(self.vector)} does not match expected dimension {vector_dim}."
+                )
         self.bias = float(bias)
         self.parent_keys = list(parent_keys or [])
         self.children_keys = list(children_keys or [])
