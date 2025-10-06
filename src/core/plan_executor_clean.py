@@ -263,7 +263,7 @@ class PlanExecutor:
                 return
 
             # Store result using NeuralStore register method
-            result_atom = NeuralAtom(key=f"result_{waiting_key}", default_value=result)
+            result_atom = NeuralAtom(key=f"result_{waiting_key}", value=result)
             self.store.register(result_atom)
 
             # Signal waiter
@@ -351,7 +351,7 @@ Focus on the key findings or outcomes, not the technical steps.
         """Persist plan for recovery."""
         plan_atom = NeuralAtom(
             key=plan_id,
-            default_value={
+            value={
                 "goal": goal,
                 "steps": [asdict(s) for s in plan],
                 "created_at": datetime.now().isoformat(),

@@ -996,7 +996,7 @@ task:
                 cost_estimate=1.0,
                 success_probability=0.8,
             )
-            atom = NeuralAtom(key=key, default_value=node, vector=vectors[i])
+            atom = NeuralAtom(key=key, value=node, vector=vectors[i])
             self.store.register(atom)
 
             # Build the parent map for reverse diagnosis

@@ -311,16 +311,16 @@ def register_tool_atoms(store, owner_plugin: str = "atom_tools"):
     """
     import numpy as np
 
-    from src.core.neural_atom import create_memory_atom
+    from src.core.neural_atom import create_memory_chunk_atom
 
     for tool_key, tool_class in BUILT_IN_TOOLS.items():
         tool_instance = tool_class()
 
         # Create atom with tool data
-        atom = create_memory_atom(
+        atom = create_memory_chunk_atom(
             key=f"tool_{tool_key}",
             content=tool_instance.to_atom_value(),
-            hierarchy_path="tool",
+            hierarchy_path=["tools", owner_plugin],
             vector=np.random.rand(EMBEDDING_DIM).astype(
                 np.float32
             ),  # Would use real embedding

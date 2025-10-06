@@ -125,8 +125,12 @@ class {class_name}(NeuralAtom):
     """
 
     def __init__(self, metadata: NeuralAtomMetadata, {additional_params}):
-        super().__init__(metadata)
-        self.key = metadata.name
+        super().__init__(
+            key=metadata.name,
+            value={},
+            metadata=metadata,
+            birth_event=f"tool_creation:{{metadata.name}}",
+        )
         {initialization}
 
     async def execute(self, input_data: Any) -> Any:

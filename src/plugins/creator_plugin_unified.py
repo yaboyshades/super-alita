@@ -68,9 +68,12 @@ class {class_name}(NeuralAtom):
                 capabilities={capabilities},
                 version="1.0.0"
             )
-        super().__init__(metadata)
-        # RULE 3: System compatibility - add .key for NeuralStore
-        self.key = metadata.name
+        super().__init__(
+            key=metadata.name,
+            value={},
+            metadata=metadata,
+            birth_event=f"generated_atom:{{metadata.name}}",
+        )
 
     async def execute(self, input_data: Any) -> Any:
         """Execute the Neural Atom's core functionality."""
@@ -118,9 +121,12 @@ class {class_name}(NeuralAtom):
                 version="1.0.0",
                 tags={{"tool", "generated"}}
             )
-        super().__init__(metadata)
-        # RULE 3: System compatibility - add .key for NeuralStore
-        self.key = metadata.name
+        super().__init__(
+            key=metadata.name,
+            value={},
+            metadata=metadata,
+            birth_event=f"generated_tool:{{metadata.name}}",
+        )
 
     async def execute(self, input_data: Any) -> Any:
         """Execute the tool functionality."""
