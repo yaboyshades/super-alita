@@ -84,7 +84,7 @@ class NeuralAtom(Generic[T]):
         else:
             self.vector = np.zeros(self.DEFAULT_VECTOR_DIM, dtype=np.float32)
 
-        self.bias = float(bias)
+        self.bias = bias
         self.active = True
 
         self.parent_keys: list[str] = list(parent_keys) if parent_keys else []
