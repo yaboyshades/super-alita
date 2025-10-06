@@ -151,8 +151,7 @@ class NeuralAtom(Generic[T]):
             value_tokens = set(combined.split())
 
         if value_tokens:
-            overlap = value_tokens & set(description.split())
-            if overlap:
+            if overlap := value_tokens & set(description.split()):
                 score += min(0.5, len(overlap) * 0.1)
 
         return min(score, 1.0)
