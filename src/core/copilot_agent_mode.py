@@ -61,7 +61,12 @@ class CopilotAgentAtom(NeuralAtom):
     """Neural Atom for Copilot agent reasoning and conversation analysis."""
 
     def __init__(self, metadata: NeuralAtomMetadata) -> None:
-        super().__init__(metadata)
+        super().__init__(
+            key=metadata.name,
+            value={"session_context": {}},
+            metadata=metadata,
+            birth_event="copilot_agent:init",
+        )
         self.conversation_history: list[dict[str, Any]] = []
         self.session_context: dict[str, Any] = {}
 
