@@ -165,6 +165,59 @@ class CopilotEnhancer:
             logger.warning(f"Copilot enhancement failed: {e}")
             return self._error_response(str(e))
 
+    def generate_guidance(
+        self,
+        user_input: str,
+        pattern: str | None = None,
+        compliance: dict[str, Any] | None = None,
+        mangle_insights: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Create consolidated guidance for the unified intelligence engine."""
+
+        context = {
+            "detected_pattern": pattern,
+            "constitutional_compliance": compliance,
+            "mangle_insights": mangle_insights,
+        }
+
+        enhancement = self.enhance_response(user_input, context=context)
+
+        highlights: list[dict[str, Any]] = []
+        if compliance:
+            overall_score = compliance.get("overall_score")
+            if overall_score is not None:
+                highlights.append(
+                    {
+                        "type": "constitutional_score",
+                        "value": overall_score,
+                        "status": "ok" if overall_score >= 0.75 else "attention",
+                    }
+                )
+
+        if mangle_insights:
+            highlights.append(
+                {
+                    "type": "mangle_availability",
+                    "value": mangle_insights.get("available"),
+                    "detail": mangle_insights.get("analysis_type")
+                    or mangle_insights.get("message"),
+                }
+            )
+
+        if pattern:
+            highlights.append(
+                {
+                    "type": "workflow_pattern",
+                    "value": pattern,
+                }
+            )
+
+        return {
+            "enhancement": enhancement,
+            "highlights": highlights,
+            "pattern": pattern,
+        }
+
     def _detect_workflow_pattern(self, user_input: str) -> str | None:
         """Detect SDD workflow pattern from user input."""
         user_lower = user_input.lower()

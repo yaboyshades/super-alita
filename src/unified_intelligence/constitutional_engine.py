@@ -1,13 +1,8 @@
-"""
-Constitutional Compliance Engine
+"""Constitutional compliance engine helpers."""
 
-Implements SDD constitutional principle validation and guidance:
-- Nine constitutional articles from SDD methodology
-- Compliance scoring and reporting
-- Principle-specific guidance and recommendations
-- Advisory-only operation for seamless integration
-"""
+from __future__ import annotations
 
+import asyncio
 from enum import Enum
 
 
@@ -461,3 +456,10 @@ class ConstitutionalEngine:
             lines.append("")
 
         return "\n".join(lines)
+
+    async def analyze_compliance_async(
+        self, text: str, context: dict | None = None
+    ) -> dict:
+        """Asynchronously analyze constitutional compliance."""
+
+        return await asyncio.to_thread(self.analyze_compliance, text, context)

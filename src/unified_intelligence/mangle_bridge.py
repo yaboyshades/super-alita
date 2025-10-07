@@ -1,13 +1,8 @@
-"""
-Mangle Reasoning Bridge
+"""Mangle Reasoning Bridge abstractions."""
 
-Provides integration with Mangle deductive reasoning engine:
-- Code knowledge graph generation and querying
-- Logical inference and fact-based reasoning
-- Question answering using deductive database
-- Advisory-only operation for seamless integration
-"""
+from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import Any
@@ -23,12 +18,19 @@ class MangleBridge:
     when Mangle is not available or encounters errors.
     """
 
-    def __init__(self, workspace_path: str | None = None):
+    def __init__(
+        self,
+        workspace_root: str | None = None,
+        mangle_executable: str | None = None,
+    ) -> None:
         """Initialize the Mangle bridge with optional workspace path."""
-        self.workspace_path = Path(workspace_path) if workspace_path else Path.cwd()
+
+        self.workspace_path = Path(workspace_root) if workspace_root else Path.cwd()
+        self.mangle_executable = mangle_executable or "mangle"
         self.mangle_available = False
         self.fact_generator = None
         self.reasoner = None
+        self._initialized = False
 
         # Try to initialize Mangle components
         self._initialize_mangle()
@@ -47,15 +49,33 @@ class MangleBridge:
             logger.info("Mangle reasoning engine initialized successfully")
 
         except ImportError as e:
-            logger.warning(f"Mangle components not available: {e}")
+            logger.warning("Mangle components not available: %s", e)
             self.mangle_available = False
-        except Exception as e:
-            logger.warning(f"Failed to initialize Mangle: {e}")
+        except Exception as e:  # pragma: no cover - defensive guard
+            logger.warning("Failed to initialize Mangle: %s", e)
             self.mangle_available = False
+        finally:
+            self._initialized = True
+
+    async def initialize(self) -> None:
+        """Asynchronously initialize Mangle components if needed."""
+
+        if self._initialized and self.mangle_available:
+            return
+
+        await asyncio.to_thread(self._initialize_mangle)
 
     def is_available(self) -> bool:
         """Check if Mangle reasoning is available."""
         return self.mangle_available
+
+    async def get_insights(
+        self, question: str, pattern: str | None = None
+    ) -> dict[str, Any]:
+        """Asynchronously generate code insights using Mangle reasoning."""
+
+        del pattern  # Currently unused but retained for compatibility
+        return await asyncio.to_thread(self.generate_code_insights, question)
 
     def generate_code_insights(self, question: str) -> dict[str, Any]:
         """
@@ -457,3 +477,8 @@ class MangleBridge:
                 validation["issues"].append(f"Basic operation failed: {e}")
 
         return validation
+
+    async def ask_question(self, question: str) -> dict[str, Any]:
+        """Asynchronously query the codebase using Mangle reasoning."""
+
+        return await asyncio.to_thread(self.query_codebase, question)

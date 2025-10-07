@@ -41,7 +41,9 @@ class UnifiedIntelligenceEngine:
         enhanced = await engine.enhance_interaction("Create a new user auth feature")
     """
 
-    def __init__(self, workspace_root: str = None, mangle_executable: str = "mangle"):
+    def __init__(
+        self, workspace_root: str | None = None, mangle_executable: str = "mangle"
+    ):
         """Initialize the unified intelligence engine."""
         self.constitutional_engine = ConstitutionalEngine()
         self.workflow_detector = WorkflowDetector()
@@ -79,7 +81,10 @@ class UnifiedIntelligenceEngine:
         pattern = self.workflow_detector.detect(user_input)
 
         # 2. Apply constitutional validation
-        compliance = await self.constitutional_engine.validate(user_input, pattern)
+        compliance = await self.constitutional_engine.analyze_compliance_async(
+            user_input,
+            {"detected_pattern": pattern, "context": context},
+        )
 
         # 3. Enhance with Mangle reasoning (if code-related)
         mangle_insights = await self.mangle_bridge.get_insights(user_input, pattern)
@@ -112,10 +117,13 @@ class UnifiedIntelligenceEngine:
         self, pattern: str, compliance: dict, mangle_insights: dict
     ) -> list:
         """Generate actionable recommendations based on analysis."""
+        compliance = compliance or {}
+        mangle_insights = mangle_insights or {}
         recommendations = []
 
         # Constitutional recommendations
-        if compliance.get("score", 1.0) < 0.75:
+        compliance_score = compliance.get("overall_score", 1.0)
+        if compliance_score < 0.75:
             recommendations.append(
                 {
                     "type": "constitutional",
@@ -152,7 +160,7 @@ class UnifiedIntelligenceEngine:
             )
 
         # Mangle-based recommendations
-        if mangle_insights.get("code_quality_issues"):
+        if mangle_insights and mangle_insights.get("code_quality_issues"):
             recommendations.append(
                 {
                     "type": "code_quality",
@@ -166,7 +174,7 @@ class UnifiedIntelligenceEngine:
 
     async def validate_constitutional_compliance(self, code_or_spec: str) -> dict:
         """Quick constitutional compliance check."""
-        return await self.constitutional_engine.analyze_compliance(code_or_spec)
+        return await self.constitutional_engine.analyze_compliance_async(code_or_spec)
 
     async def ask_code_question(self, question: str) -> dict:
         """Ask a question about the codebase using Mangle reasoning."""
@@ -180,4 +188,4 @@ class UnifiedIntelligenceEngine:
 
     def get_constitutional_articles(self) -> dict:
         """Get the SDD constitutional framework."""
-        return self.constitutional_engine.get_articles()
+        return self.constitutional_engine.get_all_articles()
