@@ -23,6 +23,8 @@ import time
 import urllib.request
 import uuid
 from collections.abc import AsyncGenerator
+from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Any, cast
 
@@ -61,6 +63,46 @@ def parse_tool_calls(text: str) -> list[dict[str, Any]]:
     return calls
 
 
+class OrchestratorPhase(Enum):
+    """High-level phases emitted for telemetry and downstream consumers."""
+
+    IDLE = "idle"
+    REASONING = "reasoning"
+    ACTING = "acting"
+    RESPONDING = "responding"
+    COMPLETED = "completed"
+
+
+@dataclass
+class OrchestratorState:
+    """Container tracking the most recent orchestration results."""
+
+    phase: OrchestratorPhase = OrchestratorPhase.IDLE
+    reasoning_content: str = ""
+    reasoning_tool_calls: list[Any] = field(default_factory=list)
+    tool_messages: list[dict[str, Any]] = field(default_factory=list)
+
+    def reset_reasoning(self) -> None:
+        self.reasoning_content = ""
+        self.reasoning_tool_calls = []
+
+    def record_reasoning(self, content: str, tool_calls: list[Any]) -> None:
+        self.reasoning_content = content
+        self.reasoning_tool_calls = list(tool_calls)
+
+    def reset_acting(self) -> None:
+        self.tool_messages = []
+
+    def record_acting(self, tool_messages: list[dict[str, Any]]) -> None:
+        self.tool_messages = [dict(msg) for msg in tool_messages]
+
+    def snapshot_reasoning(self) -> tuple[str, list[Any]]:
+        return self.reasoning_content, list(self.reasoning_tool_calls)
+
+    def snapshot_acting(self) -> list[dict[str, Any]]:
+        return [dict(msg) for msg in self.tool_messages]
+
+
 class Orchestrator:
     def __init__(self, event_bus: Any, registry: Any, model: Any, correlation_id: str):
         self.event_bus = event_bus
@@ -68,9 +110,33 @@ class Orchestrator:
         self.model = model
         self.correlation_id = correlation_id
         self._mcp_box_dir = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
-        self._last_reasoning_result: tuple[str, list[dict[str, Any]]] = ("", [])
-        self._last_reasoning_result: tuple[str, list[Any]] = ("", [])
-        self._last_acting_result: list[dict[str, Any]] = []
+        self._state = OrchestratorState()
+
+    @property
+    def state(self) -> OrchestratorState:
+        return self._state
+
+    async def transition_to(
+        self, phase: OrchestratorPhase, *, force: bool = False
+    ) -> dict[str, Any] | None:
+        """Record and broadcast a state transition for telemetry consumers."""
+
+        previous = self._state.phase
+        if not force and previous is phase:
+            return None
+        self._state.phase = phase
+        if previous is phase and force:
+            transition = (phase, phase)
+        else:
+            transition = (previous, phase)
+        event = {
+            "type": "STATE_TRANSITION",
+            "correlation_id": self.correlation_id,
+            "from_state": transition[0].value,
+            "to_state": transition[1].value,
+        }
+        await self.event_bus.emit(event)
+        return event
 
     def _persist_mcp_spec(self, spec: dict[str, Any]) -> None:
         try:
@@ -149,7 +215,8 @@ class Orchestrator:
                             "owner": a.get("owner"),
                             "repo": a.get("repo"),
                             "path": a.get("path"),
-                        } | ({"ref": a.get("ref")} if a.get("ref") else {}),
+                        }
+                        | ({"ref": a.get("ref")} if a.get("ref") else {}),
                     )
                     return cast(dict[str, Any], result)
 
@@ -269,6 +336,11 @@ class Orchestrator:
     async def _reasoning_step(
         self, messages: list[dict[str, Any]], tool_schemas: list[dict[str, Any]]
     ) -> AsyncGenerator[dict[str, Any], None]:
+        transition_event = await self.transition_to(OrchestratorPhase.REASONING)
+        if transition_event:
+            yield transition_event
+
+        self._state.reset_reasoning()
         llm_response_content = ""
         tool_calls: list[Any] = []
 
@@ -307,12 +379,17 @@ class Orchestrator:
             elif chunk.get("type") == "tool_calls":
                 tool_calls.extend(chunk.get("tool_calls", []))
         # Store the return values for later retrieval
-        self._last_reasoning_result = (llm_response_content, tool_calls)
+        self._state.record_reasoning(llm_response_content, tool_calls)
 
     async def _acting_step(
         self, tool_calls: list[Any]
     ) -> AsyncGenerator[dict[str, Any], None]:
+        transition_event = await self.transition_to(OrchestratorPhase.ACTING)
+        if transition_event:
+            yield transition_event
+
         tool_messages: list[dict[str, Any]] = []
+        self._state.reset_acting()
         for tool_call in tool_calls:
             # Support both OpenAI SDK objects and plain dicts
             if hasattr(tool_call, "function"):
@@ -348,7 +425,9 @@ class Orchestrator:
                 )
             except Exception:
                 tool_args_obj = {}
-            tool_args: dict[str, Any] = tool_args_obj if isinstance(tool_args_obj, dict) else {}
+            tool_args: dict[str, Any] = (
+                tool_args_obj if isinstance(tool_args_obj, dict) else {}
+            )
             span_id = str(uuid.uuid4())
 
             ability_called_event = {
@@ -412,7 +491,11 @@ class Orchestrator:
                     }
                 )
         # Store the return values for later retrieval
-        self._last_acting_result = tool_messages
+        self._state.record_acting(tool_messages)
+
+        transition_back = await self.transition_to(OrchestratorPhase.REASONING)
+        if transition_back:
+            yield transition_back
 
 
 async def execute_turn(
@@ -540,7 +623,7 @@ async def execute_turn(
         # Run reasoning step and get results
         async for event in orchestrator._reasoning_step(messages, tool_schemas):
             yield event
-        llm_response_content, tool_calls_raw = orchestrator._last_reasoning_result
+        llm_response_content, tool_calls_raw = orchestrator.state.snapshot_reasoning()
         tool_calls: list[Any] = list(tool_calls_raw)
         # Fallback: derive tool calls by parsing streamed content blocks
         if not tool_calls and "<tool_call>" in llm_response_content:
@@ -555,12 +638,17 @@ async def execute_turn(
         messages.append(assistant_message)
 
         if not tool_calls:
+            transition_event = await orchestrator.transition_to(
+                OrchestratorPhase.RESPONDING
+            )
+            if transition_event:
+                yield transition_event
             break
 
         # Run acting step and get results
         async for event in orchestrator._acting_step(tool_calls):
             yield event
-        tool_messages = orchestrator._last_acting_result
+        tool_messages = orchestrator.state.snapshot_acting()
         messages.extend(tool_messages)
         # Inject assistant-visible tool_result blocks to advance FakeLLM phase
         for tm in tool_messages:
@@ -697,6 +785,11 @@ async def execute_turn(
         "data": final_answer,
         "session_id": session_id,
     }
+
+    completion_event = await orchestrator.transition_to(OrchestratorPhase.COMPLETED)
+    if completion_event:
+        yield completion_event
+
     await event_bus.emit(task_succeeded_event)
     yield task_succeeded_event
 
