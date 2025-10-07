@@ -495,6 +495,11 @@ async def execute_turn(
         observability pipelines.
     """
     correlation_id = f"{session_id}-{int(time.time()*1000)}"
+    llm_token_chars = 0
+    ability_called = 0
+    ability_succeeded = 0
+    ability_failed = 0
+    tools_seen: list[str] = []
 
     # Optional message optimization/amplification
     if SETTINGS.message_optimizer_enabled:
@@ -600,6 +605,10 @@ async def execute_turn(
 
         # Run reasoning step and get results
         async for event in orchestrator._reasoning_step(messages, tool_schemas):
+            if event.get("type") == "LLMChunk":
+                text = event.get("data", {}).get("text", "")
+                if isinstance(text, str):
+                    llm_token_chars += len(text)
             yield event
         reasoning_snapshot = orchestrator._last_reasoning_result
         llm_response_content = reasoning_snapshot.text
@@ -621,6 +630,16 @@ async def execute_turn(
 
         # Run acting step and get results
         async for event in orchestrator._acting_step(tool_calls):
+            etype = event.get("type")
+            if etype == "AbilityCalled":
+                ability_called += 1
+                tool_name = event.get("tool")
+                if isinstance(tool_name, str):
+                    tools_seen.append(tool_name)
+            elif etype == "AbilitySucceeded":
+                ability_succeeded += 1
+            elif etype == "AbilityFailed":
+                ability_failed += 1
             yield event
         tool_messages = orchestrator._last_acting_result
         messages.extend(tool_messages)
@@ -725,11 +744,19 @@ async def execute_turn(
         "citations": [],
     }
 
+    created_atom_ids: list[str] = []
+    pending_bonds: list[tuple[str, str, str]] = []
+    bond_previews: list[dict[str, str]] = []
+    final_atom_id: str | None = None
+
     with contextlib.suppress(Exception):
         atom_fn = getattr(kg, "create_atom", None)
         if callable(atom_fn):
             final_atom = await atom_fn("final_answer", final_answer)
             atom_id = final_atom.get("id") if isinstance(final_atom, dict) else None
+            if isinstance(atom_id, str):
+                final_atom_id = atom_id
+                created_atom_ids.append(atom_id)
             await event_bus.emit(
                 {
                     "type": "KnowledgeAtomCreated",
@@ -739,17 +766,62 @@ async def execute_turn(
                     "atom_type": "final_answer",
                 }
             )
-            if atom_id and kg_goal_id and hasattr(kg, "create_bond"):
+            if atom_id and kg_goal_id:
+                cb_fn = getattr(kg, "create_bond", None)
+                if callable(cb_fn):
+                    pending_bonds.append(("ANSWERED", kg_goal_id, atom_id))
+                    bond_previews.append(
+                        {
+                            "type": "ANSWERED",
+                            "source": kg_goal_id,
+                            "target": atom_id,
+                        }
+                    )
+
+    atoms_for_alignment: list[str] = []
+    if isinstance(kg_goal_id, str):
+        atoms_for_alignment.append(kg_goal_id)
+    atoms_for_alignment.extend(created_atom_ids)
+    bonds_for_alignment = bond_previews
+    token_measure = max(len(content_out), llm_token_chars)
+    energy_signal = max(
+        0.0,
+        round(0.1 * token_measure + ability_succeeded - ability_failed, 4),
+    )
+    todo_count = max(0, ability_called - ability_succeeded - ability_failed)
+    bandit_ready = max(0, ability_succeeded)
+    reward_payload = {
+        "success": 1.0 if final_atom_id else 0.0,
+        "tools": sorted({t for t in tools_seen if isinstance(t, str)}),
+    }
+    loop_alignment_event = {
+        "type": "LoopAlignmentTelemetry",
+        "correlation_id": correlation_id,
+        "session_id": session_id,
+        "atoms": atoms_for_alignment,
+        "bonds": bonds_for_alignment,
+        "energy": energy_signal,
+        "todo": todo_count,
+        "bandit": bandit_ready,
+        "reward": reward_payload,
+    }
+    await event_bus.emit(loop_alignment_event)
+    yield loop_alignment_event
+
+    if pending_bonds and kg is not None:
+        cb_fn = getattr(kg, "create_bond", None)
+        if callable(cb_fn):
+            for bond_type, source_atom_id, target_atom_id in pending_bonds:
                 with contextlib.suppress(Exception):
-                    await kg.create_bond("ANSWERED", kg_goal_id, atom_id)
+                    await cb_fn(bond_type, source_atom_id, target_atom_id)
                     await event_bus.emit(
                         {
                             "type": "KnowledgeBondCreated",
                             "correlation_id": correlation_id,
                             "session_id": session_id,
-                            "bond_type": "ANSWERED",
-                            "source_atom_id": kg_goal_id,
-                            "target_atom_id": atom_id,
+                            "bond_type": bond_type,
+                            "source_atom_id": source_atom_id,
+                            "target_atom_id": target_atom_id,
                         }
                     )
 
