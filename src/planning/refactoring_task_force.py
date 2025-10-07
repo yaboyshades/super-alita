@@ -350,6 +350,87 @@ class RefactoringTaskForce:
             "reward": reward,
         }
 
+    def generate_status_board(self) -> dict[str, object]:
+        """Provide a snapshot of member capacity and objective task states."""
+
+        objective_summaries: list[dict[str, object]] = []
+        for objective in self._objective_order:
+            tasks = [
+                self._tasks[task_id]
+                for task_id in sorted(self._tasks)
+                if self._tasks[task_id].objective_id == objective.objective_id
+            ]
+            state_buckets: dict[str, list[str]] = {
+                state.value: [] for state in RefactoringTaskState
+            }
+            for task in tasks:
+                state_buckets[task.state.value].append(task.task_id)
+
+            state_counts = {
+                state: len(task_ids) for state, task_ids in state_buckets.items()
+            }
+            average_progress = (
+                round(sum(task.progress for task in tasks) / len(tasks), 4)
+                if tasks
+                else 0.0
+            )
+
+            objective_summaries.append(
+                {
+                    "objective_id": objective.objective_id,
+                    "description": objective.description,
+                    "progress": average_progress,
+                    "states": state_counts,
+                    "active": {
+                        "ready": list(state_buckets[RefactoringTaskState.READY.value]),
+                        "in_progress": list(
+                            state_buckets[RefactoringTaskState.IN_PROGRESS.value]
+                        ),
+                        "blocked": list(
+                            state_buckets[RefactoringTaskState.BLOCKED.value]
+                        ),
+                    },
+                }
+            )
+
+        member_summaries: list[dict[str, object]] = []
+        for member in sorted(self._members.values(), key=lambda entry: entry.name):
+            assignments = [
+                {
+                    "task_id": task.task_id,
+                    "objective_id": task.objective_id,
+                    "stage": task.stage.value,
+                    "state": task.state.value,
+                    "progress": round(task.progress, 4),
+                }
+                for task in self._tasks.values()
+                if task.assigned_to == member.name
+            ]
+            assignments.sort(key=lambda record: record["task_id"])
+
+            member_summaries.append(
+                {
+                    "name": member.name,
+                    "specialty": member.specialty.value,
+                    "capacity": member.capacity,
+                    "allocation": round(member.allocation, 4),
+                    "available_capacity": round(member.available_capacity(), 4),
+                    "assignments": assignments,
+                }
+            )
+
+        ready_next = sorted(
+            task.task_id
+            for task in self._tasks.values()
+            if task.state == RefactoringTaskState.READY
+        )
+
+        return {
+            "objectives": objective_summaries,
+            "members": member_summaries,
+            "ready_next": ready_next,
+        }
+
 
 __all__ = [
     "RefactoringFocus",

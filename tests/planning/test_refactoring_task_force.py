@@ -116,3 +116,42 @@ def test_progress_updates_require_valid_range():
 
     with pytest.raises(ValueError):
         force.update_task_state(analysis_task.task_id, progress=1.2)
+
+
+def test_status_board_tracks_assignments_and_states():
+    force = build_sample_force()
+
+    board = force.generate_status_board()
+    stability_summary = next(
+        entry for entry in board["objectives"] if entry["objective_id"] == "runtime-stability"
+    )
+    assert stability_summary["states"][RefactoringTaskState.READY.value] == 3
+    assert stability_summary["states"][RefactoringTaskState.BLOCKED.value] == 1
+    assert stability_summary["progress"] == pytest.approx(0.0)
+    assert "runtime-stability:validation" in board["ready_next"]
+
+    force.update_task_state("runtime-stability:analysis", progress=0.5)
+    force.update_task_state(
+        "runtime-stability:implementation", state=RefactoringTaskState.IN_PROGRESS
+    )
+
+    updated_board = force.generate_status_board()
+    stability_summary = next(
+        entry
+        for entry in updated_board["objectives"]
+        if entry["objective_id"] == "runtime-stability"
+    )
+    assert stability_summary["states"][RefactoringTaskState.IN_PROGRESS.value] == 2
+    assert stability_summary["progress"] > 0
+    assert "runtime-stability:analysis" in stability_summary["active"]["in_progress"]
+
+    rhea_summary = next(
+        member for member in updated_board["members"] if member["name"] == "Rhea"
+    )
+    assert any(
+        assignment["task_id"] == "runtime-stability:analysis"
+        for assignment in rhea_summary["assignments"]
+    )
+    assert rhea_summary["available_capacity"] == pytest.approx(
+        rhea_summary["capacity"] - rhea_summary["allocation"]
+    )
