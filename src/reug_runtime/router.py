@@ -22,7 +22,7 @@ import re
 import time
 import urllib.request
 import uuid
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from pathlib import Path
 from typing import Any, cast
 
@@ -61,6 +61,10 @@ def parse_tool_calls(text: str) -> list[dict[str, Any]]:
     return calls
 
 
+class ToolContractError(RuntimeError):
+    """Raised when an auto-generated tool contract cannot be provisioned."""
+
+
 class Orchestrator:
     def __init__(self, event_bus: Any, registry: Any, model: Any, correlation_id: str):
         self.event_bus = event_bus
@@ -71,16 +75,326 @@ class Orchestrator:
         self._last_reasoning_result: tuple[str, list[dict[str, Any]]] = ("", [])
         self._last_reasoning_result: tuple[str, list[Any]] = ("", [])
         self._last_acting_result: list[dict[str, Any]] = []
+        self._alias_cache: dict[str, str] | None = None
 
     def _persist_mcp_spec(self, spec: dict[str, Any]) -> None:
         try:
             self._mcp_box_dir.mkdir(parents=True, exist_ok=True)
             tid = spec.get("tool_id") or spec.get("name") or "unnamed_tool"
+            enriched = dict(spec)
+            metadata = dict(enriched.get("metadata") or {})
+            metadata.setdefault("generated_by", "reug_runtime.router.ensure_tool")
+            metadata.setdefault(
+                "rate_limit",
+                {
+                    "requests_per_minute": int(
+                        os.getenv("REUG_AUTO_TOOL_RPM", "60") or "60"
+                    ),
+                    "burst": SETTINGS.max_tool_calls,
+                },
+            )
+            metadata["updated_at"] = int(time.time())
+            enriched["metadata"] = metadata
+
             path = self._mcp_box_dir / f"{tid}.json"
-            path.write_text(json.dumps(spec, indent=2), encoding="utf-8")
+            path.write_text(json.dumps(enriched, indent=2), encoding="utf-8")
         except Exception:
             # Persistence is best-effort; never break the run
             pass
+
+    @staticmethod
+    def _normalize_tool_id(tool_name: str) -> str:
+        return tool_name.strip().lower()
+
+    def _load_alias_index(self) -> dict[str, str]:
+        if self._alias_cache is not None:
+            return self._alias_cache
+
+        alias_map: dict[str, str] = {}
+        idx_path = self._mcp_box_dir / "index.json"
+        try:
+            if idx_path.exists():
+                index = json.loads(idx_path.read_text(encoding="utf-8"))
+                aliases = index.get("aliases", {}) or {}
+                for canonical, alias_list in aliases.items():
+                    if not isinstance(canonical, str):
+                        continue
+                    canonical_norm = self._normalize_tool_id(canonical)
+                    alias_map[canonical_norm] = canonical
+                    if isinstance(alias_list, list):
+                        for alias in alias_list:
+                            if isinstance(alias, str):
+                                alias_map[self._normalize_tool_id(alias)] = canonical
+        except Exception:
+            pass
+
+        self._alias_cache = alias_map
+        return alias_map
+
+    def _resolve_tool_alias(self, tool_name: str) -> str:
+        alias_map = self._load_alias_index()
+        return alias_map.get(self._normalize_tool_id(tool_name), tool_name)
+
+    def _validate_json_schema(self, schema: Any, *, role: str) -> dict[str, Any]:
+        if not isinstance(schema, dict):
+            raise ToolContractError(f"{role} schema must be an object")
+
+        schema_type = schema.get("type")
+        if schema_type != "object":
+            raise ToolContractError(f"{role} schema must declare type 'object'")
+
+        properties = schema.get("properties")
+        if not isinstance(properties, dict):
+            raise ToolContractError(f"{role} schema must include properties")
+
+        for key, value in properties.items():
+            if not isinstance(key, str):
+                raise ToolContractError(f"{role} schema property names must be strings")
+            if not isinstance(value, dict):
+                raise ToolContractError(
+                    f"{role} schema property '{key}' must be an object definition"
+                )
+
+        required = schema.get("required")
+        if required is not None:
+            if not isinstance(required, list) or not all(
+                isinstance(entry, str) for entry in required
+            ):
+                raise ToolContractError(
+                    f"{role} schema required list must contain property names"
+                )
+            missing = [entry for entry in required if entry not in properties]
+            if missing:
+                raise ToolContractError(
+                    f"{role} schema required properties missing definitions: {missing}"
+                )
+
+        return schema
+
+    def _register_contract(
+        self,
+        *,
+        tool_name: str,
+        contract: dict[str, Any],
+        executor: Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
+        metadata: dict[str, Any] | None = None,
+        action: str | None = None,
+    ) -> None:
+        contract = dict(contract)
+        contract["input_schema"] = self._validate_json_schema(
+            contract.get("input_schema"), role="input"
+        )
+        contract["output_schema"] = self._validate_json_schema(
+            contract.get("output_schema"), role="output"
+        )
+
+        try:
+            self.registry.register_tool(contract=contract, executor=executor)
+        except Exception as exc:  # pragma: no cover - registry variability
+            raise ToolContractError(
+                f"Unable to register contract for {tool_name}: {exc}"
+            ) from exc
+
+        spec = {
+            "tool_id": contract.get("tool_id") or tool_name,
+            "description": contract.get("description", ""),
+            "input_schema": contract["input_schema"],
+            "output_schema": contract["output_schema"],
+        }
+        if metadata:
+            spec["metadata"] = metadata
+        if action:
+            spec["action"] = action
+        self._persist_mcp_spec(spec)
+
+    def _build_github_contract(
+        self, tool_name: str, tool_args: dict[str, Any]
+    ) -> (
+        tuple[
+            dict[str, Any],
+            Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
+            dict[str, Any] | None,
+            str | None,
+        ]
+        | None
+    ):
+        if not (
+            any(k in tool_args for k in ("owner", "repo", "path"))
+            or "github" in tool_name.lower()
+        ):
+            return None
+
+        contract = {
+            "tool_id": tool_name,
+            "description": "Proxy to fetch a raw file from GitHub",
+            "input_schema": {
+                "type": "object",
+                "required": ["owner", "repo", "path"],
+                "properties": {
+                    "owner": {"type": "string"},
+                    "repo": {"type": "string"},
+                    "path": {"type": "string"},
+                    "ref": {"type": "string"},
+                },
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "content": {"type": "string"},
+                    "url": {"type": "string"},
+                    "truncated": {"type": "boolean"},
+                    "error": {"type": "string"},
+                },
+            },
+        }
+
+        async def _exec(a: dict[str, Any]) -> dict[str, Any]:
+            result = await self.registry.execute(
+                "fetch_github_raw",
+                {
+                    "owner": a.get("owner"),
+                    "repo": a.get("repo"),
+                    "path": a.get("path"),
+                }
+                | ({"ref": a.get("ref")} if a.get("ref") else {}),
+            )
+            return cast(dict[str, Any], result)
+
+        metadata = {
+            "category": "github_proxy",
+            "rate_limit": {
+                "requests_per_minute": int(
+                    os.getenv("REUG_GITHUB_PROXY_RPM", "45") or "45"
+                ),
+                "burst": SETTINGS.max_tool_calls,
+            },
+        }
+        return contract, _exec, metadata, "fetch_github_raw"
+
+    def _build_url_contract(
+        self, tool_name: str, tool_args: dict[str, Any]
+    ) -> (
+        tuple[
+            dict[str, Any],
+            Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
+            dict[str, Any] | None,
+            str | None,
+        ]
+        | None
+    ):
+        if not (
+            "url" in {k.lower() for k in tool_args}
+            or any(x in tool_name.lower() for x in ("url", "http", "fetch"))
+        ):
+            return None
+
+        contract = {
+            "tool_id": tool_name,
+            "description": "Fetch a URL and return UTF-8 text (best-effort)",
+            "input_schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                    "url": {"type": "string"},
+                    "truncate": {"type": "integer", "minimum": 1},
+                },
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "content": {"type": "string"},
+                    "truncated": {"type": "boolean"},
+                    "error": {"type": "string"},
+                },
+            },
+        }
+
+        async def _exec(a: dict[str, Any]) -> dict[str, Any]:
+            url = a.get("url")
+            if not isinstance(url, str) or not url:
+                return {"error": "missing url"}
+
+            truncate = int(a.get("truncate") or 4000)
+            safe_max_chars = int(os.getenv("REUG_URL_FETCH_MAX_CHARS", "6000") or 6000)
+            truncate = max(1, min(truncate, safe_max_chars))
+
+            max_bytes = int(os.getenv("REUG_URL_FETCH_MAX_BYTES", "131072") or 131072)
+            max_bytes = max(1024, max_bytes)
+
+            timeout_env = float(os.getenv("REUG_URL_FETCH_TIMEOUT_S", "10.0") or 10.0)
+            timeout_s = max(1.0, min(timeout_env, SETTINGS.tool_timeout_s))
+
+            def _do_fetch() -> dict[str, Any]:
+                try:
+                    with urllib.request.urlopen(url, timeout=timeout_s) as resp:  # nosec B310
+                        raw = resp.read(max_bytes + 1)
+                    truncated_bytes = len(raw) > max_bytes
+                    if truncated_bytes:
+                        raw = raw[:max_bytes]
+                    text = raw.decode("utf-8", errors="replace")
+                    truncated_text = False
+                    if len(text) > truncate:
+                        text = text[:truncate]
+                        truncated_text = True
+                    return {
+                        "content": text,
+                        "truncated": truncated_bytes or truncated_text,
+                    }
+                except Exception as e:  # pragma: no cover - network variability
+                    return {"content": "", "truncated": False, "error": str(e)}
+
+            return await asyncio.to_thread(_do_fetch)
+
+        metadata = {
+            "category": "url_fetcher",
+            "transport": {
+                "timeout_s": max(
+                    1.0,
+                    min(
+                        float(os.getenv("REUG_URL_FETCH_TIMEOUT_S", "10.0") or 10.0),
+                        SETTINGS.tool_timeout_s,
+                    ),
+                ),
+                "max_bytes": int(
+                    os.getenv("REUG_URL_FETCH_MAX_BYTES", "131072") or 131072
+                ),
+            },
+        }
+        return contract, _exec, metadata, "fetch_url_text"
+
+    def _build_fallback_contract(
+        self, tool_name: str, tool_args: dict[str, Any]
+    ) -> tuple[
+        dict[str, Any],
+        Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
+        dict[str, Any] | None,
+        str | None,
+    ]:
+        contract = {
+            "tool_id": tool_name,
+            "description": "Echo a minimal plan for the task",
+            "input_schema": {
+                "type": "object",
+                "properties": {"task": {"type": "string"}},
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {"steps": {"type": "array", "items": {"type": "string"}}},
+            },
+        }
+
+        async def _exec(a: dict[str, Any]) -> dict[str, Any]:
+            t = (a.get("task") or "unknown task").strip()
+            return {
+                "steps": [
+                    f"Understand: {t}",
+                    "Identify resources",
+                    "Execute and verify",
+                ]
+            }
+
+        metadata = {"category": "fallback"}
+        return contract, _exec, metadata, "echo_plan"
 
     async def _ensure_tool(self, tool_name: str, tool_args: dict[str, Any]) -> bool:
         """Auto self-evolve: if a requested tool is unknown, register a minimal one.
@@ -91,180 +405,46 @@ class Orchestrator:
           - Fallback: echo_plan that returns 3 planning steps
         """
         try:
-            # Prefer canonical tool_id from MCP index if available
-            try:
-                import json as _json
-                from pathlib import Path
-
-                idx_path = Path(os.getenv("MCP_BOX_DIR", ".mcp_box")) / "index.json"
-                if idx_path.exists():
-                    index = _json.loads(idx_path.read_text(encoding="utf-8"))
-                    aliases = index.get("aliases", {}) or {}
-                    # Build alias->canonical map
-                    alias_to_canonical: dict[str, str] = {}
-                    for canonical, alias_list in aliases.items():
-                        for a in alias_list:
-                            alias_to_canonical[a] = canonical
-                    canon = alias_to_canonical.get(tool_name)
-                    if canon:
-                        tool_name = canon
-            except Exception:
-                pass
+            tool_name = self._resolve_tool_alias(tool_name)
             if getattr(self.registry, "knows", lambda *_: True)(tool_name):
                 return True
 
-            # GitHub proxy
-            if (
-                any(k in tool_args for k in ("owner", "repo", "path"))
-                or "github" in tool_name.lower()
-            ):
-                contract = {
-                    "tool_id": tool_name,
-                    "description": "Proxy to fetch a raw file from GitHub",
-                    "input_schema": {
-                        "type": "object",
-                        "required": ["owner", "repo", "path"],
-                        "properties": {
-                            "owner": {"type": "string"},
-                            "repo": {"type": "string"},
-                            "path": {"type": "string"},
-                            "ref": {"type": "string"},
-                        },
-                    },
-                    "output_schema": {
-                        "type": "object",
-                        "properties": {
-                            "content": {"type": "string"},
-                            "url": {"type": "string"},
-                            "truncated": {"type": "boolean"},
-                            "error": {"type": "string"},
-                        },
-                    },
-                }
+            builders = (
+                self._build_github_contract,
+                self._build_url_contract,
+            )
 
-                async def _exec(a: dict[str, Any]) -> dict[str, Any]:  # proxy
-                    result = await self.registry.execute(
-                        "fetch_github_raw",
-                        {
-                            "owner": a.get("owner"),
-                            "repo": a.get("repo"),
-                            "path": a.get("path"),
-                        } | ({"ref": a.get("ref")} if a.get("ref") else {}),
-                    )
-                    return cast(dict[str, Any], result)
-
-                self.registry.register_tool(contract=contract, executor=_exec)
-                # Persist spec for reuse
-                self._persist_mcp_spec(
-                    {
-                        "tool_id": tool_name,
-                        "description": contract["description"],
-                        "action": "fetch_github_raw",
-                        "input_schema": contract["input_schema"],
-                        "output_schema": contract["output_schema"],
-                    }
+            for builder in builders:
+                result = builder(tool_name, tool_args)
+                if result is None:
+                    continue
+                contract, executor, metadata, action = result
+                self._register_contract(
+                    tool_name=tool_name,
+                    contract=contract,
+                    executor=executor,
+                    metadata=metadata,
+                    action=action,
                 )
                 return True
 
-            # URL fetcher
-            if ("url" in {k.lower() for k in tool_args}) or (
-                any(x in tool_name.lower() for x in ("url", "http", "fetch"))
-            ):
-                contract = {
-                    "tool_id": tool_name,
-                    "description": "Fetch a URL and return UTF-8 text (best-effort)",
-                    "input_schema": {
-                        "type": "object",
-                        "required": ["url"],
-                        "properties": {
-                            "url": {"type": "string"},
-                            "truncate": {"type": "integer"},
-                        },
-                    },
-                    "output_schema": {
-                        "type": "object",
-                        "properties": {
-                            "content": {"type": "string"},
-                            "truncated": {"type": "boolean"},
-                            "error": {"type": "string"},
-                        },
-                    },
-                }
-
-                async def _exec(a: dict[str, Any]) -> dict[str, Any]:  # url fetch
-                    url = a.get("url")
-                    if not isinstance(url, str) or not url:
-                        return {"error": "missing url"}
-                    truncate = int(a.get("truncate") or 4000)
-
-                    def _do_fetch() -> dict[str, Any]:
-                        try:
-                            with urllib.request.urlopen(url, timeout=8) as resp:  # nosec B310
-                                raw = resp.read()
-                            text = raw.decode("utf-8", errors="replace")
-                            truncated = False
-                            if len(text) > truncate:
-                                text = text[:truncate]
-                                truncated = True
-                            return {"content": text, "truncated": truncated}
-                        except Exception as e:  # pragma: no cover - network variability
-                            return {"content": "", "truncated": False, "error": str(e)}
-
-                    return await asyncio.to_thread(_do_fetch)
-
-                self.registry.register_tool(contract=contract, executor=_exec)
-                # Persist spec for reuse
-                self._persist_mcp_spec(
-                    {
-                        "tool_id": tool_name,
-                        "description": contract["description"],
-                        "action": "fetch_url_text",
-                        "input_schema": contract["input_schema"],
-                        "output_schema": contract["output_schema"],
-                    }
-                )
-                return True
-
-            # Fallback planning tool
-            contract = {
-                "tool_id": tool_name,
-                "description": "Echo a minimal plan for the task",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {"task": {"type": "string"}},
-                },
-                "output_schema": {
-                    "type": "object",
-                    "properties": {
-                        "steps": {"type": "array", "items": {"type": "string"}}
-                    },
-                },
-            }
-
-            async def _exec(a: dict[str, Any]) -> dict[str, Any]:
-                t = (a.get("task") or "unknown task").strip()
-                return {
-                    "steps": [
-                        f"Understand: {t}",
-                        "Identify resources",
-                        "Execute and verify",
-                    ]
-                }
-
-            self.registry.register_tool(contract=contract, executor=_exec)
-            # Persist spec for reuse
-            self._persist_mcp_spec(
-                {
-                    "tool_id": tool_name,
-                    "description": contract["description"],
-                    "action": "echo_plan",
-                    "input_schema": contract["input_schema"],
-                    "output_schema": contract["output_schema"],
-                }
+            contract, executor, metadata, action = self._build_fallback_contract(
+                tool_name, tool_args
+            )
+            self._register_contract(
+                tool_name=tool_name,
+                contract=contract,
+                executor=executor,
+                metadata=metadata,
+                action=action,
             )
             return True
-        except Exception:
-            return False
+        except ToolContractError:
+            raise
+        except Exception as exc:
+            raise ToolContractError(
+                f"Failed to provision auto tool '{tool_name}': {exc}"
+            ) from exc
 
     async def _reasoning_step(
         self, messages: list[dict[str, Any]], tool_schemas: list[dict[str, Any]]
@@ -348,7 +528,9 @@ class Orchestrator:
                 )
             except Exception:
                 tool_args_obj = {}
-            tool_args: dict[str, Any] = tool_args_obj if isinstance(tool_args_obj, dict) else {}
+            tool_args: dict[str, Any] = (
+                tool_args_obj if isinstance(tool_args_obj, dict) else {}
+            )
             span_id = str(uuid.uuid4())
 
             ability_called_event = {
@@ -366,7 +548,32 @@ class Orchestrator:
             yield ability_called_event
 
             # Self-evolution: auto-register unknown tools on demand
-            await self._ensure_tool(tool_name or "", tool_args)
+            try:
+                await self._ensure_tool(tool_name or "", tool_args)
+            except ToolContractError as contract_err:
+                ability_failed_event = {
+                    "type": "AbilityFailed",
+                    "tool": tool_name,
+                    "correlation_id": self.correlation_id,
+                    "span_id": span_id,
+                    "error": str(contract_err),
+                    "stage": "contract",
+                }
+                await self.event_bus.emit(ability_failed_event)
+                yield ability_failed_event
+                tool_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "name": tool_name,
+                        "content": json.dumps(
+                            {
+                                "error": f"Tool contract provisioning failed: {contract_err}"
+                            }
+                        ),
+                    }
+                )
+                continue
 
             try:
                 result = cast(
@@ -765,7 +972,7 @@ async def sse_transformer(
             t2.cancel()
 
 
-@router.post("/chat/stream")
+@router.post("/chat/stream", response_model=None)
 async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
     # Rate limit pre-check (optional)
     try:
