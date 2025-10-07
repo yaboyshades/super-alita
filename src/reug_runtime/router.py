@@ -68,7 +68,6 @@ class Orchestrator:
         self.model = model
         self.correlation_id = correlation_id
         self._mcp_box_dir = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
-        self._last_reasoning_result: tuple[str, list[dict[str, Any]]] = ("", [])
         self._last_reasoning_result: tuple[str, list[Any]] = ("", [])
         self._last_acting_result: list[dict[str, Any]] = []
 
@@ -149,7 +148,8 @@ class Orchestrator:
                             "owner": a.get("owner"),
                             "repo": a.get("repo"),
                             "path": a.get("path"),
-                        } | ({"ref": a.get("ref")} if a.get("ref") else {}),
+                        }
+                        | ({"ref": a.get("ref")} if a.get("ref") else {}),
                     )
                     return cast(dict[str, Any], result)
 
@@ -348,7 +348,9 @@ class Orchestrator:
                 )
             except Exception:
                 tool_args_obj = {}
-            tool_args: dict[str, Any] = tool_args_obj if isinstance(tool_args_obj, dict) else {}
+            tool_args: dict[str, Any] = (
+                tool_args_obj if isinstance(tool_args_obj, dict) else {}
+            )
             span_id = str(uuid.uuid4())
 
             ability_called_event = {
@@ -578,85 +580,58 @@ async def execute_turn(
                         }
                     )
 
-    def _enforce_output_contract_on_text(text: str) -> str:
-        """Optionally normalize text to reduce formatting issues.
+    def _enforce_output_contract_on_text(
+        text: str, *, enforce: bool | None = None
+    ) -> str:
+        """Normalize assistant text when formatting enforcement is enabled."""
 
-        - Replace common unicode operators with ASCII inside fenced blocks.
-        - Leave content unchanged when enforcement is disabled.
-        """
-        # Quick exit if nothing to do
-        if "```" not in text:
+        should_enforce = enforce
+        if should_enforce is None:
+            should_enforce = os.getenv("ALITA_FORMAT_ENFORCE", "false").lower() in {
+                "1",
+                "true",
+                "yes",
+                "on",
+            }
+
+        if not should_enforce or "```" not in text:
             return text
-        # Process fenced blocks only
-        parts: list[str] = []
-        lines = text.split("\n")
-        in_fence = False
-        buf: list[str] = []
 
-        def norm_line(s: str) -> str:
-            s = s.replace("×", " * ").replace("·", " * ")
-            s = s.replace("−", "-").replace("–", "-").replace("—", "-")
-            s = s.replace("“", '"').replace("”", '"').replace("’", "'")
-            return s
+        try:
+            parts: list[str] = []
+            lines = text.split("\n")
+            in_fence = False
+            buf: list[str] = []
 
-        for line in lines:
-            if line.startswith("```"):
+            def norm_line(s: str) -> str:
+                s = s.replace("×", " * ").replace("·", " * ")
+                s = s.replace("−", "-").replace("–", "-").replace("—", "-")
+                s = s.replace("“", '"').replace("”", '"').replace("’", "'")
+                return s
+
+            for line in lines:
+                if line.startswith("```"):
+                    if in_fence:
+                        parts.append("\n".join(buf))
+                        buf = []
+                        in_fence = False
+                        parts.append(line)
+                    else:
+                        in_fence = True
+                        parts.append(line)
+                    continue
                 if in_fence:
-                    # close fence: flush normalized buffer
-                    parts.append("\n".join(buf))
-                    buf = []
-                    in_fence = False
-                    parts.append(line)
+                    buf.append(norm_line(line))
                 else:
-                    in_fence = True
                     parts.append(line)
-                continue
-            if in_fence:
-                buf.append(norm_line(line))
-            else:
-                parts.append(line)
-        # If fence left open, append remaining
-        if buf:
-            parts.append("\n".join(buf))
-        return "\n".join(parts)
-
-    def _normalize_code_blocks(text: str) -> str:
-        if "```" not in text:
+            if buf:
+                parts.append("\n".join(buf))
+            return "\n".join(parts)
+        except Exception:
             return text
-        parts: list[str] = []
-        lines = text.split("\n")
-        in_fence = False
-        buf: list[str] = []
-
-        def norm_line(s: str) -> str:
-            s = s.replace("×", " * ").replace("·", " * ")
-            s = s.replace("−", "-").replace("–", "-").replace("—", "-")
-            s = s.replace("“", '"').replace("”", '"').replace("’", "'")
-            return s
-
-        for line in lines:
-            if line.startswith("```"):
-                if in_fence:
-                    parts.append("\n".join(buf))
-                    buf = []
-                    in_fence = False
-                    parts.append(line)
-                else:
-                    in_fence = True
-                    parts.append(line)
-                continue
-            if in_fence:
-                buf.append(norm_line(line))
-            else:
-                parts.append(line)
-        if buf:
-            parts.append("\n".join(buf))
-        return "\n".join(parts)
 
     content_out = llm_response_content or "Task complete."
-    if os.getenv("ALITA_FORMAT_ENFORCE", "false").lower() in {"1", "true", "yes", "on"}:
-        with contextlib.suppress(Exception):
-            content_out = _normalize_code_blocks(content_out)
+    content_out = _enforce_output_contract_on_text(content_out)
 
     final_answer = {
         "content": content_out,
@@ -799,11 +774,7 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
     except Exception:
         pass
     raw_body = await request.json()
-    body: dict[str, Any]
-    if isinstance(raw_body, dict):
-        body = raw_body
-    else:
-        body = {}
+    body: dict[str, Any] = raw_body if isinstance(raw_body, dict) else {}
     user_msg = body.get("message", "")
     session_id = body.get("session_id", "default")
 
