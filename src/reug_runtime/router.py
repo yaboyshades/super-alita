@@ -23,6 +23,7 @@ import time
 import urllib.request
 import uuid
 from collections.abc import AsyncGenerator
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
@@ -61,6 +62,14 @@ def parse_tool_calls(text: str) -> list[dict[str, Any]]:
     return calls
 
 
+@dataclass(slots=True)
+class ReasoningResult:
+    """Snapshot of the latest reasoning output from the language model."""
+
+    text: str = ""
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
+
+
 class Orchestrator:
     def __init__(self, event_bus: Any, registry: Any, model: Any, correlation_id: str):
         self.event_bus = event_bus
@@ -68,9 +77,51 @@ class Orchestrator:
         self.model = model
         self.correlation_id = correlation_id
         self._mcp_box_dir = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
-        self._last_reasoning_result: tuple[str, list[dict[str, Any]]] = ("", [])
-        self._last_reasoning_result: tuple[str, list[Any]] = ("", [])
+        self._last_reasoning_result = ReasoningResult()
         self._last_acting_result: list[dict[str, Any]] = []
+
+    @staticmethod
+    def _coerce_tool_call(raw_call: Any) -> dict[str, Any]:
+        """Convert provider-specific tool call payloads into plain dicts."""
+
+        if isinstance(raw_call, dict):
+            return raw_call
+
+        for attr in ("model_dump", "to_dict", "dict"):
+            fn = getattr(raw_call, attr, None)
+            if callable(fn):
+                try:
+                    data = fn()
+                except TypeError:
+                    continue
+                if isinstance(data, dict):
+                    return cast(dict[str, Any], data)
+
+        result: dict[str, Any] = {}
+
+        for attr in ("id", "name", "tool", "type"):
+            value = getattr(raw_call, attr, None)
+            if value is not None:
+                result[attr] = value
+
+        fn_obj = getattr(raw_call, "function", None)
+        if fn_obj is not None:
+            if isinstance(fn_obj, dict):
+                result["function"] = fn_obj
+            else:
+                fn_dict: dict[str, Any] = {}
+                for attr in ("name", "arguments"):
+                    value = getattr(fn_obj, attr, None)
+                    if value is not None:
+                        fn_dict[attr] = value
+                if fn_dict:
+                    result["function"] = fn_dict
+
+        arguments = getattr(raw_call, "arguments", None)
+        if arguments is not None:
+            result.setdefault("arguments", arguments)
+
+        return result
 
     def _persist_mcp_spec(self, spec: dict[str, Any]) -> None:
         try:
@@ -149,7 +200,8 @@ class Orchestrator:
                             "owner": a.get("owner"),
                             "repo": a.get("repo"),
                             "path": a.get("path"),
-                        } | ({"ref": a.get("ref")} if a.get("ref") else {}),
+                        }
+                        | ({"ref": a.get("ref")} if a.get("ref") else {}),
                     )
                     return cast(dict[str, Any], result)
 
@@ -270,7 +322,7 @@ class Orchestrator:
         self, messages: list[dict[str, Any]], tool_schemas: list[dict[str, Any]]
     ) -> AsyncGenerator[dict[str, Any], None]:
         llm_response_content = ""
-        tool_calls: list[Any] = []
+        tool_calls: list[dict[str, Any]] = []
 
         # Call model.stream_chat with best-effort compatibility across providers
         async def _stream() -> AsyncGenerator[dict[str, Any], None]:
@@ -305,12 +357,19 @@ class Orchestrator:
                 llm_response_content += text
                 yield {"type": "LLMChunk", "data": {"text": text}}
             elif chunk.get("type") == "tool_calls":
-                tool_calls.extend(chunk.get("tool_calls", []))
+                raw_tool_calls = chunk.get("tool_calls", [])
+                if isinstance(raw_tool_calls, list):
+                    for raw_call in raw_tool_calls:
+                        normalized = self._coerce_tool_call(raw_call)
+                        if normalized:
+                            tool_calls.append(normalized)
         # Store the return values for later retrieval
-        self._last_reasoning_result = (llm_response_content, tool_calls)
+        self._last_reasoning_result = ReasoningResult(
+            text=llm_response_content, tool_calls=list(tool_calls)
+        )
 
     async def _acting_step(
-        self, tool_calls: list[Any]
+        self, tool_calls: list[dict[str, Any]]
     ) -> AsyncGenerator[dict[str, Any], None]:
         tool_messages: list[dict[str, Any]] = []
         for tool_call in tool_calls:
@@ -348,7 +407,9 @@ class Orchestrator:
                 )
             except Exception:
                 tool_args_obj = {}
-            tool_args: dict[str, Any] = tool_args_obj if isinstance(tool_args_obj, dict) else {}
+            tool_args: dict[str, Any] = (
+                tool_args_obj if isinstance(tool_args_obj, dict) else {}
+            )
             span_id = str(uuid.uuid4())
 
             ability_called_event = {
@@ -540,8 +601,9 @@ async def execute_turn(
         # Run reasoning step and get results
         async for event in orchestrator._reasoning_step(messages, tool_schemas):
             yield event
-        llm_response_content, tool_calls_raw = orchestrator._last_reasoning_result
-        tool_calls: list[Any] = list(tool_calls_raw)
+        reasoning_snapshot = orchestrator._last_reasoning_result
+        llm_response_content = reasoning_snapshot.text
+        tool_calls: list[dict[str, Any]] = list(reasoning_snapshot.tool_calls)
         # Fallback: derive tool calls by parsing streamed content blocks
         if not tool_calls and "<tool_call>" in llm_response_content:
             tool_calls = parse_tool_calls(llm_response_content)
@@ -799,11 +861,7 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
     except Exception:
         pass
     raw_body = await request.json()
-    body: dict[str, Any]
-    if isinstance(raw_body, dict):
-        body = raw_body
-    else:
-        body = {}
+    body: dict[str, Any] = raw_body if isinstance(raw_body, dict) else {}
     user_msg = body.get("message", "")
     session_id = body.get("session_id", "default")
 
