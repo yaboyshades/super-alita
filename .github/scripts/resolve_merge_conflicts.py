@@ -128,11 +128,10 @@ def write_patch_and_summary(resolutions: list[ConflictResolution]) -> None:
         "The CI workflow kept the 'ours' sections (above =======) for each conflict.\n",
         "\nFiles updated:\n",
     ]
-    for resolution in resolutions:
-        summary_lines.append(
-            f"- {resolution.path.as_posix()} (blocks resolved: {resolution.resolved_blocks})\n"
-        )
-
+    summary_lines.extend(
+        f"- {resolution.path.as_posix()} (blocks resolved: {resolution.resolved_blocks})\n"
+        for resolution in resolutions
+    )
     summary_lines.append(
         "\nDownload the attached patch artifact and review the changes before committing.\n"
     )
