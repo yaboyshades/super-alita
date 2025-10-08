@@ -1,0 +1,45 @@
+name: Merge Conflict Guard
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-markers:
+    name: Detect and resolve conflict markers
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sanitize merge conflict markers
+        id: resolve
+        continue-on-error: true
+        run: |
+          python .github/scripts/resolve_merge_conflicts.py
+
+      - name: Upload resolution patch
+        if: steps.resolve.outcome == 'failure' && hashFiles('merge-conflict-resolution.patch') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: merge-conflict-resolution
+          path: |
+            merge-conflict-resolution.patch
+            merge-conflict-summary.txt
+
+      - name: Fail if conflicts were detected
+        if: steps.resolve.outcome == 'failure'
+        run: |
+          cat merge-conflict-summary.txt
+          echo "::error ::Merge conflict markers were detected. Review the uploaded patch and commit the resolution."
+          exit 1
