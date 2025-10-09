@@ -7,6 +7,8 @@ replacement, code block normalization, and contract enforcement.
 
 from __future__ import annotations
 
+import re
+
 
 def normalize_output_contract(text: str) -> str:
     """Normalize text to reduce formatting issues.
@@ -26,7 +28,7 @@ def normalize_output_contract(text: str) -> str:
     # Quick exit if nothing to do
     if "```" not in text:
         return text
-        
+
     # Process fenced blocks only
     parts: list[str] = []
     lines = text.split("\n")
@@ -37,6 +39,7 @@ def normalize_output_contract(text: str) -> str:
         """Apply ASCII normalization to a single line."""
         # Replace multiplication operators
         s = s.replace("×", " * ").replace("·", " * ")
+        s = re.sub(r"\s*\*\s*", " * ", s)
         # Replace dashes with hyphens
         s = s.replace("−", "-").replace("–", "-").replace("—", "-")
         # Replace smart quotes with straight quotes
@@ -56,16 +59,16 @@ def normalize_output_contract(text: str) -> str:
                 in_fence = True
                 parts.append(line)
             continue
-        
+
         if in_fence:
             # Normalize content inside fenced blocks
             buf.append(_normalize_line(line))
         else:
             # Leave content outside fenced blocks unchanged
             parts.append(line)
-    
+
     # If fence was left open, append remaining normalized content
     if buf:
         parts.append("\n".join(buf))
-        
+
     return "\n".join(parts)
