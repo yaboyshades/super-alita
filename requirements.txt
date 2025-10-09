@@ -30,8 +30,8 @@ watchdog>=4.0.0
 # python-graphml>=1.0  # optional, install manually if available
 
 # Testing
-pytest>=7.0
-pytest-asyncio>=0.21.0
+pytest>=8.2.0
+pytest-asyncio>=1.2.0
 pytest-cov>=4.0
 
 # Development and linting
