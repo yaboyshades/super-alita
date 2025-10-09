@@ -1,7 +1,7 @@
 # Test requirements
 # Keep pytest aligned with the minversion specified in pyproject.toml
-pytest>=8.0.0
-pytest-asyncio>=0.23.6
+pytest>=8.2.0
+pytest-asyncio>=1.2.0
 
 # Jest-equivalent testing packages for complete Jest-like workflow
 pytest-cov>=4.0.0           # Coverage reporting (jest --coverage)

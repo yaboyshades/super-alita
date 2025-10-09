@@ -21,9 +21,10 @@ from __future__ import annotations
 import os
 from typing import Any, cast
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from .loop import Orchestrator, execute_turn, parse_tool_calls
 from .loop import execute_turn, parse_tool_calls
 from .streaming import sse_transformer
 
@@ -36,8 +37,8 @@ __all__ = [
 ]
 
 
-@router.post("/chat/stream")
-async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
+@router.post("/chat/stream", response_model=None)
+async def chat_stream(request: Request) -> Response:
     # Rate limit pre-check (optional)
     try:
         if os.getenv("ALITA_RATE_LIMIT_ENABLED", "false").lower() in {
@@ -62,8 +63,6 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
                 ident = f"key:{tok[:8]}" if tok else f"ip:{client_host}"
                 allowed, _ = await rl.is_allowed(ident, limit, window)
                 if not allowed:
-                    from fastapi.responses import JSONResponse
-
                     return JSONResponse(
                         status_code=429, content={"error": "rate_limited"}
                     )
@@ -94,7 +93,7 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
     )
 
 
-@router.get("/chat/stream")
+@router.get("/chat/stream", response_model=None)
 async def chat_stream_get(request: Request) -> StreamingResponse:
     """
     GET variant to support browsers using EventSource.
