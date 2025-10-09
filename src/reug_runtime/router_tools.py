@@ -6,6 +6,9 @@ Alignment additions (ALITA minimal predefinition + maximal self‑evolution):
 
 These endpoints allow the runtime to evolve capabilities at runtime without
 predefining large toolsets. Generated specs are persisted under ./.mcp_box.
+
+This module has been refactored to use the centralized ToolCatalogService
+for consistent tool catalog management and dynamic registration.
 """
 
 from __future__ import annotations
@@ -21,144 +24,9 @@ from fastapi import APIRouter, Body, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from .config import SETTINGS
+from .loop import execute_turn
 from .mcp_abstractor import abstract_mcp_box
-from .router import execute_turn
-
-TOOL_CATALOG = [
-    {
-        "name": "reug_start_turn",
-        "description": "Start a single-turn REUG agent run with streaming. Returns a run_id and initial stream chunk(s).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "message": {"type": "string"},
-                "session_id": {"type": "string"},
-            },
-            "required": ["message"],
-        },
-        "output_schema": {
-            "type": "object",
-            "properties": {
-                "run_id": {"type": "string"},
-                "stream_begun": {"type": "boolean"},
-            },
-            "required": ["run_id", "stream_begun"],
-        },
-    },
-    {
-        "name": "reug_stream_next",
-        "description": "Fetch next streamed chunk(s) for a run. Ends when final answer emitted.",
-        "input_schema": {
-            "type": "object",
-            "properties": {"run_id": {"type": "string"}},
-            "required": ["run_id"],
-        },
-        "output_schema": {
-            "type": "object",
-            "properties": {
-                "chunks": {"type": "array", "items": {"type": "string"}},
-                "finished": {"type": "boolean"},
-            },
-            "required": ["chunks", "finished"],
-        },
-    },
-    {
-        "name": "pytest_run",
-        "description": "Run pytest with optional target path and markers.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "target": {"type": "string"},
-                "markers": {"type": "string"},
-                "quiet": {"type": "boolean", "default": True},
-            },
-        },
-        "output_schema": {
-            "type": "object",
-            "properties": {
-                "ok": {"type": "boolean"},
-                "exit_code": {"type": "integer"},
-                "stdout": {"type": "string"},
-                "stderr": {"type": "string"},
-            },
-            "required": ["ok", "exit_code"],
-        },
-    },
-    {
-        "name": "fs_read",
-        "description": "Read a UTF-8 text file.",
-        "input_schema": {
-            "type": "object",
-            "properties": {"path": {"type": "string"}},
-            "required": ["path"],
-        },
-        "output_schema": {
-            "type": "object",
-            "properties": {"content": {"type": "string"}},
-            "required": ["content"],
-        },
-    },
-    {
-        "name": "fs_write",
-        "description": "Write UTF-8 content to a file (creates/overwrites).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "path": {"type": "string"},
-                "content": {"type": "string"},
-            },
-            "required": ["path", "content"],
-        },
-        "output_schema": {
-            "type": "object",
-            "properties": {"ok": {"type": "boolean"}},
-            "required": ["ok"],
-        },
-    },
-    {
-        "name": "git_apply_patch",
-        "description": "Apply a unified diff patch to the repo.",
-        "input_schema": {
-            "type": "object",
-            "properties": {"patch": {"type": "string"}},
-            "required": ["patch"],
-        },
-        "output_schema": {
-            "type": "object",
-            "properties": {
-                "ok": {"type": "boolean"},
-                "stdout": {"type": "string"},
-                "stderr": {"type": "string"},
-            },
-            "required": ["ok"],
-        },
-    },
-    {
-        "name": "deepconf_consensus",
-        "description": "Perform consensus sampling using multiple LLM calls",
-        "input_schema": {
-            "type": "object",
-            "required": ["prompt"],
-            "properties": {
-                "prompt": {"type": "string"},
-                "num_samples": {"type": "integer", "default": 3},
-                "temperature": {"type": "number", "default": 0.7},
-                "max_tokens": {"type": "integer", "default": 512},
-            },
-        },
-        "output_schema": {
-            "type": "object",
-            "properties": {
-                "consensus_text": {"type": "string"},
-                "consensus_confidence": {"type": "number"},
-                "aggregation_method": {"type": "string"},
-                "individual_responses": {"type": "array"},
-                "metadata": {"type": "object"},
-            },
-        },
-    },
-]
-
+from .tools.service import ToolCatalogService
 
 tools = APIRouter(prefix="/tools", tags=["tools"])
 
@@ -167,81 +35,26 @@ ability = APIRouter(prefix="/ability", tags=["ability"])
 
 _STREAMS: dict[str, Any] = {}
 
+# Shared catalog service instance
+_catalog_service = ToolCatalogService()
+
 
 @tools.get("/catalog")
 async def get_catalog(request: Request) -> JSONResponse:
     """Return the tool catalog including both static and dynamic tools."""
-    print("🔍 DEBUG: Catalog endpoint called")
-
-    # Start with the static tool catalog
-    catalog = list(TOOL_CATALOG)
-    print(f"🔍 DEBUG: Static catalog has {len(catalog)} tools")
-
-    # Add dynamic tools from the ability registry
     try:
         app = request.app
-        print(f"🔍 DEBUG: Got app: {type(app)}")
-
-        if hasattr(app.state, "ability_registry"):
-            registry = app.state.ability_registry
-            print(f"🔍 DEBUG: Got registry: {type(registry)}")
-
-            if hasattr(registry, "get_available_tools_schema"):
-                dynamic_tools = registry.get_available_tools_schema()
-                print(f"🔍 DEBUG: Got {len(dynamic_tools)} dynamic tools")
-
-                # Try to load tools from catalog.json
-                try:
-                    box_dir = os.getenv("MCP_BOX_DIR", ".mcp_box")
-                    catalog_path = Path(box_dir) / "catalog.json"
-                    if catalog_path.exists():
-                        mcp_catalog_tools = json.loads(
-                            catalog_path.read_text(encoding="utf-8")
-                        )
-                        print(
-                            f"🔍 DEBUG: Found {len(mcp_catalog_tools)} tools in catalog.json"
-                        )
-
-                        # Add tools from catalog.json (if not already in the static catalog)
-                        for tool in mcp_catalog_tools:
-                            tool_name = tool.get("name")
-                            if tool_name and not any(
-                                t["name"] == tool_name for t in catalog
-                            ):
-                                catalog.append(tool)
-                                print(f"🔍 DEBUG: Added catalog tool: {tool_name}")
-                except Exception as e:
-                    print(f"⚠️  Warning: Failed to load MCP catalog: {e}")
-
-                # Convert dynamic tool contracts to catalog format
-                for tool_contract in dynamic_tools:
-                    # Only add if it's not already in the static catalog
-                    tool_name = tool_contract.get("tool_id") or tool_contract.get(
-                        "name"
-                    )
-                    if tool_name and not any(t["name"] == tool_name for t in catalog):
-                        catalog_entry = {
-                            "name": tool_name,
-                            "description": tool_contract.get("description", ""),
-                            "input_schema": tool_contract.get("input_schema", {}),
-                            "output_schema": tool_contract.get("output_schema", {}),
-                        }
-                        catalog.append(catalog_entry)
-                        print(f"🔍 DEBUG: Added dynamic tool: {tool_name}")
-
-                print(f"🔍 DEBUG: Final catalog has {len(catalog)} tools")
-            else:
-                print("🔍 DEBUG: Registry has no get_available_tools_schema method")
-        else:
-            print("🔍 DEBUG: App state has no ability_registry")
+        registry = getattr(app.state, "ability_registry", None)
+        catalog = _catalog_service.list_tools(registry)
+        return JSONResponse(catalog)
     except Exception as e:
-        # If there's any error accessing dynamic tools, just return static catalog
-        print(f"⚠️  Warning: Failed to load dynamic tools: {e}")
+        # If there's any error accessing tools, return empty catalog with error info
         import traceback
-
         traceback.print_exc()
-
-    return JSONResponse(catalog)
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to load tool catalog: {str(e)}", "tools": []}
+        )
 
 
 @tools.post("/reug_start_turn")
@@ -521,25 +334,6 @@ async def ability_execute(
 
 
 # --------- MCP self-evolution helpers (brainstorm + dynamic registration) ---------
-_MCP_BOX = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
-
-
-def _ensure_mcp_box() -> Path:
-    _MCP_BOX.mkdir(parents=True, exist_ok=True)
-    return _MCP_BOX
-
-
-def _persist_spec(spec: dict[str, Any]) -> str:
-    box = _ensure_mcp_box()
-    tid = (
-        spec.get("tool_id")
-        or spec.get("name")
-        or f"mcp_{len(list(box.glob('*.json')))}"
-    )
-    spec = {"tool_id": tid, **spec}
-    path = box / f"{tid}.json"
-    path.write_text(json.dumps(spec, indent=2), encoding="utf-8")
-    return tid
 
 
 @tools.post("/mcp/brainstorm")
@@ -664,19 +458,19 @@ async def mcp_register(
                 if tool.get("signature") == sig:
                     canonical_tool_id = tool.get("tool_id")
                     print(
-                        f"🔍 DEBUG: Found canonical tool {canonical_tool_id} for signature {sig}"
+                        f"Found canonical tool {canonical_tool_id} for signature {sig}"
                     )
                     break
     except Exception as e:
-        print(f"⚠️  Warning: Error checking canonical tools: {e}")
+        print(f"Warning: Error checking canonical tools: {e}")
 
     # Use canonical tool_id if found, otherwise persist as new spec
     if canonical_tool_id:
         tool_id = canonical_tool_id
-        print(f"🔍 DEBUG: Using existing canonical tool_id: {tool_id}")
+        print(f"Using existing canonical tool_id: {tool_id}")
     else:
-        tool_id = _persist_spec(spec)
-        print(f"🔍 DEBUG: Persisted new tool spec: {tool_id}")
+        tool_id = _catalog_service.register_dynamic_tool(spec)
+        print(f"Persisted new tool spec: {tool_id}")
 
     state = cast(Any, request.app.state)
     registry = state.ability_registry
