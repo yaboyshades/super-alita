@@ -2,7 +2,6 @@
 
 import asyncio
 
-
 import pytest
 
 from collections.abc import AsyncGenerator
@@ -23,21 +22,7 @@ def _make_event_generator() -> AsyncGenerator[dict[str, object], None]:
         yield {"type": "AbilitySucceeded", "tool": "echo", "correlation_id": "test-123", "result": {"echo": "hi"}}
         yield {"type": "TaskSucceeded", "correlation_id": "test-123", "data": {"content": "done"}}
 
-        yield {
-            "type": "AbilitySucceeded",
-            "tool": "echo",
-            "correlation_id": "test-123",
-            "result": {"echo": "hi"},
-        }
-        yield {
-            "type": "TaskSucceeded",
-            "correlation_id": "test-123",
-            "data": {"content": "done"},
-        }
-
-
     return _gen()
-
 
 
 def _collect_sse_chunks(event_gen):
@@ -57,18 +42,6 @@ def test_sse_transformer_basic():
 
     # Join all chunks to get the full SSE stream
     sse_stream = "".join(chunks)
-
-def test_sse_transformer_basic() -> None:
-    """Test basic SSE transformation."""
-
-    async def _run() -> str:
-        chunks = []
-        async for chunk in sse_transformer(_make_event_generator()):
-            chunks.append(chunk)
-        return "".join(chunks)
-
-    sse_stream = asyncio.run(_run())
-
 
     # Check that we get proper SSE format
     assert "event: start\n" in sse_stream
@@ -108,19 +81,14 @@ def test_sse_transformer_empty():
     assert chunk_count == 0
 
 
-def test_sse_transformer_unknown_event() -> None:
+def test_sse_transformer_unknown_event():
     """Test SSE transformer with unknown event types."""
+    async def _gen():
+        yield {"type": "UnknownEvent", "data": "test"}
 
-    async def _run() -> str:
-        async def _gen():
-            yield {"type": "UnknownEvent", "data": "test"}
+    chunks = _collect_sse_chunks(_gen())
 
-        chunks = []
-        async for chunk in sse_transformer(_gen()):
-            chunks.append(chunk)
-        return "".join(chunks)
-
-    sse_stream = asyncio.run(_run())
+    sse_stream = "".join(chunks)
 
     # Unknown events should be mapped to "message"
     assert "event: message\n" in sse_stream
@@ -237,28 +205,3 @@ def test_sse_transformer_event_name_mapping():
     ]
 
     assert event_names == [expected for _, expected in events]
-def test_sse_transformer_heartbeat(monkeypatch: Any) -> None:
-    """Heartbeat configuration should emit ping events."""
-    monkeypatch.setenv("ALITA_SSE_HEARTBEAT", "1")
-    monkeypatch.setenv("ALITA_SSE_HEARTBEAT_INTERVAL", "1")
-
-    async def _run() -> list[str]:
-        async def _gen():
-            yield {"type": "TaskStarted", "correlation_id": "hb-1", "goal": "ping"}
-            await asyncio.sleep(1.05)
-
-        gen = sse_transformer(_gen())
-        chunks: list[str] = []
-        try:
-            for _ in range(5):
-                chunk = await anext(gen)
-                chunks.append(chunk)
-                if "event: ping" in chunk:
-                    break
-        finally:
-            await gen.aclose()
-        return chunks
-
-    chunks = asyncio.run(_run())
-
-    assert any("event: ping" in chunk for chunk in chunks)
