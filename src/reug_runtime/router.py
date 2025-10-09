@@ -51,13 +51,8 @@ __all__ = [
 ]
 
 
-@router.post("/chat/stream")
-async def chat_stream(request: Request) -> StreamingResponse:
-
-
 @router.post("/chat/stream", response_model=None)
-async def chat_stream(request: Request) -> Response:
->
+async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
     # Rate limit pre-check (optional)
     try:
         if os.getenv("ALITA_RATE_LIMIT_ENABLED", "false").lower() in {
