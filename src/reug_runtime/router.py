@@ -744,24 +744,25 @@ async def execute_turn(
         "reward": reward_payload,
     }
     await event_bus.emit(loop_alignment_event)
-    yield loop_alignment_event
-
-    if pending_bonds and kg is not None:
-        cb_fn = getattr(kg, "create_bond", None)
-        if callable(cb_fn):
-            for bond_type, source_atom_id, target_atom_id in pending_bonds:
-                with contextlib.suppress(Exception):
-                    await cb_fn(bond_type, source_atom_id, target_atom_id)
-                    await event_bus.emit(
-                        {
-                            "type": "KnowledgeBondCreated",
-                            "correlation_id": correlation_id,
-                            "session_id": session_id,
-                            "bond_type": bond_type,
-                            "source_atom_id": source_atom_id,
-                            "target_atom_id": target_atom_id,
-                        }
-                    )
+    try:
+        yield loop_alignment_event
+    finally:
+        if pending_bonds and kg is not None:
+            cb_fn = getattr(kg, "create_bond", None)
+            if callable(cb_fn):
+                for bond_type, source_atom_id, target_atom_id in pending_bonds:
+                    with contextlib.suppress(Exception):
+                        await cb_fn(bond_type, source_atom_id, target_atom_id)
+                        await event_bus.emit(
+                            {
+                                "type": "KnowledgeBondCreated",
+                                "correlation_id": correlation_id,
+                                "session_id": session_id,
+                                "bond_type": bond_type,
+                                "source_atom_id": source_atom_id,
+                                "target_atom_id": target_atom_id,
+                            }
+                        )
 
     task_succeeded_event = {
         "type": "TaskSucceeded",
