@@ -36,7 +36,7 @@ __all__ = [
 ]
 
 
-@router.post("/chat/stream")
+@router.post("/chat/stream", response_model=None)
 async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
     # Rate limit pre-check (optional)
     try:
@@ -94,7 +94,7 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
     )
 
 
-@router.get("/chat/stream")
+@router.get("/chat/stream", response_model=None)
 async def chat_stream_get(request: Request) -> StreamingResponse:
     """
     GET variant to support browsers using EventSource.
