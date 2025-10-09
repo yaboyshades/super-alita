@@ -21,17 +21,25 @@ from __future__ import annotations
 import os
 from typing import Any, cast
 
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
 
-from .loop import execute_turn
+from .loop import Orchestrator, ReasoningResult, execute_turn, parse_tool_calls
 from .streaming import sse_transformer
+
+__all__ = [
+    "router",
+    "execute_turn",
+    "parse_tool_calls",
+    "Orchestrator",
+    "ReasoningResult",
+]
 
 router = APIRouter(prefix="/v1", tags=["agent"])
 
 
 @router.post("/chat/stream")
-async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
+async def chat_stream(request: Request) -> StreamingResponse:
     # Rate limit pre-check (optional)
     try:
         if os.getenv("ALITA_RATE_LIMIT_ENABLED", "false").lower() in {
@@ -56,11 +64,7 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
                 ident = f"key:{tok[:8]}" if tok else f"ip:{client_host}"
                 allowed, _ = await rl.is_allowed(ident, limit, window)
                 if not allowed:
-                    from fastapi.responses import JSONResponse
-
-                    return JSONResponse(
-                        status_code=429, content={"error": "rate_limited"}
-                    )
+                    raise HTTPException(status_code=429, detail="rate_limited")
     except Exception:
         pass
     raw_body = await request.json()
