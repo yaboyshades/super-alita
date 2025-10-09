@@ -14,7 +14,7 @@ except Exception:  # pragma: no cover - pytest may not be available.
 else:
     try:
         from _pytest.fixtures import FixtureDef
-    except Exception:  # pragma: no cover - internal API moved.
+    except ImportError:  # pragma: no cover - internal API moved.
         FixtureDef = None  # type: ignore[assignment]
     else:
         if pytest is not None and not hasattr(pytest, "FixtureDef") and FixtureDef is not None:
