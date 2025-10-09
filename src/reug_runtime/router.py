@@ -25,9 +25,16 @@ from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from .loop import Orchestrator, execute_turn, parse_tool_calls
+from .loop import execute_turn, parse_tool_calls
 from .streaming import sse_transformer
 
 router = APIRouter(prefix="/v1", tags=["agent"])
+
+__all__ = [
+    "chat_stream",
+    "chat_stream_get",
+    "parse_tool_calls",
+]
 
 
 @router.post("/chat/stream", response_model=None)
