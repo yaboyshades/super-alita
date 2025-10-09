@@ -7,6 +7,8 @@ Follows Specification-Driven Development (SDD) methodology.
 """
 
 import json
+import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -22,6 +24,23 @@ class SpecKitArchitect:
         self.specs_dir = self.workspace_root / "specs"
         self.templates_dir = self.workspace_root / "templates"
         self.scripts_dir = self.workspace_root / "scripts"
+
+        spec_kit_path_env = os.getenv("GITHUB_SPEC_KIT_PATH")
+        templates_path_env = os.getenv("SPEC_KIT_TEMPLATES_PATH")
+
+        self.spec_kit_repo_url = os.getenv(
+            "GITHUB_SPEC_KIT_URL", "https://github.com/github/spec-kit.git"
+        )
+        self.spec_kit_repo_path = (
+            Path(spec_kit_path_env).expanduser()
+            if spec_kit_path_env
+            else self.workspace_root / "spec-kit"
+        )
+        self.github_templates_dir = (
+            Path(templates_path_env).expanduser()
+            if templates_path_env
+            else self.templates_dir / "github-spec-kit"
+        )
 
         # Ensure required directories exist
         for directory in [
@@ -188,6 +207,58 @@ class SpecKitArchitect:
         self._generate_compliance_report(feature_path, compliance)
 
         return compliance
+
+    def sync_github_spec_kit(self, repo_url: str | None = None) -> Path:
+        """Clone or update the GitHub spec-kit repository locally."""
+
+        target_url = repo_url or self.spec_kit_repo_url
+        repo_path = self.spec_kit_repo_path
+
+        if repo_path.exists():
+            git_dir = repo_path / ".git"
+            if not git_dir.is_dir():
+                raise RuntimeError(
+                    f"Existing path is not a git repository: {repo_path}"
+                )
+            self._run_git_command(["-C", str(repo_path), "fetch", "--all"])
+            self._run_git_command(
+                ["-C", str(repo_path), "reset", "--hard", "origin/main"]
+            )
+        else:
+            repo_path.parent.mkdir(parents=True, exist_ok=True)
+            self._run_git_command(["clone", target_url, str(repo_path)])
+
+        return repo_path
+
+    def integrate_github_templates(self, repo_path: Path | None = None) -> Path:
+        """Copy GitHub spec-kit templates into the local templates directory."""
+
+        source_repo = repo_path or self.spec_kit_repo_path
+        templates_source = source_repo / "templates"
+        if not templates_source.is_dir():
+            raise FileNotFoundError(
+                f"GitHub spec-kit templates directory not found: {templates_source}"
+            )
+
+        destination = self.github_templates_dir
+        destination.parent.mkdir(parents=True, exist_ok=True)
+
+        shutil.copytree(templates_source, destination, dirs_exist_ok=True)
+        return destination
+
+    def _run_git_command(self, args: list[str]) -> subprocess.CompletedProcess[str]:
+        """Execute a git command and raise a helpful error on failure."""
+
+        try:
+            return subprocess.run(
+                ["git", *args],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            stderr = exc.stderr.strip() if exc.stderr else "unknown error"
+            raise RuntimeError(f"git {' '.join(args)} failed: {stderr}") from exc
 
     def _generate_specification_with_copilot(self, feature_description: str) -> str:
         """Generate specification using GitHub Copilot CLI."""
@@ -457,12 +528,14 @@ Available commands:
   /plan <spec_path> [tech_stack]   - Create implementation plan
   /tasks <plan_path>               - Generate task breakdown
   /review <feature_dir>            - Constitutional compliance review
+  /sync [repo_url]                 - Clone/update GitHub spec-kit and sync templates
 
 Examples:
   python spec_kit.py specify "User authentication system with JWT tokens"
   python spec_kit.py plan specs/001-auth/spec.md "FastAPI + SQLAlchemy + JWT"
   python spec_kit.py tasks specs/001-auth/plan.md
   python spec_kit.py review specs/001-auth
+  python spec_kit.py sync
         """
         )
         return
@@ -483,6 +556,12 @@ Examples:
     elif command == "review" and len(sys.argv) >= 3:
         feature_dir = sys.argv[2]
         architect.constitutional_review(feature_dir)
+    elif command == "sync":
+        repo_override = sys.argv[2] if len(sys.argv) >= 3 else None
+        repo_path = architect.sync_github_spec_kit(repo_override)
+        templates_path = architect.integrate_github_templates(repo_path)
+        print(f"🔄 GitHub spec-kit synchronized at {repo_path}")
+        print(f"🗂️ Templates synced to {templates_path}")
     else:
         print(f"❌ Invalid command or missing arguments: {' '.join(sys.argv)}")
         print("Run without arguments to see usage help.")
