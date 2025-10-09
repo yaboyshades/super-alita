@@ -1,18 +1,24 @@
-"""Tests for SSE streaming functionality."""
+"""Tests for the SSE streaming transformer."""
 
 import asyncio
 
 import pytest
 
+from collections.abc import AsyncGenerator
+from typing import Any
+
+
 from reug_runtime.streaming import sse_transformer
 
 
-def _make_event_generator():
+def _make_event_generator() -> AsyncGenerator[dict[str, object], None]:
     """Create a simple async generator for testing."""
-    async def _gen():
+
+    async def _gen() -> AsyncGenerator[dict[str, object], None]:
         yield {"type": "TaskStarted", "correlation_id": "test-123", "goal": "test"}
         yield {"type": "LLMChunk", "data": {"text": "Hello"}}
         yield {"type": "AbilityCalled", "tool": "echo", "correlation_id": "test-123"}
+
         yield {"type": "AbilitySucceeded", "tool": "echo", "correlation_id": "test-123", "result": {"echo": "hi"}}
         yield {"type": "TaskSucceeded", "correlation_id": "test-123", "data": {"content": "done"}}
 
@@ -43,7 +49,7 @@ def test_sse_transformer_basic():
     assert "event: tool_start\n" in sse_stream
     assert "event: tool_result\n" in sse_stream
     assert "event: done\n" in sse_stream
-    
+
     # Check that data is properly JSON encoded
     assert 'data: {"content": "Hello"}' in sse_stream
     assert '"type": "TaskStarted"' in sse_stream
@@ -72,7 +78,7 @@ def test_sse_transformer_empty():
     chunks = _collect_sse_chunks(_empty_gen())
 
     # Should handle empty generators gracefully
-    assert len(chunks) == 0
+    assert chunk_count == 0
 
 
 def test_sse_transformer_unknown_event():

@@ -18,28 +18,33 @@ class ToolCatalogService:
 
     def __init__(self, mcp_box_dir: str | None = None) -> None:
         """Initialize the tool catalog service.
-        
+
         Args:
             mcp_box_dir: Directory for MCP spec persistence. Defaults to
                         environment variable MCP_BOX_DIR or '.mcp_box'
         """
-        self._mcp_box_dir = Path(mcp_box_dir or os.getenv("MCP_BOX_DIR", ".mcp_box"))
+        box_root = mcp_box_dir or os.getenv("MCP_BOX_DIR") or ".mcp_box"
+        self._mcp_box_dir = Path(box_root)
         self._logger = self._get_logger()
 
     def _get_logger(self) -> Any:
         """Get a logger instance for structured logging."""
         try:
             import logging
+
             return logging.getLogger(__name__)
         except Exception:
             # Fallback to basic print-based logger
             class PrintLogger:
                 def info(self, msg: str) -> None:
                     print(f"INFO: {msg}")
+
                 def warning(self, msg: str) -> None:
                     print(f"WARNING: {msg}")
+
                 def error(self, msg: str) -> None:
                     print(f"ERROR: {msg}")
+
             return PrintLogger()
 
     def _ensure_mcp_box(self) -> Path:
@@ -49,15 +54,16 @@ class ToolCatalogService:
 
     def list_tools(self, registry: Any = None) -> list[dict[str, Any]]:
         """Get the complete tool catalog including static and dynamic tools.
-        
+
         Args:
             registry: Optional ability registry to fetch dynamic tools from
-            
+
         Returns:
             List of tool catalog entries
         """
         # Static tool catalog (defined in router_tools.py)
         from . import TOOL_CATALOG
+
         catalog = list(TOOL_CATALOG)
         self._logger.info(f"Loaded {len(catalog)} static tools")
 
@@ -70,8 +76,12 @@ class ToolCatalogService:
 
                     # Convert dynamic tool contracts to catalog format
                     for tool_contract in dynamic_tools:
-                        tool_name = tool_contract.get("tool_id") or tool_contract.get("name")
-                        if tool_name and not any(t["name"] == tool_name for t in catalog):
+                        tool_name = tool_contract.get("tool_id") or tool_contract.get(
+                            "name"
+                        )
+                        if tool_name and not any(
+                            t["name"] == tool_name for t in catalog
+                        ):
                             catalog_entry = {
                                 "name": tool_name,
                                 "description": tool_contract.get("description", ""),
@@ -81,7 +91,9 @@ class ToolCatalogService:
                             catalog.append(catalog_entry)
                             self._logger.info(f"Added dynamic tool: {tool_name}")
                 else:
-                    self._logger.warning("Registry has no get_available_tools_schema method")
+                    self._logger.warning(
+                        "Registry has no get_available_tools_schema method"
+                    )
             except Exception as e:
                 self._logger.error(f"Failed to load dynamic tools: {e}")
 
@@ -90,7 +102,9 @@ class ToolCatalogService:
             catalog_path = self._mcp_box_dir / "catalog.json"
             if catalog_path.exists():
                 mcp_catalog_tools = json.loads(catalog_path.read_text(encoding="utf-8"))
-                self._logger.info(f"Found {len(mcp_catalog_tools)} tools in catalog.json")
+                self._logger.info(
+                    f"Found {len(mcp_catalog_tools)} tools in catalog.json"
+                )
 
                 # Add tools from catalog.json (if not already in the catalog)
                 for tool in mcp_catalog_tools:
@@ -106,10 +120,10 @@ class ToolCatalogService:
 
     def register_dynamic_tool(self, spec: dict[str, Any]) -> str:
         """Register a dynamic tool and persist its specification.
-        
+
         Args:
             spec: Tool specification dictionary
-            
+
         Returns:
             The tool ID of the registered tool
         """
@@ -119,10 +133,10 @@ class ToolCatalogService:
 
     def _persist_spec(self, spec: dict[str, Any]) -> str:
         """Persist a tool specification to the MCP box.
-        
+
         Args:
             spec: Tool specification dictionary
-            
+
         Returns:
             The tool ID used for persistence
         """
@@ -134,25 +148,27 @@ class ToolCatalogService:
         )
         spec = {"tool_id": tool_id, **spec}
         path = box / f"{tool_id}.json"
-        
+
         try:
             path.write_text(json.dumps(spec, indent=2), encoding="utf-8")
             self._logger.info(f"Persisted tool spec: {tool_id} -> {path}")
         except Exception as e:
             self._logger.error(f"Failed to persist tool spec {tool_id}: {e}")
-            
+
         return tool_id
 
-    def ensure_tool_registered(self, tool_name: str, tool_args: dict[str, Any], registry: Any) -> bool:
+    def ensure_tool_registered(
+        self, tool_name: str, tool_args: dict[str, Any], registry: Any
+    ) -> bool:
         """Ensure a tool is registered, creating it dynamically if needed.
-        
+
         This is the unified version of the _ensure_tool logic from the orchestrator.
-        
+
         Args:
             tool_name: Name of the tool to ensure
             tool_args: Arguments that would be passed to the tool
             registry: Ability registry to register the tool with
-            
+
         Returns:
             True if tool is available, False otherwise
         """
@@ -167,11 +183,12 @@ class ToolCatalogService:
             self._logger.error(f"Failed to ensure tool {tool_name}: {e}")
             return False
 
-    def _auto_register_tool(self, tool_name: str, tool_args: dict[str, Any], registry: Any) -> bool:
+    def _auto_register_tool(
+        self, tool_name: str, tool_args: dict[str, Any], registry: Any
+    ) -> bool:
         """Auto-register a tool based on heuristics."""
         import asyncio
         import urllib.request
-        import uuid
 
         # GitHub proxy
         if (
@@ -202,8 +219,9 @@ class ToolCatalogService:
                 },
             }
 
-            async def _exec(a: dict[str, Any]) -> dict[str, Any]:
+            async def _exec_github(a: dict[str, Any]) -> dict[str, Any]:
                 from typing import cast
+
                 result = await registry.execute(
                     "fetch_github_raw",
                     {
@@ -215,14 +233,16 @@ class ToolCatalogService:
                 )
                 return cast(dict[str, Any], result)
 
-            registry.register_tool(contract=contract, executor=_exec)
-            self.register_dynamic_tool({
-                "tool_id": tool_name,
-                "description": contract["description"],
-                "action": "fetch_github_raw",
-                "input_schema": contract["input_schema"],
-                "output_schema": contract["output_schema"],
-            })
+            registry.register_tool(contract=contract, executor=_exec_github)
+            self.register_dynamic_tool(
+                {
+                    "tool_id": tool_name,
+                    "description": contract["description"],
+                    "action": "fetch_github_raw",
+                    "input_schema": contract["input_schema"],
+                    "output_schema": contract["output_schema"],
+                }
+            )
             return True
 
         # URL fetcher
@@ -250,7 +270,7 @@ class ToolCatalogService:
                 },
             }
 
-            async def _exec(a: dict[str, Any]) -> dict[str, Any]:
+            async def _exec_url(a: dict[str, Any]) -> dict[str, Any]:
                 url = a.get("url")
                 if not isinstance(url, str) or not url:
                     return {"error": "missing url"}
@@ -271,14 +291,16 @@ class ToolCatalogService:
 
                 return await asyncio.to_thread(_do_fetch)
 
-            registry.register_tool(contract=contract, executor=_exec)
-            self.register_dynamic_tool({
-                "tool_id": tool_name,
-                "description": contract["description"],
-                "action": "fetch_url_text",
-                "input_schema": contract["input_schema"],
-                "output_schema": contract["output_schema"],
-            })
+            registry.register_tool(contract=contract, executor=_exec_url)
+            self.register_dynamic_tool(
+                {
+                    "tool_id": tool_name,
+                    "description": contract["description"],
+                    "action": "fetch_url_text",
+                    "input_schema": contract["input_schema"],
+                    "output_schema": contract["output_schema"],
+                }
+            )
             return True
 
         # Fallback planning tool
@@ -291,13 +313,11 @@ class ToolCatalogService:
             },
             "output_schema": {
                 "type": "object",
-                "properties": {
-                    "steps": {"type": "array", "items": {"type": "string"}}
-                },
+                "properties": {"steps": {"type": "array", "items": {"type": "string"}}},
             },
         }
 
-        async def _exec(a: dict[str, Any]) -> dict[str, Any]:
+        async def _exec_plan(a: dict[str, Any]) -> dict[str, Any]:
             t = (a.get("task") or "unknown task").strip()
             return {
                 "steps": [
@@ -307,12 +327,14 @@ class ToolCatalogService:
                 ]
             }
 
-        registry.register_tool(contract=contract, executor=_exec)
-        self.register_dynamic_tool({
-            "tool_id": tool_name,
-            "description": contract["description"],
-            "action": "echo_plan",
-            "input_schema": contract["input_schema"],
-            "output_schema": contract["output_schema"],
-        })
+        registry.register_tool(contract=contract, executor=_exec_plan)
+        self.register_dynamic_tool(
+            {
+                "tool_id": tool_name,
+                "description": contract["description"],
+                "action": "echo_plan",
+                "input_schema": contract["input_schema"],
+                "output_schema": contract["output_schema"],
+            }
+        )
         return True
