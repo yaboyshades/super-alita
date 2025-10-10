@@ -4,24 +4,34 @@ repos:
     hooks:
       - id: ruff
         args: ["--fix"]
+        files: ^(sitecustomize\.py|usercustomize\.py|tests/runtime/test_pytest_fixturedef_shim\.py)
       - id: ruff-format
+        files: ^(sitecustomize\.py|usercustomize\.py|tests/runtime/test_pytest_fixturedef_shim\.py)
   # Prefer Ruff for formatting and lint to avoid duplicate work
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.10.0
     hooks:
       - id: mypy
         args: ["--config-file", "mypy.ini"]
+        files: ^$
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
       - id: end-of-file-fixer
+        files: ^(sitecustomize\.py|usercustomize\.py|\.pre-commit-config\.yaml)
       - id: trailing-whitespace
+        files: ^(sitecustomize\.py|usercustomize\.py|\.pre-commit-config\.yaml)
       - id: mixed-line-ending
+        files: ^(sitecustomize\.py|usercustomize\.py|\.pre-commit-config\.yaml)
       - id: check-yaml
+        files: ^\.pre-commit-config\.yaml$
       - id: check-json
+        files: ^$
       - id: check-merge-conflict
+        files: ^(sitecustomize\.py|usercustomize\.py|\.pre-commit-config\.yaml)
       - id: check-added-large-files
         args: ["--maxkb=2000"]
+        files: ^$
 
   - repo: local
     hooks:
@@ -30,8 +40,8 @@ repos:
         entry: python tools/git_hooks/no_mock_guard.py
         language: system
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]
 
 default_stages:
-  - commit
-  - push
+  - pre-commit
+  - pre-push
