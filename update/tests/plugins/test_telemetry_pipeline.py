@@ -1,12 +1,17 @@
 """Tests for telemetry pipeline"""
 
+from typing import Any
+from unittest.mock import MagicMock
+
 import pytest
 
-from src.plugins.telemetry_pipeline.orchestrator import TelemetryPipelineOrchestrator
+from src.plugins.telemetry_pipeline.orchestrator import (
+    TelemetryPipelineOrchestrator,
+)
 
 
 @pytest.fixture
-def sample_telemetry():
+def sample_telemetry() -> list[dict[str, Any]]:
     return [
         {
             "id": "E001",
@@ -28,11 +33,13 @@ def sample_telemetry():
     ]
 
 
-async def test_pipeline_end_to_end(sample_telemetry):
+async def test_pipeline_end_to_end(
+    sample_telemetry: list[dict[str, Any]]
+) -> None:
     """Test full pipeline execution"""
     # Mock dependencies
-    mock_registry = MockAbilityRegistry()
-    mock_llm = MockLLMProvider()
+    mock_registry = MagicMock()  # Mock AbilityRegistry
+    mock_llm = MagicMock()  # Mock LLMProvider
 
     orchestrator = TelemetryPipelineOrchestrator(mock_registry, mock_llm)
 

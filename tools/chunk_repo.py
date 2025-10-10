@@ -158,7 +158,9 @@ def write_chunks(
             continue
 
         output_dir.mkdir(parents=True, exist_ok=True)
-        chunk_path.write_text("\n".join(content_lines) + "\n", encoding="utf-8")
+        chunk_path.write_text(
+            "\n".join(content_lines) + "\n", encoding="utf-8"
+        )
 
     return written
 

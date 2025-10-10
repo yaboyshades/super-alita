@@ -46,7 +46,9 @@ def _headers() -> dict[str, str]:
     headers: dict[str, str] = {"Content-Type": "application/json"}
     cfg = load_config()
     key = os.getenv("ALITA_API_KEY", cfg.get("api_key", "")).strip()
-    header_name = os.getenv("ALITA_API_HEADER", cfg.get("api_header", "Authorization"))
+    header_name = os.getenv(
+        "ALITA_API_HEADER", cfg.get("api_header", "Authorization")
+    )
     if key:
         # Use Bearer convention
         headers[header_name] = (
@@ -55,8 +57,12 @@ def _headers() -> dict[str, str]:
     return headers
 
 
-def stream_sse(url: str, json_body: dict[str, Any]) -> Iterator[dict[str, Any]]:
-    with requests.post(url, json=json_body, headers=_headers(), stream=True) as r:
+def stream_sse(
+    url: str, json_body: dict[str, Any]
+) -> Iterator[dict[str, Any]]:
+    with requests.post(
+        url, json=json_body, headers=_headers(), stream=True
+    ) as r:
         r.raise_for_status()
         current_event: str | None = None
         for line in r.iter_lines(decode_unicode=True):
@@ -108,7 +114,11 @@ def cmd_query(args: argparse.Namespace) -> int:
                 if isinstance(payload, dict):
                     ev = payload.get("__event")
                     # On start frame, show rate-limit if available
-                    if not printed_header and ev == "start" and args.show_metadata:
+                    if (
+                        not printed_header
+                        and ev == "start"
+                        and args.show_metadata
+                    ):
                         rl = payload.get("rate_limit") or {}
                         if rl:
                             print(
@@ -146,12 +156,18 @@ def cmd_query(args: argparse.Namespace) -> int:
                         table.add_row("Session", data.get("session", ""))
                         table.add_row("Mode", data.get("mode", ""))
                         table.add_row("Model", model.get("model", "unknown"))
-                        table.add_row("Provider", model.get("provider", "unknown"))
+                        table.add_row(
+                            "Provider", model.get("provider", "unknown")
+                        )
                         rl = data.get("rate_limit") or {}
                         if rl:
                             table.add_row("RL Limit", str(rl.get("limit", "")))
-                            table.add_row("RL Remaining", str(rl.get("remaining", "")))
-                            table.add_row("RL Reset In", str(rl.get("reset_in", "")))
+                            table.add_row(
+                                "RL Remaining", str(rl.get("remaining", ""))
+                            )
+                            table.add_row(
+                                "RL Reset In", str(rl.get("reset_in", ""))
+                            )
                     console.print(table)
                 except Exception:
                     print(data.get("answer", ""))
@@ -181,8 +197,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Reasoning mode (advisory)",
     )
     q.add_argument("--session", default=None, help="Session ID for context")
-    q.add_argument("--stream", action="store_true", help="Stream response via SSE")
-    q.add_argument("--max-tokens", type=int, default=None, help="Token cap (advisory)")
+    q.add_argument(
+        "--stream", action="store_true", help="Stream response via SSE"
+    )
+    q.add_argument(
+        "--max-tokens", type=int, default=None, help="Token cap (advisory)"
+    )
     q.add_argument(
         "--output",
         choices=["plain", "json", "rich"],
@@ -224,9 +244,13 @@ def main(argv: list[str] | None = None) -> int:
     k = sub.add_parser("keys", help="Manage API keys")
     ksub = k.add_subparsers(dest="action", required=True)
 
-    kc = ksub.add_parser("create", help="Create a new API key (admin or open reg)")
+    kc = ksub.add_parser(
+        "create", help="Create a new API key (admin or open reg)"
+    )
     kc.add_argument("owner", help="Owner email or id")
-    kc.add_argument("--ttl-hours", type=int, default=None, help="Key TTL in hours")
+    kc.add_argument(
+        "--ttl-hours", type=int, default=None, help="Key TTL in hours"
+    )
     kc.add_argument(
         "--admin-key",
         default=None,
@@ -247,7 +271,9 @@ def main(argv: list[str] | None = None) -> int:
         )
         if admin:
             headers[
-                os.getenv("ALITA_API_HEADER", cfg.get("api_header", "Authorization"))
+                os.getenv(
+                    "ALITA_API_HEADER", cfg.get("api_header", "Authorization")
+                )
             ] = f"Bearer {admin}"
         r = requests.post(
             url,
@@ -295,7 +321,9 @@ def main(argv: list[str] | None = None) -> int:
         )
         if admin:
             headers[
-                os.getenv("ALITA_API_HEADER", cfg.get("api_header", "Authorization"))
+                os.getenv(
+                    "ALITA_API_HEADER", cfg.get("api_header", "Authorization")
+                )
             ] = f"Bearer {admin}"
         payload: dict[str, Any] = {}
         if args.key:
@@ -341,7 +369,9 @@ def main(argv: list[str] | None = None) -> int:
         )
         if admin:
             headers[
-                os.getenv("ALITA_API_HEADER", cfg.get("api_header", "Authorization"))
+                os.getenv(
+                    "ALITA_API_HEADER", cfg.get("api_header", "Authorization")
+                )
             ] = f"Bearer {admin}"
         r = requests.get(url, headers=headers, timeout=30)
         r.raise_for_status()

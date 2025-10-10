@@ -72,7 +72,9 @@ async def run_check(repo_root: Path, telemetry_file: Path) -> dict[str, Any]:
             {},
         ),
         "missing_docstrings_result": (
-            missing if isinstance(missing, dict) else {"_type": type(missing).__name__}
+            missing
+            if isinstance(missing, dict)
+            else {"_type": type(missing).__name__}
         ),
     }
 
@@ -81,11 +83,14 @@ def main() -> int:
     ap = argparse.ArgumentParser(
         description="Validate MCP wrapper loads and tools execute with telemetry"
     )
-    ap.add_argument("--repo-root", default=str(Path(__file__).resolve().parents[1]))
+    ap.add_argument(
+        "--repo-root", default=str(Path(__file__).resolve().parents[1])
+    )
     ap.add_argument(
         "--telemetry",
         default=str(
-            Path(__file__).resolve().parents[1] / "logs/mcp_check_telemetry.jsonl"
+            Path(__file__).resolve().parents[1]
+            / "logs/mcp_check_telemetry.jsonl"
         ),
     )
     args = ap.parse_args()

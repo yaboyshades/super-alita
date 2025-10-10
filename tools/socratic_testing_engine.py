@@ -61,7 +61,7 @@ class SocraticTestingEngine:
         sections: dict[str, dict[str, Any]] = {}
         current = "ROOT"
         buf: list[str] = []
-        for idx, line in enumerate(lines, start=1):
+        for _idx, line in enumerate(lines, start=1):
             if re.match(r"^#{1,6}\s+", line):
                 # save previous
                 if buf:
@@ -96,24 +96,36 @@ class SocraticTestingEngine:
 
     def _scan_acceptance(self, text: str) -> dict[str, Any]:
         # Look for Given/When/Then patterns
-        gwt = re.findall(r"Given .*? when .*? then .*?", text, flags=re.IGNORECASE | re.DOTALL)
+        gwt = re.findall(
+            r"Given .*? when .*? then .*?",
+            text,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
         return {"gwt_count": len(gwt)}
 
     def _scan_edge_cases(self, text: str) -> list[str]:
         hints: list[str] = []
         # Explicitly missing bounds phrasing
-        if re.search(r"\bno\s+maximum\s+(size|length|limit)\b", text, re.IGNORECASE) or re.search(
+        if re.search(
+            r"\bno\s+maximum\s+(size|length|limit)\b", text, re.IGNORECASE
+        ) or re.search(
             r"\b(without\s+(limit|bounds?)|unbounded)\b", text, re.IGNORECASE
         ):
-            hints.append("Inputs described as unbounded or without maximum limits")
+            hints.append(
+                "Inputs described as unbounded or without maximum limits"
+            )
         # Generic error mention without enumerated types
         if re.search(r"error", text, re.IGNORECASE) and not re.search(
             r"specific error types|error codes", text, re.IGNORECASE
         ):
-            hints.append("Errors referenced without enumerating specific types/codes")
+            hints.append(
+                "Errors referenced without enumerating specific types/codes"
+            )
         return hints
 
-    def challenge_spec(self, spec_content: str, *, spec_file: str | None = None) -> dict[str, Any]:
+    def challenge_spec(
+        self, spec_content: str, *, spec_file: str | None = None
+    ) -> dict[str, Any]:
         parsed = self._parse_spec(spec_content)
         lines: list[str] = parsed["__lines__"]["content"]
 
@@ -166,9 +178,13 @@ class SocraticTestingEngine:
             "article_iii_simplicity_gate": {"status": "unknown", "notes": ""},
         }
         # Heuristics
-        compliance["article_ii_test_first"]["status"] = "violation" if acc["gwt_count"] == 0 else "compliant"
+        compliance["article_ii_test_first"]["status"] = (
+            "violation" if acc["gwt_count"] == 0 else "compliant"
+        )
         compliance["article_ii_test_first"]["notes"] = (
-            "No G/W/T scenarios found" if acc["gwt_count"] == 0 else "Has G/W/T scenarios"
+            "No G/W/T scenarios found"
+            if acc["gwt_count"] == 0
+            else "Has G/W/T scenarios"
         )
 
         # Score (naive): fewer findings → higher readiness
@@ -179,7 +195,9 @@ class SocraticTestingEngine:
         report = {
             "analysis_metadata": {
                 "spec_file": spec_file or "inline",
-                "analysis_timestamp": _dt.datetime.now(_dt.UTC).replace(microsecond=0).isoformat(),
+                "analysis_timestamp": _dt.datetime.now(_dt.UTC)
+                .replace(microsecond=0)
+                .isoformat(),
                 "engine_version": ENGINE_VERSION,
                 "spec_readiness_score": readiness,
             },
@@ -187,7 +205,9 @@ class SocraticTestingEngine:
             "constitutional_compliance": compliance,
             "readiness_assessment": {
                 "ready_for_implementation": readiness >= 0.9 and not findings,
-                "blocking_issues": sum(1 for f in findings if f.severity == "high"),
+                "blocking_issues": sum(
+                    1 for f in findings if f.severity == "high"
+                ),
                 "recommended_actions": "Address high-severity ambiguities and add concrete acceptance scenarios",
             },
         }
@@ -195,7 +215,9 @@ class SocraticTestingEngine:
 
     def generate_report(self, findings: dict[str, Any]) -> str:
         if yaml is None:  # pragma: no cover
-            raise RuntimeError("PyYAML not available; cannot generate YAML report")
+            raise RuntimeError(
+                "PyYAML not available; cannot generate YAML report"
+            )
         return yaml.safe_dump(findings, sort_keys=False, allow_unicode=True)
 
     def generate_report_json(self, findings: dict[str, Any]) -> str:
@@ -211,9 +233,17 @@ def _read_spec(path: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Socratic Testing Engine (STE) v1.0")
-    parser.add_argument("--spec", required=True, help="Path to markdown specification file or '-' for stdin")
-    parser.add_argument("--output", help="Path to write report (default: stdout)")
+    parser = argparse.ArgumentParser(
+        description="Socratic Testing Engine (STE) v1.0"
+    )
+    parser.add_argument(
+        "--spec",
+        required=True,
+        help="Path to markdown specification file or '-' for stdin",
+    )
+    parser.add_argument(
+        "--output", help="Path to write report (default: stdout)"
+    )
     parser.add_argument(
         "--format",
         choices=["yaml", "json"],
@@ -230,7 +260,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec_text = _read_spec(args.spec)
         engine = SocraticTestingEngine()
-        report = engine.challenge_spec(spec_text, spec_file=None if args.spec == '-' else args.spec)
+        report = engine.challenge_spec(
+            spec_text, spec_file=None if args.spec == "-" else args.spec
+        )
         fmt = "json" if args.json else args.format
         payload = (
             engine.generate_report_json(report)

@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """LangChain adapter utilities for Super Alita tools."""
+
+from __future__ import annotations
 
 import inspect
 from typing import Any

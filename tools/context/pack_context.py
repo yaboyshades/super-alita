@@ -46,7 +46,7 @@ def pull_sections(p: Path) -> str:
         if m is not None:
             # include header ± ~800 chars around it
             start = max(0, m.start() - 200)
-            parts.append(t[start: start + 1000])
+            parts.append(t[start : start + 1000])
     return f"\n\n<!-- file:{p} -->\n" + "\n\n".join(parts).strip()
 
 

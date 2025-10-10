@@ -72,7 +72,10 @@ def main() -> None:
         help="Layers offloaded to GPU (mapped to num_gpu)",
     )
     parser.add_argument(
-        "--num-thread", type=int, default=None, help="CPU threads for CPU-bound layers"
+        "--num-thread",
+        type=int,
+        default=None,
+        help="CPU threads for CPU-bound layers",
     )
     parser.add_argument(
         "--host", default="http://localhost:11434", help="Ollama host URL"

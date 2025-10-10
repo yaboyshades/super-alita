@@ -30,7 +30,9 @@ def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Super-Alita Unified Launcher")
     p.add_argument("--host", default="0.0.0.0")
     p.add_argument("--port", type=int, default=___port___)
-    p.add_argument("--mode", choices=["shadow", "act", "batch"], default="___mode___")
+    p.add_argument(
+        "--mode", choices=["shadow", "act", "batch"], default="___mode___"
+    )
     p.add_argument("--model", default="___modelName___")
     p.add_argument("--log-level", default="___logLevel___")
     p.add_argument("--reload", action="store_true")
@@ -75,4 +77,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

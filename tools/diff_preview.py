@@ -56,7 +56,11 @@ def preview(files: Iterable[str]) -> int:
             print(new)
             continue
         diff = difflib.unified_diff(
-            old.splitlines(), new.splitlines(), fromfile=f"HEAD:{p}", tofile=str(p), lineterm=""
+            old.splitlines(),
+            new.splitlines(),
+            fromfile=f"HEAD:{p}",
+            tofile=str(p),
+            lineterm="",
         )
         print("\n".join([*diff]) or f"\n(no changes) {p}")
     return rc
@@ -71,4 +75,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

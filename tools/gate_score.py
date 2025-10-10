@@ -53,8 +53,23 @@ def write_ledger(rows: list[dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
-def append_gate_log(log_id: str, req_id: str, score: int, status: str, notes: str, reviewer: str) -> None:
-    header = ["log_id", "timestamp", "req_id", "score", "status", "notes", "reviewer"]
+def append_gate_log(
+    log_id: str,
+    req_id: str,
+    score: int,
+    status: str,
+    notes: str,
+    reviewer: str,
+) -> None:
+    header = [
+        "log_id",
+        "timestamp",
+        "req_id",
+        "score",
+        "status",
+        "notes",
+        "reviewer",
+    ]
     rows_exist = GATE_LOG.exists() and GATE_LOG.stat().st_size > 0
     with GATE_LOG.open("a", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
@@ -87,13 +102,23 @@ def auto_score(req_id: str) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Gate scorer")
-    ap.add_argument("--req-id", required=True, help="Requirement ID, e.g., REQ-001")
-    ap.add_argument("--auto", action="store_true", help="Compute score heuristically")
+    ap.add_argument(
+        "--req-id", required=True, help="Requirement ID, e.g., REQ-001"
+    )
+    ap.add_argument(
+        "--auto", action="store_true", help="Compute score heuristically"
+    )
     ap.add_argument("--score", type=int, help="Override score (0-100)")
-    ap.add_argument("--status", choices=["pass", "fail"], help="Gate result status")
+    ap.add_argument(
+        "--status", choices=["pass", "fail"], help="Gate result status"
+    )
     ap.add_argument("--notes", default="", help="Notes to store in gate log")
     ap.add_argument("--reviewer", default="system", help="Reviewer name")
-    ap.add_argument("--update-ledger", action="store_true", help="Update ledger status on pass")
+    ap.add_argument(
+        "--update-ledger",
+        action="store_true",
+        help="Update ledger status on pass",
+    )
     args = ap.parse_args()
 
     if not LEDGER.exists():
@@ -101,10 +126,16 @@ def main() -> int:
         return 1
 
     # Choose score
-    score = args.score if args.score is not None else (auto_score(args.req_id) if args.auto else 60)
+    score = (
+        args.score
+        if args.score is not None
+        else (auto_score(args.req_id) if args.auto else 60)
+    )
     status = args.status or ("pass" if score >= 85 else "fail")
     log_id = f"LOG-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-    append_gate_log(log_id, args.req_id, score, status, args.notes, args.reviewer)
+    append_gate_log(
+        log_id, args.req_id, score, status, args.notes, args.reviewer
+    )
     print(f"📝 Gate logged: {log_id} score={score} status={status}")
 
     if args.update_ledger and status == "pass":
@@ -124,4 +155,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

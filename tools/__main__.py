@@ -52,7 +52,9 @@ def discover_tools() -> list[dict[str, Any]]:
                                 for tool in plugin_tools:
                                     if isinstance(tool, dict):
                                         # Add source plugin info
-                                        tool["source_plugin"] = m.name.split(".")[-1]
+                                        tool["source_plugin"] = m.name.split(
+                                            "."
+                                        )[-1]
                                         tools.append(tool)
                 except Exception:
                     # Skip plugins that can't be loaded
@@ -126,7 +128,9 @@ def format_text_output(tools: list[dict[str, Any]]) -> str:
                             param_summary.append(f"{p}*")
                         else:
                             param_summary.append(p)
-                    lines.append(f"   📋 Parameters: {', '.join(param_summary)}")
+                    lines.append(
+                        f"   📋 Parameters: {', '.join(param_summary)}"
+                    )
 
             lines.append("")
 
@@ -141,9 +145,14 @@ def format_json_output(tools: list[dict[str, Any]]) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Discover and list Super Alita tools")
+    parser = argparse.ArgumentParser(
+        description="Discover and list Super Alita tools"
+    )
     parser.add_argument(
-        "--format", choices=["text", "json"], default="text", help="Output format"
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format",
     )
     parser.add_argument("--category", help="Filter by category")
     parser.add_argument(

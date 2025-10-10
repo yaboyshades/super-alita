@@ -1,7 +1,5 @@
 """Telemetry Pipeline Plugin for Super Alita"""
 
-from typing import Any, Dict
-
 from src.core.abilities import AbilityRegistry
 from src.core.plugin_base import PluginBase
 

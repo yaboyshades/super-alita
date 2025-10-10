@@ -8,8 +8,10 @@ from src.core.abilities import Ability
 from src.core.abilities.decorators import tool
 
 # Shared system prefix for all abilities
-SYSTEM_PREFIX = """You are a cautious, loss-aware data reducer. Prefer precision over recall when token-limited.
-Never invent facts. Keep numeric values and identifiers. Preserve source ids in square brackets like [E123]."""
+SYSTEM_PREFIX = """You are a cautious, loss-aware data reducer.
+Prefer precision over recall when token-limited.
+Never invent facts. Keep numeric values and identifiers.
+Preserve source ids in square brackets like [E123]."""
 
 
 @dataclass
@@ -38,7 +40,9 @@ class IngestNormalizeAbility(Ability):
         )
 
     @tool
-    async def execute(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    async def execute(
+        self, items: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Normalize telemetry items to standard schema"""
         normalized = []
         for idx, item in enumerate(items):
@@ -77,8 +81,10 @@ class RelevanceGateAbility(Ability):
         )
         self.prompt_template = f"""{SYSTEM_PREFIX}
 
-From the telemetry items, keep only those that could change the outcome of the current task.
-Discard routine noise. For each kept item, add a 0-1 relevance score.
+From the telemetry items, keep only those that could change
+the outcome of the current task.
+Discard routine noise. For each kept item, add a 0-1 relevance
+score.
 Output JSON lines."""
 
     @tool
@@ -94,7 +100,9 @@ Task: {task}
 Items to evaluate:
 {json.dumps(items, indent=2)}
 
-Output NDJSON with format: {{"id":"E123","keep":true,"relevance":0.86,"reason":"affects model latency"}}
+Output NDJSON with format:
+{{"id":"E123","keep":true,"relevance":0.86,
+"reason":"affects model latency"}}
 """
 
         response = await llm_provider.generate(prompt)
@@ -211,7 +219,8 @@ class PruneAbility(Ability):
         # Sort clusters by total rank of members
         for cluster in clusters:
             cluster["total_rank"] = sum(
-                member.get("rank_score", 0) for member in cluster.get("members", [])
+                member.get("rank_score", 0)
+                for member in cluster.get("members", [])
             )
 
         clusters.sort(key=lambda x: x.get("total_rank", 0), reverse=True)

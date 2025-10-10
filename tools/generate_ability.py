@@ -35,7 +35,9 @@ def validate_ability_name(name: str) -> str:
     clean = re.sub(r"[^a-zA-Z0-9_]", "_", name)
     clean = re.sub(r"_+", "_", clean).strip("_")
     if not clean or not re.match(r"^[a-zA-Z]", clean):
-        raise ValueError("Ability name must start with a letter and be non-empty")
+        raise ValueError(
+            "Ability name must start with a letter and be non-empty"
+        )
     return to_snake_case(clean)
 
 
@@ -45,7 +47,9 @@ def substitute(content: str, vars: dict[str, str]) -> str:
     return content
 
 
-def create_from_template(template_file: Path, output_file: Path, variables: dict[str, str]) -> Path:
+def create_from_template(
+    template_file: Path, output_file: Path, variables: dict[str, str]
+) -> Path:
     if not template_file.exists():
         raise FileNotFoundError(f"Template not found: {template_file}")
     text = template_file.read_text(encoding="utf-8")
@@ -56,7 +60,9 @@ def create_from_template(template_file: Path, output_file: Path, variables: dict
     return output_file
 
 
-def update_abilities_init(ability_name: str, class_name: str, abilities_dir: Path) -> None:
+def update_abilities_init(
+    ability_name: str, class_name: str, abilities_dir: Path
+) -> None:
     init_file = abilities_dir / "__init__.py"
     if init_file.exists():
         content = init_file.read_text(encoding="utf-8")
@@ -81,16 +87,24 @@ def update_abilities_init(ability_name: str, class_name: str, abilities_dir: Pat
             inner = m.group(1)
             entry = f'"{class_name}Ability"'
             if entry not in inner:
-                new_inner = (inner.rstrip() + f",\n    {entry}") if inner.strip() else f"\n    {entry}\n"
-                content = content.replace(m.group(0), f"__all__ = [{new_inner}]")
+                new_inner = (
+                    (inner.rstrip() + f",\n    {entry}")
+                    if inner.strip()
+                    else f"\n    {entry}\n"
+                )
+                content = content.replace(
+                    m.group(0), f"__all__ = [{new_inner}]"
+                )
     else:
-        content += f"\n\n__all__ = [\n    \"{class_name}Ability\"\n]\n"
+        content += f'\n\n__all__ = [\n    "{class_name}Ability"\n]\n'
 
     init_file.write_text(content, encoding="utf-8")
     print(f"✅ Updated: {init_file}")
 
 
-def generate_registration_instructions(ability_name: str, class_name: str) -> None:
+def generate_registration_instructions(
+    ability_name: str, class_name: str
+) -> None:
     print(
         f"""
 📋 ABILITY REGISTRATION INSTRUCTIONS
@@ -131,18 +145,30 @@ def main() -> None:
             "  python tools/generate_ability.py --name web_scraper --mode test-only\n"
         ),
     )
-    parser.add_argument("--name", required=True, help="Ability name (snake_case or CamelCase)")
-    parser.add_argument("--description", default="A new Super-Alita ability", help="Ability description")
-    parser.add_argument("--author", default="Super-Alita Developer", help="Author name")
+    parser.add_argument(
+        "--name", required=True, help="Ability name (snake_case or CamelCase)"
+    )
+    parser.add_argument(
+        "--description",
+        default="A new Super-Alita ability",
+        help="Ability description",
+    )
+    parser.add_argument(
+        "--author", default="Super-Alita Developer", help="Author name"
+    )
     parser.add_argument("--version", default="1.0.0", help="Initial version")
-    parser.add_argument("--input-field", default="input_data", help="Primary input field name")
+    parser.add_argument(
+        "--input-field", default="input_data", help="Primary input field name"
+    )
     parser.add_argument(
         "--mode",
         choices=["both", "test-only", "implementation-only"],
         default="both",
         help="Generation mode",
     )
-    parser.add_argument("--output-dir", help="Output base directory (defaults to project root)")
+    parser.add_argument(
+        "--output-dir", help="Output base directory (defaults to project root)"
+    )
 
     args = parser.parse_args()
 
@@ -159,7 +185,11 @@ def main() -> None:
         "inputDescription": f"Input data for {to_title_case(ability_name)}",
     }
 
-    base_dir = Path(args.output_dir) if args.output_dir else Path(__file__).parent.parent
+    base_dir = (
+        Path(args.output_dir)
+        if args.output_dir
+        else Path(__file__).parent.parent
+    )
     template_dir = base_dir / "templates"
     abilities_dir = base_dir / "src" / "abilities"
     tests_dir = base_dir / "tests" / "abilities"
@@ -169,12 +199,20 @@ def main() -> None:
     print(f"   Mode: {args.mode}")
 
     if args.mode in ("both", "test-only"):
-        test_tmpl = template_dir / "ability_test_template" / "test____abilityName____ability.py"
+        test_tmpl = (
+            template_dir
+            / "ability_test_template"
+            / "test____abilityName____ability.py"
+        )
         test_out = tests_dir / f"test_{ability_name}_ability.py"
         create_from_template(test_tmpl, test_out, variables)
 
     if args.mode in ("both", "implementation-only"):
-        impl_tmpl = template_dir / "ability_implementation_template" / "___abilityName____ability.py"
+        impl_tmpl = (
+            template_dir
+            / "ability_implementation_template"
+            / "___abilityName____ability.py"
+        )
         impl_out = abilities_dir / f"{ability_name}_ability.py"
         create_from_template(impl_tmpl, impl_out, variables)
         update_abilities_init(ability_name, class_name, abilities_dir)
@@ -193,4 +231,3 @@ if __name__ == "__main__":
     except Exception as e:  # pragma: no cover
         print(f"❌ Error: {e}")
         sys.exit(1)
-

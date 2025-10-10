@@ -21,7 +21,9 @@ def _enabled() -> bool:
 
 
 def _ensure_sys_path() -> None:
-    root = Path(__file__).resolve().parents[2]  # demos/<name>/main.py -> repo root
+    root = (
+        Path(__file__).resolve().parents[2]
+    )  # demos/<name>/main.py -> repo root
     src = root / "src"
     for p in (str(root), str(src)):
         if p not in sys.path:
@@ -52,4 +54,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

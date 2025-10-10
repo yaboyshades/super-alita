@@ -88,7 +88,9 @@ class SuperAlitaOrchestrator:
             "src/abilities/enhanced_consensus_ability.py",
             "validate_deployment.py",
         ]
-        missing = [p for p in required_files if not (self.base_dir / p).exists()]
+        missing = [
+            p for p in required_files if not (self.base_dir / p).exists()
+        ]
         if missing:
             print("❌ Required files missing:")
             for m in missing:
@@ -104,7 +106,9 @@ class SuperAlitaOrchestrator:
         """Run a command with repo proc util when available; returns rc, out, err."""
         if proc is not None:
             try:
-                out = proc.run(argv, timeout=float(timeout) if timeout else None)
+                out = proc.run(
+                    argv, timeout=float(timeout) if timeout else None
+                )
                 return 0, out, ""
             except Exception as e:  # includes ProcError
                 # Best-effort extract stdout/stderr from ProcError
@@ -139,7 +143,13 @@ class SuperAlitaOrchestrator:
                     print(f"❌ uv install failed: {err or out}")
                     return False
                 if has_req_test:
-                    args = [uv, "pip", "install", "-r", "requirements-test.txt"]
+                    args = [
+                        uv,
+                        "pip",
+                        "install",
+                        "-r",
+                        "requirements-test.txt",
+                    ]
                     if has_constraints:
                         args.extend(["-c", "constraints.txt"])
                     rc, out, err = self._run(args, timeout=self.timeout)
@@ -148,7 +158,14 @@ class SuperAlitaOrchestrator:
                         return False
             else:
                 python_exe = sys.executable
-                args = [python_exe, "-m", "pip", "install", "-r", "requirements.txt"]
+                args = [
+                    python_exe,
+                    "-m",
+                    "pip",
+                    "install",
+                    "-r",
+                    "requirements.txt",
+                ]
                 if has_constraints:
                     args.extend(["-c", "constraints.txt"])
                 rc, out, err = self._run(args, timeout=self.timeout)
@@ -196,7 +213,7 @@ class SuperAlitaOrchestrator:
                 text=True,
             )
             self.processes.append(process)
-            for i in range(30):
+            for _i in range(30):
                 try:
                     r = requests.get(f"{base}/api/tags", timeout=2)
                     if r.status_code == 200:
@@ -227,7 +244,9 @@ class SuperAlitaOrchestrator:
                 if "gpt-oss:20b" in (m.get("name", "").lower()):
                     print("✅ GPT-OSS:20B model found")
                     return True
-            print("📥 GPT-OSS:20B not found, pulling model (this can take time)...")
+            print(
+                "📥 GPT-OSS:20B not found, pulling model (this can take time)..."
+            )
             pull = subprocess.Popen(
                 ["ollama", "pull", "gpt-oss:20b"],
                 stdout=subprocess.PIPE,
@@ -316,7 +335,9 @@ class SuperAlitaOrchestrator:
             print("   Waiting for Super Alita startup...")
             for i in range(60):
                 try:
-                    r = requests.get("http://127.0.0.1:8080/healthz", timeout=2)
+                    r = requests.get(
+                        "http://127.0.0.1:8080/healthz", timeout=2
+                    )
                     if r.status_code == 200:
                         print("✅ Super Alita started! Health: ok")
                         return True
@@ -333,11 +354,15 @@ class SuperAlitaOrchestrator:
 
     def validate_system(self) -> bool:
         print("🔍 Running System Validation...")
-        rc, out, err = self._run([sys.executable, "validate_deployment.py"], timeout=60)
+        rc, out, err = self._run(
+            [sys.executable, "validate_deployment.py"], timeout=60
+        )
         if rc == 0:
             print("✅ System validation passed")
             if "ALL TESTS PASSED" in out.upper():
-                print("🎉 ALL TESTS PASSED - Super Alita is ready for deployment!")
+                print(
+                    "🎉 ALL TESTS PASSED - Super Alita is ready for deployment!"
+                )
             return True
         print("❌ System validation failed:")
         if out:
@@ -395,8 +420,12 @@ class SuperAlitaOrchestrator:
         print("  • Health: http://127.0.0.1:8080/healthz")
         print("  • Tools: http://127.0.0.1:8080/tools/catalog")
         print("  • SSE Chat: POST http://127.0.0.1:8080/v1/chat/stream (SSE)")
-        print("  • Tool Chat: POST http://127.0.0.1:8080/tools/reug_start_turn")
-        print("  • Stream Next: POST http://127.0.0.1:8080/tools/reug_stream_next")
+        print(
+            "  • Tool Chat: POST http://127.0.0.1:8080/tools/reug_start_turn"
+        )
+        print(
+            "  • Stream Next: POST http://127.0.0.1:8080/tools/reug_stream_next"
+        )
         print("\nDirect model access:")
         print("  • Ollama: http://127.0.0.1:11434/v1/chat/completions")
         print("\nType 'exit' to shutdown all services")
@@ -404,7 +433,9 @@ class SuperAlitaOrchestrator:
 
         while True:
             try:
-                user_input = input("\n💬 Enter your message (or 'exit'): ").strip()
+                user_input = input(
+                    "\n💬 Enter your message (or 'exit'): "
+                ).strip()
                 if user_input.lower() in {"exit", "quit", "bye"}:
                     print("👋 Shutting down all services...")
                     break
@@ -486,7 +517,9 @@ class SuperAlitaOrchestrator:
 class contextlib_suppress:
     """Small helper to avoid importing contextlib for tiny suppression needs."""
 
-    def __init__(self, *exceptions: type[BaseException]) -> None:  # pragma: no cover
+    def __init__(
+        self, *exceptions: type[BaseException]
+    ) -> None:  # pragma: no cover
         self.exceptions = exceptions or (Exception,)
 
     def __enter__(self) -> None:  # pragma: no cover

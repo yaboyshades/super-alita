@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
-"""Quick test of telemetry pipeline"""
+"""Example test of telemetry pipeline.
+
+Note: This is example code. To run, you need to:
+1. Create mock registry and llm objects
+2. Or integrate with actual application services
+"""
 
 import asyncio
+from typing import Any
 
-from src.plugins.telemetry_pipeline.orchestrator import TelemetryPipelineOrchestrator
+from src.plugins.telemetry_pipeline.orchestrator import (
+    TelemetryPipelineOrchestrator,
+)
 
 
-async def main():
+async def main() -> None:
+    """Example telemetry pipeline test."""
     # Sample telemetry
     telemetry = [
         {
@@ -17,6 +26,10 @@ async def main():
             "latency_ms": 1800,
         }
     ]
+
+    # Example: Create mock objects (replace with actual implementation)
+    registry: Any = None  # TODO: Replace with actual AbilityRegistry
+    llm: Any = None  # TODO: Replace with actual LLMProvider
 
     # Process through pipeline
     orchestrator = TelemetryPipelineOrchestrator(registry, llm)

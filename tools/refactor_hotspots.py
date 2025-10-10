@@ -44,6 +44,7 @@ try:
         sys.path.insert(0, str(mangle_path))
     import super_alita_pb2  # type: ignore
     import super_alita_pb2_grpc  # type: ignore
+
     MANGLE_AVAILABLE = True
 except Exception:  # pragma: no cover
     super_alita_pb2 = None  # type: ignore
@@ -87,7 +88,9 @@ class MangleReasoningAbility:
 
     def _init_mangle(self, cfg_path: str) -> None:
         if Path(cfg_path).exists() and yaml is not None:
-            self.cfg = yaml.safe_load(Path(cfg_path).read_text(encoding="utf-8"))
+            self.cfg = yaml.safe_load(
+                Path(cfg_path).read_text(encoding="utf-8")
+            )
         if self.cfg is None:
             self.cfg = {
                 "grpc": {"host": "localhost", "port": 50051},
@@ -106,24 +109,45 @@ class MangleReasoningAbility:
             req = super_alita_pb2.SemanticSearchRequest(
                 query=query,
                 scope=str(scope),
-                min_confidence=self.cfg.get("model", {}).get("confidence_threshold", 0.70),
+                min_confidence=self.cfg.get("model", {}).get(
+                    "confidence_threshold", 0.70
+                ),
             )
             resp = self.stub.SemanticSearch(req)
             return [
-                {"file": r.file, "line": r.line, "snippet": r.snippet, "score": r.confidence}
+                {
+                    "file": r.file,
+                    "line": r.line,
+                    "snippet": r.snippet,
+                    "score": r.confidence,
+                }
                 for r in resp.results
             ]
         except Exception:
             return self._fallback_search(query, scope)
 
-    def _fallback_search(self, query: str, scope: Path) -> list[dict[str, Any]]:
+    def _fallback_search(
+        self, query: str, scope: Path
+    ) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
         terms = query.lower().split()
         for py in scope.rglob("*.py"):
             with contextlib.suppress(Exception):
-                for i, line in enumerate(py.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
+                for i, line in enumerate(
+                    py.read_text(
+                        encoding="utf-8", errors="ignore"
+                    ).splitlines(),
+                    1,
+                ):
                     if any(t in line.lower() for t in terms):
-                        results.append({"file": str(py), "line": i, "snippet": line.strip(), "score": 0.5})
+                        results.append(
+                            {
+                                "file": str(py),
+                                "line": i,
+                                "snippet": line.strip(),
+                                "score": 0.5,
+                            }
+                        )
         return results[:20]
 
 
@@ -180,7 +204,9 @@ class CodeAnalyzer:
         count += text.count(":\n    ")
         return min(1.0, count / 6.0)
 
-    def detect_duplicates(self, files: Iterable[Path]) -> list[RefactorOpportunity]:
+    def detect_duplicates(
+        self, files: Iterable[Path]
+    ) -> list[RefactorOpportunity]:
         seen: dict[str, Path] = {}
         ops: list[RefactorOpportunity] = []
         for f in files:
@@ -202,7 +228,9 @@ class CodeAnalyzer:
                     seen[key] = f
         return ops
 
-    def check_constitutional_compliance(self, file_path: Path) -> list[RefactorOpportunity]:
+    def check_constitutional_compliance(
+        self, file_path: Path
+    ) -> list[RefactorOpportunity]:
         with contextlib.suppress(Exception):
             text = file_path.read_text(encoding="utf-8", errors="ignore")
             ops: list[RefactorOpportunity] = []
@@ -217,7 +245,10 @@ class CodeAnalyzer:
                         estimated_effort="medium",
                     )
                 )
-            if re.search(r"class\s+\w*Ability\b", text) and "PluginInterface" not in text:
+            if (
+                re.search(r"class\s+\w*Ability\b", text)
+                and "PluginInterface" not in text
+            ):
                 ops.append(
                     RefactorOpportunity(
                         file_path=str(file_path),
@@ -233,13 +264,19 @@ class CodeAnalyzer:
 
 
 class PatternApplicator:
-    def apply_plugin_inheritance(self, class_name: str, file_path: Path) -> str:
+    def apply_plugin_inheritance(
+        self, class_name: str, file_path: Path
+    ) -> str:
         src = file_path.read_text(encoding="utf-8", errors="ignore")
         lines = src.splitlines()
-        import_stmt = "from src.plugins.plugin_interface import PluginInterface"
+        import_stmt = (
+            "from src.plugins.plugin_interface import PluginInterface"
+        )
         if not any(import_stmt in ln for ln in lines):
             lines.insert(0, import_stmt)
-        class_re = re.compile(rf"^(\s*)class\s+{re.escape(class_name)}(\s*\([^)]*\))?:", re.M)
+        class_re = re.compile(
+            rf"^(\s*)class\s+{re.escape(class_name)}(\s*\([^)]*\))?:", re.M
+        )
 
         def _repl(m: re.Match[str]) -> str:
             indent = m.group(1) or ""
@@ -248,7 +285,11 @@ class PatternApplicator:
                 return f"{indent}class {class_name}(PluginInterface):"
             if "PluginInterface" in parens:
                 return m.group(0)
-            new_parens = parens[:-1] + (", " if len(parens) > 1 else "(") + "PluginInterface)"
+            new_parens = (
+                parens[:-1]
+                + (", " if len(parens) > 1 else "(")
+                + "PluginInterface)"
+            )
             return f"{indent}class {class_name}{new_parens}:"
 
         return class_re.sub(_repl, "\n".join(lines))
@@ -273,14 +314,14 @@ class PatternApplicator:
             return code[: m.end()] + snippet + code[m.end() :]
         if "event_bus" not in code:
             code += "\n\n    # Event bus integration\n    event_bus = None\n"
-        code += (
-            "\n\n    async def initialize(self, event_bus):\n        self.event_bus = event_bus\n        if hasattr(event_bus, 'subscribe'):\n            await event_bus.subscribe('refactor_event', getattr(self, 'handle_event', lambda *_: None))\n        return True\n"
-        )
+        code += "\n\n    async def initialize(self, event_bus):\n        self.event_bus = event_bus\n        if hasattr(event_bus, 'subscribe'):\n            await event_bus.subscribe('refactor_event', getattr(self, 'handle_event', lambda *_: None))\n        return True\n"
         return code
 
 
 class RefactorExecutor:
-    def execute_plan(self, plan: Any, approval_callback: Callable[..., bool]) -> bool:
+    def execute_plan(
+        self, plan: Any, approval_callback: Callable[..., bool]
+    ) -> bool:
         approved = False
         for opp in getattr(plan, "opportunities", []) or []:
             if approval_callback(opp):
@@ -292,19 +333,29 @@ class RefactorExecutor:
         with contextlib.suppress(Exception):
             res = subprocess.run(cmd, capture_output=True, text=True)
             if res.returncode != 0:
-                res = subprocess.run(["python", "-m", "pytest", "-q"], capture_output=True, text=True)
+                res = subprocess.run(
+                    ["python", "-m", "pytest", "-q"],
+                    capture_output=True,
+                    text=True,
+                )
             return res.returncode == 0
         return False
 
     def rollback_changes(self, commit_hash: str) -> bool:
         with contextlib.suppress(Exception):
-            res = subprocess.run(["git", "reset", "--hard", commit_hash], capture_output=True, text=True)
+            res = subprocess.run(
+                ["git", "reset", "--hard", commit_hash],
+                capture_output=True,
+                text=True,
+            )
             return res.returncode == 0
         return False
 
 
 class AutonomousRefactoringAgent:
-    def __init__(self, project_path: Path, approval_mode: str | None = None) -> None:
+    def __init__(
+        self, project_path: Path, approval_mode: str | None = None
+    ) -> None:
         self.project_path = project_path
         self.approval_mode = approval_mode or "interactive"
         self.analyzer = CodeAnalyzer()
@@ -314,15 +365,19 @@ class AutonomousRefactoringAgent:
     def analyze_project(self) -> RefactorPlan:
         ops = self.analyzer.scan_directory(self.project_path)
         files = [op.file_path for op in ops]
-        order = sorted(list(dict.fromkeys(files)))
+        order = sorted(dict.fromkeys(files))
         # Prefer the test's RefactorPlan if running under tests
         try:
-            test_mod = sys.modules.get("tests.test_autonomous_refactoring_agent")
+            test_mod = sys.modules.get(
+                "tests.test_autonomous_refactoring_agent"
+            )
             if test_mod and hasattr(test_mod, "RefactorPlan"):
                 TestPlan = test_mod.RefactorPlan  # type: ignore[assignment]
                 return TestPlan(
                     opportunities=ops,
-                    execution_order=order if order else [str(self.project_path)],
+                    execution_order=(
+                        order if order else [str(self.project_path)]
+                    ),
                     rollback_strategy="git_reset",
                     test_requirements=["pytest -x"],
                 )
@@ -369,7 +424,9 @@ def mangle_is_available() -> bool:
 
 
 @lru_cache(maxsize=64)
-def mangle_semantic_search(query: str, scope: str = ".") -> list[dict[str, Any]]:
+def mangle_semantic_search(
+    query: str, scope: str = "."
+) -> list[dict[str, Any]]:
     with contextlib.suppress(Exception):
         ability = MangleReasoningAbility()
         return ability.semantic_search(query, Path(scope))
@@ -419,14 +476,24 @@ def _cli() -> int:
     parser = argparse.ArgumentParser(
         description="Autonomous Refactoring Agent - Hotspot Scanner"
     )
-    parser.add_argument("--scan", metavar="PATH", help="Scan path for refactor hotspots")
-    parser.add_argument("--output", metavar="FILE", help="Write JSON report to file")
-    parser.add_argument("--report", metavar="FILE", help="Read an existing report (reserved)")
     parser.add_argument(
-        "--semantic-only", action="store_true", help="Use only Mangle semantic analysis (no fallback)"
+        "--scan", metavar="PATH", help="Scan path for refactor hotspots"
     )
     parser.add_argument(
-        "--no-semantic", action="store_true", help="Skip Mangle semantic analysis (fallback only)"
+        "--output", metavar="FILE", help="Write JSON report to file"
+    )
+    parser.add_argument(
+        "--report", metavar="FILE", help="Read an existing report (reserved)"
+    )
+    parser.add_argument(
+        "--semantic-only",
+        action="store_true",
+        help="Use only Mangle semantic analysis (no fallback)",
+    )
+    parser.add_argument(
+        "--no-semantic",
+        action="store_true",
+        help="Skip Mangle semantic analysis (fallback only)",
     )
     args = parser.parse_args()
 
@@ -434,7 +501,9 @@ def _cli() -> int:
         root = Path(args.scan)
         analyzer = CodeAnalyzer()
         if args.semantic_only and not mangle_is_available():
-            print("❌ Error: --semantic-only specified but Mangle is not available")
+            print(
+                "❌ Error: --semantic-only specified but Mangle is not available"
+            )
             return 1
         if args.no_semantic and hasattr(analyzer, "mangle"):
             analyzer.mangle = None
@@ -475,4 +544,3 @@ def _cli() -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(_cli())
-

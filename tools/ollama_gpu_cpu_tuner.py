@@ -93,8 +93,12 @@ def parse_layers(specs: Iterable[str]) -> list[int]:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Tune Ollama gpu_layers for CPU+GPU split")
-    ap.add_argument("--model", required=True, help="Model name (e.g., llama3:8b)")
+    ap = argparse.ArgumentParser(
+        description="Tune Ollama gpu_layers for CPU+GPU split"
+    )
+    ap.add_argument(
+        "--model", required=True, help="Model name (e.g., llama3:8b)"
+    )
     ap.add_argument(
         "--layers",
         nargs="+",
@@ -102,19 +106,30 @@ def main() -> None:
         help="List or ranges of gpu_layers (e.g., 8 12 16 or 8-32)",
     )
     ap.add_argument(
-        "--num-thread", type=int, default=None, help="CPU threads for CPU layers"
+        "--num-thread",
+        type=int,
+        default=None,
+        help="CPU threads for CPU layers",
     )
-    ap.add_argument("--prompt", default="Hello!", help="Short prompt to measure")
-    ap.add_argument("--host", default="http://localhost:11434", help="Ollama host URL")
+    ap.add_argument(
+        "--prompt", default="Hello!", help="Short prompt to measure"
+    )
+    ap.add_argument(
+        "--host", default="http://localhost:11434", help="Ollama host URL"
+    )
     args = ap.parse_args()
 
     layers = parse_layers(args.layers)
-    print(f"Tuning model={args.model} layers={layers} num_thread={args.num_thread}")
+    print(
+        f"Tuning model={args.model} layers={layers} num_thread={args.num_thread}"
+    )
     results = []
     for L in layers:
         print(f"\n==> Testing gpu_layers={L} ...", flush=True)
         try:
-            res = generate_once(args.host, args.model, args.prompt, L, args.num_thread)
+            res = generate_once(
+                args.host, args.model, args.prompt, L, args.num_thread
+            )
         except Exception as e:  # noqa: BLE001
             print(f"gpu_layers={L} ERROR: {e}")
             continue
@@ -133,7 +148,9 @@ def main() -> None:
         return
 
     # Sort by tokens_per_s then elapsed
-    results.sort(key=lambda r: (-(r.get("tokens_per_s") or 0.0), r["elapsed_s"]))
+    results.sort(
+        key=lambda r: (-(r.get("tokens_per_s") or 0.0), r["elapsed_s"])
+    )
     best = results[0]
     print("\nBest configuration:")
     tps = best.get("tokens_per_s")

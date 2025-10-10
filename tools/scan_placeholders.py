@@ -38,11 +38,8 @@ INCLUDE_DIRS = {"src", "scripts", "cortex"}
 
 
 def should_skip(path: Path) -> bool:
-    parts = set(p.name for p in path.parents) | {path.name}
-    for d in IGNORE_DIRS:
-        if d in parts:
-            return True
-    return False
+    parts = {p.name for p in path.parents} | {path.name}
+    return any(d in parts for d in IGNORE_DIRS)
 
 
 def main() -> int:
