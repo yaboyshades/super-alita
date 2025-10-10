@@ -160,7 +160,9 @@ def create_sdd_router(workspace_root: Path | None = None) -> APIRouter:
             ) from e
 
     @router.get("/validate", response_model=ConstitutionalComplianceResponse)
-    async def validate_constitutional_compliance() -> ConstitutionalComplianceResponse:
+    async def validate_constitutional_compliance() -> (
+        ConstitutionalComplianceResponse
+    ):
         """
         Validate code against all constitutional rules using Mangle reasoning.
 
@@ -179,11 +181,14 @@ def create_sdd_router(workspace_root: Path | None = None) -> APIRouter:
             return ConstitutionalComplianceResponse(**result)
         except Exception as e:
             raise HTTPException(
-                status_code=500, detail=f"Constitutional validation failed: {str(e)}"
+                status_code=500,
+                detail=f"Constitutional validation failed: {str(e)}",
             ) from e
 
     @router.post("/trace", response_model=CodeTraceResponse)
-    async def trace_code_to_spec(request: CodeTraceRequest) -> CodeTraceResponse:
+    async def trace_code_to_spec(
+        request: CodeTraceRequest,
+    ) -> CodeTraceResponse:
         """
         Trace code elements back to their specifications.
 
@@ -245,7 +250,8 @@ def create_sdd_router(workspace_root: Path | None = None) -> APIRouter:
             return FactStatisticsResponse(**result)
         except Exception as e:
             raise HTTPException(
-                status_code=500, detail=f"Statistics retrieval failed: {str(e)}"
+                status_code=500,
+                detail=f"Statistics retrieval failed: {str(e)}",
             )
 
     @router.post("/cache/invalidate")
@@ -299,7 +305,8 @@ def create_sdd_router(workspace_root: Path | None = None) -> APIRouter:
     @router.get("/constitutional-violations")
     async def get_constitutional_violations(
         article: str | None = Query(
-            None, description="Specific article to check (I, II, III, IV, V, VI)"
+            None,
+            description="Specific article to check (I, II, III, IV, V, VI)",
         )
     ) -> dict[str, Any]:
         """Get constitutional violations, optionally filtered by article."""
@@ -322,7 +329,11 @@ def create_sdd_router(workspace_root: Path | None = None) -> APIRouter:
                     return {
                         "article": article.upper(),
                         "violations": result.raw_results,
-                        "count": len(result.raw_results) if result.raw_results else 0,
+                        "count": (
+                            len(result.raw_results)
+                            if result.raw_results
+                            else 0
+                        ),
                         "success": result.success,
                     }
                 else:
@@ -335,7 +346,9 @@ def create_sdd_router(workspace_root: Path | None = None) -> APIRouter:
                 result = framework.ask_question("what violates constitution")
                 return {
                     "all_violations": result["results"],
-                    "count": len(result["results"]) if result["results"] else 0,
+                    "count": (
+                        len(result["results"]) if result["results"] else 0
+                    ),
                     "success": result["success"],
                 }
         except HTTPException:
@@ -369,7 +382,9 @@ def create_sdd_router(workspace_root: Path | None = None) -> APIRouter:
             return {
                 "status": "degraded",
                 "error": str(e),
-                "workspace": str(framework.workspace_root) if framework else "unknown",
+                "workspace": (
+                    str(framework.workspace_root) if framework else "unknown"
+                ),
                 "mangle_integration": "error",
             }
 

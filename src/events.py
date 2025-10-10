@@ -1,4 +1,5 @@
 """Event base classes for test environment."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

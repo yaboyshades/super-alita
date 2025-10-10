@@ -54,7 +54,12 @@ class BasicBlock(nn.Module):
         )
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(
-            out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False
+            out_channels,
+            out_channels,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            bias=False,
         )
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
@@ -99,7 +104,9 @@ class BottleneckBlock(nn.Module):
         super().__init__()
 
         # Bottleneck design: 1x1 -> 3x3 -> 1x1
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+        self.conv1 = nn.Conv2d(
+            in_channels, out_channels, kernel_size=1, bias=False
+        )
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(
             out_channels,
@@ -111,7 +118,10 @@ class BottleneckBlock(nn.Module):
         )
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.conv3 = nn.Conv2d(
-            out_channels, out_channels * self.expansion, kernel_size=1, bias=False
+            out_channels,
+            out_channels * self.expansion,
+            kernel_size=1,
+            bias=False,
         )
         self.bn3 = nn.BatchNorm2d(out_channels * self.expansion)
         self.relu = nn.ReLU(inplace=True)
@@ -161,7 +171,9 @@ class ResNet(nn.Module):
         self.in_channels = 64
 
         # Initial convolution layer
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(
+            3, 64, kernel_size=7, stride=2, padding=3, bias=False
+        )
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -180,7 +192,11 @@ class ResNet(nn.Module):
         self._initialize_weights(zero_init_residual)
 
     def _make_layer(
-        self, block: type[nn.Module], out_channels: int, blocks: int, stride: int = 1
+        self,
+        block: type[nn.Module],
+        out_channels: int,
+        blocks: int,
+        stride: int = 1,
     ) -> nn.Sequential:
         """Create a layer with multiple residual blocks"""
         downsample = None
@@ -199,7 +215,9 @@ class ResNet(nn.Module):
             )
 
         layers = []
-        layers.append(block(self.in_channels, out_channels, stride, downsample))
+        layers.append(
+            block(self.in_channels, out_channels, stride, downsample)
+        )
         self.in_channels = out_channels * block.expansion
 
         # Add remaining blocks
@@ -212,7 +230,9 @@ class ResNet(nn.Module):
         """Initialize weights using Kaiming initialization"""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                nn.init.kaiming_normal_(
+                    m.weight, mode="fan_out", nonlinearity="relu"
+                )
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -305,4 +325,6 @@ if __name__ == "__main__":
 
     print(f"Input shape: {x.shape}")
     print(f"Output shape: {output.shape}")
-    print(f"Number of parameters: {sum(p.numel() for p in model.parameters()):,}")
+    print(
+        f"Number of parameters: {sum(p.numel() for p in model.parameters()):,}"
+    )

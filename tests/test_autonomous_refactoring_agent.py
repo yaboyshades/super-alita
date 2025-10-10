@@ -122,13 +122,17 @@ class TestCodeAnalyzer:
 
         analyzer = CodeAnalyzer()
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as f:
             f.write(sample_complex_code)
             f.flush()
 
             complexity = analyzer.calculate_complexity(Path(f.name))
 
-            assert complexity > 0.8, f"Expected high complexity score, got {complexity}"
+            assert (
+                complexity > 0.8
+            ), f"Expected high complexity score, got {complexity}"
 
     def test_detect_duplicates_finds_repeated_code(self):
         """
@@ -151,7 +155,9 @@ class TestCodeAnalyzer:
             opportunities = analyzer.detect_duplicates([file1, file2])
 
             assert len(opportunities) > 0
-            assert any(opp.issue_type == "duplication" for opp in opportunities)
+            assert any(
+                opp.issue_type == "duplication" for opp in opportunities
+            )
 
     def test_check_constitutional_compliance_plugin_violation(
         self, sample_plugin_violation
@@ -165,11 +171,15 @@ class TestCodeAnalyzer:
 
         analyzer = CodeAnalyzer()
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as f:
             f.write(sample_plugin_violation)
             f.flush()
 
-            opportunities = analyzer.check_constitutional_compliance(Path(f.name))
+            opportunities = analyzer.check_constitutional_compliance(
+                Path(f.name)
+            )
 
             plugin_violations = [
                 opp
@@ -180,7 +190,9 @@ class TestCodeAnalyzer:
                 len(plugin_violations) > 0
             ), "Should detect plugin inheritance violation"
 
-    def test_check_constitutional_compliance_unsafe_eval(self, sample_unsafe_code):
+    def test_check_constitutional_compliance_unsafe_eval(
+        self, sample_unsafe_code
+    ):
         """
         Given code using unsafe eval/exec
         When CodeAnalyzer checks constitutional compliance
@@ -190,11 +202,15 @@ class TestCodeAnalyzer:
 
         analyzer = CodeAnalyzer()
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as f:
             f.write(sample_unsafe_code)
             f.flush()
 
-            opportunities = analyzer.check_constitutional_compliance(Path(f.name))
+            opportunities = analyzer.check_constitutional_compliance(
+                Path(f.name)
+            )
 
             sandbox_opportunities = [
                 opp
@@ -209,7 +225,9 @@ class TestCodeAnalyzer:
 class TestPatternApplicator:
     """Test suite for PatternApplicator class"""
 
-    def test_apply_plugin_inheritance_adds_base_class(self, sample_plugin_violation):
+    def test_apply_plugin_inheritance_adds_base_class(
+        self, sample_plugin_violation
+    ):
         """
         Given a class that doesn't inherit from PluginInterface
         When PatternApplicator applies plugin inheritance
@@ -219,7 +237,9 @@ class TestPatternApplicator:
 
         applicator = PatternApplicator()
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as f:
             f.write(sample_plugin_violation)
             f.flush()
 
@@ -245,9 +265,15 @@ class TestPatternApplicator:
 
         secured_code = applicator.wrap_with_sandbox(sample_unsafe_code)
 
-        assert "from src.sandbox.exec_sandbox import execute_safely" in secured_code
+        assert (
+            "from src.sandbox.exec_sandbox import execute_safely"
+            in secured_code
+        )
         assert "execute_safely" in secured_code
-        assert "eval(" not in secured_code or "await execute_safely" in secured_code
+        assert (
+            "eval(" not in secured_code
+            or "await execute_safely" in secured_code
+        )
 
     def test_add_event_bus_integration_adds_subscription(self):
         """
@@ -436,7 +462,9 @@ def overly_complex(a, b, c):
 
             assert isinstance(suggestions, list)
             assert len(suggestions) > 0
-            assert any("extract" in suggestion.lower() for suggestion in suggestions)
+            assert any(
+                "extract" in suggestion.lower() for suggestion in suggestions
+            )
 
     def test_execute_refactors_applies_changes_safely(self):
         """
@@ -447,7 +475,9 @@ def overly_complex(a, b, c):
         from tools.refactor_hotspots import AutonomousRefactoringAgent
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            agent = AutonomousRefactoringAgent(Path(tmp_dir), approval_mode="auto")
+            agent = AutonomousRefactoringAgent(
+                Path(tmp_dir), approval_mode="auto"
+            )
 
             plan = RefactorPlan(
                 opportunities=[],  # Empty plan for safety
@@ -457,7 +487,9 @@ def overly_complex(a, b, c):
             )
 
             # Mock the execution to avoid actual file changes
-            with patch.object(agent, "_execute_single_opportunity", return_value=True):
+            with patch.object(
+                agent, "_execute_single_opportunity", return_value=True
+            ):
                 result = agent.execute_refactors(plan)
 
                 assert isinstance(result, bool)

@@ -1,4 +1,5 @@
 """Backward compatibility shim for src.mcp_server.tools."""
+
 from __future__ import annotations
 
 import warnings

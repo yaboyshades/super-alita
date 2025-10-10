@@ -37,7 +37,9 @@ class BreakerConfig:
     open_cap_seconds: float = 60.0
     base_seconds: float = 1.0
     half_open_max_probes: int = 1
-    monitored_exceptions: list[type] = field(default_factory=lambda: [Exception])
+    monitored_exceptions: list[type] = field(
+        default_factory=lambda: [Exception]
+    )
 
 
 class ProbeGate:
@@ -61,7 +63,9 @@ class ProbeGate:
                 self._in_probe = False
 
 
-def decorrelated_jitter_backoff(previous: float, base: float, cap: float) -> float:
+def decorrelated_jitter_backoff(
+    previous: float, base: float, cap: float
+) -> float:
     """
     AWS-style decorrelated jitter backoff algorithm
     next ∈ [base, min(cap, base + U(0,1) * (previous * 3 - base))]
@@ -144,7 +148,9 @@ class RaceSafeCircuitBreaker:
         }
 
         if new_state not in legal_transitions[old_state]:
-            raise ValueError(f"Illegal state transition: {old_state} -> {new_state}")
+            raise ValueError(
+                f"Illegal state transition: {old_state} -> {new_state}"
+            )
 
         # Update state atomically
         self._state = new_state
@@ -170,13 +176,19 @@ class RaceSafeCircuitBreaker:
                 "reason": reason,
                 "timestamp": now,
                 "backoff_seconds": (
-                    self._backoff_previous if new_state == BreakerState.OPEN else None
+                    self._backoff_previous
+                    if new_state == BreakerState.OPEN
+                    else None
                 ),
             },
         )
 
     async def _emit_state_change_event(
-        self, old_state: BreakerState, new_state: BreakerState, reason: str, now: float
+        self,
+        old_state: BreakerState,
+        new_state: BreakerState,
+        reason: str,
+        now: float,
     ) -> None:
         """Emit state change event to event bus"""
         if self.event_bus:
@@ -227,8 +239,12 @@ class RaceSafeCircuitBreaker:
                     self._opened_at is not None
                     and (now - self._opened_at) >= self._backoff_previous
                 ):
-                    await self._set_state(BreakerState.HALF_OPEN, "cooldown_elapsed")
-                    return False  # This request is denied, but next can be probe
+                    await self._set_state(
+                        BreakerState.HALF_OPEN, "cooldown_elapsed"
+                    )
+                    return (
+                        False  # This request is denied, but next can be probe
+                    )
                 return False
 
             elif self._state == BreakerState.HALF_OPEN:
@@ -248,7 +264,9 @@ class RaceSafeCircuitBreaker:
                 self._successful_calls += 1
                 # If we're in HALF_OPEN and got success, transition to CLOSED
                 if self._state == BreakerState.HALF_OPEN:
-                    await self._set_state(BreakerState.CLOSED, "probe_succeeded")
+                    await self._set_state(
+                        BreakerState.CLOSED, "probe_succeeded"
+                    )
             else:
                 # Check if this exception should be counted
                 should_count = exception is None or any(
@@ -262,7 +280,9 @@ class RaceSafeCircuitBreaker:
 
                     # If we're in HALF_OPEN and got failure, transition back to OPEN
                     if self._state == BreakerState.HALF_OPEN:
-                        await self._set_state(BreakerState.OPEN, "probe_failed")
+                        await self._set_state(
+                            BreakerState.OPEN, "probe_failed"
+                        )
 
     async def execute_with_breaker(self, func: Callable[[], T]) -> T:
         """

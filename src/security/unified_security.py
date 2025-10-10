@@ -59,7 +59,9 @@ class User:
             "permissions": self.permissions,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat(),
-            "last_login": (self.last_login.isoformat() if self.last_login else None),
+            "last_login": (
+                self.last_login.isoformat() if self.last_login else None
+            ),
             "metadata": self.metadata,
         }
 
@@ -178,8 +180,11 @@ class TokenManager:
             "roles": user.roles,
             "permissions": user.permissions,
             "iat": datetime.now(UTC),
-            "exp": datetime.now(UTC) + timedelta(hours=self.config.jwt_expiry_hours),
-            "jti": secrets.token_urlsafe(16),  # Unique token ID for blacklisting
+            "exp": datetime.now(UTC)
+            + timedelta(hours=self.config.jwt_expiry_hours),
+            "jti": secrets.token_urlsafe(
+                16
+            ),  # Unique token ID for blacklisting
         }
 
         return jwt.encode(
@@ -217,7 +222,9 @@ class TokenManager:
                 token,
                 self.config.jwt_secret,
                 algorithms=[self.config.jwt_algorithm],
-                options={"verify_exp": False},  # Allow expired tokens for blacklisting
+                options={
+                    "verify_exp": False
+                },  # Allow expired tokens for blacklisting
             )
 
             jti = payload.get("jti")
@@ -281,7 +288,9 @@ class RateLimiter:
         window_start = current_time - window
 
         if self.redis_client:
-            return await self._redis_rate_limit(identifier, limit, window, current_time)
+            return await self._redis_rate_limit(
+                identifier, limit, window, current_time
+            )
         else:
             return self._local_rate_limit(
                 identifier, limit, window, current_time, window_start
@@ -316,7 +325,9 @@ class RateLimiter:
 
         # Clean old requests
         cache_entry["requests"] = [
-            req_time for req_time in cache_entry["requests"] if req_time > window_start
+            req_time
+            for req_time in cache_entry["requests"]
+            if req_time > window_start
         ]
 
         # Check if limit exceeded
@@ -433,11 +444,9 @@ class InputValidator:
         ]
 
         text_lower = text.lower()
-        for pattern in sql_patterns:
-            if re.search(pattern, text_lower):
-                return False
-
-        return True
+        return all(
+            not re.search(pattern, text_lower) for pattern in sql_patterns
+        )
 
 
 class EncryptionManager:
@@ -479,7 +488,9 @@ class AuditLogger:
 
         # Configure file handler
         handler = logging.FileHandler(log_file)
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s"
+        )
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.INFO)
@@ -595,7 +606,9 @@ class UnifiedSecurity:
             return {"success": False, "error": "Invalid email format"}
 
         # Check password strength
-        password_validation = self.password_manager.validate_password_strength(password)
+        password_validation = self.password_manager.validate_password_strength(
+            password
+        )
         if not password_validation["is_valid"]:
             self.audit_logger.log_event(
                 user_id=username,
@@ -712,7 +725,9 @@ class UnifiedSecurity:
             return {"success": False, "error": "Account is inactive"}
 
         # Verify password
-        if not self.password_manager.verify_password(password, user.password_hash):
+        if not self.password_manager.verify_password(
+            password, user.password_hash
+        ):
             self.audit_logger.log_event(
                 user_id=username,
                 action="login",
@@ -745,7 +760,8 @@ class UnifiedSecurity:
             "token": token,
             "user": user.to_dict(),
             "expires_at": (
-                datetime.now(UTC) + timedelta(hours=self.config.jwt_expiry_hours)
+                datetime.now(UTC)
+                + timedelta(hours=self.config.jwt_expiry_hours)
             ).isoformat(),
         }
 
@@ -776,8 +792,9 @@ class UnifiedSecurity:
         permissions = payload.get("permissions", [])
 
         # Check permission
-        if required_permission not in permissions and "admin" not in payload.get(
-            "roles", []
+        if (
+            required_permission not in permissions
+            and "admin" not in payload.get("roles", [])
         ):
             self.audit_logger.log_event(
                 user_id=user_id,
@@ -830,7 +847,9 @@ class UnifiedSecurity:
         """Get comprehensive security statistics"""
         return {
             "total_users": len(self.users),
-            "active_users": sum(1 for user in self.users.values() if user.is_active),
+            "active_users": sum(
+                1 for user in self.users.values() if user.is_active
+            ),
             "blacklisted_tokens": len(self.token_manager.blacklisted_tokens),
             "recent_audit_logs": len(self.audit_logger.recent_logs),
             "config": {

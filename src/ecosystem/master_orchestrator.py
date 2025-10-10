@@ -75,7 +75,9 @@ class GitHubExample:
 class IReugEngine(Protocol):
     """Interface for the REUG Cognitive Engine."""
 
-    async def analyze_todo_complexity(self, todo_text: str) -> TodoAnalysisResult: ...
+    async def analyze_todo_complexity(
+        self, todo_text: str
+    ) -> TodoAnalysisResult: ...
 
 
 class ISemanticCodeSearch(Protocol):
@@ -89,7 +91,9 @@ class ISemanticCodeSearch(Protocol):
 class ICopilotContextEnhancer(Protocol):
     """Interface for enhancing Copilot context, e.g., by finding GitHub examples."""
 
-    async def find_github_examples(self, query: str) -> list[GitHubExample]: ...
+    async def find_github_examples(
+        self, query: str
+    ) -> list[GitHubExample]: ...
 
 
 class IDynamicSnippetGenerator(Protocol):
@@ -158,7 +162,9 @@ class NoopSnippetGenerator(IDynamicSnippetGenerator):
         related_code: list[SemanticSearchResult],  # noqa: ARG002
         patterns: list[str],  # noqa: ARG002
     ) -> list[dict[str, str]]:
-        print("[Orchestrator] No-op Snippet Generator: Returning a default snippet.")
+        print(
+            "[Orchestrator] No-op Snippet Generator: Returning a default snippet."
+        )
         return [
             {
                 "prefix": "todo_impl",
@@ -217,10 +223,14 @@ class EcosystemOrchestrator:
         # State management for developer contexts.
         self.developer_contexts: dict[str, DeveloperContext] = {}
 
-    async def _get_or_create_developer_context(self, user_id: str) -> DeveloperContext:
+    async def _get_or_create_developer_context(
+        self, user_id: str
+    ) -> DeveloperContext:
         """Retrieves an existing context for a developer or creates a new one."""
         if user_id not in self.developer_contexts:
-            self.developer_contexts[user_id] = DeveloperContext(user_id=user_id)
+            self.developer_contexts[user_id] = DeveloperContext(
+                user_id=user_id
+            )
         return self.developer_contexts[user_id]
 
     async def handle_developer_action(
@@ -239,12 +249,15 @@ class EcosystemOrchestrator:
         if action == "todo_detected":
             # ADDED: Wrap the workflow in a telemetry span
             with self.telemetry.timer(
-                "workflow.todo_resolution.duration_ms", tags={"user_id": user_id}
+                "workflow.todo_resolution.duration_ms",
+                tags={"user_id": user_id},
             ):
                 self.telemetry.increment_counter(
                     "workflow_runs.todo_resolution", tags={"user_id": user_id}
                 )
-                return await self._orchestrate_todo_workflow(dev_context, context)
+                return await self._orchestrate_todo_workflow(
+                    dev_context, context
+                )
 
         # Default response for unknown actions.
         return {"status": "error", "message": f"Unknown action: '{action}'"}
@@ -256,21 +269,31 @@ class EcosystemOrchestrator:
         integrated subsystems."""
         todo_text = context.get("todo_text", "")
         if not todo_text:
-            return {"status": "error", "message": "todo_text not provided in context"}
+            return {
+                "status": "error",
+                "message": "todo_text not provided in context",
+            }
 
         # ADDED: Emit event at the start of the workflow
         await self.event_bus.emit(
             "workflow.todo_resolution.started",
-            {"user_id": dev_context.user_id, "file_path": context.get("file_path")},
+            {
+                "user_id": dev_context.user_id,
+                "file_path": context.get("file_path"),
+            },
         )
 
         # ADDED: Time individual steps of the workflow
         with self.telemetry.timer("todo.analysis.duration_ms"):
-            todo_analysis = await self.reug_engine.analyze_todo_complexity(todo_text)
+            todo_analysis = await self.reug_engine.analyze_todo_complexity(
+                todo_text
+            )
 
         with self.telemetry.timer("todo.semantic_search.duration_ms"):
-            related_code = await self.semantic_search.find_related_implementations(
-                todo_text, dev_context.active_codebase
+            related_code = (
+                await self.semantic_search.find_related_implementations(
+                    todo_text, dev_context.active_codebase
+                )
             )
 
         with self.telemetry.timer("todo.github_search.duration_ms"):

@@ -67,7 +67,9 @@ class AtomCreatorPlugin(PluginInterface):
             created_by = data.get("created_by", "system")
 
             if not tool_name or not code:
-                logger.error("Invalid atom creation request: missing tool_name or code")
+                logger.error(
+                    "Invalid atom creation request: missing tool_name or code"
+                )
                 return
 
             logger.info(f"🧬 Creating atom: {tool_name}")
@@ -109,7 +111,9 @@ class AtomCreatorPlugin(PluginInterface):
                         # Track locally
                         self.created_atoms[tool_name] = atom_data
 
-                        logger.info(f"✅ Atom '{tool_name}' stored in semantic memory")
+                        logger.info(
+                            f"✅ Atom '{tool_name}' stored in semantic memory"
+                        )
 
                         # Confirm to user via chat
                         await self.event_bus._redis.publish(
@@ -122,7 +126,9 @@ class AtomCreatorPlugin(PluginInterface):
                         )
 
                     except Exception as e:
-                        logger.error(f"Failed to store atom in semantic memory: {e}")
+                        logger.error(
+                            f"Failed to store atom in semantic memory: {e}"
+                        )
                         # Store locally as fallback
                         self.created_atoms[tool_name] = atom_data
 
@@ -216,7 +222,9 @@ class AtomCreatorPlugin(PluginInterface):
                 if atom and hasattr(atom, "value"):
                     return atom.value
             except Exception as e:
-                logger.warning(f"Failed to retrieve atom from semantic memory: {e}")
+                logger.warning(
+                    f"Failed to retrieve atom from semantic memory: {e}"
+                )
 
         return None
 

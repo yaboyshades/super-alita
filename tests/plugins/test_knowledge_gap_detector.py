@@ -52,7 +52,9 @@ async def test_gap_on_uncertainty_pattern():
         async def should_use_cortex(self, confidence, context):
             return True
 
-    det = KnowledgeGapDetector(event_bus=bus, policy=AllowAll(), cooldown_seconds=0.5)
+    det = KnowledgeGapDetector(
+        event_bus=bus, policy=AllowAll(), cooldown_seconds=0.5
+    )
     await det.detect_uncertainty_patterns(
         {"data": {"content": "I'm not sure about this"}}
     )
@@ -63,7 +65,9 @@ async def test_gap_on_uncertainty_pattern():
         == "knowledge_gap"
     )
     assert getattr(payload, "gap_type", None) == "uncertainty_expression"
-    await det.detect_uncertainty_patterns({"data": {"content": "I'm not sure again"}})
+    await det.detect_uncertainty_patterns(
+        {"data": {"content": "I'm not sure again"}}
+    )
     assert bus.publish.call_count == 1
     await det._maybe_publish_gap(
         gap_description="x", context={"hop_count": 3}, gap_type="t"

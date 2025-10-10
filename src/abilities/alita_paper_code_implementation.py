@@ -38,7 +38,9 @@ class MultiModalFusion(nn.Module):
         image_proj = self.image_projection(image_features)
 
         # Cross-attention between modalities
-        fused_features, _ = self.cross_attention(text_proj, image_proj, image_proj)
+        fused_features, _ = self.cross_attention(
+            text_proj, image_proj, image_proj
+        )
 
         # Adaptive gating
         concat_features = torch.cat([text_proj, fused_features], dim=-1)
@@ -56,13 +58,17 @@ class ConversationalMemory(nn.Module):
         self.hidden_dim = hidden_dim
 
         # Episodic memory
-        self.episodic_memory = nn.Parameter(torch.randn(memory_size, hidden_dim))
+        self.episodic_memory = nn.Parameter(
+            torch.randn(memory_size, hidden_dim)
+        )
         self.memory_attention = nn.MultiheadAttention(hidden_dim, num_heads=8)
 
         # Working memory
         self.working_memory = nn.GRU(hidden_dim, hidden_dim, batch_first=True)
 
-    def forward(self, query: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, query: torch.Tensor, context: torch.Tensor
+    ) -> torch.Tensor:
         """Retrieve and update memory based on query and context"""
         # Retrieve from episodic memory
         retrieved_memory, _ = self.memory_attention(
@@ -88,7 +94,9 @@ class InformationSeekingEngine(nn.Module):
         )
         self.relevance_scorer = nn.Linear(query_dim + doc_dim, 1)
 
-    def forward(self, query: torch.Tensor, documents: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, query: torch.Tensor, documents: torch.Tensor
+    ) -> torch.Tensor:
         """Score document relevance for query"""
         query_encoded = self.query_encoder(query)
         docs_encoded = self.document_encoder(documents)
@@ -137,9 +145,13 @@ class AlitaArchitecture(nn.Module):
         self.positional_encoding = self._create_positional_encoding(hidden_dim)
 
         # Alita-specific modules
-        self.multimodal_fusion = MultiModalFusion(hidden_dim, hidden_dim, hidden_dim)
+        self.multimodal_fusion = MultiModalFusion(
+            hidden_dim, hidden_dim, hidden_dim
+        )
         self.conversational_memory = ConversationalMemory(1024, hidden_dim)
-        self.information_seeking = InformationSeekingEngine(hidden_dim, hidden_dim)
+        self.information_seeking = InformationSeekingEngine(
+            hidden_dim, hidden_dim
+        )
         self.adversarial_training = AdversarialTraining(hidden_dim)
 
         # Transformer backbone
@@ -158,7 +170,8 @@ class AlitaArchitecture(nn.Module):
         position = torch.arange(0, max_length).unsqueeze(1).float()
 
         div_term = torch.exp(
-            torch.arange(0, hidden_dim, 2).float() * -(math.log(10000.0) / hidden_dim)
+            torch.arange(0, hidden_dim, 2).float()
+            * -(math.log(10000.0) / hidden_dim)
         )
 
         pe[:, 0::2] = torch.sin(position * div_term)

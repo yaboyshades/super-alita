@@ -62,7 +62,9 @@ class RedisEventBus(EventBus):
         self.redis_port = int(
             self.config.get("redis_port", os.getenv("REDIS_PORT", 6379))
         )
-        self.redis_db = int(self.config.get("redis_db", os.getenv("REDIS_DB", 0)))
+        self.redis_db = int(
+            self.config.get("redis_db", os.getenv("REDIS_DB", 0))
+        )
         self.redis_password = self.config.get("redis_password") or os.getenv(
             "REDIS_PASSWORD"
         )
@@ -76,7 +78,9 @@ class RedisEventBus(EventBus):
     async def initialize(self) -> bool:
         """Initialize Redis connection and start background listeners."""
         if not REDIS_AVAILABLE:
-            logger.warning("Redis not available, falling back to in-memory event bus")
+            logger.warning(
+                "Redis not available, falling back to in-memory event bus"
+            )
             return self.fallback_to_memory
 
         try:
@@ -149,7 +153,9 @@ class RedisEventBus(EventBus):
                 return True
 
             except Exception as e:
-                logger.error(f"Failed to subscribe to Redis channel {event_type}: {e}")
+                logger.error(
+                    f"Failed to subscribe to Redis channel {event_type}: {e}"
+                )
                 if self.fallback_to_memory:
                     # Store in fallback handlers
                     if event_type not in self._fallback_handlers:
@@ -177,7 +183,9 @@ class RedisEventBus(EventBus):
         if "timestamp" not in event:
             import datetime
 
-            event["timestamp"] = datetime.datetime.now(datetime.UTC).isoformat()
+            event["timestamp"] = datetime.datetime.now(
+                datetime.UTC
+            ).isoformat()
 
         if self._connected and self.redis_client:
             try:
@@ -250,7 +258,9 @@ class RedisEventBus(EventBus):
                 else:
                     handler(event)
             except Exception as e:
-                logger.error(f"Error in fallback handler for {event_type}: {e}")
+                logger.error(
+                    f"Error in fallback handler for {event_type}: {e}"
+                )
 
         return len(handlers) > 0
 
@@ -262,7 +272,9 @@ class RedisEventBus(EventBus):
                 task.cancel()
 
         if self._background_tasks:
-            await asyncio.gather(*self._background_tasks, return_exceptions=True)
+            await asyncio.gather(
+                *self._background_tasks, return_exceptions=True
+            )
 
         # Close Redis connections
         if self.pubsub:
@@ -300,7 +312,10 @@ class RedisEventBus(EventBus):
                     "fallback_mode": self.fallback_to_memory,
                 }
 
-        return {"status": "fallback", "fallback_handlers": len(self._fallback_handlers)}
+        return {
+            "status": "fallback",
+            "fallback_handlers": len(self._fallback_handlers),
+        }
 
     def get_stats(self) -> Dict[str, Any]:
         """Get event bus statistics."""

@@ -87,7 +87,9 @@ async def test_enhanced_consensus_direct():
                 ensemble_scores = metadata.get("ensemble_scores", [])
                 print(f"🏆 Components: {components}")
                 if ensemble_scores:
-                    print(f"📊 Scores: {[round(s, 3) for s in ensemble_scores]}")
+                    print(
+                        f"📊 Scores: {[round(s, 3) for s in ensemble_scores]}"
+                    )
 
             results[method] = {"success": True, "result": result}
 

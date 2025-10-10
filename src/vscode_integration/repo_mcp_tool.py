@@ -16,6 +16,8 @@ try:  # Optional pydantic for structured returns
 except Exception:  # pragma: no cover - fallback if pydantic unavailable
     BaseModel = object  # type: ignore
 
+import contextlib
+
 from src.core.proc import arun
 
 
@@ -54,7 +56,9 @@ class RepositoryMCPTool:
     ) -> dict[str, Any]:
         try:
             base = (
-                (self.repo_root / directory).resolve() if directory else self.repo_root
+                (self.repo_root / directory).resolve()
+                if directory
+                else self.repo_root
             )
             if not base.exists() or not base.is_dir():
                 return {"error": f"Directory {directory!r} not found"}
@@ -87,7 +91,11 @@ class RepositoryMCPTool:
                         "language": self._detect_language(p),
                     }
                 )
-            return {"files": files, "directory": directory, "count": len(files)}
+            return {
+                "files": files,
+                "directory": directory,
+                "count": len(files),
+            }
         except Exception as e:  # pragma: no cover - defensive
             return {"error": f"Failed to list files: {e}"}
 
@@ -139,7 +147,7 @@ class RepositoryMCPTool:
 
             # Emit a simple event for observability (best-effort)
             if self.event_bus is not None:
-                try:
+                with contextlib.suppress(Exception):
                     await self.event_bus.emit(
                         {
                             "type": "file_modified",
@@ -148,8 +156,6 @@ class RepositoryMCPTool:
                             "backup_available": backup_available,
                         }
                     )
-                except Exception:
-                    pass
 
             return {
                 "success": True,
@@ -194,7 +200,11 @@ class RepositoryMCPTool:
                         "timestamp": tsf,
                     }
                 )
-            return {"commits": commits, "file_path": file_path, "count": len(commits)}
+            return {
+                "commits": commits,
+                "file_path": file_path,
+                "count": len(commits),
+            }
         except Exception as e:
             return {"error": f"Failed to get git history: {e}"}
 

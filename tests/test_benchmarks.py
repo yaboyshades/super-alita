@@ -41,7 +41,9 @@ class BenchmarkFixtures:
 
     @pytest.fixture
     def concurrency_gate(self):
-        return AdaptiveConcurrencyGate(initial_limit=50, metrics=NoOpMetricsCollector())
+        return AdaptiveConcurrencyGate(
+            initial_limit=50, metrics=NoOpMetricsCollector()
+        )
 
 
 class TestCacheBenchmarks(BenchmarkFixtures):
@@ -161,7 +163,9 @@ class TestCircuitBreakerBenchmarks(BenchmarkFixtures):
         async def execute_with_breaker():
             return await breaker.execute_with_breaker(dummy_func)
 
-        await benchmark.pedantic(execute_with_breaker, rounds=50, iterations=10)
+        await benchmark.pedantic(
+            execute_with_breaker, rounds=50, iterations=10
+        )
 
 
 class TestConcurrencyBenchmarks(BenchmarkFixtures):
@@ -180,7 +184,9 @@ class TestConcurrencyBenchmarks(BenchmarkFixtures):
         await benchmark.pedantic(acquire_and_release, rounds=20, iterations=5)
 
     @pytest.mark.asyncio
-    async def test_concurrent_gate_performance(self, benchmark, concurrency_gate):
+    async def test_concurrent_gate_performance(
+        self, benchmark, concurrency_gate
+    ):
         """Benchmark gate under concurrent load"""
 
         async def concurrent_workload():

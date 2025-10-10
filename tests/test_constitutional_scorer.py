@@ -22,7 +22,9 @@ class TestConstitutionalScorer:
     def test_scorer_initialization(self):
         """Test scorer initializes with proper defaults."""
         assert self.scorer.compliance_threshold == 0.75
-        assert self.scorer.article_weights["Article V"] == 2.0  # Clarity 2x weight
+        assert (
+            self.scorer.article_weights["Article V"] == 2.0
+        )  # Clarity 2x weight
         assert len(self.scorer.article_weights) == 6
 
     def test_score_specification_high_compliance(self):
@@ -179,7 +181,9 @@ def broken_function(
     def test_article_ii_test_first_spec(self):
         """Test Article II (Test-First) scoring for specifications."""
         # High compliance spec
-        good_spec = "Include comprehensive testing with 80% coverage using pytest"
+        good_spec = (
+            "Include comprehensive testing with 80% coverage using pytest"
+        )
         result = self.scorer.score_specification(good_spec)
         assert result.article_scores["Article II"] > 0.5
 
@@ -191,19 +195,25 @@ def broken_function(
     def test_article_iii_simplicity_spec(self):
         """Test Article III (Simplicity Gate) scoring for specifications."""
         # High compliance spec
-        good_spec = "Build a simple, clear file processor with minimal complexity"
+        good_spec = (
+            "Build a simple, clear file processor with minimal complexity"
+        )
         result = self.scorer.score_specification(good_spec)
         assert result.article_scores["Article III"] > 0.5
 
         # Low compliance spec
-        bad_spec = "Build complex enterprise sophisticated advanced architecture"
+        bad_spec = (
+            "Build complex enterprise sophisticated advanced architecture"
+        )
         result = self.scorer.score_specification(bad_spec)
         assert result.article_scores["Article III"] < 0.8
 
     def test_article_iv_integration_spec(self):
         """Test Article IV (Integration-First) scoring for specifications."""
         # High compliance spec
-        good_spec = "Include end-to-end integration testing in realistic environment"
+        good_spec = (
+            "Include end-to-end integration testing in realistic environment"
+        )
         result = self.scorer.score_specification(good_spec)
         assert result.article_scores["Article IV"] > 0.5
 
@@ -227,7 +237,9 @@ def broken_function(
     def test_article_vi_counterfactual_spec(self):
         """Test Article VI (Counterfactual Justification) scoring for specifications."""
         # High compliance spec
-        good_spec = "Use FastAPI because it's faster than Django for this use case"
+        good_spec = (
+            "Use FastAPI because it's faster than Django for this use case"
+        )
         result = self.scorer.score_specification(good_spec)
         assert result.article_scores["Article VI"] > 0.5
 
@@ -239,9 +251,7 @@ def broken_function(
     def test_weighted_scoring(self):
         """Test that Article V (Clarity) has 2x weight in overall scoring."""
         # Specification with only clarity issues
-        spec_with_clarity_issues = (
-            "Maybe build something. TBD. Unclear requirements. Could be flexible."
-        )
+        spec_with_clarity_issues = "Maybe build something. TBD. Unclear requirements. Could be flexible."
         result = self.scorer.score_specification(spec_with_clarity_issues)
 
         # The overall score should be significantly impacted due to 2x weight

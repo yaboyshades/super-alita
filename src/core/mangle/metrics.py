@@ -238,7 +238,9 @@ class PrometheusMetricsCollector:
 
     # Cortex metrics methods
 
-    def inc_cortex_cycles(self, session_id: str, status: str = "success") -> None:
+    def inc_cortex_cycles(
+        self, session_id: str, status: str = "success"
+    ) -> None:
         """Increment Cortex cycle counter."""
         self._ensure_initialized()
         self._metrics["cortex_cycles_total"].labels(
@@ -280,12 +282,16 @@ class PrometheusMetricsCollector:
     def set_knowledge_atoms(self, atom_type: str, count: int) -> None:
         """Set knowledge graph atom count."""
         self._ensure_initialized()
-        self._metrics["knowledge_atoms_total"].labels(atom_type=atom_type).set(count)
+        self._metrics["knowledge_atoms_total"].labels(atom_type=atom_type).set(
+            count
+        )
 
     def set_knowledge_bonds(self, bond_type: str, count: int) -> None:
         """Set knowledge graph bond count."""
         self._ensure_initialized()
-        self._metrics["knowledge_bonds_total"].labels(bond_type=bond_type).set(count)
+        self._metrics["knowledge_bonds_total"].labels(bond_type=bond_type).set(
+            count
+        )
 
     def inc_knowledge_operations(
         self, operation_type: str, status: str = "success"
@@ -351,7 +357,9 @@ class PrometheusMetricsCollector:
     def set_plugins_loaded(self, plugin_type: str, count: int) -> None:
         """Set loaded plugins count."""
         self._ensure_initialized()
-        self._metrics["plugins_loaded_total"].labels(plugin_type=plugin_type).set(count)
+        self._metrics["plugins_loaded_total"].labels(
+            plugin_type=plugin_type
+        ).set(count)
 
     def inc_plugin_execution(
         self, plugin_name: str, method: str, status: str = "success"
@@ -376,12 +384,18 @@ class PrometheusMetricsCollector:
     def inc_grpc_requests(self, method: str, status: str) -> None:
         """Increment gRPC requests counter."""
         self._ensure_initialized()
-        self._metrics["grpc_requests_total"].labels(method=method, status=status).inc()
+        self._metrics["grpc_requests_total"].labels(
+            method=method, status=status
+        ).inc()
 
-    def observe_grpc_request_duration(self, method: str, duration: float) -> None:
+    def observe_grpc_request_duration(
+        self, method: str, duration: float
+    ) -> None:
         """Record gRPC request duration."""
         self._ensure_initialized()
-        self._metrics["grpc_request_duration"].labels(method=method).observe(duration)
+        self._metrics["grpc_request_duration"].labels(method=method).observe(
+            duration
+        )
 
     # Metrics exposure methods
 
@@ -436,4 +450,8 @@ class PrometheusMetricsCollector:
                 "timestamp": test_time,
             }
         except Exception as e:
-            return {"status": "unhealthy", "error": str(e), "timestamp": time.time()}
+            return {
+                "status": "unhealthy",
+                "error": str(e),
+                "timestamp": time.time(),
+            }

@@ -8,4 +8,3 @@ def test_cma_system_prompt_loads():
     text = pm.get_system_prompt("cma")
     assert isinstance(text, str) and len(text) > 0
     assert "Constitutional Mastery Architect" in text
-

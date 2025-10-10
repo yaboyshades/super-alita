@@ -9,7 +9,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from reug_runtime.event_bus import make_event_bus  # noqa: E402
-from src.plugins.autogen_creator_plugin import AutogenCreatorPlugin  # noqa: E402
+from src.plugins.autogen_creator_plugin import (
+    AutogenCreatorPlugin,
+)  # noqa: E402
 
 
 async def test_plugin_setup():

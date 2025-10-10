@@ -214,25 +214,29 @@ class TestCorrelationIntegration:
         test_correlation_id = "test-correlation-123"
         test_session_id = "test-session-456"
 
-        with patch(
-            "src.core.context_builder.get_correlation_id",
-            return_value=test_correlation_id,
+        with (
+            patch(
+                "src.core.context_builder.get_correlation_id",
+                return_value=test_correlation_id,
+            ),
+            patch(
+                "src.core.context_builder.get_session_id",
+                return_value=test_session_id,
+            ),
         ):
-            with patch(
-                "src.core.context_builder.get_session_id", return_value=test_session_id
-            ):
-                assembler = ContextAssembler(user_input="test")
-                ctx = assembler.build_for_decision()
+            assembler = ContextAssembler(user_input="test")
+            ctx = assembler.build_for_decision()
 
-                assert ctx["correlation_id"] == test_correlation_id
-                assert ctx["session_id"] == test_session_id
+            assert ctx["correlation_id"] == test_correlation_id
+            assert ctx["session_id"] == test_session_id
 
     def test_correlation_in_trace(self):
         """Test that trace entries include correlation IDs"""
         test_correlation_id = "trace-correlation-789"
 
         with patch(
-            "src.core.trace.get_correlation_id", return_value=test_correlation_id
+            "src.core.trace.get_correlation_id",
+            return_value=test_correlation_id,
         ):
             tracer = TurnTracer()
             tracer.new_turn()

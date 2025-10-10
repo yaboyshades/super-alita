@@ -69,8 +69,12 @@ class PromptManager:
             self.version = data.get("version", "unknown")
             self.response_schemas = data.get("response_schemas", {})
             self.placeholders = data.get("placeholders", {})
-            logger.info(f"📝 Loaded prompts v{self.version} from {self.prompts_file}")
-            logger.info(f"📂 Available prompt categories: {list(self.prompts.keys())}")
+            logger.info(
+                f"📝 Loaded prompts v{self.version} from {self.prompts_file}"
+            )
+            logger.info(
+                f"📂 Available prompt categories: {list(self.prompts.keys())}"
+            )
         except Exception as e:
             logger.error(f"Failed to load prompts: {e}")
             self.prompts = {}
@@ -107,7 +111,9 @@ class PromptManager:
             else:
                 template_str = str(current)
             # Perform template substitution
-            formatted_prompt = self._format_template(template_str, path, **kwargs)
+            formatted_prompt = self._format_template(
+                template_str, path, **kwargs
+            )
             logger.debug(
                 f"📝 Retrieved prompt: {path} (length: {len(formatted_prompt)})"
             )
@@ -131,7 +137,8 @@ class PromptManager:
                 elif key == "examples" and isinstance(value, list):
                     # Format examples as numbered list
                     formatted_kwargs[key] = "\n".join(
-                        f"{i + 1}. {example}" for i, example in enumerate(value)
+                        f"{i + 1}. {example}"
+                        for i, example in enumerate(value)
                     )
                 elif key == "dependencies" and isinstance(value, list):
                     # Format dependencies as JSON array string
@@ -239,7 +246,9 @@ class PromptManager:
             Complete system prompt with REUG framework and Sacred Laws
         """
         # Try to load from markdown file first
-        core_prompt_file = self.config_root / "prompts" / "core_agent_system.md"
+        core_prompt_file = (
+            self.config_root / "prompts" / "core_agent_system.md"
+        )
         if core_prompt_file.exists():
             with open(core_prompt_file, encoding="utf-8") as f:
                 core_prompt = f.read()
@@ -262,8 +271,13 @@ class PromptManager:
             The contents of the referenced prompt file, or a fallback string.
         """
         try:
-            if not hasattr(self, "integrated_config") or not self.integrated_config:
-                logger.warning("Integrated prompt config not loaded; returning fallback")
+            if (
+                not hasattr(self, "integrated_config")
+                or not self.integrated_config
+            ):
+                logger.warning(
+                    "Integrated prompt config not loaded; returning fallback"
+                )
                 return f"System prompt '{key}' not available."
             hierarchy = self.integrated_config.get("prompt_hierarchy", {})
             entry = hierarchy.get(key)
@@ -276,7 +290,9 @@ class PromptManager:
                 return f"System prompt '{key}' has no file configured."
             prompt_path = (self.config_root / rel_path).resolve()
             if not prompt_path.exists():
-                logger.warning(f"Prompt file not found for '{key}': {prompt_path}")
+                logger.warning(
+                    f"Prompt file not found for '{key}': {prompt_path}"
+                )
                 return f"System prompt file missing for '{key}': {prompt_path}"
             with open(prompt_path, encoding="utf-8") as f:
                 return f.read()
@@ -284,7 +300,9 @@ class PromptManager:
             logger.error(f"Failed to load system prompt '{key}': {e}")
             return f"System prompt '{key}' failed to load."
 
-    def get_plugin_prompt(self, plugin_name: str, operation: str | None = None) -> str:
+    def get_plugin_prompt(
+        self, plugin_name: str, operation: str | None = None
+    ) -> str:
         """
         Get specialized prompt for a specific plugin.
         Args:
@@ -300,7 +318,9 @@ class PromptManager:
         )
         plugin_config = plugin_specs.get(plugin_name, {})
         if not plugin_config:
-            logger.warning(f"No specialized prompt found for plugin: {plugin_name}")
+            logger.warning(
+                f"No specialized prompt found for plugin: {plugin_name}"
+            )
             return f"You are the {plugin_name} module of the Super Alita AI agent."
         base_prompt = plugin_config.get("system_prompt", "")
         # Add operation-specific context if provided
@@ -351,7 +371,9 @@ class PromptManager:
             .get("turn_structure", {})
         )
 
-    def _format_tool_descriptions(self, tool_descriptions: dict[str, str]) -> str:
+    def _format_tool_descriptions(
+        self, tool_descriptions: dict[str, str]
+    ) -> str:
         """Format tool descriptions for the routing template."""
         if not tool_descriptions:
             return "No tools available"
@@ -428,11 +450,17 @@ Always start complex tasks with a `# script.py Plan:` structure.
             if not os.path.exists(full_path):
                 missing_files.append(file_path)
         if missing_files:
-            validation_report["issues"].append(f"Missing prompt files: {missing_files}")
+            validation_report["issues"].append(
+                f"Missing prompt files: {missing_files}"
+            )
             validation_report["status"] = "incomplete"
         # Check configuration completeness
         if self.integrated_config:
-            required_sections = ["prompts", "prompt_hierarchy", "integration_points"]
+            required_sections = [
+                "prompts",
+                "prompt_hierarchy",
+                "integration_points",
+            ]
             for section in required_sections:
                 if section not in self.integrated_config:
                     validation_report["issues"].append(
@@ -445,7 +473,9 @@ Always start complex tasks with a `# script.py Plan:` structure.
             "missing_files": len(missing_files),
             "has_integrated_config": bool(self.integrated_config),
             "legacy_prompts_available": bool(self.prompts),
-            "prompt_version": self.integrated_config.get("version", self.version),
+            "prompt_version": self.integrated_config.get(
+                "version", self.version
+            ),
         }
         return validation_report
 

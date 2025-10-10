@@ -47,7 +47,9 @@ class MangleRule:
     body: str
     description: str = ""
     tags: list[str] = field(default_factory=list)
-    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    created_at: str = field(
+        default_factory=lambda: datetime.now(UTC).isoformat()
+    )
 
 
 class ManglePlugin(PluginInterface):
@@ -64,7 +66,9 @@ class ManglePlugin(PluginInterface):
     def __init__(self):
         """Initialize the Mangle plugin."""
         self.name = "mangle_deductive_reasoning"
-        self.description = "Deductive database programming using Google's Mangle"
+        self.description = (
+            "Deductive database programming using Google's Mangle"
+        )
 
         # Storage for rules and facts
         self.rules: dict[str, MangleRule] = {}
@@ -105,7 +109,9 @@ class ManglePlugin(PluginInterface):
             if result.returncode == 0:
                 logger.info(f"Mangle detected: {result.stdout.strip()}")
             else:
-                logger.warning(f"Mangle check returned non-zero: {result.stderr}")
+                logger.warning(
+                    f"Mangle check returned non-zero: {result.stderr}"
+                )
                 # We'll continue even if this fails, as we may mock the execution
         except (subprocess.SubprocessError, FileNotFoundError) as e:
             logger.warning(f"Mangle binary not found or error checking: {e}")
@@ -114,7 +120,9 @@ class ManglePlugin(PluginInterface):
 
         # Subscribe to relevant events
         await event_bus.subscribe("knowledge_fact_added", self.handle_new_fact)
-        await event_bus.subscribe("query_knowledge", self.handle_knowledge_query)
+        await event_bus.subscribe(
+            "query_knowledge", self.handle_knowledge_query
+        )
 
         logger.info(
             f"{self.name} plugin initialized with {len(self.rules)} rules "
@@ -122,12 +130,16 @@ class ManglePlugin(PluginInterface):
         )
         return True
 
-    async def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
+    async def process_event(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Process events from the event bus."""
         # This plugin primarily uses specific event handlers rather than this generic method
         return None
 
-    async def handle_new_fact(self, event: dict[str, Any]) -> dict[str, Any] | None:
+    async def handle_new_fact(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Handle new fact events from the event bus."""
         try:
             if "relation" in event and "data" in event:
@@ -142,7 +154,9 @@ class ManglePlugin(PluginInterface):
                 # Save facts to disk
                 self._save_facts()
 
-                logger.debug(f"Added new fact to relation '{relation}': {data}")
+                logger.debug(
+                    f"Added new fact to relation '{relation}': {data}"
+                )
                 return {"status": "success", "relation": relation}
         except Exception as e:
             logger.error(f"Error processing new fact: {e}")
@@ -211,7 +225,11 @@ class ManglePlugin(PluginInterface):
             raise
 
     def add_rule(
-        self, name: str, body: str, description: str = "", tags: list[str] = None
+        self,
+        name: str,
+        body: str,
+        description: str = "",
+        tags: list[str] = None,
     ) -> str:
         """Add a new rule to the database."""
         rule_id = name.lower().replace(" ", "_")
@@ -238,7 +256,9 @@ class ManglePlugin(PluginInterface):
         self.facts[relation].append(data)
         self._save_facts()
 
-    def get_facts(self, relation: str = None) -> dict[str, list[dict[str, Any]]]:
+    def get_facts(
+        self, relation: str = None
+    ) -> dict[str, list[dict[str, Any]]]:
         """Get facts, optionally filtered by relation."""
         if relation:
             return {relation: self.facts.get(relation, [])}
@@ -255,7 +275,9 @@ class ManglePlugin(PluginInterface):
                     rule_id: MangleRule(**rule_data)
                     for rule_id, rule_data in rules_data.items()
                 }
-                logger.info(f"Loaded {len(self.rules)} rules from {self.rules_file}")
+                logger.info(
+                    f"Loaded {len(self.rules)} rules from {self.rules_file}"
+                )
         except Exception as e:
             logger.error(f"Error loading rules: {e}")
             # Initialize with empty rules if loading fails
@@ -308,12 +330,14 @@ class ManglePlugin(PluginInterface):
         except Exception as e:
             logger.error(f"Error saving facts: {e}")
 
-    def _convert_fact_to_mangle(self, relation: str, fact: dict[str, Any]) -> str:
+    def _convert_fact_to_mangle(
+        self, relation: str, fact: dict[str, Any]
+    ) -> str:
         """Convert a fact dictionary to Mangle syntax."""
         # Handle different data types appropriately
         values = []
 
-        for key, value in fact.items():
+        for _key, value in fact.items():
             if isinstance(value, str):
                 values.append(f'"{value}"')  # Strings are quoted
             elif isinstance(value, bool):
@@ -362,10 +386,14 @@ class ManglePlugin(PluginInterface):
                             try:
                                 # Try to parse as number
                                 result[key.strip()] = (
-                                    float(value) if "." in value else int(value)
+                                    float(value)
+                                    if "." in value
+                                    else int(value)
                                 )
                             except ValueError:
-                                result[key.strip()] = value  # Fallback to string
+                                result[key.strip()] = (
+                                    value  # Fallback to string
+                                )
 
                 results.append(result)
 
@@ -399,10 +427,12 @@ if __name__ == "__main__":
         plugin.add_fact("project", {"name": "project_a"})
         plugin.add_fact("project", {"name": "project_b"})
         plugin.add_fact(
-            "depends_on", {"project": "project_a", "lib": "log4j", "version": "2.15.0"}
+            "depends_on",
+            {"project": "project_a", "lib": "log4j", "version": "2.15.0"},
         )
         plugin.add_fact(
-            "depends_on", {"project": "project_b", "lib": "log4j", "version": "2.17.1"}
+            "depends_on",
+            {"project": "project_b", "lib": "log4j", "version": "2.17.1"},
         )
 
         # Execute a query

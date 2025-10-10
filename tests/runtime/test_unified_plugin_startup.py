@@ -25,7 +25,9 @@ class InMemoryEventBus:
         self.events: list[dict[str, Any]] = []
         self.handlers: dict[str, list[Callable[[Any], Any]]] = {}
 
-    async def subscribe(self, event_type: str, handler: Callable[[Any], Any]) -> None:
+    async def subscribe(
+        self, event_type: str, handler: Callable[[Any], Any]
+    ) -> None:
         self.handlers.setdefault(event_type, []).append(handler)
 
     async def emit(self, event_type: str, **kwargs: Any) -> None:
@@ -52,8 +54,12 @@ class WorkspaceShim:
     def __init__(self, bus: InMemoryEventBus) -> None:
         self.bus = bus
 
-    def subscribe(self, event_type: str, handler: Callable[[Any], Any]) -> None:
-        asyncio.get_event_loop().create_task(self.bus.subscribe(event_type, handler))
+    def subscribe(
+        self, event_type: str, handler: Callable[[Any], Any]
+    ) -> None:
+        asyncio.get_event_loop().create_task(
+            self.bus.subscribe(event_type, handler)
+        )
 
 
 @pytest.mark.asyncio
@@ -86,7 +92,10 @@ async def test_unified_plugins_start_and_pipeline() -> None:
 
         # emit synthetic telemetry to confirm bus capture
         await bus.emit(
-            "STATE_TRANSITION", plugin=name, from_state="setup", to_state="started"
+            "STATE_TRANSITION",
+            plugin=name,
+            from_state="setup",
+            to_state="started",
         )
         await bus.emit("AbilityCalled", plugin=name, ability="startup")
         await bus.emit("AbilitySucceeded", plugin=name, ability="startup")

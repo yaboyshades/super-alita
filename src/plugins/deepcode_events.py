@@ -20,7 +20,9 @@ class DeepCodeGenerationEvent:
             self.timestamp = datetime.now(UTC)
 
     def to_atom_metadata(self) -> dict[str, Any]:
-        prompt_hash = hashlib.sha256(self.prompt.encode("utf-8")).hexdigest()[:16]
+        prompt_hash = hashlib.sha256(self.prompt.encode("utf-8")).hexdigest()[
+            :16
+        ]
         return {
             "event_type": "deepcode_generation",
             "repo_path": self.repo_path,

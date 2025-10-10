@@ -27,7 +27,9 @@ async def test_sdd_pipeline_spec_plan_tasks(tmp_path: Path):
     assert spec_res.next_step_guidance is not None
     assert spec_res.next_step_metadata_path is not None
 
-    metadata_file = Path(pipeline.workspace_root) / spec_res.next_step_metadata_path
+    metadata_file = (
+        Path(pipeline.workspace_root) / spec_res.next_step_metadata_path
+    )
     assert metadata_file.exists()
 
     metadata = safe_load(metadata_file.read_text(encoding="utf-8"))
@@ -66,12 +68,16 @@ async def test_sdd_pipeline_spec_plan_tasks(tmp_path: Path):
 
     plan_metadata = safe_load(metadata_file.read_text(encoding="utf-8"))
     assert plan_metadata
-    assert all(item["status"] == "complete" for item in plan_metadata["clarifications"])
+    assert all(
+        item["status"] == "complete"
+        for item in plan_metadata["clarifications"]
+    )
     plan_command = next(
-        item for item in plan_metadata["commands"] if "/plan" in item["action"].lower()
+        item
+        for item in plan_metadata["commands"]
+        if "/plan" in item["action"].lower()
     )
     assert plan_command["status"] == "complete"
-
 
     # tasks
     tasks_res = await pipeline.tasks(
@@ -89,14 +95,18 @@ async def test_sdd_pipeline_spec_plan_tasks(tmp_path: Path):
     assert tasks_res.estimated_total_hours >= 0
     assert tasks_res.feature_id == plan_res.feature_id
     assert tasks_res.next_step_guidance is not None
-    assert tasks_res.next_step_metadata_path == spec_res.next_step_metadata_path
+    assert (
+        tasks_res.next_step_metadata_path == spec_res.next_step_metadata_path
+    )
     assert tasks_res.next_steps
     assert any(task.id.startswith("NS-") for task in tasks_res.tasks)
     assert "Guidance Follow-ups" in tasks_file.read_text(encoding="utf-8")
 
     post_metadata = safe_load(metadata_file.read_text(encoding="utf-8"))
     tasks_command = next(
-        item for item in post_metadata["commands"] if "/tasks" in item["action"].lower()
+        item
+        for item in post_metadata["commands"]
+        if "/tasks" in item["action"].lower()
     )
     assert tasks_command["status"] in {"in_progress", "complete"}
 
@@ -120,9 +130,10 @@ async def test_sdd_pipeline_spec_plan_tasks(tmp_path: Path):
     assert "Priority Focus" in tasks_res.tasks_breakdown
 
     # Critical path should include all critical-priority tasks
-    critical_ids = {task.id for task in tasks_res.tasks if task.priority == "critical"}
+    critical_ids = {
+        task.id for task in tasks_res.tasks if task.priority == "critical"
+    }
     assert set(tasks_res.critical_path) == critical_ids
 
     # Acceptance criteria should be present for every task definition
     assert all(task.acceptance_criteria for task in tasks_res.tasks)
-

@@ -44,12 +44,16 @@ class OpenAIAgentPlugin(PluginInterface):
     async def _handle_message(self, event: dict[str, Any]) -> None:
         """Forward user message to OpenAI Agent and emit response."""
         if not self.client:
-            logger.warning("OpenAI Agent client not configured; echoing message")
+            logger.warning(
+                "OpenAI Agent client not configured; echoing message"
+            )
             reply = event.get("user_message", "")
         else:
             user_message = event.get("user_message", "")
             try:
-                response = await self.client.responses.create(prompt=user_message)
+                response = await self.client.responses.create(
+                    prompt=user_message
+                )
                 reply = response.output_text
             except Exception as exc:  # pragma: no cover - network failures
                 logger.error("Agent call failed: %s", exc)

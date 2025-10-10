@@ -135,17 +135,30 @@ class CodeSandbox:
                     if isinstance(node, ast.ImportFrom):
                         module_name = node.module
                     else:
-                        module_name = node.names[0].name if node.names else None
+                        module_name = (
+                            node.names[0].name if node.names else None
+                        )
 
-                    if module_name and not self._is_module_allowed(module_name):
-                        dangerous_nodes.append(f"Forbidden import: {module_name}")
+                    if module_name and not self._is_module_allowed(
+                        module_name
+                    ):
+                        dangerous_nodes.append(
+                            f"Forbidden import: {module_name}"
+                        )
 
                 # Check for dangerous function calls
                 elif isinstance(node, ast.Call):
                     if isinstance(node.func, ast.Name):
                         func_name = node.func.id
-                        if func_name in {"eval", "exec", "compile", "__import__"}:
-                            dangerous_nodes.append(f"Forbidden function: {func_name}")
+                        if func_name in {
+                            "eval",
+                            "exec",
+                            "compile",
+                            "__import__",
+                        }:
+                            dangerous_nodes.append(
+                                f"Forbidden function: {func_name}"
+                            )
 
                 # Check for attribute access to dangerous attributes
                 elif isinstance(node, ast.Attribute):
@@ -226,7 +239,9 @@ class CodeSandbox:
 
             # Execute with timeout
             result = await asyncio.wait_for(
-                self._execute_code_async(code, execution_globals, execution_locals),
+                self._execute_code_async(
+                    code, execution_globals, execution_locals
+                ),
                 timeout=self.timeout,
             )
 
@@ -260,14 +275,19 @@ class CodeSandbox:
             sys.stderr = old_stderr
 
     async def _execute_code_async(
-        self, code: str, globals_dict: dict[str, Any], locals_dict: dict[str, Any]
+        self,
+        code: str,
+        globals_dict: dict[str, Any],
+        locals_dict: dict[str, Any],
     ) -> Any:
         """Execute code in async context"""
         # Parse code to determine if it's an expression or statement
         try:
             # Try as expression first
             tree = ast.parse(code, mode="eval")
-            return eval(compile(tree, "<string>", "eval"), globals_dict, locals_dict)
+            return eval(
+                compile(tree, "<string>", "eval"), globals_dict, locals_dict
+            )
         except SyntaxError:
             # Not an expression, execute as statements
             tree = ast.parse(code, mode="exec")
@@ -284,7 +304,9 @@ class CodeSandbox:
             ):
                 try:
                     return eval(
-                        compile(ast.Expression(last_expr.value), "<string>", "eval"),
+                        compile(
+                            ast.Expression(last_expr.value), "<string>", "eval"
+                        ),
                         globals_dict,
                         locals_dict,
                     )
@@ -330,11 +352,16 @@ class CodeSandbox:
             ) from e
 
     async def _eval_expression_async(
-        self, expression: str, globals_dict: dict[str, Any], locals_dict: dict[str, Any]
+        self,
+        expression: str,
+        globals_dict: dict[str, Any],
+        locals_dict: dict[str, Any],
     ) -> Any:
         """Evaluate expression in async context"""
         tree = ast.parse(expression, mode="eval")
-        return eval(compile(tree, "<string>", "eval"), globals_dict, locals_dict)
+        return eval(
+            compile(tree, "<string>", "eval"), globals_dict, locals_dict
+        )
 
 
 # Custom import hook for additional security
@@ -345,7 +372,12 @@ class RestrictedImporter:
         self.allowed_modules = allowed_modules
 
     def __call__(
-        self, name: str, globals_dict=None, locals_dict=None, fromlist=(), level=0
+        self,
+        name: str,
+        globals_dict=None,
+        locals_dict=None,
+        fromlist=(),
+        level=0,
     ):
         if not self._is_module_allowed(name):
             raise ImportError(f"Import of module '{name}' is not allowed")

@@ -24,7 +24,11 @@ def _try_import_gemini() -> tuple[bool, str | None, Any]:
     """
     # Check if explicitly disabled
     if os.getenv("DISABLE_GEMINI", "").lower() in ("true", "1", "yes"):
-        return False, "Gemini disabled via DISABLE_GEMINI environment variable", None
+        return (
+            False,
+            "Gemini disabled via DISABLE_GEMINI environment variable",
+            None,
+        )
 
     try:
         import google.generativeai as genai_module
@@ -33,7 +37,9 @@ def _try_import_gemini() -> tuple[bool, str | None, Any]:
         return False, error_msg, None
     except TypeError as e:
         if "descriptor pool" in str(e) or "duplicate symbol" in str(e):
-            error_msg = f"Protobuf descriptor conflict in Google AI package: {e}"
+            error_msg = (
+                f"Protobuf descriptor conflict in Google AI package: {e}"
+            )
             # This is a known issue with google-generativeai package
             return False, error_msg, None
         error_msg = f"TypeError importing Google Generative AI: {e}"
@@ -74,5 +80,7 @@ def get_gemini_error() -> str | None:
 def require_gemini():
     """Raise an exception if Gemini is not available."""
     if not GEMINI_AVAILABLE:
-        raise ImportError(f"Google Generative AI not available: {GEMINI_ERROR}")
+        raise ImportError(
+            f"Google Generative AI not available: {GEMINI_ERROR}"
+        )
     return genai

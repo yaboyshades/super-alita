@@ -128,9 +128,13 @@ class PlannerPlugin(PluginInterface):
             )
 
             # Send final result to user
-            await self.emit_event("agent_reply", text=result, session_id=session_id)
+            await self.emit_event(
+                "agent_reply", text=result, session_id=session_id
+            )
 
-            logger.info(f"✅ Plan execution completed for session {session_id}")
+            logger.info(
+                f"✅ Plan execution completed for session {session_id}"
+            )
 
         except Exception as e:
             logger.error(f"Plan execution failed: {e}")
@@ -154,7 +158,9 @@ class PlannerPlugin(PluginInterface):
             elif isinstance(event, dict):
                 user_message = event.get("text", event.get("user_message", ""))
             else:
-                logger.warning(f"Could not extract message from event: {event}")
+                logger.warning(
+                    f"Could not extract message from event: {event}"
+                )
                 return
 
             if not user_message or not user_message.strip():
@@ -206,9 +212,13 @@ class PlannerPlugin(PluginInterface):
                         f"🎯 Using templated prompt for: {user_message[:50]}..."
                     )
 
-                    decision = await self.gemini_client.generate_content(prompt)
+                    decision = await self.gemini_client.generate_content(
+                        prompt
+                    )
                     decision_text = decision.strip()
-                    logger.info(f"LLM Decision for '{user_message}': {decision_text}")
+                    logger.info(
+                        f"LLM Decision for '{user_message}': {decision_text}"
+                    )
 
                     if decision_text.startswith("TOOL "):
                         try:
@@ -240,7 +250,10 @@ class PlannerPlugin(PluginInterface):
                         gap_description = decision_text[4:].strip()
                         logger.info(f"🔧 Tool gap detected: {gap_description}")
                         await self._handle_tool_gap(
-                            gap_description, user_message, session_id, conversation_id
+                            gap_description,
+                            user_message,
+                            session_id,
+                            conversation_id,
                         )
                         return
 
@@ -278,7 +291,9 @@ class PlannerPlugin(PluginInterface):
                     return
 
             # Fallback if LLM is not available
-            logger.warning("Gemini client not available - using basic fallback")
+            logger.warning(
+                "Gemini client not available - using basic fallback"
+            )
             await self._emit_chat_response(
                 "I'm currently unable to process your request. Please try again later or use '/search <query>' for web searches.",
                 session_id,
@@ -321,7 +336,9 @@ class PlannerPlugin(PluginInterface):
                 "planner.gap_response", gap_description=gap_description
             )
 
-            await self._emit_chat_response(response, session_id, conversation_id)
+            await self._emit_chat_response(
+                response, session_id, conversation_id
+            )
 
             # Subscribe to atom_ready events to notify user when tool is available
             # (This could be enhanced to track specific gap requests)
@@ -358,7 +375,11 @@ class PlannerPlugin(PluginInterface):
             logger.error(f"Failed to emit chat response: {e}")
 
     async def _emit_tool_call(
-        self, tool_name: str, params: dict, session_id: str, conversation_id: str
+        self,
+        tool_name: str,
+        params: dict,
+        session_id: str,
+        conversation_id: str,
     ):
         """Emit a tool call event with deduplication."""
         # Defensive normalization: convert legacy tool names
@@ -404,7 +425,10 @@ class PlannerPlugin(PluginInterface):
 
             # Generic fallback: if tool_name doesn't match any known static tool,
             # check if there's a dynamic tool with a similar name
-            elif tool_name not in ["web_agent", "memory_manager"]:  # Known static tools
+            elif tool_name not in [
+                "web_agent",
+                "memory_manager",
+            ]:  # Known static tools
                 for tool_key in dynamic_tools:
                     if (
                         tool_name.lower() in tool_key.lower()
@@ -453,7 +477,9 @@ class PlannerPlugin(PluginInterface):
     async def _handle_atom_ready(self, event):
         """Handle notifications of newly created tools."""
         try:
-            data = event.model_dump() if hasattr(event, "model_dump") else event
+            data = (
+                event.model_dump() if hasattr(event, "model_dump") else event
+            )
             atom_info = data.get("atom", {})
 
             tool_name = atom_info.get("name", "New Tool")
@@ -496,7 +522,9 @@ class PlannerPlugin(PluginInterface):
                             elif isinstance(details, dict):
                                 param_type = details.get("type", "str")
                                 desc = details.get("description", details)
-                                param_desc.append(f"  {param} ({param_type}): {desc}")
+                                param_desc.append(
+                                    f"  {param} ({param_type}): {desc}"
+                                )
                             else:
                                 param_desc.append(f"  {param}: {details}")
 

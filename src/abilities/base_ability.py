@@ -28,19 +28,27 @@ class BaseAbility(ABC):
         self.event_bus: Any = None
 
     @abstractmethod
-    async def initialize(self, event_bus: Any) -> bool:  # pragma: no cover - interface
+    async def initialize(
+        self, event_bus: Any
+    ) -> bool:  # pragma: no cover - interface
         """Wire subscriptions and emit initialization events."""
 
     @abstractmethod
-    def validate_input(self, input_data: Any) -> bool:  # pragma: no cover - interface
+    def validate_input(
+        self, input_data: Any
+    ) -> bool:  # pragma: no cover - interface
         """Validate input according to the ability contract."""
 
     @abstractmethod
-    async def execute(self, input_data: dict[str, Any]) -> dict[str, Any]:  # pragma: no cover - interface
+    async def execute(
+        self, input_data: dict[str, Any]
+    ) -> dict[str, Any]:  # pragma: no cover - interface
         """Execute the ability and return a standardized result structure."""
 
     @abstractmethod
-    async def health_check(self) -> dict[str, Any]:  # pragma: no cover - interface
+    async def health_check(
+        self,
+    ) -> dict[str, Any]:  # pragma: no cover - interface
         """Return a health status for monitoring and debugging."""
 
     @abstractmethod
@@ -49,4 +57,3 @@ class BaseAbility(ABC):
 
     def __str__(self) -> str:  # pragma: no cover - convenience
         return f"{getattr(self, 'name', 'ability')} v{getattr(self, 'version', '0.0.0')}"
-

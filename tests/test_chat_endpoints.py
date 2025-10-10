@@ -11,7 +11,9 @@ transport = ASGITransport(app=app)
 
 @pytest.mark.asyncio
 async def test_chat_json_roundtrip() -> None:
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         r = await client.post(
             "/v1/chat", json={"q": "hello integration", "session": "test"}
         )
@@ -19,13 +21,18 @@ async def test_chat_json_roundtrip() -> None:
         data = r.json()
         assert data.get("type") == "message"
         assert "content" in data
-        assert data["content"].lower().startswith("hello") or len(data["content"]) > 0
+        assert (
+            data["content"].lower().startswith("hello")
+            or len(data["content"]) > 0
+        )
 
 
 @pytest.mark.asyncio
 async def test_chat_sse_stream_basic() -> None:
     # Use a raw stream to capture initial few events
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         url = "/v1/chat/stream"
         params = {"q": "hi there", "session": "test"}
         # httpx can't stream SSE via GET easily with auto decode; use raw stream

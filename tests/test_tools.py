@@ -14,7 +14,10 @@ async def test_find_github_examples_success():
         "items": [
             {
                 "path": "src/main.py",
-                "repository": {"full_name": "test/repo1", "license": {"name": "MIT"}},
+                "repository": {
+                    "full_name": "test/repo1",
+                    "license": {"name": "MIT"},
+                },
                 "text_matches": [{"fragment": "def my_func():"}],
             }
         ]
@@ -24,7 +27,9 @@ async def test_find_github_examples_success():
     async_mock_client.get = AsyncMock(return_value=mock_response)
 
     with patch("httpx.AsyncClient") as mock_async_client_cls:
-        mock_async_client_cls.return_value.__aenter__.return_value = async_mock_client
+        mock_async_client_cls.return_value.__aenter__.return_value = (
+            async_mock_client
+        )
 
         tool = GitHubTool(token="fake_token")
         results = await tool.find_github_examples("test query")
@@ -41,10 +46,11 @@ async def test_find_github_examples_api_error():
     async_mock_client.get = AsyncMock(side_effect=Exception("Network Error"))
 
     with patch("httpx.AsyncClient") as mock_async_client_cls:
-        mock_async_client_cls.return_value.__aenter__.return_value = async_mock_client
+        mock_async_client_cls.return_value.__aenter__.return_value = (
+            async_mock_client
+        )
 
         tool = GitHubTool(token="fake_token")
         results = await tool.find_github_examples("test query")
 
         assert results == []
-

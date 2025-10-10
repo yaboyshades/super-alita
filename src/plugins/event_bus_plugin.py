@@ -71,7 +71,9 @@ class EventBusPlugin(PluginInterface):
 
         # Apply plugin-specific configuration
         plugin_config = config.get(self.name, {})
-        self._health_check_interval = plugin_config.get("health_check_interval", 30.0)
+        self._health_check_interval = plugin_config.get(
+            "health_check_interval", 30.0
+        )
         self._max_retries = plugin_config.get("max_connection_retries", 5)
 
         # Configure the EventBus itself if settings are provided
@@ -79,12 +81,18 @@ class EventBusPlugin(PluginInterface):
         if redis_config:
             # Pass Redis configuration to the event bus
             if hasattr(self._bus_instance, "_redis_host"):
-                self._bus_instance._redis_host = redis_config.get("host", "localhost")
+                self._bus_instance._redis_host = redis_config.get(
+                    "host", "localhost"
+                )
                 self._bus_instance._redis_port = redis_config.get("port", 6379)
                 self._bus_instance._redis_db = redis_config.get("db", 0)
-                self._bus_instance._redis_password = redis_config.get("password")
+                self._bus_instance._redis_password = redis_config.get(
+                    "password"
+                )
 
-        logger.info("EventBusPlugin setup complete with enhanced monitoring enabled")
+        logger.info(
+            "EventBusPlugin setup complete with enhanced monitoring enabled"
+        )
 
     async def start(self) -> None:
         """
@@ -132,7 +140,9 @@ class EventBusPlugin(PluginInterface):
                     ) from None
 
                 # Exponential backoff with jitter
-                backoff_time = min(2**self._connection_retries, 30)  # Cap at 30 seconds
+                backoff_time = min(
+                    2**self._connection_retries, 30
+                )  # Cap at 30 seconds
                 await asyncio.sleep(backoff_time)
 
     async def shutdown(self) -> None:
@@ -154,10 +164,14 @@ class EventBusPlugin(PluginInterface):
             # Mark plugin as stopped
             await super().shutdown()
 
-            logger.info("EventBusPlugin shutdown complete with stats preserved")
+            logger.info(
+                "EventBusPlugin shutdown complete with stats preserved"
+            )
 
         except Exception as e:
-            logger.error(f"Error during EventBusPlugin shutdown: {e}", exc_info=True)
+            logger.error(
+                f"Error during EventBusPlugin shutdown: {e}", exc_info=True
+            )
             # Still mark as shutdown even if there were errors
             await super().shutdown()
 
@@ -184,7 +198,9 @@ class EventBusPlugin(PluginInterface):
                 self._performance_stats["connection_uptime"] = (
                     current_time - start_time
                 ).total_seconds()
-                self._performance_stats["last_health_check"] = current_time.isoformat()
+                self._performance_stats["last_health_check"] = (
+                    current_time.isoformat()
+                )
 
                 # Comprehensive health check
                 is_healthy = await self._comprehensive_health_check()
@@ -203,7 +219,9 @@ class EventBusPlugin(PluginInterface):
                 logger.info("EventBus health monitor cancelled")
                 break
             except Exception as e:
-                logger.error(f"Error in EventBus health monitor: {e}", exc_info=True)
+                logger.error(
+                    f"Error in EventBus health monitor: {e}", exc_info=True
+                )
 
     async def _performance_monitor(self):
         """
@@ -223,16 +241,21 @@ class EventBusPlugin(PluginInterface):
                 await self._collect_performance_metrics()
 
                 # Log performance summary every 10 minutes
-                uptime_minutes = self._performance_stats["connection_uptime"] / 60
+                uptime_minutes = (
+                    self._performance_stats["connection_uptime"] / 60
+                )
                 if uptime_minutes > 0 and int(uptime_minutes) % 10 == 0:
-                    logger.info(f"EventBus performance: {self._performance_stats}")
+                    logger.info(
+                        f"EventBus performance: {self._performance_stats}"
+                    )
 
             except asyncio.CancelledError:
                 logger.info("EventBus performance monitor cancelled")
                 break
             except Exception as e:
                 logger.error(
-                    f"Error in EventBus performance monitor: {e}", exc_info=True
+                    f"Error in EventBus performance monitor: {e}",
+                    exc_info=True,
                 )
 
     async def _comprehensive_health_check(self) -> bool:
@@ -248,7 +271,10 @@ class EventBusPlugin(PluginInterface):
                 return False
 
             # Redis connection health check
-            if hasattr(self._bus_instance, "_redis") and self._bus_instance._redis:
+            if (
+                hasattr(self._bus_instance, "_redis")
+                and self._bus_instance._redis
+            ):
                 # Try Redis ping with timeout
                 ping_result = await asyncio.wait_for(
                     self._bus_instance._redis.ping(), timeout=5.0
@@ -293,7 +319,9 @@ class EventBusPlugin(PluginInterface):
                 bus_stats = self._bus_instance._stats
                 self._performance_stats.update(
                     {
-                        "events_published": bus_stats.get("events_published", 0),
+                        "events_published": bus_stats.get(
+                            "events_published", 0
+                        ),
                         "events_received": bus_stats.get("events_received", 0),
                         "active_subscriptions": bus_stats.get(
                             "active_subscriptions", 0
@@ -302,7 +330,10 @@ class EventBusPlugin(PluginInterface):
                 )
 
             # Collect Redis performance metrics if available
-            if hasattr(self._bus_instance, "_redis") and self._bus_instance._redis:
+            if (
+                hasattr(self._bus_instance, "_redis")
+                and self._bus_instance._redis
+            ):
                 try:
                     info = await self._bus_instance._redis.info()
                     self._performance_stats["redis_metrics"] = {
@@ -337,7 +368,9 @@ class EventBusPlugin(PluginInterface):
 
                 # Test the connection
                 if await self._comprehensive_health_check():
-                    logger.info("EventBus recovery successful (simple reconnection)")
+                    logger.info(
+                        "EventBus recovery successful (simple reconnection)"
+                    )
                     return
             except Exception as e:
                 logger.debug(f"Simple reconnection failed: {e}")
@@ -348,7 +381,9 @@ class EventBusPlugin(PluginInterface):
                 await self._bus_instance.start()
 
                 if await self._comprehensive_health_check():
-                    logger.info("EventBus recovery successful (delayed reconnection)")
+                    logger.info(
+                        "EventBus recovery successful (delayed reconnection)"
+                    )
                     return
             except Exception as e:
                 logger.debug(f"Delayed reconnection failed: {e}")
@@ -410,13 +445,17 @@ class EventBusPlugin(PluginInterface):
                 "plugin_stats": base_stats,
                 "plugin_running": self.is_running,
                 "event_bus_running": (
-                    self._bus_instance.is_running if self._bus_instance else False
+                    self._bus_instance.is_running
+                    if self._bus_instance
+                    else False
                 ),
                 "health_status": (await self.health_check())["status"],
             }
 
         except Exception as e:
-            logger.error(f"Error getting EventBus statistics: {e}", exc_info=True)
+            logger.error(
+                f"Error getting EventBus statistics: {e}", exc_info=True
+            )
             return {"error": str(e)}
 
     # Public accessor for other plugins (backward compatibility)
@@ -451,7 +490,9 @@ async def check_event_bus_health(plugin: EventBusPlugin) -> bool:
     """
     try:
         status = await plugin.get_status()
-        return status.get("redis_health", False) and status.get("plugin_running", False)
+        return status.get("redis_health", False) and status.get(
+            "plugin_running", False
+        )
     except Exception:
         return False
 

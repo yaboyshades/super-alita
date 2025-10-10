@@ -26,7 +26,10 @@ class AsyncCircuitBreaker:
     """Simple async circuit breaker implementation."""
 
     def __init__(
-        self, name: str, failure_threshold: int = 5, recovery_timeout: float = 60.0
+        self,
+        name: str,
+        failure_threshold: int = 5,
+        recovery_timeout: float = 60.0,
     ):
         self.name = name
         self.failure_threshold = failure_threshold
@@ -42,11 +45,14 @@ class AsyncCircuitBreaker:
             # Check if recovery timeout has passed
             if (
                 self.last_failure_time
-                and time.time() - self.last_failure_time > self.recovery_timeout
+                and time.time() - self.last_failure_time
+                > self.recovery_timeout
             ):
                 self.state = CircuitState.HALF_OPEN
             else:
-                raise CircuitBreakerError(f"Circuit breaker {self.name} is open")
+                raise CircuitBreakerError(
+                    f"Circuit breaker {self.name} is open"
+                )
 
         return self
 

@@ -58,7 +58,9 @@ def test_mcp_registration():
         return
 
     # Now register a second tool with same signature but different ID
-    print("\nStep 3: Registering second tool with same signature but different ID...")
+    print(
+        "\nStep 3: Registering second tool with same signature but different ID..."
+    )
     calculator_spec_2 = {
         "tool_id": "math_tool",  # Different ID
         "description": "Performs mathematical operations",  # Different description
@@ -81,7 +83,9 @@ def test_mcp_registration():
         },
     }
 
-    res = requests.post(f"{BASE_URL}/tools/mcp/register", json=calculator_spec_2)
+    res = requests.post(
+        f"{BASE_URL}/tools/mcp/register", json=calculator_spec_2
+    )
     if res.status_code == 200:
         reg_result_2 = res.json()
         print(f"✅ Second tool registered: {reg_result_2}")
@@ -126,12 +130,18 @@ def test_mcp_registration():
     if res.status_code == 200:
         catalog_data = res.json()
         # Find calculator tool by the expected canonical ID from step 4
-        canonical_id = reg_result.get("registered")  # This should be the canonical ID
+        canonical_id = reg_result.get(
+            "registered"
+        )  # This should be the canonical ID
         calc_tools = [t for t in catalog_data if t.get("name") == canonical_id]
         if len(calc_tools) == 1:
-            print(f"✅ SUCCESS: Canonical tool '{canonical_id}' found in catalog!")
+            print(
+                f"✅ SUCCESS: Canonical tool '{canonical_id}' found in catalog!"
+            )
         else:
-            print(f"❌ FAILED: Canonical tool '{canonical_id}' not found in catalog")
+            print(
+                f"❌ FAILED: Canonical tool '{canonical_id}' not found in catalog"
+            )
             tool_names = [t.get("name") for t in catalog_data]
             print(f"   - Available tools in catalog: {tool_names}")
     else:

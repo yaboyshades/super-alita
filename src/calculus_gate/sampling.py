@@ -51,7 +51,8 @@ class RuntimeProfiler:
             raise ValueError("input_sizes cannot be empty")
 
         if not all(
-            input_sizes[i] < input_sizes[i + 1] for i in range(len(input_sizes) - 1)
+            input_sizes[i] < input_sizes[i + 1]
+            for i in range(len(input_sizes) - 1)
         ):
             raise ValueError("input_sizes must be strictly increasing")
 
@@ -70,9 +71,14 @@ class RuntimeProfiler:
 
         for input_size in input_sizes:
             try:
-                wall_time, cpu_time, memory_peak, memory_delta, outliers, noise = (
-                    self._measure_single_input(target_function, input_size)
-                )
+                (
+                    wall_time,
+                    cpu_time,
+                    memory_peak,
+                    memory_delta,
+                    outliers,
+                    noise,
+                ) = self._measure_single_input(target_function, input_size)
 
                 sample_set.add_sample(
                     input_size, wall_time, cpu_time, memory_peak, memory_delta
@@ -82,7 +88,9 @@ class RuntimeProfiler:
 
             except Exception as e:
                 # Record measurement failure but continue with other sizes
-                print(f"Warning: Failed to measure input size {input_size}: {e}")
+                print(
+                    f"Warning: Failed to measure input size {input_size}: {e}"
+                )
                 # Add minimal data to maintain array consistency
                 sample_set.add_sample(input_size, 0.0, 0.0, 0, 0)
                 measurement_noise_values.append(
@@ -183,10 +191,14 @@ class RuntimeProfiler:
 
         # Calculate averages
         avg_wall_time = (
-            sum(wall_times_clean) / len(wall_times_clean) if wall_times_clean else 0.0
+            sum(wall_times_clean) / len(wall_times_clean)
+            if wall_times_clean
+            else 0.0
         )
         avg_cpu_time = (
-            sum(cpu_times_clean) / len(cpu_times_clean) if cpu_times_clean else 0.0
+            sum(cpu_times_clean) / len(cpu_times_clean)
+            if cpu_times_clean
+            else 0.0
         )
         avg_memory_peak = max(memory_peaks) if memory_peaks else 0
         avg_memory_delta = (
@@ -195,9 +207,9 @@ class RuntimeProfiler:
 
         # Calculate measurement noise (coefficient of variation)
         if len(wall_times_clean) > 1 and avg_wall_time > 0:
-            variance = sum((t - avg_wall_time) ** 2 for t in wall_times_clean) / len(
-                wall_times_clean
-            )
+            variance = sum(
+                (t - avg_wall_time) ** 2 for t in wall_times_clean
+            ) / len(wall_times_clean)
             std_dev = variance**0.5
             noise = std_dev / avg_wall_time
         else:
@@ -300,7 +312,7 @@ class RuntimeProfiler:
         """
         try:
             # Try calling with a small test value
-            result = target_function(1)
+            target_function(1)
             return True
         except TypeError as e:
             if "takes" in str(e) and "positional argument" in str(e):
@@ -328,8 +340,12 @@ class RuntimeProfiler:
         ratios = []
         for i in range(1, len(sample_set.wall_times)):
             if sample_set.wall_times[i - 1] > 0:
-                time_ratio = sample_set.wall_times[i] / sample_set.wall_times[i - 1]
-                size_ratio = sample_set.input_sizes[i] / sample_set.input_sizes[i - 1]
+                time_ratio = (
+                    sample_set.wall_times[i] / sample_set.wall_times[i - 1]
+                )
+                size_ratio = (
+                    sample_set.input_sizes[i] / sample_set.input_sizes[i - 1]
+                )
                 if size_ratio > 1:
                     ratios.append(time_ratio / size_ratio)
 

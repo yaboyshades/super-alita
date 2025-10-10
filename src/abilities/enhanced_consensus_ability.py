@@ -43,7 +43,9 @@ class EnhancedConsensusProvider(PluginInterface):
     def __init__(self, config: dict[str, Any] = None):
         super().__init__(name="enhanced_consensus")
         self.config = config or {}
-        self.base_url = self.config.get("base_url", "http://localhost:11434/v1")
+        self.base_url = self.config.get(
+            "base_url", "http://localhost:11434/v1"
+        )
         self.model_name = self.config.get("model_name", "gpt-oss:20b")
         self.timeout = self.config.get("timeout", 60.0)
         self.max_retries = self.config.get("max_retries", 3)
@@ -52,7 +54,9 @@ class EnhancedConsensusProvider(PluginInterface):
 
     async def initialize(self) -> None:
         """Initialize the consensus provider."""
-        print(f"🔧 Enhanced consensus provider initialized for {self.model_name}")
+        print(
+            f"🔧 Enhanced consensus provider initialized for {self.model_name}"
+        )
 
     async def shutdown(self) -> None:
         """Shutdown the consensus provider."""
@@ -62,7 +66,9 @@ class EnhancedConsensusProvider(PluginInterface):
         """Cleanup the consensus provider."""
         pass
 
-    async def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
+    async def process_event(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Process events if needed."""
         return None
 
@@ -100,13 +106,17 @@ class EnhancedConsensusProvider(PluginInterface):
                 "metadata": {"error": "No valid responses"},
             }
 
-        responses, confidence_scores = zip(*responses_with_confidence, strict=False)
+        responses, confidence_scores = zip(
+            *responses_with_confidence, strict=False
+        )
 
         # Apply consensus method
         if consensus_method == ConsensusMethod.SIMPLE_VOTE:
             consensus = self._simple_vote_consensus(responses)
         elif consensus_method == ConsensusMethod.WEIGHTED_VOTE:
-            consensus = self._weighted_vote_consensus(responses, confidence_scores)
+            consensus = self._weighted_vote_consensus(
+                responses, confidence_scores
+            )
         elif consensus_method == ConsensusMethod.CONFIDENCE_BASED:
             consensus = self._confidence_based_consensus(
                 responses, confidence_scores, confidence_threshold
@@ -114,9 +124,13 @@ class EnhancedConsensusProvider(PluginInterface):
         elif consensus_method == ConsensusMethod.SEMANTIC_SIMILARITY:
             consensus = await self._semantic_similarity_consensus(responses)
         elif consensus_method == ConsensusMethod.ENSEMBLE_RANKING:
-            consensus = self._ensemble_ranking_consensus(responses, confidence_scores)
+            consensus = self._ensemble_ranking_consensus(
+                responses, confidence_scores
+            )
         else:
-            consensus = self._weighted_vote_consensus(responses, confidence_scores)
+            consensus = self._weighted_vote_consensus(
+                responses, confidence_scores
+            )
 
         # Merge consensus metadata with transport/debug info
         transport_counts: dict[str, int] = {}
@@ -157,7 +171,9 @@ class EnhancedConsensusProvider(PluginInterface):
                 temp_offset = (i / max(1, num_samples - 1) - 0.5) * temp_range
                 temperature = max(0.1, min(1.0, base_temp + temp_offset))
 
-                task = self._single_request(client, prompt, temperature, max_tokens)
+                task = self._single_request(
+                    client, prompt, temperature, max_tokens
+                )
                 tasks.append(task)
 
             responses = await asyncio.gather(*tasks, return_exceptions=True)
@@ -192,7 +208,10 @@ class EnhancedConsensusProvider(PluginInterface):
                 json={
                     "model": self.model_name,
                     "messages": [
-                        {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "system",
+                            "content": "You are a helpful assistant.",
+                        },
                         {"role": "user", "content": prompt},
                     ],
                     "max_tokens": max_tokens,
@@ -246,7 +265,9 @@ class EnhancedConsensusProvider(PluginInterface):
                 self._transport_used.append("ollama_api_chat")
             except Exception as e2:
                 # Re-raise original error context with fallback info
-                raise RuntimeError(f"openai+ollama fallback failed: {e1!r} | {e2!r}")
+                raise RuntimeError(
+                    f"openai+ollama fallback failed: {e1!r} | {e2!r}"
+                )
 
         # Estimate confidence based on response characteristics
         confidence = self._estimate_confidence(content, temperature)
@@ -269,7 +290,8 @@ class EnhancedConsensusProvider(PluginInterface):
 
         # Specificity indicators
         if any(
-            word in content.lower() for word in ["specific", "exactly", "precisely"]
+            word in content.lower()
+            for word in ["specific", "exactly", "precisely"]
         ):
             confidence += 0.1
 
@@ -286,13 +308,17 @@ class EnhancedConsensusProvider(PluginInterface):
 
         return max(0.1, min(1.0, confidence))
 
-    def _simple_vote_consensus(self, responses: tuple[str, ...]) -> ConsensusResponse:
+    def _simple_vote_consensus(
+        self, responses: tuple[str, ...]
+    ) -> ConsensusResponse:
         """Simple majority voting consensus."""
         response_counts = {}
         for resp in responses:
             response_counts[resp] = response_counts.get(resp, 0) + 1
 
-        consensus_text = max(response_counts.keys(), key=lambda x: response_counts[x])
+        consensus_text = max(
+            response_counts.keys(), key=lambda x: response_counts[x]
+        )
         consensus_confidence = response_counts[consensus_text] / len(responses)
 
         return ConsensusResponse(
@@ -319,10 +345,14 @@ class EnhancedConsensusProvider(PluginInterface):
                 weighted_counts[resp] = 0.0
             weighted_counts[resp] += conf
 
-        consensus_text = max(weighted_counts.keys(), key=lambda x: weighted_counts[x])
+        consensus_text = max(
+            weighted_counts.keys(), key=lambda x: weighted_counts[x]
+        )
         total_weight = sum(confidence_scores)
         consensus_confidence = (
-            weighted_counts[consensus_text] / total_weight if total_weight > 0 else 0.0
+            weighted_counts[consensus_text] / total_weight
+            if total_weight > 0
+            else 0.0
         )
 
         return ConsensusResponse(
@@ -357,7 +387,8 @@ class EnhancedConsensusProvider(PluginInterface):
         if not high_conf_responses:
             # Fall back to highest confidence if none meet threshold
             max_idx = max(
-                range(len(confidence_scores)), key=lambda i: confidence_scores[i]
+                range(len(confidence_scores)),
+                key=lambda i: confidence_scores[i],
             )
             consensus_text = responses[max_idx]
             consensus_confidence = confidence_scores[max_idx]
@@ -379,7 +410,8 @@ class EnhancedConsensusProvider(PluginInterface):
                 "threshold": threshold,
                 "qualified_responses": len(high_conf_responses),
                 "fallback_used": fallback,
-                "avg_confidence": sum(confidence_scores) / len(confidence_scores),
+                "avg_confidence": sum(confidence_scores)
+                / len(confidence_scores),
             },
         )
 
@@ -391,10 +423,10 @@ class EnhancedConsensusProvider(PluginInterface):
         # In production, would use embeddings/transformers
 
         similarity_matrix = []
-        for i, resp1 in enumerate(responses):
+        for _i, resp1 in enumerate(responses):
             row = []
             words1 = set(resp1.lower().split())
-            for j, resp2 in enumerate(responses):
+            for _j, resp2 in enumerate(responses):
                 words2 = set(resp2.lower().split())
                 # Jaccard similarity
                 intersection = len(words1.intersection(words2))
@@ -432,7 +464,7 @@ class EnhancedConsensusProvider(PluginInterface):
         # Score based on multiple factors
         ensemble_scores = []
 
-        for i, (resp, conf) in enumerate(
+        for _i, (resp, conf) in enumerate(
             zip(responses, confidence_scores, strict=False)
         ):
             score = 0.0
@@ -441,11 +473,15 @@ class EnhancedConsensusProvider(PluginInterface):
             score += conf * 0.4
 
             # Length appropriateness (20%)
-            length_score = min(1.0, len(resp) / 100) * max(0.5, 1.0 - len(resp) / 1000)
+            length_score = min(1.0, len(resp) / 100) * max(
+                0.5, 1.0 - len(resp) / 1000
+            )
             score += length_score * 0.2
 
             # Specificity (20%)
-            specificity = len(re.findall(r"\d+", resp)) * 0.1 + len(resp.split()) * 0.01
+            specificity = (
+                len(re.findall(r"\d+", resp)) * 0.1 + len(resp.split()) * 0.01
+            )
             score += min(1.0, specificity) * 0.2
 
             # Uniqueness bonus (20%)

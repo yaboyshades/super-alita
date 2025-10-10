@@ -41,8 +41,12 @@ class WebScraper:
             # Extract common data patterns
             data = {
                 "title": soup.find("title").text if soup.find("title") else "",
-                "headings": [h.text.strip() for h in soup.find_all(["h1", "h2", "h3"])],
-                "links": [a.get("href") for a in soup.find_all("a", href=True)],
+                "headings": [
+                    h.text.strip() for h in soup.find_all(["h1", "h2", "h3"])
+                ],
+                "links": [
+                    a.get("href") for a in soup.find_all("a", href=True)
+                ],
                 "text_content": soup.get_text().strip(),
                 "meta_description": "",
             }

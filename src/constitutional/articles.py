@@ -70,21 +70,35 @@ class SimplicityGateValidator:
             "violation_detected": line_count > 50,
             "current_length": line_count,
             "max_allowed": 50,
-            "suggestions": ["Break into smaller functions"] if line_count > 50 else [],
+            "suggestions": (
+                ["Break into smaller functions"] if line_count > 50 else []
+            ),
         }
 
     def analyze_complexity(self, code: str) -> dict:
         """Analyze cyclomatic complexity."""
         # Simple complexity estimation based on control structures
-        complexity_keywords = ["if", "elif", "else", "for", "while", "try", "except"]
+        complexity_keywords = [
+            "if",
+            "elif",
+            "else",
+            "for",
+            "while",
+            "try",
+            "except",
+        ]
         complexity = sum(
             1 for keyword in complexity_keywords if keyword in code.lower()
         )
 
         return {
-            "cyclomatic_complexity": min(complexity, 10),  # Cap at 10 for this mock
+            "cyclomatic_complexity": min(
+                complexity, 10
+            ),  # Cap at 10 for this mock
             "violation_detected": complexity > 10,
-            "suggestions": ["Reduce nesting and branching"] if complexity > 10 else [],
+            "suggestions": (
+                ["Reduce nesting and branching"] if complexity > 10 else []
+            ),
         }
 
 
@@ -106,7 +120,9 @@ class ClarityValidator:
     def analyze_clarity(self, text: str) -> dict:
         """Analyze text for clarity and unambiguity."""
         ambiguous_words = ["maybe", "possibly", "might", "could", "perhaps"]
-        ambiguous_count = sum(1 for word in ambiguous_words if word in text.lower())
+        ambiguous_count = sum(
+            1 for word in ambiguous_words if word in text.lower()
+        )
 
         return {
             "ambiguous_phrases": ambiguous_count,
@@ -137,6 +153,8 @@ class CounterfactualValidator:
             "justifications_found": justification_count > 0,
             "justification_count": justification_count,
             "violations": (
-                ["No justifications provided"] if justification_count == 0 else []
+                ["No justifications provided"]
+                if justification_count == 0
+                else []
             ),
         }

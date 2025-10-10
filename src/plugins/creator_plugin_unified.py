@@ -6,10 +6,19 @@ import logging
 import time
 from typing import Any
 
-from src.core.global_workspace import AttentionLevel, GlobalWorkspace, WorkspaceEvent
+from src.core.global_workspace import (
+    AttentionLevel,
+    GlobalWorkspace,
+    WorkspaceEvent,
+)
 from src.core.neural_atom import NeuralAtom, NeuralAtomMetadata, NeuralStore
 from src.core.plugin_interface import PluginInterface
-from src.core.schemas import CREATORRequest, CREATORResult, CREATORStage, NeuralAtomSpec
+from src.core.schemas import (
+    CREATORRequest,
+    CREATORResult,
+    CREATORStage,
+    NeuralAtomSpec,
+)
 
 # Try to import Google Generative AI for code generation
 try:
@@ -49,7 +58,9 @@ class CreatorPlugin(PluginInterface):
             "successful_creations": 0,
             "failed_creations": 0,
             "average_creation_time": 0.0,
-            "stage_completion_rates": {stage.value: 0 for stage in CREATORStage},
+            "stage_completion_rates": {
+                stage.value: 0 for stage in CREATORStage
+            },
         }
 
     def _load_creation_templates(self) -> dict[str, str]:
@@ -201,7 +212,10 @@ class {class_name}(NeuralAtom):
         }
 
     async def setup(
-        self, workspace: GlobalWorkspace, store: NeuralStore, config: dict[str, Any]
+        self,
+        workspace: GlobalWorkspace,
+        store: NeuralStore,
+        config: dict[str, Any],
     ):
         """Initialize the Creator Plugin with workspace and store."""
         await super().setup(workspace, store, config)
@@ -294,12 +308,16 @@ class {class_name}(NeuralAtom):
                 raise Exception("Failed to create design")
 
             # Stage 3: Implementation
-            implementation = await self._stage_3_implementation(request, spec, design)
+            implementation = await self._stage_3_implementation(
+                request, spec, design
+            )
             if not implementation:
                 raise Exception("Failed to implement Neural Atom")
 
             # Stage 4: Rectification
-            final_atom = await self._stage_4_rectification(request, implementation)
+            final_atom = await self._stage_4_rectification(
+                request, implementation
+            )
             if not final_atom:
                 raise Exception("Failed to validate Neural Atom")
 
@@ -408,7 +426,8 @@ Respond with ONLY the JSON, no additional text:
 
         # Generate name from description
         name_parts = [
-            word.capitalize() for word in request.capability_description.split()[:3]
+            word.capitalize()
+            for word in request.capability_description.split()[:3]
         ]
         name = " ".join(name_parts) + " Tool"
 
@@ -419,7 +438,10 @@ Respond with ONLY the JSON, no additional text:
             version="1.0.0",
             tags=["generated", "creator"],
             parameters={
-                "input": {"type": "any", "description": "Input data for processing"}
+                "input": {
+                    "type": "any",
+                    "description": "Input data for processing",
+                }
             },
             dependencies=[],
         )
@@ -428,7 +450,9 @@ Respond with ONLY the JSON, no additional text:
         self, request: CREATORRequest, spec: NeuralAtomSpec
     ) -> dict[str, Any] | None:
         """Stage 2: Design decision - Plan implementation approach."""
-        logger.info(f"🎯 CREATOR Stage 2: Design Decision for {request.request_id}")
+        logger.info(
+            f"🎯 CREATOR Stage 2: Design Decision for {request.request_id}"
+        )
 
         try:
             self._update_stage_completion(CREATORStage.DESIGN_DECISION)
@@ -479,7 +503,9 @@ Respond with ONLY the JSON, no additional text:
 
         return class_name or "GeneratedAtom"
 
-    def _generate_test_cases(self, spec: NeuralAtomSpec) -> list[dict[str, Any]]:
+    def _generate_test_cases(
+        self, spec: NeuralAtomSpec
+    ) -> list[dict[str, Any]]:
         """Generate basic test cases for the specification."""
         test_cases = []
 
@@ -495,15 +521,23 @@ Respond with ONLY the JSON, no additional text:
         return test_cases
 
     async def _stage_3_implementation(
-        self, request: CREATORRequest, spec: NeuralAtomSpec, design: dict[str, Any]
+        self,
+        request: CREATORRequest,
+        spec: NeuralAtomSpec,
+        design: dict[str, Any],
     ) -> str | None:
         """Stage 3: Implementation - Generate and test code."""
-        logger.info(f"⚙️ CREATOR Stage 3: Implementation for {request.request_id}")
+        logger.info(
+            f"⚙️ CREATOR Stage 3: Implementation for {request.request_id}"
+        )
 
         try:
             self._update_stage_completion(CREATORStage.IMPLEMENTATION)
 
-            if self.llm_client and design["implementation_approach"] == "llm_based":
+            if (
+                self.llm_client
+                and design["implementation_approach"] == "llm_based"
+            ):
                 code = await self._llm_generate_code(spec, design)
             else:
                 code = await self._template_generate_code(spec, design)
@@ -512,7 +546,9 @@ Respond with ONLY the JSON, no additional text:
             if await self._validate_generated_code(code):
                 logger.info("Generated code passed validation")
                 return code
-            logger.warning("Generated code failed validation, using safe fallback")
+            logger.warning(
+                "Generated code failed validation, using safe fallback"
+            )
             return await self._generate_safe_fallback_code(spec, design)
 
         except Exception as e:
@@ -559,7 +595,9 @@ Respond with ONLY the JSON, no additional text:
 
         # Default case
         implementation_lines.append('        if "result" not in locals():')
-        implementation_lines.append('            result = f"Processed: {parameters}"')
+        implementation_lines.append(
+            '            result = f"Processed: {parameters}"'
+        )
 
         implementation_code = "\n".join(implementation_lines)
 
@@ -633,7 +671,9 @@ Respond with ONLY the JSON, no additional text:
         self, request: CREATORRequest, code: str
     ) -> Any | None:
         """Stage 4: Rectification - Validate and optimize."""
-        logger.info(f"✅ CREATOR Stage 4: Rectification for {request.request_id}")
+        logger.info(
+            f"✅ CREATOR Stage 4: Rectification for {request.request_id}"
+        )
 
         try:
             self._update_stage_completion(CREATORStage.RECTIFICATION)
@@ -680,13 +720,17 @@ Respond with ONLY the JSON, no additional text:
                     f"Created Neural Atom instance: {atom_instance.metadata.name}"
                 )
                 return atom_instance
-            raise Exception("No valid Neural Atom class found in generated code")
+            raise Exception(
+                "No valid Neural Atom class found in generated code"
+            )
 
         except Exception as e:
             logger.error(f"Stage 4 failed: {e}")
             return None
 
-    async def _register_created_atom(self, request: CREATORRequest, atom: NeuralAtom):
+    async def _register_created_atom(
+        self, request: CREATORRequest, atom: NeuralAtom
+    ):
         """Register the successfully created Neural Atom in the store."""
         try:
             # Register in Neural Store
@@ -711,7 +755,9 @@ Respond with ONLY the JSON, no additional text:
 
         except Exception as e:
             logger.error(f"Failed to register created atom: {e}")
-            await self._handle_creation_failure(request, f"Registration failed: {e}")
+            await self._handle_creation_failure(
+                request, f"Registration failed: {e}"
+            )
 
     async def _handle_creation_failure(
         self, request: CREATORRequest, error_message: str
@@ -721,9 +767,9 @@ Respond with ONLY the JSON, no additional text:
             request_id=request.request_id,
             success=False,
             error=error_message,
-            stages_completed=self.active_requests.get(request.request_id, {}).get(
-                "stages_completed", []
-            ),
+            stages_completed=self.active_requests.get(
+                request.request_id, {}
+            ).get("stages_completed", []),
         )
 
         await self.workspace.update(
@@ -752,7 +798,9 @@ Respond with ONLY the JSON, no additional text:
 
     async def _handle_capability_gap_event(self, event_data: dict[str, Any]):
         """Convert capability gap event to CREATOR request."""
-        gap_description = event_data.get("description", "Unknown capability gap")
+        gap_description = event_data.get(
+            "description", "Unknown capability gap"
+        )
 
         creator_request = CREATORRequest(
             request_id=f"gap_{int(time.time())}",

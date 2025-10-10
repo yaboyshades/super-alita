@@ -194,7 +194,9 @@ class TestMangleReasoner:
     def test_query_result_formatting(self):
         """Test query result formatting."""
         result = MangleQueryResult(
-            query="test_query(X)", raw_results=[["result1"], ["result2"]], success=True
+            query="test_query(X)",
+            raw_results=[["result1"], ["result2"]],
+            success=True,
         )
 
         formatted = result.format_for_display()
@@ -269,7 +271,9 @@ class TestMangleReasoner:
         """Test quality issue detection."""
         with patch.object(self.reasoner, "query") as mock_query:
             mock_query.return_value = MangleQueryResult(
-                query="mock_query", raw_results=[["issue1"], ["issue2"]], success=True
+                query="mock_query",
+                raw_results=[["issue1"], ["issue2"]],
+                success=True,
             )
 
             results = self.reasoner.find_quality_issues()
@@ -280,9 +284,13 @@ class TestMangleReasoner:
 
     def test_cache_functionality(self):
         """Test query caching."""
-        with patch.object(self.reasoner, "_execute_mangle_query") as mock_execute:
+        with patch.object(
+            self.reasoner, "_execute_mangle_query"
+        ) as mock_execute:
             mock_execute.return_value = MangleQueryResult(
-                query="test_query", raw_results=[["cached_result"]], success=True
+                query="test_query",
+                raw_results=[["cached_result"]],
+                success=True,
             )
 
             # First query should execute
@@ -298,7 +306,9 @@ class TestMangleReasoner:
     def test_invalidate_cache(self):
         """Test cache invalidation."""
         # Add something to cache
-        self.reasoner._query_cache["test"] = MangleQueryResult("test", [], True)
+        self.reasoner._query_cache["test"] = MangleQueryResult(
+            "test", [], True
+        )
         self.reasoner._facts_cache = "cached facts"
         self.reasoner._facts_cache_valid = True
 
@@ -363,7 +373,9 @@ class TestEnhancedSDDFramework:
 
     def test_ask_question(self):
         """Test natural language question processing."""
-        with patch.object(self.framework.mangle_reasoner, "ask_question") as mock_ask:
+        with patch.object(
+            self.framework.mangle_reasoner, "ask_question"
+        ) as mock_ask:
             mock_ask.return_value = MangleQueryResult(
                 query="untested_function(Func)",
                 raw_results=[["func1"], ["func2"]],
@@ -380,7 +392,8 @@ class TestEnhancedSDDFramework:
     def test_validate_constitutional_compliance(self):
         """Test constitutional compliance validation."""
         with patch.object(
-            self.framework.mangle_reasoner, "validate_constitutional_compliance"
+            self.framework.mangle_reasoner,
+            "validate_constitutional_compliance",
         ) as mock_validate:
             mock_validate.return_value = {
                 "Article I": MangleQueryResult("test", [], True),
@@ -414,25 +427,31 @@ class TestEnhancedSDDFramework:
 
     def test_analyze_code_quality(self):
         """Test code quality analysis."""
-        with patch.object(
-            self.framework.mangle_reasoner, "find_quality_issues"
-        ) as mock_quality:
-            with patch.object(
+        with (
+            patch.object(
+                self.framework.mangle_reasoner, "find_quality_issues"
+            ) as mock_quality,
+            patch.object(
                 self.framework.mangle_reasoner, "find_incomplete_work"
-            ) as mock_incomplete:
-                mock_quality.return_value = {
-                    "Untested Functions": MangleQueryResult("test", [["func1"]], True)
-                }
-                mock_incomplete.return_value = {
-                    "Incomplete Features": MangleQueryResult("test", [["feat1"]], True)
-                }
+            ) as mock_incomplete,
+        ):
+            mock_quality.return_value = {
+                "Untested Functions": MangleQueryResult(
+                    "test", [["func1"]], True
+                )
+            }
+            mock_incomplete.return_value = {
+                "Incomplete Features": MangleQueryResult(
+                    "test", [["feat1"]], True
+                )
+            }
 
-                result = self.framework.analyze_code_quality()
+            result = self.framework.analyze_code_quality()
 
-                assert "quality_issues" in result
-                assert "incomplete_work" in result
-                assert "quality_metrics" in result
-                assert "recommendations" in result
+            assert "quality_issues" in result
+            assert "incomplete_work" in result
+            assert "quality_metrics" in result
+            assert "recommendations" in result
 
     @pytest.mark.asyncio
     async def test_enhanced_specify(self):
@@ -446,7 +465,10 @@ class TestEnhancedSDDFramework:
         with patch(
             "src.sdd.constitutional_pipeline.ConstitutionalSDDPipeline.specify"
         ) as mock_parent:
-            from src.sdd.models import ConstitutionalValidation, SpecifyResponse
+            from src.sdd.models import (
+                ConstitutionalValidation,
+                SpecifyResponse,
+            )
 
             mock_parent.return_value = SpecifyResponse(
                 feature_id="001-auth-system",
@@ -472,12 +494,17 @@ class TestEnhancedSDDFramework:
                     with patch.object(
                         self.framework, "_predict_compliance_issues"
                     ) as mock_compliance:
-                        mock_compliance.return_value = {"existing_violations": 0}
+                        mock_compliance.return_value = {
+                            "existing_violations": 0
+                        }
 
                         result = await self.framework.specify(request)
 
                         assert result.feature_id == "001-auth-system"
-                        assert result.analysis_results.get("mangle_enhanced") is True
+                        assert (
+                            result.analysis_results.get("mangle_enhanced")
+                            is True
+                        )
 
     def test_get_fact_statistics(self):
         """Test fact statistics retrieval."""
@@ -635,7 +662,9 @@ class TestErrorHandling:
             src_dir.mkdir()
 
             # Create invalid Python file
-            (src_dir / "invalid.py").write_text("def invalid_syntax(:\n    pass")
+            (src_dir / "invalid.py").write_text(
+                "def invalid_syntax(:\n    pass"
+            )
 
             generator = MangleFactGenerator(str(temp_dir))
             facts = generator.generate_code_facts()

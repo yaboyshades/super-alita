@@ -1,6 +1,9 @@
 import pytest
 
-from src.orchestration.cortex_weaning import CortexWeaningOrchestrator, TrainingPhase
+from src.orchestration.cortex_weaning import (
+    CortexWeaningOrchestrator,
+    TrainingPhase,
+)
 
 
 @pytest.mark.asyncio

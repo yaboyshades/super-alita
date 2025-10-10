@@ -18,7 +18,10 @@ async def test_deepconf_registration():
         print("🔍 Testing DeepConf ability registration...")
 
         # Import the ability
-        from src.abilities.deepconf_ability import ConsensusMode, DeepConfAbility
+        from src.abilities.deepconf_ability import (
+            ConsensusMode,
+            DeepConfAbility,
+        )
 
         print("✅ DeepConf imports successful")
 

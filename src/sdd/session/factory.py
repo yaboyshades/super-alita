@@ -32,7 +32,9 @@ class FeatureSessionFactory:
             feature_dir = specs_dir / f"{feature_id:03d}-unknown"
             feature_dir.mkdir(parents=True, exist_ok=True)
 
-        return FeatureSession(feature_id, feature_dir, self.pipeline, self.repository)
+        return FeatureSession(
+            feature_id, feature_dir, self.pipeline, self.repository
+        )
 
     def for_description(
         self, description: str, context: dict | None = None
@@ -46,7 +48,9 @@ class FeatureSessionFactory:
         # Generate feature ID using pipeline logic
         specs_dir = self.workspace_root / "specs"
         existing_features = [
-            d for d in specs_dir.iterdir() if d.is_dir() and d.name[:3].isdigit()
+            d
+            for d in specs_dir.iterdir()
+            if d.is_dir() and d.name[:3].isdigit()
         ]
         next_num = len(existing_features) + 1
         feature_id = f"{next_num:03d}"
@@ -60,4 +64,6 @@ class FeatureSessionFactory:
         feature_dir = specs_dir / f"{feature_id}-{feature_name}"
         feature_dir.mkdir(parents=True, exist_ok=True)
 
-        return FeatureSession(feature_id, feature_dir, self.pipeline, self.repository)
+        return FeatureSession(
+            feature_id, feature_dir, self.pipeline, self.repository
+        )

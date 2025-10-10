@@ -30,14 +30,20 @@ try:
     import torch  # type: ignore
     from transformers import AutoModelForCausalLM, AutoTokenizer  # type: ignore
 except Exception as e:  # pragma: no cover
-    raise RuntimeError("transformers and torch are required for local adapter") from e
+    raise RuntimeError(
+        "transformers and torch are required for local adapter"
+    ) from e
 
 app = FastAPI(title="LocalHFAdapter", version="0.1.0")
 
 MODEL_ID = os.getenv("LOCAL_HF_MODEL_ID", "gpt2")
 MAX_NEW = int(os.getenv("LOCAL_HF_MAX_NEW_TOKENS", "128"))
 DEVICE_PREF = os.getenv("LOCAL_HF_DEVICE", "auto")
-DEVICE = 0 if (DEVICE_PREF in {"auto", "cuda"} and torch.cuda.is_available()) else "cpu"
+DEVICE = (
+    0
+    if (DEVICE_PREF in {"auto", "cuda"} and torch.cuda.is_available())
+    else "cpu"
+)
 
 _tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
 _model = AutoModelForCausalLM.from_pretrained(MODEL_ID).to(DEVICE)
@@ -66,7 +72,9 @@ async def chat_completions(request: Request):
     stream = body.get("stream", False)
     model = body.get("model", MODEL_ID)
     # Compose a simple prompt from user messages
-    user_parts = [m.get("content", "") for m in messages if m.get("role") == "user"]
+    user_parts = [
+        m.get("content", "") for m in messages if m.get("role") == "user"
+    ]
     prompt = user_parts[-1] if user_parts else ""
 
     if not stream:
@@ -136,7 +144,9 @@ async def completions(request: Request):
                 "object": "text_completion.chunk",
                 "created": int(time.time()),
                 "model": model,
-                "choices": [{"index": 0, "text": piece, "finish_reason": None}],
+                "choices": [
+                    {"index": 0, "text": piece, "finish_reason": None}
+                ],
             }
             yield f"data: {json.dumps(data)}\n\n"
         yield "data: [DONE]\n\n"

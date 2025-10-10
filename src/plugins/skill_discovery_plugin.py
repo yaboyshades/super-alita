@@ -166,18 +166,28 @@ class SkillProposer:
             return pilot_proposal
 
         # Fallback to traditional random approach if Pilot fails
-        logger.warning("Pilot consultation failed, using traditional skill proposal")
+        logger.warning(
+            "Pilot consultation failed, using traditional skill proposal"
+        )
         proposal_type = random.choice(self.proposal_templates)
 
         if proposal_type == "combine_skills" and len(existing_skills) >= 2:
             return await self._propose_combined_skill(existing_skills, context)
         if proposal_type == "specialize_skill" and existing_skills:
-            return await self._propose_specialized_skill(existing_skills, context)
+            return await self._propose_specialized_skill(
+                existing_skills, context
+            )
         if proposal_type == "generalize_skill" and existing_skills:
-            return await self._propose_generalized_skill(existing_skills, context)
+            return await self._propose_generalized_skill(
+                existing_skills, context
+            )
         if proposal_type == "optimize_skill" and existing_skills:
-            return await self._propose_optimized_skill(existing_skills, context)
-        return await self._propose_adaptive_skill(context, failed_attempts or [])
+            return await self._propose_optimized_skill(
+                existing_skills, context
+            )
+        return await self._propose_adaptive_skill(
+            context, failed_attempts or []
+        )
 
     async def _propose_combined_skill(
         self, skills: list[str], context: dict[str, Any]
@@ -223,9 +233,7 @@ def {name.replace("-", "_")}(input_data, **kwargs):
         domain = context.get("domain", "general")
 
         name = f"specialized_{base_skill}_{domain}"
-        description = (
-            f"Specialized version of {base_skill} optimized for {domain} domain"
-        )
+        description = f"Specialized version of {base_skill} optimized for {domain} domain"
 
         code = f'''
 def {name.replace("-", "_")}(input_data, **kwargs):
@@ -267,9 +275,7 @@ def {name.replace("-", "_")}(input_data, **kwargs):
         base_skill = random.choice(skills)
 
         name = f"generalized_{base_skill}"
-        description = (
-            f"Generalized version of {base_skill} that works across multiple domains"
-        )
+        description = f"Generalized version of {base_skill} that works across multiple domains"
 
         code = f'''
 def {name.replace("-", "_")}(input_data, **kwargs):
@@ -357,7 +363,9 @@ def {name.replace("-", "_")}(input_data, **kwargs):
         task_type = context.get("task_type", "general")
 
         name = f"adaptive_{task_type}_skill_{random.randint(1000, 9999)}"
-        description = f"Adaptive skill for {task_type} tasks with learning capabilities"
+        description = (
+            f"Adaptive skill for {task_type} tasks with learning capabilities"
+        )
 
         code = f'''
 def {name.replace("-", "_")}(input_data, **kwargs):
@@ -427,7 +435,9 @@ class SkillEvaluator:
             )
 
             # Usefulness evaluation
-            usefulness_score = await self._evaluate_usefulness(proposal, errors)
+            usefulness_score = await self._evaluate_usefulness(
+                proposal, errors
+            )
 
             # Test case evaluation
             test_results = await self._run_test_cases(
@@ -458,7 +468,9 @@ class SkillEvaluator:
                 test_cases_passed=test_results.get("passed", 0),
                 total_test_cases=test_results.get("total", 0),
                 metadata={
-                    "proposal_type": proposal.metadata.get("proposal_type", "unknown"),
+                    "proposal_type": proposal.metadata.get(
+                        "proposal_type", "unknown"
+                    ),
                     "parent_skills": proposal.parent_skills,
                     "confidence": proposal.confidence,
                 },
@@ -495,7 +507,9 @@ class SkillEvaluator:
                 errors.append(f"Safety check error: {e!s}")
                 safety_scores.append(0.0)
 
-        return sum(safety_scores) / len(safety_scores) if safety_scores else 0.0
+        return (
+            sum(safety_scores) / len(safety_scores) if safety_scores else 0.0
+        )
 
     async def _check_code_safety(self, proposal: SkillProposal) -> float:
         """Check code for dangerous patterns."""
@@ -571,7 +585,9 @@ class SkillEvaluator:
 
         # Basic performance metrics
         code_length = len(proposal.code)
-        complexity_score = max(0.0, 1.0 - (code_length / 1000))  # Prefer shorter code
+        complexity_score = max(
+            0.0, 1.0 - (code_length / 1000)
+        )  # Prefer shorter code
 
         # Check for performance-oriented patterns
         performance_patterns = [
@@ -686,9 +702,13 @@ class SkillEvaluator:
         feedback_parts = []
 
         # Overall assessment
-        overall_score = (safety_score + performance_score + usefulness_score) / 3
+        overall_score = (
+            safety_score + performance_score + usefulness_score
+        ) / 3
         if overall_score > 0.8:
-            feedback_parts.append("Excellent skill proposal with high quality.")
+            feedback_parts.append(
+                "Excellent skill proposal with high quality."
+            )
         elif overall_score > 0.6:
             feedback_parts.append("Good skill proposal with minor issues.")
         elif overall_score > 0.4:
@@ -718,7 +738,9 @@ class SkillEvaluator:
 
         # Error feedback
         if errors:
-            feedback_parts.append(f"Errors encountered: {'; '.join(errors[:3])}")
+            feedback_parts.append(
+                f"Errors encountered: {'; '.join(errors[:3])}"
+            )
 
         return " ".join(feedback_parts)
 
@@ -803,7 +825,9 @@ class SkillDiscoveryPlugin(PluginInterface):
 
         # Subscribe to events
         await self.subscribe("skill_proposal", self._handle_skill_proposal)
-        await self.subscribe("skill_evaluation", self._handle_skill_evaluation_result)
+        await self.subscribe(
+            "skill_evaluation", self._handle_skill_evaluation_result
+        )
         await self.subscribe("planning", self._handle_planning_event)
         await self.subscribe("system", self._handle_system_event)
 
@@ -841,7 +865,10 @@ class SkillDiscoveryPlugin(PluginInterface):
         trace_fitness(f"skill:{skill_name}", event.performance_score)
 
         # Store evaluation
-        if hasattr(event, "skill_id") and event.skill_id in self.skill_proposals:
+        if (
+            hasattr(event, "skill_id")
+            and event.skill_id in self.skill_proposals
+        ):
             evaluation = SkillEvaluation(
                 skill_id=event.skill_id,
                 skill_name=skill_name,
@@ -932,7 +959,9 @@ class SkillDiscoveryPlugin(PluginInterface):
         # Also run traditional evolution if available
         traditional_proposals = []
         if self.evolution_arena:
-            evolved_solutions = await self.evolution_arena.evolve(num_generations=3)
+            evolved_solutions = await self.evolution_arena.evolve(
+                num_generations=3
+            )
             for i, solution in enumerate(evolved_solutions[:3]):
                 proposal = await self._solution_to_skill_proposal(solution, i)
                 traditional_proposals.append(proposal)
@@ -961,16 +990,18 @@ class SkillDiscoveryPlugin(PluginInterface):
         # Complete PAE cycle
         self.current_pae_cycle.evolution_result = {
             "proposals_generated": len(all_proposals),
-            "proposals_accepted": sum(1 for r in evolution_results if r["accepted"]),
+            "proposals_accepted": sum(
+                1 for r in evolution_results if r["accepted"]
+            ),
             "average_fitness": (
                 np.mean([r["fitness"] for r in evolution_results])
                 if evolution_results
                 else 0.0
             ),
         }
-        self.current_pae_cycle.fitness_score = self.current_pae_cycle.evolution_result[
-            "average_fitness"
-        ]
+        self.current_pae_cycle.fitness_score = (
+            self.current_pae_cycle.evolution_result["average_fitness"]
+        )
 
         # Archive completed cycle
         self.pae_history.append(self.current_pae_cycle)
@@ -992,7 +1023,11 @@ class SkillDiscoveryPlugin(PluginInterface):
         landscape = {
             "total_skills": len(self.skill_repository),
             "active_skills": len(
-                [s for s in self.skill_repository.values() if s.get("active", True)]
+                [
+                    s
+                    for s in self.skill_repository.values()
+                    if s.get("active", True)
+                ]
             ),
             "recent_evaluations": len(
                 [
@@ -1005,7 +1040,9 @@ class SkillDiscoveryPlugin(PluginInterface):
         }
 
         # Analyze fitness distribution
-        fitness_scores = [e.performance_score for e in self.skill_evaluations.values()]
+        fitness_scores = [
+            e.performance_score for e in self.skill_evaluations.values()
+        ]
         if fitness_scores:
             landscape["fitness_distribution"] = {
                 "mean": np.mean(fitness_scores),
@@ -1124,11 +1161,15 @@ def {name}(input_data, **kwargs):
             key=f"skill:{proposal.name}",
             node_type="skill",
             birth_event="skill_acceptance",
-            parent_keys=[f"skill:{parent}" for parent in proposal.parent_skills],
+            parent_keys=[
+                f"skill:{parent}" for parent in proposal.parent_skills
+            ],
             metadata={
                 "proposer": proposal.proposer,
                 "overall_score": evaluation.overall_score,
-                "proposal_type": proposal.metadata.get("proposal_type", "unknown"),
+                "proposal_type": proposal.metadata.get(
+                    "proposal_type", "unknown"
+                ),
             },
         )
 
@@ -1162,13 +1203,20 @@ def {name}(input_data, **kwargs):
 
         goal_lower = goal.lower()
 
-        if any(word in goal_lower for word in ["analyze", "analysis", "study"]):
+        if any(
+            word in goal_lower for word in ["analyze", "analysis", "study"]
+        ):
             return "analysis"
         if any(word in goal_lower for word in ["generate", "create", "build"]):
             return "generation"
-        if any(word in goal_lower for word in ["optimize", "improve", "enhance"]):
+        if any(
+            word in goal_lower for word in ["optimize", "improve", "enhance"]
+        ):
             return "optimization"
-        if any(word in goal_lower for word in ["learn", "understand", "comprehend"]):
+        if any(
+            word in goal_lower
+            for word in ["learn", "understand", "comprehend"]
+        ):
             return "learning"
         return "general"
 
@@ -1189,7 +1237,9 @@ def {name}(input_data, **kwargs):
 
         return failed_skills[-10:]  # Last 10 failures
 
-    async def _propose_contextual_skills(self, context: dict[str, Any]) -> None:
+    async def _propose_contextual_skills(
+        self, context: dict[str, Any]
+    ) -> None:
         """Propose skills based on specific context."""
 
         # This could be enhanced with more sophisticated context analysis
@@ -1217,9 +1267,9 @@ def {name}(input_data, **kwargs):
 
         avg_score = 0.0
         if recent_evaluations:
-            avg_score = sum(eval.overall_score for eval in recent_evaluations) / len(
-                recent_evaluations
-            )
+            avg_score = sum(
+                eval.overall_score for eval in recent_evaluations
+            ) / len(recent_evaluations)
 
         return {
             **self.discovery_stats,
@@ -1333,7 +1383,8 @@ def {name}(input_data, **kwargs):
 
         while current.children and current.is_expanded:
             best_child = max(
-                current.children, key=lambda c: c.ucb1_value(self.exploration_constant)
+                current.children,
+                key=lambda c: c.ucb1_value(self.exploration_constant),
             )
             current = best_child
 
@@ -1344,7 +1395,9 @@ def {name}(input_data, **kwargs):
         node.is_expanded = True
 
         # Generate several variations of the current skill
-        variations = await self._generate_skill_variations(node.skill_code, count=3)
+        variations = await self._generate_skill_variations(
+            node.skill_code, count=3
+        )
 
         for i, variation in enumerate(variations):
             child = MCTSNode(
@@ -1399,7 +1452,10 @@ def {name}(input_data, **kwargs):
             return max(0.0, min(1.0, fitness))  # Clamp to [0, 1]
 
         except Exception as e:
-            self.log("warning", f"MCTS simulation failed for node {node.skill_id}: {e}")
+            self.log(
+                "warning",
+                f"MCTS simulation failed for node {node.skill_id}: {e}",
+            )
             return 0.0
 
     def _backpropagate(self, node: MCTSNode, reward: float) -> None:
@@ -1446,9 +1502,7 @@ def {name}(input_data, **kwargs):
             # Get relevant skill memories
             if hasattr(self, "_memory") and self._memory:
                 try:
-                    context_query = (
-                        f"Skills for task: {task_description}. Goal: {goal_description}"
-                    )
+                    context_query = f"Skills for task: {task_description}. Goal: {goal_description}"
                     query_embedding = await asyncio.wait_for(
                         self._memory.embed_text([context_query]), timeout=15.0
                     )
@@ -1505,7 +1559,9 @@ def {name}(input_data, **kwargs):
                 return None
 
         except Exception as e:
-            logger.error(f"Critical error in _ask_pilot_for_skill_proposal: {e}")
+            logger.error(
+                f"Critical error in _ask_pilot_for_skill_proposal: {e}"
+            )
             return None
 
         return None
@@ -1541,20 +1597,27 @@ def {name}(input_data, **kwargs):
                     # Mark as Pilot-evaluated
                     skill_evaluation.metadata = skill_evaluation.metadata or {}
                     skill_evaluation.metadata.update(
-                        {"pilot_evaluated": True, "evaluation_method": "strategic_llm"}
+                        {
+                            "pilot_evaluated": True,
+                            "evaluation_method": "strategic_llm",
+                        }
                     )
 
                     return skill_evaluation
 
             except TimeoutError:
-                logger.warning(f"Pilot skill evaluation timed out for {proposal.name}")
+                logger.warning(
+                    f"Pilot skill evaluation timed out for {proposal.name}"
+                )
                 return None
             except Exception as e:
                 logger.error(f"Error during Pilot skill evaluation: {e}")
                 return None
 
         except Exception as e:
-            logger.error(f"Critical error in _ask_pilot_for_skill_evaluation: {e}")
+            logger.error(
+                f"Critical error in _ask_pilot_for_skill_evaluation: {e}"
+            )
             return None
 
         return None
@@ -1609,7 +1672,9 @@ def {name}(input_data, **kwargs):
                     )
                     memory_section += f'\n  - key: "{key}"'
                     memory_section += f"\n    similarity_score: {score:.4f}"
-                    memory_section += f'\n    content_summary: "{content_summary}"'
+                    memory_section += (
+                        f'\n    content_summary: "{content_summary}"'
+                    )
         else:
             memory_section = (
                 '\nrelevant_skill_patterns:\n  - "No relevant patterns found."'
@@ -1687,7 +1752,9 @@ task:
                 test_cases_section += f'\n    input_type: "{type(test_case.get("input", "unknown")).__name__}"'
                 test_cases_section += f'\n    expected_behavior: "{test_case.get("expected_output", "N/A")}"'
         else:
-            test_cases_section += '\n  - "No test cases provided for evaluation."'
+            test_cases_section += (
+                '\n  - "No test cases provided for evaluation."'
+            )
 
         # Build the Cognitive Contract prompt
         prompt = f"""# COGNITIVE CONTRACT: Strategic Skill Evaluation
@@ -1753,7 +1820,11 @@ task:
         if self.gemini_client:
             try:
                 response = await self.gemini_client.generate_content(prompt)
-                return response.text if hasattr(response, "text") else str(response)
+                return (
+                    response.text
+                    if hasattr(response, "text")
+                    else str(response)
+                )
             except Exception as e:
                 logger.error(f"Gemini client call failed: {e}")
                 # Fallback to mock response for resilience
@@ -1860,14 +1931,18 @@ task:
                 execution_time=0.1,  # Pilot evaluation is fast
                 success=eval_data["overall_success"],
                 errors=[],
-                feedback=eval_data.get("feedback", "Pilot evaluation completed"),
+                feedback=eval_data.get(
+                    "feedback", "Pilot evaluation completed"
+                ),
                 test_cases_passed=0,  # Pilot does strategic evaluation, not test execution
                 total_test_cases=0,
                 metadata={
                     "pilot_reasoning": eval_data.get(
                         "reasoning", "No reasoning provided"
                     ),
-                    "recommended_action": eval_data.get("recommended_action", "accept"),
+                    "recommended_action": eval_data.get(
+                        "recommended_action", "accept"
+                    ),
                     "evaluation_method": "pilot_strategic",
                 },
             )

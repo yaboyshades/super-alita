@@ -161,7 +161,9 @@ class LLMPlannerPlugin(PluginInterface):
             "calculator": {
                 "name": "calculator",
                 "description": "Evaluates mathematical expressions and performs calculations",
-                "actions": {"calculate": "Evaluate arithmetic expressions safely"},
+                "actions": {
+                    "calculate": "Evaluate arithmetic expressions safely"
+                },
                 "parameters": {
                     "expression": "Required: mathematical expression to evaluate",
                     "expr": "Alternative: same as expression",
@@ -199,7 +201,9 @@ class LLMPlannerPlugin(PluginInterface):
         )  # Low temperature for consistent decisions
         self._config.setdefault("enable_context_injection", True)
         self._config.setdefault("max_context_messages", 5)
-        self._config.setdefault("llm_timeout", 10.0)  # 10 second timeout for LLM calls
+        self._config.setdefault(
+            "llm_timeout", 10.0
+        )  # 10 second timeout for LLM calls
 
         # Configure Gemini API
         if not HAS_GEMINI:
@@ -221,7 +225,9 @@ class LLMPlannerPlugin(PluginInterface):
             api_key = os.environ.get("GEMINI_API_KEY")
 
         if not api_key:
-            logger.error("Gemini API key not configured. LLM planner will be disabled.")
+            logger.error(
+                "Gemini API key not configured. LLM planner will be disabled."
+            )
             return
 
         try:
@@ -248,7 +254,9 @@ class LLMPlannerPlugin(PluginInterface):
         # This plugin now just executes simple routing based on structured actions.
 
         # Subscribe to preprocessed actions - this is our primary event source
-        await self.subscribe("preprocessed_action", self._handle_preprocessed_action)
+        await self.subscribe(
+            "preprocessed_action", self._handle_preprocessed_action
+        )
 
         await super().start()
 
@@ -276,9 +284,13 @@ class LLMPlannerPlugin(PluginInterface):
     async def _test_llm_connection(self):
         """Test LLM connection with a simple query."""
         try:
-            test_prompt = "Respond with exactly 'OK' if you can understand this."
+            test_prompt = (
+                "Respond with exactly 'OK' if you can understand this."
+            )
             response = await asyncio.wait_for(
-                asyncio.to_thread(self._llm_client.generate_content, test_prompt),
+                asyncio.to_thread(
+                    self._llm_client.generate_content, test_prompt
+                ),
                 timeout=10.0,
             )
 
@@ -290,14 +302,18 @@ class LLMPlannerPlugin(PluginInterface):
         except Exception as e:
             logger.error(f"LLM connection test failed: {e}")
 
-    async def _handle_preprocessed_action(self, event: PreprocessedActionEvent) -> None:
+    async def _handle_preprocessed_action(
+        self, event: PreprocessedActionEvent
+    ) -> None:
         """
         Enhanced handler for preprocessed actions with cognitive turn processing.
 
         This method receives structured action objects and routes them to appropriate
         tools while incorporating cognitive turn insights for enhanced decision-making.
         """
-        logger.info(f"Processing preprocessed action for session {event.session_id}")
+        logger.info(
+            f"Processing preprocessed action for session {event.session_id}"
+        )
 
         try:
             # Extract action details from the action dictionary
@@ -360,7 +376,9 @@ class LLMPlannerPlugin(PluginInterface):
                         "description", "Unknown capability gap"
                     ),
                 )
-                logger.info(f"🔧 Tool gap detected by preprocessor: {gap_description}")
+                logger.info(
+                    f"🔧 Tool gap detected by preprocessor: {gap_description}"
+                )
 
                 # Import here to avoid circular imports
                 import uuid
@@ -377,7 +395,9 @@ class LLMPlannerPlugin(PluginInterface):
                 )
 
                 await self.event_bus.publish(gap_event)
-                self._stats["gaps_detected"] = self._stats.get("gaps_detected", 0) + 1
+                self._stats["gaps_detected"] = (
+                    self._stats.get("gaps_detected", 0) + 1
+                )
 
                 # Also send a response to the user
                 await self._reply_to_user(
@@ -390,7 +410,8 @@ class LLMPlannerPlugin(PluginInterface):
                 response_message = action_data.get(
                     "response",
                     action_data.get("parameters", {}).get(
-                        "response", "I understand. How can I help you with that?"
+                        "response",
+                        "I understand. How can I help you with that?",
                     ),
                 )
                 await self._reply_to_user(
@@ -400,7 +421,9 @@ class LLMPlannerPlugin(PluginInterface):
 
             elif action_type == "complex_task":
                 # Handle complex multi-step tasks (future enhancement)
-                task_description = action_data.get("description", "Complex task")
+                task_description = action_data.get(
+                    "description", "Complex task"
+                )
                 logger.info(f"Complex task detected: {task_description}")
                 await self._reply_to_user(
                     session_id=event.session_id,
@@ -419,7 +442,9 @@ class LLMPlannerPlugin(PluginInterface):
             self._stats["last_activity"] = datetime.now(UTC).isoformat()
 
         except Exception as e:
-            logger.error(f"Error processing preprocessed action: {e}", exc_info=True)
+            logger.error(
+                f"Error processing preprocessed action: {e}", exc_info=True
+            )
             self._stats["errors"] += 1
 
             # Graceful fallback response
@@ -484,7 +509,10 @@ class LLMPlannerPlugin(PluginInterface):
                     "final_confidence": 9,
                     "uncertainty_gaps": "Minimal uncertainty in action routing",
                     "risk_assessment": "low",
-                    "verification_methods": ["action_analysis", "tool_matching"],
+                    "verification_methods": [
+                        "action_analysis",
+                        "tool_matching",
+                    ],
                 },
             }
 
@@ -500,7 +528,10 @@ class LLMPlannerPlugin(PluginInterface):
                     is_required=True,
                     steps=plan.execution_steps,
                     estimated_duration=120.0,
-                    resource_requirements=["tool_creation", "creator_pipeline"],
+                    resource_requirements=[
+                        "tool_creation",
+                        "creator_pipeline",
+                    ],
                 )
 
             logger.info(
@@ -563,7 +594,9 @@ class LLMPlannerPlugin(PluginInterface):
             logger.debug(f"Emitted conversational response: {message[:50]}...")
 
         except Exception as e:
-            logger.error(f"Failed to emit conversational response: {e}", exc_info=True)
+            logger.error(
+                f"Failed to emit conversational response: {e}", exc_info=True
+            )
 
     def _get_stats(self) -> dict[str, Any]:
         """Get plugin statistics."""

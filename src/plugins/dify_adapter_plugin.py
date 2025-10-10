@@ -38,7 +38,8 @@ class DifyAdapterPlugin(PluginInterface):
             api_url=os.getenv("DIFY_API_URL", "http://localhost:3000/api"),
             api_key=os.getenv("DIFY_API_KEY"),
             workflow_id=os.getenv("DIFY_WORKFLOW_ID") or None,
-            enable_streaming=os.getenv("DIFY_STREAMING", "true").lower() == "true",
+            enable_streaming=os.getenv("DIFY_STREAMING", "true").lower()
+            == "true",
             use_codegen_for_code=os.getenv("DIFY_USE_CODEGEN", "true").lower()
             == "true",
             enabled=os.getenv("DIFY_ENABLED", "false").lower() == "true",
@@ -48,7 +49,9 @@ class DifyAdapterPlugin(PluginInterface):
     def name(self) -> str:
         return "dify_adapter"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         logger.info("DifyAdapter setup (enabled=%s)", self._cfg.enabled)
 
@@ -59,8 +62,12 @@ class DifyAdapterPlugin(PluginInterface):
             return
         self._session = aiohttp.ClientSession()
         await self.subscribe("dify_request", self._on_dify_request)
-        await self.subscribe("codegen_implementation_proposed", self._on_codegen_result)
-        await self.subscribe("codegen_ready_for_apply", self._on_codegen_result)
+        await self.subscribe(
+            "codegen_implementation_proposed", self._on_codegen_result
+        )
+        await self.subscribe(
+            "codegen_ready_for_apply", self._on_codegen_result
+        )
         logger.info("DifyAdapter started")
 
     async def shutdown(self) -> None:
@@ -96,9 +103,9 @@ class DifyAdapterPlugin(PluginInterface):
     async def _on_codegen_result(self, event: dict[str, Any]) -> None:
         if not self._session:
             return
-        callback_id = event.get("dify_callback_id") or event.get("data", {}).get(
-            "dify_callback_id"
-        )
+        callback_id = event.get("dify_callback_id") or event.get(
+            "data", {}
+        ).get("dify_callback_id")
         if not callback_id:
             return
         payload = {

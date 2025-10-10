@@ -66,7 +66,9 @@ class PluginMessage:
             "priority": self.priority.value,
             "status": self.status.value,
             "created_at": self.created_at.isoformat(),
-            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "expires_at": (
+                self.expires_at.isoformat() if self.expires_at else None
+            ),
             "reply_to": self.reply_to,
             "correlation_id": self.correlation_id,
             "requires_ack": self.requires_ack,
@@ -134,7 +136,9 @@ class PluginDependency:
         required_set = set(self.required_capabilities)
         return required_set.issubset(available_capabilities)
 
-    def get_available_optional(self, available_capabilities: set[str]) -> list[str]:
+    def get_available_optional(
+        self, available_capabilities: set[str]
+    ) -> list[str]:
         """Get which optional capabilities are available"""
         optional_set = set(self.optional_capabilities)
         return list(optional_set.intersection(available_capabilities))
@@ -205,7 +209,11 @@ class PluginCommunicationHub:
         self.plugin_capabilities[plugin_name] = set(capabilities)
         self.message_queues[plugin_name] = asyncio.Queue()
         self.message_handlers[plugin_name] = {}
-        self.delivery_stats[plugin_name] = {"sent": 0, "received": 0, "failed": 0}
+        self.delivery_stats[plugin_name] = {
+            "sent": 0,
+            "received": 0,
+            "failed": 0,
+        }
 
         if dependencies:
             self.plugin_dependencies[plugin_name] = dependencies
@@ -220,7 +228,9 @@ class PluginCommunicationHub:
                 "plugin_registered",
                 plugin_name=plugin_name,
                 capabilities=capabilities,
-                dependencies=dependencies.plugin_name if dependencies else None,
+                dependencies=(
+                    dependencies.plugin_name if dependencies else None
+                ),
                 source_plugin="communication_hub",
             )
             asyncio.create_task(self.event_bus.emit(event))
@@ -249,18 +259,24 @@ class PluginCommunicationHub:
             self.message_handlers[plugin_name] = {}
 
         self.message_handlers[plugin_name][message_type] = handler
-        self.logger.debug(f"Registered handler for {message_type} in {plugin_name}")
+        self.logger.debug(
+            f"Registered handler for {message_type} in {plugin_name}"
+        )
 
     def add_message_route(self, route: MessageRoute) -> None:
         """Add a message routing rule"""
         self.message_routes[route.message_type] = route
-        self.logger.debug(f"Added route for message type: {route.message_type}")
+        self.logger.debug(
+            f"Added route for message type: {route.message_type}"
+        )
 
     async def send_message(self, message: PluginMessage) -> bool:
         """Send a message to specified recipients"""
         # Validate message
         if not message.recipients:
-            self.logger.error(f"Message {message.message_id} has no recipients")
+            self.logger.error(
+                f"Message {message.message_id} has no recipients"
+            )
             return False
 
         # Apply routing rules
@@ -296,7 +312,9 @@ class PluginCommunicationHub:
                 self.logger.warning(f"Recipient {recipient} not registered")
 
         if not valid_recipients:
-            self.logger.error(f"No valid recipients for message {message.message_id}")
+            self.logger.error(
+                f"No valid recipients for message {message.message_id}"
+            )
             return False
 
         message.recipients = valid_recipients
@@ -350,7 +368,10 @@ class PluginCommunicationHub:
 
                 for message_id, message in self.pending_messages.items():
                     # Check if message expired
-                    if message.expires_at and datetime.now(UTC) > message.expires_at:
+                    if (
+                        message.expires_at
+                        and datetime.now(UTC) > message.expires_at
+                    ):
                         message.status = MessageStatus.EXPIRED
                         messages_to_remove.append(message_id)
                         continue
@@ -395,9 +416,12 @@ class PluginCommunicationHub:
                 # Call handler if registered
                 if (
                     recipient in self.message_handlers
-                    and message.message_type in self.message_handlers[recipient]
+                    and message.message_type
+                    in self.message_handlers[recipient]
                 ):
-                    handler = self.message_handlers[recipient][message.message_type]
+                    handler = self.message_handlers[recipient][
+                        message.message_type
+                    ]
                     try:
                         # Call handler asynchronously
                         if asyncio.iscoroutinefunction(handler):
@@ -405,7 +429,9 @@ class PluginCommunicationHub:
                         else:
                             handler(message)
                     except Exception as e:
-                        self.logger.error(f"Handler error for {recipient}: {e}")
+                        self.logger.error(
+                            f"Handler error for {recipient}: {e}"
+                        )
 
                 # Update stats
                 if recipient in self.delivery_stats:
@@ -416,7 +442,9 @@ class PluginCommunicationHub:
                 )
 
             except Exception as e:
-                self.logger.error(f"Failed to deliver message to {recipient}: {e}")
+                self.logger.error(
+                    f"Failed to deliver message to {recipient}: {e}"
+                )
                 delivery_success = False
 
                 if recipient in self.delivery_stats:
@@ -432,12 +460,17 @@ class PluginCommunicationHub:
                 expired_messages = []
 
                 for message_id, message in self.pending_messages.items():
-                    if message.expires_at and current_time > message.expires_at:
+                    if (
+                        message.expires_at
+                        and current_time > message.expires_at
+                    ):
                         expired_messages.append(message_id)
 
                 for message_id in expired_messages:
                     del self.pending_messages[message_id]
-                    self.logger.debug(f"Cleaned up expired message: {message_id}")
+                    self.logger.debug(
+                        f"Cleaned up expired message: {message_id}"
+                    )
 
                 await asyncio.sleep(60.0)  # Clean up every minute
 
@@ -452,8 +485,13 @@ class PluginCommunicationHub:
                 # Check dependency satisfaction for all plugins
                 available_capabilities = self._get_all_available_capabilities()
 
-                for plugin_name, dependency in self.plugin_dependencies.items():
-                    is_satisfied = dependency.is_satisfied(available_capabilities)
+                for (
+                    plugin_name,
+                    dependency,
+                ) in self.plugin_dependencies.items():
+                    is_satisfied = dependency.is_satisfied(
+                        available_capabilities
+                    )
 
                     # Log dependency status
                     self.logger.debug(
@@ -479,7 +517,9 @@ class PluginCommunicationHub:
 
         for plugin_name in self.registered_plugins:
             stats[plugin_name] = {
-                "capabilities": list(self.plugin_capabilities.get(plugin_name, [])),
+                "capabilities": list(
+                    self.plugin_capabilities.get(plugin_name, [])
+                ),
                 "queue_size": self.message_queues[plugin_name].qsize(),
                 "delivery_stats": self.delivery_stats.get(plugin_name, {}),
                 "has_dependencies": plugin_name in self.plugin_dependencies,
@@ -490,8 +530,8 @@ class PluginCommunicationHub:
             if plugin_name in self.plugin_dependencies:
                 dependency = self.plugin_dependencies[plugin_name]
                 available_caps = self._get_all_available_capabilities()
-                stats[plugin_name]["dependency_satisfied"] = dependency.is_satisfied(
-                    available_caps
+                stats[plugin_name]["dependency_satisfied"] = (
+                    dependency.is_satisfied(available_caps)
                 )
 
         return stats

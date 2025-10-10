@@ -28,7 +28,11 @@ def test_app_factory_configures_app(tmp_path, monkeypatch) -> None:
 
     # CORS config respects environment
     cors = next(
-        (mw for mw in app.user_middleware if mw.cls.__name__ == "CORSMiddleware"),
+        (
+            mw
+            for mw in app.user_middleware
+            if mw.cls.__name__ == "CORSMiddleware"
+        ),
         None,
     )
     assert cors is not None

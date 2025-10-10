@@ -95,7 +95,9 @@ class TelemetryCollector:
             return
 
         try:
-            marker_id = f"{marker.cycle_id}_{marker.phase}_{marker.marker_type}"
+            marker_id = (
+                f"{marker.cycle_id}_{marker.phase}_{marker.marker_type}"
+            )
             self.active_markers[marker_id] = marker
         except Exception as e:
             print(f"Error recording marker: {e}")
@@ -142,13 +144,19 @@ class TelemetryCollector:
             stats["started_at"] = event.get("timestamp")
         elif kind == "StageCompleted":
             stage_name = data.get("name", "unknown")
-            stage_info = stats["stages"].setdefault(stage_name, {
-                "duration_ms": 0,
-                "status": "started",
-            })
+            stage_info = stats["stages"].setdefault(
+                stage_name,
+                {
+                    "duration_ms": 0,
+                    "status": "started",
+                },
+            )
             stage_info["duration_ms"] = int(data.get("duration_ms", 0))
             stage_info["status"] = data.get("status", "ok")
-        elif kind in {"AbilityInvocationStarted", "AbilityInvocationCompleted"}:
+        elif kind in {
+            "AbilityInvocationStarted",
+            "AbilityInvocationCompleted",
+        }:
             stats["counts"]["abilities"] += 1
         elif kind == "RunError":
             error_type = data.get("error_type") or "UNKNOWN"
@@ -160,7 +168,9 @@ class TelemetryCollector:
                 "total_duration_ms": data.get("total_duration_ms"),
                 "stages": stats["stages"],
                 "errors": stats["errors"],
-                "abilities_invoked": data.get("abilities_invoked", stats["counts"]["abilities"]),
+                "abilities_invoked": data.get(
+                    "abilities_invoked", stats["counts"]["abilities"]
+                ),
                 "constitutional_score": event.get("constitutional_score"),
             }
             self.canonical_history.append(summary)

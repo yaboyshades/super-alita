@@ -41,5 +41,7 @@ async def test_sales_regression(tmp_path):
     bus = FakeEventBus()
     event = CodeActStartRequest(code=code)
     await handle_start(event, bus, runner)
-    ui_event = [e for e in bus.events if e["event_type"] == "ui_notification"][0]
+    ui_event = [e for e in bus.events if e["event_type"] == "ui_notification"][
+        0
+    ]
     assert "y=2.0x+1.0" in ui_event["message"]

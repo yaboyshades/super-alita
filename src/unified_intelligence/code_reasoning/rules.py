@@ -38,7 +38,9 @@ class RuleEngine:
         self.rules["untested_function"] = untested_sql
 
         # Complex functions with no inbound or outbound calls.
-        self.rules["orphan_complex"] = """
+        self.rules[
+            "orphan_complex"
+        ] = """
         WITH indeg AS (
           SELECT callee AS sym, COUNT(*) AS d FROM calls GROUP BY callee
         ), outdeg AS (
@@ -91,7 +93,9 @@ class RuleEngine:
         self.rules["config_cascade_breaks"] = config_sql
 
         # Functions that appear to emit JSON but never import the json module.
-        self.rules["reinvention_json"] = """
+        self.rules[
+            "reinvention_json"
+        ] = """
         SELECT s.symbol, s.file
         FROM symbol s
         WHERE s.kind='function'
@@ -176,14 +180,19 @@ class RuleEngine:
                         finding.file = row["file"]
                         finding.complexity = row["complexity"]
                         finding.indegree = row["indegree"]
-                    elif canonical_name == "config_cascade_breaks" or canonical_name == "reinvention_json":
+                    elif (
+                        canonical_name == "config_cascade_breaks"
+                        or canonical_name == "reinvention_json"
+                    ):
                         finding.symbol = row["symbol"]
                         finding.file = row["file"]
 
                     metadata = dict(row)
                     metadata.setdefault("source_rule", rule_name)
                     if canonical_name == "config_cascade_breaks":
-                        metadata.setdefault("note", "central config logic lacks direct tests")
+                        metadata.setdefault(
+                            "note", "central config logic lacks direct tests"
+                        )
                     finding.metadata = metadata
 
                     findings.append(finding)
@@ -208,7 +217,7 @@ class RuleEngine:
         if rule_names is None:
             seen = set()
             ordered: list[str] = []
-            for name in self.rules.keys():
+            for name in self.rules:
                 canonical = self._canonical_rule_name(name)
                 if canonical in seen:
                     continue
@@ -230,6 +239,11 @@ class RuleEngine:
 
         return results
 
-    def get_summary(self, findings: dict[str, list[Finding]]) -> dict[str, int]:
+    def get_summary(
+        self, findings: dict[str, list[Finding]]
+    ) -> dict[str, int]:
         """Generate summary counts from findings."""
-        return {rule: len(findings_list) for rule, findings_list in findings.items()}
+        return {
+            rule: len(findings_list)
+            for rule, findings_list in findings.items()
+        }

@@ -61,7 +61,10 @@ class TestAgentCognitiveLoop:
                         "db_path": str(Path(tmp_dir) / "test_chroma"),
                         "collection_name": "test_memory",
                     },
-                    "conversation": {"enabled": True, "llm_model": "gemini-2.5-pro"},
+                    "conversation": {
+                        "enabled": True,
+                        "llm_model": "gemini-2.5-pro",
+                    },
                 },
             }
 
@@ -138,14 +141,20 @@ class TestAgentCognitiveLoop:
             await asyncio.sleep(5.0)
 
             # Should receive at least one response
-            assert len(agent_responses) > 0, "Agent should respond to conversation"
+            assert (
+                len(agent_responses) > 0
+            ), "Agent should respond to conversation"
 
             # Response should have content
             response = agent_responses[0]
-            assert hasattr(response, "response") or hasattr(response, "message")
+            assert hasattr(response, "response") or hasattr(
+                response, "message"
+            )
 
             if hasattr(response, "response"):
-                assert response.response.strip(), "Response should not be empty"
+                assert (
+                    response.response.strip()
+                ), "Response should not be empty"
             elif hasattr(response, "message"):
                 assert response.message.strip(), "Message should not be empty"
 

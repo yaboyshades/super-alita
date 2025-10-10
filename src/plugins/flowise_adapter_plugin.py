@@ -50,7 +50,9 @@ class FlowiseAdapterPlugin(PluginInterface):
         if not self._cfg.enabled:
             logger.info("FlowiseAdapter disabled; not starting.")
             return
-        await self.subscribe("codegen_implementation_proposed", self._on_codegen_event)
+        await self.subscribe(
+            "codegen_implementation_proposed", self._on_codegen_event
+        )
         await self.subscribe("codegen_ready_for_apply", self._on_codegen_event)
         self._listener_task = asyncio.create_task(self._connect_and_listen())
         logger.info("FlowiseAdapter started")
@@ -89,7 +91,9 @@ class FlowiseAdapterPlugin(PluginInterface):
                 logger.warning("Flowise WS error: %s; retrying in 2s", e)
                 await asyncio.sleep(2)
 
-    async def _register_node(self, ws: websockets.WebSocketClientProtocol) -> None:
+    async def _register_node(
+        self, ws: websockets.WebSocketClientProtocol
+    ) -> None:
         node_def = {
             "type": "register_node",
             "data": {
@@ -113,7 +117,11 @@ class FlowiseAdapterPlugin(PluginInterface):
                     },
                 ],
                 "outputs": [
-                    {"label": "Generated Diffs", "name": "diffs", "type": "json"},
+                    {
+                        "label": "Generated Diffs",
+                        "name": "diffs",
+                        "type": "json",
+                    },
                     {"label": "Tests", "name": "tests", "type": "json"},
                 ],
             },

@@ -60,7 +60,9 @@ class ChemistryEnhancedPlanner:
             Selected tool name or None
         """
         if not self._molecular_router:
-            if fallback_to_original and hasattr(self.original_planner, "_select_tool"):
+            if fallback_to_original and hasattr(
+                self.original_planner, "_select_tool"
+            ):
                 return await self.original_planner._select_tool(task)
             return None
 
@@ -79,13 +81,19 @@ class ChemistryEnhancedPlanner:
                 return tool_name
 
             # Fallback to original if no chemistry match
-            if fallback_to_original and hasattr(self.original_planner, "_select_tool"):
-                logger.info("No chemistry match, falling back to original selection")
+            if fallback_to_original and hasattr(
+                self.original_planner, "_select_tool"
+            ):
+                logger.info(
+                    "No chemistry match, falling back to original selection"
+                )
                 return await self.original_planner._select_tool(task)
 
         except Exception as e:
             logger.error(f"Chemistry-enhanced selection failed: {e}")
-            if fallback_to_original and hasattr(self.original_planner, "_select_tool"):
+            if fallback_to_original and hasattr(
+                self.original_planner, "_select_tool"
+            ):
                 return await self.original_planner._select_tool(task)
 
         return None
@@ -176,7 +184,9 @@ async def patch_planner_with_chemistry(planner_plugin):
     # Auto-discover initial molecules
     molecules = await enhanced_planner.auto_discover_molecules()
     if molecules:
-        logger.info(f"Auto-discovered {len(molecules)} molecular skills: {molecules}")
+        logger.info(
+            f"Auto-discovered {len(molecules)} molecular skills: {molecules}"
+        )
 
     # Store the enhanced planner as an attribute
     planner_plugin._chemistry_enhanced = enhanced_planner
@@ -192,11 +202,15 @@ async def patch_planner_with_chemistry(planner_plugin):
         # If the tool name suggests we should use chemistry routing
         if tool_name == "auto_select" or not tool_name:
             task = {
-                "description": params.get("query", params.get("description", "")),
+                "description": params.get(
+                    "query", params.get("description", "")
+                ),
                 "parameters": params,
             }
 
-            selected_tool = await enhanced_planner.enhanced_tool_selection(task)
+            selected_tool = await enhanced_planner.enhanced_tool_selection(
+                task
+            )
             if selected_tool:
                 tool_name = selected_tool
 

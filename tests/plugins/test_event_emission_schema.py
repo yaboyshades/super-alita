@@ -15,7 +15,9 @@ class MockEventBus:
 
     async def emit(self, event_type: str, **kwargs):
         """Capture emitted events with their payloads."""
-        self.emitted_events.append({"event_type": event_type, "payload": kwargs})
+        self.emitted_events.append(
+            {"event_type": event_type, "payload": kwargs}
+        )
 
 
 async def test_planning_decision_event_schema():

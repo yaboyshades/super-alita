@@ -13,7 +13,9 @@ PLAN_TEMPLATE_TEXT = "# Plan Template\n"
 DEFAULT_DESCRIPTION = "Realtime inference tuning plan"
 
 
-def _run_git_command(repo_dir: Path, *args: str) -> subprocess.CompletedProcess[str]:
+def _run_git_command(
+    repo_dir: Path, *args: str
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["git", *args],
         cwd=repo_dir,
@@ -86,7 +88,9 @@ def _slugify(text: str) -> str:
         ("Straße", "strasse"),
     ],
 )
-def test_slugify_transliterates_unicode_characters(text: str, expected: str) -> None:
+def test_slugify_transliterates_unicode_characters(
+    text: str, expected: str
+) -> None:
     assert _slugify(text) == expected
 
 
@@ -100,7 +104,9 @@ def _branch_suffix(slug: str) -> str:
 def test_create_new_feature_generates_branch_and_spec(tmp_path: Path) -> None:
     repo_dir = _init_repo(tmp_path)
 
-    result = _run_script(CREATE_SCRIPT, repo_dir, "--json", DEFAULT_DESCRIPTION)
+    result = _run_script(
+        CREATE_SCRIPT, repo_dir, "--json", DEFAULT_DESCRIPTION
+    )
 
     assert result.returncode == 0, result.stderr
     data = json.loads(result.stdout)
@@ -126,9 +132,13 @@ def test_create_new_feature_generates_branch_and_spec(tmp_path: Path) -> None:
     assert head_branch == expected_branch
 
 
-def test_setup_plan_populates_template_and_reports_paths(tmp_path: Path) -> None:
+def test_setup_plan_populates_template_and_reports_paths(
+    tmp_path: Path,
+) -> None:
     repo_dir = _init_repo(tmp_path)
-    create_result = _run_script(CREATE_SCRIPT, repo_dir, "--json", DEFAULT_DESCRIPTION)
+    create_result = _run_script(
+        CREATE_SCRIPT, repo_dir, "--json", DEFAULT_DESCRIPTION
+    )
     create_data = json.loads(create_result.stdout)
     branch_name = create_data["BRANCH_NAME"]
 

@@ -67,7 +67,9 @@ class CurationManager(PluginInterface):
         await super().start()
         await self.subscribe("tool_result", self.handle_tool_result)
         await self.subscribe("prediction_error", self.handle_prediction_error)
-        await self.subscribe("oak.prediction_error", self.handle_prediction_error)
+        await self.subscribe(
+            "oak.prediction_error", self.handle_prediction_error
+        )
 
     async def shutdown(self) -> None:  # noqa: D401
         await super().shutdown()
@@ -86,7 +88,9 @@ class CurationManager(PluginInterface):
                 return
 
             error_msg = str(event.get("error", ""))
-            if re.search(r"(schema|validation|type|required)", error_msg, re.I):
+            if re.search(
+                r"(schema|validation|type|required)", error_msg, re.I
+            ):
                 category = "syntactic"
                 weight = self.syntactic_error_penalty
             else:

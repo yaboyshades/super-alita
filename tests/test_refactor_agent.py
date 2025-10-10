@@ -72,7 +72,9 @@ def test_auto_code_reason():
     try:
         from refactor_hotspots import auto_code_reason
 
-        result = auto_code_reason("find functions with high complexity", "tools")
+        result = auto_code_reason(
+            "find functions with high complexity", "tools"
+        )
         print(f"✅ auto_code_reason test: used_mangle={result['used_mangle']}")
         print(f"   Results: {len(result['results'])} semantic matches")
         print(f"   Hints: {len(result['hints'])} analyzer hints")
@@ -99,8 +101,12 @@ def test_agent_creation():
 
             # Test project analysis
             plan = agent.analyze_project()
-            print(f"   Analysis: {len(plan.opportunities)} opportunities found")
-            print(f"   Execution order: {len(plan.execution_order)} files to process")
+            print(
+                f"   Analysis: {len(plan.opportunities)} opportunities found"
+            )
+            print(
+                f"   Execution order: {len(plan.execution_order)} files to process"
+            )
 
             return True
         else:
@@ -141,10 +147,14 @@ def main():
     print(f"📊 Test Results: {passed}/{total} passed")
 
     if passed == total:
-        print("🎉 All tests passed! Autonomous Refactoring Agent Kit is functional.")
+        print(
+            "🎉 All tests passed! Autonomous Refactoring Agent Kit is functional."
+        )
         return 0
     else:
-        print("⚠️  Some tests failed. Check dependency installation and configuration.")
+        print(
+            "⚠️  Some tests failed. Check dependency installation and configuration."
+        )
         return 1
 
 

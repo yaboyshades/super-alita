@@ -1,4 +1,5 @@
 """Minimal MCP registry shim for tests."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -11,8 +12,10 @@ class ToolDefinition:
     description: str = ""
     spec: dict[str, Any] | None = None
 
+
 class UnknownToolError(KeyError):
     pass
+
 
 class ToolRegistry:
     """Simple in-memory registry used in test environments."""

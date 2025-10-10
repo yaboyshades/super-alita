@@ -124,7 +124,10 @@ CODE_REFACTOR_WORKFLOW = AgentWorkflow(
         WorkflowStep(
             step_type="tool",
             tool_id="repo_write_file",
-            args={"file_path": "{{target_file}}", "content": "{{refactored_code}}"},
+            args={
+                "file_path": "{{target_file}}",
+                "content": "{{refactored_code}}",
+            },
         ),
     ],
 )
@@ -145,16 +148,24 @@ class WorkflowExecutor:
             try:
                 if step.step_type == "tool" and step.tool_id:
                     args = self._subst(step.args, execution_context)
-                    res = await self.ability_registry.execute(step.tool_id, args)
+                    res = await self.ability_registry.execute(
+                        step.tool_id, args
+                    )
                     key = f"step_{step.tool_id}_result"
                     execution_context[key] = res
                     results[step.tool_id] = res
                 elif step.step_type == "model" and step.prompt_template:
-                    prompt = self._subst(step.prompt_template, execution_context)
+                    prompt = self._subst(
+                        step.prompt_template, execution_context
+                    )
                     # Route to existing consensus tool for simplicity
                     res = await self.ability_registry.execute(
                         "deepconf_consensus",
-                        {"prompt": prompt, "method": "weighted_vote", "num_samples": 3},
+                        {
+                            "prompt": prompt,
+                            "method": "weighted_vote",
+                            "num_samples": 3,
+                        },
                     )
                     execution_context["model_result"] = res
                     results["model_generation"] = res

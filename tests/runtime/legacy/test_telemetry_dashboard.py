@@ -74,7 +74,9 @@ async def test_telemetry_dashboard():
     print("Telemetry data generated!")
     print(f"   Total events: {collector.metrics.total_events}")
     print(f"   Total cycles: {collector.metrics.total_cycles}")
-    print(f"   Avg cycle duration: {collector.metrics.avg_cycle_duration_ms:.1f}ms")
+    print(
+        f"   Avg cycle duration: {collector.metrics.avg_cycle_duration_ms:.1f}ms"
+    )
     print(f"   Success rate: {collector.metrics.success_rate:.1%}")
 
     print("\nDashboard is running at: http://localhost:8001")

@@ -46,17 +46,23 @@ class EventBusAdapter(BaseEventBus):  # type: ignore[misc]
         await self.local_bus.initialize()
         if self.mode in (EventBusMode.REDIS, EventBusMode.HYBRID):
             if Redis is None:
-                logger.warning("Redis not installed; falling back to local event bus")
+                logger.warning(
+                    "Redis not installed; falling back to local event bus"
+                )
                 return
             try:
                 host = self.config.get("redis_host", "localhost")
                 port = int(self.config.get("redis_port", 6379))
-                self._redis = Redis(host=host, port=port, decode_responses=True)
+                self._redis = Redis(
+                    host=host, port=port, decode_responses=True
+                )
                 await self._redis.ping()
                 self._pubsub = self._redis.pubsub()
                 logger.info("Redis event bus connected")
             except Exception as e:  # pragma: no cover
-                logger.warning(f"Redis connection failed: {e}; using local fallback")
+                logger.warning(
+                    f"Redis connection failed: {e}; using local fallback"
+                )
                 self._redis = None
 
     async def publish(self, event_type: str, **kwargs: Any) -> str:  # type: ignore[override]

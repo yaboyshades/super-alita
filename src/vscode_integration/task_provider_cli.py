@@ -168,7 +168,9 @@ Examples:
     )
 
     parser.add_argument(
-        "--data", type=str, help="JSON data for create_task or update_task actions"
+        "--data",
+        type=str,
+        help="JSON data for create_task or update_task actions",
     )
 
     parser.add_argument(
@@ -177,7 +179,9 @@ Examples:
         help="Task ID for update_task, complete_task, or delete_task actions",
     )
 
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "--verbose", action="store_true", help="Enable verbose logging"
+    )
 
     args = parser.parse_args()
 
@@ -240,7 +244,11 @@ Examples:
         print(json.dumps(result, indent=2, default=str))
 
     except Exception as e:
-        error_result = {"error": str(e), "action": args.action, "success": False}
+        error_result = {
+            "error": str(e),
+            "action": args.action,
+            "success": False,
+        }
         print(json.dumps(error_result, indent=2))
         sys.exit(1)
 

@@ -14,7 +14,10 @@ from pydantic import BaseModel, Field
 
 # Simple atom creation function for API usage
 def create_atom(
-    atom_type: str, content: str, confidence: float = 0.8, metadata: dict | None = None
+    atom_type: str,
+    content: str,
+    confidence: float = 0.8,
+    metadata: dict | None = None,
 ):
     """Create a simple atom structure for knowledge graph storage"""
     return {
@@ -59,11 +62,15 @@ class ConsolidationRequest(BaseModel):
     confidence: float = Field(
         default=0.8, ge=0.0, le=1.0, description="Confidence score"
     )
-    session_count: int = Field(default=1, ge=1, description="Number of sessions")
+    session_count: int = Field(
+        default=1, ge=1, description="Number of sessions"
+    )
     insight_strength: float = Field(
         default=0.5, ge=0.0, le=1.0, description="Insight strength"
     )
-    patterns: list[str] = Field(default_factory=list, description="Identified patterns")
+    patterns: list[str] = Field(
+        default_factory=list, description="Identified patterns"
+    )
     related_atom_ids: list[str] = Field(
         default_factory=list, description="Related atom IDs"
     )
@@ -265,7 +272,8 @@ async def get_personality_metrics():
     except Exception as e:
         logger.error(f"Failed to fetch personality metrics: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to fetch personality metrics: {str(e)}"
+            status_code=500,
+            detail=f"Failed to fetch personality metrics: {str(e)}",
         ) from e
 
 
@@ -362,7 +370,9 @@ async def get_consolidation_insights():
         """
 
         result = await neo4j_driver.execute_query(query)
-        consolidations = [dict(record["consolidation"]) for record in result.records]
+        consolidations = [
+            dict(record["consolidation"]) for record in result.records
+        ]
 
         return ConsolidationResponse(
             consolidations=consolidations, count=len(consolidations)
@@ -371,7 +381,8 @@ async def get_consolidation_insights():
     except Exception as e:
         logger.error(f"Failed to fetch consolidation insights: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to fetch consolidation insights: {str(e)}"
+            status_code=500,
+            detail=f"Failed to fetch consolidation insights: {str(e)}",
         )
 
 
@@ -436,7 +447,8 @@ async def create_consolidation_insight(insight_data: ConsolidationRequest):
     except Exception as e:
         logger.error(f"Failed to create consolidation insight: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to create consolidation insight: {str(e)}"
+            status_code=500,
+            detail=f"Failed to create consolidation insight: {str(e)}",
         )
 
 
@@ -482,8 +494,12 @@ async def get_metrics():
 
     metrics.append("# HELP sa_api_response_time_seconds API response time")
     metrics.append("# TYPE sa_api_response_time_seconds histogram")
-    metrics.append('sa_api_response_time_seconds_bucket{endpoint="policy",le="0.1"} 35')
-    metrics.append('sa_api_response_time_seconds_bucket{endpoint="policy",le="0.5"} 42')
+    metrics.append(
+        'sa_api_response_time_seconds_bucket{endpoint="policy",le="0.1"} 35'
+    )
+    metrics.append(
+        'sa_api_response_time_seconds_bucket{endpoint="policy",le="0.5"} 42'
+    )
     metrics.append(
         'sa_api_response_time_seconds_bucket{endpoint="policy",le="+Inf"} 42'
     )
@@ -505,7 +521,9 @@ async def get_metrics():
     metrics.append("# TYPE sa_fsm_mailbox_size gauge")
     metrics.append("sa_fsm_mailbox_size 2")
 
-    metrics.append("# HELP sa_fsm_mailbox_size_max Maximum FSM mailbox size reached")
+    metrics.append(
+        "# HELP sa_fsm_mailbox_size_max Maximum FSM mailbox size reached"
+    )
     metrics.append("# TYPE sa_fsm_mailbox_size_max gauge")
     metrics.append("sa_fsm_mailbox_size_max 12")
 
@@ -513,7 +531,9 @@ async def get_metrics():
     metrics.append("# TYPE sa_fsm_active_operations gauge")
     metrics.append("sa_fsm_active_operations 1")
 
-    metrics.append("# HELP sa_fsm_operations_total Total operations registered")
+    metrics.append(
+        "# HELP sa_fsm_operations_total Total operations registered"
+    )
     metrics.append("# TYPE sa_fsm_operations_total counter")
     metrics.append("sa_fsm_operations_total 145")
 

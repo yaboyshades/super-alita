@@ -31,7 +31,9 @@ async def test_gpt_oss_ollama():
         print(f"✅ Model name: {client.model_name}")
 
         # Test streaming
-        messages = [{"role": "user", "content": "Hello! Please respond briefly."}]
+        messages = [
+            {"role": "user", "content": "Hello! Please respond briefly."}
+        ]
         print("\n🚀 Testing streaming response...")
 
         response_parts = []

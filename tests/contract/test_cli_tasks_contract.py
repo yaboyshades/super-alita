@@ -55,7 +55,9 @@ def test_cli_tasks_output_format() -> None:
         "--format",
         "json",
     ]
-    subprocess.run(plan_cmd, capture_output=True, text=True, cwd=workspace_root)
+    subprocess.run(
+        plan_cmd, capture_output=True, text=True, cwd=workspace_root
+    )
 
     # Now run the tasks command using the feature ID
     cmd = [
@@ -67,7 +69,9 @@ def test_cli_tasks_output_format() -> None:
         "--format",
         "json",
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=workspace_root)
+    result = subprocess.run(
+        cmd, capture_output=True, text=True, cwd=workspace_root
+    )
 
     # The command should succeed (exit code 0)
     assert result.returncode == 0, f"CLI failed: {result.stderr}"

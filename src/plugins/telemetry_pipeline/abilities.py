@@ -27,7 +27,9 @@ class Ability:
     description: str
     category: str
 
-    def __init__(self, name: str, description: str, category: str = "pipeline") -> None:
+    def __init__(
+        self, name: str, description: str, category: str = "pipeline"
+    ) -> None:
         self.name = name
         self.description = description
         self.category = category
@@ -71,7 +73,9 @@ class IngestNormalizeAbility(Ability):
 
     @tool
     async def execute(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
-        items: list[dict[str, Any]] = kwargs.get("items") or (args[0] if args else [])
+        items: list[dict[str, Any]] = kwargs.get("items") or (
+            args[0] if args else []
+        )
         out: list[dict[str, Any]] = []
         for idx, item in enumerate(items):
             out.append(
@@ -188,7 +192,9 @@ class RankAbility(Ability):
         items: list[dict[str, Any]] = kwargs.get("items") or (
             args[1] if len(args) > 1 else []
         )
-        top_n: int = int(kwargs.get("top_n", (args[2] if len(args) > 2 else 200)))
+        top_n: int = int(
+            kwargs.get("top_n", (args[2] if len(args) > 2 else 200))
+        )
         if not items:
             return []
         for it in items:
@@ -223,7 +229,9 @@ class ClusterAbility(Ability):
 
     @tool
     async def execute(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
-        items: list[dict[str, Any]] = kwargs.get("items") or (args[0] if args else [])
+        items: list[dict[str, Any]] = kwargs.get("items") or (
+            args[0] if args else []
+        )
         llm_provider = kwargs.get("llm_provider") or (
             args[1] if len(args) > 1 else None
         )
@@ -236,7 +244,9 @@ class ClusterAbility(Ability):
                     "topic": "aggregate",
                     "members": items,
                     "conflicts": [],
-                    "summary": ", ".join(it.get("text", "") for it in items)[:300],
+                    "summary": ", ".join(it.get("text", "") for it in items)[
+                        :300
+                    ],
                 }
             ]
         prompt = f"{self.template}\nItems:\n" + json.dumps(items, indent=2)
@@ -330,7 +340,11 @@ class FinalPromptAssemblerAbility(Ability):
                 else "- No conflicts detected"
             )
             + "\n\n# Hard constraints\n"
-            + ("\n".join(f"- {c}" for c in constraints) if constraints else "- None")
+            + (
+                "\n".join(f"- {c}" for c in constraints)
+                if constraints
+                else "- None"
+            )
             + "\n\n# Your job\nAnalyze the above information and provide "
             "actionable recommendations.\n"
         )

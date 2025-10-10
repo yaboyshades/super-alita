@@ -7,7 +7,11 @@ logger = logging.getLogger(__name__)
 
 
 async def fibonacci_sequence_calculator(
-    event_bus=None, tool_call_id="", session_id="", conversation_id="", **kwargs
+    event_bus=None,
+    tool_call_id="",
+    session_id="",
+    conversation_id="",
+    **kwargs,
 ):
     """
     fibonacci sequence calculator
@@ -21,7 +25,9 @@ async def fibonacci_sequence_calculator(
     try:
         # fibonacci sequence calculator
         # Fibonacci calculation logic
-        n = kwargs.get("n", kwargs.get("number", 10))  # Default to 10 if not specified
+        n = kwargs.get(
+            "n", kwargs.get("number", 10)
+        )  # Default to 10 if not specified
         if n <= 0:
             value = 0
         elif n == 1:
@@ -31,7 +37,11 @@ async def fibonacci_sequence_calculator(
             for _ in range(n):
                 a, b = b, a + b
             value = a
-        result = {"value": value, "n": n, "description": f"fibonacci({n}) = {value}"}
+        result = {
+            "value": value,
+            "n": n,
+            "description": f"fibonacci({n}) = {value}",
+        }
         success = True
         logger.info("fibonacci sequence calculator executed successfully")
 
@@ -59,7 +69,9 @@ async def fibonacci_sequence_calculator(
                 # Sync publishing fallback
                 event_bus.publish(tool_result)
 
-            logger.debug("fibonacci sequence calculator result event published")
+            logger.debug(
+                "fibonacci sequence calculator result event published"
+            )
 
         except Exception as e:
             logger.error(

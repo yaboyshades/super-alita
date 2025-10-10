@@ -35,7 +35,9 @@ class ToolLifecyclePlugin(PluginInterface):
     def name(self) -> str:
         return "tool_lifecycle"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         """Initialize the tool lifecycle plugin."""
         await super().setup(event_bus, store, config)
         logger.info("ToolLifecyclePlugin setup complete")
@@ -45,21 +47,29 @@ class ToolLifecyclePlugin(PluginInterface):
         await super().start()
 
         # Subscribe to the same channel as conversation plugin - we'll race to handle commands
-        await self.subscribe("conversation_message", self._handle_conversation_commands)
+        await self.subscribe(
+            "conversation_message", self._handle_conversation_commands
+        )
         await self.subscribe("user_message", self._handle_user_commands)
 
-        logger.info("ToolLifecyclePlugin started - listening for tool commands")
+        logger.info(
+            "ToolLifecyclePlugin started - listening for tool commands"
+        )
 
     async def _handle_conversation_commands(self, event: Any) -> None:
         """Handle tool commands from structured conversation events."""
         try:
-            data = event.model_dump() if hasattr(event, "model_dump") else event
+            data = (
+                event.model_dump() if hasattr(event, "model_dump") else event
+            )
             user_message = data.get("user_message", "").strip()
             session_id = data.get("session_id", "default")
 
             if await self._process_tool_command(user_message, session_id):
                 # Command was handled - prevent conversation plugin from processing
-                logger.info(f"Tool command intercepted: {user_message[:50]}...")
+                logger.info(
+                    f"Tool command intercepted: {user_message[:50]}..."
+                )
                 return
 
         except Exception as e:
@@ -93,7 +103,9 @@ class ToolLifecyclePlugin(PluginInterface):
         except Exception as e:
             logger.error(f"Error handling user command: {e}")
 
-    async def _process_tool_command(self, message: str, session_id: str) -> bool:
+    async def _process_tool_command(
+        self, message: str, session_id: str
+    ) -> bool:
         """
         Process tool commands and return True if handled.
 
@@ -105,7 +117,9 @@ class ToolLifecyclePlugin(PluginInterface):
             return False
 
         # Parse /create-atom command
-        create_match = re.match(r"^/create-atom\s+name=(\w+)\s+code='([^']+)'", message)
+        create_match = re.match(
+            r"^/create-atom\s+name=(\w+)\s+code='([^']+)'", message
+        )
         if create_match:
             name, code = create_match.groups()
             await self._create_atom(name, code, session_id)
@@ -127,7 +141,9 @@ class ToolLifecyclePlugin(PluginInterface):
 
         return False
 
-    async def _create_atom(self, name: str, code: str, session_id: str) -> None:
+    async def _create_atom(
+        self, name: str, code: str, session_id: str
+    ) -> None:
         """Create and store a new tool atom."""
         try:
             atom_id = f"atom_{name}_{uuid.uuid4().hex[:8]}"
@@ -158,19 +174,26 @@ class ToolLifecyclePlugin(PluginInterface):
             # Send success response
             await self.event_bus._redis.publish(
                 "agent_reply",
-                json.dumps({"text": f"🧬 Atom '{name}' created and stored in memory"}),
+                json.dumps(
+                    {"text": f"🧬 Atom '{name}' created and stored in memory"}
+                ),
             )
 
             # Emit event for other plugins
             await self.emit_event(
-                "atom_created", name=name, atom_id=atom_id, session_id=session_id
+                "atom_created",
+                name=name,
+                atom_id=atom_id,
+                session_id=session_id,
             )
 
         except Exception as e:
             logger.error(f"Error creating atom {name}: {e}")
             await self.event_bus._redis.publish(
                 "agent_reply",
-                json.dumps({"text": f"❌ Failed to create atom '{name}': {e}"}),
+                json.dumps(
+                    {"text": f"❌ Failed to create atom '{name}': {e}"}
+                ),
             )
 
     async def _run_atom(self, name: str, args: str, session_id: str) -> None:
@@ -182,7 +205,9 @@ class ToolLifecyclePlugin(PluginInterface):
                 await self.event_bus._redis.publish(
                     "agent_reply",
                     json.dumps(
-                        {"text": f"❌ Atom '{name}' not found in session {session_id}"}
+                        {
+                            "text": f"❌ Atom '{name}' not found in session {session_id}"
+                        }
                     ),
                 )
                 return
@@ -199,7 +224,9 @@ class ToolLifecyclePlugin(PluginInterface):
             # Send result
             await self.event_bus._redis.publish(
                 "agent_reply",
-                json.dumps({"text": f"🔧 Tool '{name}' executed → stdout: {result}"}),
+                json.dumps(
+                    {"text": f"🔧 Tool '{name}' executed → stdout: {result}"}
+                ),
             )
 
             # Emit event for other plugins
@@ -216,10 +243,13 @@ class ToolLifecyclePlugin(PluginInterface):
         except Exception as e:
             logger.error(f"Error executing atom {name}: {e}")
             await self.event_bus._redis.publish(
-                "agent_reply", json.dumps({"text": f"❌ Tool execution error: {e}"})
+                "agent_reply",
+                json.dumps({"text": f"❌ Tool execution error: {e}"}),
             )
 
-    async def _find_atom(self, name: str, session_id: str) -> dict[str, Any] | None:
+    async def _find_atom(
+        self, name: str, session_id: str
+    ) -> dict[str, Any] | None:
         """Find an atom by name in the session."""
         try:
             # Try neural store first
@@ -257,7 +287,9 @@ class ToolLifecyclePlugin(PluginInterface):
         """Safely execute Python code with subprocess."""
         try:
             # Create temporary file with the code
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".py", delete=False
+            ) as f:
                 # If args provided, modify code to handle input
                 if args:
                     # Replace input() calls with the provided args
@@ -270,7 +302,10 @@ class ToolLifecyclePlugin(PluginInterface):
             try:
                 # Execute with timeout for safety
                 proc = await asyncio.create_subprocess_exec(
-                    "python", temp_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                    "python",
+                    temp_file,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                 )
 
                 stdout, stderr = await asyncio.wait_for(

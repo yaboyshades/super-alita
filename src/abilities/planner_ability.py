@@ -180,7 +180,9 @@ def plan_task(prompt: str, max_steps: int = 6) -> dict[str, Any]:
                 if not action:
                     continue
                 rationale = _clean_text(str(raw.get("rationale", ""))) or ""
-                steps.append({"id": i + 1, "action": action, "rationale": rationale})
+                steps.append(
+                    {"id": i + 1, "action": action, "rationale": rationale}
+                )
             if not steps:
                 raise ValueError("No valid steps parsed")
             summary = _clean_text(str(plan.get("summary", ""))) or action[:80]

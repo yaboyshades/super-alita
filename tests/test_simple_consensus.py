@@ -20,7 +20,9 @@ def test_simple_consensus():
             ]
             if consensus_tools:
                 print("✅ Consensus tool found in catalog")
-                print(f"   Description: {consensus_tools[0].get('description', 'N/A')}")
+                print(
+                    f"   Description: {consensus_tools[0].get('description', 'N/A')}"
+                )
             else:
                 print("❌ Consensus tool not found in catalog")
                 return

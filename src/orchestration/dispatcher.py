@@ -43,7 +43,9 @@ class Dispatcher:
         await self.event_bus.publish(gap_event)
         logger.info(f"Published AtomGapEvent for: {description}")
 
-    async def dispatch_tool(self, tool_name: str, params: dict[str, Any]) -> None:
+    async def dispatch_tool(
+        self, tool_name: str, params: dict[str, Any]
+    ) -> None:
         """Dispatch TOOL action - call specific tool."""
         logger.info(f"Dispatching TOOL: {tool_name} with params {params}")
 
@@ -59,7 +61,9 @@ class Dispatcher:
         await self.event_bus.publish(tool_event)
         logger.info(f"Published ToolCallEvent for: {tool_name}")
 
-    async def dispatch_show_created(self, tool_name: str, user_message: str) -> None:
+    async def dispatch_show_created(
+        self, tool_name: str, user_message: str
+    ) -> None:
         """Dispatch SHOW_CREATED action - show proof of tool creation."""
         logger.info(f"Dispatching SHOW_CREATED: {tool_name}")
 
@@ -117,7 +121,8 @@ class Dispatcher:
 
         elif action_type == "NONE":
             response = params.get(
-                "response", "I understand, but I'm not sure how to help with that."
+                "response",
+                "I understand, but I'm not sure how to help with that.",
             )
             await self.dispatch_none(response)
 

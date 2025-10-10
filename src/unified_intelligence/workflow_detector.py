@@ -191,8 +191,12 @@ class WorkflowDetector:
 
         # Determine best match
         if pattern_scores:
-            best_pattern = max(pattern_scores.keys(), key=lambda p: pattern_scores[p])
-            confidence = min(1.0, pattern_scores[best_pattern] / 5.0)  # Normalize
+            best_pattern = max(
+                pattern_scores.keys(), key=lambda p: pattern_scores[p]
+            )
+            confidence = min(
+                1.0, pattern_scores[best_pattern] / 5.0
+            )  # Normalize
         else:
             best_pattern = WorkflowPattern.GENERAL
             confidence = 0.0
@@ -329,12 +333,17 @@ class WorkflowDetector:
         # Extract general entities
         entities.update(
             {
-                "mentions_testing": bool(re.search(r"\btest\b", user_input.lower())),
+                "mentions_testing": bool(
+                    re.search(r"\btest\b", user_input.lower())
+                ),
                 "mentions_database": bool(
                     re.search(r"\bdatabase\b", user_input.lower())
                 ),
-                "mentions_api": bool(re.search(r"\bapi\b", user_input.lower())),
-                "has_clarification_request": "[NEEDS CLARIFICATION]" in user_input,
+                "mentions_api": bool(
+                    re.search(r"\bapi\b", user_input.lower())
+                ),
+                "has_clarification_request": "[NEEDS CLARIFICATION]"
+                in user_input,
             }
         )
 

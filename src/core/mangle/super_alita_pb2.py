@@ -24,7 +24,9 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "super_alita_pb2", _globals)
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "super_alita_pb2", _globals
+)
 if not _descriptor._USE_C_DESCRIPTORS:
     DESCRIPTOR._loaded_options = None
     _globals["_HEALTHRESPONSE_DETAILSENTRY"]._loaded_options = None
@@ -42,23 +44,31 @@ if not _descriptor._USE_C_DESCRIPTORS:
     _globals["_EVENT_METADATAENTRY"]._loaded_options = None
     _globals["_EVENT_METADATAENTRY"]._serialized_options = b"8\001"
     _globals["_CREATECONCEPTREQUEST_METADATAENTRY"]._loaded_options = None
-    _globals["_CREATECONCEPTREQUEST_METADATAENTRY"]._serialized_options = b"8\001"
+    _globals["_CREATECONCEPTREQUEST_METADATAENTRY"]._serialized_options = (
+        b"8\001"
+    )
     _globals["_CREATERELATIONSHIPREQUEST_METADATAENTRY"]._loaded_options = None
-    _globals["_CREATERELATIONSHIPREQUEST_METADATAENTRY"]._serialized_options = b"8\001"
+    _globals[
+        "_CREATERELATIONSHIPREQUEST_METADATAENTRY"
+    ]._serialized_options = b"8\001"
     _globals["_QUERYREQUEST_FILTERSENTRY"]._loaded_options = None
     _globals["_QUERYREQUEST_FILTERSENTRY"]._serialized_options = b"8\001"
     _globals["_KNOWLEDGENODE_DATAENTRY"]._loaded_options = None
     _globals["_KNOWLEDGENODE_DATAENTRY"]._serialized_options = b"8\001"
     _globals["_KNOWLEDGEEDGE_DATAENTRY"]._loaded_options = None
     _globals["_KNOWLEDGEEDGE_DATAENTRY"]._serialized_options = b"8\001"
-    _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"]._loaded_options = None
-    _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"]._serialized_options = (
-        b"8\001"
-    )
-    _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"]._loaded_options = None
-    _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"]._serialized_options = (
-        b"8\001"
-    )
+    _globals[
+        "_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"
+    ]._loaded_options = None
+    _globals[
+        "_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"
+    ]._serialized_options = b"8\001"
+    _globals[
+        "_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"
+    ]._loaded_options = None
+    _globals[
+        "_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"
+    ]._serialized_options = b"8\001"
     _globals["_CREATEPOLICYREQUEST_CONFIGENTRY"]._loaded_options = None
     _globals["_CREATEPOLICYREQUEST_CONFIGENTRY"]._serialized_options = b"8\001"
     _globals["_POLICYARM_METADATAENTRY"]._loaded_options = None
@@ -117,7 +127,9 @@ if not _descriptor._USE_C_DESCRIPTORS:
     _globals["_CREATECONCEPTRESPONSE"]._serialized_end = 2735
     _globals["_CREATERELATIONSHIPREQUEST"]._serialized_start = 2738
     _globals["_CREATERELATIONSHIPREQUEST"]._serialized_end = 2951
-    _globals["_CREATERELATIONSHIPREQUEST_METADATAENTRY"]._serialized_start = 861
+    _globals["_CREATERELATIONSHIPREQUEST_METADATAENTRY"]._serialized_start = (
+        861
+    )
     _globals["_CREATERELATIONSHIPREQUEST_METADATAENTRY"]._serialized_end = 908
     _globals["_CREATERELATIONSHIPRESPONSE"]._serialized_start = 2953
     _globals["_CREATERELATIONSHIPRESPONSE"]._serialized_end = 3046
@@ -137,10 +149,18 @@ if not _descriptor._USE_C_DESCRIPTORS:
     _globals["_KNOWLEDGEEDGE_DATAENTRY"]._serialized_end = 2446
     _globals["_KNOWLEDGEGRAPHSTATSRESPONSE"]._serialized_start = 3777
     _globals["_KNOWLEDGEGRAPHSTATSRESPONSE"]._serialized_end = 4139
-    _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"]._serialized_start = 4037
-    _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"]._serialized_end = 4087
-    _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"]._serialized_start = 4089
-    _globals["_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"]._serialized_end = 4139
+    _globals[
+        "_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"
+    ]._serialized_start = 4037
+    _globals[
+        "_KNOWLEDGEGRAPHSTATSRESPONSE_ATOMSBYTYPEENTRY"
+    ]._serialized_end = 4087
+    _globals[
+        "_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"
+    ]._serialized_start = 4089
+    _globals[
+        "_KNOWLEDGEGRAPHSTATSRESPONSE_BONDSBYTYPEENTRY"
+    ]._serialized_end = 4139
     _globals["_CREATEPOLICYREQUEST"]._serialized_start = 4142
     _globals["_CREATEPOLICYREQUEST"]._serialized_end = 4369
     _globals["_CREATEPOLICYREQUEST_CONFIGENTRY"]._serialized_start = 4324

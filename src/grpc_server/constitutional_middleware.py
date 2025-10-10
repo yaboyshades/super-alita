@@ -46,13 +46,17 @@ class ConstitutionalScore:
         violations = []
 
         # Article I: Library-First Development
-        scores["Library_First"] = self._evaluate_library_first(artifact, context)
+        scores["Library_First"] = self._evaluate_library_first(
+            artifact, context
+        )
 
         # Article II: Test-First Development
         scores["Test_First"] = self._evaluate_test_first(artifact, context)
 
         # Article III: Simplicity Gate
-        scores["Simplicity_Gate"] = self._evaluate_simplicity(artifact, context)
+        scores["Simplicity_Gate"] = self._evaluate_simplicity(
+            artifact, context
+        )
 
         # Article IV: Integration-First Testing
         scores["Integration_First"] = self._evaluate_integration_first(
@@ -60,7 +64,9 @@ class ConstitutionalScore:
         )
 
         # Article V: Clarity and Unambiguity
-        scores["Clarity_Unambiguity"] = self._evaluate_clarity(artifact, context)
+        scores["Clarity_Unambiguity"] = self._evaluate_clarity(
+            artifact, context
+        )
 
         # Article VI: Counterfactual Justification
         scores["Counterfactual_Justification"] = self._evaluate_counterfactual(
@@ -94,14 +100,21 @@ class ConstitutionalScore:
             "threshold": self.compliance_threshold,
         }
 
-    def _evaluate_library_first(self, artifact: Any, context: dict[str, Any]) -> float:
+    def _evaluate_library_first(
+        self, artifact: Any, context: dict[str, Any]
+    ) -> float:
         """Evaluate Article I: Library-First Development compliance."""
         # Check if existing solutions were considered
-        if hasattr(artifact, "content") and "existing" in str(artifact.content).lower():
+        if (
+            hasattr(artifact, "content")
+            and "existing" in str(artifact.content).lower()
+        ):
             return 0.8
         return 0.6  # Default moderate compliance
 
-    def _evaluate_test_first(self, artifact: Any, context: dict[str, Any]) -> float:
+    def _evaluate_test_first(
+        self, artifact: Any, context: dict[str, Any]
+    ) -> float:
         """Evaluate Article II: Test-First Development compliance."""
         # Check for test-related context
         if (
@@ -111,7 +124,9 @@ class ConstitutionalScore:
             return 0.9
         return 0.5  # Needs test consideration
 
-    def _evaluate_simplicity(self, artifact: Any, context: dict[str, Any]) -> float:
+    def _evaluate_simplicity(
+        self, artifact: Any, context: dict[str, Any]
+    ) -> float:
         """Evaluate Article III: Simplicity Gate compliance."""
         # Check complexity indicators
         content_length = len(str(artifact)) if artifact else 0
@@ -132,7 +147,9 @@ class ConstitutionalScore:
             return 0.8
         return 0.6  # Default moderate compliance
 
-    def _evaluate_clarity(self, artifact: Any, context: dict[str, Any]) -> float:
+    def _evaluate_clarity(
+        self, artifact: Any, context: dict[str, Any]
+    ) -> float:
         """Evaluate Article V: Clarity and Unambiguity compliance."""
         # Check for clear, unambiguous responses
         if hasattr(artifact, "success") and artifact.success:
@@ -141,11 +158,16 @@ class ConstitutionalScore:
             return 0.3  # Error indicates lack of clarity
         return 0.7  # Default good clarity
 
-    def _evaluate_counterfactual(self, artifact: Any, context: dict[str, Any]) -> float:
+    def _evaluate_counterfactual(
+        self, artifact: Any, context: dict[str, Any]
+    ) -> float:
         """Evaluate Article VI: Counterfactual Justification compliance."""
         # Check for justification/reasoning
         method_name = context.get("method_name", "")
-        if "decision" in method_name.lower() or "validate" in method_name.lower():
+        if (
+            "decision" in method_name.lower()
+            or "validate" in method_name.lower()
+        ):
             return 0.8  # Decision methods should include justification
         return 0.7  # Default good justification
 
@@ -158,7 +180,10 @@ class ConstitutionalValidationMiddleware:
         self.validation_enabled = True
 
     async def validate_request(
-        self, request: message.Message, method_name: str, context: grpc.ServicerContext
+        self,
+        request: message.Message,
+        method_name: str,
+        context: grpc.ServicerContext,
     ) -> dict[str, Any]:
         """Validate incoming request for constitutional compliance."""
         if not self.validation_enabled:
@@ -274,7 +299,7 @@ def constitutional_rpc_interceptor(
                 response = await original_method(self, request, context)
 
                 # Constitutional output validation
-                response_validation = await middleware.validate_response(
+                await middleware.validate_response(
                     response, method_name, context, request_validation
                 )
 
@@ -291,9 +316,13 @@ def constitutional_rpc_interceptor(
 
             except Exception as e:
                 # Constitutional error handling
-                logger.error(f"Constitutional method {method_name} failed: {e}")
+                logger.error(
+                    f"Constitutional method {method_name} failed: {e}"
+                )
                 context.set_code(grpc.StatusCode.INTERNAL)
-                context.set_details(f"Constitutional validation failure: {str(e)}")
+                context.set_details(
+                    f"Constitutional validation failure: {str(e)}"
+                )
                 raise
 
         return wrapper
@@ -316,9 +345,9 @@ class ConstitutionalServicerMixin:
         method_name: str,
     ) -> message.Message:
         """Execute method with constitutional validation."""
-        return await constitutional_rpc_interceptor(self.constitutional_middleware)(
-            method_func
-        )(self, request, context)
+        return await constitutional_rpc_interceptor(
+            self.constitutional_middleware
+        )(method_func)(self, request, context)
 
 
 # Export key components

@@ -16,7 +16,10 @@ from core.optimization.bandits import (
     UCB1Bandit,
 )
 from core.optimization.plugin import OptimizationPlugin
-from core.optimization.policy_engine import DecisionContext, DecisionPolicyEngine
+from core.optimization.policy_engine import (
+    DecisionContext,
+    DecisionPolicyEngine,
+)
 from core.optimization.reward_tracker import (
     RewardTracker,
     create_performance_rule,
@@ -114,7 +117,9 @@ class TestBanditAlgorithms:
             bandit.update_reward(decision.decision_id, reward)
 
         # Should mostly select good arm (with some exploration)
-        good_selections = sum(1 for d in exploit_decisions if d.arm_id == "good")
+        good_selections = sum(
+            1 for d in exploit_decisions if d.arm_id == "good"
+        )
         assert good_selections >= 15  # At least 75% should be good arm
 
         stats = bandit.get_statistics()
@@ -175,7 +180,9 @@ class TestDecisionPolicyEngine:
         )
 
         context = DecisionContext(
-            session_id="test_session", user_id="test_user", task_type="optimization"
+            session_id="test_session",
+            user_id="test_user",
+            task_type="optimization",
         )
 
         decision = await policy_engine.make_decision(policy_id, context)
@@ -376,7 +383,9 @@ class TestOptimizationPlugin:
 
         # Provide feedback
         feedback_success = await plugin.provide_feedback(
-            decision_id=decision.decision_id, reward=0.9, source="test_feedback"
+            decision_id=decision.decision_id,
+            reward=0.9,
+            source="test_feedback",
         )
         assert feedback_success
 

@@ -32,15 +32,23 @@ class DeepCodeGeneratorBridgePlugin(PluginInterface):
     def name(self) -> str:
         return "deepcode_generator"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         logger.info("DeepCodeGeneratorBridge setup complete")
 
     async def start(self) -> None:
         await super().start()
-        await self.subscribe("code_generation_request", self._handle_generation)
-        await self.subscribe("repository_analysis_request", self._handle_analysis)
-        logger.info("DeepCodeGeneratorBridge started (listening for legacy events)")
+        await self.subscribe(
+            "code_generation_request", self._handle_generation
+        )
+        await self.subscribe(
+            "repository_analysis_request", self._handle_analysis
+        )
+        logger.info(
+            "DeepCodeGeneratorBridge started (listening for legacy events)"
+        )
 
     async def shutdown(self) -> None:
         logger.info("DeepCodeGeneratorBridge shutting down")
@@ -49,9 +57,13 @@ class DeepCodeGeneratorBridgePlugin(PluginInterface):
     async def _handle_generation(self, event: dict[str, Any]) -> None:
         if not self.is_running:
             return
-        prompt = event.get("prompt") or event.get("data", {}).get("prompt") or ""
+        prompt = (
+            event.get("prompt") or event.get("data", {}).get("prompt") or ""
+        )
         repo_path = (
-            event.get("repo_path") or event.get("data", {}).get("repo_path") or "."
+            event.get("repo_path")
+            or event.get("data", {}).get("repo_path")
+            or "."
         )
         conversation_id = event.get("conversation_id")
 

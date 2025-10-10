@@ -74,10 +74,16 @@ class CognitiveProfile:
 COGNITIVE_PROFILES: dict[str, CognitiveProfile] = {
     "idle": CognitiveProfile("idle", temperature=0.5, thinking_mode="minimal"),
     "planning": CognitiveProfile(
-        "planning", temperature=0.8, thinking_mode="tree_of_thoughts", max_tokens=8192
+        "planning",
+        temperature=0.8,
+        thinking_mode="tree_of_thoughts",
+        max_tokens=8192,
     ),
     "executing": CognitiveProfile(
-        "executing", temperature=0.2, thinking_mode="step_by_step", max_tokens=8192
+        "executing",
+        temperature=0.2,
+        thinking_mode="step_by_step",
+        max_tokens=8192,
     ),
     "learning": CognitiveProfile(
         "learning", temperature=0.6, thinking_mode="reflective"
@@ -106,7 +112,9 @@ COGNITIVE_PROFILES: dict[str, CognitiveProfile] = {
     "self_heal": CognitiveProfile(
         "self_heal", temperature=0.4, thinking_mode="diagnostic"
     ),
-    "error": CognitiveProfile("error", temperature=0.3, thinking_mode="recovery"),
+    "error": CognitiveProfile(
+        "error", temperature=0.3, thinking_mode="recovery"
+    ),
 }
 
 
@@ -133,7 +141,9 @@ class FSMState:
     is_final: bool = False
 
     def __post_init__(self):
-        if self.embedding is not None and not isinstance(self.embedding, np.ndarray):
+        if self.embedding is not None and not isinstance(
+            self.embedding, np.ndarray
+        ):
             self.embedding = np.array(self.embedding)
 
 
@@ -152,7 +162,9 @@ class FSMTransition:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
-        if self.embedding is not None and not isinstance(self.embedding, np.ndarray):
+        if self.embedding is not None and not isinstance(
+            self.embedding, np.ndarray
+        ):
             self.embedding = np.array(self.embedding)
 
 
@@ -164,7 +176,9 @@ class SemanticFSM:
     rather than just exact trigger matching.
     """
 
-    def __init__(self, name: str, embedding_model: str = "models/text-embedding-004"):
+    def __init__(
+        self, name: str, embedding_model: str = "models/text-embedding-004"
+    ):
         self.name = name
         self.embedding_model = embedding_model
         self.states: dict[str, FSMState] = {}
@@ -222,12 +236,18 @@ class SemanticFSM:
                 f"Embedding generation timed out for state '{name}'. Using fallback."
             )
             # Create a normalized random embedding as fallback
-            embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(np.float32)
+            embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(
+                np.float32
+            )
             embedding = embedding / np.linalg.norm(embedding)
         except Exception as e:
-            logger.error(f"Failed to generate embedding for state '{name}': {e}")
+            logger.error(
+                f"Failed to generate embedding for state '{name}': {e}"
+            )
             # Create a random normalized embedding as fallback
-            embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(np.float32)
+            embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(
+                np.float32
+            )
             embedding = embedding / np.linalg.norm(embedding)
 
         state = FSMState(
@@ -272,14 +292,18 @@ class SemanticFSM:
                     f"Embedding generation timed out for transition trigger '{trigger}'. Using fallback."
                 )
                 # Create a normalized random embedding as fallback
-                embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(np.float32)
+                embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(
+                    np.float32
+                )
                 embedding = embedding / np.linalg.norm(embedding)
             except Exception as e:
                 logger.error(
                     f"Failed to generate embedding for transition trigger '{trigger}': {e}"
                 )
                 # Create a random normalized embedding as fallback
-                embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(np.float32)
+                embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(
+                    np.float32
+                )
                 embedding = embedding / np.linalg.norm(embedding)
 
         transition = FSMTransition(
@@ -354,20 +378,34 @@ class SemanticFSM:
             response = await asyncio.wait_for(
                 self._generate_embedding_async(trigger), timeout=30.0
             )
-            trigger_embedding = np.array(response["embedding"], dtype=np.float32)
-            trigger_embedding = trigger_embedding / np.linalg.norm(trigger_embedding)
+            trigger_embedding = np.array(
+                response["embedding"], dtype=np.float32
+            )
+            trigger_embedding = trigger_embedding / np.linalg.norm(
+                trigger_embedding
+            )
         except TimeoutError:
             logger.warning(
                 f"Trigger embedding generation timed out for '{trigger}'. Using fallback."
             )
             # Create a normalized random embedding as fallback
-            trigger_embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(np.float32)
-            trigger_embedding = trigger_embedding / np.linalg.norm(trigger_embedding)
+            trigger_embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(
+                np.float32
+            )
+            trigger_embedding = trigger_embedding / np.linalg.norm(
+                trigger_embedding
+            )
         except Exception as e:
-            logger.error(f"Failed to generate embedding for trigger '{trigger}': {e}")
+            logger.error(
+                f"Failed to generate embedding for trigger '{trigger}': {e}"
+            )
             # Create a random normalized embedding as fallback
-            trigger_embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(np.float32)
-            trigger_embedding = trigger_embedding / np.linalg.norm(trigger_embedding)
+            trigger_embedding = np.random.normal(0, 1, EMBEDDING_DIM).astype(
+                np.float32
+            )
+            trigger_embedding = trigger_embedding / np.linalg.norm(
+                trigger_embedding
+            )
 
         for transition in self.transitions:
             # Check if transition is from current state
@@ -386,14 +424,20 @@ class SemanticFSM:
             elif transition.transition_type == TransitionType.SEMANTIC:
                 # Semantic similarity match
                 if transition.embedding is not None:
-                    similarity = np.dot(trigger_embedding, transition.embedding)
+                    similarity = np.dot(
+                        trigger_embedding, transition.embedding
+                    )
                     matches = similarity >= transition.similarity_threshold
 
             elif transition.transition_type == TransitionType.TEMPORAL:
                 # Time-based transition
                 if self.state_enter_time:
-                    elapsed = (current_time - self.state_enter_time).total_seconds()
-                    if elapsed >= float(transition.trigger):  # trigger contains seconds
+                    elapsed = (
+                        current_time - self.state_enter_time
+                    ).total_seconds()
+                    if elapsed >= float(
+                        transition.trigger
+                    ):  # trigger contains seconds
                         similarity = 1.0
                         matches = True
 
@@ -401,7 +445,9 @@ class SemanticFSM:
                 # Condition-based transition
                 if transition.condition_func:
                     try:
-                        if await self._evaluate_condition(transition.condition_func):
+                        if await self._evaluate_condition(
+                            transition.condition_func
+                        ):
                             similarity = 1.0
                             matches = True
                     except Exception as e:
@@ -419,7 +465,9 @@ class SemanticFSM:
             return await condition_func(self.context, self.current_state)
         return condition_func(self.context, self.current_state)
 
-    async def _execute_transition(self, transition: FSMTransition, trigger: str) -> str:
+    async def _execute_transition(
+        self, transition: FSMTransition, trigger: str
+    ) -> str:
         """Execute a state transition."""
 
         old_state = self.current_state
@@ -444,11 +492,15 @@ class SemanticFSM:
 
         return new_state
 
-    async def _execute_action(self, action: str, action_type: str, state: str) -> None:
+    async def _execute_action(
+        self, action: str, action_type: str, state: str
+    ) -> None:
         """Execute a state action."""
         # Execute the action (could emit events, call functions, etc.)
         # For now, we'll just log the action execution at debug level
-        logger.debug(f"Executing {action_type} action '{action}' for state '{state}'")
+        logger.debug(
+            f"Executing {action_type} action '{action}' for state '{state}'"
+        )
 
     def get_current_state_info(self) -> dict[str, Any] | None:
         """Get information about the current state."""
@@ -461,7 +513,9 @@ class SemanticFSM:
 
         time_in_state = None
         if self.state_enter_time:
-            time_in_state = (current_time - self.state_enter_time).total_seconds()
+            time_in_state = (
+                current_time - self.state_enter_time
+            ).total_seconds()
 
         return {
             "name": state.name,
@@ -502,7 +556,11 @@ class SemanticFSM:
         history = []
         for state, timestamp, trigger in self.state_history[-limit:]:
             history.append(
-                {"state": state, "timestamp": timestamp.isoformat(), "trigger": trigger}
+                {
+                    "state": state,
+                    "timestamp": timestamp.isoformat(),
+                    "trigger": trigger,
+                }
             )
 
         return history
@@ -583,7 +641,9 @@ class SemanticFSMPlugin(PluginInterface):
             self._api_configured = True
             logger.info("Google text-embedding-004 configured for SemanticFSM")
         else:
-            logger.warning("No Gemini API key found for SemanticFSM - plugin may fail")
+            logger.warning(
+                "No Gemini API key found for SemanticFSM - plugin may fail"
+            )
 
         # Load predefined FSMs
         await self._load_predefined_fsms()
@@ -592,7 +652,9 @@ class SemanticFSMPlugin(PluginInterface):
         await super().start()
 
         # Subscribe to events
-        await self.subscribe("fsm_state_change", self._handle_state_change_request)
+        await self.subscribe(
+            "fsm_state_change", self._handle_state_change_request
+        )
         await self.subscribe("system", self._handle_system_event)
         await self.subscribe("planning", self._handle_planning_event)
 
@@ -752,18 +814,32 @@ class SemanticFSMPlugin(PluginInterface):
         # Transitions
         transitions = [
             ("problem_analysis", "solution_generation", "problem understood"),
-            ("solution_generation", "solution_evaluation", "solutions generated"),
-            ("solution_evaluation", "implementation", "best solution selected"),
+            (
+                "solution_generation",
+                "solution_evaluation",
+                "solutions generated",
+            ),
+            (
+                "solution_evaluation",
+                "implementation",
+                "best solution selected",
+            ),
             ("implementation", "validation", "solution implemented"),
             ("validation", "complete", "solution validated"),
             # Back-tracking transitions
-            ("solution_evaluation", "solution_generation", "need more solutions"),
+            (
+                "solution_evaluation",
+                "solution_generation",
+                "need more solutions",
+            ),
             ("validation", "implementation", "solution needs refinement"),
             ("implementation", "solution_evaluation", "solution failed"),
         ]
 
         for from_state, to_state, trigger in transitions:
-            fsm.add_transition(from_state, to_state, trigger, TransitionType.SEMANTIC)
+            fsm.add_transition(
+                from_state, to_state, trigger, TransitionType.SEMANTIC
+            )
 
         self.fsms["problem_solving"] = fsm
 
@@ -817,7 +893,9 @@ class SemanticFSMPlugin(PluginInterface):
         ]
 
         for from_state, to_state, trigger in learning_transitions:
-            fsm.add_transition(from_state, to_state, trigger, TransitionType.SEMANTIC)
+            fsm.add_transition(
+                from_state, to_state, trigger, TransitionType.SEMANTIC
+            )
 
         self.fsms["learning"] = fsm
 
@@ -829,7 +907,9 @@ class SemanticFSMPlugin(PluginInterface):
         context_update = getattr(event, "context", {})
 
         if fsm_name and fsm_name in self.fsms:
-            result = await self.fsms[fsm_name].process_trigger(trigger, context_update)
+            result = await self.fsms[fsm_name].process_trigger(
+                trigger, context_update
+            )
 
             if result:
                 # Emit successful state change
@@ -837,7 +917,9 @@ class SemanticFSMPlugin(PluginInterface):
                     "fsm_state_changed",
                     fsm_name=fsm_name,
                     from_state=(
-                        event.from_state if hasattr(event, "from_state") else None
+                        event.from_state
+                        if hasattr(event, "from_state")
+                        else None
                     ),
                     to_state=result,
                     trigger=trigger,
@@ -922,7 +1004,9 @@ class SemanticFSMPlugin(PluginInterface):
             except Exception as e:
                 print(f"Error in FSM monitoring: {e}")
 
-    async def get_fsm_status(self, fsm_name: str | None = None) -> dict[str, Any]:
+    async def get_fsm_status(
+        self, fsm_name: str | None = None
+    ) -> dict[str, Any]:
         """Get status of FSM(s)."""
 
         if fsm_name:
@@ -965,7 +1049,9 @@ class SemanticFSMPlugin(PluginInterface):
             return self.fsms[self.active_fsm].current_state
         return None
 
-    def get_cognitive_profile(self, state: str | None = None) -> CognitiveProfile:
+    def get_cognitive_profile(
+        self, state: str | None = None
+    ) -> CognitiveProfile:
         """Get the cognitive profile for the current or specified state."""
         current_state = state or self.get_current_state()
 
@@ -1027,7 +1113,9 @@ class SemanticFSMPlugin(PluginInterface):
 
         # Get system health for world state
         system_health = self.store.get("system.health")
-        system_health_value = system_health.value if system_health else "Unknown"
+        system_health_value = (
+            system_health.value if system_health else "Unknown"
+        )
 
         # Generate correlation ID if not provided
         if not correlation_id:
@@ -1047,9 +1135,13 @@ class SemanticFSMPlugin(PluginInterface):
                     )
                     memory_section += f'\n  - key: "{key}"'
                     memory_section += f"\n    similarity_score: {score:.4f}"
-                    memory_section += f'\n    content_summary: "{content_summary}"'
+                    memory_section += (
+                        f'\n    content_summary: "{content_summary}"'
+                    )
         else:
-            memory_section = '\nrelevant_memories:\n  - "No relevant memories found."'
+            memory_section = (
+                '\nrelevant_memories:\n  - "No relevant memories found."'
+            )
 
         # Build the Cognitive Contract prompt
         prompt = f"""# COGNITIVE CONTRACT: FSM State Transition Analysis

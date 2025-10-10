@@ -1,4 +1,5 @@
 """Unit tests for the egress guard."""
+
 from research_agent.egress_guard import BLOCKED_NETWORKS, is_allowed
 
 

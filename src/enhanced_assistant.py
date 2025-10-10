@@ -27,9 +27,13 @@ class EnhancedAssistant:
         self.validator = ValidationChecklist()
         self.telemetry = TelemetryMiddleware()
 
-    async def analyze_request(self, user_query: str, context: dict[str, Any]) -> UnifiedAdvice:
+    async def analyze_request(
+        self, user_query: str, context: dict[str, Any]
+    ) -> UnifiedAdvice:
         request = Request(
-            request_id=context.get("request_id", f"req-{datetime.utcnow().timestamp():.0f}"),
+            request_id=context.get(
+                "request_id", f"req-{datetime.utcnow().timestamp():.0f}"
+            ),
             ts=datetime.utcnow().isoformat(),
             intent_text=user_query,
             code_refs=context.get("files", []),
@@ -40,7 +44,9 @@ class EnhancedAssistant:
         advice.telemetry_headers = self.telemetry.generate_headers(advice)  # type: ignore[attr-defined]
         return advice
 
-    async def validate_changes(self, proposed_changes: dict[str, Any]) -> dict[str, Any]:
+    async def validate_changes(
+        self, proposed_changes: dict[str, Any]
+    ) -> dict[str, Any]:
         try:
             return await self.validator.validate_async(proposed_changes)
         except AttributeError:
@@ -71,12 +77,16 @@ class EnhancedAssistant:
         parts.append(f"*request-id: {request_id}*")
         return "\n".join(parts)
 
-    async def process_user_request(self, user_query: str, context: dict[str, Any] | None = None) -> str:
+    async def process_user_request(
+        self, user_query: str, context: dict[str, Any] | None = None
+    ) -> str:
         context = context or {}
         advice = await self.analyze_request(user_query, context)
 
         if context.get("proposed_changes"):
-            validation = await self.validate_changes(context["proposed_changes"])
+            validation = await self.validate_changes(
+                context["proposed_changes"]
+            )
             advice.validation = validation  # type: ignore[attr-defined]
 
         return await self.generate_response(advice)
@@ -91,13 +101,19 @@ def _ensure_event_loop() -> asyncio.AbstractEventLoop:
     return loop
 
 
-def process_query_sync(user_query: str, context: dict[str, Any] | None = None) -> str:
+def process_query_sync(
+    user_query: str, context: dict[str, Any] | None = None
+) -> str:
     loop = _ensure_event_loop()
     if loop.is_running():
         return asyncio.run(process_user_request(user_query, context or {}))
-    return loop.run_until_complete(process_user_request(user_query, context or {}))
+    return loop.run_until_complete(
+        process_user_request(user_query, context or {})
+    )
 
 
-async def process_user_request(user_query: str, context: dict[str, Any] | None = None) -> str:
+async def process_user_request(
+    user_query: str, context: dict[str, Any] | None = None
+) -> str:
     assistant = EnhancedAssistant()
     return await assistant.process_user_request(user_query, context)

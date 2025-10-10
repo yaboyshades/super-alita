@@ -103,7 +103,9 @@ class EventSubscription:
                 await loop.run_in_executor(None, self.handler, event)
 
         except Exception as e:
-            logger.error(f"Error in neural event handler {self.subscriber_id}: {e}")
+            logger.error(
+                f"Error in neural event handler {self.subscriber_id}: {e}"
+            )
 
     def deactivate(self) -> None:
         """Deactivate this neural subscription."""
@@ -148,7 +150,9 @@ class RedisEventBus:
         self._serializer = EventSerializer()
 
         # Neural subscriptions (preserves all semantic intelligence)
-        self._subscriptions: dict[str, list[EventSubscription]] = defaultdict(list)
+        self._subscriptions: dict[str, list[EventSubscription]] = defaultdict(
+            list
+        )
 
         # Background neural processing
         self._listener_task: asyncio.Task | None = None
@@ -273,7 +277,9 @@ class RedisEventBus:
             await self._redis.publish(event.event_type, serialized_data)
 
             self._stats["events_emitted"] += 1
-            logger.debug(f"Pre-created neural event '{event.event_type}' transmitted")
+            logger.debug(
+                f"Pre-created neural event '{event.event_type}' transmitted"
+            )
 
         except Exception as e:
             self._stats["errors"] += 1
@@ -321,9 +327,7 @@ class RedisEventBus:
         if self._running and self._pubsub:
             await self._pubsub.subscribe(event_type)
 
-        neural_info = (
-            f" (semantic filter: {'YES' if semantic_filter is not None else 'NO'})"
-        )
+        neural_info = f" (semantic filter: {'YES' if semantic_filter is not None else 'NO'})"
         logger.info(
             f"Neural subscription: {subscription.subscriber_id} -> {event_type}{neural_info}"
         )
@@ -472,7 +476,9 @@ async def emit_global(event_type: str, **kwargs) -> None:
     await bus.emit(event_type, **kwargs)
 
 
-async def subscribe_global(event_type: str, handler: Callable, **kwargs) -> str:
+async def subscribe_global(
+    event_type: str, handler: Callable, **kwargs
+) -> str:
     """Subscribe to events using the global neural event bus."""
     bus = await get_global_bus()
     return await bus.subscribe(event_type, handler, **kwargs)

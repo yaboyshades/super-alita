@@ -36,7 +36,9 @@ class NeuralAtomBridge:
                 atom = await mapper(event)
                 if atom:
                     # Process through MCP server
-                    await self.mcp_server.handle_event("AtomCreated", atom.to_dict())
+                    await self.mcp_server.handle_event(
+                        "AtomCreated", atom.to_dict()
+                    )
                     logger.debug(
                         f"Converted event {event.event_type} to atom {atom.atom_id}"
                     )

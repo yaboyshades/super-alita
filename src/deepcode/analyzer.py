@@ -86,7 +86,9 @@ class AnalysisResult:
         """Add an issue to the results"""
         self.issues.append(issue)
 
-    def get_issues_by_severity(self, severity: SeverityLevel) -> List[CodeIssue]:
+    def get_issues_by_severity(
+        self, severity: SeverityLevel
+    ) -> List[CodeIssue]:
         """Get issues filtered by severity"""
         return [issue for issue in self.issues if issue.severity == severity]
 
@@ -261,7 +263,9 @@ class PythonDeepAnalyzer(CodeAnalyzer):
                     )
 
                 # Check function length
-                length = node.end_lineno - node.lineno if node.end_lineno else 0
+                length = (
+                    node.end_lineno - node.lineno if node.end_lineno else 0
+                )
                 self.function_lengths.append(length)
                 if length > 50:
                     self.result.add_issue(
@@ -332,7 +336,9 @@ class PythonDeepAnalyzer(CodeAnalyzer):
                                     message=pattern_info["message"],
                                     file_path=file_path,
                                     line_number=line_num,
-                                    suggestions=pattern_info.get("suggestions", []),
+                                    suggestions=pattern_info.get(
+                                        "suggestions", []
+                                    ),
                                 )
                             )
 
@@ -356,7 +362,9 @@ class PythonDeepAnalyzer(CodeAnalyzer):
                                     message=pattern_info["message"],
                                     file_path=file_path,
                                     line_number=line_num,
-                                    suggestions=pattern_info.get("suggestions", []),
+                                    suggestions=pattern_info.get(
+                                        "suggestions", []
+                                    ),
                                 )
                             )
 
@@ -373,7 +381,9 @@ class PythonDeepAnalyzer(CodeAnalyzer):
                 self.dependencies = set()
 
             def visit_ClassDef(self, node):
-                class_length = node.end_lineno - node.lineno if node.end_lineno else 0
+                class_length = (
+                    node.end_lineno - node.lineno if node.end_lineno else 0
+                )
                 method_count = len(
                     [n for n in node.body if isinstance(n, ast.FunctionDef)]
                 )
@@ -425,7 +435,9 @@ class PythonDeepAnalyzer(CodeAnalyzer):
         analyzer = ArchitectureAnalyzer(result, file_path)
         analyzer.visit(tree)
 
-    def _calculate_metrics(self, tree: ast.AST, content: str) -> Dict[str, Any]:
+    def _calculate_metrics(
+        self, tree: ast.AST, content: str
+    ) -> Dict[str, Any]:
         """Calculate code metrics"""
         lines = content.split("\n")
 
@@ -475,7 +487,9 @@ class DeepCodeEngine:
     """Main DeepCode analysis engine"""
 
     def __init__(self):
-        self.analyzers: Dict[str, CodeAnalyzer] = {"python": PythonDeepAnalyzer()}
+        self.analyzers: Dict[str, CodeAnalyzer] = {
+            "python": PythonDeepAnalyzer()
+        }
         self.cache: Dict[str, Tuple[AnalysisResult, float]] = {}
         self.cache_ttl = 300  # 5 minutes
 
@@ -542,7 +556,9 @@ class DeepCodeEngine:
         return result
 
     async def analyze_directory(
-        self, directory_path: str, level: AnalysisLevel = AnalysisLevel.SEMANTIC
+        self,
+        directory_path: str,
+        level: AnalysisLevel = AnalysisLevel.SEMANTIC,
     ) -> Dict[str, AnalysisResult]:
         """Analyze all supported files in a directory"""
         results = {}
@@ -563,13 +579,19 @@ class DeepCodeEngine:
         # Analyze files concurrently (but with limits)
         semaphore = asyncio.Semaphore(5)  # Limit concurrent analyses
 
-        async def analyze_single_file(file_path: Path) -> Tuple[str, AnalysisResult]:
+        async def analyze_single_file(
+            file_path: Path,
+        ) -> Tuple[str, AnalysisResult]:
             async with semaphore:
                 result = await self.analyze_file(str(file_path), level)
                 return str(file_path), result
 
-        tasks = [analyze_single_file(file_path) for file_path in files_to_analyze]
-        completed_analyses = await asyncio.gather(*tasks, return_exceptions=True)
+        tasks = [
+            analyze_single_file(file_path) for file_path in files_to_analyze
+        ]
+        completed_analyses = await asyncio.gather(
+            *tasks, return_exceptions=True
+        )
 
         for item in completed_analyses:
             if isinstance(item, Exception):
@@ -580,7 +602,9 @@ class DeepCodeEngine:
 
         return results
 
-    def generate_report(self, results: Dict[str, AnalysisResult]) -> Dict[str, Any]:
+    def generate_report(
+        self, results: Dict[str, AnalysisResult]
+    ) -> Dict[str, Any]:
         """Generate a comprehensive analysis report"""
         all_issues = []
         total_metrics = {
@@ -616,7 +640,9 @@ class DeepCodeEngine:
                 )
 
         # Calculate quality score (0-100)
-        quality_score = self._calculate_quality_score(severity_counts, total_metrics)
+        quality_score = self._calculate_quality_score(
+            severity_counts, total_metrics
+        )
 
         return {
             "summary": {
@@ -636,7 +662,9 @@ class DeepCodeEngine:
         }
 
     def _calculate_quality_score(
-        self, severity_counts: Dict[SeverityLevel, int], metrics: Dict[str, Any]
+        self,
+        severity_counts: Dict[SeverityLevel, int],
+        metrics: Dict[str, Any],
     ) -> float:
         """Calculate a quality score from 0-100"""
         base_score = 100.0
@@ -663,7 +691,9 @@ class DeepCodeEngine:
         # Group issues by category
         category_counts = {}
         for issue in issues:
-            category_counts[issue.category] = category_counts.get(issue.category, 0) + 1
+            category_counts[issue.category] = (
+                category_counts.get(issue.category, 0) + 1
+            )
 
         # Generate recommendations based on most common issues
         if category_counts.get("security.code-injection", 0) > 0:
@@ -681,7 +711,10 @@ class DeepCodeEngine:
                 "Optimize loops and iterations for better performance"
             )
 
-        if metrics.get("functions", 0) / max(metrics.get("classes", 1), 1) > 10:
+        if (
+            metrics.get("functions", 0) / max(metrics.get("classes", 1), 1)
+            > 10
+        ):
             recommendations.append(
                 "Consider organizing functions into classes for better structure"
             )
@@ -714,7 +747,9 @@ if __name__ == "__main__":
         print(f"Found {len(result.issues)} issues")
 
         # Analyze a directory
-        results = await engine.analyze_directory("./src", AnalysisLevel.SEMANTIC)
+        results = await engine.analyze_directory(
+            "./src", AnalysisLevel.SEMANTIC
+        )
         report = engine.generate_report(results)
         print(f"Quality score: {report['summary']['quality_score']}")
 

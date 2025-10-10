@@ -43,7 +43,9 @@ class TestFallbackBehavior:
         )
 
         # Mock execution flow to return no tools
-        with patch("core.execution_flow.find_applicable_tools", return_value=[]):
+        with patch(
+            "core.execution_flow.find_applicable_tools", return_value=[]
+        ):
             # Transition to GENERATE state
             await fsm.transition(TransitionTrigger.TOOLS_SELECTED)
 
@@ -59,7 +61,9 @@ class TestFallbackBehavior:
             )
 
             # Check metrics
-            fallback_count = metrics.get_counter("sa_fsm_fallback_responses_total")
+            fallback_count = metrics.get_counter(
+                "sa_fsm_fallback_responses_total"
+            )
             assert fallback_count > 0
 
     @pytest.mark.asyncio
@@ -77,7 +81,9 @@ class TestFallbackBehavior:
         )
 
         # Mock tool execution to fail
-        with patch("core.execution_flow._execute_tools_with_comp_env") as mock_execute:
+        with patch(
+            "core.execution_flow._execute_tools_with_comp_env"
+        ) as mock_execute:
             mock_execute.side_effect = Exception("Tool execution failed")
 
             result = await fsm._handle_generate_state(context)
@@ -177,7 +183,9 @@ class TestStaleCompletions:
 
         # Create a context with an old operation ID
         context = Context(
-            user_input="Test request", session_id="test_stale", turn_id="old_turn_id"
+            user_input="Test request",
+            session_id="test_stale",
+            turn_id="old_turn_id",
         )
 
         # Start a new operation to make the old one stale
@@ -252,7 +260,9 @@ class TestCircuitBreaker:
         await asyncio.sleep(0.5)
 
         # Check if circuit breaker tripped
-        breaker_trips = metrics.get_counter("sa_fsm_circuit_breaker_trips_total")
+        breaker_trips = metrics.get_counter(
+            "sa_fsm_circuit_breaker_trips_total"
+        )
         assert breaker_trips > 0
 
         # Check if circuit breaker is open
@@ -356,7 +366,9 @@ class TestIntegrationScenarios:
         final_metrics = {
             "operations_total": metrics.get_counter("sa_fsm_operations_total"),
             "mailbox_pressure": metrics.get_gauge("sa_fsm_mailbox_pressure"),
-            "stale_completions": metrics.get_counter("sa_fsm_stale_completions_total"),
+            "stale_completions": metrics.get_counter(
+                "sa_fsm_stale_completions_total"
+            ),
             "circuit_breaker_trips": metrics.get_counter(
                 "sa_fsm_circuit_breaker_trips_total"
             ),

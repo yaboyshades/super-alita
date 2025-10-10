@@ -142,7 +142,9 @@ class EnergyEnhancedLadderAdapter(KGEnhancedLadderAdapter):
 
         return result
 
-    def _update_energy_metrics(self, result: dict[str, Any], processing_time: float):
+    def _update_energy_metrics(
+        self, result: dict[str, Any], processing_time: float
+    ):
         """Update energy-specific metrics."""
         # Update base metrics
         self.metrics.total_plans += 1
@@ -178,13 +180,18 @@ class EnergyEnhancedLadderAdapter(KGEnhancedLadderAdapter):
         ) / total_plans
 
     async def handle_task_completion(
-        self, task_id: str, success: bool, context: dict[str, Any] | None = None
+        self,
+        task_id: str,
+        success: bool,
+        context: dict[str, Any] | None = None,
     ):
         """Handle task completion with energy learning."""
         context = context or {}
 
         # Get task priority info before marking complete
-        priority_info = self.planner.prioritizer.get_task_priority_info(task_id)
+        priority_info = self.planner.prioritizer.get_task_priority_info(
+            task_id
+        )
 
         # Mark task as completed in prioritizer
         completion_time = time.time()
@@ -201,7 +208,9 @@ class EnergyEnhancedLadderAdapter(KGEnhancedLadderAdapter):
                 self.metrics.low_energy_tasks_completed += 1
 
             # Simple accuracy calculation
-            predicted_success = priority_info.energy.metrics.success_probability
+            predicted_success = (
+                priority_info.energy.metrics.success_probability
+            )
             actual_success = 1.0 if success else 0.0
 
             # Update prioritization accuracy (simple moving average)
@@ -214,7 +223,8 @@ class EnergyEnhancedLadderAdapter(KGEnhancedLadderAdapter):
 
             if total_completions > 0:
                 self.metrics.prioritization_accuracy = (
-                    current_accuracy * (total_completions - 1) + (1.0 - accuracy_error)
+                    current_accuracy * (total_completions - 1)
+                    + (1.0 - accuracy_error)
                 ) / total_completions
 
         # Emit task completion event
@@ -272,7 +282,9 @@ class EnergyEnhancedLadderAdapter(KGEnhancedLadderAdapter):
         """Get detailed explanation of task prioritization."""
         return self.planner.explain_task_priority(task_id)
 
-    async def rebalance_priorities(self, context: dict[str, Any] | None = None) -> bool:
+    async def rebalance_priorities(
+        self, context: dict[str, Any] | None = None
+    ) -> bool:
         """Manually trigger priority rebalancing."""
         if not hasattr(self, "active_plans") or not self.active_plans:
             return False
@@ -306,11 +318,15 @@ class EnergyEnhancedLadderAdapter(KGEnhancedLadderAdapter):
         # If no specific plan, get from all active plans
         all_recommendations = []
         for plan in self.active_plans.values():
-            recommendations = self.planner.get_next_recommended_tasks(plan, count)
+            recommendations = self.planner.get_next_recommended_tasks(
+                plan, count
+            )
             all_recommendations.extend(recommendations)
 
         # Sort by priority score and return top N
-        all_recommendations.sort(key=lambda x: x["priority_score"], reverse=True)
+        all_recommendations.sort(
+            key=lambda x: x["priority_score"], reverse=True
+        )
         return all_recommendations[:count]
 
     def get_energy_performance_metrics(self) -> dict[str, Any]:
@@ -322,7 +338,8 @@ class EnergyEnhancedLadderAdapter(KGEnhancedLadderAdapter):
             "adapter_metrics": {
                 "total_requests": self.metrics.total_plans,
                 "success_rate": (
-                    self.metrics.successful_executions / self.metrics.total_plans
+                    self.metrics.successful_executions
+                    / self.metrics.total_plans
                     if self.metrics.total_plans > 0
                     else 0.0
                 ),

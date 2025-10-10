@@ -47,7 +47,9 @@ class ExecutionContext:
 
     def add_to_history(self, entry: dict[str, Any]) -> None:
         """Add an entry to execution history"""
-        self.history.append({**entry, "timestamp": asyncio.get_event_loop().time()})
+        self.history.append(
+            {**entry, "timestamp": asyncio.get_event_loop().time()}
+        )
 
     def get_history(self, limit: int | None = None) -> list[dict[str, Any]]:
         """Get execution history"""
@@ -74,7 +76,9 @@ class ComputationalEnvironment:
         self.contexts: dict[str, ExecutionContext] = {}
         self.logger = logging.getLogger(__name__)
 
-    def create_context(self, session_id: str | None = None) -> ExecutionContext:
+    def create_context(
+        self, session_id: str | None = None
+    ) -> ExecutionContext:
         """Create a new execution context"""
         context = ExecutionContext(session_id)
         self.contexts[context.session_id] = context
@@ -169,7 +173,10 @@ class ComputationalEnvironment:
             }
 
     async def execute_tool(
-        self, tool_name: str, parameters: dict[str, Any], session_id: str | None = None
+        self,
+        tool_name: str,
+        parameters: dict[str, Any],
+        session_id: str | None = None,
     ) -> dict[str, Any]:
         """
         Execute a tool in the computational environment
@@ -192,7 +199,9 @@ class ComputationalEnvironment:
 
         try:
             # Execute tool
-            result = await self.tools_registry.execute_tool(tool_name, **parameters)
+            result = await self.tools_registry.execute_tool(
+                tool_name, **parameters
+            )
 
             # Add to history
             context.add_to_history(
@@ -267,7 +276,9 @@ class ComputationalEnvironment:
             interpreter = ScriptOfThoughtInterpreter(self)
 
             # Execute script
-            result = await interpreter.execute_script(script, context.session_id)
+            result = await interpreter.execute_script(
+                script, context.session_id
+            )
 
             # Add to history
             context.add_to_history(

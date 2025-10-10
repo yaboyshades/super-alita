@@ -15,7 +15,11 @@ from src.core.enhanced_protocol import (
     ReasoningMode,
     create_enhanced_protocol_engine,
 )
-from src.core.events import BaseEvent, ConversationEvent, ConversationMessageEvent
+from src.core.events import (
+    BaseEvent,
+    ConversationEvent,
+    ConversationMessageEvent,
+)
 from src.core.plugin_interface import PluginInterface
 
 logger = logging.getLogger(__name__)
@@ -50,14 +54,18 @@ class EnhancedProtocolPlugin(PluginInterface):
         self.protocol_engine = create_enhanced_protocol_engine()
 
         logger.info("Enhanced Protocol Plugin initialized")
-        logger.info(f"Protocol Status: {self.protocol_engine.get_protocol_status()}")
+        logger.info(
+            f"Protocol Status: {self.protocol_engine.get_protocol_status()}"
+        )
 
     async def start(self):
         """Start the enhanced protocol plugin."""
         await super().start()
 
         # Subscribe to conversation events for enhanced processing
-        await self.subscribe("conversation", self._handle_conversation_with_protocol)
+        await self.subscribe(
+            "conversation", self._handle_conversation_with_protocol
+        )
         await self.subscribe(
             "enhanced_cognitive_request", self._handle_enhanced_request
         )
@@ -70,11 +78,15 @@ class EnhancedProtocolPlugin(PluginInterface):
         """Shutdown the enhanced protocol plugin."""
         if self.protocol_engine:
             status = self.protocol_engine.get_protocol_status()
-            logger.info(f"Enhanced Protocol Plugin shutdown - Final stats: {status}")
+            logger.info(
+                f"Enhanced Protocol Plugin shutdown - Final stats: {status}"
+            )
 
         await super().shutdown()
 
-    async def _handle_conversation_with_protocol(self, event: ConversationEvent):
+    async def _handle_conversation_with_protocol(
+        self, event: ConversationEvent
+    ):
         """Handle conversation events using enhanced protocol processing."""
         try:
             if not self.protocol_engine:
@@ -151,8 +163,12 @@ class EnhancedProtocolPlugin(PluginInterface):
             request = CognitiveRequest(
                 user_input=event.user_message,
                 session_id=getattr(event, "session_id", "default"),
-                expansion_tier=self._determine_expansion_tier(event.user_message),
-                required_modes=self._determine_required_modes(event.user_message),
+                expansion_tier=self._determine_expansion_tier(
+                    event.user_message
+                ),
+                required_modes=self._determine_required_modes(
+                    event.user_message
+                ),
                 confidence_threshold=0.7,
                 compliance_required=True,
                 metadata={
@@ -194,7 +210,13 @@ class EnhancedProtocolPlugin(PluginInterface):
         # Extended tier triggers
         if any(
             keyword in message_lower
-            for keyword in ["analyze", "evaluate", "assess", "examine", "investigate"]
+            for keyword in [
+                "analyze",
+                "evaluate",
+                "assess",
+                "examine",
+                "investigate",
+            ]
         ):
             return ExpansionTier.EXTENDED
 
@@ -208,7 +230,9 @@ class EnhancedProtocolPlugin(PluginInterface):
         # Default to minimal for simple queries
         return ExpansionTier.MINIMAL
 
-    def _determine_required_modes(self, user_message: str) -> list[ReasoningMode]:
+    def _determine_required_modes(
+        self, user_message: str
+    ) -> list[ReasoningMode]:
         """Determine required reasoning modes based on message content."""
         message_lower = user_message.lower()
         modes = []
@@ -219,21 +243,40 @@ class EnhancedProtocolPlugin(PluginInterface):
         # Dialectical mode triggers
         if any(
             keyword in message_lower
-            for keyword in ["compare", "contrast", "versus", "alternative", "different"]
+            for keyword in [
+                "compare",
+                "contrast",
+                "versus",
+                "alternative",
+                "different",
+            ]
         ):
             modes.append(ReasoningMode.DIALECTICAL)
 
         # Critical mode triggers
         if any(
             keyword in message_lower
-            for keyword in ["risk", "problem", "issue", "concern", "security", "safety"]
+            for keyword in [
+                "risk",
+                "problem",
+                "issue",
+                "concern",
+                "security",
+                "safety",
+            ]
         ):
             modes.append(ReasoningMode.CRITICAL)
 
         # Speculative mode triggers
         if any(
             keyword in message_lower
-            for keyword in ["future", "predict", "forecast", "what if", "scenario"]
+            for keyword in [
+                "future",
+                "predict",
+                "forecast",
+                "what if",
+                "scenario",
+            ]
         ):
             modes.append(ReasoningMode.SPECULATIVE)
 
@@ -270,7 +313,9 @@ class EnhancedProtocolPlugin(PluginInterface):
         """Emit enhanced conversation response event."""
         try:
             # Format enhanced response for conversation
-            formatted_response = self._format_protocol_response(protocol_response)
+            formatted_response = self._format_protocol_response(
+                protocol_response
+            )
 
             # Create conversation message event
             response_event = ConversationMessageEvent(
@@ -320,15 +365,11 @@ class EnhancedProtocolPlugin(PluginInterface):
         """Format protocol response for conversation output."""
         try:
             # Start with supplemental banner
-            formatted = (
-                f"{protocol_response.metadata.get('supplemental_banner', '')}\n\n"
-            )
+            formatted = f"{protocol_response.metadata.get('supplemental_banner', '')}\n\n"
 
             # Add executive summary
             if protocol_response.executive_summary:
-                formatted += (
-                    f"## Executive Summary\n{protocol_response.executive_summary}\n\n"
-                )
+                formatted += f"## Executive Summary\n{protocol_response.executive_summary}\n\n"
 
             # Add reasoning trace if available
             if protocol_response.reasoning_trace:
@@ -339,17 +380,11 @@ class EnhancedProtocolPlugin(PluginInterface):
 
             # Add confidence and compliance information
             formatted += "## Processing Details\n"
-            formatted += (
-                f"- **Confidence Score:** {protocol_response.confidence_score:.2f}\n"
-            )
+            formatted += f"- **Confidence Score:** {protocol_response.confidence_score:.2f}\n"
             formatted += f"- **Compliance Verified:** {'✅' if protocol_response.compliance_verified else '❌'}\n"
-            formatted += (
-                f"- **Expansion Tier:** {protocol_response.expansion_tier.value}\n"
-            )
+            formatted += f"- **Expansion Tier:** {protocol_response.expansion_tier.value}\n"
             formatted += f"- **Active Reasoning Modes:** {', '.join(mode.value for mode in protocol_response.active_modes)}\n"
-            formatted += (
-                f"- **Processing Time:** {protocol_response.processing_time:.3f}s\n"
-            )
+            formatted += f"- **Processing Time:** {protocol_response.processing_time:.3f}s\n"
 
             # Add metadata if available
             if protocol_response.metadata:
@@ -360,7 +395,9 @@ class EnhancedProtocolPlugin(PluginInterface):
                         "protocol_version",
                         "legal_authority",
                     ]:
-                        formatted += f"- **{key.replace('_', ' ').title()}:** {value}\n"
+                        formatted += (
+                            f"- **{key.replace('_', ' ').title()}:** {value}\n"
+                        )
 
             return formatted
 
@@ -379,6 +416,8 @@ class EnhancedProtocolPlugin(PluginInterface):
         }
 
         if self.protocol_engine:
-            status["protocol_status"] = self.protocol_engine.get_protocol_status()
+            status["protocol_status"] = (
+                self.protocol_engine.get_protocol_status()
+            )
 
         return status

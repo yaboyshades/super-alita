@@ -89,7 +89,9 @@ class EnhancedAgentCycle:
                 await self.event_bus.initialize()
 
                 # Subscribe to development events
-                await self.event_bus.subscribe("file_changed", self._handle_file_change)
+                await self.event_bus.subscribe(
+                    "file_changed", self._handle_file_change
+                )
                 await self.event_bus.subscribe(
                     "task_created", self._handle_task_created
                 )
@@ -200,7 +202,9 @@ class EnhancedAgentCycle:
             # Emit file change events
             if self.event_bus:
                 for file_path in recent_changes:
-                    await self.event_bus.emit("file_changed", file_path=str(file_path))
+                    await self.event_bus.emit(
+                        "file_changed", file_path=str(file_path)
+                    )
 
         # Check system health
         health_status = await self._check_system_health()
@@ -224,7 +228,9 @@ class EnhancedAgentCycle:
             complexity = await self._analyze_task_complexity(task)
             urgency = await self._calculate_task_urgency(task)
 
-            print(f"  🎯 {task['title']}: complexity={complexity}, urgency={urgency}")
+            print(
+                f"  🎯 {task['title']}: complexity={complexity}, urgency={urgency}"
+            )
 
     async def _execute_planning(self):
         """Execute LADDER-based intelligent planning."""
@@ -238,7 +244,9 @@ class EnhancedAgentCycle:
         ]
 
         if high_priority_tasks:
-            for task in high_priority_tasks[:2]:  # Plan top 2 high priority tasks
+            for task in high_priority_tasks[
+                :2
+            ]:  # Plan top 2 high priority tasks
                 plan = await self.base_agent.plan_with_ladder(
                     goal=task["title"], mode="shadow"
                 )
@@ -253,7 +261,9 @@ class EnhancedAgentCycle:
         analysis_results = await self.code_analyzer.analyze_workspace()
 
         if analysis_results["issues_found"] > 0:
-            print(f"⚠️ Found {analysis_results['issues_found']} code quality issues")
+            print(
+                f"⚠️ Found {analysis_results['issues_found']} code quality issues"
+            )
 
             # Auto-fix simple issues
             auto_fixes = await self.code_analyzer.auto_fix_issues()
@@ -355,7 +365,9 @@ class EnhancedAgentCycle:
         """Analyze task complexity."""
         description = task.get("description", "").lower()
 
-        if any(word in description for word in ["implement", "create", "build"]):
+        if any(
+            word in description for word in ["implement", "create", "build"]
+        ):
             return "high"
         elif any(word in description for word in ["update", "fix", "improve"]):
             return "medium"
@@ -383,7 +395,9 @@ class EnhancedAgentCycle:
         recommendations = []
 
         if self.cycle_count > 5 and self.tasks_completed_this_session == 0:
-            recommendations.append("🎯 Consider focusing on completing existing tasks")
+            recommendations.append(
+                "🎯 Consider focusing on completing existing tasks"
+            )
 
         if self.code_improvements_made > 10:
             recommendations.append("🔧 Excellent code quality maintenance!")
@@ -453,7 +467,11 @@ class PerformanceMonitor:
     @property
     def average_cycle_time(self) -> float:
         """Calculate average cycle time."""
-        return sum(self.cycle_times) / len(self.cycle_times) if self.cycle_times else 0
+        return (
+            sum(self.cycle_times) / len(self.cycle_times)
+            if self.cycle_times
+            else 0
+        )
 
 
 class AutoDocumentationGenerator:

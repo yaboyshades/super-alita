@@ -48,8 +48,12 @@ class PredictiveWorldModelPlugin(PluginInterface):
             return
 
         # Subscribe to prediction and learning events
-        await self.subscribe("prediction_request", self._handle_prediction_request)
-        await self.subscribe("execution_result", self._handle_execution_learning)
+        await self.subscribe(
+            "prediction_request", self._handle_prediction_request
+        )
+        await self.subscribe(
+            "execution_result", self._handle_execution_learning
+        )
         await self.subscribe("tool_result", self._handle_tool_result_learning)
 
         # Emit startup status
@@ -62,7 +66,9 @@ class PredictiveWorldModelPlugin(PluginInterface):
             success=True,
         )
 
-        logger.info("🔮 Predictive World Model Plugin started with enhanced features")
+        logger.info(
+            "🔮 Predictive World Model Plugin started with enhanced features"
+        )
 
     async def shutdown(self):
         logger.info("🔮 Predictive World Model Plugin shutting down")
@@ -104,7 +110,9 @@ class PredictiveWorldModelPlugin(PluginInterface):
                 success=True,
             )
 
-            logger.info(f"🔮 Generated prediction for action: {proposed_action}")
+            logger.info(
+                f"🔮 Generated prediction for action: {proposed_action}"
+            )
 
         except Exception as e:
             logger.exception(f"❌ Prediction error: {e}")
@@ -136,7 +144,9 @@ class PredictiveWorldModelPlugin(PluginInterface):
                 context=context,
             )
 
-            logger.info(f"🔮 Learned from execution: {action} (success={success})")
+            logger.info(
+                f"🔮 Learned from execution: {action} (success={success})"
+            )
 
         except Exception as e:
             logger.exception(f"❌ Learning error: {e}")

@@ -8,7 +8,9 @@ from src.core.execution_flow import REUGExecutionFlow
 
 
 class UnifiedRouter:
-    def __init__(self, event_bus=None, plugin_registry: dict[str, Any] | None = None):
+    def __init__(
+        self, event_bus=None, plugin_registry: dict[str, Any] | None = None
+    ):
         self.decision_policy = DecisionPolicyEngine()
         self.execution_flow = REUGExecutionFlow(
             event_bus=event_bus, plugin_registry=plugin_registry or {}

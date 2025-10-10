@@ -118,7 +118,9 @@ class BanditAlgorithm(ABC):
         return True
 
     @abstractmethod
-    def select_arm(self, context: dict[str, Any] | None = None) -> BanditDecision:
+    def select_arm(
+        self, context: dict[str, Any] | None = None
+    ) -> BanditDecision:
         """Select an arm based on the algorithm's strategy."""
         pass
 
@@ -156,7 +158,9 @@ class ThompsonSamplingBandit(BanditAlgorithm):
     def __init__(self):
         super().__init__("Thompson Sampling")
 
-    def select_arm(self, context: dict[str, Any] | None = None) -> BanditDecision:
+    def select_arm(
+        self, context: dict[str, Any] | None = None
+    ) -> BanditDecision:
         """Select arm using Thompson Sampling."""
         if not self.arms:
             raise ValueError("No arms available for selection")
@@ -192,7 +196,10 @@ class ThompsonSamplingBandit(BanditAlgorithm):
             confidence = min(1.0, 0.5 + margin)
 
         decision = BanditDecision.create(
-            arm=best_arm, algorithm=self.name, confidence=confidence, context=context
+            arm=best_arm,
+            algorithm=self.name,
+            confidence=confidence,
+            context=context,
         )
 
         self.decision_history.append(decision)
@@ -210,7 +217,9 @@ class UCB1Bandit(BanditAlgorithm):
     def __init__(self):
         super().__init__("UCB1")
 
-    def select_arm(self, context: dict[str, Any] | None = None) -> BanditDecision:
+    def select_arm(
+        self, context: dict[str, Any] | None = None
+    ) -> BanditDecision:
         """Select arm using UCB1 algorithm."""
         if not self.arms:
             raise ValueError("No arms available for selection")
@@ -261,7 +270,10 @@ class UCB1Bandit(BanditAlgorithm):
             confidence = min(1.0, 0.5 + margin / 2)
 
         decision = BanditDecision.create(
-            arm=best_arm, algorithm=self.name, confidence=confidence, context=context
+            arm=best_arm,
+            algorithm=self.name,
+            confidence=confidence,
+            context=context,
         )
 
         self.decision_history.append(decision)
@@ -280,7 +292,9 @@ class EpsilonGreedyBandit(BanditAlgorithm):
         super().__init__("Epsilon-Greedy")
         self.epsilon = epsilon
 
-    def select_arm(self, context: dict[str, Any] | None = None) -> BanditDecision:
+    def select_arm(
+        self, context: dict[str, Any] | None = None
+    ) -> BanditDecision:
         """Select arm using Epsilon-Greedy strategy."""
         if not self.arms:
             raise ValueError("No arms available for selection")

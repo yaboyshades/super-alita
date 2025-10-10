@@ -86,7 +86,9 @@ class CapabilityMetadata:
             "use_cases": self.use_cases,
             "examples": self.examples,
             "created_at": self.created_at.isoformat(),
-            "last_used": self.last_used.isoformat() if self.last_used else None,
+            "last_used": (
+                self.last_used.isoformat() if self.last_used else None
+            ),
             "usage_count": self.usage_count,
             "status": self.status.value,
             "error_message": self.error_message,
@@ -113,12 +115,16 @@ class CapabilityRegistry:
     def __init__(self):
         self.capabilities: dict[str, CapabilityMetadata] = {}
         self.interfaces: dict[str, CapabilityInterface] = {}
-        self.capability_index: dict[str, list[str]] = {}  # keyword -> capability names
+        self.capability_index: dict[str, list[str]] = (
+            {}
+        )  # keyword -> capability names
         self.dependency_graph: dict[str, list[str]] = {}
         self.audit_history: list[dict[str, Any]] = []
 
     def register_capability(
-        self, metadata: CapabilityMetadata, interface: CapabilityInterface | None = None
+        self,
+        metadata: CapabilityMetadata,
+        interface: CapabilityInterface | None = None,
     ) -> bool:
         """Register a new capability"""
         try:
@@ -180,7 +186,9 @@ class CapabilityRegistry:
                 matches.update(self.capability_index[word])
 
         return [
-            self.capabilities[name] for name in matches if name in self.capabilities
+            self.capabilities[name]
+            for name in matches
+            if name in self.capabilities
         ]
 
     def get_capability_stats(self) -> dict[str, Any]:
@@ -199,7 +207,9 @@ class CapabilityRegistry:
 
         # Group by type
         for cap_type in CapabilityType:
-            count = len([c for c in capabilities if c.capability_type == cap_type])
+            count = len(
+                [c for c in capabilities if c.capability_type == cap_type]
+            )
             if count > 0:
                 stats["by_type"][cap_type.value] = count
 
@@ -214,14 +224,18 @@ class CapabilityRegistry:
             capabilities, key=lambda c: c.usage_count, reverse=True
         )
         stats["most_used"] = [
-            {"name": c.name, "usage_count": c.usage_count} for c in sorted_by_usage[:5]
+            {"name": c.name, "usage_count": c.usage_count}
+            for c in sorted_by_usage[:5]
         ]
         stats["least_used"] = [
-            {"name": c.name, "usage_count": c.usage_count} for c in sorted_by_usage[-5:]
+            {"name": c.name, "usage_count": c.usage_count}
+            for c in sorted_by_usage[-5:]
         ]
 
         # Recent additions
-        sorted_by_date = sorted(capabilities, key=lambda c: c.created_at, reverse=True)
+        sorted_by_date = sorted(
+            capabilities, key=lambda c: c.created_at, reverse=True
+        )
         stats["recent_additions"] = [
             {"name": c.name, "created_at": c.created_at.isoformat()}
             for c in sorted_by_date[:5]
@@ -242,7 +256,8 @@ class CapabilityRegistry:
             export_data = {
                 "timestamp": datetime.now(UTC).isoformat(),
                 "capabilities": {
-                    name: cap.to_dict() for name, cap in self.capabilities.items()
+                    name: cap.to_dict()
+                    for name, cap in self.capabilities.items()
                 },
                 "interfaces": {
                     name: {
@@ -333,8 +348,12 @@ class CapabilityAuditor:
         )
 
         # Identify issues and recommendations
-        audit_results["issues"] = self._identify_issues(audit_results["audit_results"])
-        audit_results["recommendations"] = self._generate_recommendations(audit_results)
+        audit_results["issues"] = self._identify_issues(
+            audit_results["audit_results"]
+        )
+        audit_results["recommendations"] = self._generate_recommendations(
+            audit_results
+        )
 
         # Store audit in history
         self.registry.audit_history.append(audit_results)
@@ -385,8 +404,12 @@ class CapabilityAuditor:
                             name=plugin_info["name"],
                             methods=plugin_info["methods"],
                             properties=plugin_info["properties"],
-                            events_emitted=plugin_info.get("events_emitted", []),
-                            events_consumed=plugin_info.get("events_consumed", []),
+                            events_emitted=plugin_info.get(
+                                "events_emitted", []
+                            ),
+                            events_consumed=plugin_info.get(
+                                "events_consumed", []
+                            ),
                         )
 
                         self.registry.register_capability(metadata, interface)
@@ -403,7 +426,9 @@ class CapabilityAuditor:
 
         return plugin_results
 
-    async def _analyze_plugin_file(self, plugin_file: Path) -> dict[str, Any] | None:
+    async def _analyze_plugin_file(
+        self, plugin_file: Path
+    ) -> dict[str, Any] | None:
         """Analyze a single plugin file"""
         try:
             # Read file content
@@ -457,7 +482,8 @@ class CapabilityAuditor:
                     # Simple docstring extraction
                     if (
                         current_class
-                        and plugin_info["description"] == "Plugin description not found"
+                        and plugin_info["description"]
+                        == "Plugin description not found"
                     ):
                         plugin_info["description"] = line_clean.replace(
                             '"""', ""
@@ -476,16 +502,22 @@ class CapabilityAuditor:
             name_lower = plugin_info["name"].lower()
             if "memory" in name_lower:
                 plugin_info["tags"].extend(["memory", "storage"])
-                plugin_info["use_cases"].append("Memory management and retrieval")
+                plugin_info["use_cases"].append(
+                    "Memory management and retrieval"
+                )
             if "conversation" in name_lower:
                 plugin_info["tags"].extend(["conversation", "chat", "nlp"])
-                plugin_info["use_cases"].append("Natural language conversation")
+                plugin_info["use_cases"].append(
+                    "Natural language conversation"
+                )
             if "tool" in name_lower or "creator" in name_lower:
                 plugin_info["tags"].extend(["tools", "creation"])
                 plugin_info["use_cases"].append("Tool creation and management")
             if "planner" in name_lower:
                 plugin_info["tags"].extend(["planning", "reasoning"])
-                plugin_info["use_cases"].append("Task planning and orchestration")
+                plugin_info["use_cases"].append(
+                    "Task planning and orchestration"
+                )
             if "atom" in name_lower:
                 plugin_info["tags"].extend(["atoms", "execution"])
                 plugin_info["use_cases"].append("Atomic task execution")
@@ -597,7 +629,9 @@ class CapabilityAuditor:
                         if '"""' in content:
                             # Extract docstring
                             docstring_start = content.find('"""')
-                            docstring_end = content.find('"""', docstring_start + 3)
+                            docstring_end = content.find(
+                                '"""', docstring_start + 3
+                            )
                             if docstring_end > docstring_start:
                                 atom_info["description"] = content[
                                     docstring_start + 3 : docstring_end
@@ -667,9 +701,7 @@ class CapabilityAuditor:
                                 self.registry.register_capability(metadata)
 
                             except Exception as e:
-                                error = (
-                                    f"Error analyzing MCP tool {tool_file.name}: {e}"
-                                )
+                                error = f"Error analyzing MCP tool {tool_file.name}: {e}"
                                 mcp_results["errors"].append(error)
 
             mcp_results["total"] = len(mcp_results["discovered"])
@@ -697,7 +729,9 @@ class CapabilityAuditor:
             # Check plugins for memory systems
             for plugin_file in self.plugins_path.glob("*.py"):
                 name_lower = plugin_file.stem.lower()
-                if any(indicator in name_lower for indicator in memory_indicators):
+                if any(
+                    indicator in name_lower for indicator in memory_indicators
+                ):
                     memory_info = {
                         "name": plugin_file.stem,
                         "type": "plugin_based",
@@ -713,7 +747,10 @@ class CapabilityAuditor:
                         capability_type=CapabilityType.MEMORY_SYSTEM,
                         description=memory_info["description"],
                         tags=["memory", "storage", "persistence"],
-                        use_cases=["Data storage and retrieval", "Context management"],
+                        use_cases=[
+                            "Data storage and retrieval",
+                            "Context management",
+                        ],
                         file_path=str(plugin_file),
                         status=CapabilityStatus.ACTIVE,
                     )
@@ -754,7 +791,9 @@ class CapabilityAuditor:
             memory_results["total"] = len(memory_results["discovered"])
 
         except Exception as e:
-            memory_results["errors"].append(f"Memory systems audit failed: {e}")
+            memory_results["errors"].append(
+                f"Memory systems audit failed: {e}"
+            )
 
         return memory_results
 
@@ -792,14 +831,17 @@ class CapabilityAuditor:
                 for file in search_path.rglob("*.py"):
                     name_lower = file.stem.lower()
                     if any(
-                        indicator in name_lower for indicator in reasoning_indicators
+                        indicator in name_lower
+                        for indicator in reasoning_indicators
                     ):
                         reasoning_info = {
                             "name": file.stem,
                             "type": "reasoning_engine",
                             "file_path": str(file),
                             "description": f"Reasoning engine: {file.stem}",
-                            "category": self._categorize_reasoning_engine(file.stem),
+                            "category": self._categorize_reasoning_engine(
+                                file.stem
+                            ),
                         }
 
                         reasoning_results["discovered"].append(reasoning_info)
@@ -809,7 +851,11 @@ class CapabilityAuditor:
                             name=reasoning_info["name"],
                             capability_type=CapabilityType.REASONING_ENGINE,
                             description=reasoning_info["description"],
-                            tags=["reasoning", "planning", reasoning_info["category"]],
+                            tags=[
+                                "reasoning",
+                                "planning",
+                                reasoning_info["category"],
+                            ],
                             use_cases=[
                                 "Task planning",
                                 "Decision making",
@@ -824,7 +870,9 @@ class CapabilityAuditor:
             reasoning_results["total"] = len(reasoning_results["discovered"])
 
         except Exception as e:
-            reasoning_results["errors"].append(f"Reasoning engines audit failed: {e}")
+            reasoning_results["errors"].append(
+                f"Reasoning engines audit failed: {e}"
+            )
 
         return reasoning_results
 
@@ -845,7 +893,9 @@ class CapabilityAuditor:
         else:
             return "general"
 
-    def _generate_audit_summary(self, audit_results: dict[str, Any]) -> dict[str, Any]:
+    def _generate_audit_summary(
+        self, audit_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate summary of audit results"""
         total_capabilities = 0
         total_errors = 0
@@ -862,11 +912,15 @@ class CapabilityAuditor:
                 for category, results in audit_results.items()
             },
             "health_score": (
-                max(0, 100 - (total_errors * 10)) if total_capabilities > 0 else 0
+                max(0, 100 - (total_errors * 10))
+                if total_capabilities > 0
+                else 0
             ),
         }
 
-    def _identify_issues(self, audit_results: dict[str, Any]) -> list[dict[str, Any]]:
+    def _identify_issues(
+        self, audit_results: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Identify issues from audit results"""
         issues = []
 
@@ -883,7 +937,12 @@ class CapabilityAuditor:
                 )
 
         # Check for missing critical capabilities
-        critical_capabilities = ["conversation", "memory", "planner", "tool_creator"]
+        critical_capabilities = [
+            "conversation",
+            "memory",
+            "planner",
+            "tool_creator",
+        ]
         discovered_names = set()
 
         for category, results in audit_results.items():
@@ -903,7 +962,9 @@ class CapabilityAuditor:
 
         return issues
 
-    def _generate_recommendations(self, audit_results: dict[str, Any]) -> list[str]:
+    def _generate_recommendations(
+        self, audit_results: dict[str, Any]
+    ) -> list[str]:
         """Generate recommendations based on audit"""
         recommendations = []
 

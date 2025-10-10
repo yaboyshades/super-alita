@@ -71,7 +71,9 @@ class CoreUtilsPlugin(PluginInterface):
                 "method": name,
                 "signature": str(signature),
                 "docstring": docstring,
-                "parameters": [param.name for param in signature.parameters.values()],
+                "parameters": [
+                    param.name for param in signature.parameters.values()
+                ],
                 "is_static": isinstance(
                     inspect.getattr_static(CoreUtils, name), staticmethod
                 ),
@@ -79,7 +81,8 @@ class CoreUtilsPlugin(PluginInterface):
             }
 
         logger.info(
-            "🔍 Dynamically discovered %d capabilities:", len(self._capabilities)
+            "🔍 Dynamically discovered %d capabilities:",
+            len(self._capabilities),
         )
         for tool_name, metadata in self._capability_metadata.items():
             logger.debug(
@@ -102,7 +105,9 @@ class CoreUtilsPlugin(PluginInterface):
                 "discovery_method": "dynamic_reflection",
                 "total_count": len(self._capabilities),
             }
-            await self.store.register_capabilities(self.name, capabilities_data)
+            await self.store.register_capabilities(
+                self.name, capabilities_data
+            )
 
         # Emit capability discovery event for system awareness
         if hasattr(self.event_bus, "publish"):
@@ -120,7 +125,8 @@ class CoreUtilsPlugin(PluginInterface):
                 await self.event_bus.publish(discovery_event)
             except Exception as e:
                 logger.warning(
-                    "⚠️ Warning: Could not publish capability discovery event: %s", e
+                    "⚠️ Warning: Could not publish capability discovery event: %s",
+                    e,
                 )
                 # Continue anyway - this is not critical for operation
 
@@ -192,7 +198,10 @@ class CoreUtilsPlugin(PluginInterface):
             )
 
     def _extract_method_parameters(
-        self, method: Callable, event_params: dict[str, Any], metadata: dict[str, Any]
+        self,
+        method: Callable,
+        event_params: dict[str, Any],
+        metadata: dict[str, Any],
     ) -> dict[str, Any]:
         """
         Dynamically extract and map parameters for method execution.

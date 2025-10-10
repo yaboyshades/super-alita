@@ -52,7 +52,8 @@ class TelemetryEvent:
     def approx_token_len(self) -> int:
         # naive token approximation: words * 1.3 heuristic
         return int(len(self.message.split()) * 1.3) + int(
-            sum(len(str(v)).split().__len__() for v in self.meta.values()) * 0.5
+            sum(len(str(v)).split().__len__() for v in self.meta.values())
+            * 0.5
         )
 
 

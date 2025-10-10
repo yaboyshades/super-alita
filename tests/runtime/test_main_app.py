@@ -15,7 +15,8 @@ def test_create_app_smoke(tmp_path, monkeypatch) -> None:
     assert resp.status_code == 200
 
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "hello", "session_id": "s1"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "hello", "session_id": "s1"},
     )
     assert resp.status_code == 200
     assert "<final_answer>" in resp.text
@@ -37,7 +38,8 @@ def test_create_app_with_api_prefix(tmp_path, monkeypatch) -> None:
         app = main.create_app()
         client = TestClient(app)
         resp = client.post(
-            "/api/v1/chat/stream", json={"message": "hello", "session_id": "s1"}
+            "/api/v1/chat/stream",
+            json={"message": "hello", "session_id": "s1"},
         )
         assert resp.status_code == 200
     finally:

@@ -19,7 +19,9 @@ class KGEnhancedLadderPlanner(LadderPlanner):
     - Provides historical knowledge for similar goals
     """
 
-    def __init__(self, kg_adapter: KnowledgeGraphAdapter | None = None, **kwargs):
+    def __init__(
+        self, kg_adapter: KnowledgeGraphAdapter | None = None, **kwargs
+    ):
         """Initialize the KG-enhanced planner.
 
         Args:
@@ -81,7 +83,9 @@ class KGEnhancedLadderPlanner(LadderPlanner):
             return base_decision
 
         # Check KG patterns for decomposition guidance
-        relevant_patterns = self.execution_context.get_fact("relevant_patterns", [])
+        relevant_patterns = self.execution_context.get_fact(
+            "relevant_patterns", []
+        )
 
         for pattern in relevant_patterns:
             # If we have successful patterns with multiple steps, decompose
@@ -135,7 +139,9 @@ class KGEnhancedLadderPlanner(LadderPlanner):
             "domain": kg_context.get("domain", "general"),
             "patterns_found": len(kg_context.get("relevant_patterns", [])),
             "similar_goals_found": len(kg_context.get("similar_goals", [])),
-            "historical_outcomes": len(kg_context.get("historical_outcomes", [])),
+            "historical_outcomes": len(
+                kg_context.get("historical_outcomes", [])
+            ),
         }
 
         return enhanced_context

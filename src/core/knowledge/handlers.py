@@ -67,7 +67,9 @@ class KnowledgeGraphEventHandlers:
                     metadata={"event_type": "cortex_cycle_complete"},
                 )
 
-                print(f"📊 Knowledge: Created atoms for Cortex cycle {cycle_id}")
+                print(
+                    f"📊 Knowledge: Created atoms for Cortex cycle {cycle_id}"
+                )
 
         except Exception as e:
             print(f"⚠️ Error handling Cortex cycle event: {e}")
@@ -92,7 +94,9 @@ class KnowledgeGraphEventHandlers:
             cycle_id = event.metadata.get("cycle_id")
             if cycle_id:
                 # Find the cortex result atom for this cycle
-                cortex_atoms = self.knowledge_store.search_atoms_by_content(cycle_id)
+                cortex_atoms = self.knowledge_store.search_atoms_by_content(
+                    cycle_id
+                )
                 for atom in cortex_atoms:
                     if atom.atom_type == AtomType.CORTEX_RESULT:
                         # Create bond between telemetry and cortex result
@@ -163,8 +167,10 @@ class KnowledgeGraphEventHandlers:
 
                 for related_id in related_ids:
                     # Try to find related atoms
-                    related_atoms = self.knowledge_store.search_atoms_by_content(
-                        related_id
+                    related_atoms = (
+                        self.knowledge_store.search_atoms_by_content(
+                            related_id
+                        )
                     )
                     for related_atom in related_atoms:
                         self.knowledge_store.create_bond(
@@ -268,7 +274,9 @@ class KnowledgeGraphEventHandlers:
             "triggers": BondType.TRIGGERS,
         }
 
-        bond_type = bond_type_mapping.get(relationship_type, BondType.RELATES_TO)
+        bond_type = bond_type_mapping.get(
+            relationship_type, BondType.RELATES_TO
+        )
 
         bond = self.knowledge_store.create_bond(
             from_atom_id=from_atom_id,

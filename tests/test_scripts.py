@@ -148,7 +148,9 @@ class TestConstitutionManager:
         mock_load_template.return_value = (
             "# Constitution Template\n\n## Principles\n\n{{ principles }}"
         )
-        mock_ai.return_value = "# Constitution\n\n## Principles\n\n1. Test principle"
+        mock_ai.return_value = (
+            "# Constitution\n\n## Principles\n\n1. Test principle"
+        )
 
         result_path = manager.create_constitution(
             principles="Test principle", force=True
@@ -315,7 +317,9 @@ class TestRequestModels:
 
     def test_constitution_request(self):
         """Test ConstitutionRequest model."""
-        req = ConstitutionRequest(principles="principle1\nprinciple2", force=True)
+        req = ConstitutionRequest(
+            principles="principle1\nprinciple2", force=True
+        )
 
         assert req.principles == "principle1\nprinciple2"
         assert req.force is True

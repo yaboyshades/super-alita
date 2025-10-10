@@ -108,7 +108,8 @@ async def test_alita_paper():
                                 c
                                 for c in components
                                 if c in content
-                                or c.lower().replace("_", "") in content.lower()
+                                or c.lower().replace("_", "")
+                                in content.lower()
                             ]
                             if found_components:
                                 print(
@@ -118,7 +119,12 @@ async def test_alita_paper():
                                 print(
                                     "\n⚠️ Checking for neural architecture patterns..."
                                 )
-                                patterns = ["class", "attention", "memory", "fusion"]
+                                patterns = [
+                                    "class",
+                                    "attention",
+                                    "memory",
+                                    "fusion",
+                                ]
                                 found_patterns = [
                                     p for p in patterns if p in content.lower()
                                 ]

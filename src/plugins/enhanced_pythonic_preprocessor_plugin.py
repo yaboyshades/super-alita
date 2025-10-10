@@ -99,7 +99,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
             try:
                 import os
 
-                api_key = config.get("gemini_api_key") or os.getenv("GEMINI_API_KEY")
+                api_key = config.get("gemini_api_key") or os.getenv(
+                    "GEMINI_API_KEY"
+                )
                 if api_key:
                     genai.configure(api_key=api_key)
                     self.llm_client = genai.GenerativeModel("gemini-1.5-flash")
@@ -113,7 +115,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
 
         # Subscribe to conversation events for cognitive processing
         if hasattr(self.event_bus, "subscribe"):
-            await self.subscribe("conversation_message", self._handle_conversation)
+            await self.subscribe(
+                "conversation_message", self._handle_conversation
+            )
             await self.subscribe("user_input", self._handle_user_input)
             logger.info("Subscribed to conversation events")
 
@@ -147,7 +151,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
                         conversation_id=conversation_id,
                     )
                     await self.event_bus.publish(turn_event)
-                    logger.info(f"Published cognitive turn for session {session_id}")
+                    logger.info(
+                        f"Published cognitive turn for session {session_id}"
+                    )
             else:
                 # Fallback to legacy processing
                 await self._process_legacy_mode(user_message, context, event)
@@ -176,7 +182,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
             if self.llm_client:
                 llm_response = await self._generate_with_llm(prompt)
             else:
-                llm_response = self._generate_structured_turn_response(user_message)
+                llm_response = self._generate_structured_turn_response(
+                    user_message
+                )
 
             # Parse and validate cognitive turn
             turn_data = json.loads(llm_response)
@@ -189,7 +197,10 @@ class PythonicPreprocessorPlugin(PluginInterface):
                     is_required=True,
                     steps=plan.execution_steps,
                     estimated_duration=60.0,
-                    resource_requirements=["cognitive_processing", "llm_access"],
+                    resource_requirements=[
+                        "cognitive_processing",
+                        "llm_access",
+                    ],
                 )
 
             logger.info(
@@ -207,7 +218,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
         """Build prompt for cognitive turn generation."""
 
         context_str = (
-            json.dumps(context, indent=2) if context else "No additional context"
+            json.dumps(context, indent=2)
+            if context
+            else "No additional context"
         )
 
         prompt = f"""
@@ -301,7 +314,9 @@ Format as valid JSON only.
         if "help" in user_message.lower():
             response = "I'm here to help! What would you like to know?"
         elif "status" in user_message.lower():
-            response = "System is operational. Cognitive turn processing unavailable."
+            response = (
+                "System is operational. Cognitive turn processing unavailable."
+            )
         else:
             response = f"Processed: {user_message} (legacy mode)"
 

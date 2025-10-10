@@ -80,7 +80,9 @@ class CopilotContextEnhancerFromGitHub(ICopilotContextEnhancer):
             print(f"[GitHubBridge] Error searching GitHub: {e}")
             return []
 
-    def _normalize_results(self, api_result: dict[str, Any]) -> list[GitHubExample]:
+    def _normalize_results(
+        self, api_result: dict[str, Any]
+    ) -> list[GitHubExample]:
         """Converts raw GitHub API results into structured GitHubExample objects."""
         examples = []
         for item in api_result.get("items", []):
@@ -94,7 +96,9 @@ class CopilotContextEnhancerFromGitHub(ICopilotContextEnhancer):
                     repo=item["repository"]["full_name"],
                     path=item["path"],
                     code_snippet=code_snippet,
-                    license=item["repository"].get("license", {}).get("spdx_id"),
+                    license=item["repository"]
+                    .get("license", {})
+                    .get("spdx_id"),
                 )
             )
         return examples

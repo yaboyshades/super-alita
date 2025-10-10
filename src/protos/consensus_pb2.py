@@ -27,12 +27,16 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "consensus_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
     DESCRIPTOR._loaded_options = None
     _globals["_CONSENSUSRESPONSE_CONFIDENCESCORESENTRY"]._loaded_options = None
-    _globals["_CONSENSUSRESPONSE_CONFIDENCESCORESENTRY"]._serialized_options = b"8\001"
+    _globals[
+        "_CONSENSUSRESPONSE_CONFIDENCESCORESENTRY"
+    ]._serialized_options = b"8\001"
     _globals["_CONSENSUSREQUEST"]._serialized_start = 31
     _globals["_CONSENSUSREQUEST"]._serialized_end = 200
     _globals["_CONSENSUSRESPONSE"]._serialized_start = 203
     _globals["_CONSENSUSRESPONSE"]._serialized_end = 438
-    _globals["_CONSENSUSRESPONSE_CONFIDENCESCORESENTRY"]._serialized_start = 383
+    _globals["_CONSENSUSRESPONSE_CONFIDENCESCORESENTRY"]._serialized_start = (
+        383
+    )
     _globals["_CONSENSUSRESPONSE_CONFIDENCESCORESENTRY"]._serialized_end = 438
     _globals["_CONSENSUSSERVICE"]._serialized_start = 440
     _globals["_CONSENSUSSERVICE"]._serialized_end = 533

@@ -10,6 +10,6 @@ from .pattern_analyzer import (
 __all__ = [
     "AdvancedConstitutionalValidator",
     "ViolationPattern",
-    "TrendAnalysis", 
-    "ComplianceRiskAssessment"
+    "TrendAnalysis",
+    "ComplianceRiskAssessment",
 ]

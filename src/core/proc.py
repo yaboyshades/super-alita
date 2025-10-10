@@ -7,7 +7,9 @@ from pathlib import Path
 
 
 class ProcError(RuntimeError):
-    def __init__(self, cmd: Sequence[str], returncode: int, stdout: str, stderr: str):
+    def __init__(
+        self, cmd: Sequence[str], returncode: int, stdout: str, stderr: str
+    ):
         super().__init__(f"Command failed ({returncode}): {' '.join(cmd)}")
         self.cmd = list(cmd)
         self.returncode = returncode

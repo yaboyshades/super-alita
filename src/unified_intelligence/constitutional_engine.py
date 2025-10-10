@@ -72,7 +72,12 @@ class ConstitutionalEngine:
                 "title": "Simplicity Gate",
                 "description": "Prefer simple solutions, avoid over-engineering",
                 "keywords": ["simple", "minimal", "clean", "straightforward"],
-                "violations": ["complex", "sophisticated", "advanced", "enterprise"],
+                "violations": [
+                    "complex",
+                    "sophisticated",
+                    "advanced",
+                    "enterprise",
+                ],
                 "weight": 1.2,
             },
             ConstitutionalArticle.INTEGRATION_FIRST: {
@@ -91,8 +96,19 @@ class ConstitutionalEngine:
             ConstitutionalArticle.CLARITY_UNAMBIGUITY: {
                 "title": "Clarity and Unambiguity",
                 "description": "Clear specifications and unambiguous requirements",
-                "keywords": ["clear", "specific", "explicit", "detailed", "precise"],
-                "violations": ["ambiguous", "unclear", "vague", "needs clarification"],
+                "keywords": [
+                    "clear",
+                    "specific",
+                    "explicit",
+                    "detailed",
+                    "precise",
+                ],
+                "violations": [
+                    "ambiguous",
+                    "unclear",
+                    "vague",
+                    "needs clarification",
+                ],
                 "weight": 1.3,
             },
             ConstitutionalArticle.COUNTERFACTUAL_JUSTIFICATION: {
@@ -105,13 +121,23 @@ class ConstitutionalEngine:
                     "versus",
                     "instead",
                 ],
-                "violations": ["only option", "no alternatives", "obvious choice"],
+                "violations": [
+                    "only option",
+                    "no alternatives",
+                    "obvious choice",
+                ],
                 "weight": 1.0,
             },
             ConstitutionalArticle.DOCUMENTATION_DRIVEN: {
                 "title": "Documentation-Driven Development",
                 "description": "Comprehensive documentation drives implementation",
-                "keywords": ["documentation", "readme", "docs", "documented", "guide"],
+                "keywords": [
+                    "documentation",
+                    "readme",
+                    "docs",
+                    "documented",
+                    "guide",
+                ],
                 "violations": ["undocumented", "no docs", "figure it out"],
                 "weight": 1.0,
             },
@@ -131,13 +157,25 @@ class ConstitutionalEngine:
             ConstitutionalArticle.CLI_INTERFACE: {
                 "title": "CLI Interface Design",
                 "description": "Command-line interfaces should be intuitive and well-designed",
-                "keywords": ["cli", "command", "interface", "usable", "intuitive"],
-                "violations": ["confusing interface", "hard to use", "no help"],
+                "keywords": [
+                    "cli",
+                    "command",
+                    "interface",
+                    "usable",
+                    "intuitive",
+                ],
+                "violations": [
+                    "confusing interface",
+                    "hard to use",
+                    "no help",
+                ],
                 "weight": 0.8,
             },
         }
 
-    def analyze_compliance(self, text: str, context: dict | None = None) -> dict:
+    def analyze_compliance(
+        self, text: str, context: dict | None = None
+    ) -> dict:
         """
         Analyze constitutional compliance of given text.
 
@@ -282,7 +320,9 @@ class ConstitutionalEngine:
             if data["score"] < 0.5
         ]
 
-        for article, data in low_scoring_articles[:3]:  # Top 3 improvement areas
+        for article, data in low_scoring_articles[
+            :3
+        ]:  # Top 3 improvement areas
             recommendations.append(
                 {
                     "type": "improvement",
@@ -325,7 +365,9 @@ class ConstitutionalEngine:
             "template_driven": "Adopt more consistent templates and patterns",
             "cli_interface": "Improve command-line interface design and usability",
         }
-        return improvement_map.get(article, "Focus on this constitutional principle.")
+        return improvement_map.get(
+            article, "Focus on this constitutional principle."
+        )
 
     def _empty_analysis(self) -> dict:
         """Return empty analysis for invalid input."""

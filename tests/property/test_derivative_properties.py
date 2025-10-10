@@ -14,7 +14,11 @@ class TestDerivativeMathematicalProperties:
     """Property-based tests for derivative computation correctness."""
 
     @given(
-        st.lists(st.floats(min_value=0.001, max_value=100.0), min_size=5, max_size=20)
+        st.lists(
+            st.floats(min_value=0.001, max_value=100.0),
+            min_size=5,
+            max_size=20,
+        )
     )
     def test_derivative_approximation_accuracy(self, runtime_data):
         """Test that finite difference derivatives approximate true derivatives."""
@@ -90,7 +94,11 @@ class TestDerivativeMathematicalProperties:
         mean_second_deriv = np.mean(second_derivs)
         assert abs(mean_second_deriv - 2.0) < 0.5
 
-    @given(st.lists(st.floats(min_value=0.1, max_value=10.0), min_size=4, max_size=15))
+    @given(
+        st.lists(
+            st.floats(min_value=0.1, max_value=10.0), min_size=4, max_size=15
+        )
+    )
     def test_monotonic_data_derivative_signs(self, base_times):
         """Test derivative signs for monotonic data."""
         assume(len(set(base_times)) >= 3)  # Need distinct values
@@ -108,10 +116,16 @@ class TestDerivativeMathematicalProperties:
 
         # Property: for monotonic increasing data, most derivatives should be ≥ 0
         non_negative_count = sum(1 for d in first_derivs if d >= -0.1)
-        assert non_negative_count >= len(first_derivs) * 0.7  # 70% non-negative
+        assert (
+            non_negative_count >= len(first_derivs) * 0.7
+        )  # 70% non-negative
 
     @given(
-        st.lists(st.floats(min_value=0.001, max_value=1000.0), min_size=5, max_size=15)
+        st.lists(
+            st.floats(min_value=0.001, max_value=1000.0),
+            min_size=5,
+            max_size=15,
+        )
     )
     def test_lipschitz_constant_property(self, runtime_data):
         """Test Lipschitz constant mathematical properties."""
@@ -139,7 +153,11 @@ class TestDerivativeMathematicalProperties:
         # Lipschitz constant should be at least as large as max derivative
         assert lipschitz_const >= max_slope * 0.5  # Allow some tolerance
 
-    @given(st.lists(st.floats(min_value=0.1, max_value=100.0), min_size=6, max_size=12))
+    @given(
+        st.lists(
+            st.floats(min_value=0.1, max_value=100.0), min_size=6, max_size=12
+        )
+    )
     def test_confidence_interval_properties(self, runtime_data):
         """Test bootstrap confidence interval properties."""
         from src.calculus_gate.fitting import CalculusAnalyzer
@@ -150,7 +168,9 @@ class TestDerivativeMathematicalProperties:
         analyzer.fit_curve(input_sizes, runtime_data)
 
         # Bootstrap confidence intervals
-        intervals = analyzer.compute_confidence_intervals(bootstrap_samples=100)
+        intervals = analyzer.compute_confidence_intervals(
+            bootstrap_samples=100
+        )
 
         # Property: each interval should have lower ≤ upper bound
         for lower, upper in intervals:
@@ -191,7 +211,8 @@ class TestDerivativeMathematicalProperties:
 
         # Property: small noise should not change derivatives drastically
         max_diff = max(
-            abs(clean_derivs[i] - noisy_derivs[i]) for i in range(len(clean_derivs))
+            abs(clean_derivs[i] - noisy_derivs[i])
+            for i in range(len(clean_derivs))
         )
 
         # Maximum difference should be proportional to noise level

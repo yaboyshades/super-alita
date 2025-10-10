@@ -127,7 +127,12 @@ class SecureCodeExecutor:
                     if isinstance(node, ast.Call):
                         # Check for dangerous function calls
                         if hasattr(node.func, "id"):
-                            if node.func.id in ["eval", "exec", "compile", "open"]:
+                            if node.func.id in [
+                                "eval",
+                                "exec",
+                                "compile",
+                                "open",
+                            ]:
                                 logger.error(
                                     f"Dangerous function call detected: {node.func.id}"
                                 )
@@ -179,7 +184,9 @@ class SecureCodeExecutor:
             }
 
             if not callables:
-                raise RuntimeError("No callable function found in executed code")
+                raise RuntimeError(
+                    "No callable function found in executed code"
+                )
 
             if len(callables) == 1:
                 return list(callables.values())[0]
@@ -188,7 +195,9 @@ class SecureCodeExecutor:
                 if not isinstance(func, types.BuiltinFunctionType):
                     return func
 
-            raise RuntimeError("Multiple functions found, specify function_name")
+            raise RuntimeError(
+                "Multiple functions found, specify function_name"
+            )
 
         except Exception as e:
             logger.error(f"Code execution failed: {e}")
@@ -243,7 +252,9 @@ class SecureCodeExecutor:
         except Exception as e:
             error = str(e)
             logger.error(f"Code execution failed: {error}")
-            self.log_audit(code, sanitized_params, user_id, context_id, None, error)
+            self.log_audit(
+                code, sanitized_params, user_id, context_id, None, error
+            )
             raise CodeExecutionError(f"Execution failed: {error}") from e
 
     def get_audit_logs(
@@ -261,7 +272,10 @@ class SecureCodeExecutor:
         return logs
 
     def run_unit_test(
-        self, code: str, params: dict[str, Any], test_inputs: dict[str, Any] = None
+        self,
+        code: str,
+        params: dict[str, Any],
+        test_inputs: dict[str, Any] = None,
     ) -> dict[str, Any]:
         """Run automated unit test on generated code"""
         try:
@@ -326,9 +340,9 @@ class DynamicToolRegistry:
 
     def get_popular_tools(self, limit: int = 10) -> list[tuple[str, int]]:
         """Get most frequently used tools"""
-        return sorted(self.usage_stats.items(), key=lambda x: x[1], reverse=True)[
-            :limit
-        ]
+        return sorted(
+            self.usage_stats.items(), key=lambda x: x[1], reverse=True
+        )[:limit]
 
     def list_tools(self) -> list[str]:
         """List all registered tools"""
@@ -350,7 +364,9 @@ class DynamicToolRegistry:
                     importlib.reload(sys.modules[module_name])
                     logger.info(f"Reloaded module: {module_name}")
                 except Exception as e:
-                    logger.warning(f"Failed to reload module {module_name}: {e}")
+                    logger.warning(
+                        f"Failed to reload module {module_name}: {e}"
+                    )
             else:
                 try:
                     importlib.import_module(module_name)
@@ -358,7 +374,9 @@ class DynamicToolRegistry:
                 except Exception as e:
                     logger.warning(f"Failed to load module {module_name}: {e}")
 
-        logger.info(f"Registry reload complete. Available tools: {self.list_tools()}")
+        logger.info(
+            f"Registry reload complete. Available tools: {self.list_tools()}"
+        )
 
 
 class SecurityError(Exception):
@@ -385,7 +403,9 @@ def get_tool_registry() -> DynamicToolRegistry:
     return _tool_registry
 
 
-def execute_tool(tool_fn: Callable, kwargs: dict[str, Any], timeout: int = 5) -> Any:
+def execute_tool(
+    tool_fn: Callable, kwargs: dict[str, Any], timeout: int = 5
+) -> Any:
     """
     Execute a tool (sync or async) with a hard wall-clock timeout.
 

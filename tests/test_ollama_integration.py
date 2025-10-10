@@ -96,7 +96,9 @@ async def main():
     print(f"  • get_llm_client factory: {'✅' if factory_ok else '❌'}")
 
     if direct_ok and factory_ok:
-        print("\n🎉 Ollama integration is working! The issue may be elsewhere.")
+        print(
+            "\n🎉 Ollama integration is working! The issue may be elsewhere."
+        )
     else:
         print("\n⚠️ Ollama integration has issues.")
 

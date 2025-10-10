@@ -145,7 +145,9 @@ class SmoothedMetric:
             "samples": len(self.trend.values),
         }
 
-    def should_alert(self, threshold: float, require_trend: bool = True) -> bool:
+    def should_alert(
+        self, threshold: float, require_trend: bool = True
+    ) -> bool:
         """
         Determine if metric should trigger alert based on smoothed value and trend.
 
@@ -198,7 +200,9 @@ class MetricsSmoother:
     def update_metric(self, name: str, value: float) -> dict[str, Any]:
         """Update a metric and return analysis"""
         if name not in self.metrics:
-            self.metrics[name] = SmoothedMetric(name, self.alpha, self.trend_window)
+            self.metrics[name] = SmoothedMetric(
+                name, self.alpha, self.trend_window
+            )
 
         return self.metrics[name].update(value)
 
@@ -235,7 +239,9 @@ class MetricsSmoother:
         trending_down_count = sum(
             1 for m in self.metrics.values() if m.trend.is_trending_down()
         )
-        stable_count = sum(1 for m in self.metrics.values() if m.trend.is_stable())
+        stable_count = sum(
+            1 for m in self.metrics.values() if m.trend.is_stable()
+        )
 
         total_metrics = len(self.metrics)
 
@@ -254,9 +260,19 @@ class MetricsSmoother:
             "trending_down": trending_down_count,
             "stable": stable_count,
             "trend_percentages": {
-                "up": trending_up_count / total_metrics if total_metrics > 0 else 0,
-                "down": trending_down_count / total_metrics if total_metrics > 0 else 0,
-                "stable": stable_count / total_metrics if total_metrics > 0 else 0,
+                "up": (
+                    trending_up_count / total_metrics
+                    if total_metrics > 0
+                    else 0
+                ),
+                "down": (
+                    trending_down_count / total_metrics
+                    if total_metrics > 0
+                    else 0
+                ),
+                "stable": (
+                    stable_count / total_metrics if total_metrics > 0 else 0
+                ),
             },
         }
 

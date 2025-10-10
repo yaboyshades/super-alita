@@ -37,8 +37,12 @@ class ChatSession:
     session_id: str
     messages: list[ChatMessage] = field(default_factory=list)
 
-    def add(self, role: str, content: str, meta: dict[str, Any] | None = None) -> None:
-        self.messages.append(ChatMessage(role=role, content=content, meta=meta))
+    def add(
+        self, role: str, content: str, meta: dict[str, Any] | None = None
+    ) -> None:
+        self.messages.append(
+            ChatMessage(role=role, content=content, meta=meta)
+        )
 
 
 class UnifiedChatService:
@@ -50,7 +54,9 @@ class UnifiedChatService:
         self._lock = asyncio.Lock()
 
     # ---- Session Management -------------------------------------------------
-    async def create_session(self, session_id: str | None = None) -> ChatSession:
+    async def create_session(
+        self, session_id: str | None = None
+    ) -> ChatSession:
         sid = session_id or str(uuid.uuid4())
         async with self._lock:
             if sid not in self._sessions:
@@ -151,7 +157,9 @@ class UnifiedChatService:
                         },
                     )
                     consensus_text = (
-                        result.get("consensus_text") or result.get("result") or ""
+                        result.get("consensus_text")
+                        or result.get("result")
+                        or ""
                     )
                     await self.add_assistant_message(
                         session_id,

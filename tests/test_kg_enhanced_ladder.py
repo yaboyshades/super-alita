@@ -100,7 +100,9 @@ async def test_kg_enhanced_ladder_system():
     )
 
     print(f"   ✓ Planning 3: {result3['status']}")
-    print(f"   Domain: {result3.get('kg_context', {}).get('domain', 'unknown')}")
+    print(
+        f"   Domain: {result3.get('kg_context', {}).get('domain', 'unknown')}"
+    )
 
     # 7. Check KG learning and statistics
     print("\n7. Checking KG learning and statistics...")
@@ -119,7 +121,8 @@ async def test_kg_enhanced_ladder_system():
 
     async def make_kg_request(i, domain):
         return await adapter.handle_request(
-            f"Task {i}: Solve a {domain} problem", {"task_id": i, "domain": domain}
+            f"Task {i}: Solve a {domain} problem",
+            {"task_id": i, "domain": domain},
         )
 
     # Run concurrent requests in different domains
@@ -166,7 +169,9 @@ async def test_kg_enhanced_ladder_system():
         for i, step in enumerate(pattern.decomposition_steps[:3], 1):
             print(f"     {i}. {step}")
         if len(pattern.decomposition_steps) > 3:
-            print(f"     ... and {len(pattern.decomposition_steps) - 3} more steps")
+            print(
+                f"     ... and {len(pattern.decomposition_steps) - 3} more steps"
+            )
 
     # 11. Cleanup
     print("\n11. Cleanup...")

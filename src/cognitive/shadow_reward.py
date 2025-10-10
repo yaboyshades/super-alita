@@ -27,7 +27,9 @@ class SimplePythonReward:
     Clipped to [0, 1].
     """
 
-    async def compute_reward(self, code: str, _context: dict[str, Any] | None = None) -> float:
+    async def compute_reward(
+        self, code: str, _context: dict[str, Any] | None = None
+    ) -> float:
         try:
             tree = ast.parse(code)
         except SyntaxError:
@@ -41,7 +43,9 @@ class SimplePythonReward:
         if any(f.returns is not None for f in funcs):
             score += 0.1
         # Docstrings
-        has_doc = any(ast.get_docstring(f) for f in funcs) or (ast.get_docstring(tree) is not None)
+        has_doc = any(ast.get_docstring(f) for f in funcs) or (
+            ast.get_docstring(tree) is not None
+        )
         if has_doc:
             score += 0.1
         # Placeholders
@@ -69,30 +73,50 @@ class ShadowRewardDeployment:
     - When rollout > 0, will occasionally substitute alt score
     """
 
-    def __init__(self, stub_model: Any, torch_model: Any, config: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        stub_model: Any,
+        torch_model: Any,
+        config: dict[str, Any] | None = None,
+    ) -> None:
         self.stub_model = stub_model
         self.torch_model = torch_model
         self.config = config or {}
         self.comparisons: list[RewardComparison] = []
-        self.correlation_threshold: float = float(self.config.get("correlation_threshold", 0.8))
-        self.correlation_window: int = int(self.config.get("correlation_window", 100))
+        self.correlation_threshold: float = float(
+            self.config.get("correlation_threshold", 0.8)
+        )
+        self.correlation_window: int = int(
+            self.config.get("correlation_window", 100)
+        )
         self.torch_enabled_percentage: float = 0.0
 
-    async def compute_reward_with_shadow(self, code: str, context: dict[str, Any] | None = None) -> float:
+    async def compute_reward_with_shadow(
+        self, code: str, context: dict[str, Any] | None = None
+    ) -> float:
         context = context or {}
         # Production stub score
         stub_score = await self.stub_model.compute_reward(code, context)
         # Shadow compute alt score
-        torch_task = asyncio.create_task(self._safe_torch_compute(code, context))
+        torch_task = asyncio.create_task(
+            self._safe_torch_compute(code, context)
+        )
         # Log comparison async
-        asyncio.create_task(self._collect_shadow_comparison(code, context, stub_score, torch_task))
+        asyncio.create_task(
+            self._collect_shadow_comparison(
+                code, context, stub_score, torch_task
+            )
+        )
 
         # Progressive rollout (best-effort)
         use_alt = False
         try:
             import random
 
-            if self.torch_enabled_percentage > 0 and random.random() < self.torch_enabled_percentage:
+            if (
+                self.torch_enabled_percentage > 0
+                and random.random() < self.torch_enabled_percentage
+            ):
                 use_alt = True
         except Exception:
             pass
@@ -104,9 +128,13 @@ class ShadowRewardDeployment:
                 logger.warning("shadow alt failed: %s", e)
         return stub_score
 
-    async def _safe_torch_compute(self, code: str, context: dict[str, Any]) -> float:
+    async def _safe_torch_compute(
+        self, code: str, context: dict[str, Any]
+    ) -> float:
         try:
-            return await asyncio.wait_for(self.torch_model.compute_reward(code, context), timeout=5.0)
+            return await asyncio.wait_for(
+                self.torch_model.compute_reward(code, context), timeout=5.0
+            )
         except TimeoutError:
             logger.warning("torch reward timeout")
             return 0.5
@@ -114,7 +142,13 @@ class ShadowRewardDeployment:
             logger.error("torch reward error: %s", e)
             return 0.5
 
-    async def _collect_shadow_comparison(self, code: str, context: dict[str, Any], stub_score: float, torch_future: asyncio.Task) -> None:
+    async def _collect_shadow_comparison(
+        self,
+        code: str,
+        context: dict[str, Any],
+        stub_score: float,
+        torch_future: asyncio.Task,
+    ) -> None:
         try:
             torch_score = await torch_future
             cmp = RewardComparison(
@@ -135,7 +169,11 @@ class ShadowRewardDeployment:
     async def _update_rollout(self) -> None:
         if np is None:
             return
-        window = self.comparisons[-self.correlation_window :] if self.comparisons else []
+        window = (
+            self.comparisons[-self.correlation_window :]
+            if self.comparisons
+            else []
+        )
         if len(window) < 10:
             return
         s = [c.stub_score for c in window]
@@ -147,16 +185,30 @@ class ShadowRewardDeployment:
         for c in window:
             c.correlation = corr
         if corr >= 0.9:
-            self.torch_enabled_percentage = min(1.0, self.torch_enabled_percentage + 0.1)
+            self.torch_enabled_percentage = min(
+                1.0, self.torch_enabled_percentage + 0.1
+            )
         elif corr >= 0.8:
-            self.torch_enabled_percentage = min(0.5, self.torch_enabled_percentage + 0.05)
+            self.torch_enabled_percentage = min(
+                0.5, self.torch_enabled_percentage + 0.05
+            )
         elif corr < 0.6:
-            self.torch_enabled_percentage = max(0.0, self.torch_enabled_percentage - 0.1)
-        logger.info("shadow corr=%.3f, rollout=%.1f%%", corr, 100 * self.torch_enabled_percentage)
+            self.torch_enabled_percentage = max(
+                0.0, self.torch_enabled_percentage - 0.1
+            )
+        logger.info(
+            "shadow corr=%.3f, rollout=%.1f%%",
+            corr,
+            100 * self.torch_enabled_percentage,
+        )
 
     def get_metrics(self) -> dict[str, Any]:
         if not self.comparisons:
-            return {"status": "collecting", "samples": 0, "rollout": self.torch_enabled_percentage}
+            return {
+                "status": "collecting",
+                "samples": 0,
+                "rollout": self.torch_enabled_percentage,
+            }
         window = self.comparisons[-min(len(self.comparisons), 50) :]
         s = [c.stub_score for c in window]
         t = [c.torch_score for c in window]
@@ -175,4 +227,3 @@ class ShadowRewardDeployment:
             "mean_stub": sum(s) / len(s) if s else 0.0,
             "mean_torch": sum(t) / len(t) if t else 0.0,
         }
-

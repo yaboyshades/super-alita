@@ -54,7 +54,9 @@ class VLLMGenerationResult:
 
         # Convert to probabilities and calculate geometric mean
         probabilities = [np.exp(lp) for lp in log_probs]
-        geometric_mean = np.power(np.prod(probabilities), 1.0 / len(probabilities))
+        geometric_mean = np.power(
+            np.prod(probabilities), 1.0 / len(probabilities)
+        )
 
         # Normalize to [0, 1] range
         return min(1.0, max(0.0, geometric_mean))
@@ -254,8 +256,9 @@ class VLLMDeepConfClient:
                                 }
 
                                 # Add top alternatives if available
-                                if "top_logprobs" in logprobs_data and i < len(
-                                    logprobs_data["top_logprobs"]
+                                if (
+                                    "top_logprobs" in logprobs_data
+                                    and i < len(logprobs_data["top_logprobs"])
                                 ):
                                     token_info["top_logprobs"] = logprobs_data[
                                         "top_logprobs"
@@ -383,13 +386,16 @@ class VLLMDeepConfClient:
                         "status": "healthy",
                         "model": self.model_name,
                         "base_url": self.base_url,
-                        "response_time": response.headers.get("X-Response-Time"),
+                        "response_time": response.headers.get(
+                            "X-Response-Time"
+                        ),
                         "server_info": data.get("model", {}),
                         "performance_stats": {
                             "total_requests": self.request_count,
                             "total_tokens": self.total_tokens_generated,
                             "avg_generation_time": (
-                                self.total_generation_time / max(1, self.request_count)
+                                self.total_generation_time
+                                / max(1, self.request_count)
                             ),
                         },
                     }
@@ -423,7 +429,8 @@ class VLLMDeepConfClient:
                 self.total_generation_time / max(1, self.request_count)
             ),
             "tokens_per_second": (
-                self.total_tokens_generated / max(0.001, self.total_generation_time)
+                self.total_tokens_generated
+                / max(0.001, self.total_generation_time)
             ),
         }
 

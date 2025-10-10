@@ -47,7 +47,9 @@ def load_plugin_manifest(path: str | None = None) -> list[dict[str, Any]]:
                 path = candidate
                 break
         else:
-            logger.warning("No plugins.yaml found, falling back to static plugin list")
+            logger.warning(
+                "No plugins.yaml found, falling back to static plugin list"
+            )
             return []
 
     try:
@@ -81,9 +83,13 @@ def load_plugin_manifest(path: str | None = None) -> list[dict[str, Any]]:
         return plugins
 
     except yaml.YAMLError as e:
-        raise PluginManifestError(f"Failed to parse YAML from {path}: {e}") from e
+        raise PluginManifestError(
+            f"Failed to parse YAML from {path}: {e}"
+        ) from e
     except FileNotFoundError:
-        raise PluginManifestError(f"Plugin manifest not found: {path}") from None
+        raise PluginManifestError(
+            f"Plugin manifest not found: {path}"
+        ) from None
     except Exception as e:
         raise PluginManifestError(
             f"Unexpected error loading manifest from {path}: {e}"
@@ -134,7 +140,9 @@ def discover_plugins(
 
     # Filter enabled plugins and sort by priority
     enabled_plugins = [p for p in plugins if p.get("enabled", True)]
-    sorted_plugins = sorted(enabled_plugins, key=lambda p: p.get("priority", 100))
+    sorted_plugins = sorted(
+        enabled_plugins, key=lambda p: p.get("priority", 100)
+    )
 
     for plugin_config in sorted_plugins:
         name = plugin_config["name"]
@@ -189,7 +197,9 @@ def discover_plugins(
     return result
 
 
-def get_plugin_info(plugins: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def get_plugin_info(
+    plugins: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
     """
     Extract plugin metadata for introspection.
 
@@ -227,7 +237,9 @@ def validate_plugin_order(plugins: list[dict[str, Any]]) -> list[str]:
     """
     warnings = []
     enabled_plugins = [p for p in plugins if p.get("enabled", True)]
-    sorted_plugins = sorted(enabled_plugins, key=lambda p: p.get("priority", 100))
+    sorted_plugins = sorted(
+        enabled_plugins, key=lambda p: p.get("priority", 100)
+    )
 
     loaded_plugins = set()
 

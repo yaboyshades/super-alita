@@ -15,7 +15,10 @@ sys.path.insert(0, str(project_root))
 async def test_simple_integration():
     """Simple test of Super Alita with Ollama"""
     try:
-        from src.abilities.deepconf_ability import ConsensusMode, DeepConfAbility
+        from src.abilities.deepconf_ability import (
+            ConsensusMode,
+            DeepConfAbility,
+        )
 
         print("🚀 Super Alita + Ollama Integration Test")
         print("=" * 50)

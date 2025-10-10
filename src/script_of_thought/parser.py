@@ -89,7 +89,11 @@ class ScriptOfThoughtParser:
         try:
             # Extract title
             title_match = self.title_pattern.search(script_text)
-            title = title_match.group(1).strip() if title_match else "Untitled Script"
+            title = (
+                title_match.group(1).strip()
+                if title_match
+                else "Untitled Script"
+            )
 
             # Split into sections
             sections = self._split_into_sections(script_text)
@@ -113,7 +117,9 @@ class ScriptOfThoughtParser:
                 },
             )
 
-            self.logger.info(f"Parsed script '{title}' with {len(steps)} steps")
+            self.logger.info(
+                f"Parsed script '{title}' with {len(steps)} steps"
+            )
             return script
 
         except Exception as e:
@@ -134,7 +140,9 @@ class ScriptOfThoughtParser:
             if step_match:
                 # Save previous section
                 if current_section:
-                    sections.append((current_section, "\n".join(current_content)))
+                    sections.append(
+                        (current_section, "\n".join(current_content))
+                    )
 
                 # Start new section
                 current_section = step_match.group(1).upper()
@@ -178,7 +186,9 @@ class ScriptOfThoughtParser:
             # Check for dependencies
             dep_match = self.dependency_pattern.search(content)
             if dep_match:
-                dependencies = [int(x.strip()) for x in dep_match.group(1).split(",")]
+                dependencies = [
+                    int(x.strip()) for x in dep_match.group(1).split(",")
+                ]
                 content = self.dependency_pattern.sub("", content)
 
             # Extract code blocks for COMPUTE steps
@@ -196,7 +206,9 @@ class ScriptOfThoughtParser:
                 )
                 query_match = query_pattern.search(content)
                 if query_match:
-                    metadata["query"] = query_match.group(1) or query_match.group(2)
+                    metadata["query"] = query_match.group(
+                        1
+                    ) or query_match.group(2)
 
             return ScriptStep(
                 step_type=step_type,
@@ -218,7 +230,9 @@ class ScriptOfThoughtParser:
             issues.append("Script has no executable steps")
 
         # Check dependency validity
-        step_ids = {step.step_id for step in script.steps if step.step_id is not None}
+        step_ids = {
+            step.step_id for step in script.steps if step.step_id is not None
+        }
 
         for step in script.steps:
             for dep_id in step.dependencies:

@@ -18,9 +18,13 @@ async def test_ability_whitelist(monkeypatch):
     importlib.reload(mod)
     app = mod.app  # type: ignore
     transport = ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         # Allowed
-        r = await client.post("/ability/execute/echo", json={"payload": "hello"})
+        r = await client.post(
+            "/ability/execute/echo", json={"payload": "hello"}
+        )
         assert r.status_code == 200, r.text
         # Blocked
         r = await client.post(
@@ -41,7 +45,9 @@ async def test_ability_admin_only(monkeypatch):
     importlib.reload(mod)
     app = mod.app  # type: ignore
     transport = ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         # Without admin -> 403
         r = await client.post("/ability/execute/echo", json={"payload": "hi"})
         assert r.status_code == 403

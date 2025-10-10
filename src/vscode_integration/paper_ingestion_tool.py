@@ -56,7 +56,8 @@ class PaperIngestionTool:
                 "extraction_method": "best_effort",
             }
             cache_file.write_text(
-                json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+                json.dumps(result, ensure_ascii=False, indent=2),
+                encoding="utf-8",
             )
             return result
         except Exception as e:  # pragma: no cover - defensive
@@ -80,7 +81,9 @@ class PaperIngestionTool:
             return {"error": f"Failed to process text: {e}"}
 
     # --------------------------- Search cache --------------------------- #
-    async def search_papers(self, query: str, max_results: int = 10) -> dict[str, Any]:
+    async def search_papers(
+        self, query: str, max_results: int = 10
+    ) -> dict[str, Any]:
         try:
             results: list[dict[str, Any]] = []
             for cf in self.cache_dir.glob("*.json"):
@@ -98,7 +101,9 @@ class PaperIngestionTool:
                             {
                                 "file_path": data.get("file_path"),
                                 "title": (meta.get("title") or "Unknown"),
-                                "relevance_snippet": self._extract_snippet(hay, query),
+                                "relevance_snippet": self._extract_snippet(
+                                    hay, query
+                                ),
                             }
                         )
                 except Exception:
@@ -125,7 +130,9 @@ class PaperIngestionTool:
             async with aiohttp.ClientSession() as sess:
                 async with sess.get(url, timeout=60) as resp:
                     if resp.status != 200:
-                        return {"error": f"Failed to download: HTTP {resp.status}"}
+                        return {
+                            "error": f"Failed to download: HTTP {resp.status}"
+                        }
                     data = await resp.read()
                     target.write_bytes(data)
                     size = len(data)
@@ -151,11 +158,14 @@ class PaperIngestionTool:
             foci = [
                 s.lower()
                 for s in (
-                    focus_areas or ["abstract", "methods", "results", "conclusion"]
+                    focus_areas
+                    or ["abstract", "methods", "results", "conclusion"]
                 )
             ]
             key_sections = [
-                s for s in sections if (s.get("section_type") or "").lower() in foci
+                s
+                for s in sections
+                if (s.get("section_type") or "").lower() in foci
             ]
             return {
                 "title": meta.get("title") or "Unknown",
@@ -163,7 +173,9 @@ class PaperIngestionTool:
                 "key_sections": key_sections,
                 "abstract": meta.get("abstract") or "",
                 "keywords": meta.get("keywords") or [],
-                "algorithmic_content": self._extract_algorithmic_content(sections),
+                "algorithmic_content": self._extract_algorithmic_content(
+                    sections
+                ),
             }
         except Exception as e:
             return {"error": f"Failed to generate summary: {e}"}
@@ -249,23 +261,33 @@ class PaperIngestionTool:
                 buf.append(line)
         if current and buf:
             sections.append(
-                {"title": current, "content": "\n".join(buf), "section_type": current}
+                {
+                    "title": current,
+                    "content": "\n".join(buf),
+                    "section_type": current,
+                }
             )
         return sections
 
     def _extract_metadata(self, text: str) -> dict[str, Any]:
         lines = [l.strip() for l in text.splitlines()[:80] if l.strip()]
         title = next(
-            (l for l in lines if len(l) > 20 and not l.isupper()), "Unknown Title"
+            (l for l in lines if len(l) > 20 and not l.isupper()),
+            "Unknown Title",
         )
         abstract_match = re.search(
-            r"(?is)abstract\s*[:\-]?\s*(.+?)(?=\n\s*\n|\n\s*1\.|introduction)\s*", text
+            r"(?is)abstract\s*[:\-]?\s*(.+?)(?=\n\s*\n|\n\s*1\.|introduction)\s*",
+            text,
         )
         abstract = abstract_match.group(1).strip() if abstract_match else ""
-        kw_match = re.search(r"(?i)keywords?\s*[:\-]?\s*(.+?)\s*(?=\n\s*\n)", text)
+        kw_match = re.search(
+            r"(?i)keywords?\s*[:\-]?\s*(.+?)\s*(?=\n\s*\n)", text
+        )
         keywords = []
         if kw_match:
-            keywords = [k.strip() for k in kw_match.group(1).split(",") if k.strip()]
+            keywords = [
+                k.strip() for k in kw_match.group(1).split(",") if k.strip()
+            ]
         return {
             "title": title,
             "authors": [],
@@ -273,7 +295,9 @@ class PaperIngestionTool:
             "keywords": keywords,
         }
 
-    def _extract_snippet(self, hay: str, needle: str, max_len: int = 200) -> str:
+    def _extract_snippet(
+        self, hay: str, needle: str, max_len: int = 200
+    ) -> str:
         h, n = hay.lower(), needle.lower()
         i = h.find(n)
         if i < 0:
@@ -287,7 +311,9 @@ class PaperIngestionTool:
             snip = snip + "..."
         return snip
 
-    def _extract_algorithmic_content(self, sections: list[dict[str, Any]]) -> list[str]:
+    def _extract_algorithmic_content(
+        self, sections: list[dict[str, Any]]
+    ) -> list[str]:
         pats = [
             r"(?i)algorithm\s+\d+",
             r"(?i)procedure\s+\w+",

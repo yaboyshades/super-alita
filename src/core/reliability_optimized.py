@@ -87,7 +87,9 @@ class OptimizedIdempotentProcessor:
         self.ttl = ttl
         self._bloom_filter: set[str] = set()  # Simple in-memory bloom filter
         self._metrics = OptimizedReliabilityMetrics()
-        logger.info(f"Optimized idempotent processor initialized with {ttl}s TTL")
+        logger.info(
+            f"Optimized idempotent processor initialized with {ttl}s TTL"
+        )
 
     def _generate_event_id(self, event: BaseEvent) -> str:
         """Generate deterministic event ID for deduplication."""
@@ -151,7 +153,8 @@ class OptimizedIdempotentProcessor:
         """Get current performance metrics."""
         # Calculate cache efficiency
         total_lookups = (
-            self._metrics.bloom_filter_hits + self._metrics.duplicates_prevented
+            self._metrics.bloom_filter_hits
+            + self._metrics.duplicates_prevented
         )
         if total_lookups > 0:
             self._metrics.cache_efficiency = (
@@ -329,7 +332,8 @@ class OptimizedReliabilityManager:
                 # Exponential moving average
                 alpha = 0.1
                 self._metrics.avg_latency_ms = (
-                    alpha * processing_time + (1 - alpha) * self._metrics.avg_latency_ms
+                    alpha * processing_time
+                    + (1 - alpha) * self._metrics.avg_latency_ms
                 )
 
     async def process_event_reliable(
@@ -395,7 +399,8 @@ class OptimizedReliabilityManager:
             # EMA with alpha=0.2 for responsiveness
             alpha = 0.2
             self._metrics.avg_latency_ms = (
-                alpha * processing_time_ms + (1 - alpha) * self._metrics.avg_latency_ms
+                alpha * processing_time_ms
+                + (1 - alpha) * self._metrics.avg_latency_ms
             )
 
     def get_comprehensive_metrics(self) -> dict[str, Any]:

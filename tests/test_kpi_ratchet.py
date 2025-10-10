@@ -12,7 +12,9 @@ import pytest
 
 def load_kpi_ratchet() -> ModuleType:
     module_path = Path(__file__).resolve().parents[1] / "kpi-ratchet.py"
-    spec = importlib.util.spec_from_file_location("kpi_ratchet_module", module_path)
+    spec = importlib.util.spec_from_file_location(
+        "kpi_ratchet_module", module_path
+    )
     if spec is None or spec.loader is None:
         raise RuntimeError("Unable to load kpi-ratchet module")
     module = importlib.util.module_from_spec(spec)
@@ -42,7 +44,9 @@ def test_generate_report_uses_template(
         file_count=4,
         loc_count=200,
     )
-    monkeypatch.setattr(kpi_ratchet, "build_context", lambda repo_root: context)
+    monkeypatch.setattr(
+        kpi_ratchet, "build_context", lambda repo_root: context
+    )
 
     generated_path = kpi_ratchet.generate_report(
         template_path=template_path,
@@ -51,19 +55,34 @@ def test_generate_report_uses_template(
     )
 
     assert generated_path == output_path
-    assert output_path.read_text(encoding="utf-8") == "Date: 2024-01-02 | Commit: abc1234 | Size: 4 files / 200 LOC\n"
+    assert (
+        output_path.read_text(encoding="utf-8")
+        == "Date: 2024-01-02 | Commit: abc1234 | Size: 4 files / 200 LOC\n"
+    )
     # Ensure the template remained untouched.
-    assert template_path.read_text(encoding="utf-8") == "Date: <fill> | Commit: <sha> | Size: <files/LOC>\n"
+    assert (
+        template_path.read_text(encoding="utf-8")
+        == "Date: <fill> | Commit: <sha> | Size: <files/LOC>\n"
+    )
 
 
-def test_build_context_counts_files(tmp_path: Path, kpi_ratchet: ModuleType) -> None:
+def test_build_context_counts_files(
+    tmp_path: Path, kpi_ratchet: ModuleType
+) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
-    subprocess.run(["git", "init"], cwd=repo_root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init"], cwd=repo_root, check=True, capture_output=True
+    )
 
     (repo_root / "alpha.txt").write_text("first\nsecond\n", encoding="utf-8")
     (repo_root / "bravo.py").write_text("only\n", encoding="utf-8")
-    subprocess.run(["git", "add", "alpha.txt", "bravo.py"], cwd=repo_root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "alpha.txt", "bravo.py"],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+    )
 
     context = kpi_ratchet.build_context(repo_root)
 

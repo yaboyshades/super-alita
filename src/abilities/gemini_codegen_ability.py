@@ -14,7 +14,12 @@ import aiohttp
 from src.core.plugin_interface import PluginInterface
 from src.prompt.policy_constants import REQUIRED_FIELDS_ALG, build_header
 from src.utils.guardrails import hash_top_files, repo_download_integrity
-from src.utils.telemetry import ReadLedger, end_timer, start_timer, telemetry_footer
+from src.utils.telemetry import (
+    ReadLedger,
+    end_timer,
+    start_timer,
+    telemetry_footer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +53,9 @@ class GeminiCodegenAbility(PluginInterface):
             enabled=os.getenv("CODEGEN_ENABLED", "true").lower() == "true",
         )
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
 
     @property
@@ -139,7 +146,10 @@ class GeminiCodegenAbility(PluginInterface):
                 else {}
             )
         ]
-        validation_summary = {"missing_required_fields": missing, "unknown_fields": []}
+        validation_summary = {
+            "missing_required_fields": missing,
+            "unknown_fields": [],
+        }
         telem = telemetry_footer(
             retrieval_rounds=(
                 int(raw_obj.get("telemetry", {}).get("retrieval_rounds", 1))
@@ -147,7 +157,11 @@ class GeminiCodegenAbility(PluginInterface):
                 else 1
             ),
             segments_used=(
-                int(raw_obj.get("telemetry", {}).get("segments_used", ledger.count()))
+                int(
+                    raw_obj.get("telemetry", {}).get(
+                        "segments_used", ledger.count()
+                    )
+                )
                 if isinstance(raw_obj, dict)
                 else ledger.count()
             ),
@@ -194,7 +208,8 @@ class GeminiCodegenAbility(PluginInterface):
             f"{self._cfg.model}:generateContent?key={self._cfg.api_key}"
         )
         sys_message = (
-            sys_header + "\n\nYou are a repository-level code generation assistant.\n"
+            sys_header
+            + "\n\nYou are a repository-level code generation assistant.\n"
         )
         # Execution cost guard is enforced by the retrieval tool on the caller side;
         # here we just pass the ceilings inside the policy header.
@@ -214,7 +229,10 @@ class GeminiCodegenAbility(PluginInterface):
         payload = {
             "contents": [
                 {"role": "user", "parts": [{"text": sys_message}]},
-                {"role": "user", "parts": [{"text": json.dumps(user_message)}]},
+                {
+                    "role": "user",
+                    "parts": [{"text": json.dumps(user_message)}],
+                },
             ],
             "generationConfig": {
                 "temperature": 0.2,
@@ -222,11 +240,15 @@ class GeminiCodegenAbility(PluginInterface):
                 "responseMimeType": "application/json",
             },
         }
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as s:
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=60)
+        ) as s:
             async with s.post(url, json=payload) as resp:
                 txt = await resp.text()
                 if resp.status >= 300:
-                    raise RuntimeError(f"Gemini HTTP {resp.status}: {txt[:200]}")
+                    raise RuntimeError(
+                        f"Gemini HTTP {resp.status}: {txt[:200]}"
+                    )
                 data = json.loads(txt)
         try:
             raw = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -238,9 +260,21 @@ class GeminiCodegenAbility(PluginInterface):
                 else {"diffs": [], "tests": [], "docs": [], "confidence": 0.3}
             )
 
-        diffs = obj.get("diffs") or obj.get("alg_extraction_v1", {}).get("diffs") or []
-        tests = obj.get("tests") or obj.get("alg_extraction_v1", {}).get("tests") or []
-        docs = obj.get("docs") or obj.get("alg_extraction_v1", {}).get("docs") or []
+        diffs = (
+            obj.get("diffs")
+            or obj.get("alg_extraction_v1", {}).get("diffs")
+            or []
+        )
+        tests = (
+            obj.get("tests")
+            or obj.get("alg_extraction_v1", {}).get("tests")
+            or []
+        )
+        docs = (
+            obj.get("docs")
+            or obj.get("alg_extraction_v1", {}).get("docs")
+            or []
+        )
         confidence = float(
             obj.get("confidence")
             or obj.get("alg_extraction_v1", {}).get("confidence", 0.5)

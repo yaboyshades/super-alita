@@ -13,6 +13,7 @@ Constitutional Compliance:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import os
 import sys
 import types
@@ -79,7 +80,9 @@ class TestArgumentParsing:
         args = parser.parse_args(["--launcher", "demo-enhanced-consensus"])
         assert args.launcher == "demo-enhanced-consensus"
 
-        args = parser.parse_args(["--launcher", "debug-reug-streaming", "--debug"])
+        args = parser.parse_args(
+            ["--launcher", "debug-reug-streaming", "--debug"]
+        )
         assert args.launcher == "debug-reug-streaming"
         assert args.debug is True
 
@@ -168,12 +171,17 @@ class TestModeRegistry:
             assert launcher_module._MODES[mode]["category"] == "mangle"
 
     def test_mode_registry_decorator(self, launcher_module):
-        @launcher_module.register_mode("test-mode", "Test mode description", "test")
+        @launcher_module.register_mode(
+            "test-mode", "Test mode description", "test"
+        )
         def test_handler(args):  # noqa: ANN001
             return "test result"
 
         assert "test-mode" in launcher_module._MODES
-        assert launcher_module._MODES["test-mode"]["description"] == "Test mode description"
+        assert (
+            launcher_module._MODES["test-mode"]["description"]
+            == "Test mode description"
+        )
         assert launcher_module._MODES["test-mode"]["category"] == "test"
         assert launcher_module._MODES["test-mode"]["handler"] == test_handler
 
@@ -200,12 +208,16 @@ class TestModeListingAndValidation:
         demo_section = any("[demo]" in l for l in lines)
         debug_section = any("[debug]" in l for l in lines)
         mangle_section = any("[mangle]" in l for l in lines)
-        assert core_section and demo_section and debug_section and mangle_section
+        assert (
+            core_section and demo_section and debug_section and mangle_section
+        )
 
 
 class TestModeExecution:
     def test_server_mode_execution(self, launcher_module, mock_uvicorn):
-        args = argparse.Namespace(launcher="server", ui=False, debug=False, port=8081, host="0.0.0.0")
+        args = argparse.Namespace(
+            launcher="server", ui=False, debug=False, port=8081, host="0.0.0.0"
+        )
         handler = launcher_module._MODES["server"]["handler"]
         handler(args)
         mock_uvicorn.assert_called_once()
@@ -227,8 +239,16 @@ class TestModeExecution:
         assert args.debug is True
         mock_uvicorn.assert_called_once()
 
-    def test_mangle_mode_environment_setup(self, launcher_module, mock_uvicorn):
-        args = argparse.Namespace(launcher="run-mangle-demo", ui=False, debug=False, port=8081, host="0.0.0.0")
+    def test_mangle_mode_environment_setup(
+        self, launcher_module, mock_uvicorn
+    ):
+        args = argparse.Namespace(
+            launcher="run-mangle-demo",
+            ui=False,
+            debug=False,
+            port=8081,
+            host="0.0.0.0",
+        )
         if "MANGLE_TIMEOUT" in os.environ:
             del os.environ["MANGLE_TIMEOUT"]
         handler = launcher_module._MODES["run-mangle-demo"]["handler"]
@@ -236,16 +256,27 @@ class TestModeExecution:
         assert os.environ.get("MANGLE_TIMEOUT") == "30"
         mock_uvicorn.assert_called_once()
 
-    def test_ui_mode_execution(self, launcher_module, mock_web_ui, mock_uvicorn):
-        args = argparse.Namespace(launcher="server", ui=True, debug=False, port=8081, host="0.0.0.0")
+    def test_ui_mode_execution(
+        self, launcher_module, mock_web_ui, mock_uvicorn
+    ):
+        args = argparse.Namespace(
+            launcher="server", ui=True, debug=False, port=8081, host="0.0.0.0"
+        )
         handler = launcher_module._MODES["server"]["handler"]
         handler(args)
         mock_web_ui.assert_called_once_with(port=8081)
         mock_uvicorn.assert_not_called()
 
-    @patch("src.ui.web_ui.launch_ui", side_effect=ImportError("UI module not found"))
-    def test_ui_fallback_to_api(self, mock_web_ui, launcher_module, mock_uvicorn):  # noqa: ARG001
-        args = argparse.Namespace(launcher="server", ui=True, debug=False, port=8081, host="0.0.0.0")
+    @patch(
+        "src.ui.web_ui.launch_ui",
+        side_effect=ImportError("UI module not found"),
+    )
+    def test_ui_fallback_to_api(
+        self, mock_web_ui, launcher_module, mock_uvicorn
+    ):  # noqa: ARG001
+        args = argparse.Namespace(
+            launcher="server", ui=True, debug=False, port=8081, host="0.0.0.0"
+        )
         handler = launcher_module._MODES["server"]["handler"]
         handler(args)
         mock_web_ui.assert_called_once()
@@ -305,27 +336,31 @@ class TestEnvironmentConfiguration:
 
 class TestMainFunction:
     @patch("start.list_modes")
-    def test_main_list_modes_exit(self, mock_list_modes, launcher_module):  # noqa: ARG001
+    def test_main_list_modes_exit(
+        self, mock_list_modes, launcher_module
+    ):  # noqa: ARG001
         with patch("sys.argv", ["start.py", "--list-modes"]):
             launcher_module.main()
             mock_list_modes.assert_called_once()
 
-    def test_legacy_mode_compatibility_in_main(self, launcher_module, mock_uvicorn):  # noqa: ARG001
+    def test_legacy_mode_compatibility_in_main(
+        self, launcher_module, mock_uvicorn
+    ):  # noqa: ARG001
         with patch("sys.argv", ["start.py", "--mode", "shadow"]):
             with patch.object(launcher_module, "setup_environment"):
-                try:
+                with contextlib.suppress(SystemExit):
                     launcher_module.main()
-                except SystemExit:
-                    pass
 
-        with patch("sys.argv", ["start.py", "--mode", "demo-enhanced-consensus"]):
+        with patch(
+            "sys.argv", ["start.py", "--mode", "demo-enhanced-consensus"]
+        ):
             with patch.object(launcher_module, "setup_environment"):
-                try:
+                with contextlib.suppress(SystemExit):
                     launcher_module.main()
-                except SystemExit:
-                    pass
 
-    def test_unknown_mode_handling(self, launcher_module, mock_uvicorn, capsys):  # noqa: ARG001
+    def test_unknown_mode_handling(
+        self, launcher_module, mock_uvicorn, capsys
+    ):  # noqa: ARG001
         args = argparse.Namespace(
             launcher="nonexistent-mode",
             op="act",
@@ -340,41 +375,43 @@ class TestMainFunction:
         with patch.object(launcher_module, "create_parser") as mock_parser:
             mock_parser.return_value.parse_args.return_value = args
             with patch.object(launcher_module, "setup_environment"):
-                try:
+                with contextlib.suppress(SystemExit):
                     launcher_module.main()
-                except SystemExit:
-                    pass
         captured = capsys.readouterr()
         assert "Unknown launcher mode: nonexistent-mode" in captured.out
 
 
 class TestIntegration:
-    def test_full_demo_workflow(self, launcher_module, mock_uvicorn):  # noqa: ARG001
-        with patch(
-            "sys.argv",
-            [
-                "start.py",
-                "--launcher",
-                "demo-enhanced-consensus",
-                "--op",
-                "act",
-                "--model",
-                "gpt-4",
-                "--port",
-                "9000",
-                "--debug",
-            ],
+    def test_full_demo_workflow(
+        self, launcher_module, mock_uvicorn
+    ):  # noqa: ARG001
+        with (
+            patch(
+                "sys.argv",
+                [
+                    "start.py",
+                    "--launcher",
+                    "demo-enhanced-consensus",
+                    "--op",
+                    "act",
+                    "--model",
+                    "gpt-4",
+                    "--port",
+                    "9000",
+                    "--debug",
+                ],
+            ),
+            patch.object(launcher_module, "setup_environment") as mock_setup,
         ):
-            with patch.object(launcher_module, "setup_environment") as mock_setup:
-                try:
-                    launcher_module.main()
-                except SystemExit:
-                    pass
-                mock_setup.assert_called_once()
-                mock_uvicorn.assert_called_once()
+            with contextlib.suppress(SystemExit):
+                launcher_module.main()
+            mock_setup.assert_called_once()
+            mock_uvicorn.assert_called_once()
 
-    def test_constitutional_compliance_single_responsibility(self, launcher_module):
-        for mode_name, mode_info in launcher_module._MODES.items():
+    def test_constitutional_compliance_single_responsibility(
+        self, launcher_module
+    ):
+        for _mode_name, mode_info in launcher_module._MODES.items():
             assert "handler" in mode_info
             assert callable(mode_info["handler"])  # noqa: PT018
 
@@ -394,9 +431,13 @@ class TestIntegration:
             "debug-autogen-pipeline",
         ]
         expected_mangle = ["run-mangle-demo", "mangle-simple-demo"]
-        all_expected = expected_core + expected_demo + expected_debug + expected_mangle
+        all_expected = (
+            expected_core + expected_demo + expected_debug + expected_mangle
+        )
         for mode in all_expected:
-            assert mode in launcher_module._MODES, f"Mode {mode} not registered"
+            assert (
+                mode in launcher_module._MODES
+            ), f"Mode {mode} not registered"
 
 
 class TestPerformance:
@@ -439,10 +480,14 @@ class TestErrorHandling:
 
     @pytest.mark.no_uvicorn_stub
     def test_missing_dependencies_handling(self, launcher_module):
-        args = argparse.Namespace(launcher="server", ui=False, debug=False, port=8081, host="0.0.0.0")
+        args = argparse.Namespace(
+            launcher="server", ui=False, debug=False, port=8081, host="0.0.0.0"
+        )
         # Ensure any pre-stubbed module is cleared for this test
         sys.modules.pop("uvicorn", None)
-        with patch("builtins.__import__", side_effect=ImportError("uvicorn not found")):
+        with patch(
+            "builtins.__import__", side_effect=ImportError("uvicorn not found")
+        ):
             with pytest.raises(ImportError):
                 handler = launcher_module._MODES["server"]["handler"]
                 handler(args)

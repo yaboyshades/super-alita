@@ -125,7 +125,9 @@ async def test_capability_matching():
     for candidate in candidates:
         match_score = engine.calculate_match_score(candidate, goal, {})
         utility = engine.utility_calculator.calculate(candidate, goal, {})
-        print(f"  - {candidate.name}: match={match_score:.2f}, utility={utility:.2f}")
+        print(
+            f"  - {candidate.name}: match={match_score:.2f}, utility={utility:.2f}"
+        )
     print()
 
 
@@ -139,10 +141,18 @@ async def test_bandit_learning():
     capability_id = "git.clone_or_pull"
 
     # Record some attempts
-    engine.update_bandit_stats(capability_id, success=True, cost=0.1, latency=2.0)
-    engine.update_bandit_stats(capability_id, success=True, cost=0.1, latency=1.5)
-    engine.update_bandit_stats(capability_id, success=False, cost=0.2, latency=5.0)
-    engine.update_bandit_stats(capability_id, success=True, cost=0.1, latency=1.8)
+    engine.update_bandit_stats(
+        capability_id, success=True, cost=0.1, latency=2.0
+    )
+    engine.update_bandit_stats(
+        capability_id, success=True, cost=0.1, latency=1.5
+    )
+    engine.update_bandit_stats(
+        capability_id, success=False, cost=0.2, latency=5.0
+    )
+    engine.update_bandit_stats(
+        capability_id, success=True, cost=0.1, latency=1.8
+    )
 
     stats = engine.bandit_stats[capability_id]
     print(f"Capability: {capability_id}")

@@ -17,7 +17,9 @@ def test_copilot_enhancement():
 
     try:
         # Test the enhanced ability
-        from src.abilities.mangle_reasoning_ability import MangleReasoningAbility
+        from src.abilities.mangle_reasoning_ability import (
+            MangleReasoningAbility,
+        )
 
         ability = MangleReasoningAbility()
 

@@ -28,7 +28,11 @@ def test_run_ledger_appends_in_order(tmp_path, shadow_mode):
         constitutional_score=None,
         meta=None,
         input_summary="short",
-        config={"stages": ["plan"], "abilities": ["planner"], "ledger_enabled": True},
+        config={
+            "stages": ["plan"],
+            "abilities": ["planner"],
+            "ledger_enabled": True,
+        },
     )
     final_event = make_run_terminated_event(
         run_id="run-123",
@@ -56,7 +60,9 @@ def test_run_ledger_appends_in_order(tmp_path, shadow_mode):
 
     records = [json.loads(line) for line in lines]
     assert [rec["sequence"] for rec in records] == [0, 1]
-    assert all(rec["kind"] in {"RunStarted", "RunTerminated"} for rec in records)
+    assert all(
+        rec["kind"] in {"RunStarted", "RunTerminated"} for rec in records
+    )
 
     terminated = records[1]
     preview = terminated["data"].get("final_output_preview", "")

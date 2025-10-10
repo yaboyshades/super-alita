@@ -168,7 +168,9 @@ class REUGStateContextExtended(StateContext):
     """Extended state context for REUG v9.3.1"""
 
     # Execution bounds for formal verification
-    execution_bounds: REUGExecutionBounds = field(default_factory=REUGExecutionBounds)
+    execution_bounds: REUGExecutionBounds = field(
+        default_factory=REUGExecutionBounds
+    )
 
     # Script execution tracking
     current_script: ScriptOfThought | None = None
@@ -338,7 +340,9 @@ class REUGStateMachineVerified(StateMachine):
         self.state_handlers.update(verified_handlers)
 
     async def transition(
-        self, trigger: TransitionTrigger, context_updates: dict[str, Any] | None = None
+        self,
+        trigger: TransitionTrigger,
+        context_updates: dict[str, Any] | None = None,
     ) -> bool:
         """Enhanced transition with formal verification and telemetry"""
         start_time = datetime.now(UTC)
@@ -407,7 +411,9 @@ class REUGStateMachineVerified(StateMachine):
 
             if current_step_idx >= len(script.steps):
                 # All steps completed
-                logger.info(f"Script execution complete: {len(script.steps)} steps")
+                logger.info(
+                    f"Script execution complete: {len(script.steps)} steps"
+                )
                 self.context.execution_bounds.exit_recursion()
                 return REUGTransitionTriggerExtended.SCRIPT_EXECUTION_COMPLETE
 
@@ -417,7 +423,9 @@ class REUGStateMachineVerified(StateMachine):
             if not self._check_step_dependencies(
                 current_step, self.context.script_results
             ):
-                logger.error(f"Step {current_step_idx} dependencies not satisfied")
+                logger.error(
+                    f"Step {current_step_idx} dependencies not satisfied"
+                )
                 self.context.execution_bounds.exit_recursion()
                 return TransitionTrigger.ERROR_OCCURRED
 
@@ -448,7 +456,9 @@ class REUGStateMachineVerified(StateMachine):
             self.context.execution_bounds.exit_recursion()
             return TransitionTrigger.ERROR_OCCURRED
 
-    async def _handle_validate_tool_schema_state(self) -> TransitionTrigger | None:
+    async def _handle_validate_tool_schema_state(
+        self,
+    ) -> TransitionTrigger | None:
         """Handle VALIDATE_TOOL_SCHEMA state - validate dynamic tool schemas"""
         logger.debug("VALIDATE_TOOL_SCHEMA state: Validating tool schema")
 
@@ -477,7 +487,9 @@ class REUGStateMachineVerified(StateMachine):
             logger.error(f"Error in VALIDATE_TOOL_SCHEMA state: {e}")
             return REUGTransitionTriggerExtended.SCHEMA_INVALID
 
-    async def _handle_parallelize_tasks_state(self) -> TransitionTrigger | None:
+    async def _handle_parallelize_tasks_state(
+        self,
+    ) -> TransitionTrigger | None:
         """Handle PARALLELIZE_TASKS state - execute independent tasks concurrently"""
         logger.debug("PARALLELIZE_TASKS state: Executing tasks in parallel")
 
@@ -495,8 +507,12 @@ class REUGStateMachineVerified(StateMachine):
                 tasks = tasks[: REUGGuards.MAX_PARALLEL_TASKS.value]
 
             # Execute tasks concurrently
-            task_coroutines = [self._execute_parallel_task(task) for task in tasks]
-            results = await asyncio.gather(*task_coroutines, return_exceptions=True)
+            task_coroutines = [
+                self._execute_parallel_task(task) for task in tasks
+            ]
+            results = await asyncio.gather(
+                *task_coroutines, return_exceptions=True
+            )
 
             # Store results
             for i, result in enumerate(results):
@@ -516,9 +532,13 @@ class REUGStateMachineVerified(StateMachine):
             logger.error(f"Error in PARALLELIZE_TASKS state: {e}")
             return TransitionTrigger.ERROR_OCCURRED
 
-    async def _handle_await_parallel_results_state(self) -> TransitionTrigger | None:
+    async def _handle_await_parallel_results_state(
+        self,
+    ) -> TransitionTrigger | None:
         """Handle AWAIT_PARALLEL_RESULTS state - wait for all parallel tasks"""
-        logger.debug("AWAIT_PARALLEL_RESULTS state: Waiting for parallel completion")
+        logger.debug(
+            "AWAIT_PARALLEL_RESULTS state: Waiting for parallel completion"
+        )
 
         try:
             # Check if all expected results are available
@@ -540,9 +560,13 @@ class REUGStateMachineVerified(StateMachine):
             logger.error(f"Error in AWAIT_PARALLEL_RESULTS state: {e}")
             return TransitionTrigger.ERROR_OCCURRED
 
-    async def _handle_error_recovery_unified_state(self) -> TransitionTrigger | None:
+    async def _handle_error_recovery_unified_state(
+        self,
+    ) -> TransitionTrigger | None:
         """Handle ERROR_RECOVERY_UNIFIED state - unified error recovery"""
-        logger.debug("ERROR_RECOVERY_UNIFIED state: Attempting unified error recovery")
+        logger.debug(
+            "ERROR_RECOVERY_UNIFIED state: Attempting unified error recovery"
+        )
 
         try:
             error_context = self.context.unified_error_context
@@ -566,7 +590,9 @@ class REUGStateMachineVerified(StateMachine):
                     attempted_strategies.append(strategy)
 
                     if success:
-                        logger.info(f"Recovery successful with strategy: {strategy}")
+                        logger.info(
+                            f"Recovery successful with strategy: {strategy}"
+                        )
                         self._emit_telemetry_event(
                             "error_recovery_success",
                             {
@@ -586,7 +612,9 @@ class REUGStateMachineVerified(StateMachine):
 
     # Helper methods for formal verification
 
-    def _check_step_dependencies(self, step, step_results: dict[int, Any]) -> bool:
+    def _check_step_dependencies(
+        self, step, step_results: dict[int, Any]
+    ) -> bool:
         """Check if step dependencies are satisfied"""
         if not hasattr(step, "dependencies") or not step.dependencies:
             return True
@@ -617,9 +645,15 @@ class REUGStateMachineVerified(StateMachine):
             }
 
         except Exception as e:
-            return {"success": False, "error": str(e), "step_type": step.step_type.name}
+            return {
+                "success": False,
+                "error": str(e),
+                "step_type": step.step_type.name,
+            }
 
-    async def _validate_tool_schema(self, schema: dict[str, Any]) -> dict[str, Any]:
+    async def _validate_tool_schema(
+        self, schema: dict[str, Any]
+    ) -> dict[str, Any]:
         """Validate a dynamic tool schema"""
         try:
             errors = []
@@ -659,7 +693,9 @@ class REUGStateMachineVerified(StateMachine):
                 "schema_name": schema.get("name", "unknown"),
             }
 
-    async def _execute_parallel_task(self, task: dict[str, Any]) -> dict[str, Any]:
+    async def _execute_parallel_task(
+        self, task: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute a single parallel task"""
         try:
             task_type = task.get("type", "unknown")
@@ -704,7 +740,10 @@ class REUGStateMachineVerified(StateMachine):
 
             elif strategy == "reduce_complexity":
                 # Reduce script complexity
-                if self.context.current_script and self.context.current_script.steps:
+                if (
+                    self.context.current_script
+                    and self.context.current_script.steps
+                ):
                     # Keep only first 3 steps
                     self.context.current_script.steps = (
                         self.context.current_script.steps[:3]
@@ -717,7 +756,9 @@ class REUGStateMachineVerified(StateMachine):
             logger.error(f"Recovery strategy {strategy} failed: {e}")
             return False
 
-    async def _transition_to_error_recovery(self, trigger: TransitionTrigger) -> bool:
+    async def _transition_to_error_recovery(
+        self, trigger: TransitionTrigger
+    ) -> bool:
         """Transition to error recovery with proper context"""
         self.context.unified_error_context = {
             "trigger": trigger.name,
@@ -762,8 +803,11 @@ class REUGStateMachineVerified(StateMachine):
                 "no_unsafe_sequences": True,  # Verified transition guards
             },
             "liveness_properties": {
-                "progress_guaranteed": self.context.execution_bounds.step_budget > 0,
-                "convergence_detection": len(self.context.recovery_strategies_attempted)
+                "progress_guaranteed": self.context.execution_bounds.step_budget
+                > 0,
+                "convergence_detection": len(
+                    self.context.recovery_strategies_attempted
+                )
                 < 4,
                 "bounded_execution": not self.context.execution_bounds.check_timeout(),
             },

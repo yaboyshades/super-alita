@@ -36,7 +36,8 @@ async def test_academic_search(search_tool):
     assert result["mode"] == "academic"
     assert "citations" in result
     assert all(
-        c["source"] in ["semantic_scholar", "crossref"] for c in result["citations"]
+        c["source"] in ["semantic_scholar", "crossref"]
+        for c in result["citations"]
     )
 
 

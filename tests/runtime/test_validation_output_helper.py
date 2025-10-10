@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import json
 
-from src.utils.validation_output import build_payload, normalise_messages, to_json
+from src.utils.validation_output import (
+    build_payload,
+    normalise_messages,
+    to_json,
+)
 
 
 def test_normalise_messages_parses_status_prefixes() -> None:

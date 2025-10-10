@@ -66,7 +66,9 @@ class ReliableEventBus:
 
         if self._enable_reliability and self._event_bus._redis:
             # Initialize reliability manager after Redis connection
-            self._reliability_manager = ReliabilityManager(self._event_bus._redis)
+            self._reliability_manager = ReliabilityManager(
+                self._event_bus._redis
+            )
             logger.info("✅ Reliability manager initialized")
 
     async def start(self) -> None:
@@ -89,7 +91,9 @@ class ReliableEventBus:
         await self._event_bus.publish(event)
 
     async def subscribe(
-        self, event_type: str, handler: Callable[[BaseEvent], Coroutine[Any, Any, None]]
+        self,
+        event_type: str,
+        handler: Callable[[BaseEvent], Coroutine[Any, Any, None]],
     ) -> None:
         """Delegate to wrapped EventBus subscribe."""
         await self._event_bus.subscribe(event_type, handler)
@@ -119,19 +123,23 @@ class ReliableEventBus:
 
         try:
             # Fast path: minimal idempotency check only
-            event_id = (
-                self._reliability_manager.idempotent_processor._generate_event_id(event)
+            event_id = self._reliability_manager.idempotent_processor._generate_event_id(
+                event
             )
 
             # Quick bloom filter check
-            if hasattr(self._reliability_manager.idempotent_processor, "_bloom_filter"):
+            if hasattr(
+                self._reliability_manager.idempotent_processor, "_bloom_filter"
+            ):
                 bloom_filter = (
                     self._reliability_manager.idempotent_processor._bloom_filter
                 )
                 if event_id in bloom_filter:
                     # Potential duplicate - quick Redis check
                     processed_key = f"processed:{event_id}"
-                    if await self._reliability_manager.redis.exists(processed_key):
+                    if await self._reliability_manager.redis.exists(
+                        processed_key
+                    ):
                         return {
                             "status": "duplicate",
                             "event_id": event_id,
@@ -204,8 +212,10 @@ class ReliableEventBus:
 
             if enable_idempotency:
                 # Process with full reliability (idempotency + circuit breaker + DLQ)
-                result = await self._reliability_manager.process_event_reliably(
-                    event, publish_processor
+                result = (
+                    await self._reliability_manager.process_event_reliably(
+                        event, publish_processor
+                    )
                 )
             else:
                 # Process with circuit breaker only (faster path)
@@ -236,7 +246,9 @@ class ReliableEventBus:
             return result
 
         except CircuitBreakerOpenException as e:
-            logger.warning(f"Circuit breaker open for event {event.event_type}: {e}")
+            logger.warning(
+                f"Circuit breaker open for event {event.event_type}: {e}"
+            )
             return {
                 "status": "circuit_open",
                 "event_type": event.event_type,
@@ -264,11 +276,15 @@ class ReliableEventBus:
 
     def get_reliability_metrics(self) -> dict[str, Any]:
         """Get comprehensive reliability and performance metrics."""
-        base_metrics = self._event_bus.get_metrics()  # Get EventBus throughput metrics
+        base_metrics = (
+            self._event_bus.get_metrics()
+        )  # Get EventBus throughput metrics
 
         reliability_metrics = {}
         if self._reliability_manager:
-            reliability_metrics = self._reliability_manager.get_comprehensive_metrics()
+            reliability_metrics = (
+                self._reliability_manager.get_comprehensive_metrics()
+            )
 
         return {
             "eventbus": base_metrics,
@@ -301,19 +317,28 @@ class ReliableEventBus:
         # Check base EventBus health through its public interface
         try:
             # Assume healthy if no exceptions during basic operations
-            health["components"]["redis"] = {"status": "healthy", "connected": True}
+            health["components"]["redis"] = {
+                "status": "healthy",
+                "connected": True,
+            }
         except Exception as e:
-            health["components"]["redis"] = {"status": "unhealthy", "error": str(e)}
+            health["components"]["redis"] = {
+                "status": "unhealthy",
+                "error": str(e),
+            }
             health["status"] = "degraded"
 
         # Check reliability components
         if self._enable_reliability and self._reliability_manager:
             # Circuit breaker health
-            cb_metrics = self._reliability_manager.circuit_breaker.get_metrics()
+            cb_metrics = (
+                self._reliability_manager.circuit_breaker.get_metrics()
+            )
             health["components"]["circuit_breaker"] = {
                 "status": (
                     "healthy"
-                    if self._reliability_manager.circuit_breaker.state.value == "CLOSED"
+                    if self._reliability_manager.circuit_breaker.state.value
+                    == "CLOSED"
                     else "degraded"
                 ),
                 "state": self._reliability_manager.circuit_breaker.state.value,
@@ -322,10 +347,14 @@ class ReliableEventBus:
             }
 
             # Backpressure health
-            bp_metrics = self._reliability_manager.backpressure.get_queue_metrics()
+            bp_metrics = (
+                self._reliability_manager.backpressure.get_queue_metrics()
+            )
             health["components"]["backpressure"] = {
                 "status": (
-                    "healthy" if not bp_metrics["backpressure_active"] else "warning"
+                    "healthy"
+                    if not bp_metrics["backpressure_active"]
+                    else "warning"
                 ),
                 "queue_utilization": bp_metrics["utilization"],
                 "queue_size": bp_metrics["queue_size"],

@@ -30,7 +30,8 @@ def test_legacy_events_mirror_canonical_sequence():
     ]
 
     canonical_events = [
-        event.to_dict() for event in canonicalize_legacy_stream("run-1", legacy_events)
+        event.to_dict()
+        for event in canonicalize_legacy_stream("run-1", legacy_events)
     ]
 
     assert [event["kind"] for event in canonical_events] == [

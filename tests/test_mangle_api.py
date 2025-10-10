@@ -57,11 +57,15 @@ def test_mangle_api():
 
     for fact in facts:
         try:
-            response = requests.post(f"{base_url}/mangle_add_fact", json={"fact": fact})
+            response = requests.post(
+                f"{base_url}/mangle_add_fact", json={"fact": fact}
+            )
             if response.status_code == 200:
                 print(f"   ✅ Added: {fact}")
             else:
-                print(f"   ❌ Failed to add: {fact} - Status: {response.status_code}")
+                print(
+                    f"   ❌ Failed to add: {fact} - Status: {response.status_code}"
+                )
         except Exception as e:
             print(f"   ❌ Error adding {fact}: {e}")
 
@@ -75,7 +79,8 @@ def test_mangle_api():
 
     try:
         rule_response = requests.post(
-            f"{base_url}/mangle_add_rule", json={"name": "update_rule", "rule": rule}
+            f"{base_url}/mangle_add_rule",
+            json={"name": "update_rule", "rule": rule},
         )
         rule_data = rule_response.json()
         print(f"   Response: {rule_data}")
@@ -91,7 +96,8 @@ def test_mangle_api():
     print("\n4. Querying vulnerable dependencies...")
     try:
         query_response = requests.post(
-            f"{base_url}/mangle_query", json={"query": "vulnerable(Name, Version)"}
+            f"{base_url}/mangle_query",
+            json={"query": "vulnerable(Name, Version)"},
         )
         query_data = query_response.json()
 
@@ -108,7 +114,9 @@ def test_mangle_api():
             else:
                 print("   - No vulnerable dependencies found")
         else:
-            print(f"   ❌ Query failed: {result.get('error', 'Unknown error')}")
+            print(
+                f"   ❌ Query failed: {result.get('error', 'Unknown error')}"
+            )
     except Exception as e:
         print(f"❌ Error executing query: {e}")
 
@@ -140,7 +148,9 @@ def test_mangle_api():
             else:
                 print("   - No vulnerable dependencies found")
         else:
-            print(f"   ❌ Analysis failed: {result.get('error', 'Unknown error')}")
+            print(
+                f"   ❌ Analysis failed: {result.get('error', 'Unknown error')}"
+            )
     except Exception as e:
         print(f"❌ Error analyzing dependencies: {e}")
 

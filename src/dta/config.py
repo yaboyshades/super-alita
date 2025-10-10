@@ -116,9 +116,13 @@ class DTAConfig:
 
     environment: str = "development"
     debug: bool = False
-    circuit_breaker: CircuitBreakerConfig = field(default_factory=CircuitBreakerConfig)
+    circuit_breaker: CircuitBreakerConfig = field(
+        default_factory=CircuitBreakerConfig
+    )
     llm: LLMConfig = field(default_factory=LLMConfig)
-    cognitive_turn: CognitiveTurnConfig = field(default_factory=CognitiveTurnConfig)
+    cognitive_turn: CognitiveTurnConfig = field(
+        default_factory=CognitiveTurnConfig
+    )
     monitoring: MonitoringConfig = field(default_factory=MonitoringConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     validation: ValidationConfig = field(default_factory=ValidationConfig)
@@ -133,7 +137,9 @@ class DTAConfig:
         if isinstance(circuit_breaker_data, dict):
             self.circuit_breaker = CircuitBreakerConfig(**circuit_breaker_data)
         else:
-            self.circuit_breaker = circuit_breaker_data or CircuitBreakerConfig()
+            self.circuit_breaker = (
+                circuit_breaker_data or CircuitBreakerConfig()
+            )
 
         # Initialize LLM config
         llm_data = kwargs.get("llm", {})
@@ -178,7 +184,9 @@ class DTAConfig:
         try:
             config_file = Path(config_path)
             if not config_file.exists():
-                logger.warning(f"Config file {config_path} not found, using defaults")
+                logger.warning(
+                    f"Config file {config_path} not found, using defaults"
+                )
                 return cls()
 
             with open(config_file) as f:

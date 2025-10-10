@@ -62,7 +62,11 @@ class ConsensusResult:
 
 class EnhancedConsensusGrpcClient:
     def __init__(self, config: dict[str, Any]):
-        if grpc is None or ConsensusServiceStub is None or ConsensusRequest is None:
+        if (
+            grpc is None
+            or ConsensusServiceStub is None
+            or ConsensusRequest is None
+        ):
             raise RuntimeError("gRPC consensus stubs not available")
         self.config = config
         self.server_url = self.config.get("grpc_url", "localhost:50051")
@@ -76,7 +80,9 @@ class EnhancedConsensusGrpcClient:
         )
         self._stub = ConsensusServiceStub(self._channel)  # type: ignore
 
-    async def consensus_sampling(self, prompt: str, **kwargs: Any) -> dict[str, Any]:
+    async def consensus_sampling(
+        self, prompt: str, **kwargs: Any
+    ) -> dict[str, Any]:
         req = ConsensusRequest(  # type: ignore
             prompt=prompt,
             method=kwargs.get("method", "weighted_vote"),
@@ -100,6 +106,8 @@ class EnhancedConsensusGrpcClient:
                 "metadata": {"source": "grpc"},
             }
         except TimeoutError as e:  # noqa: PERF203
-            raise TimeoutError(f"Consensus gRPC timeout after {self.timeout}s") from e
+            raise TimeoutError(
+                f"Consensus gRPC timeout after {self.timeout}s"
+            ) from e
         except grpc.RpcError as e:  # type: ignore[attr-defined]
             raise RuntimeError(f"Consensus gRPC error: {e}") from e

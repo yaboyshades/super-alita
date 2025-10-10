@@ -43,7 +43,11 @@ def mock_cortex_runtime():
     cortex = Mock()
     cortex.process_cycle = AsyncMock(return_value="Cortex processing complete")
     cortex.create_context = Mock(return_value={"session_id": "test_session"})
-    cortex.modules = {"perception": Mock(), "reasoning": Mock(), "action": Mock()}
+    cortex.modules = {
+        "perception": Mock(),
+        "reasoning": Mock(),
+        "action": Mock(),
+    }
     return cortex
 
 
@@ -117,7 +121,9 @@ class TestPrometheusMetrics:
         collector = PrometheusMetricsCollector(custom_registry)
 
         collector.set_optimization_policies(5)
-        collector.inc_optimization_decisions("policy_1", "thompson_sampling", "arm_1")
+        collector.inc_optimization_decisions(
+            "policy_1", "thompson_sampling", "arm_1"
+        )
         collector.inc_optimization_rewards("policy_1", "arm_1")
         collector.observe_optimization_reward_value("policy_1", "arm_1", 0.8)
         collector.set_optimization_arm_performance(
@@ -299,18 +305,24 @@ class TestMangleComponentsIntegration:
 class TestEndToEndMangleValidation:
     """End-to-end validation tests for Mangle integration."""
 
-    async def test_complete_metrics_and_events_flow(self, event_bus, custom_registry):
+    async def test_complete_metrics_and_events_flow(
+        self, event_bus, custom_registry
+    ):
         """Test complete flow of events and metrics."""
         collector = PrometheusMetricsCollector(custom_registry)
 
         # Setup event handlers that update metrics
         async def cortex_handler(event):
-            collector.inc_events_processed("cortex_cycle", "mangle_integration")
+            collector.inc_events_processed(
+                "cortex_cycle", "mangle_integration"
+            )
             session_id = event.metadata.get("session_id", "unknown")
             collector.inc_cortex_cycles(session_id)
 
         async def system_handler(event):
-            collector.inc_events_processed("system_status", "mangle_integration")
+            collector.inc_events_processed(
+                "system_status", "mangle_integration"
+            )
 
         # Subscribe to events
         await event_bus.subscribe("cortex_cycle", cortex_handler)
@@ -323,7 +335,9 @@ class TestEndToEndMangleValidation:
             metadata={"session_id": "test_session"},
         )
 
-        system_event = create_event("system_status", source_plugin="system_monitor")
+        system_event = create_event(
+            "system_status", source_plugin="system_monitor"
+        )
 
         await event_bus.emit(cortex_event)
         await event_bus.emit(system_event)

@@ -36,7 +36,9 @@ def canonicalize_legacy_stream(
     for legacy in legacy_events:
         kind = str(legacy.get("type", ""))
         if kind == "UnifiedRunStarted":
-            input_summary = truncate_preview(str(legacy.get("prompt", "")), 200)
+            input_summary = truncate_preview(
+                str(legacy.get("prompt", "")), 200
+            )
             config = _legacy_config_snapshot(legacy)
             canonical = make_run_started_event(
                 run_id=run_id,
@@ -56,7 +58,9 @@ def canonicalize_legacy_stream(
 
         if kind == "UnifiedStageStarted":
             stage = str(legacy.get("stage", "unknown"))
-            stage_corr = stage_correlations.setdefault(stage, _correlation(stage))
+            stage_corr = stage_correlations.setdefault(
+                stage, _correlation(stage)
+            )
             canonical = make_stage_started_event(
                 run_id=run_id,
                 sequence=next_sequence(),
@@ -76,7 +80,9 @@ def canonicalize_legacy_stream(
 
         if kind in {"UnifiedStageSucceeded", "UnifiedStageFailed"}:
             stage = str(legacy.get("stage", "unknown"))
-            stage_corr = stage_correlations.setdefault(stage, _correlation(stage))
+            stage_corr = stage_correlations.setdefault(
+                stage, _correlation(stage)
+            )
             status = "ok" if kind == "UnifiedStageSucceeded" else "partial"
             if status == "ok":
                 stages_executed += 1
@@ -115,7 +121,9 @@ def canonicalize_legacy_stream(
                     stage_name=stage,
                     ability=None,
                     error_type="LEGACY_STAGE_FAILURE",
-                    message=truncate_preview(_stringify(legacy.get("error")), 200)
+                    message=truncate_preview(
+                        _stringify(legacy.get("error")), 200
+                    )
                     or "stage failed",
                     retryable=False,
                 )
@@ -164,7 +172,9 @@ def canonicalize_legacy_stream(
                 meta=None,
                 fatal_error_type=str(legacy.get("error_type", "unknown")),
                 message=_stringify(legacy.get("error", "fatal")) or "fatal",
-                last_stage=str(legacy.get("stage")) if legacy.get("stage") else None,
+                last_stage=(
+                    str(legacy.get("stage")) if legacy.get("stage") else None
+                ),
                 total_duration_ms=int(legacy.get("duration_ms", 0) or 0),
             )
             yield canonical
@@ -193,7 +203,7 @@ def _correlation(prefix: str) -> str:
 def _stringify(value: Any) -> str | None:
     if value is None:
         return None
-    if isinstance(value, (str, int, float, bool)):
+    if isinstance(value, str | int | float | bool):
         return str(value)
     try:
         return json.dumps(value)

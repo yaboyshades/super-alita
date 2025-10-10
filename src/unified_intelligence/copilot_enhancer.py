@@ -142,17 +142,21 @@ class CopilotEnhancer:
             if workflow:
                 enhancement["workflow_detected"] = workflow
                 enhancement["sdd_guidance"] = self._get_sdd_guidance(workflow)
-                enhancement["template_suggestion"] = self._get_template_suggestion(
-                    workflow
+                enhancement["template_suggestion"] = (
+                    self._get_template_suggestion(workflow)
                 )
 
             # Add constitutional guidance
-            constitutional_notes = self._get_constitutional_guidance(user_input)
+            constitutional_notes = self._get_constitutional_guidance(
+                user_input
+            )
             if constitutional_notes:
                 enhancement["constitutional_notes"] = constitutional_notes
 
             # Generate recommendations
-            recommendations = self._generate_recommendations(user_input, workflow)
+            recommendations = self._generate_recommendations(
+                user_input, workflow
+            )
             if recommendations:
                 enhancement["recommendations"] = recommendations
 
@@ -224,7 +228,8 @@ class CopilotEnhancer:
 
         # Library-first guidance
         if any(
-            word in user_lower for word in ["implement", "create", "build", "develop"]
+            word in user_lower
+            for word in ["implement", "create", "build", "develop"]
         ):
             guidance.append(
                 "Library-First: Research existing solutions before implementing from scratch"
@@ -235,25 +240,36 @@ class CopilotEnhancer:
             word in user_lower
             for word in ["function", "feature", "component", "module"]
         ):
-            guidance.append("Test-First: Write tests before implementation (TDD)")
+            guidance.append(
+                "Test-First: Write tests before implementation (TDD)"
+            )
 
         # Simplicity guidance
-        if any(word in user_lower for word in ["complex", "advanced", "sophisticated"]):
+        if any(
+            word in user_lower
+            for word in ["complex", "advanced", "sophisticated"]
+        ):
             guidance.append(
                 "Simplicity Gate: Prefer simple solutions over complex ones"
             )
 
         # Integration guidance
         if any(
-            word in user_lower for word in ["api", "service", "database", "external"]
+            word in user_lower
+            for word in ["api", "service", "database", "external"]
         ):
             guidance.append(
                 "Integration-First: Test system integration before unit details"
             )
 
         # Clarity guidance
-        if any(word in user_lower for word in ["unclear", "ambiguous", "confusing"]):
-            guidance.append("Clarity: Ensure specifications are clear and unambiguous")
+        if any(
+            word in user_lower
+            for word in ["unclear", "ambiguous", "confusing"]
+        ):
+            guidance.append(
+                "Clarity: Ensure specifications are clear and unambiguous"
+            )
 
         return guidance
 
@@ -289,9 +305,14 @@ class CopilotEnhancer:
             recommendations.append("Consider test-driven development approach")
 
         if "library" not in user_lower and "package" not in user_lower:
-            recommendations.append("Research existing libraries before implementing")
+            recommendations.append(
+                "Research existing libraries before implementing"
+            )
 
-        if any(word in user_lower for word in ["complex", "advanced", "sophisticated"]):
+        if any(
+            word in user_lower
+            for word in ["complex", "advanced", "sophisticated"]
+        ):
             recommendations.append("Look for simpler alternatives")
 
         if "documentation" not in user_lower and any(

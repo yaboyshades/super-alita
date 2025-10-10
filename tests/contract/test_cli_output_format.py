@@ -274,7 +274,13 @@ class TestCLIOutputFormatContract:
         """Test that CLI uses proper exit codes."""
         # Success case
         result = subprocess.run(
-            ["python", "-m", "src.calculus_gate.cli", "--function", "passing_function"],
+            [
+                "python",
+                "-m",
+                "src.calculus_gate.cli",
+                "--function",
+                "passing_function",
+            ],
             capture_output=True,
             text=True,
         )
@@ -282,7 +288,13 @@ class TestCLIOutputFormatContract:
 
         # Failure case (gates failed)
         result = subprocess.run(
-            ["python", "-m", "src.calculus_gate.cli", "--function", "failing_function"],
+            [
+                "python",
+                "-m",
+                "src.calculus_gate.cli",
+                "--function",
+                "failing_function",
+            ],
             capture_output=True,
             text=True,
         )

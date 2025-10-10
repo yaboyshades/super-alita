@@ -49,7 +49,7 @@ async def test_deepcode_latest_and_apply(monkeypatch):
     for key in ["average_risk", "high_risk_count", "suggested_tests"]:
         assert key in rs, f"risk_summary missing key {key}"
     assert isinstance(
-        rs["average_risk"], (int, float)
+        rs["average_risk"], int | float
     )  # noqa: UP038 keep tuple for broad numeric
     assert isinstance(rs["high_risk_count"], int)
     assert isinstance(rs["suggested_tests"], list)

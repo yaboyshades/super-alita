@@ -48,7 +48,9 @@ class AlertGate:
 
         self.last_fired[key] = current_time
         self.open_alerts.add(key)
-        logger.info(f"Alert {key} fired after {current_time - last_fire_time:.1f}s")
+        logger.info(
+            f"Alert {key} fired after {current_time - last_fire_time:.1f}s"
+        )
         return True
 
     def should_escalate(
@@ -129,7 +131,9 @@ class MetricsClassifier:
         self.previous_states: dict[str, str] = {}
         self.consecutive_clears: dict[str, int] = {}
 
-    def classify_metric(self, metric_name: str, value: float) -> tuple[str, bool]:
+    def classify_metric(
+        self, metric_name: str, value: float
+    ) -> tuple[str, bool]:
         """
         Classify a metric value and determine if action should be taken.
 
@@ -178,9 +182,9 @@ class MetricsClassifier:
                 self.consecutive_clears.get(metric_name, 0) + 1
             )
 
-            if self.consecutive_clears[metric_name] >= 2 and self.alert_gate.can_clear(
+            if self.consecutive_clears[
                 metric_name
-            ):
+            ] >= 2 and self.alert_gate.can_clear(metric_name):
                 should_act = True
                 self.alert_gate.clear_alert(metric_name)
                 logger.info(

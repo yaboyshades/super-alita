@@ -160,7 +160,9 @@ async def test_task_creation_and_graph_integration(kg_task_manager):
     # Integration task should have higher dependency depth
     assert integration_task.dependency_depth > root_task.dependency_depth
 
-    print(f"✅ Task graph created successfully with {len(kg_task_manager.tasks)} tasks")
+    print(
+        f"✅ Task graph created successfully with {len(kg_task_manager.tasks)} tasks"
+    )
 
 
 @pytest.mark.asyncio
@@ -365,7 +367,9 @@ async def test_task_visualization(kg_task_manager):
     )
 
     # Generate Mermaid visualization
-    mermaid_graph = await kg_task_manager.visualize_task_graph(format="mermaid")
+    mermaid_graph = await kg_task_manager.visualize_task_graph(
+        format="mermaid"
+    )
     assert "graph TD" in mermaid_graph
     assert task_a.task_id in mermaid_graph
     assert task_b.task_id in mermaid_graph
@@ -546,7 +550,9 @@ if __name__ == "__main__":
         event_bus = MockEventBus()
 
         # Test KG Task Manager
-        kg_manager = KnowledgeGraphTaskManager(event_bus, {"auto_prioritize": False})
+        kg_manager = KnowledgeGraphTaskManager(
+            event_bus, {"auto_prioritize": False}
+        )
         await kg_manager.initialize()
 
         # Create test tasks

@@ -45,7 +45,9 @@ class SimpleEventBus:
             except Exception as e:
                 print(f"Error in event handler: {e}")
 
-    async def emit(self, event_or_type: Union[str, "BaseEvent"], **kwargs: Any):
+    async def emit(
+        self, event_or_type: Union[str, "BaseEvent"], **kwargs: Any
+    ):
         """Legacy emit method for compatibility"""
         from ..events import BaseEvent, create_event
 

@@ -56,7 +56,9 @@ def generate_master_cognitive_plan(task_description: str) -> CognitivePlan:
         # Phase 4: Confidence Calibration
         verified_plan.confidence = _calculate_plan_confidence(verified_plan)
 
-        logger.info(f"Generated plan with confidence: {verified_plan.confidence}")
+        logger.info(
+            f"Generated plan with confidence: {verified_plan.confidence}"
+        )
         return verified_plan
 
     except Exception as e:
@@ -237,7 +239,10 @@ def create_tool_plan(tool_requirements: list[str]) -> CognitivePlan:
         domain_knowledge=knowledge,
         execution_steps=steps,
         confidence=0.8,
-        success_criteria=["Tools function correctly", "Integration successful"],
+        success_criteria=[
+            "Tools function correctly",
+            "Integration successful",
+        ],
     )
 
 

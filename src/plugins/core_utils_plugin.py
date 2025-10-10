@@ -20,7 +20,9 @@ class CoreUtilsPlugin(PluginInterface):
     def name(self) -> str:
         return "core_utils"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         """Initialize the CoreUtils plugin."""
         await super().setup(event_bus, store, config)
         logger.info(

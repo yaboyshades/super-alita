@@ -8,7 +8,11 @@ import os
 from datetime import datetime
 from typing import Any
 
-from src.core.global_workspace import AttentionLevel, GlobalWorkspace, WorkspaceEvent
+from src.core.global_workspace import (
+    AttentionLevel,
+    GlobalWorkspace,
+    WorkspaceEvent,
+)
 from src.core.neural_atom import NeuralStore
 from src.core.plugin_interface import PluginInterface
 from src.core.schemas import (
@@ -69,7 +73,10 @@ class LLMPlannerPlugin(PluginInterface):
         return "llm_planner"
 
     async def setup(
-        self, workspace: GlobalWorkspace, store: NeuralStore, config: dict[str, Any]
+        self,
+        workspace: GlobalWorkspace,
+        store: NeuralStore,
+        config: dict[str, Any],
     ):
         """Initialize the LLM planner with workspace and store."""
         await super().setup(workspace, store, config)
@@ -88,7 +95,9 @@ class LLMPlannerPlugin(PluginInterface):
         # Load available Neural Atoms from store
         await self._load_available_neural_atoms()
 
-        logger.info("LLM Planner Plugin initialized for PLANNING and SELECTION stages")
+        logger.info(
+            "LLM Planner Plugin initialized for PLANNING and SELECTION stages"
+        )
 
     async def _initialize_llm_client(self, config: dict[str, Any]):
         """Initialize the Google Gemini client."""
@@ -101,7 +110,9 @@ class LLMPlannerPlugin(PluginInterface):
                 self.llm_client = genai.GenerativeModel(model_name)  # type: ignore[attr-defined]
                 logger.info(f"LLM client initialized with model: {model_name}")
             else:
-                logger.warning("GEMINI_API_KEY not found or gemini lib missing")
+                logger.warning(
+                    "GEMINI_API_KEY not found or gemini lib missing"
+                )
         except Exception as e:  # pragma: no cover
             logger.error(f"Failed to initialize LLM client: {e}")
 
@@ -129,7 +140,9 @@ class LLMPlannerPlugin(PluginInterface):
                 },
             }
 
-            logger.info(f"Loaded {len(self.available_neural_atoms)} Neural Atoms")
+            logger.info(
+                f"Loaded {len(self.available_neural_atoms)} Neural Atoms"
+            )
 
         except Exception as e:
             logger.error(f"Error loading Neural Atoms: {e}")
@@ -140,7 +153,9 @@ class LLMPlannerPlugin(PluginInterface):
 
         if self.workspace:
             # Subscribe to task requests and conversation events
-            self.workspace.subscribe("llm_planner", self._handle_workspace_event)
+            self.workspace.subscribe(
+                "llm_planner", self._handle_workspace_event
+            )
 
             logger.info("LLM Planner subscribed to Global Workspace events")
 
@@ -158,7 +173,9 @@ class LLMPlannerPlugin(PluginInterface):
                 if event_type == "task_request":
                     await self._handle_task_request(TaskRequest(**event.data))
                 elif event_type == "conversation_message":
-                    await self._handle_conversation(ConversationEvent(**event.data))
+                    await self._handle_conversation(
+                        ConversationEvent(**event.data)
+                    )
                 else:
                     logger.debug(f"Unhandled event type: {event_type}")
 
@@ -209,12 +226,16 @@ class LLMPlannerPlugin(PluginInterface):
                 f"Plan decided for task {task.task_id}: {plan['action']}",
                 importance=1.2 if plan["action"] == "CAPABILITY_GAP" else 1.0,
                 meta={
-                    k: v for k, v in plan.items() if k not in {"parameters", "response"}
+                    k: v
+                    for k, v in plan.items()
+                    if k not in {"parameters", "response"}
                 },
             )
 
         except Exception as e:
-            logger.error(f"Error in planning stage for task {task.task_id}: {e}")
+            logger.error(
+                f"Error in planning stage for task {task.task_id}: {e}"
+            )
             await self._handle_planning_error(task, str(e))
 
     async def _analyze_and_plan(self, task: TaskRequest) -> dict[str, Any]:
@@ -241,7 +262,9 @@ class LLMPlannerPlugin(PluginInterface):
                     meta={
                         "hash": envelope.get("hash"),
                         "total_tokens": envelope.get("total_tokens"),
-                        "categories": list(envelope.get("categories", {}).keys()),
+                        "categories": list(
+                            envelope.get("categories", {}).keys()
+                        ),
                     },
                 )
 
@@ -285,7 +308,9 @@ class LLMPlannerPlugin(PluginInterface):
                 ]
                 cat_parts.append(f"* {cat}:\n" + "\n".join(lines))
             envelope_section = (
-                "\nCurated Recent Telemetry (scored):\n" + "\n".join(cat_parts) + "\n"
+                "\nCurated Recent Telemetry (scored):\n"
+                + "\n".join(cat_parts)
+                + "\n"
             )
 
         prompt = (
@@ -399,7 +424,9 @@ class LLMPlannerPlugin(PluginInterface):
         description_lower = task.description.lower()
 
         # Simple keyword-based routing
-        if any(word in description_lower for word in ["remember", "save", "store"]):
+        if any(
+            word in description_lower for word in ["remember", "save", "store"]
+        ):
             return {
                 "action": "NEURAL_ATOM",
                 "atom_name": "memory_manager",
@@ -407,7 +434,9 @@ class LLMPlannerPlugin(PluginInterface):
                 "reasoning": "Keyword-based routing to memory manager",
             }
 
-        if any(word in description_lower for word in ["search", "find", "look"]):
+        if any(
+            word in description_lower for word in ["search", "find", "look"]
+        ):
             return {
                 "action": "NEURAL_ATOM",
                 "atom_name": "web_agent",
@@ -415,7 +444,9 @@ class LLMPlannerPlugin(PluginInterface):
                 "reasoning": "Keyword-based routing to web agent",
             }
 
-        if any(word in description_lower for word in ["create", "build", "make"]):
+        if any(
+            word in description_lower for word in ["create", "build", "make"]
+        ):
             return {
                 "action": "CAPABILITY_GAP",
                 "gap_description": f"Tool creation requested: {task.description}",
@@ -428,7 +459,9 @@ class LLMPlannerPlugin(PluginInterface):
             "reasoning": "General conversational response",
         }
 
-    async def _route_to_neural_atom(self, task: TaskRequest, plan: dict[str, Any]):
+    async def _route_to_neural_atom(
+        self, task: TaskRequest, plan: dict[str, Any]
+    ):
         """Route task to the appropriate Neural Atom."""
         atom_name = plan["atom_name"]
         parameters = plan["parameters"]
@@ -450,7 +483,9 @@ class LLMPlannerPlugin(PluginInterface):
 
         logger.info(f"Routed task {task.task_id} to Neural Atom: {atom_name}")
 
-    async def _handle_capability_gap(self, task: TaskRequest, plan: dict[str, Any]):
+    async def _handle_capability_gap(
+        self, task: TaskRequest, plan: dict[str, Any]
+    ):
         """Handle detected capability gaps by triggering CREATOR."""
         gap_description = plan["gap_description"]
 
@@ -474,7 +509,9 @@ class LLMPlannerPlugin(PluginInterface):
             f"Capability gap detected for task {task.task_id}: {gap_description}"
         )
 
-    async def _provide_direct_response(self, task: TaskRequest, plan: dict[str, Any]):
+    async def _provide_direct_response(
+        self, task: TaskRequest, plan: dict[str, Any]
+    ):
         """Provide direct response without using Neural Atoms."""
         response = plan["response"]
 
@@ -496,7 +533,9 @@ class LLMPlannerPlugin(PluginInterface):
 
         logger.info(f"Direct response provided for task {task.task_id}")
 
-    async def _handle_planning_error(self, task: TaskRequest, error_message: str):
+    async def _handle_planning_error(
+        self, task: TaskRequest, error_message: str
+    ):
         """Handle errors during planning stage."""
         error_result = TaskResult(
             task_id=task.task_id,

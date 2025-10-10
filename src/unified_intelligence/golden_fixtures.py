@@ -14,7 +14,8 @@ GOLDEN_REQUESTS = {
     "new_feature_json_export": {
         "request_id": "req_9f3",
         "ts": "2025-09-18T14:05:00Z",
-        "intent_text": "Create a new feature to add JSON export " "to the analyzer.",
+        "intent_text": "Create a new feature to add JSON export "
+        "to the analyzer.",
         "code_refs": ["src/analyzer/__init__.py", "tests/test_analyzer.py"],
         "context": {},
     },
@@ -75,20 +76,30 @@ GOLDEN_MANGLE_RESULTS = {
     },
     "refactor_complex_function": {
         "ok": True,
-        "facts": [{"type": "function", "name": "process_data", "complexity": 15}],
+        "facts": [
+            {"type": "function", "name": "process_data", "complexity": 15}
+        ],
         "metrics": {"complexity": 0.85, "coverage_gap": 0.3},
         "findings": [
-            {"severity": "high", "note": "Function exceeds " "complexity threshold"}
+            {
+                "severity": "high",
+                "note": "Function exceeds " "complexity threshold",
+            }
         ],
         "confidence": 0.82,
         "errors": [],
     },
     "debug_api_issue": {
         "ok": True,
-        "facts": [{"type": "function", "name": "api_endpoint", "error_paths": 3}],
+        "facts": [
+            {"type": "function", "name": "api_endpoint", "error_paths": 3}
+        ],
         "metrics": {"complexity": 0.45, "coverage_gap": 0.8},
         "findings": [
-            {"severity": "high", "note": "Missing error handling " "in API endpoint"}
+            {
+                "severity": "high",
+                "note": "Missing error handling " "in API endpoint",
+            }
         ],
         "confidence": 0.79,
         "errors": [],
@@ -173,8 +184,14 @@ GOLDEN_COPILOT_RESULTS = {
         "ok": True,
         "templates_applied": ["feature_spec_template"],
         "guidance": [
-            {"section": "requirements", "text": "Define clear acceptance criteria"},
-            {"section": "testing", "text": "Plan test strategy before implementation"},
+            {
+                "section": "requirements",
+                "text": "Define clear acceptance criteria",
+            },
+            {
+                "section": "testing",
+                "text": "Plan test strategy before implementation",
+            },
         ],
         "errors": [],
     },
@@ -183,7 +200,10 @@ GOLDEN_COPILOT_RESULTS = {
         "templates_applied": ["refactor_template"],
         "guidance": [
             {"section": "simplicity", "text": "Break down complex function"},
-            {"section": "testing", "text": "Ensure tests cover refactored code"},
+            {
+                "section": "testing",
+                "text": "Ensure tests cover refactored code",
+            },
         ],
         "errors": [],
     },
@@ -191,7 +211,10 @@ GOLDEN_COPILOT_RESULTS = {
         "ok": True,
         "templates_applied": ["debug_template"],
         "guidance": [
-            {"section": "error_handling", "text": "Add comprehensive error handling"},
+            {
+                "section": "error_handling",
+                "text": "Add comprehensive error handling",
+            },
             {"section": "testing", "text": "Add tests for error scenarios"},
         ],
         "errors": [],
@@ -215,14 +238,19 @@ GOLDEN_FUSED_RESULTS = {
                 "refs": ["tests/test_export_json.py"],
             },
             {
-                "action": "Introduce small adapter instead of " "custom serializer",
+                "action": "Introduce small adapter instead of "
+                "custom serializer",
                 "rationale": "Library-first improves simplicity_gate",
                 "refs": [],
             },
         ],
         "scores": {
             "fused": 0.66,
-            "contributors": {"mangle": 0.63, "constitution": 0.75, "workflow": 0.82},
+            "contributors": {
+                "mangle": 0.63,
+                "constitution": 0.75,
+                "workflow": 0.82,
+            },
         },
         "telemetry": {
             "request_id": "req_9f3",
@@ -254,7 +282,11 @@ GOLDEN_FUSED_RESULTS = {
         ],
         "scores": {
             "fused": 0.58,
-            "contributors": {"mangle": 0.72, "constitution": 0.65, "workflow": 0.75},
+            "contributors": {
+                "mangle": 0.72,
+                "constitution": 0.65,
+                "workflow": 0.75,
+            },
         },
         "telemetry": {
             "request_id": "req_abc",
@@ -283,7 +315,11 @@ GOLDEN_FUSED_RESULTS = {
         ],
         "scores": {
             "fused": 0.72,
-            "contributors": {"mangle": 0.68, "constitution": 0.78, "workflow": 0.88},
+            "contributors": {
+                "mangle": 0.68,
+                "constitution": 0.78,
+                "workflow": 0.88,
+            },
         },
         "telemetry": {
             "request_id": "req_xyz",
@@ -422,7 +458,8 @@ GOLDEN_FUSED_RESULTS_WITH_ANALYSIS = {
                 "refs": ["tests/test_export_json.py"],
             },
             {
-                "action": "Introduce small adapter instead of " "custom serializer",
+                "action": "Introduce small adapter instead of "
+                "custom serializer",
                 "rationale": "Library-first improves simplicity_gate",
                 "refs": [],
             },
@@ -434,7 +471,11 @@ GOLDEN_FUSED_RESULTS_WITH_ANALYSIS = {
         ],
         "scores": {
             "fused": 0.64,
-            "contributors": {"mangle": 0.63, "constitution": 0.75, "workflow": 0.82},
+            "contributors": {
+                "mangle": 0.63,
+                "constitution": 0.75,
+                "workflow": 0.82,
+            },
         },
         "telemetry": {
             "request_id": "req_9f3",
@@ -468,7 +509,11 @@ GOLDEN_FUSED_RESULTS_WITH_ANALYSIS = {
         ],
         "scores": {
             "fused": 0.57,
-            "contributors": {"mangle": 0.72, "constitution": 0.65, "workflow": 0.75},
+            "contributors": {
+                "mangle": 0.72,
+                "constitution": 0.65,
+                "workflow": 0.75,
+            },
         },
         "telemetry": {
             "request_id": "req_abc",
@@ -497,7 +542,11 @@ GOLDEN_FUSED_RESULTS_WITH_ANALYSIS = {
         ],
         "scores": {
             "fused": 0.71,
-            "contributors": {"mangle": 0.68, "constitution": 0.78, "workflow": 0.88},
+            "contributors": {
+                "mangle": 0.68,
+                "constitution": 0.78,
+                "workflow": 0.88,
+            },
         },
         "telemetry": {
             "request_id": "req_xyz",

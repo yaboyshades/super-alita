@@ -65,7 +65,10 @@ class EventBus:
     _instance: Optional["EventBus"] = None
 
     def __new__(
-        cls, host: str = "localhost", port: int = 6379, wire_format: str = "json"
+        cls,
+        host: str = "localhost",
+        port: int = 6379,
+        wire_format: str = "json",
     ) -> "EventBus":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -76,7 +79,10 @@ class EventBus:
         return cls._instance
 
     def __init__(
-        self, host: str = "localhost", port: int = 6379, wire_format: str = "json"
+        self,
+        host: str = "localhost",
+        port: int = 6379,
+        wire_format: str = "json",
     ) -> None:
         if self._initialized:
             return
@@ -163,7 +169,9 @@ class EventBus:
                 logger.info("Existing connection failed, reconnecting...")
 
         try:
-            self._redis = redis.Redis(host=self._redis_host, port=self._redis_port)
+            self._redis = redis.Redis(
+                host=self._redis_host, port=self._redis_port
+            )
             await self._redis.ping()
             logger.info("EventBus successfully connected to Memurai.")
         except Exception as e:
@@ -203,7 +211,9 @@ class EventBus:
                         "✅ Pre-subscribed to Memurai pattern: * (all channels)"
                     )
                 except Exception as e:
-                    logger.exception(f"❌ Failed to pattern subscribe to '*': {e}")
+                    logger.exception(
+                        f"❌ Failed to pattern subscribe to '*': {e}"
+                    )
                     raise
 
             # Subscribe to specific channels
@@ -291,7 +301,10 @@ class EventBus:
                 if event_type == "*":
                     # Check if we're already pattern subscribed
                     current_patterns: set[str] = set()
-                    if hasattr(self._pubsub, "patterns") and self._pubsub.patterns:
+                    if (
+                        hasattr(self._pubsub, "patterns")
+                        and self._pubsub.patterns
+                    ):
                         current_patterns = {
                             (
                                 pattern.decode("utf-8")
@@ -311,9 +324,16 @@ class EventBus:
                 else:
                     # Handle specific channel subscription
                     current_channels: set[str] = set()
-                    if hasattr(self._pubsub, "channels") and self._pubsub.channels:
+                    if (
+                        hasattr(self._pubsub, "channels")
+                        and self._pubsub.channels
+                    ):
                         current_channels = {
-                            ch.decode("utf-8") if isinstance(ch, bytes) else str(ch)
+                            (
+                                ch.decode("utf-8")
+                                if isinstance(ch, bytes)
+                                else str(ch)
+                            )
                             for ch in self._pubsub.channels
                         }
 
@@ -324,9 +344,13 @@ class EventBus:
                             event_type,
                         )
                     else:
-                        logger.debug("Already subscribed to channel: %s", event_type)
+                        logger.debug(
+                            "Already subscribed to channel: %s", event_type
+                        )
             except Exception as e:
-                logger.exception("❌ Failed to subscribe to '%s': %s", event_type, e)
+                logger.exception(
+                    "❌ Failed to subscribe to '%s': %s", event_type, e
+                )
                 raise  # Re-raise to ensure caller knows subscription failed
 
     async def _subscribe_to_new_channel(self, channel: str) -> None:
@@ -334,7 +358,9 @@ class EventBus:
         try:
             if self._pubsub is not None:
                 await self._pubsub.subscribe(channel)
-                logger.info("Dynamically subscribed to new channel: %s", channel)
+                logger.info(
+                    "Dynamically subscribed to new channel: %s", channel
+                )
         except Exception as e:
             logger.exception(
                 "Failed to dynamically subscribe to channel '%s': %s",
@@ -405,12 +431,16 @@ class EventBus:
                     if not has_wildcard_subscribers:
                         # No wildcard subscribers, so process specific handlers normally
                         if channel in self._subscribers:
-                            handlers_to_dispatch.extend(self._subscribers[channel])
+                            handlers_to_dispatch.extend(
+                                self._subscribers[channel]
+                            )
                     else:
                         # Has wildcard subscribers, process both specific and
                         # wildcard handlers
                         if channel in self._subscribers:
-                            handlers_to_dispatch.extend(self._subscribers[channel])
+                            handlers_to_dispatch.extend(
+                                self._subscribers[channel]
+                            )
 
                 # Dispatch to all collected handlers
                 if handlers_to_dispatch:
@@ -431,7 +461,9 @@ class EventBus:
 
                     # Dispatch to all handlers asynchronously
                     for handler in handlers_to_dispatch:
-                        task = asyncio.create_task(self._safe_dispatch(handler, event))
+                        task = asyncio.create_task(
+                            self._safe_dispatch(handler, event)
+                        )
                         background_tasks.add(task)
                         task.add_done_callback(background_tasks.discard)
 

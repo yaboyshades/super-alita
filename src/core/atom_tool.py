@@ -32,10 +32,17 @@ class ToolSignature(BaseModel):
     required: list[str] = Field(default_factory=list)
 
     def add_param(
-        self, name: str, param_type: str, description: str, required: bool = False
+        self,
+        name: str,
+        param_type: str,
+        description: str,
+        required: bool = False,
     ):
         """Add a parameter to the tool signature."""
-        self.properties[name] = {"type": param_type, "description": description}
+        self.properties[name] = {
+            "type": param_type,
+            "description": description,
+        }
         if required:
             self.required.append(name)
 
@@ -99,7 +106,9 @@ class AtomTool(BaseModel, ABC):
             # Check required parameters
             for required_param in self.signature.required:
                 if required_param not in params:
-                    logger.error(f"Missing required parameter: {required_param}")
+                    logger.error(
+                        f"Missing required parameter: {required_param}"
+                    )
                     return False
 
             # Basic type checking could be added here
@@ -152,7 +161,9 @@ class ShellTool(AtomTool):
         signature.add_param(
             "command", "string", "Shell command to execute", required=True
         )
-        signature.add_param("timeout", "integer", "Timeout in seconds", required=False)
+        signature.add_param(
+            "timeout", "integer", "Timeout in seconds", required=False
+        )
 
         super().__init__(
             key="shell_executor",
@@ -173,13 +184,17 @@ class ShellTool(AtomTool):
             return ToolResult(success=False, error="Invalid parameters")
 
         if not command:
-            return ToolResult(success=False, error="Command cannot be empty or None")
+            return ToolResult(
+                success=False, error="Command cannot be empty or None"
+            )
 
         try:
             logger.info(f"Executing shell command: {command}")
 
             process = await asyncio.create_subprocess_shell(
-                command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await asyncio.wait_for(
@@ -198,7 +213,8 @@ class ShellTool(AtomTool):
 
         except TimeoutError:
             return ToolResult(
-                success=False, error=f"Command timed out after {timeout} seconds"
+                success=False,
+                error=f"Command timed out after {timeout} seconds",
             )
         except Exception as e:
             return ToolResult(success=False, error=f"Execution failed: {e!s}")
@@ -212,7 +228,10 @@ class PythonMathTool(AtomTool):
     def __init__(self):
         signature = ToolSignature()
         signature.add_param(
-            "expression", "string", "Python mathematical expression", required=True
+            "expression",
+            "string",
+            "Python mathematical expression",
+            required=True,
         )
         signature.add_param(
             "imports", "array", "Additional modules to import", required=False
@@ -239,7 +258,9 @@ class PythonMathTool(AtomTool):
             return ToolResult(success=False, error="Invalid parameters")
 
         if not expression:
-            return ToolResult(success=False, error="Expression cannot be empty or None")
+            return ToolResult(
+                success=False, error="Expression cannot be empty or None"
+            )
 
         try:
             # Safe execution environment

@@ -22,19 +22,19 @@ async def test_idempotent_atoms(code):
     bus = FakeEventBus()
     event = CodeActStartRequest(code=code)
     await handle_start(event, bus, runner)
-    first_atoms = [e for e in bus.events if e["event_type"] == "batch_atoms_created"][
-        0
-    ]["atoms"]
-    first_bonds = [e for e in bus.events if e["event_type"] == "batch_bonds_added"][0][
-        "bonds"
-    ]
+    first_atoms = [
+        e for e in bus.events if e["event_type"] == "batch_atoms_created"
+    ][0]["atoms"]
+    first_bonds = [
+        e for e in bus.events if e["event_type"] == "batch_bonds_added"
+    ][0]["bonds"]
     bus.events.clear()
     await handle_start(event, bus, runner)
-    second_atoms = [e for e in bus.events if e["event_type"] == "batch_atoms_created"][
-        0
-    ]["atoms"]
-    second_bonds = [e for e in bus.events if e["event_type"] == "batch_bonds_added"][0][
-        "bonds"
-    ]
+    second_atoms = [
+        e for e in bus.events if e["event_type"] == "batch_atoms_created"
+    ][0]["atoms"]
+    second_bonds = [
+        e for e in bus.events if e["event_type"] == "batch_bonds_added"
+    ][0]["bonds"]
     assert first_atoms == second_atoms
     assert first_bonds == second_bonds

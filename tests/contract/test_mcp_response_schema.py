@@ -42,7 +42,9 @@ class TestMCPResponseSchemaContract:
         # Schema validation should pass
         validate(instance=response, schema=mcp_response_schema)
 
-    def test_error_mcp_response_includes_error_details(self, mcp_response_schema):
+    def test_error_mcp_response_includes_error_details(
+        self, mcp_response_schema
+    ):
         """Test that error responses include required error_details."""
         from src.mcp.calculus_server import CalculusAnalysisServer
 
@@ -76,9 +78,15 @@ class TestMCPResponseSchemaContract:
         response = server.analyze_function("test_func")
 
         status = response["status"]
-        assert status in ["success", "error", "warning"], f"Invalid status: {status}"
+        assert status in [
+            "success",
+            "error",
+            "warning",
+        ], f"Invalid status: {status}"
 
-    def test_successful_response_includes_analysis_summary(self, mcp_response_schema):
+    def test_successful_response_includes_analysis_summary(
+        self, mcp_response_schema
+    ):
         """Test that successful responses include analysis_summary."""
         from src.mcp.calculus_server import CalculusAnalysisServer
 
@@ -108,7 +116,11 @@ class TestMCPResponseSchemaContract:
         if "gate_results" in response:
             gates = response["gate_results"]
 
-            for gate_name in ["slope_gate", "curvature_gate", "lipschitz_gate"]:
+            for gate_name in [
+                "slope_gate",
+                "curvature_gate",
+                "lipschitz_gate",
+            ]:
                 if gate_name in gates:
                     gate = gates[gate_name]
 
@@ -117,10 +129,10 @@ class TestMCPResponseSchemaContract:
                     assert isinstance(gate["passed"], bool)
 
                     assert "threshold" in gate
-                    assert isinstance(gate["threshold"], (int, float))
+                    assert isinstance(gate["threshold"], int | float)
 
                     assert "measured_value" in gate
-                    assert isinstance(gate["measured_value"], (int, float))
+                    assert isinstance(gate["measured_value"], int | float)
 
     def test_performance_metrics_structure(self, mcp_response_schema):
         """Test that performance_metrics have correct structure."""
@@ -160,7 +172,11 @@ class TestMCPResponseSchemaContract:
 
             for rec in recommendations:
                 assert "type" in rec
-                assert rec["type"] in ["optimization", "investigation", "monitoring"]
+                assert rec["type"] in [
+                    "optimization",
+                    "investigation",
+                    "monitoring",
+                ]
 
                 assert "priority" in rec
                 assert rec["priority"] in ["low", "medium", "high", "critical"]
@@ -183,7 +199,7 @@ class TestMCPResponseSchemaContract:
                 assert trend in ["improving", "stable", "degrading", "unknown"]
 
             if "performance_change" in trending:
-                assert isinstance(trending["performance_change"], (int, float))
+                assert isinstance(trending["performance_change"], int | float)
 
             if "baseline_available" in trending:
                 assert isinstance(trending["baseline_available"], bool)

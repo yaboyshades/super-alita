@@ -79,7 +79,9 @@ class CortexModule(ABC):
         self.performance_tracker: PerformanceTracker | None = None
 
     @abstractmethod
-    async def process(self, input_data: Any, context: dict[str, Any]) -> ModuleResult:
+    async def process(
+        self, input_data: Any, context: dict[str, Any]
+    ) -> ModuleResult:
         """Process input and return result"""
         pass
 
@@ -202,12 +204,15 @@ class TextPerceptionModule(PerceptionModule):
             "word_count": len(text.split()),
             "has_questions": "?" in text,
             "has_commands": any(
-                cmd in text.lower() for cmd in ["create", "build", "implement", "fix"]
+                cmd in text.lower()
+                for cmd in ["create", "build", "implement", "fix"]
             ),
             "complexity_score": len(text.split()) / 100.0,  # Simple metric
         }
 
-        confidence = min(1.0, len(text) / 1000.0)  # Higher confidence for longer text
+        confidence = min(
+            1.0, len(text) / 1000.0
+        )  # Higher confidence for longer text
 
         result = PerceptionResult(
             processed_data={"text": text, "tokens": text.split()},
@@ -252,14 +257,20 @@ class LogicalReasoningModule(ReasoningModule):
         else:
             analysis["complexity"] = "low"
 
-        confidence = input_data.confidence * 0.9  # Slightly lower than perception
+        confidence = (
+            input_data.confidence * 0.9
+        )  # Slightly lower than perception
 
         result = ReasoningResult(
             analysis=analysis,
             conclusions=conclusions,
             confidence=confidence,
             reasoning_chain=[
-                {"step": 1, "rule": "intent_detection", "output": analysis["intent"]},
+                {
+                    "step": 1,
+                    "rule": "intent_detection",
+                    "output": analysis["intent"],
+                },
                 {
                     "step": 2,
                     "rule": "complexity_assessment",
@@ -268,7 +279,9 @@ class LogicalReasoningModule(ReasoningModule):
             ],
         )
 
-        return ModuleResult(data=result, success=True, metrics={"inference_steps": 2})
+        return ModuleResult(
+            data=result, success=True, metrics={"inference_steps": 2}
+        )
 
 
 class PlanningActionModule(ActionModule):
@@ -291,7 +304,9 @@ class PlanningActionModule(ActionModule):
                 {
                     "type": "execute_task",
                     "description": "Execute requested command",
-                    "parameters": {"complexity": analysis.get("complexity", "low")},
+                    "parameters": {
+                        "complexity": analysis.get("complexity", "low")
+                    },
                 }
             )
             priority_scores["execute_task"] = 0.9
@@ -340,5 +355,7 @@ class PlanningActionModule(ActionModule):
         )
 
         return ModuleResult(
-            data=result, success=True, metrics={"actions_generated": len(actions)}
+            data=result,
+            success=True,
+            metrics={"actions_generated": len(actions)},
         )

@@ -86,17 +86,22 @@ class APIClient:
         try:
             if hasattr(event_bus, "subscribe"):
                 await event_bus.subscribe(
-                    "system_shutdown", getattr(self, "shutdown", lambda *_: None)
+                    "system_shutdown",
+                    getattr(self, "shutdown", lambda *_: None),
                 )
         except Exception:
             pass
         return True
 
-    def post(self, endpoint: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
+    def post(
+        self, endpoint: str, data: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """POST request"""
         return self._make_request("POST", endpoint, data=data)
 
-    def put(self, endpoint: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
+    def put(
+        self, endpoint: str, data: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """PUT request"""
         return self._make_request("PUT", endpoint, data=data)
 
@@ -104,7 +109,9 @@ class APIClient:
         """DELETE request"""
         return self._make_request("DELETE", endpoint)
 
-    def paginate(self, endpoint: str, page_size: int = 50) -> list[dict[str, Any]]:
+    def paginate(
+        self, endpoint: str, page_size: int = 50
+    ) -> list[dict[str, Any]]:
         """Handle paginated responses"""
         all_data = []
         page = 1
@@ -146,5 +153,7 @@ if __name__ == "__main__":
     print(f"Users: {users}")
 
     # POST request
-    new_user = client.post("/users", {"name": "John", "email": "john@example.com"})
+    new_user = client.post(
+        "/users", {"name": "John", "email": "john@example.com"}
+    )
     print(f"Created user: {new_user}")

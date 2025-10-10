@@ -145,7 +145,9 @@ class EventBusCircuitBreaker:
         try:
             start_time = time.time()
             result = await operation()
-            self._metrics.processing_latency_ms = (time.time() - start_time) * 1000
+            self._metrics.processing_latency_ms = (
+                time.time() - start_time
+            ) * 1000
 
             self.on_success()
             return result
@@ -206,7 +208,9 @@ class IdempotentEventProcessor:
         self.processed_ttl = processed_ttl
         self._metrics = ReliabilityMetrics()
 
-        logger.info(f"Idempotent processor initialized with {processed_ttl}s TTL")
+        logger.info(
+            f"Idempotent processor initialized with {processed_ttl}s TTL"
+        )
 
     def generate_event_id(self, event: BaseEvent) -> str:
         """Generate deterministic ID for event deduplication."""
@@ -251,7 +255,9 @@ class IdempotentEventProcessor:
         processed_key = f"processed:{event_id}"
 
         try:
-            await self.redis.setex(processed_key, self.processed_ttl, "processed")
+            await self.redis.setex(
+                processed_key, self.processed_ttl, "processed"
+            )
             logger.debug(f"Marked event as processed: {event_id}")
 
         except Exception as e:
@@ -269,7 +275,11 @@ class IdempotentEventProcessor:
         # Check for duplicate
         if await self.is_duplicate(event_id):
             logger.debug(f"Skipping duplicate event: {event_id}")
-            return {"status": "duplicate", "event_id": event_id, "processed": False}
+            return {
+                "status": "duplicate",
+                "event_id": event_id,
+                "processed": False,
+            }
 
         try:
             # Process the event
@@ -372,14 +382,18 @@ class DeadLetterQueue:
         # Exponential backoff with jitter
         delay = self.retry_delay_base * (2**retry_count)
         jitter = delay * 0.1  # 10% jitter
-        total_delay = delay + (jitter * (2 * time.time() % 1 - 1))  # Random jitter
+        total_delay = delay + (
+            jitter * (2 * time.time() % 1 - 1)
+        )  # Random jitter
 
         await asyncio.sleep(total_delay)
 
         try:
             self._metrics.retry_attempts += 1
             await processor(event)
-            logger.info(f"Event retry successful after {retry_count + 1} attempts")
+            logger.info(
+                f"Event retry successful after {retry_count + 1} attempts"
+            )
             return True
 
         except Exception as e:
@@ -414,7 +428,9 @@ class BackpressureController:
         self.warning_threshold = int(max_queue_size * warning_threshold)
         self.critical_threshold = int(max_queue_size * critical_threshold)
 
-        self._queue: asyncio.Queue[BaseEvent] = asyncio.Queue(maxsize=max_queue_size)
+        self._queue: asyncio.Queue[BaseEvent] = asyncio.Queue(
+            maxsize=max_queue_size
+        )
         self._metrics = ReliabilityMetrics()
         self._backpressure_active = False
 
@@ -457,7 +473,10 @@ class BackpressureController:
 
             # Check if backpressure can be released
             current_size = self._queue.qsize()
-            if self._backpressure_active and current_size < self.warning_threshold:
+            if (
+                self._backpressure_active
+                and current_size < self.warning_threshold
+            ):
                 self._backpressure_active = False
                 logger.info("Backpressure released")
 
@@ -539,11 +558,17 @@ class ReliabilityManager:
         except CircuitBreakerOpenException as e:
             # Circuit breaker open - send to DLQ for retry later
             await self.dlq.send_to_dlq(queued_event, e)
-            return {"status": "circuit_open", "error": str(e), "sent_to_dlq": True}
+            return {
+                "status": "circuit_open",
+                "error": str(e),
+                "sent_to_dlq": True,
+            }
 
         except Exception as e:
             # Other processing errors - attempt retry via DLQ
-            retry_success = await self.dlq.retry_event(queued_event, processor, 0)
+            retry_success = await self.dlq.retry_event(
+                queued_event, processor, 0
+            )
             return {
                 "status": "error",
                 "error": str(e),

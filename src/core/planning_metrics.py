@@ -44,16 +44,26 @@ class PlanningMetricsProvider:
         mailbox_size = self.registry.get_gauge("sa_fsm_mailbox_size")
         mailbox_max = self.registry.get_gauge("sa_fsm_mailbox_size_max")
         active_ops = self.registry.get_gauge("sa_fsm_active_operations")
-        ignored_triggers = self.registry.get_counter("sa_fsm_ignored_triggers_total")
-        stale_completions = self.registry.get_counter("sa_fsm_stale_completions_total")
+        ignored_triggers = self.registry.get_counter(
+            "sa_fsm_ignored_triggers_total"
+        )
+        stale_completions = self.registry.get_counter(
+            "sa_fsm_stale_completions_total"
+        )
         total_operations = self.registry.get_counter("sa_fsm_operations_total")
 
         # Calculate derived planning metrics
-        mailbox_pressure = mailbox_size / max(mailbox_max, 1) if mailbox_max > 0 else 0
-        stale_rate = (
-            stale_completions / max(total_operations, 1) if total_operations > 0 else 0
+        mailbox_pressure = (
+            mailbox_size / max(mailbox_max, 1) if mailbox_max > 0 else 0
         )
-        concurrency_load = active_ops / 5.0  # Assume 5 is reasonable max concurrent ops
+        stale_rate = (
+            stale_completions / max(total_operations, 1)
+            if total_operations > 0
+            else 0
+        )
+        concurrency_load = (
+            active_ops / 5.0
+        )  # Assume 5 is reasonable max concurrent ops
 
         planning_metrics = {
             "timestamp": current_time.isoformat(),
@@ -70,7 +80,10 @@ class PlanningMetricsProvider:
                 "total_operations_processed": total_operations,
             },
             "planning_implications": self._derive_planning_implications(
-                mailbox_pressure, stale_rate, concurrency_load, ignored_triggers
+                mailbox_pressure,
+                stale_rate,
+                concurrency_load,
+                ignored_triggers,
             ),
         }
 
@@ -150,7 +163,8 @@ class PlanningMetricsProvider:
         # Determine overall trend
         if len(self._trend_history) >= 2:
             recent_pressure = [
-                m["system_health"]["mailbox_pressure"] for m in self._trend_history[-5:]
+                m["system_health"]["mailbox_pressure"]
+                for m in self._trend_history[-5:]
             ]
             if len(recent_pressure) >= 2:
                 if recent_pressure[-1] > recent_pressure[0] * 1.2:
@@ -171,14 +185,18 @@ class PlanningMetricsProvider:
 
         return {
             "metrics_timestamp": metrics["timestamp"],
-            "system_status": self._get_system_status_summary(metrics["system_health"]),
+            "system_status": self._get_system_status_summary(
+                metrics["system_health"]
+            ),
             "priority_suggestions": implications["priority_adjustments"],
             "actionable_items": implications["suggested_actions"],
             "risk_alerts": implications["risk_factors"],
             "trend": implications["performance_trends"],
         }
 
-    def _get_system_status_summary(self, health_metrics: dict[str, Any]) -> str:
+    def _get_system_status_summary(
+        self, health_metrics: dict[str, Any]
+    ) -> str:
         """Generate a human-readable system status summary."""
         pressure = health_metrics["mailbox_pressure"]
         stale_rate = health_metrics["stale_completion_rate"]
@@ -210,9 +228,19 @@ class PlanningMetricsProvider:
 
         # Map metric implications to todo areas
         area_mapping = {
-            "concurrency_optimization": ["concurrency", "fsm", "mailbox", "queue"],
+            "concurrency_optimization": [
+                "concurrency",
+                "fsm",
+                "mailbox",
+                "queue",
+            ],
             "fsm_stability": ["fsm", "state", "transition", "operation"],
-            "resource_management": ["performance", "optimization", "resource", "load"],
+            "resource_management": [
+                "performance",
+                "optimization",
+                "resource",
+                "load",
+            ],
             "error_recovery": ["error", "recovery", "resilience", "fallback"],
             "test_coverage": ["test", "coverage", "validation", "verify"],
         }
@@ -227,9 +255,7 @@ class PlanningMetricsProvider:
             matching_todos = []
 
             for todo in current_todos:
-                todo_text = (
-                    f"{todo.get('title', '')} {todo.get('description', '')}".lower()
-                )
+                todo_text = f"{todo.get('title', '')} {todo.get('description', '')}".lower()
                 if any(keyword in todo_text for keyword in relevant_keywords):
                     matching_todos.append(todo)
 

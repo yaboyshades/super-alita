@@ -61,7 +61,10 @@ class NativePerplexicaPlugin(PluginInterface):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string", "description": "Search query"},
+                        "query": {
+                            "type": "string",
+                            "description": "Search query",
+                        },
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of results",
@@ -99,7 +102,10 @@ class NativePerplexicaPlugin(PluginInterface):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string", "description": "News search query"},
+                        "query": {
+                            "type": "string",
+                            "description": "News search query",
+                        },
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of results",
@@ -175,7 +181,10 @@ class NativePerplexicaPlugin(PluginInterface):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string", "description": "Search query"},
+                        "query": {
+                            "type": "string",
+                            "description": "Search query",
+                        },
                         "search_mode": {
                             "type": "string",
                             "description": "Search mode",
@@ -220,11 +229,15 @@ class NativePerplexicaPlugin(PluginInterface):
         }
         return executor_map.get(tool_name)
 
-    async def search_web(self, query: str, max_results: int = 10) -> dict[str, Any]:
+    async def search_web(
+        self, query: str, max_results: int = 10
+    ) -> dict[str, Any]:
         """Search the web for information."""
         try:
             response = await self.api.search(
-                query=query, search_mode=SearchMode.WEB, max_results=max_results
+                query=query,
+                search_mode=SearchMode.WEB,
+                max_results=max_results,
             )
             return self._format_response(response)
         except Exception as e:
@@ -237,51 +250,69 @@ class NativePerplexicaPlugin(PluginInterface):
         """Search academic sources."""
         try:
             response = await self.api.search(
-                query=query, search_mode=SearchMode.ACADEMIC, max_results=max_results
+                query=query,
+                search_mode=SearchMode.ACADEMIC,
+                max_results=max_results,
             )
             return self._format_response(response)
         except Exception as e:
             logger.error(f"Academic search failed: {e}")
             return {"error": str(e), "results": []}
 
-    async def search_news(self, query: str, max_results: int = 10) -> dict[str, Any]:
+    async def search_news(
+        self, query: str, max_results: int = 10
+    ) -> dict[str, Any]:
         """Search news sources."""
         try:
             response = await self.api.search(
-                query=query, search_mode=SearchMode.NEWS, max_results=max_results
+                query=query,
+                search_mode=SearchMode.NEWS,
+                max_results=max_results,
             )
             return self._format_response(response)
         except Exception as e:
             logger.error(f"News search failed: {e}")
             return {"error": str(e), "results": []}
 
-    async def search_reddit(self, query: str, max_results: int = 10) -> dict[str, Any]:
+    async def search_reddit(
+        self, query: str, max_results: int = 10
+    ) -> dict[str, Any]:
         """Search Reddit discussions."""
         try:
             response = await self.api.search(
-                query=query, search_mode=SearchMode.REDDIT, max_results=max_results
+                query=query,
+                search_mode=SearchMode.REDDIT,
+                max_results=max_results,
             )
             return self._format_response(response)
         except Exception as e:
             logger.error(f"Reddit search failed: {e}")
             return {"error": str(e), "results": []}
 
-    async def search_images(self, query: str, max_results: int = 10) -> dict[str, Any]:
+    async def search_images(
+        self, query: str, max_results: int = 10
+    ) -> dict[str, Any]:
         """Search for images."""
         try:
             response = await self.api.search(
-                query=query, search_mode=SearchMode.IMAGES, max_results=max_results
+                query=query,
+                search_mode=SearchMode.IMAGES,
+                max_results=max_results,
             )
             return self._format_response(response)
         except Exception as e:
             logger.error(f"Image search failed: {e}")
             return {"error": str(e), "results": []}
 
-    async def search_videos(self, query: str, max_results: int = 10) -> dict[str, Any]:
+    async def search_videos(
+        self, query: str, max_results: int = 10
+    ) -> dict[str, Any]:
         """Search for videos."""
         try:
             response = await self.api.search(
-                query=query, search_mode=SearchMode.VIDEO, max_results=max_results
+                query=query,
+                search_mode=SearchMode.VIDEO,
+                max_results=max_results,
             )
             return self._format_response(response)
         except Exception as e:
@@ -341,9 +372,17 @@ class NativePerplexicaPlugin(PluginInterface):
         """Check the health of the plugin."""
         try:
             health = await self.api.health_check()
-            return {"status": "healthy", "plugin": self.name, "api_health": health}
+            return {
+                "status": "healthy",
+                "plugin": self.name,
+                "api_health": health,
+            }
         except Exception as e:
-            return {"status": "unhealthy", "plugin": self.name, "error": str(e)}
+            return {
+                "status": "unhealthy",
+                "plugin": self.name,
+                "error": str(e),
+            }
 
     async def get_search_history(self) -> list[dict[str, Any]]:
         """Get the search history."""

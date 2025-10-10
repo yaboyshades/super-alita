@@ -2,7 +2,11 @@
 DeepCode package for advanced code analysis and intelligence
 """
 
-from .analyzer_simple import AnalysisLevel, SeverityLevel, create_deepcode_engine
+from .analyzer_simple import (
+    AnalysisLevel,
+    SeverityLevel,
+    create_deepcode_engine,
+)
 from .integration import (
     analyze_current_file,
     analyze_workspace_sample,

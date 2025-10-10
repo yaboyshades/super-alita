@@ -26,7 +26,9 @@ import signal
 import sys
 from pathlib import Path
 
-from src.grpc_server.unified_integration import run_constitutional_unified_integration
+from src.grpc_server.unified_integration import (
+    run_constitutional_unified_integration,
+)
 
 
 def setup_logging(level: str = "INFO", format_style: str = "detailed") -> None:
@@ -127,7 +129,9 @@ async def validate_configuration(
     logger = logging.getLogger(__name__)
 
     try:
-        logger.info("🔍 Validating constitutional gRPC server configuration...")
+        logger.info(
+            "🔍 Validating constitutional gRPC server configuration..."
+        )
 
         # Validate host and port
         if not (1 <= port <= 65535):
@@ -146,9 +150,11 @@ async def validate_configuration(
             logger.info("✅ Using default configuration")
 
         # Test integration initialization (dry run)
-        from src.grpc_server.unified_integration import ConstitutionalUnifiedIntegration
+        from src.grpc_server.unified_integration import (
+            ConstitutionalUnifiedIntegration,
+        )
 
-        integration = ConstitutionalUnifiedIntegration(
+        ConstitutionalUnifiedIntegration(
             grpc_host=host,
             grpc_port=port,
             config_path=config_path,
@@ -179,7 +185,9 @@ def handle_shutdown_signals(integration_task: asyncio.Task) -> None:
 
     def signal_handler(signum: int, frame) -> None:  # type: ignore
         signal_name = signal.Signals(signum).name
-        logger.info(f"🛑 Received {signal_name}, initiating graceful shutdown...")
+        logger.info(
+            f"🛑 Received {signal_name}, initiating graceful shutdown..."
+        )
         integration_task.cancel()
 
     # Handle common shutdown signals
@@ -212,7 +220,9 @@ async def main() -> int:
 
     try:
         # Validate configuration
-        is_valid = await validate_configuration(args.host, args.port, args.config)
+        is_valid = await validate_configuration(
+            args.host, args.port, args.config
+        )
         if not is_valid:
             logger.error("❌ Configuration validation failed")
             return 1
@@ -222,7 +232,9 @@ async def main() -> int:
             return 0
 
         # Start constitutional gRPC server with unified intelligence
-        logger.info("🚀 Starting constitutional gRPC Super Alita Agent Server...")
+        logger.info(
+            "🚀 Starting constitutional gRPC Super Alita Agent Server..."
+        )
         logger.info("⚖️ Constitutional compliance framework: v1.0")
         logger.info("🧠 Unified intelligence integration: enabled")
         logger.info(f"🌐 Server: {args.host}:{args.port}")
@@ -263,7 +275,9 @@ def cli_main() -> None:
     try:
         if sys.platform == "win32":
             # Windows-specific asyncio configuration
-            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+            asyncio.set_event_loop_policy(
+                asyncio.WindowsProactorEventLoopPolicy()
+            )
 
         exit_code = asyncio.run(main())
         sys.exit(exit_code)

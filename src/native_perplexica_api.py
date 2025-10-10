@@ -90,9 +90,13 @@ class NativePerplexicaAPI:
             if api_key:
                 genai.configure(api_key=api_key)
                 self.llm_client = genai.GenerativeModel("gemini-pro")
-                logger.info("✅ Gemini LLM initialized for Perplexica reasoning")
+                logger.info(
+                    "✅ Gemini LLM initialized for Perplexica reasoning"
+                )
             else:
-                logger.info("⚠️ No GEMINI_API_KEY found, using fallback reasoning")
+                logger.info(
+                    "⚠️ No GEMINI_API_KEY found, using fallback reasoning"
+                )
         except ImportError:
             logger.info(
                 "⚠️ Google Generative AI not available, using fallback reasoning"
@@ -119,7 +123,9 @@ class NativePerplexicaAPI:
         """
         start_time = time.time()
 
-        logger.info(f"🔍 Native Perplexica search: '{query}' (mode: {search_mode})")
+        logger.info(
+            f"🔍 Native Perplexica search: '{query}' (mode: {search_mode})"
+        )
 
         # Get search handler for the mode
         handler = self._mode_handlers.get(search_mode, self._search_web)
@@ -155,7 +161,9 @@ class NativePerplexicaAPI:
                 reasoning,
                 citations,
                 follow_ups,
-            ) = await self._generate_ai_analysis(query, search_results, search_mode)
+            ) = await self._generate_ai_analysis(
+                query, search_results, search_mode
+            )
         else:
             summary = self._generate_simple_summary(query, search_results)
             reasoning = (
@@ -163,7 +171,8 @@ class NativePerplexicaAPI:
                 f"using {search_mode} search."
             )
             citations = [
-                f"[{i+1}] {r.title} - {r.url}" for i, r in enumerate(search_results[:5])
+                f"[{i+1}] {r.title} - {r.url}"
+                for i, r in enumerate(search_results[:5])
             ]
             follow_ups = []
 
@@ -191,11 +200,15 @@ class NativePerplexicaAPI:
         )
         return response
 
-    async def _search_web(self, query: str, max_results: int) -> list[dict[str, Any]]:
+    async def _search_web(
+        self, query: str, max_results: int
+    ) -> list[dict[str, Any]]:
         """Perform web search using WebAgent if available."""
         if self.web_agent:
             try:
-                result = await self.web_agent.call(query, web_k=max_results, github_k=0)
+                result = await self.web_agent.call(
+                    query, web_k=max_results, github_k=0
+                )
                 web_results = result.get("web", [])
 
                 # Convert WebAgent format to standard format
@@ -203,7 +216,9 @@ class NativePerplexicaAPI:
                     {
                         "title": item.get("title", "No title"),
                         "url": item.get("url", ""),
-                        "snippet": item.get("content", item.get("snippet", "")),
+                        "snippet": item.get(
+                            "content", item.get("snippet", "")
+                        ),
                         "source": "web",
                         "relevance_score": 0.8,
                         "metadata": {"via": "WebAgent"},
@@ -233,7 +248,9 @@ class NativePerplexicaAPI:
                     {
                         "title": item.get("title", "No title"),
                         "url": item.get("url", ""),
-                        "snippet": item.get("content", item.get("snippet", "")),
+                        "snippet": item.get(
+                            "content", item.get("snippet", "")
+                        ),
                         "source": "academic",
                         "relevance_score": 0.9,
                         "metadata": {"via": "WebAgent", "type": "academic"},
@@ -243,23 +260,33 @@ class NativePerplexicaAPI:
             except Exception:
                 pass
 
-        return await self._fallback_search(academic_query, max_results, "academic")
+        return await self._fallback_search(
+            academic_query, max_results, "academic"
+        )
 
-    async def _search_video(self, query: str, max_results: int) -> list[dict[str, Any]]:
+    async def _search_video(
+        self, query: str, max_results: int
+    ) -> list[dict[str, Any]]:
         """Search for videos."""
         video_query = f"{query} site:youtube.com OR site:vimeo.com"
         return await self._fallback_search(video_query, max_results, "video")
 
-    async def _search_news(self, query: str, max_results: int) -> list[dict[str, Any]]:
+    async def _search_news(
+        self, query: str, max_results: int
+    ) -> list[dict[str, Any]]:
         """Search news sources."""
-        news_query = f"{query} site:news.google.com OR site:reuters.com OR site:bbc.com"
+        news_query = (
+            f"{query} site:news.google.com OR site:reuters.com OR site:bbc.com"
+        )
         return await self._fallback_search(news_query, max_results, "news")
 
     async def _search_images(
         self, query: str, max_results: int
     ) -> list[dict[str, Any]]:
         """Search for images."""
-        return await self._fallback_search(f"{query} images", max_results, "images")
+        return await self._fallback_search(
+            f"{query} images", max_results, "images"
+        )
 
     async def _search_reddit(
         self, query: str, max_results: int
@@ -273,14 +300,18 @@ class NativePerplexicaAPI:
     ) -> list[dict[str, Any]]:
         """Search shopping sites."""
         shopping_query = f"{query} buy purchase price"
-        return await self._fallback_search(shopping_query, max_results, "shopping")
+        return await self._fallback_search(
+            shopping_query, max_results, "shopping"
+        )
 
     async def _search_wolfram(
         self, query: str, max_results: int
     ) -> list[dict[str, Any]]:
         """Search using Wolfram Alpha style computational queries."""
         computational_query = f"{query} calculate compute math"
-        return await self._fallback_search(computational_query, max_results, "wolfram")
+        return await self._fallback_search(
+            computational_query, max_results, "wolfram"
+        )
 
     async def _fallback_search(
         self, query: str, max_results: int, source: str
@@ -302,7 +333,9 @@ class NativePerplexicaAPI:
             )
         return results
 
-    def _dedupe_results(self, results: list[SearchResult]) -> list[SearchResult]:
+    def _dedupe_results(
+        self, results: list[SearchResult]
+    ) -> list[SearchResult]:
         """Remove duplicate search results."""
         seen_urls = set()
         deduped = []
@@ -335,7 +368,9 @@ class NativePerplexicaAPI:
         try:
             # Prepare context for LLM
             context = f"Search Query: {query}\nSearch Mode: {search_mode}\n\nSearch Results:\n"
-            for i, result in enumerate(results[:5]):  # Limit to top 5 for context
+            for i, result in enumerate(
+                results[:5]
+            ):  # Limit to top 5 for context
                 context += f"{i+1}. {result.title}\n   {result.snippet}\n   URL: {result.url}\n\n"
 
             # Generate analysis
@@ -393,7 +428,9 @@ Please provide a comprehensive analysis that helps the user understand the key f
             if not reasoning:
                 reasoning = "Analysis of search results shows relevant information for the query."
             if not citations:
-                citations = [f"[{i+1}] {r.title}" for i, r in enumerate(results[:3])]
+                citations = [
+                    f"[{i+1}] {r.title}" for i, r in enumerate(results[:3])
+                ]
             if not follow_ups:
                 follow_ups = [
                     f"What are the latest developments in {query}?",
@@ -413,14 +450,17 @@ Please provide a comprehensive analysis that helps the user understand the key f
         """Fallback analysis when AI is not available."""
         if not results:
             summary = f"No results found for '{query}'"
-            reasoning = "Search completed but no relevant results were returned."
+            reasoning = (
+                "Search completed but no relevant results were returned."
+            )
             citations = []
             follow_ups = []
         else:
             summary = f"Found {len(results)} results for '{query}' using {search_mode} search."
             reasoning = f"Search returned {len(results)} results with an average relevance score of {sum(r.relevance_score for r in results) / len(results):.2f}."
             citations = [
-                f"[{i+1}] {r.title} - {r.url}" for i, r in enumerate(results[:5])
+                f"[{i+1}] {r.title} - {r.url}"
+                for i, r in enumerate(results[:5])
             ]
             follow_ups = [
                 f"What are the latest updates on {query}?",
@@ -430,7 +470,9 @@ Please provide a comprehensive analysis that helps the user understand the key f
 
         return summary, reasoning, citations, follow_ups
 
-    def _generate_simple_summary(self, query: str, results: list[SearchResult]) -> str:
+    def _generate_simple_summary(
+        self, query: str, results: list[SearchResult]
+    ) -> str:
         """Generate a simple summary without AI."""
         if not results:
             return f"No results found for '{query}'"

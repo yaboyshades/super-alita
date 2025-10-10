@@ -5,7 +5,9 @@ import contextlib
 import json
 import os
 from collections.abc import AsyncGenerator
-from typing import Any  # noqa: F401 (used in type comments and optional telemetry)
+from typing import (
+    Any,
+)  # noqa: F401 (used in type comments and optional telemetry)
 
 try:  # lightweight optional import
     import httpx  # type: ignore
@@ -110,7 +112,9 @@ class OpenAIClient(LLMClient):
         except Exception:  # pragma: no cover - optional dependency
             AsyncOpenAI = None
         api_key = os.getenv("OPENAI_API_KEY")
-        self._client = AsyncOpenAI(api_key=api_key) if AsyncOpenAI and api_key else None
+        self._client = (
+            AsyncOpenAI(api_key=api_key) if AsyncOpenAI and api_key else None
+        )
 
     async def stream_chat(
         self,
@@ -135,7 +139,10 @@ class OpenAIClient(LLMClient):
                 if delta.content:
                     yield {"type": "content", "content": delta.content}
                 if delta.tool_calls:
-                    yield {"type": "tool_calls", "tool_calls": delta.tool_calls}
+                    yield {
+                        "type": "tool_calls",
+                        "tool_calls": delta.tool_calls,
+                    }
 
 
 class AnthropicClient(LLMClient):
@@ -149,7 +156,9 @@ class AnthropicClient(LLMClient):
             AsyncAnthropic = None
         api_key = os.getenv("ANTHROPIC_API_KEY")
         self._client = (
-            AsyncAnthropic(api_key=api_key) if AsyncAnthropic and api_key else None
+            AsyncAnthropic(api_key=api_key)
+            if AsyncAnthropic and api_key
+            else None
         )
 
     async def stream_chat(
@@ -234,7 +243,9 @@ class SuperAlitaFallbackClient(LLMClient):
         self.model_name = model_name or os.getenv(
             "SUPER_ALITA_MODEL", "gpt-oss-20b-4bit"
         )
-        self.base_url = os.getenv("SUPER_ALITA_BASE_URL", "http://127.0.0.1:8080")
+        self.base_url = os.getenv(
+            "SUPER_ALITA_BASE_URL", "http://127.0.0.1:8080"
+        )
         self.api_key = os.getenv("SUPER_ALITA_API_KEY")
         self._client = None
         if httpx:  # pragma: no branch - simple guard
@@ -244,7 +255,9 @@ class SuperAlitaFallbackClient(LLMClient):
             loop = asyncio.get_running_loop()
             loop.create_task(
                 broadcast_agent_event(
-                    event_type=getattr(EventTypes, "LLM_FALLBACK", "llm_fallback"),
+                    event_type=getattr(
+                        EventTypes, "LLM_FALLBACK", "llm_fallback"
+                    ),
                     source="llm_client_factory",
                     data={
                         "selected": "super_alita_fallback",
@@ -284,7 +297,9 @@ class SuperAlitaFallbackClient(LLMClient):
         tools: list[dict[str, Any]] | None = None,
     ) -> AsyncGenerator[dict[str, Any], None]:
         if self._client is None:  # pragma: no cover
-            raise RuntimeError("httpx not available for SuperAlitaFallbackClient")
+            raise RuntimeError(
+                "httpx not available for SuperAlitaFallbackClient"
+            )
         headers = {"Accept": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
@@ -330,11 +345,20 @@ class SuperAlitaFallbackClient(LLMClient):
                         if isinstance(obj, dict):
                             choice = obj.get("choices", [{}])[0]
                         if choice and isinstance(choice, dict):
-                            delta = choice.get("delta") or choice.get("message") or {}
-                            content = delta.get("content") or choice.get("text")
+                            delta = (
+                                choice.get("delta")
+                                or choice.get("message")
+                                or {}
+                            )
+                            content = delta.get("content") or choice.get(
+                                "text"
+                            )
                             tool_calls = delta.get("tool_calls") or []
                             if tool_calls:
-                                yield {"type": "tool_calls", "tool_calls": tool_calls}
+                                yield {
+                                    "type": "tool_calls",
+                                    "tool_calls": tool_calls,
+                                }
                             if content:
                                 yield {"type": "content", "content": content}
                     return
@@ -356,7 +380,9 @@ class SuperAlitaFallbackClient(LLMClient):
         start = asyncio.get_event_loop().time()
         try:
             async with asyncio.timeout(effective_timeout):
-                async for ev in self._stream_openai_style(messages, tools=tools):
+                async for ev in self._stream_openai_style(
+                    messages, tools=tools
+                ):
                     yield ev
         finally:
             dur = asyncio.get_event_loop().time() - start
@@ -421,7 +447,10 @@ class LocalHFClient(LLMClient):
         self.torch = torch
         device = (
             0
-            if (self.device_pref in {"auto", "cuda"} and torch.cuda.is_available())
+            if (
+                self.device_pref in {"auto", "cuda"}
+                and torch.cuda.is_available()
+            )
             else "cpu"
         )
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
@@ -437,7 +466,9 @@ class LocalHFClient(LLMClient):
         timeout = timeout or SETTINGS.model_stream_timeout_s
         async with asyncio.timeout(timeout):
             # Build a single prompt from user + last assistant maybe
-            user_parts = [m["content"] for m in messages if m["role"] == "user"]
+            user_parts = [
+                m["content"] for m in messages if m["role"] == "user"
+            ]
             prompt = user_parts[-1] if user_parts else ""
             input_ids = self.tokenizer.encode(prompt, return_tensors="pt").to(
                 self.device
@@ -450,7 +481,9 @@ class LocalHFClient(LLMClient):
             )
             gen_ids = output[0][input_ids.shape[-1] :]
             # Slice into pseudo streaming chunks
-            text_full = self.tokenizer.decode(gen_ids, skip_special_tokens=True)
+            text_full = self.tokenizer.decode(
+                gen_ids, skip_special_tokens=True
+            )
             # Emit in 40 char chunks
             for i in range(0, len(text_full), 40):
                 await asyncio.sleep(0)
@@ -521,13 +554,19 @@ class OllamaClient(LLMClient):
         if self._client is None:  # pragma: no cover
             raise RuntimeError("httpx not available for OllamaClient")
         timeout = timeout or SETTINGS.model_stream_timeout_s
-        payload = {"model": self.model_name, "messages": messages, "stream": True}
+        payload = {
+            "model": self.model_name,
+            "messages": messages,
+            "stream": True,
+        }
         url = f"{self.host}/api/chat"
         async with asyncio.timeout(timeout):
             async with self._client.stream("POST", url, json=payload) as resp:
                 if resp.status_code >= 400:
                     data = await resp.aread()
-                    raise RuntimeError(f"Ollama {resp.status_code}: {data[:200]!r}")
+                    raise RuntimeError(
+                        f"Ollama {resp.status_code}: {data[:200]!r}"
+                    )
                 async for line in resp.aiter_lines():
                     if not line:
                         continue
@@ -535,7 +574,9 @@ class OllamaClient(LLMClient):
                         obj = json.loads(line)
                     except Exception:
                         continue
-                    msg = obj.get("message", {}) if isinstance(obj, dict) else {}
+                    msg = (
+                        obj.get("message", {}) if isinstance(obj, dict) else {}
+                    )
                     content = msg.get("content")
                     if content:
                         yield {"content": content}

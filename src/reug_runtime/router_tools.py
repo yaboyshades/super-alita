@@ -209,29 +209,41 @@ async def get_catalog(request: Request) -> JSONResponse:
                                 t["name"] == tool_name for t in catalog
                             ):
                                 catalog.append(tool)
-                                print(f"🔍 DEBUG: Added catalog tool: {tool_name}")
+                                print(
+                                    f"🔍 DEBUG: Added catalog tool: {tool_name}"
+                                )
                 except Exception as e:
                     print(f"⚠️  Warning: Failed to load MCP catalog: {e}")
 
                 # Convert dynamic tool contracts to catalog format
                 for tool_contract in dynamic_tools:
                     # Only add if it's not already in the static catalog
-                    tool_name = tool_contract.get("tool_id") or tool_contract.get(
-                        "name"
-                    )
-                    if tool_name and not any(t["name"] == tool_name for t in catalog):
+                    tool_name = tool_contract.get(
+                        "tool_id"
+                    ) or tool_contract.get("name")
+                    if tool_name and not any(
+                        t["name"] == tool_name for t in catalog
+                    ):
                         catalog_entry = {
                             "name": tool_name,
-                            "description": tool_contract.get("description", ""),
-                            "input_schema": tool_contract.get("input_schema", {}),
-                            "output_schema": tool_contract.get("output_schema", {}),
+                            "description": tool_contract.get(
+                                "description", ""
+                            ),
+                            "input_schema": tool_contract.get(
+                                "input_schema", {}
+                            ),
+                            "output_schema": tool_contract.get(
+                                "output_schema", {}
+                            ),
                         }
                         catalog.append(catalog_entry)
                         print(f"🔍 DEBUG: Added dynamic tool: {tool_name}")
 
                 print(f"🔍 DEBUG: Final catalog has {len(catalog)} tools")
             else:
-                print("🔍 DEBUG: Registry has no get_available_tools_schema method")
+                print(
+                    "🔍 DEBUG: Registry has no get_available_tools_schema method"
+                )
         else:
             print("🔍 DEBUG: App state has no ability_registry")
     except Exception as e:
@@ -358,7 +370,9 @@ async def fs_read(
     """
     path = body["path"]
     try:
-        content = await asyncio.to_thread(Path(path).read_text, encoding="utf-8")
+        content = await asyncio.to_thread(
+            Path(path).read_text, encoding="utf-8"
+        )
     except FileNotFoundError as err:
         raise HTTPException(status_code=404, detail="file not found") from err
     return {"content": content}
@@ -504,7 +518,11 @@ async def execute_tool_path(
     except TimeoutError as e:
         raise HTTPException(
             status_code=504,
-            detail={"error": "tool_timeout", "tool": tool_id, "timeout": _timeout},
+            detail={
+                "error": "tool_timeout",
+                "tool": tool_id,
+                "timeout": _timeout,
+            },
         ) from e
     except Exception as e:  # pragma: no cover
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -690,7 +708,9 @@ async def mcp_register(
                 return {"error": "missing url"}
             truncate = int(args.get("truncate") or 4000)
             try:
-                with urllib.request.urlopen(url, timeout=8) as resp:  # nosec B310
+                with urllib.request.urlopen(
+                    url, timeout=8
+                ) as resp:  # nosec B310
                     raw = resp.read()
                 text = raw.decode("utf-8", errors="replace")
                 truncated = False
@@ -714,7 +734,11 @@ async def mcp_register(
             return cast(dict[str, Any], result)
         if action == "echo_plan":
             task = (args.get("task") or "").strip()
-            steps = [f"Understand: {task}", "Identify resources", "Execute and verify"]
+            steps = [
+                f"Understand: {task}",
+                "Identify resources",
+                "Execute and verify",
+            ]
             return {"steps": steps}
         # Unknown action fallback
         return {"ok": True, "args": args}
@@ -751,10 +775,12 @@ async def mcp_abstract(
     box_dir: str | Path
     if raw_dir is None:
         box_dir = os.getenv("MCP_BOX_DIR", ".mcp_box") or ".mcp_box"
-    elif isinstance(raw_dir, (str, Path)):
+    elif isinstance(raw_dir, str | Path):
         box_dir = raw_dir
     else:
-        raise HTTPException(status_code=400, detail="mcp_box_dir must be a path")
+        raise HTTPException(
+            status_code=400, detail="mcp_box_dir must be a path"
+        )
     result = abstract_mcp_box(box_dir)
     return JSONResponse(result)
 
@@ -778,5 +804,6 @@ async def mcp_catalog() -> JSONResponse:
         return JSONResponse(catalog)
     except Exception as e:
         return JSONResponse(
-            status_code=500, content={"error": f"Failed to read catalog: {str(e)}"}
+            status_code=500,
+            content={"error": f"Failed to read catalog: {str(e)}"},
         )

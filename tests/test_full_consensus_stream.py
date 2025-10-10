@@ -25,7 +25,9 @@ def test_full_consensus_stream():
         )
 
         if response.status_code != 200:
-            print(f"❌ Failed to start: {response.status_code} - {response.text}")
+            print(
+                f"❌ Failed to start: {response.status_code} - {response.text}"
+            )
             return
 
         result = response.json()
@@ -57,7 +59,9 @@ def test_full_consensus_stream():
                 finished = stream_data.get("finished", False)
 
                 if chunks:
-                    print(f"📄 Iteration {iteration}: Received {len(chunks)} chunk(s)")
+                    print(
+                        f"📄 Iteration {iteration}: Received {len(chunks)} chunk(s)"
+                    )
                     for i, chunk in enumerate(chunks):
                         chunk_str = str(chunk)
                         print(f"   Chunk {i}: {chunk_str[:100]}...")
@@ -86,7 +90,9 @@ def test_full_consensus_stream():
 
         # Look for consensus tool calls in the chunks
         consensus_chunks = [
-            c for c in all_chunks if "consensus" in c.lower() or "deepconf" in c.lower()
+            c
+            for c in all_chunks
+            if "consensus" in c.lower() or "deepconf" in c.lower()
         ]
         if consensus_chunks:
             print(f"   Consensus-related chunks: {len(consensus_chunks)}")
@@ -103,6 +109,8 @@ def test_full_consensus_stream():
 if __name__ == "__main__":
     chunks = test_full_consensus_stream()
     if chunks:
-        print(f"\n🎉 Successfully received {len(chunks)} chunks from consensus test!")
+        print(
+            f"\n🎉 Successfully received {len(chunks)} chunks from consensus test!"
+        )
     else:
         print("\n❌ No chunks received")

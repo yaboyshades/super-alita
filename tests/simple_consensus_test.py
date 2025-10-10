@@ -61,7 +61,9 @@ class SimpleConsensusProvider:
         tasks = []
         for i in range(num_samples):
             # Vary temperature slightly for diversity
-            temp = temperature + (i * 0.1 - 0.1)  # -0.1, 0.0, +0.1 for 3 samples
+            temp = temperature + (
+                i * 0.1 - 0.1
+            )  # -0.1, 0.0, +0.1 for 3 samples
             temp = max(0.1, min(1.0, temp))  # Keep in valid range
             tasks.append(self.generate_response(prompt, temp, max_tokens))
 
@@ -69,7 +71,9 @@ class SimpleConsensusProvider:
 
         # Filter out error responses
         valid_responses = [
-            r for r in responses if isinstance(r, str) and not r.startswith("Error:")
+            r
+            for r in responses
+            if isinstance(r, str) and not r.startswith("Error:")
         ]
 
         if not valid_responses:
@@ -87,8 +91,12 @@ class SimpleConsensusProvider:
             response_counts[resp] = response_counts.get(resp, 0) + 1
 
         # Get the most common response
-        consensus_text = max(response_counts.keys(), key=lambda x: response_counts[x])
-        consensus_confidence = response_counts[consensus_text] / len(valid_responses)
+        consensus_text = max(
+            response_counts.keys(), key=lambda x: response_counts[x]
+        )
+        consensus_confidence = response_counts[consensus_text] / len(
+            valid_responses
+        )
 
         print(f"✅ Consensus complete: {len(valid_responses)} valid responses")
 
@@ -112,12 +120,16 @@ async def test_simple_consensus():
         print("=" * 50)
 
         provider = SimpleConsensusProvider(
-            base_url="http://localhost:11434/v1", model_name="gpt-oss:20b", timeout=60.0
+            base_url="http://localhost:11434/v1",
+            model_name="gpt-oss:20b",
+            timeout=60.0,
         )
 
         # Test single response first
         print("🧪 Testing single response...")
-        single_response = await provider.generate_response("What is 2+2?", 0.1, 20)
+        single_response = await provider.generate_response(
+            "What is 2+2?", 0.1, 20
+        )
         print(f"📝 Single response: {single_response}")
 
         # Test consensus sampling

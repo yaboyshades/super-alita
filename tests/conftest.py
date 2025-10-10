@@ -56,7 +56,9 @@ for _mod in _CANDIDATE_MODULES:
         if inspect.isclass(obj) and name == "MetricsRegistry":
             _MR_CLASS = obj
         # common singleton patterns: METRICS, metrics, registry
-        if name in {"METRICS", "metrics", "registry"} and not inspect.isclass(obj):
+        if name in {"METRICS", "metrics", "registry"} and not inspect.isclass(
+            obj
+        ):
             _MR_INSTANCE = obj
     if _MR_CLASS or _MR_INSTANCE:
         break
@@ -171,7 +173,9 @@ def _attach_execution_flow_shims():
                 import asyncio
 
                 async def _select():
-                    return await services["select_tool"](ps, {"correlation_id": "test"})
+                    return await services["select_tool"](
+                        ps, {"correlation_id": "test"}
+                    )
 
                 res = asyncio.get_event_loop().run_until_complete(_select())
                 if res.get("status") == "FOUND":
@@ -275,7 +279,9 @@ try:
             len(args) >= 2
             and isinstance(args[0], _Session)
             and (
-                _MR_CLASS and isinstance(args[1], _MR_CLASS) or args[1] is _MR_INSTANCE
+                _MR_CLASS
+                and isinstance(args[1], _MR_CLASS)
+                or args[1] is _MR_INSTANCE
             )
         ):
             session, metrics = args[0], args[1]
@@ -314,7 +320,9 @@ try:
                 return _TT.RESPONSE_READY
             except Exception:
                 if getattr(self, "metrics_registry", None):
-                    self.metrics_registry.increment_counter("sa_fsm_errors_total")
+                    self.metrics_registry.increment_counter(
+                        "sa_fsm_errors_total"
+                    )
                 self.context.response = "fallback response"
                 return _TT.RESPONSE_READY
 

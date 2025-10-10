@@ -92,7 +92,9 @@ class SimpleTodoManager:
         todos_data = self.load_todos()
 
         # Generate new ID
-        existing_ids = {todo.get("id") for todo in todos_data.get("todoList", [])}
+        existing_ids = {
+            todo.get("id") for todo in todos_data.get("todoList", [])
+        }
         new_id = 1
         while new_id in existing_ids:
             new_id += 1
@@ -103,7 +105,9 @@ class SimpleTodoManager:
             "title": task_data.get("title", "New Task"),
             "description": task_data.get("description", ""),
             "status": (
-                "completed" if task_data.get("completed", False) else "not-started"
+                "completed"
+                if task_data.get("completed", False)
+                else "not-started"
             ),
         }
 
@@ -229,7 +233,9 @@ Examples:
     )
 
     parser.add_argument(
-        "--data", type=str, help="JSON data for create_task or update_task actions"
+        "--data",
+        type=str,
+        help="JSON data for create_task or update_task actions",
     )
 
     parser.add_argument(
@@ -244,7 +250,9 @@ Examples:
         help="Workspace folder path (defaults to current directory)",
     )
 
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "--verbose", action="store_true", help="Enable verbose logging"
+    )
 
     args = parser.parse_args()
 
@@ -311,7 +319,11 @@ Examples:
         print(json.dumps(result, indent=2, default=str))
 
     except Exception as e:
-        error_result = {"error": str(e), "action": args.action, "success": False}
+        error_result = {
+            "error": str(e),
+            "action": args.action,
+            "success": False,
+        }
         print(json.dumps(error_result, indent=2))
         sys.exit(1)
 

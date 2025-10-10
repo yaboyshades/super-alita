@@ -106,7 +106,9 @@ class MockTodoStore:
         return self.todos.get(todo_id)
 
     def children_of(self, todo_id: str) -> list[Todo]:
-        return [todo for todo in self.todos.values() if todo.parent_id == todo_id]
+        return [
+            todo for todo in self.todos.values() if todo.parent_id == todo_id
+        ]
 
 
 @pytest.fixture
@@ -158,12 +160,16 @@ class TestEnhancedLadderPlanner:
 
         # Verify root todo
         assert root_todo.title == "Run comprehensive tests with coverage"
-        assert root_todo.stage == LadderStage.REVIEW  # Should complete all stages
+        assert (
+            root_todo.stage == LadderStage.REVIEW
+        )  # Should complete all stages
         assert root_todo.energy > 0
         assert len(root_todo.children_ids) > 0
 
         # Verify children were created
-        children = [planner.store.get(child_id) for child_id in root_todo.children_ids]
+        children = [
+            planner.store.get(child_id) for child_id in root_todo.children_ids
+        ]
         assert all(child is not None for child in children)
         assert all(child.parent_id == root_todo.id for child in children)
 
@@ -187,7 +193,8 @@ class TestEnhancedLadderPlanner:
 
             root_todo = await planner.plan_from_user_event(user_event)
             children = [
-                planner.store.get(child_id) for child_id in root_todo.children_ids
+                planner.store.get(child_id)
+                for child_id in root_todo.children_ids
             ]
 
             # Verify children were created
@@ -252,9 +259,12 @@ class TestEnhancedLadderPlanner:
         planner.set_mode("shadow")
         assert planner.mode == "shadow"
 
-        root_todo_shadow = await planner.plan_from_user_event(sample_user_event)
+        root_todo_shadow = await planner.plan_from_user_event(
+            sample_user_event
+        )
         children_shadow = [
-            planner.store.get(child_id) for child_id in root_todo_shadow.children_ids
+            planner.store.get(child_id)
+            for child_id in root_todo_shadow.children_ids
         ]
 
         # Execute in shadow mode
@@ -285,9 +295,12 @@ class TestEnhancedLadderPlanner:
             },
         )()
 
-        root_todo_active = await planner.plan_from_user_event(user_event_active)
+        root_todo_active = await planner.plan_from_user_event(
+            user_event_active
+        )
         children_active = [
-            planner.store.get(child_id) for child_id in root_todo_active.children_ids
+            planner.store.get(child_id)
+            for child_id in root_todo_active.children_ids
         ]
 
         # Execute in active mode
@@ -304,7 +317,9 @@ class TestEnhancedLadderPlanner:
         """Test knowledge base updates and learning."""
         # Execute a plan to populate knowledge base
         root_todo = await planner.plan_from_user_event(sample_user_event)
-        children = [planner.store.get(child_id) for child_id in root_todo.children_ids]
+        children = [
+            planner.store.get(child_id) for child_id in root_todo.children_ids
+        ]
 
         await planner._enhanced_execute(root_todo, children)
         await planner._enhanced_review(root_todo, children)
@@ -346,14 +361,21 @@ class TestEnhancedLadderPlanner:
         user_event = type(
             "UserEvent",
             (),
-            {"payload": {"query": "This task will fail", "context": "Error testing"}},
+            {
+                "payload": {
+                    "query": "This task will fail",
+                    "context": "Error testing",
+                }
+            },
         )()
 
         # Set to active mode to test actual execution
         planner.set_mode("active")
 
         root_todo = await planner.plan_from_user_event(user_event)
-        children = [planner.store.get(child_id) for child_id in root_todo.children_ids]
+        children = [
+            planner.store.get(child_id) for child_id in root_todo.children_ids
+        ]
 
         # Execute should handle errors gracefully
         await planner._enhanced_execute(root_todo, children)
@@ -456,7 +478,9 @@ class TestEnhancedLadderPlanner:
 
         # Execute a plan
         root_todo = await planner.plan_from_user_event(sample_user_event)
-        children = [planner.store.get(child_id) for child_id in root_todo.children_ids]
+        children = [
+            planner.store.get(child_id) for child_id in root_todo.children_ids
+        ]
 
         await planner._enhanced_execute(root_todo, children)
         await planner._enhanced_review(root_todo, children)
@@ -497,7 +521,9 @@ class TestEnhancedLadderPlanner:
         )
 
         user_event = type(
-            "UserEvent", (), {"payload": {"query": "Quick test", "context": ""}}
+            "UserEvent",
+            (),
+            {"payload": {"query": "Quick test", "context": ""}},
         )()
         initial_energy = planner._estimate_task_energy("Quick test", "")
         root = await planner.plan_from_user_event(user_event)

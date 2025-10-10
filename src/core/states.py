@@ -148,17 +148,29 @@ class StateMachine:
         self.session = session or Session()
 
         # Transition registry
-        self.transitions: dict[tuple[StateType, TransitionTrigger], StateTransition] = (
-            {}
-        )
+        self.transitions: dict[
+            tuple[StateType, TransitionTrigger], StateTransition
+        ] = {}
         self._setup_transitions()
 
         # Define ignored triggers (no warnings)
         self.ignored_triggers = {
-            (StateType.GENERATE, TransitionTrigger.USER_INPUT),  # Queue instead
-            (StateType.COMPLETE, TransitionTrigger.RESPONSE_READY),  # Stale completion
-            (StateType.READY, TransitionTrigger.RESPONSE_READY),  # Out-of-order
-            (StateType.UNDERSTAND, TransitionTrigger.USER_INPUT),  # Queue instead
+            (
+                StateType.GENERATE,
+                TransitionTrigger.USER_INPUT,
+            ),  # Queue instead
+            (
+                StateType.COMPLETE,
+                TransitionTrigger.RESPONSE_READY,
+            ),  # Stale completion
+            (
+                StateType.READY,
+                TransitionTrigger.RESPONSE_READY,
+            ),  # Out-of-order
+            (
+                StateType.UNDERSTAND,
+                TransitionTrigger.USER_INPUT,
+            ),  # Queue instead
         }
 
         # State handlers
@@ -369,7 +381,9 @@ class StateMachine:
                 current_time - self.circuit_breaker.last_failure_time
                 > CIRCUIT_BREAKER_TIMEOUT
             ):
-                logger.info("Circuit breaker timeout expired, attempting reset")
+                logger.info(
+                    "Circuit breaker timeout expired, attempting reset"
+                )
                 self._reset_circuit_breaker()
             else:
                 logger.warning("Circuit breaker is open, blocking transition")
@@ -413,7 +427,9 @@ class StateMachine:
         # Update mailbox pressure metric
         mailbox_pressure = len(self.mailbox) / MAILBOX_MAX_SIZE
         if self.metrics_registry:
-            self.metrics_registry.set_gauge("sa_fsm_mailbox_pressure", mailbox_pressure)
+            self.metrics_registry.set_gauge(
+                "sa_fsm_mailbox_pressure", mailbox_pressure
+            )
 
         # Warning if approaching limits
         if len(self.mailbox) > MAILBOX_WARNING_SIZE:
@@ -422,7 +438,9 @@ class StateMachine:
             )
 
     async def transition(
-        self, trigger: TransitionTrigger, context_updates: dict[str, Any] | None = None
+        self,
+        trigger: TransitionTrigger,
+        context_updates: dict[str, Any] | None = None,
     ) -> bool:
         """
         Execute a state transition with concurrency safety
@@ -508,7 +526,9 @@ class StateMachine:
         """
         handler = self.state_handlers.get(self.current_state)
         if not handler:
-            self.logger.error(f"No handler defined for state {self.current_state}")
+            self.logger.error(
+                f"No handler defined for state {self.current_state}"
+            )
             return TransitionTrigger.FATAL_ERROR
 
         try:
@@ -517,7 +537,9 @@ class StateMachine:
                 return await result
             return result
         except Exception as e:
-            self.logger.error(f"State handler error in {self.current_state}: {e}")
+            self.logger.error(
+                f"State handler error in {self.current_state}: {e}"
+            )
             self.context.error_count += 1
 
             if self.context.error_count >= 3:
@@ -535,7 +557,9 @@ class StateMachine:
         if self.session.can_accept_input(self.current_state):
             # Create async task for transition
             asyncio.create_task(
-                self.transition(TransitionTrigger.USER_INPUT, {"user_input": text})
+                self.transition(
+                    TransitionTrigger.USER_INPUT, {"user_input": text}
+                )
             )
         else:
             # Queue for later processing
@@ -559,7 +583,9 @@ class StateMachine:
             return
 
         if self.current_state != StateType.GENERATE:
-            self.logger.debug(f"Ignoring RESPONSE_READY in state {self.current_state}")
+            self.logger.debug(
+                f"Ignoring RESPONSE_READY in state {self.current_state}"
+            )
             return
 
         # Mark operation as complete
@@ -574,7 +600,9 @@ class StateMachine:
         """
         queued_input = await self.session.drain_one_input()
         if queued_input:
-            self.logger.debug(f"Processing queued input: {queued_input[:50]}...")
+            self.logger.debug(
+                f"Processing queued input: {queued_input[:50]}..."
+            )
             await self.transition(
                 TransitionTrigger.USER_INPUT, {"user_input": queued_input}
             )

@@ -26,7 +26,9 @@ async def chat_with_ollama(message: str):
             if response.status_code == 200:
                 return response.json()["message"]["content"]
             else:
-                return f"Error: Status {response.status_code} - {response.text}"
+                return (
+                    f"Error: Status {response.status_code} - {response.text}"
+                )
 
     except Exception as e:
         return f"Ollama connection error: {str(e)}"
@@ -55,7 +57,9 @@ async def test_streaming_chat(message: str):
                     if line.strip():
                         try:
                             data = json.loads(line)
-                            content = data.get("message", {}).get("content", "")
+                            content = data.get("message", {}).get(
+                                "content", ""
+                            )
                             if content:
                                 print(content, end="", flush=True)
                             if data.get("done"):

@@ -74,10 +74,16 @@ async def test_puter_plugin_initialization_with_env(monkeypatch):
             async def execute_command(
                 self, command: str, args=None, cwd=None, env=None
             ) -> dict[str, Any]:
-                return {"stdout": "", "stderr": "", "exit_code": 0, "execution_time": 0}
+                return {
+                    "stdout": "",
+                    "stderr": "",
+                    "exit_code": 0,
+                    "execution_time": 0,
+                }
 
         monkeypatch.setattr(
-            "plugins.puter_plugin.PuterApiClient", lambda *args, **kwargs: DummyClient()
+            "plugins.puter_plugin.PuterApiClient",
+            lambda *args, **kwargs: DummyClient(),
         )
 
         # Create mocks
@@ -177,10 +183,16 @@ async def test_end_to_end_puter_workflow(monkeypatch):
         async def execute_command(
             self, command: str, args=None, cwd=None, env=None
         ) -> dict[str, Any]:
-            return {"stdout": "", "stderr": "", "exit_code": 0, "execution_time": 0}
+            return {
+                "stdout": "",
+                "stderr": "",
+                "exit_code": 0,
+                "execution_time": 0,
+            }
 
     monkeypatch.setattr(
-        "plugins.puter_plugin.PuterApiClient", lambda *args, **kwargs: DummyClient()
+        "plugins.puter_plugin.PuterApiClient",
+        lambda *args, **kwargs: DummyClient(),
     )
 
     config = {
@@ -209,7 +221,9 @@ async def test_end_to_end_puter_workflow(monkeypatch):
     # Verify operation was recorded and event emitted
     assert len(plugin.operation_history) == 1
     completion_event = next(
-        e for e in mock_bus.events if e.event_type == "puter_operation_completed"
+        e
+        for e in mock_bus.events
+        if e.event_type == "puter_operation_completed"
     )
     assert completion_event.operation_type == "file_operation"
     assert completion_event.file_path == "/test/file.txt"

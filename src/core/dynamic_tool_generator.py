@@ -26,7 +26,11 @@ from .secure_executor import (
     get_secure_executor,
     get_tool_registry,
 )
-from .tool_memory import format_tool_response, get_memory_manager, prompt_save_tool
+from .tool_memory import (
+    format_tool_response,
+    get_memory_manager,
+    prompt_save_tool,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +92,9 @@ class DynamicToolGenerator:
             test_result = self.secure_executor.run_unit_test(code, params)
 
             if test_result["status"] == "failure":
-                logger.error(f"Generated tool failed unit test: {test_result['error']}")
+                logger.error(
+                    f"Generated tool failed unit test: {test_result['error']}"
+                )
                 raise CodeExecutionError(
                     f"Tool validation failed: {test_result['error']}"
                 )
@@ -141,7 +147,10 @@ class DynamicToolGenerator:
         try:
             # Execute with security and audit
             func, audit_log = self.secure_executor.execute_with_audit(
-                code=code, params=params, user_id=user_id, context_id=context_id
+                code=code,
+                params=params,
+                user_id=user_id,
+                context_id=context_id,
             )
 
             # Run the function
@@ -165,7 +174,9 @@ class DynamicToolGenerator:
             self.memory_manager.update_tool_usage(tool_name, success=True)
 
             # Format response
-            response = format_tool_response(result, code, params, tool_name=tool_name)
+            response = format_tool_response(
+                result, code, params, tool_name=tool_name
+            )
             response.update(
                 {
                     "execution_time": execution_time,
@@ -201,7 +212,9 @@ class DynamicToolGenerator:
             response = format_tool_response(
                 None, code, params, error=error_msg, tool_name=tool_name
             )
-            response.update({"execution_time": execution_time, "memory_id": memory_id})
+            response.update(
+                {"execution_time": execution_time, "memory_id": memory_id}
+            )
 
             return response
 
@@ -528,7 +541,9 @@ def simulation_tool(steps={steps}):
 '''
         return code.strip()
 
-    def _generate_generic_tool(self, tool_type: str, params: dict[str, Any]) -> str:
+    def _generate_generic_tool(
+        self, tool_type: str, params: dict[str, Any]
+    ) -> str:
         """Generate secure generic tool for unknown types"""
         code = f'''
 def generic_tool_{tool_type}(**params):
@@ -593,7 +608,9 @@ class DynamicAtomTool(AtomTool):
 
         except Exception as e:
             return ToolResult(
-                success=False, error=str(e), message="Dynamic tool execution failed"
+                success=False,
+                error=str(e),
+                message="Dynamic tool execution failed",
             )
 
 
@@ -851,9 +868,13 @@ def data_processor(operation='{operation}', format='{format}', columns='{columns
             category="data",
         )
 
-        logger.info(f"Initialized {len(self._templates)} dynamic tool templates")
+        logger.info(
+            f"Initialized {len(self._templates)} dynamic tool templates"
+        )
 
-    def extract_parameters(self, text: str, template: ToolTemplate) -> dict[str, Any]:
+    def extract_parameters(
+        self, text: str, template: ToolTemplate
+    ) -> dict[str, Any]:
         """Extract parameters from natural language text using template patterns."""
         params = {}
 
@@ -887,7 +908,13 @@ def data_processor(operation='{operation}', format='{format}', columns='{columns
         # Quantum computing keywords
         if any(
             keyword in request_lower
-            for keyword in ["quantum", "qubit", "circuit", "gate", "superposition"]
+            for keyword in [
+                "quantum",
+                "qubit",
+                "circuit",
+                "gate",
+                "superposition",
+            ]
         ):
             return "quantum_circuit"
 
@@ -935,7 +962,9 @@ def data_processor(operation='{operation}', format='{format}', columns='{columns
             # Detect tool type
             tool_type = self.detect_tool_type(request)
             if not tool_type or tool_type not in self._templates:
-                logger.warning(f"Could not detect tool type for request: {request}")
+                logger.warning(
+                    f"Could not detect tool type for request: {request}"
+                )
                 return None
 
             template = self._templates[tool_type]
@@ -1025,8 +1054,12 @@ class DynamicAtomTool(AtomTool):
         # Create signature from parameters
         signature = ToolSignature()
         for param_name, param_value in parameters.items():
-            param_type = "integer" if isinstance(param_value, int) else "string"
-            signature.add_param(param_name, param_type, f"Parameter {param_name}")
+            param_type = (
+                "integer" if isinstance(param_value, int) else "string"
+            )
+            signature.add_param(
+                param_name, param_type, f"Parameter {param_name}"
+            )
 
         super().__init__(
             key=key,
@@ -1061,7 +1094,9 @@ class DynamicAtomTool(AtomTool):
                     break
 
             if not self._compiled_function:
-                raise RuntimeError("No callable function found in generated code")
+                raise RuntimeError(
+                    "No callable function found in generated code"
+                )
 
             logger.info(f"Successfully compiled dynamic tool: {self.key}")
 
@@ -1073,7 +1108,9 @@ class DynamicAtomTool(AtomTool):
         """Execute the dynamically generated tool."""
         try:
             if not self._compiled_function:
-                return ToolResult(success=False, error="Tool not properly compiled")
+                return ToolResult(
+                    success=False, error="Tool not properly compiled"
+                )
 
             logger.info(f"Executing dynamic tool: {self.name}")
 

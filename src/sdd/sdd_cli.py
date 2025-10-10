@@ -54,7 +54,9 @@ class CLIFormatter:
         widths = {header: len(header) for header in headers}
         for row in data:
             for header in headers:
-                widths[header] = max(widths[header], len(str(row.get(header, ""))))
+                widths[header] = max(
+                    widths[header], len(str(row.get(header, "")))
+                )
 
         # Create table
         lines = []
@@ -66,7 +68,9 @@ class CLIFormatter:
 
         # Rows
         for row in data:
-            row_line = " | ".join(str(row.get(h, "")).ljust(widths[h]) for h in headers)
+            row_line = " | ".join(
+                str(row.get(h, "")).ljust(widths[h]) for h in headers
+            )
             lines.append(row_line)
 
         return "\n".join(lines)
@@ -87,7 +91,9 @@ class CLIFormatter:
         return "\n".join(lines)
 
     @staticmethod
-    def format_dict(data: dict, title: str | None = None, indent: int = 0) -> str:
+    def format_dict(
+        data: dict, title: str | None = None, indent: int = 0
+    ) -> str:
         """Format a dictionary for display."""
         lines = []
         prefix = "  " * indent
@@ -99,7 +105,9 @@ class CLIFormatter:
         for key, value in data.items():
             if isinstance(value, dict):
                 lines.append(f"{prefix}{key}:")
-                lines.append(CLIFormatter.format_dict(value, indent=indent + 1))
+                lines.append(
+                    CLIFormatter.format_dict(value, indent=indent + 1)
+                )
             elif isinstance(value, list):
                 lines.append(f"{prefix}{key}: {len(value)} items")
                 for item in value[:3]:  # Show first 3 items
@@ -113,7 +121,9 @@ class CLIFormatter:
 
 
 @click.group()
-@click.option("--workspace", "-w", default=".", help="Workspace root directory")
+@click.option(
+    "--workspace", "-w", default=".", help="Workspace root directory"
+)
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.pass_context
 def cli(ctx, workspace, verbose):
@@ -163,16 +173,22 @@ def ask(ctx, question, output_format):
                 if result["results"]:
                     for i, item in enumerate(result["results"][:10], 1):
                         if isinstance(item, list):
-                            click.echo(f"  {i}. {', '.join(str(x) for x in item)}")
+                            click.echo(
+                                f"  {i}. {', '.join(str(x) for x in item)}"
+                            )
                         else:
                             click.echo(f"  {i}. {item}")
 
                     if len(result["results"]) > 10:
-                        click.echo(f"  ... and {len(result['results']) - 10} more")
+                        click.echo(
+                            f"  ... and {len(result['results']) - 10} more"
+                        )
                 else:
                     click.echo("  No results found.")
             else:
-                click.echo(f"Error: {result.get('query_used', 'Unknown error')}")
+                click.echo(
+                    f"Error: {result.get('query_used', 'Unknown error')}"
+                )
 
             click.echo(f"Execution time: {result['execution_time']:.3f}s")
 
@@ -209,13 +225,17 @@ def validate(ctx, output_format, article):
             click.echo(
                 f"Overall Status: {summary.get('overall_compliance', 'UNKNOWN')}"
             )
-            click.echo(f"Total Violations: {summary.get('total_violations', 0)}")
+            click.echo(
+                f"Total Violations: {summary.get('total_violations', 0)}"
+            )
             click.echo(
                 f"Articles with Violations: {summary.get('articles_with_violations', 0)}"
             )
 
             if summary.get("traditional_score"):
-                click.echo(f"Traditional Score: {summary['traditional_score']:.2f}")
+                click.echo(
+                    f"Traditional Score: {summary['traditional_score']:.2f}"
+                )
 
             # Display violations by article
             mangle_analysis = results.get("mangle_analysis", {})
@@ -236,7 +256,9 @@ def validate(ctx, output_format, article):
                             else:
                                 click.echo(f"    - {violation}")
                         if len(violations) > 5:
-                            click.echo(f"    ... and {len(violations) - 5} more")
+                            click.echo(
+                                f"    ... and {len(violations) - 5} more"
+                            )
                     else:
                         click.echo("  ✓ No violations found")
                 else:
@@ -285,7 +307,9 @@ def trace(ctx, code_element, output_format):
                     )
                     for spec in result["related_specs"]:
                         if isinstance(spec, list):
-                            click.echo(f"  - Feature: {spec[0] if spec else 'Unknown'}")
+                            click.echo(
+                                f"  - Feature: {spec[0] if spec else 'Unknown'}"
+                            )
                         else:
                             click.echo(f"  - {spec}")
                 else:
@@ -332,11 +356,15 @@ def analyze(ctx, output_format, category):
                 metrics = quality_results.get("quality_metrics", {})
                 click.echo("\nCode Quality Metrics")
                 click.echo("=" * 30)
-                click.echo(f"Quality Score: {metrics.get('quality_score', 0)}/100")
+                click.echo(
+                    f"Quality Score: {metrics.get('quality_score', 0)}/100"
+                )
                 click.echo(
                     f"Completeness Score: {metrics.get('completeness_score', 0)}/100"
                 )
-                click.echo(f"Total Issues: {metrics.get('total_quality_issues', 0)}")
+                click.echo(
+                    f"Total Issues: {metrics.get('total_quality_issues', 0)}"
+                )
                 click.echo(
                     f"Incomplete Items: {metrics.get('total_incomplete_items', 0)}"
                 )
@@ -348,11 +376,15 @@ def analyze(ctx, output_format, category):
                         click.echo(f"\n{issue_type} ({issue_data['count']}):")
                         for item in issue_data["items"][:3]:  # Show first 3
                             if isinstance(item, list):
-                                click.echo(f"  - {', '.join(str(x) for x in item)}")
+                                click.echo(
+                                    f"  - {', '.join(str(x) for x in item)}"
+                                )
                             else:
                                 click.echo(f"  - {item}")
                         if issue_data["count"] > 3:
-                            click.echo(f"  ... and {issue_data['count'] - 3} more")
+                            click.echo(
+                                f"  ... and {issue_data['count'] - 3} more"
+                            )
 
                 # Display recommendations
                 recommendations = quality_results.get("recommendations", [])
@@ -388,9 +420,13 @@ def stats(ctx, output_format):
             click.echo("Knowledge Graph Statistics")
             click.echo("=" * 30)
             click.echo(f"Total Facts: {stats_data.get('total_facts', 0)}")
-            click.echo(f"Facts Size: {stats_data.get('facts_size_bytes', 0)} bytes")
+            click.echo(
+                f"Facts Size: {stats_data.get('facts_size_bytes', 0)} bytes"
+            )
             click.echo(f"Cache Valid: {stats_data.get('cache_valid', False)}")
-            click.echo(f"Cached Queries: {stats_data.get('cached_queries', 0)}")
+            click.echo(
+                f"Cached Queries: {stats_data.get('cached_queries', 0)}"
+            )
 
             fact_types = stats_data.get("fact_types", {})
             if fact_types:
@@ -439,10 +475,9 @@ def specify(ctx, description, context, output_format):
         if context:
             try:
                 loaded = json.loads(context)
-                if isinstance(loaded, dict):
-                    ctx_dict = loaded
-                else:
-                    ctx_dict = {"context": loaded}
+                ctx_dict = (
+                    loaded if isinstance(loaded, dict) else {"context": loaded}
+                )
             except Exception:
                 ctx_dict = {"notes": context}
 
@@ -462,7 +497,9 @@ def specify(ctx, description, context, output_format):
                 click.echo(f"Next-Step Metadata: {result.metadata_path}")
             if result.guidance:
                 click.echo("\nNext Steps Guidance:")
-                click.echo(f"  Clarifications: {len(result.guidance.clarifications)}")
+                click.echo(
+                    f"  Clarifications: {len(result.guidance.clarifications)}"
+                )
                 click.echo(f"  Artefacts: {len(result.guidance.artefacts)}")
                 click.echo(f"  Commands: {len(result.guidance.commands)}")
 
@@ -517,7 +554,9 @@ def plan(ctx, specification_path, output_format):
                 click.echo(f"Next-Step Metadata: {result.metadata_path}")
             if result.guidance:
                 click.echo("\nNext Steps Guidance:")
-                click.echo(f"  Clarifications: {len(result.guidance.clarifications)}")
+                click.echo(
+                    f"  Clarifications: {len(result.guidance.clarifications)}"
+                )
                 click.echo(f"  Artefacts: {len(result.guidance.artefacts)}")
                 click.echo(f"  Commands: {len(result.guidance.commands)}")
 
@@ -557,7 +596,9 @@ def tasks(ctx, plan_path, output_format):
     try:
         request = TasksRequest(plan_path=plan_path)
 
-        click.echo("Generating implementation tasks with enhanced prioritization...")
+        click.echo(
+            "Generating implementation tasks with enhanced prioritization..."
+        )
         # Load existing session by deriving feature ID from plan path
         feature_id = _derive_feature_id_from_path(plan_path)
         session = session_factory.for_feature_id(feature_id)
@@ -572,7 +613,9 @@ def tasks(ctx, plan_path, output_format):
                 click.echo(f"Next-Step Metadata: {result.metadata_path}")
             if result.guidance:
                 click.echo("\nNext Steps Guidance:")
-                click.echo(f"  Clarifications: {len(result.guidance.clarifications)}")
+                click.echo(
+                    f"  Clarifications: {len(result.guidance.clarifications)}"
+                )
                 click.echo(f"  Artefacts: {len(result.guidance.artefacts)}")
                 click.echo(f"  Commands: {len(result.guidance.commands)}")
 
@@ -621,7 +664,9 @@ def incomplete(ctx):
     if result["success"] and result["results"]:
         click.echo(f"Incomplete features ({len(result['results'])}):")
         for feature in result["results"]:
-            click.echo(f"  - {feature[0] if isinstance(feature, list) else feature}")
+            click.echo(
+                f"  - {feature[0] if isinstance(feature, list) else feature}"
+            )
     else:
         click.echo("No incomplete features found or analysis failed.")
 

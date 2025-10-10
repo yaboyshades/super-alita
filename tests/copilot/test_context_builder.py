@@ -17,7 +17,9 @@ def build_assembler(**kwargs: dict[str, Any]) -> ContextAssembler:
 
 
 def test_extraction_and_chat_signals_pass_through():
-    hits = [{"atom_id": "a1", "score": 0.5, "truncated_content_hash": "deadbeef"}]
+    hits = [
+        {"atom_id": "a1", "score": 0.5, "truncated_content_hash": "deadbeef"}
+    ]
     extras = {"chat_signals": {"attention": True}}
     assembler = build_assembler(
         user_input="hello",
@@ -30,7 +32,9 @@ def test_extraction_and_chat_signals_pass_through():
 
     with (
         patch("src.core.context_builder.get_session_id", return_value="sess"),
-        patch("src.core.context_builder.get_correlation_id", return_value="corr"),
+        patch(
+            "src.core.context_builder.get_correlation_id", return_value="corr"
+        ),
     ):
         ctx = assembler.build_for_decision()
 

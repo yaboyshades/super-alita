@@ -109,7 +109,9 @@ async def test_leanrag_integration():
         # Create a demo knowledge graph (directed graph as expected by LeanRAG)
         demo_kg = nx.DiGraph()
         demo_kg.add_node(
-            "ai_agents", name="AI Agents", description="Autonomous software entities"
+            "ai_agents",
+            name="AI Agents",
+            description="Autonomous software entities",
         )
         demo_kg.add_node(
             "development",

@@ -49,7 +49,9 @@ class APIKeyStore:
 
     @classmethod
     def from_env(cls) -> APIKeyStore:
-        path = os.getenv("ALITA_API_KEY_STORE", str(Path("config") / "api_keys.json"))
+        path = os.getenv(
+            "ALITA_API_KEY_STORE", str(Path("config") / "api_keys.json")
+        )
         return cls(path)
 
     def _ensure_loaded(self) -> None:
@@ -72,7 +74,8 @@ class APIKeyStore:
         serialized = {kid: asdict(rec) for kid, rec in self._db.items()}
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(
-            json.dumps(serialized, ensure_ascii=False, indent=2), encoding="utf-8"
+            json.dumps(serialized, ensure_ascii=False, indent=2),
+            encoding="utf-8",
         )
         tmp.replace(self.path)
 

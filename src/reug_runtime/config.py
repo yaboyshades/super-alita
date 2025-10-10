@@ -97,7 +97,9 @@ class Settings:
     # Execution limits / guardrails
     max_tool_calls: int = _getenv_int("REUG_MAX_TOOL_CALLS", 5)
     tool_timeout_s: float = _getenv_float("REUG_EXEC_TIMEOUT_S", 20.0)
-    model_stream_timeout_s: float = _getenv_float("REUG_MODEL_STREAM_TIMEOUT_S", 60.0)
+    model_stream_timeout_s: float = _getenv_float(
+        "REUG_MODEL_STREAM_TIMEOUT_S", 60.0
+    )
     max_retries: int = _getenv_int("REUG_EXEC_MAX_RETRIES", 1)
     retry_base_ms: int = _getenv_int("REUG_RETRY_BASE_MS", 250)
     schema_enforce: bool = _getenv_bool("REUG_SCHEMA_ENFORCE", True)
@@ -107,7 +109,9 @@ class Settings:
     message_optimizer_enabled: bool = _getenv_bool(
         "REUG_MESSAGE_OPTIMIZER_ENABLED", True
     )
-    message_optimizer_max_len: int = _getenv_int("REUG_MESSAGE_OPTIMIZER_MAX_LEN", 6000)
+    message_optimizer_max_len: int = _getenv_int(
+        "REUG_MESSAGE_OPTIMIZER_MAX_LEN", 6000
+    )
     message_optimizer_emit_telemetry: bool = _getenv_bool(
         "REUG_MESSAGE_OPTIMIZER_TELEMETRY", True
     )

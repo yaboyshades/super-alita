@@ -27,13 +27,17 @@ async def atomizer(
         Dict[str, Any]: ``{"atoms": [...], "bonds": [...]}`` payload.
     """
 
-    sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()][:max_notes]
+    sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()][
+        :max_notes
+    ]
     atoms: list[dict[str, Any]] = []
     bonds: list[dict[str, Any]] = []
 
     for idx, sentence in enumerate(sentences):
         atom_id = generate_atom_id("NOTE", "", sentence, NS)
-        atom = Atom(atom_id=atom_id, atom_type="NOTE", content=sentence, meta={})
+        atom = Atom(
+            atom_id=atom_id, atom_type="NOTE", content=sentence, meta={}
+        )
         prov = {
             "source_type": "tool",
             "source_id": "atomizer/0.1.0",
@@ -49,7 +53,11 @@ async def atomizer(
                 source_id=atoms[idx - 1]["atom_id"],
                 target_id=atom_id,
                 bond_type="RELATES_TO",
-                meta={"provenance": {"parent_atom_ids": [atoms[idx - 1]["atom_id"]]}},
+                meta={
+                    "provenance": {
+                        "parent_atom_ids": [atoms[idx - 1]["atom_id"]]
+                    }
+                },
             )
             bonds.append(
                 {

@@ -23,7 +23,11 @@ async def test_mcp_broadcaster_wraps_event_bus(tmp_path):
         assert bc is not None
 
         # Emit an event and ensure it is captured in broadcaster history
-        event = {"event_type": "tool_call", "source": "pytest", "payload": {"a": 1}}
+        event = {
+            "event_type": "tool_call",
+            "source": "pytest",
+            "payload": {"a": 1},
+        }
         await app.state.event_bus.emit(event)  # type: ignore[attr-defined]
 
         # Small delay to allow async wrapper to append

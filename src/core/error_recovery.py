@@ -115,7 +115,9 @@ class CircuitBreakerConfig:
     success_threshold: int = 3
     timeout_seconds: float = 60.0
     half_open_max_calls: int = 5
-    monitored_exceptions: list[type] = field(default_factory=lambda: [Exception])
+    monitored_exceptions: list[type] = field(
+        default_factory=lambda: [Exception]
+    )
 
 
 @dataclass
@@ -128,7 +130,9 @@ class RetryConfig:
     max_delay: float = 60.0
     multiplier: float = 2.0
     jitter: bool = True
-    retryable_exceptions: list[type] = field(default_factory=lambda: [Exception])
+    retryable_exceptions: list[type] = field(
+        default_factory=lambda: [Exception]
+    )
 
 
 @dataclass
@@ -145,7 +149,9 @@ class FailoverConfig:
 class CircuitBreaker:
     """Circuit breaker implementation for preventing cascade failures"""
 
-    def __init__(self, name: str, config: CircuitBreakerConfig, event_bus=None):
+    def __init__(
+        self, name: str, config: CircuitBreakerConfig, event_bus=None
+    ):
         self.name = name
         self.config = config
         self.event_bus = event_bus
@@ -173,7 +179,9 @@ class CircuitBreaker:
             if self._should_attempt_reset():
                 await self._transition_to_half_open()
             else:
-                raise CircuitBreakerOpenError(f"Circuit breaker {self.name} is open")
+                raise CircuitBreakerOpenError(
+                    f"Circuit breaker {self.name} is open"
+                )
 
         # Check if we're in half-open state and reached max calls
         if (
@@ -198,7 +206,8 @@ class CircuitBreaker:
         except Exception as e:
             # Check if this exception should trigger circuit breaker
             if any(
-                isinstance(e, exc_type) for exc_type in self.config.monitored_exceptions
+                isinstance(e, exc_type)
+                for exc_type in self.config.monitored_exceptions
             ):
                 await self._on_failure(e)
             raise
@@ -254,7 +263,9 @@ class CircuitBreaker:
             return True
 
         time_since_failure = datetime.now(UTC) - self.last_failure_time
-        return time_since_failure.total_seconds() >= self.config.timeout_seconds
+        return (
+            time_since_failure.total_seconds() >= self.config.timeout_seconds
+        )
 
     async def _transition_to_closed(self) -> None:
         """Transition circuit breaker to closed state"""
@@ -303,7 +314,9 @@ class CircuitBreaker:
         )
         await self._emit_state_change_event(old_state)
 
-    async def _emit_state_change_event(self, old_state: CircuitBreakerState) -> None:
+    async def _emit_state_change_event(
+        self, old_state: CircuitBreakerState
+    ) -> None:
         """Emit circuit breaker state change event"""
         if self.event_bus:
             try:
@@ -339,7 +352,9 @@ class CircuitBreaker:
                 else 100.0
             ),
             "last_failure_time": (
-                self.last_failure_time.isoformat() if self.last_failure_time else None
+                self.last_failure_time.isoformat()
+                if self.last_failure_time
+                else None
             ),
         }
 
@@ -399,12 +414,16 @@ class ErrorRecoveryOrchestrator:
         return circuit_breaker
 
     async def handle_error(
-        self, error_context: ErrorContext, recovery_actions: list[RecoveryAction] = None
+        self,
+        error_context: ErrorContext,
+        recovery_actions: list[RecoveryAction] = None,
     ) -> bool:
         """Handle an error with appropriate recovery mechanisms"""
         # Record error
         self.error_history.append(error_context)
-        error_pattern = f"{error_context.component_name}:{error_context.error_type}"
+        error_pattern = (
+            f"{error_context.component_name}:{error_context.error_type}"
+        )
         self.error_patterns[error_pattern] += 1
 
         # Determine recovery actions if not provided
@@ -420,10 +439,14 @@ class ErrorRecoveryOrchestrator:
                     recovery_success = await self._handle_retry(error_context)
 
                 elif action == RecoveryAction.CIRCUIT_BREAK:
-                    recovery_success = await self._handle_circuit_break(error_context)
+                    recovery_success = await self._handle_circuit_break(
+                        error_context
+                    )
 
                 elif action == RecoveryAction.FALLBACK:
-                    recovery_success = await self._handle_fallback(error_context)
+                    recovery_success = await self._handle_fallback(
+                        error_context
+                    )
 
                 elif action == RecoveryAction.ALERT_OPERATOR:
                     recovery_success = await self._handle_alert(error_context)
@@ -436,7 +459,9 @@ class ErrorRecoveryOrchestrator:
                     break
 
             except Exception as e:
-                self.logger.error(f"Error executing recovery action {action}: {e}")
+                self.logger.error(
+                    f"Error executing recovery action {action}: {e}"
+                )
 
         # Emit error handled event
         if self.event_bus:
@@ -445,7 +470,9 @@ class ErrorRecoveryOrchestrator:
                     "error_handled",
                     error_id=error_context.error_id,
                     component_name=error_context.component_name,
-                    recovery_actions=[action.value for action in recovery_actions],
+                    recovery_actions=[
+                        action.value for action in recovery_actions
+                    ],
                     recovery_success=recovery_success,
                     source_plugin="error_recovery",
                 )
@@ -471,7 +498,10 @@ class ErrorRecoveryOrchestrator:
         elif error_context.severity == ErrorSeverity.HIGH:
             actions = [RecoveryAction.CIRCUIT_BREAK, RecoveryAction.FALLBACK]
 
-        elif error_context.severity in [ErrorSeverity.CRITICAL, ErrorSeverity.FATAL]:
+        elif error_context.severity in [
+            ErrorSeverity.CRITICAL,
+            ErrorSeverity.FATAL,
+        ]:
             actions = [
                 RecoveryAction.CIRCUIT_BREAK,
                 RecoveryAction.FALLBACK,
@@ -479,7 +509,9 @@ class ErrorRecoveryOrchestrator:
             ]
 
         # Based on error patterns
-        error_pattern = f"{error_context.component_name}:{error_context.error_type}"
+        error_pattern = (
+            f"{error_context.component_name}:{error_context.error_type}"
+        )
         if (
             self.error_patterns[error_pattern] > 5
             and RecoveryAction.CIRCUIT_BREAK not in actions
@@ -492,12 +524,16 @@ class ErrorRecoveryOrchestrator:
         """Handle retry recovery action"""
         # This would integrate with the actual function that failed
         # For now, just simulate retry logic
-        self.logger.info(f"Executing retry recovery for {error_context.error_id}")
+        self.logger.info(
+            f"Executing retry recovery for {error_context.error_id}"
+        )
         return error_context.retry_count < error_context.max_retries
 
     async def _handle_circuit_break(self, error_context: ErrorContext) -> bool:
         """Handle circuit breaker recovery action"""
-        circuit_breaker_name = f"{error_context.component_name}_circuit_breaker"
+        circuit_breaker_name = (
+            f"{error_context.component_name}_circuit_breaker"
+        )
 
         if circuit_breaker_name not in self.circuit_breakers:
             # Create default circuit breaker
@@ -512,7 +548,9 @@ class ErrorRecoveryOrchestrator:
     async def _handle_fallback(self, error_context: ErrorContext) -> bool:
         """Handle fallback recovery action"""
         # This would implement fallback logic (cached data, simplified processing, etc.)
-        self.logger.info(f"Executing fallback for {error_context.component_name}")
+        self.logger.info(
+            f"Executing fallback for {error_context.component_name}"
+        )
         return True
 
     async def _handle_alert(self, error_context: ErrorContext) -> bool:
@@ -568,7 +606,8 @@ class ErrorRecoveryOrchestrator:
         recent_errors = [
             error
             for error in self.error_history
-            if (current_time - error.timestamp).total_seconds() < 300  # Last 5 minutes
+            if (current_time - error.timestamp).total_seconds()
+            < 300  # Last 5 minutes
         ]
 
         if len(recent_errors) > 10:  # More than 10 errors in 5 minutes
@@ -607,14 +646,16 @@ class ErrorRecoveryOrchestrator:
         recent_errors = [
             error
             for error in self.error_history
-            if (datetime.now(UTC) - error.timestamp).total_seconds() < 3600  # Last hour
+            if (datetime.now(UTC) - error.timestamp).total_seconds()
+            < 3600  # Last hour
         ]
 
         return {
             "running": self._running,
             "timestamp": datetime.now(UTC).isoformat(),
             "circuit_breakers": {
-                name: cb.get_metrics() for name, cb in self.circuit_breakers.items()
+                name: cb.get_metrics()
+                for name, cb in self.circuit_breakers.items()
             },
             "error_statistics": {
                 "total_errors": len(self.error_history),
@@ -622,7 +663,9 @@ class ErrorRecoveryOrchestrator:
                 "error_patterns": dict(self.error_patterns),
                 "severity_distribution": {
                     severity.value: sum(
-                        1 for error in recent_errors if error.severity == severity
+                        1
+                        for error in recent_errors
+                        if error.severity == severity
                     )
                     for severity in ErrorSeverity
                 },

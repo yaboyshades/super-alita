@@ -61,7 +61,10 @@ class ToolDesignSpec:
         if self.tags is None:
             self.tags = ["generated", self.name.split("_")[0]]
         if self.guardrails is None:
-            self.guardrails = {"sandbox_required": True, "validation_required": True}
+            self.guardrails = {
+                "sandbox_required": True,
+                "validation_required": True,
+            }
 
 
 class CoArchitectMode:
@@ -73,7 +76,9 @@ class CoArchitectMode:
     """
 
     def __init__(
-        self, memory_enabled: bool = True, audit_trail: bool = AUDIT_TRAIL_ENABLED
+        self,
+        memory_enabled: bool = True,
+        audit_trail: bool = AUDIT_TRAIL_ENABLED,
     ):
         """
         Initialize Co-Architect mode.
@@ -151,7 +156,10 @@ class CoArchitectMode:
 
             # Default handler
             logger.warning(f"Unhandled event type: {event_type}")
-            return {"success": False, "error": f"Unhandled event type: {event_type}"}
+            return {
+                "success": False,
+                "error": f"Unhandled event type: {event_type}",
+            }
 
         except Exception as e:
             logger.exception(f"Error processing event {event_type}: {e}")
@@ -172,7 +180,9 @@ class CoArchitectMode:
                         "timestamp": event.timestamp,
                         # Clone parameters to avoid modifying the original
                         "parameters": {
-                            k: v for k, v in event.parameters.items() if k != "schema"
+                            k: v
+                            for k, v in event.parameters.items()
+                            if k != "schema"
                         },
                     }
                 )
@@ -180,21 +190,28 @@ class CoArchitectMode:
         except Exception as e:
             logger.error(f"Failed to record audit trail: {e}")
 
-    async def _process_tool_design(self, event: CoArchitectEvent) -> dict[str, Any]:
+    async def _process_tool_design(
+        self, event: CoArchitectEvent
+    ) -> dict[str, Any]:
         """Process tool design event."""
         params = event.parameters
         name = params.get("name", "")
         description = params.get("description", "")
 
         if not name or not description:
-            return {"success": False, "error": "Tool name and description are required"}
+            return {
+                "success": False,
+                "error": "Tool name and description are required",
+            }
 
         # Generate tool schema based on name and description
         # In a real implementation, this would involve LLM-based schema generation
         schema = self._generate_tool_schema(name, description)
 
         # Create tool design spec
-        design_spec = ToolDesignSpec(name=name, description=description, schema=schema)
+        design_spec = ToolDesignSpec(
+            name=name, description=description, schema=schema
+        )
 
         # Store in active designs
         self.active_designs[name] = design_spec
@@ -223,7 +240,9 @@ class CoArchitectMode:
             },
         }
 
-    def _generate_tool_schema(self, name: str, description: str) -> dict[str, Any]:
+    def _generate_tool_schema(
+        self, name: str, description: str
+    ) -> dict[str, Any]:
         """Generate tool schema based on name and description."""
         return {
             "type": "object",
@@ -253,7 +272,9 @@ class CoArchitectMode:
             },
         }
 
-    async def _process_tool_validation(self, event: CoArchitectEvent) -> dict[str, Any]:
+    async def _process_tool_validation(
+        self, event: CoArchitectEvent
+    ) -> dict[str, Any]:
         """Process tool validation event."""
         params = event.parameters
         name = params.get("name", "")
@@ -339,7 +360,9 @@ class CoArchitectMode:
                     memory_designs[name] = {
                         "name": name,
                         "description": record.get("description", ""),
-                        "version": record.get("version", CONTRACT_FIRST_SCHEMA_VERSION),
+                        "version": record.get(
+                            "version", CONTRACT_FIRST_SCHEMA_VERSION
+                        ),
                         "created_at": record.get("created_at", 0),
                     }
 
@@ -357,7 +380,9 @@ class CoArchitectMode:
             return []
 
         records = await self.audit_memory.retrieve(limit)
-        return sorted(records, key=lambda x: x.get("timestamp", 0), reverse=True)
+        return sorted(
+            records, key=lambda x: x.get("timestamp", 0), reverse=True
+        )
 
 
 # Export key components

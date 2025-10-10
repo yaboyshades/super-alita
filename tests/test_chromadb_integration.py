@@ -25,7 +25,8 @@ try:
 
     # Test ChromaDB integration directly
     client = chromadb.PersistentClient(
-        path="./data/chroma_memory", settings=Settings(anonymized_telemetry=False)
+        path="./data/chroma_memory",
+        settings=Settings(anonymized_telemetry=False),
     )
 
     # Check existing collections
@@ -36,11 +37,14 @@ try:
 
     # Test memory persistence with semantic collection
     semantic_collection = client.get_or_create_collection(
-        name="semantic_memory", metadata={"description": "Semantic knowledge storage"}
+        name="semantic_memory",
+        metadata={"description": "Semantic knowledge storage"},
     )
 
     # Add a test memory entry
-    test_memory_doc = "ChromaDB is properly integrated with Super Alita memory system"
+    test_memory_doc = (
+        "ChromaDB is properly integrated with Super Alita memory system"
+    )
     test_metadata = {
         "timestamp": "2025-08-31T14:08:00Z",
         "type": "semantic",
@@ -48,7 +52,9 @@ try:
     }
 
     semantic_collection.upsert(
-        ids=["test_memory_001"], documents=[test_memory_doc], metadatas=[test_metadata]
+        ids=["test_memory_001"],
+        documents=[test_memory_doc],
+        metadatas=[test_metadata],
     )
 
     # Verify the memory was stored
@@ -59,11 +65,14 @@ try:
     print("✅ Memory persistence test successful!")
     print(f"📝 Stored memory: {test_memory_doc[:50]}...")
     print(f'🔍 Query results: {len(results["documents"][0])} matches found')
-    print(f"📈 Semantic collection now has {semantic_collection.count()} documents")
+    print(
+        f"📈 Semantic collection now has {semantic_collection.count()} documents"
+    )
 
     # Test episodic collection
     episodic_collection = client.get_or_create_collection(
-        name="episodic_memory", metadata={"description": "Episodic experience storage"}
+        name="episodic_memory",
+        metadata={"description": "Episodic experience storage"},
     )
 
     test_episode_doc = "User requested ChromaDB integration verification"
@@ -75,11 +84,15 @@ try:
     }
 
     episodic_collection.upsert(
-        ids=["episode_001"], documents=[test_episode_doc], metadatas=[episode_metadata]
+        ids=["episode_001"],
+        documents=[test_episode_doc],
+        metadatas=[episode_metadata],
     )
 
     print("✅ Episodic memory test successful!")
-    print(f"📚 Episodic collection now has {episodic_collection.count()} documents")
+    print(
+        f"📚 Episodic collection now has {episodic_collection.count()} documents"
+    )
 
     # Summary
     print("")

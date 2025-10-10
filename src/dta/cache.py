@@ -233,7 +233,10 @@ class InMemoryCache:
 
                 # Create cache entry
                 entry = CacheEntry(
-                    key=key, value=value, created_at=datetime.now(UTC), ttl_seconds=ttl
+                    key=key,
+                    value=value,
+                    created_at=datetime.now(UTC),
+                    ttl_seconds=ttl,
                 )
 
                 self._cache[key] = entry
@@ -539,7 +542,9 @@ class DTACache:
         # Initialize backend
         if self.backend_type == CacheBackend.REDIS:
             self.primary_cache = RedisCache(
-                redis_url=self.config.get("redis_url", "redis://localhost:6379"),
+                redis_url=self.config.get(
+                    "redis_url", "redis://localhost:6379"
+                ),
                 key_prefix=self.config.get("key_prefix", "dta:"),
                 default_ttl=self.config.get("default_ttl", 3600),
             )
@@ -569,7 +574,9 @@ class DTACache:
         """Generate optimized cache key."""
         if isinstance(key_data, dict):
             # Create deterministic key from dict
-            key_str = json.dumps(key_data, sort_keys=True, separators=(",", ":"))
+            key_str = json.dumps(
+                key_data, sort_keys=True, separators=(",", ":")
+            )
         else:
             key_str = str(key_data)
 
@@ -582,7 +589,9 @@ class DTACache:
 
         return full_key
 
-    async def get(self, namespace: str, key_data: str | dict[str, Any]) -> Any | None:
+    async def get(
+        self, namespace: str, key_data: str | dict[str, Any]
+    ) -> Any | None:
         """Get value from cache with fallback support."""
         if not self.enabled:
             return None
@@ -635,7 +644,9 @@ class DTACache:
 
         return success
 
-    async def delete(self, namespace: str, key_data: str | dict[str, Any]) -> bool:
+    async def delete(
+        self, namespace: str, key_data: str | dict[str, Any]
+    ) -> bool:
         """Delete value from cache."""
         if not self.enabled:
             return False
@@ -657,7 +668,9 @@ class DTACache:
 
         return success
 
-    async def exists(self, namespace: str, key_data: str | dict[str, Any]) -> bool:
+    async def exists(
+        self, namespace: str, key_data: str | dict[str, Any]
+    ) -> bool:
         """Check if key exists in cache."""
         if not self.enabled:
             return False
@@ -853,7 +866,9 @@ def create_cache(config: dict[str, Any] | None = None) -> DTACache:
                 config_dict = config.to_dict()
             else:
                 config_dict = {
-                    k: v for k, v in config.__dict__.items() if not k.startswith("_")
+                    k: v
+                    for k, v in config.__dict__.items()
+                    if not k.startswith("_")
                 }
             default_config.update(config_dict)
         else:

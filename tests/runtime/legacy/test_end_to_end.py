@@ -33,7 +33,9 @@ async def test_agent_request_handling():
         print("  ✅ Decision policy engine ready")
 
         # Simulate a user request
-        user_request = "Help me write a Python function to calculate fibonacci numbers"
+        user_request = (
+            "Help me write a Python function to calculate fibonacci numbers"
+        )
 
         # Create an event for the request
         request_event = create_event(

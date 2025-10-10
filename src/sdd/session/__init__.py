@@ -51,7 +51,9 @@ class ArtifactResult:
             "artifact_path": self.artifact_path,
             "artifact_content": self.artifact_content,
             "guidance": (
-                self.guidance.model_dump(mode="json") if self.guidance else None
+                self.guidance.model_dump(mode="json")
+                if self.guidance
+                else None
             ),
             "constitutional_compliance": compliance_dict,
             "overall_compliance_score": self.overall_compliance_score,
@@ -93,20 +95,28 @@ class GuidanceRepository:
         except Exception:
             return None
 
-    def save_guidance(self, feature_dir: Path, guidance: NextStepGuidance) -> str:
+    def save_guidance(
+        self, feature_dir: Path, guidance: NextStepGuidance
+    ) -> str:
         """Save guidance to feature directory and return relative path."""
         metadata_path = feature_dir / "next_steps.yaml"
-        metadata_path.write_text(safe_dump(guidance.model_dump()), encoding="utf-8")
+        metadata_path.write_text(
+            safe_dump(guidance.model_dump()), encoding="utf-8"
+        )
         return str(metadata_path.relative_to(self.workspace_root))
 
-    def load_artifact(self, feature_dir: Path, artifact_name: str) -> str | None:
+    def load_artifact(
+        self, feature_dir: Path, artifact_name: str
+    ) -> str | None:
         """Load artifact content from feature directory."""
         artifact_path = feature_dir / artifact_name
         if not artifact_path.exists():
             return None
         return artifact_path.read_text(encoding="utf-8")
 
-    def save_artifact(self, feature_dir: Path, artifact_name: str, content: str) -> str:
+    def save_artifact(
+        self, feature_dir: Path, artifact_name: str, content: str
+    ) -> str:
         """Save artifact to feature directory and return relative path."""
         artifact_path = feature_dir / artifact_name
         artifact_path.write_text(content, encoding="utf-8")
@@ -186,7 +196,9 @@ class FeatureSession:
             metadata_path = None
 
         # Cache the artifact
-        self._cached_artifacts["implementation-plan.md"] = response.implementation_plan
+        self._cached_artifacts["implementation-plan.md"] = (
+            response.implementation_plan
+        )
 
         return ArtifactResult(
             feature_id=self.feature_id,
@@ -238,7 +250,9 @@ class FeatureSession:
             "clarifications": len(self.guidance.clarifications),
             "artefacts": len(self.guidance.artefacts),
             "commands": len(self.guidance.commands),
-            "constitutional_alignment": len(self.guidance.constitutional_alignment),
+            "constitutional_alignment": len(
+                self.guidance.constitutional_alignment
+            ),
         }
 
     def get_cached_artifact(self, name: str) -> str | None:

@@ -87,9 +87,7 @@ class RateLimiter:
 
 class PerplexicaSearchTool:
     name = "perplexica.search"
-    description = (
-        "AI-powered multi-modal search with reasoning, summarization, and citations."
-    )
+    description = "AI-powered multi-modal search with reasoning, summarization, and citations."
 
     def __init__(
         self,
@@ -157,13 +155,19 @@ class PerplexicaSearchTool:
             try:
                 if provider in self.rate_limiters:
                     async with self.rate_limiters[provider].acquire(provider):
-                        results = await self._provider_search(provider, query, mode)
+                        results = await self._provider_search(
+                            provider, query, mode
+                        )
                 else:
-                    results = await self._provider_search(provider, query, mode)
+                    results = await self._provider_search(
+                        provider, query, mode
+                    )
 
                 if results:
                     if self.metrics:
-                        self.metrics.record("provider.success", provider=provider)
+                        self.metrics.record(
+                            "provider.success", provider=provider
+                        )
                     return results
             except Exception as e:  # pragma: no cover - metric emission
                 if self.metrics:
@@ -207,7 +211,9 @@ class PerplexicaSearchTool:
         if not results:
             return {
                 "summary": "No relevant results found.",
-                "reasoning": ("The search query did not return any matching results."),
+                "reasoning": (
+                    "The search query did not return any matching results."
+                ),
                 "confidence": 0.0,
                 "followup_questions": [
                     (
@@ -219,16 +225,12 @@ class PerplexicaSearchTool:
                 ],
             }
 
-        summary = (
-            f"Based on {len(results)} sources, here's what I found about '{query}':\n\n"
-        )
+        summary = f"Based on {len(results)} sources, here's what I found about '{query}':\n\n"
         summary += "• Key finding from search [1]\n"
         summary += "• Supporting evidence [2,3]\n"
         summary += "• Additional context [4]\n"
 
-        reasoning = (
-            "The search results show consistent information across multiple sources."
-        )
+        reasoning = "The search results show consistent information across multiple sources."
         confidence = min(0.95, 0.6 + (len(results) * 0.05))
 
         followups = [
@@ -306,7 +308,9 @@ class PerplexicaSearchTool:
                 results = await self._rerank_results(results, query)
                 if self.events:
                     self.events.emit(
-                        "search.rerank.done", kept=len(results), model="bge-large"
+                        "search.rerank.done",
+                        kept=len(results),
+                        model="bge-large",
                     )
 
             max_results = req.get("max_results", self.config.max_results)
@@ -325,7 +329,10 @@ class PerplexicaSearchTool:
             }
 
             if self.config.cache_enabled:
-                self.cache[cache_key] = {"timestamp": time.time(), "data": response}
+                self.cache[cache_key] = {
+                    "timestamp": time.time(),
+                    "data": response,
+                }
 
             if self.events:
                 self.events.emit(

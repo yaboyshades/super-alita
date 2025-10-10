@@ -24,7 +24,9 @@ class CalculusAnalyzer:
         self.fitting_quality_score: float = 0.0
         self.noise_handling_applied: bool = False
 
-    def fit_curve(self, input_sizes: list[int], runtime_data: list[float]) -> None:
+    def fit_curve(
+        self, input_sizes: list[int], runtime_data: list[float]
+    ) -> None:
         """
         Fit a smooth curve to runtime data.
 
@@ -33,7 +35,9 @@ class CalculusAnalyzer:
             runtime_data: Runtime measurements (y-axis)
         """
         if len(input_sizes) != len(runtime_data):
-            raise ValueError("input_sizes and runtime_data must have same length")
+            raise ValueError(
+                "input_sizes and runtime_data must have same length"
+            )
         if len(input_sizes) < 3:
             raise ValueError("Need at least 3 data points for curve fitting")
 
@@ -80,7 +84,9 @@ class CalculusAnalyzer:
         y = np.array(self.runtime_data, dtype=float)
 
         # Apply Savitzky-Golay filter for smoothing
-        window_length = min(len(y), 5) if len(y) % 2 == 1 else min(len(y) - 1, 5)
+        window_length = (
+            min(len(y), 5) if len(y) % 2 == 1 else min(len(y) - 1, 5)
+        )
         if window_length < 3:
             window_length = 3
 
@@ -224,7 +230,9 @@ class CalculusAnalyzer:
         intervals = []
         for i in range(n_points):
             values_at_i = [
-                derivs[i] for derivs in bootstrap_derivatives if i < len(derivs)
+                derivs[i]
+                for derivs in bootstrap_derivatives
+                if i < len(derivs)
             ]
             if values_at_i:
                 lower = np.percentile(values_at_i, lower_percentile)
@@ -255,7 +263,9 @@ class CalculusAnalyzer:
             total_pairs += 1
 
         # Consider monotonic if 80% of pairs are non-decreasing
-        return increasing_count / total_pairs >= 0.8 if total_pairs > 0 else True
+        return (
+            increasing_count / total_pairs >= 0.8 if total_pairs > 0 else True
+        )
 
     def detect_convexity(self) -> bool:
         """
@@ -496,7 +506,9 @@ class CalculusAnalyzer:
             data = np.array(self.runtime_data)
             data_normalized = (data - np.mean(data)) / np.std(data)
 
-            autocorr = np.correlate(data_normalized, data_normalized, mode="full")
+            autocorr = np.correlate(
+                data_normalized, data_normalized, mode="full"
+            )
             autocorr = autocorr[autocorr.size // 2 :]
 
             # Look for peaks in autocorrelation

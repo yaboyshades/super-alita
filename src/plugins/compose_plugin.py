@@ -114,7 +114,9 @@ class ComposePlugin(PluginInterface):
                     or "gemini-1.5-flash"
                 )
                 self._model = genai.GenerativeModel(model_name=model_name)
-                logger.info("ComposePlugin: Gemini client ready (%s)", model_name)
+                logger.info(
+                    "ComposePlugin: Gemini client ready (%s)", model_name
+                )
             else:
                 self._model = None
                 logger.info(
@@ -197,7 +199,9 @@ class ComposePlugin(PluginInterface):
                     ]
                 )
 
-                response = f"🧠 **Current Atoms** ({len(atoms)} total):\n{atom_list}"
+                response = (
+                    f"🧠 **Current Atoms** ({len(atoms)} total):\n{atom_list}"
+                )
                 if len(atoms) > 10:
                     response += f"\n... and {len(atoms) - 10} more"
 
@@ -243,7 +247,9 @@ class ComposePlugin(PluginInterface):
 
                 await self.event_bus._redis.publish(
                     "agent_reply",
-                    json.dumps({"text": f"✅ Created atom: {tool} with code: {code}"}),
+                    json.dumps(
+                        {"text": f"✅ Created atom: {tool} with code: {code}"}
+                    ),
                 )
             else:
                 await self.event_bus._redis.publish(
@@ -281,7 +287,9 @@ class ComposePlugin(PluginInterface):
             if self._model:
                 composed_code = await self._llm_compose(goal, relevant_atoms)
             else:
-                composed_code = await self._fallback_compose(goal, relevant_atoms)
+                composed_code = await self._fallback_compose(
+                    goal, relevant_atoms
+                )
 
             if not composed_code:
                 logger.warning("Failed to generate composed code")
@@ -299,7 +307,9 @@ class ComposePlugin(PluginInterface):
 
             self.composed_atoms.append(combo_atom)
 
-            logger.info(f"✅ ComposePlugin — stitched atoms → new atom id={combo_id}")
+            logger.info(
+                f"✅ ComposePlugin — stitched atoms → new atom id={combo_id}"
+            )
 
             # 4. Execute the composed tool
             await self._execute_composed_tool(combo_atom, params)
@@ -312,7 +322,9 @@ class ComposePlugin(PluginInterface):
     async def _find_relevant_atoms(self, goal: str) -> list[dict[str, Any]]:
         """Find atoms relevant to the goal using embedding similarity"""
         try:
-            if hasattr(self.store, "embed_text") and hasattr(self.store, "attention"):
+            if hasattr(self.store, "embed_text") and hasattr(
+                self.store, "attention"
+            ):
                 # Generate embedding for the goal
                 goal_embeddings = await self.store.embed_text([goal])
                 if not goal_embeddings:
@@ -340,7 +352,9 @@ class ComposePlugin(PluginInterface):
                             continue
 
                 return atoms
-            logger.warning("Embedding/attention not available - returning all atoms")
+            logger.warning(
+                "Embedding/attention not available - returning all atoms"
+            )
             return await self._list_atoms()
 
         except Exception as e:
@@ -375,7 +389,9 @@ class ComposePlugin(PluginInterface):
             logger.error(f"Error listing atoms: {e}")
             return []
 
-    async def _llm_compose(self, goal: str, atoms: list[dict[str, Any]]) -> str:
+    async def _llm_compose(
+        self, goal: str, atoms: list[dict[str, Any]]
+    ) -> str:
         """Use LLM to compose atoms into unified code"""
         try:
             atom_descriptions = []
@@ -414,7 +430,9 @@ Do not include explanations or markdown formatting."""
             logger.error(f"LLM composition failed: {e}")
             return ""
 
-    async def _fallback_compose(self, goal: str, atoms: list[dict[str, Any]]) -> str:
+    async def _fallback_compose(
+        self, goal: str, atoms: list[dict[str, Any]]
+    ) -> str:
         """Fallback composition when LLM is unavailable"""
         # Simple concatenation of atom codes
         code_parts = []
@@ -424,7 +442,11 @@ Do not include explanations or markdown formatting."""
                 code_parts.append(f"# {atom.get('tool', 'unknown')}")
                 code_parts.append(atom_code)
 
-        return "\n".join(code_parts) if code_parts else 'print("No atoms to compose")'
+        return (
+            "\n".join(code_parts)
+            if code_parts
+            else 'print("No atoms to compose")'
+        )
 
     async def _execute_composed_tool(
         self, atom: DynamicAtom, params: dict[str, Any]
@@ -450,11 +472,15 @@ Do not include explanations or markdown formatting."""
             try:
                 # Sandbox execution to avoid eval/exec risks
                 result = (
-                    evaluate_expression(atom.code) if atom.code else "No code to execute"
+                    evaluate_expression(atom.code)
+                    if atom.code
+                    else "No code to execute"
                 )
                 logger.info(f"🔧 Tool executed → result: {str(result)[:100]}")
             except Exception as e:
-                logger.info(f"🔧 Tool execution attempted → error: {str(e)[:100]}")
+                logger.info(
+                    f"🔧 Tool execution attempted → error: {str(e)[:100]}"
+                )
 
         except Exception as e:
             logger.error(f"Error executing composed tool: {e}")
@@ -472,14 +498,19 @@ Do not include explanations or markdown formatting."""
                 # Fallback: create neural atom directly
                 import json
 
-                from src.core.neural_atom import NeuralAtomMetadata, TextualMemoryAtom
+                from src.core.neural_atom import (
+                    NeuralAtomMetadata,
+                    TextualMemoryAtom,
+                )
 
                 metadata = NeuralAtomMetadata(
                     name=memory_id,
                     description=atom.description,
                     capabilities=[atom.tool],
                 )
-                neural_atom = TextualMemoryAtom(metadata, json.dumps(atom.model_dump()))
+                neural_atom = TextualMemoryAtom(
+                    metadata, json.dumps(atom.model_dump())
+                )
 
                 self.store.register(neural_atom)
                 logger.info(
@@ -500,6 +531,8 @@ Do not include explanations or markdown formatting."""
         """Get composition statistics"""
         return {
             "atoms_composed": len(self.composed_atoms),
-            "recent_compositions": [atom.tool for atom in self.composed_atoms[-5:]],
+            "recent_compositions": [
+                atom.tool for atom in self.composed_atoms[-5:]
+            ],
             "llm_available": bool(self.llm_client),
         }

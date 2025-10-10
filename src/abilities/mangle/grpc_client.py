@@ -54,14 +54,19 @@ class MangleGrpcClient:
         self.connect()
         assert self._stub is not None
         try:
-            resp = self._stub.GetHealth(pb2.google_dot_protobuf_dot_empty__pb2.Empty(), timeout=self.timeout)
+            resp = self._stub.GetHealth(
+                pb2.google_dot_protobuf_dot_empty__pb2.Empty(),
+                timeout=self.timeout,
+            )
             status = getattr(resp, "status", 0)
             message = getattr(resp, "message", "")
-            ok = bool(status == pb2.HealthResponse.HEALTHY or status == pb2.HealthResponse.DEGRADED)
+            ok = bool(
+                status == pb2.HealthResponse.HEALTHY
+                or status == pb2.HealthResponse.DEGRADED
+            )
             return GrpcHealthStatus(ok=ok, status=str(status), message=message)
         except Exception as e:  # pragma: no cover
             return GrpcHealthStatus(ok=False, status="error", message=str(e))
 
     # Placeholder for future remote query API.
     # def mangle_query(self, program: str) -> dict: ...
-

@@ -7,7 +7,10 @@ import asyncio
 
 import pytest
 
-from src.orchestration.unified_orchestrator import UnifiedOrchestrator, UnifiedRunConfig
+from src.orchestration.unified_orchestrator import (
+    UnifiedOrchestrator,
+    UnifiedRunConfig,
+)
 
 
 class MockAbilityRegistry:
@@ -34,9 +37,21 @@ class MockAbilityRegistry:
         if ability_name == "task_planner":
             return {
                 "steps": [
-                    {"id": 1, "action": "Setup project", "rationale": "foundation"},
-                    {"id": 2, "action": "Implement core", "rationale": "main logic"},
-                    {"id": 3, "action": "Add tests", "rationale": "validation"},
+                    {
+                        "id": 1,
+                        "action": "Setup project",
+                        "rationale": "foundation",
+                    },
+                    {
+                        "id": 2,
+                        "action": "Implement core",
+                        "rationale": "main logic",
+                    },
+                    {
+                        "id": 3,
+                        "action": "Add tests",
+                        "rationale": "validation",
+                    },
                 ],
                 "source": "mock_planner",
             }
@@ -198,11 +213,17 @@ async def test_sdd_workflow_integration(orchestrator, mock_event_bus):
     spec_validation = [
         e for e in events if e.get("stage") == "specification_validation"
     ]
-    plan_validation = [e for e in events if e.get("stage") == "planning_validation"]
-    tasks_validation = [e for e in events if e.get("stage") == "tasks_validation"]
+    plan_validation = [
+        e for e in events if e.get("stage") == "planning_validation"
+    ]
+    tasks_validation = [
+        e for e in events if e.get("stage") == "tasks_validation"
+    ]
 
     # At least one validation stage should be present
-    assert len(spec_validation) + len(plan_validation) + len(tasks_validation) > 0
+    assert (
+        len(spec_validation) + len(plan_validation) + len(tasks_validation) > 0
+    )
 
 
 @pytest.mark.asyncio
@@ -222,8 +243,10 @@ async def test_constitutional_validation_flow(orchestrator, mock_registry):
         events.append(event)
 
     # Check that validation stages executed
-    validation_events = [
-        e for e in events if e.get("stage") and "validation" in e.get("stage", "")
+    [
+        e
+        for e in events
+        if e.get("stage") and "validation" in e.get("stage", "")
     ]
 
     # Should have at least specification validation
@@ -258,7 +281,8 @@ async def test_orchestrator_error_handling(orchestrator, mock_registry):
     planning_events = [
         e
         for e in events
-        if e.get("stage") == "planning" and e["type"] == "UnifiedStageSucceeded"
+        if e.get("stage") == "planning"
+        and e["type"] == "UnifiedStageSucceeded"
     ]
     if planning_events:
         # Fallback should provide basic structure
@@ -311,7 +335,7 @@ async def test_orchestrator_timeout_handling(orchestrator, mock_registry):
         events.append(event)
 
     # Should have failure events due to timeout
-    failed_events = [e for e in events if e["type"] == "UnifiedStageFailed"]
+    [e for e in events if e["type"] == "UnifiedStageFailed"]
     # Note: Timeout behavior depends on Python version and implementation
     # This test checks that the orchestrator handles timeouts gracefully
 
@@ -357,6 +381,7 @@ if __name__ == "__main__":
     # Run tests directly
     asyncio.run(
         test_basic_orchestrator_run(
-            UnifiedOrchestrator(MockAbilityRegistry(), MockEventBus()), MockEventBus()
+            UnifiedOrchestrator(MockAbilityRegistry(), MockEventBus()),
+            MockEventBus(),
         )
     )

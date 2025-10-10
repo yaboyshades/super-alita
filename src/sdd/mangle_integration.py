@@ -84,11 +84,14 @@ class MangleFactGenerator:
         logger.info(f"Generated {len(self._generated_facts)} unique facts")
         return result
 
-
     def generate_facts(self) -> list[str]:
         """Return unique fact strings for compatibility with MangleBridge."""
         all_facts = self.generate_all_facts()
-        return [line for line in all_facts.splitlines() if line and not line.startswith('//')]
+        return [
+            line
+            for line in all_facts.splitlines()
+            if line and not line.startswith("//")
+        ]
 
     def generate_spec_facts(self) -> str:
         """
@@ -125,7 +128,9 @@ class MangleFactGenerator:
                     )
 
                     # Extract acceptance criteria
-                    ac_facts = self._extract_acceptance_criteria(content, feature_id)
+                    ac_facts = self._extract_acceptance_criteria(
+                        content, feature_id
+                    )
                     facts.extend(ac_facts)
 
                     # Extract requirements
@@ -159,7 +164,9 @@ class MangleFactGenerator:
 
         for file_path in self.src_dir.rglob("*.py"):
             relative_path = file_path.relative_to(self.workspace_root)
-            facts.extend(self._parse_python_file(file_path, str(relative_path)))
+            facts.extend(
+                self._parse_python_file(file_path, str(relative_path))
+            )
 
         return "\n".join(facts)
 
@@ -239,12 +246,21 @@ class MangleFactGenerator:
             for line in content.split("\n"):
                 line = line.strip()
                 if line and not line.startswith("#"):
-                    package = line.split("==")[0].split(">=")[0].split("<=")[0].strip()
-                    facts.append(self._add_fact(f'external_dependency("{package}")'))
+                    package = (
+                        line.split("==")[0]
+                        .split(">=")[0]
+                        .split("<=")[0]
+                        .strip()
+                    )
+                    facts.append(
+                        self._add_fact(f'external_dependency("{package}")')
+                    )
 
         return "\n".join(facts)
 
-    def _parse_python_file(self, file_path: Path, relative_path: str) -> list[str]:
+    def _parse_python_file(
+        self, file_path: Path, relative_path: str
+    ) -> list[str]:
         """
         Parse a Python file and extract structural facts.
 
@@ -263,9 +279,13 @@ class MangleFactGenerator:
 
             # Add module fact
             module_name = (
-                relative_path.replace("/", ".").replace("\\", ".").replace(".py", "")
+                relative_path.replace("/", ".")
+                .replace("\\", ".")
+                .replace(".py", "")
             )
-            facts.append(self._add_fact(f'module("{module_name}", "{relative_path}")'))
+            facts.append(
+                self._add_fact(f'module("{module_name}", "{relative_path}")')
+            )
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef):
@@ -343,7 +363,9 @@ class MangleFactGenerator:
 
         return facts
 
-    def _parse_test_file(self, file_path: Path, relative_path: str) -> list[str]:
+    def _parse_test_file(
+        self, file_path: Path, relative_path: str
+    ) -> list[str]:
         """
         Parse a test file and extract test-related facts.
 
@@ -361,14 +383,20 @@ class MangleFactGenerator:
             tree = ast.parse(content)
 
             module_name = (
-                relative_path.replace("/", ".").replace("\\", ".").replace(".py", "")
+                relative_path.replace("/", ".")
+                .replace("\\", ".")
+                .replace(".py", "")
             )
             facts.append(
-                self._add_fact(f'test_module("{module_name}", "{relative_path}")')
+                self._add_fact(
+                    f'test_module("{module_name}", "{relative_path}")'
+                )
             )
 
             for node in ast.walk(tree):
-                if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
+                if isinstance(node, ast.FunctionDef) and node.name.startswith(
+                    "test_"
+                ):
                     test_name = node.name
                     facts.append(
                         self._add_fact(
@@ -379,7 +407,9 @@ class MangleFactGenerator:
                     # Try to infer what function this test covers
                     # Simple heuristic: remove "test_" prefix
                     if test_name.startswith("test_"):
-                        tested_function = test_name[5:]  # Remove "test_" prefix
+                        tested_function = test_name[
+                            5:
+                        ]  # Remove "test_" prefix
                         facts.append(
                             self._add_fact(
                                 f'test_for("{test_name}", "{tested_function}")'
@@ -443,7 +473,9 @@ class MangleFactGenerator:
 
         return "Untitled Specification"
 
-    def _extract_acceptance_criteria(self, content: str, feature_id: str) -> list[str]:
+    def _extract_acceptance_criteria(
+        self, content: str, feature_id: str
+    ) -> list[str]:
         """Extract acceptance criteria from specification content."""
         facts = []
 
@@ -465,7 +497,9 @@ class MangleFactGenerator:
 
         return facts
 
-    def _extract_requirements(self, content: str, feature_id: str) -> list[str]:
+    def _extract_requirements(
+        self, content: str, feature_id: str
+    ) -> list[str]:
         """Extract requirements from specification content."""
         facts = []
 
@@ -486,7 +520,9 @@ class MangleFactGenerator:
 
         return facts
 
-    def _extract_feature_tags(self, content: str, feature_id: str) -> list[str]:
+    def _extract_feature_tags(
+        self, content: str, feature_id: str
+    ) -> list[str]:
         """Extract feature tags/categories from specification content."""
         facts = []
 
@@ -501,14 +537,20 @@ class MangleFactGenerator:
             matches = re.findall(pattern, content, re.DOTALL)
             for match in matches:
                 if "," in match:
-                    tags = [tag.strip().strip("\"'") for tag in match.split(",")]
+                    tags = [
+                        tag.strip().strip("\"'") for tag in match.split(",")
+                    ]
                 else:
-                    tags = [tag.strip() for tag in match.split("\n") if tag.strip()]
+                    tags = [
+                        tag.strip() for tag in match.split("\n") if tag.strip()
+                    ]
 
                 for tag in tags:
                     if tag:
                         facts.append(
-                            self._add_fact(f'feature_tag("{feature_id}", "{tag}")')
+                            self._add_fact(
+                                f'feature_tag("{feature_id}", "{tag}")'
+                            )
                         )
 
         return facts

@@ -16,9 +16,7 @@ class DummyRegistry:
     async def execute(self, name: str, args):  # pragma: no cover - simple
         if name == "task_planner":
             return {
-                "steps": [
-                    {"id": 1, "action": "Do X", "rationale": "demo"}
-                ]
+                "steps": [{"id": 1, "action": "Do X", "rationale": "demo"}]
             }
         if name == "deepconf_consensus":
             return {"consensus_text": args.get("prompt") + " (consensus)"}

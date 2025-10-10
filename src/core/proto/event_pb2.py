@@ -35,4 +35,6 @@ class BaseEvent:
         self.data = parsed.get("data", "")
 
     def __str__(self):
-        return f"BaseEvent(type={self.event_type}, source={self.source_plugin})"
+        return (
+            f"BaseEvent(type={self.event_type}, source={self.source_plugin})"
+        )

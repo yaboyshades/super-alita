@@ -14,7 +14,9 @@ from typing import Any
 import aiohttp
 from dotenv import load_dotenv
 
-from src.core.plugin_interface import PluginInterface  # Use existing base for now
+from src.core.plugin_interface import (
+    PluginInterface,
+)  # Use existing base for now
 
 load_dotenv()
 
@@ -88,7 +90,9 @@ class WebAgentAtom(PluginInterface):
 
     def __init__(self):
         super().__init__()
-        self.searxng_url = os.getenv("SEARXNG_BASE_URL", "http://localhost:4000")
+        self.searxng_url = os.getenv(
+            "SEARXNG_BASE_URL", "http://localhost:4000"
+        )
         self.gh_token = os.getenv("GITHUB_TOKEN")
         self._handled: set[str] = set()  # Deduplication cache for tool calls
 
@@ -106,7 +110,9 @@ class WebAgentAtom(PluginInterface):
         ):
             # This is a workspace (unified architecture)
             self.workspace = event_bus_or_workspace
-            await super().setup(None, store, config)  # No event_bus in unified arch
+            await super().setup(
+                None, store, config
+            )  # No event_bus in unified arch
         else:
             # This is an event_bus (legacy architecture)
             await super().setup(event_bus_or_workspace, store, config)
@@ -129,7 +135,11 @@ class WebAgentAtom(PluginInterface):
         logger.info("WebAgentAtom shutdown complete")
 
     async def call(
-        self, query: str, web_k: int = 5, github_k: int = 5, auto_wrap: bool = False
+        self,
+        query: str,
+        web_k: int = 5,
+        github_k: int = 5,
+        auto_wrap: bool = False,
     ) -> dict[str, Any]:
         """Main search method - can be called directly or via events."""
         logger.info(
@@ -177,7 +187,11 @@ class WebAgentAtom(PluginInterface):
 
         # Automatic persistence layer for neural recall
         try:
-            if hasattr(self, "store") and self.store and hasattr(self.store, "upsert"):
+            if (
+                hasattr(self, "store")
+                and self.store
+                and hasattr(self.store, "upsert")
+            ):
                 await self.store.upsert(
                     content={
                         "type": "search_memory",
@@ -204,7 +218,11 @@ class WebAgentAtom(PluginInterface):
             if hasattr(event, "data") and isinstance(event.data, dict):
                 data = event.data
             else:
-                data = event.model_dump() if hasattr(event, "model_dump") else event
+                data = (
+                    event.model_dump()
+                    if hasattr(event, "model_dump")
+                    else event
+                )
 
             # Defensive parameter extraction: handle both "query" and "input" (legacy)
             query = data.get("query") or data.get("input") or ""
@@ -263,9 +281,13 @@ class WebAgentAtom(PluginInterface):
     async def _on_tool_call(self, event):
         """Handle tool calls from planner."""
         # Robust call_id extraction to prevent KeyError
-        call_id = getattr(getattr(event, "tool_call", None), "id", None) or str(event)
+        call_id = getattr(
+            getattr(event, "tool_call", None), "id", None
+        ) or str(event)
         if call_id in self._handled:  # Check for duplicate
-            logger.debug("Duplicate tool_call %s ignored", call_id)  # Log duplicate
+            logger.debug(
+                "Duplicate tool_call %s ignored", call_id
+            )  # Log duplicate
             return  # Exit if duplicate
         self._handled.add(call_id)  # Add to handled set
 
@@ -274,7 +296,11 @@ class WebAgentAtom(PluginInterface):
             if hasattr(event, "data") and isinstance(event.data, dict):
                 data = event.data
             else:
-                data = event.model_dump() if hasattr(event, "model_dump") else event
+                data = (
+                    event.model_dump()
+                    if hasattr(event, "model_dump")
+                    else event
+                )
 
             # Defensive parameter extraction: handle both "query" and "input" (legacy)
             query = data.get("query") or data.get("input") or ""
@@ -337,12 +363,21 @@ class WebAgentAtom(PluginInterface):
         logger.info(f"🔍 Starting SearXNG search for: '{q}' (limit: {k})")
         try:
             async with aiohttp.ClientSession() as sess:
-                params = {"q": q, "format": "json", "engines": "google", "pageno": "1"}
+                params = {
+                    "q": q,
+                    "format": "json",
+                    "engines": "google",
+                    "pageno": "1",
+                }
                 search_url = f"{self.searxng_url}/search"
-                logger.info(f"🌐 Calling SearXNG: {search_url} with params: {params}")
+                logger.info(
+                    f"🌐 Calling SearXNG: {search_url} with params: {params}"
+                )
 
                 async with sess.get(
-                    search_url, params=params, timeout=aiohttp.ClientTimeout(total=8)
+                    search_url,
+                    params=params,
+                    timeout=aiohttp.ClientTimeout(total=8),
                 ) as r:
                     logger.info(f"📡 SearXNG response status: {r.status}")
                     data = await r.json()
@@ -369,7 +404,9 @@ class WebAgentAtom(PluginInterface):
 
         except Exception as e:
             logger.error(f"❌ SearXNG search failed: {e}")
-            logger.warning(f"SearXNG search failed ({e}), falling back to GitHub-only")
+            logger.warning(
+                f"SearXNG search failed ({e}), falling back to GitHub-only"
+            )
             return []
 
     async def _github(
@@ -379,7 +416,9 @@ class WebAgentAtom(PluginInterface):
         logger.info(f"🐙 Starting GitHub search for: '{q}' (limit: {k})")
 
         if not self.gh_token or self.gh_token == "your_github_token_here":
-            logger.info("ℹ️ GitHub search skipped: No valid GITHUB_TOKEN configured")
+            logger.info(
+                "ℹ️ GitHub search skipped: No valid GITHUB_TOKEN configured"
+            )
             return []
 
         headers = {
@@ -439,7 +478,8 @@ class WebAgentAtom(PluginInterface):
             new_atom = {
                 "key": f"github_{hit['full_name'].replace('/', '_')}",
                 "name": f"GitHub:{hit['full_name']}",
-                "description": hit["description"] or "Auto-wrapped GitHub repo",
+                "description": hit["description"]
+                or "Auto-wrapped GitHub repo",
                 "source_url": hit["url"],
                 "language": hit["language"],
                 "stars": hit["stars"],

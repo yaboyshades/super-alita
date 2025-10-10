@@ -22,8 +22,12 @@ class GitHubCliInput(BaseModel):
     repository: str | None = Field(
         default=None, description="Target repository (owner/repo)"
     )
-    timeout: float = Field(default=30.0, description="Command timeout in seconds")
-    capture_output: bool = Field(default=True, description="Capture command output")
+    timeout: float = Field(
+        default=30.0, description="Command timeout in seconds"
+    )
+    capture_output: bool = Field(
+        default=True, description="Capture command output"
+    )
 
 
 class GitHubCliOutput(BaseModel):
@@ -32,10 +36,14 @@ class GitHubCliOutput(BaseModel):
     success: bool = Field(..., description="Whether command succeeded")
     command: str = Field(..., description="Executed command")
     output: str = Field(default="", description="Command output")
-    error: str | None = Field(default=None, description="Error message if failed")
+    error: str | None = Field(
+        default=None, description="Error message if failed"
+    )
     dry_run: bool = Field(..., description="Whether executed in dry-run mode")
     execution_time: float = Field(..., description="Execution time in seconds")
-    exit_code: int | None = Field(default=None, description="Command exit code")
+    exit_code: int | None = Field(
+        default=None, description="Command exit code"
+    )
     github_event: GitHubEventSchema | None = Field(
         default=None, description="Generated GitHub event if applicable"
     )
@@ -92,10 +100,16 @@ class GitHubCliTool:
                 )
 
             # Execute command
-            if input_data.dry_run or self._requires_dry_run(input_data.command):
-                result = await self._execute_dry_run(validated_command, input_data)
+            if input_data.dry_run or self._requires_dry_run(
+                input_data.command
+            ):
+                result = await self._execute_dry_run(
+                    validated_command, input_data
+                )
             else:
-                result = await self._execute_command(validated_command, input_data)
+                result = await self._execute_command(
+                    validated_command, input_data
+                )
 
             # Generate GitHub event if applicable
             github_event = self._generate_github_event(input_data, result)
@@ -134,13 +148,16 @@ class GitHubCliTool:
     def _requires_dry_run(self, command: str) -> bool:
         """Check if command requires dry-run mode."""
         # Commands that modify state should use dry-run
-        modifying_actions = ["create", "merge", "close", "delete", "update", "run"]
+        modifying_actions = [
+            "create",
+            "merge",
+            "close",
+            "delete",
+            "update",
+            "run",
+        ]
 
-        for action in modifying_actions:
-            if action in command:
-                return True
-
-        return False
+        return any(action in command for action in modifying_actions)
 
     async def _execute_dry_run(
         self, command: str, input_data: GitHubCliInput

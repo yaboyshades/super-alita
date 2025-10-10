@@ -33,7 +33,9 @@ def test_engine_basic_analysis(tmp_path: Path):
     categories = {f["category"] for f in report["findings"]}
     assert "ambiguity" in categories
     # GWT scenarios missing
-    assert any(f["category"] == "acceptance_criteria" for f in report["findings"])
+    assert any(
+        f["category"] == "acceptance_criteria" for f in report["findings"]
+    )
 
 
 def test_engine_report_yaml(tmp_path: Path):
@@ -48,10 +50,13 @@ def test_engine_report_yaml(tmp_path: Path):
     assert "findings:" in yaml_text
 
 
-@pytest.mark.parametrize("content, expect_edge", [
-    ("Input is validated.", False),
-    ("We handle input but no maximum size is specified.", True),
-])
+@pytest.mark.parametrize(
+    "content, expect_edge",
+    [
+        ("Input is validated.", False),
+        ("We handle input but no maximum size is specified.", True),
+    ],
+)
 def test_edge_hints(content: str, expect_edge: bool):
     from tools.socratic_testing_engine import SocraticTestingEngine
 
@@ -59,4 +64,3 @@ def test_edge_hints(content: str, expect_edge: bool):
     report = engine.challenge_spec("# Spec\n\n" + content)
     has_edge = any(f["category"] == "edge_case" for f in report["findings"])
     assert has_edge is expect_edge
-

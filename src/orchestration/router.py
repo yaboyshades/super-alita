@@ -22,9 +22,7 @@ class ActionRoute:
 
     def __repr__(self):
         if self.action_type == "GAP":
-            return (
-                f"ActionRoute(GAP -> {self.params.get('description', 'Unknown gap')})"
-            )
+            return f"ActionRoute(GAP -> {self.params.get('description', 'Unknown gap')})"
         if self.action_type == "NONE":
             return f"ActionRoute(NONE -> {self.params.get('response', 'No action')})"
         return f"ActionRoute(TOOL -> {self.target})"
@@ -37,8 +35,12 @@ class Router:
         # Patterns to parse planner output
         self.gap_pattern = re.compile(r"GAP\s+(.+)", re.IGNORECASE)
         self.none_pattern = re.compile(r"NONE\s+(.+)", re.IGNORECASE)
-        self.tool_pattern = re.compile(r"TOOL\s+(\w+)(?:\s+(.+))?", re.IGNORECASE)
-        self.sot_executed_pattern = re.compile(r"SOT_EXECUTED\s+(.+)", re.IGNORECASE)
+        self.tool_pattern = re.compile(
+            r"TOOL\s+(\w+)(?:\s+(.+))?", re.IGNORECASE
+        )
+        self.sot_executed_pattern = re.compile(
+            r"SOT_EXECUTED\s+(.+)", re.IGNORECASE
+        )
 
         # Pattern for "show me you created it" requests
         self.show_created_pattern = re.compile(
@@ -82,7 +84,9 @@ class Router:
             if tool_params_str:
                 # Basic parameter parsing - can be enhanced later
                 params = {"params_str": tool_params_str.strip()}
-            logger.info(f"Parsed TOOL action: {tool_name} with params {params}")
+            logger.info(
+                f"Parsed TOOL action: {tool_name} with params {params}"
+            )
             return ActionRoute("TOOL", target=tool_name, params=params)
 
         # Fallback - treat as NONE
@@ -91,7 +95,9 @@ class Router:
         )
         return ActionRoute("NONE", params={"response": planner_output})
 
-    def route_user_message(self, user_message: str, planner_output: str) -> ActionRoute:
+    def route_user_message(
+        self, user_message: str, planner_output: str
+    ) -> ActionRoute:
         """Main routing function: user message + planner output -> ActionRoute."""
         logger.info(f"Routing user message: {user_message}")
 
@@ -104,9 +110,13 @@ class Router:
             tool_match = tool_name_pattern.search(user_message)
             tool_name = tool_match.group(1) if tool_match else "unknown"
 
-            logger.info(f"Detected 'show created tool' request for: {tool_name}")
+            logger.info(
+                f"Detected 'show created tool' request for: {tool_name}"
+            )
             return ActionRoute(
-                "SHOW_CREATED", target=tool_name, params={"user_message": user_message}
+                "SHOW_CREATED",
+                target=tool_name,
+                params={"user_message": user_message},
             )
 
         # Parse the planner output

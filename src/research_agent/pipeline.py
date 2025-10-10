@@ -1,4 +1,5 @@
 """Pipeline orchestrating Searx searches and schema validation."""
+
 from __future__ import annotations
 
 import json
@@ -11,7 +12,11 @@ from jsonschema import Draft7Validator
 from .metrics import Timer, log_event
 from .searx_client import SearxClient
 
-SCHEMA_PATH = Path(__file__).resolve().parent / "contracts" / "research_query.schema.json"
+SCHEMA_PATH = (
+    Path(__file__).resolve().parent
+    / "contracts"
+    / "research_query.schema.json"
+)
 
 
 def _load_schema() -> Draft7Validator:
@@ -33,7 +38,14 @@ class ResearchResult:
         return {"query": self.query, "items": self.items, "stats": self.stats}
 
     def to_markdown(self) -> str:
-        lines = ["# Research Findings", "", f"**Query:** {self.query}", "", "| # | Title | URL |", "|---|-------|-----|"]
+        lines = [
+            "# Research Findings",
+            "",
+            f"**Query:** {self.query}",
+            "",
+            "| # | Title | URL |",
+            "|---|-------|-----|",
+        ]
         for idx, item in enumerate(self.items, start=1):
             title = item.get("title", "").replace("|", r"\|")
             url = item.get("url", "")

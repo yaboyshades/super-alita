@@ -9,7 +9,10 @@ with Super Alita's ability registry and provides tool contracts.
 import logging
 from typing import Any
 
-from src.abilities.mangle.mangle_ability import MangleAbility, ManglePluginInterface
+from src.abilities.mangle.mangle_ability import (
+    MangleAbility,
+    ManglePluginInterface,
+)
 from src.core.plugin_registry import register_plugin
 from src.reug_runtime.mcp_abstractor import abstract_mcp_box
 
@@ -40,7 +43,8 @@ def register_mangle_abilities(ability_registry, config=None):
             contract={
                 "tool_id": "mangle_query",
                 "description": (
-                    "Execute a Mangle deductive query against the knowledge " "base"
+                    "Execute a Mangle deductive query against the knowledge "
+                    "base"
                 ),
                 "input_schema": {
                     "type": "object",
@@ -181,7 +185,9 @@ def register_mangle_abilities(ability_registry, config=None):
 
         # mangle_explain
         async def _exec_explain(args):  # type: ignore
-            return await mangle_ability.explain_query_results(args.get("query", ""))
+            return await mangle_ability.explain_query_results(
+                args.get("query", "")
+            )
 
         ability_registry.register_tool(
             contract={
@@ -208,7 +214,9 @@ def register_mangle_abilities(ability_registry, config=None):
                         "name": name,
                         "description": body[:60],
                     }
-                    for name, body in getattr(mangle_ability, "rules", {}).items()
+                    for name, body in getattr(
+                        mangle_ability, "rules", {}
+                    ).items()
                 ],
                 "count": len(getattr(mangle_ability, "rules", {})),
                 "fallback": True,
@@ -248,7 +256,6 @@ def register_mangle_abilities(ability_registry, config=None):
             executor=_exec_run_rule,
         )
 
-
         # mangle_grpc_health
         async def _exec_grpc_health(_args):  # type: ignore
             return await mangle_ability.grpc_health()
@@ -261,7 +268,6 @@ def register_mangle_abilities(ability_registry, config=None):
             },
             executor=_exec_grpc_health,
         )
-
 
         logger.info("Mangle abilities registered successfully")
         return True
@@ -327,7 +333,8 @@ def export_mangle_rules_to_mcp_box(dir_: str = ".mcp_box") -> dict[str, int]:
         {
             "tool_id": "mangle_run_rule",
             "description": (
-                "Execute a one-off Mangle rule with a query over current " "facts"
+                "Execute a one-off Mangle rule with a query over current "
+                "facts"
             ),
             "action": "mangle_run_rule",
             "input_schema": {
@@ -380,7 +387,8 @@ def export_mangle_to_mcp_box(dir_: str = ".mcp_box") -> dict[str, int]:
         {
             "tool_id": "mangle_query",
             "description": (
-                "Execute a Mangle deductive query against the knowledge " "base"
+                "Execute a Mangle deductive query against the knowledge "
+                "base"
             ),
             "action": "mangle_query",
             "input_schema": {
@@ -473,7 +481,8 @@ def export_mangle_to_mcp_box(dir_: str = ".mcp_box") -> dict[str, int]:
         {
             "tool_id": "mangle_run_rule",
             "description": (
-                "Execute a one-off Mangle rule with a query over current " "facts"
+                "Execute a one-off Mangle rule with a query over current "
+                "facts"
             ),
             "action": "mangle_run_rule",
             "input_schema": {

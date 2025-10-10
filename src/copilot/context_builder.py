@@ -86,7 +86,9 @@ def _extract_symbols(source: str) -> list[str]:
 
     symbols: list[str] = []
     for node in tree.body:
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+        if isinstance(
+            node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
+        ):
             symbols.append(node.name)
     return symbols
 
@@ -111,7 +113,9 @@ def _compute_content_hash(
             for f in sorted(attachments, key=lambda f: f.path)
         ],
     }
-    canonical = json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
+    canonical = json.dumps(
+        data, sort_keys=True, separators=(",", ":")
+    ).encode()
     return sha256(canonical).hexdigest()
 
 
@@ -129,7 +133,9 @@ def build_copilot_context(chat: ChatContext) -> CopilotContext:
         imports[file.path] = _extract_imports(file.content)
         symbols[file.path] = _extract_symbols(file.content)
         if file.selection is not None:
-            selections[file.path] = _extract_selection(file.content, file.selection)
+            selections[file.path] = _extract_selection(
+                file.content, file.selection
+            )
 
     attachments_paths = [a.path for a in chat.attachments]
     content_hash = _compute_content_hash(chat.open_files, chat.attachments)

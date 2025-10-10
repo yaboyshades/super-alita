@@ -50,7 +50,9 @@ class MangleIntegration:
     """
 
     def __init__(
-        self, config: dict[str, Any] | None = None, workspace_root: Path | None = None
+        self,
+        config: dict[str, Any] | None = None,
+        workspace_root: Path | None = None,
     ):
         """
         Initialize Mangle integration.
@@ -113,10 +115,16 @@ class MangleIntegration:
 
         # Initialize gRPC server
         if grpc_available and SuperAlitaGrpcServer:
-            self.grpc_server = SuperAlitaGrpcServer(host=grpc_host, port=grpc_port)
-            logger.info(f"🚀 gRPC server configured on {grpc_host}:{grpc_port}")
+            self.grpc_server = SuperAlitaGrpcServer(
+                host=grpc_host, port=grpc_port
+            )
+            logger.info(
+                f"🚀 gRPC server configured on {grpc_host}:{grpc_port}"
+            )
         else:
-            logger.warning("🚀 gRPC server not available - skipping gRPC configuration")
+            logger.warning(
+                "🚀 gRPC server not available - skipping gRPC configuration"
+            )
 
     def setup_agent_components(
         self,
@@ -259,14 +267,18 @@ class MangleIntegration:
             return
 
         # Subscribe to key event types for metrics collection
-        await self.redis_event_bus.subscribe("cortex_cycle", self._handle_cortex_event)
+        await self.redis_event_bus.subscribe(
+            "cortex_cycle", self._handle_cortex_event
+        )
         await self.redis_event_bus.subscribe(
             "knowledge_operation", self._handle_knowledge_event
         )
         await self.redis_event_bus.subscribe(
             "optimization_decision", self._handle_optimization_event
         )
-        await self.redis_event_bus.subscribe("system_status", self._handle_system_event)
+        await self.redis_event_bus.subscribe(
+            "system_status", self._handle_system_event
+        )
 
         logger.info("🚀 Event bus subscriptions configured")
 
@@ -278,7 +290,9 @@ class MangleIntegration:
             )
 
             # Extract session info if available
-            session_id = getattr(event, "metadata", {}).get("session_id", "unknown")
+            session_id = getattr(event, "metadata", {}).get(
+                "session_id", "unknown"
+            )
             self.metrics_collector.inc_cortex_cycles(session_id)
 
     async def _handle_knowledge_event(self, event) -> None:
@@ -289,7 +303,9 @@ class MangleIntegration:
             )
 
             # Extract operation info if available
-            operation = getattr(event, "metadata", {}).get("operation", "unknown")
+            operation = getattr(event, "metadata", {}).get(
+                "operation", "unknown"
+            )
             self.metrics_collector.inc_knowledge_operations(operation)
 
     async def _handle_optimization_event(self, event) -> None:
@@ -370,7 +386,11 @@ class MangleIntegration:
 
     async def health_check(self) -> dict[str, Any]:
         """Perform comprehensive health check."""
-        health = {"status": "healthy", "timestamp": time.time(), "components": {}}
+        health = {
+            "status": "healthy",
+            "timestamp": time.time(),
+            "components": {},
+        }
 
         overall_healthy = True
 
@@ -437,7 +457,9 @@ class MangleIntegration:
 
 
 async def create_and_run_mangle_integration(
-    config: dict[str, Any] | None = None, workspace_root: Path | None = None, **kwargs
+    config: dict[str, Any] | None = None,
+    workspace_root: Path | None = None,
+    **kwargs,
 ) -> MangleIntegration:
     """
     Create, configure, and run a complete Mangle integration.
@@ -450,7 +472,9 @@ async def create_and_run_mangle_integration(
     Returns:
         Configured and running MangleIntegration instance
     """
-    integration = MangleIntegration(config=config, workspace_root=workspace_root)
+    integration = MangleIntegration(
+        config=config, workspace_root=workspace_root
+    )
 
     # Apply configuration
     integration.configure(**kwargs)
@@ -475,6 +499,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-

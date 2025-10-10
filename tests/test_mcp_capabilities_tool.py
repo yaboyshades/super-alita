@@ -21,7 +21,14 @@ class TestCapabilitiesCollection:
         capabilities = collect_capabilities()
 
         # Check top-level structure
-        expected_keys = ["timestamp", "version", "plugins", "events", "tools", "system"]
+        expected_keys = [
+            "timestamp",
+            "version",
+            "plugins",
+            "events",
+            "tools",
+            "system",
+        ]
         for key in expected_keys:
             assert key in capabilities
 
@@ -38,7 +45,9 @@ class TestPluginCapabilities:
 
     @patch("src.mcp_local.capabilities_tool.load_plugin_manifest")
     @patch("src.mcp_local.capabilities_tool.get_plugin_info")
-    def test_collect_plugins_with_manifest(self, mock_get_info, mock_load_manifest):
+    def test_collect_plugins_with_manifest(
+        self, mock_get_info, mock_load_manifest
+    ):
         """Test collecting plugin capabilities with manifest available."""
         # Mock manifest data
         mock_load_manifest.return_value = [
@@ -76,7 +85,9 @@ class TestPluginCapabilities:
 
     def test_collect_plugins_import_error(self):
         """Test collecting plugin capabilities with import error."""
-        with patch("src.mcp_local.capabilities_tool.load_plugin_manifest") as mock_load:
+        with patch(
+            "src.mcp_local.capabilities_tool.load_plugin_manifest"
+        ) as mock_load:
             mock_load.side_effect = ImportError("Module not found")
 
             plugins = _collect_plugin_capabilities()
@@ -133,7 +144,9 @@ class TestEventCapabilities:
         assert "deprecated_event" in event_names
 
         # Find deprecated event
-        deprecated = next(e for e in events["types"] if e["name"] == "deprecated_event")
+        deprecated = next(
+            e for e in events["types"] if e["name"] == "deprecated_event"
+        )
         assert deprecated["deprecated"] is True
         assert deprecated["successor"] == "new_event"
 
@@ -178,7 +191,12 @@ class TestSystemCapabilities:
         system = _collect_system_capabilities()
 
         # Check required fields
-        required_fields = ["python_version", "platform", "memory_usage", "uptime"]
+        required_fields = [
+            "python_version",
+            "platform",
+            "memory_usage",
+            "uptime",
+        ]
         for field_name in required_fields:
             assert field_name in system
 
@@ -211,7 +229,9 @@ class TestSystemCapabilities:
 
     def test_collect_system_without_psutil(self):
         """Test system capability collection without psutil."""
-        with patch("src.mcp_local.capabilities_tool.psutil", side_effect=ImportError):
+        with patch(
+            "src.mcp_local.capabilities_tool.psutil", side_effect=ImportError
+        ):
             system = _collect_system_capabilities()
 
             assert system["memory_usage"] is None
@@ -267,7 +287,9 @@ class TestUtilityFunctions:
 
     def test_check_optional_dependencies(self):
         """Test optional dependencies checking."""
-        from src.mcp_local.capabilities_tool import _check_optional_dependencies
+        from src.mcp_local.capabilities_tool import (
+            _check_optional_dependencies,
+        )
 
         deps = _check_optional_dependencies()
         assert isinstance(deps, dict)

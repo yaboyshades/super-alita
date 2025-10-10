@@ -24,7 +24,9 @@ async def test_redis_event_bus_publishes():
     import redis
 
     try:
-        client = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
+        client = redis.Redis(
+            host="127.0.0.1", port=6379, decode_responses=True
+        )
         client.ping()
     except Exception:
         pytest.skip("Redis server not available")

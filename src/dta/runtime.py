@@ -26,7 +26,10 @@ class AsyncDTARuntime:
         # Initialize monitoring if enabled
         if self.config.monitoring.enabled:
             self.monitoring = create_monitoring(
-                {"enabled": True, "log_level": self.config.monitoring.log_level}
+                {
+                    "enabled": True,
+                    "log_level": self.config.monitoring.log_level,
+                }
             )
         else:
             self.monitoring = None
@@ -86,8 +89,12 @@ class AsyncDTARuntime:
                 # Mock processing - simulate LLM thinking
                 thinking_content = '<thinking>\n1. User is asking for a simple greeting\n2. This doesn\'t require any tools\n3. I should respond with a friendly chat message\n4. High confidence since this is straightforward\n</thinking>\n\nBased on my analysis, the user wants a simple greeting response.\n\nMy confidence level is High because this is a basic conversational request.\n\nGenerate exactly one Python function call:\nchat("Hello! How can I help you today?")'
 
-                if self.llm_client and hasattr(self.llm_client, "generate_async"):
-                    response = await self.llm_client.generate_async("test prompt")
+                if self.llm_client and hasattr(
+                    self.llm_client, "generate_async"
+                ):
+                    response = await self.llm_client.generate_async(
+                        "test prompt"
+                    )
                 else:
                     response = thinking_content
 
@@ -97,9 +104,7 @@ class AsyncDTARuntime:
                     if "<thinking>" in response
                     else ""
                 )
-                reasoning_summary = (
-                    "Based on my analysis, the user wants a simple greeting response."
-                )
+                reasoning_summary = "Based on my analysis, the user wants a simple greeting response."
                 python_code = 'chat("Hello! How can I help you today?")'
                 confidence_score = 0.8
 
@@ -107,7 +112,10 @@ class AsyncDTARuntime:
                 validation_result = None
                 if self.validator:
                     validation_result = await self.validator.validate_response(
-                        thinking_trace, reasoning_summary, confidence_score, python_code
+                        thinking_trace,
+                        reasoning_summary,
+                        confidence_score,
+                        python_code,
                     )
 
                 # Create result with validation
@@ -121,7 +129,9 @@ class AsyncDTARuntime:
                 return result
 
         except Exception as e:
-            return DTAResult(status=DTAStatus.ERROR, metadata={"error": str(e)})
+            return DTAResult(
+                status=DTAStatus.ERROR, metadata={"error": str(e)}
+            )
 
     async def shutdown(self):
         """Shutdown the runtime."""

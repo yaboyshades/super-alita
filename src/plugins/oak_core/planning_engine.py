@@ -16,7 +16,9 @@ class PlanningEngine(PluginInterface):
     def name(self) -> str:
         return "oak_planning_engine"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         self.option_source = self.get_config("option_source")
 
@@ -34,7 +36,9 @@ class PlanningEngine(PluginInterface):
             candidates = list(self.option_source.options.keys())
 
         beam_width = self.get_config("beam_width", 3)
-        plan = [{"option_id": oid, "step": 0} for oid in candidates[:beam_width]]
+        plan = [
+            {"option_id": oid, "step": 0} for oid in candidates[:beam_width]
+        ]
         await self.emit_event(
             "oak.plan_proposed",
             goal=goal,

@@ -10,7 +10,9 @@ from .canonical_events import CanonicalEvent
 _SENSITIVE_SUBSTRINGS = ("key", "token", "secret", "password")
 
 
-def sanitize_config_snapshot(config: Mapping[str, Any] | None) -> dict[str, Any]:
+def sanitize_config_snapshot(
+    config: Mapping[str, Any] | None,
+) -> dict[str, Any]:
     """Return a sanitized copy of the config with sensitive values redacted."""
 
     if config is None:
@@ -48,7 +50,9 @@ def sanitize_event_for_ledger(event: CanonicalEvent) -> dict[str, Any]:
                 data["result_preview"]
             )
         if payload["kind"] == "RunStarted" and "config" in data:
-            payload["data"]["config"] = sanitize_config_snapshot(data["config"])
+            payload["data"]["config"] = sanitize_config_snapshot(
+                data["config"]
+            )
     if payload.get("meta"):
         payload["meta"] = sanitize_config_snapshot(payload.get("meta") or {})
     return payload

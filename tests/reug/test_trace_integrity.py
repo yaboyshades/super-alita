@@ -13,7 +13,9 @@ def test_trace_integrity(tmp_path, monkeypatch):
     services = create_services(emitter)
     flow = ExecutionFlow(services, emitter)
 
-    asyncio.run(flow.run({"sot": ["compute:1+1", "generate:hi", "compute:2+2"]}))
+    asyncio.run(
+        flow.run({"sot": ["compute:1+1", "generate:hi", "compute:2+2"]})
+    )
 
     corr_ids = {e.get("correlation_id") for e in events}
     assert len(corr_ids) == 1
@@ -26,7 +28,11 @@ def test_trace_integrity(tmp_path, monkeypatch):
     assert transitions[0] == ("AWAITING_INPUT", "DECOMPOSE_TASK")
     assert transitions[-1][1] == "RESPONDING_SUCCESS"
 
-    starts = {e["span_id"] for e in events if e.get("event_type") == "TOOL_CALL_START"}
+    starts = {
+        e["span_id"]
+        for e in events
+        if e.get("event_type") == "TOOL_CALL_START"
+    }
     ends = {
         e["span_id"]
         for e in events

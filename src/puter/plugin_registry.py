@@ -20,7 +20,9 @@ class PluginRegistry:
             "puter": PuterPlugin,
         }
 
-    async def initialize_plugin(self, plugin_name: str, config: dict[str, Any]) -> None:
+    async def initialize_plugin(
+        self, plugin_name: str, config: dict[str, Any]
+    ) -> None:
         if plugin_name in self.plugins:
             logger.warning("Plugin %s already initialized", plugin_name)
             return

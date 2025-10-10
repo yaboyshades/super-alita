@@ -42,7 +42,9 @@ class UnifiedCapabilityRegistry:
                 )
         return capabilities
 
-    def register_capability(self, capability: Capability, registry_type: str) -> None:
+    def register_capability(
+        self, capability: Capability, registry_type: str
+    ) -> None:
         registry_map = {
             "normal": self.normal_tools,
             "mcp": self.mcp_tools,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 from pathlib import Path
@@ -11,7 +12,9 @@ from .event_sanitizer import sanitize_event_for_ledger
 class RunLedgerWriter:
     """Append-only NDJSON ledger for canonical orchestration events."""
 
-    def __init__(self, path: str | Path, *, enable_shadow: bool = False) -> None:
+    def __init__(
+        self, path: str | Path, *, enable_shadow: bool = False
+    ) -> None:
         self.path = Path(path)
         self.enable_shadow = enable_shadow
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -30,10 +33,8 @@ class RunLedgerWriter:
     def _ensure_permissions(self) -> None:
         if os.name == "nt":  # Windows ACLs handled separately
             return
-        try:
+        with contextlib.suppress(PermissionError):
             os.chmod(self.path, 0o600)
-        except PermissionError:
-            pass
 
 
 __all__ = ["RunLedgerWriter"]

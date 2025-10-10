@@ -13,7 +13,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import core services for unified architecture
-from src.core.global_workspace import AttentionLevel, GlobalWorkspace  # noqa: E402
+from src.core.global_workspace import (
+    AttentionLevel,
+    GlobalWorkspace,
+)  # noqa: E402
 from src.core.neural_atom import NeuralStore  # noqa: E402
 from src.core.plugin_interface import PluginInterface  # noqa: E402
 from src.core.schemas import SystemState  # noqa: E402
@@ -61,8 +64,16 @@ def _load_unified_plugins():
             "OptionExecutorPlugin",
             "option_executor",
         ),
-        ("src.plugins.oak_core.coordinator", "OakCoordinator", "oak_coordinator"),
-        ("src.plugins.creator_plugin_unified", "CreatorPlugin", "creator_plugin"),
+        (
+            "src.plugins.oak_core.coordinator",
+            "OakCoordinator",
+            "oak_coordinator",
+        ),
+        (
+            "src.plugins.creator_plugin_unified",
+            "CreatorPlugin",
+            "creator_plugin",
+        ),
         (
             "src.plugins.memory_manager_plugin_unified",
             "MemoryManagerPlugin",
@@ -82,7 +93,11 @@ def _load_unified_plugins():
             "perplexica_search",
         ),
         # Legacy plugins (fallback compatibility)
-        ("src.plugins.conversation_plugin", "ConversationPlugin", "conversation"),
+        (
+            "src.plugins.conversation_plugin",
+            "ConversationPlugin",
+            "conversation",
+        ),
         ("src.atoms.web_agent_atom", "WebAgentAtom", "web_agent"),
     ]
 
@@ -93,7 +108,9 @@ def _load_unified_plugins():
             AVAILABLE_PLUGINS[plugin_name] = plugin_class
             logger.debug(f"Loaded plugin: {plugin_name} -> {class_name}")
         except (ImportError, AttributeError) as e:
-            logger.warning(f"Could not load plugin {module_path}.{class_name}: {e}")
+            logger.warning(
+                f"Could not load plugin {module_path}.{class_name}: {e}"
+            )
 
 
 class UnifiedSuperAlita:
@@ -124,10 +141,14 @@ class UnifiedSuperAlita:
 
         # System state tracking
         self.system_state = SystemState(
-            state_id="system_initial", cognitive_load=0.0, neural_atoms_active=0
+            state_id="system_initial",
+            cognitive_load=0.0,
+            neural_atoms_active=0,
         )
 
-        logger.info("Unified Super Alita initialized with Version 3.0 architecture")
+        logger.info(
+            "Unified Super Alita initialized with Version 3.0 architecture"
+        )
 
     def _load_configuration(self) -> dict[str, Any]:
         """Load and validate configuration from agent.yaml."""
@@ -137,7 +158,9 @@ class UnifiedSuperAlita:
                     config = yaml.safe_load(f)
                 logger.info(f"Configuration loaded from {self.config_path}")
                 return config
-            logger.warning(f"Config file {self.config_path} not found, using defaults")
+            logger.warning(
+                f"Config file {self.config_path} not found, using defaults"
+            )
             return self._get_default_config()
         except Exception as e:
             logger.error(f"Error loading configuration: {e}")
@@ -249,7 +272,10 @@ class UnifiedSuperAlita:
 
             # Initialize plugins in order
             for plugin_name in PLUGIN_ORDER:
-                if plugin_name in enabled_plugins and plugin_name in AVAILABLE_PLUGINS:
+                if (
+                    plugin_name in enabled_plugins
+                    and plugin_name in AVAILABLE_PLUGINS
+                ):
                     await self._initialize_plugin(
                         plugin_name, enabled_plugins[plugin_name]
                     )
@@ -291,7 +317,9 @@ class UnifiedSuperAlita:
         finally:
             await self.shutdown()
 
-    async def _initialize_plugin(self, plugin_name: str, plugin_config: dict[str, Any]):
+    async def _initialize_plugin(
+        self, plugin_name: str, plugin_config: dict[str, Any]
+    ):
         """Initialize a single plugin with the unified architecture."""
         try:
             plugin_class = AVAILABLE_PLUGINS[plugin_name]
@@ -307,7 +335,9 @@ class UnifiedSuperAlita:
                 env_config = {
                     "puter_base_url": os.getenv(
                         "PUTER_BASE_URL",
-                        plugin_config.get("puter_base_url", "https://puter.com"),
+                        plugin_config.get(
+                            "puter_base_url", "https://puter.com"
+                        ),
                     ),
                     "puter_api_key": os.getenv(
                         "PUTER_API_KEY", plugin_config.get("puter_api_key", "")
@@ -330,7 +360,9 @@ class UnifiedSuperAlita:
                         "Perplexica plugin configured with WebAgent integration"
                     )
                 else:
-                    logger.warning("WebAgent not available for Perplexica integration")
+                    logger.warning(
+                        "WebAgent not available for Perplexica integration"
+                    )
 
             # Setup plugin with unified dependencies
             await instance.setup(self.workspace, self.store, final_config)
@@ -348,7 +380,9 @@ class UnifiedSuperAlita:
             state_id=f"system_{len(self.plugins)}_plugins",
             cognitive_load=len(self.plugins) / 10.0,  # Simple heuristic
             active_tasks=[],
-            memory_usage={"neural_atoms": len(getattr(self.store, "_atoms", {}))},
+            memory_usage={
+                "neural_atoms": len(getattr(self.store, "_atoms", {}))
+            },
             neural_atoms_active=len(getattr(self.store, "_atoms", {})),
             attention_focus=[],
             performance_metrics={},
@@ -369,7 +403,9 @@ class UnifiedSuperAlita:
                 await plugin.shutdown()
                 logger.info(f"✅ Plugin '{plugin_name}' stopped")
             except Exception as e:
-                logger.error(f"Error shutting down plugin '{plugin_name}': {e}")
+                logger.error(
+                    f"Error shutting down plugin '{plugin_name}': {e}"
+                )
 
         # Broadcast shutdown event
         try:
@@ -394,13 +430,15 @@ class UnifiedSuperAlita:
             "neural_store_stats": store_stats,
             "plugins_active": list(self.plugins.keys()),
             "config_summary": {
-                "neural_atoms_enabled": self.config.get("neural_atoms", {}).get(
-                    "registry_type"
+                "neural_atoms_enabled": self.config.get(
+                    "neural_atoms", {}
+                ).get("registry_type"),
+                "consciousness_enabled": self.config.get(
+                    "global_workspace", {}
+                ).get("consciousness_layer_enabled"),
+                "creator_enabled": self.config.get("creator_engine", {}).get(
+                    "enabled"
                 ),
-                "consciousness_enabled": self.config.get("global_workspace", {}).get(
-                    "consciousness_layer_enabled"
-                ),
-                "creator_enabled": self.config.get("creator_engine", {}).get("enabled"),
                 "safety_enabled": self.config.get("safety", {}).get(
                     "recursive_improvement"
                 ),

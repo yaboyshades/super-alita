@@ -92,7 +92,9 @@ class CortexRuntime(PluginInterface):
 
         # Initialize all modules
         all_modules = (
-            self.perception_modules + self.reasoning_modules + self.action_modules
+            self.perception_modules
+            + self.reasoning_modules
+            + self.action_modules
         )
         for module in all_modules:
             module.set_performance_tracker(self.performance_tracker)
@@ -110,7 +112,9 @@ class CortexRuntime(PluginInterface):
 
         # Shutdown all modules
         all_modules = (
-            self.perception_modules + self.reasoning_modules + self.action_modules
+            self.perception_modules
+            + self.reasoning_modules
+            + self.action_modules
         )
         for module in all_modules:
             await module.shutdown()
@@ -177,7 +181,9 @@ class CortexRuntime(PluginInterface):
             )
 
             # Phase 1: Perception
-            perception_result = await self._run_perception_phase(cortex_input, context)
+            perception_result = await self._run_perception_phase(
+                cortex_input, context
+            )
             if not perception_result or not perception_result.success:
                 error = f"Perception failed: {perception_result.error if perception_result else 'No result'}"
                 raise RuntimeError(error)
@@ -191,7 +197,9 @@ class CortexRuntime(PluginInterface):
                 raise RuntimeError(error)
 
             # Phase 3: Action
-            action_result = await self._run_action_phase(reasoning_result.data, context)
+            action_result = await self._run_action_phase(
+                reasoning_result.data, context
+            )
             if not action_result or not action_result.success:
                 error = f"Action failed: {action_result.error if action_result else 'No result'}"
                 raise RuntimeError(error)
@@ -265,7 +273,9 @@ class CortexRuntime(PluginInterface):
 
             # No successful modules
             return ModuleResult(
-                data=None, success=False, error="No perception modules succeeded"
+                data=None,
+                success=False,
+                error="No perception modules succeeded",
             )
 
         finally:
@@ -290,7 +300,9 @@ class CortexRuntime(PluginInterface):
                     return result
 
             return ModuleResult(
-                data=None, success=False, error="No reasoning modules succeeded"
+                data=None,
+                success=False,
+                error="No reasoning modules succeeded",
             )
 
         finally:
@@ -356,7 +368,9 @@ class CortexRuntime(PluginInterface):
 
 
 # Factory function for easy setup
-def create_cortex_runtime(config: dict[str, Any] | None = None) -> CortexRuntime:
+def create_cortex_runtime(
+    config: dict[str, Any] | None = None,
+) -> CortexRuntime:
     """Create and configure a Cortex runtime with default modules"""
     from .modules import (
         LogicalReasoningModule,
@@ -368,7 +382,9 @@ def create_cortex_runtime(config: dict[str, Any] | None = None) -> CortexRuntime
 
     # Register default modules
     runtime.register_perception_module(TextPerceptionModule("text_perception"))
-    runtime.register_reasoning_module(LogicalReasoningModule("logical_reasoning"))
+    runtime.register_reasoning_module(
+        LogicalReasoningModule("logical_reasoning")
+    )
     runtime.register_action_module(PlanningActionModule("planning_action"))
 
     return runtime

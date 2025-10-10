@@ -25,7 +25,9 @@ from src.ecosystem.master_orchestrator import (
 class FakeReugEngine(IReugEngine):
     """A fake REUG engine that returns predictable analysis results."""
 
-    async def analyze_todo_complexity(self, todo_text: str) -> TodoAnalysisResult:  # noqa: ARG002
+    async def analyze_todo_complexity(
+        self, todo_text: str
+    ) -> TodoAnalysisResult:  # noqa: ARG002
         return TodoAnalysisResult(
             complexity_score=0.8,
             confidence=0.9,
@@ -52,7 +54,9 @@ class FakeSemanticSearch(ISemanticCodeSearch):
 class FakeCopilotEnhancer(ICopilotContextEnhancer):
     """A fake Copilot Enhancer that returns a fixed GitHub example."""
 
-    async def find_github_examples(self, query: str) -> list[GitHubExample]:  # noqa: ARG002
+    async def find_github_examples(
+        self, query: str
+    ) -> list[GitHubExample]:  # noqa: ARG002
         return [
             GitHubExample(
                 repo="test/repo",
@@ -72,7 +76,9 @@ class FakeSnippetGenerator(IDynamicSnippetGenerator):
         related_code: list[SemanticSearchResult],  # noqa: ARG002
         patterns: list[str],  # noqa: ARG002
     ) -> list[dict[str, str]]:
-        return [{"prefix": "test_snippet", "body": "implementation goes here;"}]
+        return [
+            {"prefix": "test_snippet", "body": "implementation goes here;"}
+        ]
 
 
 class FakeMetricsCollector(IMetricsCollector):
@@ -92,7 +98,7 @@ class FakeMetricsCollector(IMetricsCollector):
 
 @pytest.fixture
 def orchestrator_with_fakes():
-    """Provides a fully-wired orchestrator instance with fake dependencies 
+    """Provides a fully-wired orchestrator instance with fake dependencies
     for each test."""
     return EcosystemOrchestrator(
         reug_engine=FakeReugEngine(),
@@ -108,12 +114,15 @@ async def test_orchestrate_todo_workflow_happy_path(
     orchestrator_with_fakes: EcosystemOrchestrator,
 ):
     """
-    Tests the full end-to-end TODO workflow with successful results from all 
+    Tests the full end-to-end TODO workflow with successful results from all
     mocked subsystems.
     """
     user_id = "test_dev_01"
     action = "todo_detected"
-    context = {"todo_text": "Implement an LRU cache", "file_path": "src/utils/cache.py"}
+    context = {
+        "todo_text": "Implement an LRU cache",
+        "file_path": "src/utils/cache.py",
+    }
 
     result = await orchestrator_with_fakes.handle_developer_action(
         user_id, action, context
@@ -136,7 +145,9 @@ async def test_orchestrate_todo_workflow_happy_path(
     event_name, metadata = metrics_collector.recorded_events[0]
     assert event_name == "todo_resolution"
     assert metadata["complexity"] == 0.8
-    assert metadata["context_sources"] == 2  # 1 from semantic search, 1 from github
+    assert (
+        metadata["context_sources"] == 2
+    )  # 1 from semantic search, 1 from github
     assert metadata["file_path"] == "src/utils/cache.py"
 
 
@@ -145,7 +156,7 @@ async def test_orchestrate_todo_workflow_no_context_found(
     orchestrator_with_fakes: EcosystemOrchestrator,
 ):
     """
-    Tests that the workflow gracefully handles cases where search and 
+    Tests that the workflow gracefully handles cases where search and
     enhancers find no results.
     """
     # Override fakes to return empty lists, simulating no context found.
@@ -171,7 +182,9 @@ async def test_orchestrate_todo_workflow_no_context_found(
 
 
 @pytest.mark.asyncio
-async def test_handle_unknown_action(orchestrator_with_fakes: EcosystemOrchestrator):
+async def test_handle_unknown_action(
+    orchestrator_with_fakes: EcosystemOrchestrator,
+):
     """
     Tests that the orchestrator returns a specific error for an unsupported action.
     """
@@ -197,7 +210,9 @@ async def test_missing_todo_text():
     action = "todo_detected"
     context = {"file_path": "src/utils/cache.py"}  # Missing todo_text
 
-    result = await orchestrator.handle_developer_action(user_id, action, context)
+    result = await orchestrator.handle_developer_action(
+        user_id, action, context
+    )
 
     assert result["status"] == "error"
     assert "todo_text not provided" in result["message"]
@@ -232,7 +247,9 @@ async def test_copilot_prompt_synthesis():
     context_data = {
         "todo_text": "Implement cache system",
         "todo_analysis": TodoAnalysisResult(0.7, 0.8, "large", ["redis"]),
-        "related_code": [SemanticSearchResult("cache.py", "class Cache:", 0.9)],
+        "related_code": [
+            SemanticSearchResult("cache.py", "class Cache:", 0.9)
+        ],
         "github_examples": [
             GitHubExample(
                 "redis/redis-py", "cache.py", "Redis cache impl", "BSD"
@@ -257,13 +274,17 @@ async def test_no_op_implementations():
     """
     Tests that no-op implementations work correctly for standalone operation.
     """
-    orchestrator = EcosystemOrchestrator()  # Uses no-op implementations by default
+    orchestrator = (
+        EcosystemOrchestrator()
+    )  # Uses no-op implementations by default
 
     user_id = "test_dev_06"
     action = "todo_detected"
     context = {"todo_text": "Test TODO", "file_path": "test.py"}
 
-    result = await orchestrator.handle_developer_action(user_id, action, context)
+    result = await orchestrator.handle_developer_action(
+        user_id, action, context
+    )
 
     # Should work with no-op implementations
     assert result["workflow_type"] == "todo_resolution"

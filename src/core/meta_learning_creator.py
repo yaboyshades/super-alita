@@ -154,7 +154,9 @@ class {class_name}(NeuralAtom):
 
         logger.info("🧠 MetaLearningCreator initialized")
 
-    async def generate_tool(self, request: ToolGenerationRequest) -> GeneratedTool:
+    async def generate_tool(
+        self, request: ToolGenerationRequest
+    ) -> GeneratedTool:
         """Generate a new tool using meta-learning insights"""
         start_time = time.time()
 
@@ -215,7 +217,9 @@ class {class_name}(NeuralAtom):
             "feedback": execution_feedback,
             "timestamp": datetime.now(),
             "patterns_used": tool.metadata.get("patterns_used", []),
-            "template_strategy": tool.metadata.get("template_strategy", "unknown"),
+            "template_strategy": tool.metadata.get(
+                "template_strategy", "unknown"
+            ),
         }
 
         self.generation_history.append(generation_record)
@@ -238,7 +242,9 @@ class {class_name}(NeuralAtom):
             await self._extract_failure_patterns(tool, execution_feedback)
 
         # Evolve templates based on learning
-        await self._evolve_templates(tool, actual_success_rate, execution_feedback)
+        await self._evolve_templates(
+            tool, actual_success_rate, execution_feedback
+        )
 
         logger.debug(
             f"🧠 Learned from tool '{tool.name}': success_rate={actual_success_rate:.2f}"
@@ -264,7 +270,9 @@ class {class_name}(NeuralAtom):
                         relevance += 0.1
 
             # Weight by pattern confidence and usage
-            relevance *= pattern.confidence * min(1.0, pattern.usage_count / 10.0)
+            relevance *= pattern.confidence * min(
+                1.0, pattern.usage_count / 10.0
+            )
 
             if relevance >= self.pattern_threshold:
                 relevant_patterns.append(pattern)
@@ -305,14 +313,20 @@ class {class_name}(NeuralAtom):
             code_snippets.extend(pattern.code_templates)
 
         # Generate template parameters
-        template_params = await self._generate_template_parameters(request, patterns)
+        template_params = await self._generate_template_parameters(
+            request, patterns
+        )
 
         # Fill template with learned patterns
         try:
             generated_code = base_template.format(**template_params)
         except KeyError as e:
-            logger.warning(f"🧠 Template parameter missing: {e}, using fallback")
-            generated_code = self._generate_fallback_code(request, template_strategy)
+            logger.warning(
+                f"🧠 Template parameter missing: {e}, using fallback"
+            )
+            generated_code = self._generate_fallback_code(
+                request, template_strategy
+            )
 
         return generated_code
 
@@ -451,7 +465,9 @@ async def {base_name}_tool(input_data: Any = None) -> Dict[str, Any]:
             return True
 
         except SyntaxError as e:
-            logger.error(f"🧠 Syntax error in generated tool '{tool.name}': {e}")
+            logger.error(
+                f"🧠 Syntax error in generated tool '{tool.name}': {e}"
+            )
             return False
         except Exception as e:
             logger.error(f"🧠 Validation error for tool '{tool.name}': {e}")
@@ -513,7 +529,10 @@ async def {base_name}_tool(input_data: Any = None) -> Dict[str, Any]:
             logger.debug(f"🧠 Extracted failure pattern: {pattern_id}")
 
     async def _evolve_templates(
-        self, tool: GeneratedTool, success_rate: float, feedback: dict[str, Any]
+        self,
+        tool: GeneratedTool,
+        success_rate: float,
+        feedback: dict[str, Any],
     ) -> None:
         """Evolve code templates based on learning"""
         template_strategy = tool.metadata.get("template_strategy", "unknown")
@@ -525,9 +544,9 @@ async def {base_name}_tool(input_data: Any = None) -> Dict[str, Any]:
 
             # Limit template storage
             if len(self.success_templates[template_strategy]) > 20:
-                self.success_templates[template_strategy] = self.success_templates[
-                    template_strategy
-                ][-20:]
+                self.success_templates[template_strategy] = (
+                    self.success_templates[template_strategy][-20:]
+                )
 
         # Update base templates with learned improvements
         if len(self.success_templates.get(template_strategy, [])) > 5:
@@ -557,17 +576,21 @@ async def {base_name}_tool(input_data: Any = None) -> Dict[str, Any]:
         for code in codes:
             lines = code.split("\n")
             for line in lines:
-                if line.strip().startswith("import ") or line.strip().startswith(
-                    "from "
-                ):
+                if line.strip().startswith(
+                    "import "
+                ) or line.strip().startswith("from "):
                     common_imports.add(line.strip())
 
-        if len(common_imports) >= len(codes) * 0.5:  # Present in at least 50% of codes
+        if (
+            len(common_imports) >= len(codes) * 0.5
+        ):  # Present in at least 50% of codes
             patterns.extend(common_imports)
 
         return patterns
 
-    def _assess_request_complexity(self, request: ToolGenerationRequest) -> float:
+    def _assess_request_complexity(
+        self, request: ToolGenerationRequest
+    ) -> float:
         """Assess the complexity of a generation request"""
         complexity_score = 0.0
 
@@ -642,7 +665,9 @@ async def {base_name}_tool(input_data: Any = None) -> Dict[str, Any]:
 
         return "generated_tool"
 
-    def _extract_capabilities(self, request: ToolGenerationRequest) -> list[str]:
+    def _extract_capabilities(
+        self, request: ToolGenerationRequest
+    ) -> list[str]:
         """Extract capabilities from the generation request"""
         capabilities = []
 
@@ -683,7 +708,9 @@ async def {base_name}_tool(input_data: Any = None) -> Dict[str, Any]:
 
         # Get top performing patterns
         top_patterns = sorted(
-            self.learned_patterns.values(), key=lambda p: p.confidence, reverse=True
+            self.learned_patterns.values(),
+            key=lambda p: p.confidence,
+            reverse=True,
         )[:5]
 
         return {
@@ -696,7 +723,9 @@ async def {base_name}_tool(input_data: Any = None) -> Dict[str, Any]:
                     "id": p.pattern_id,
                     "confidence": p.confidence,
                     "usage_count": p.usage_count,
-                    "success_indicators": p.success_indicators[:3],  # Top 3 indicators
+                    "success_indicators": p.success_indicators[
+                        :3
+                    ],  # Top 3 indicators
                 }
                 for p in top_patterns
             ],

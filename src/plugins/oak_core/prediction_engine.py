@@ -63,7 +63,9 @@ class PredictionEngine(PluginInterface):
     def name(self) -> str:
         return "oak_prediction_engine"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         self.device = torch.device(self.get_config("device", "cpu"))
         self.state_dim = self.get_config("state_dim", 100)
@@ -131,7 +133,9 @@ class PredictionEngine(PluginInterface):
                 i += 10
         return vec.to(self.device)
 
-    def _cumulant(self, g: GVF, reward: float, next_state: dict[str, Any]) -> float:
+    def _cumulant(
+        self, g: GVF, reward: float, next_state: dict[str, Any]
+    ) -> float:
         if g.cumulant_type == "duration":
             return 1.0
         if g.cumulant_type == "attainment":
@@ -169,7 +173,9 @@ class PredictionEngine(PluginInterface):
             c = self._cumulant(g, reward, ns)
             gamma = 0.0 if done else g.discount
             target = torch.tensor(
-                c + gamma * float(v_next), dtype=torch.float32, device=self.device
+                c + gamma * float(v_next),
+                dtype=torch.float32,
+                device=self.device,
             )
             pred = net(s_t).squeeze()
 

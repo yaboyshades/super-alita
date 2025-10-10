@@ -41,7 +41,11 @@ async def test_extension_lint():
     ext_path = Path("extensions/alita-language-tools")
 
     result = subprocess.run(
-        ["npm", "run", "lint"], cwd=ext_path, capture_output=True, text=True, timeout=30
+        ["npm", "run", "lint"],
+        cwd=ext_path,
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
 
     # Lint should pass with no errors

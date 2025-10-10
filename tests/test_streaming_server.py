@@ -19,7 +19,11 @@ async def test_stream():
 
     async def generate_stream():
         for i in range(5):
-            data = {"chunk": i, "timestamp": time.time(), "message": f"Test chunk {i}"}
+            data = {
+                "chunk": i,
+                "timestamp": time.time(),
+                "message": f"Test chunk {i}",
+            }
             yield f"data: {json.dumps(data)}\n\n"
             await asyncio.sleep(1)
 
@@ -48,5 +52,9 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        app, host="127.0.0.1", port=8081, timeout_keep_alive=120, access_log=True
+        app,
+        host="127.0.0.1",
+        port=8081,
+        timeout_keep_alive=120,
+        access_log=True,
     )

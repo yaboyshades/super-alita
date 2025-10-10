@@ -153,7 +153,9 @@ class DTAStructuredLogger:
     def _format_message(self, message: str, **kwargs) -> str:
         """Format message with structured data."""
         if kwargs:
-            structured_data = json.dumps(kwargs, default=str, separators=(",", ":"))
+            structured_data = json.dumps(
+                kwargs, default=str, separators=(",", ":")
+            )
             return f"{message} | {structured_data}"
         return message
 
@@ -274,9 +276,9 @@ class DTAMetricsCollector:
     def observe_request_duration(self, component: str, duration: float):
         """Observe request duration."""
         if "request_duration" in self._metrics:
-            self._metrics["request_duration"].labels(component=component).observe(
-                duration
-            )
+            self._metrics["request_duration"].labels(
+                component=component
+            ).observe(duration)
 
     def inc_errors(self, component: str, error_type: str):
         """Increment error counter."""
@@ -288,19 +290,23 @@ class DTAMetricsCollector:
     def set_active_requests(self, component: str, count: int):
         """Set number of active requests."""
         if "active_requests" in self._metrics:
-            self._metrics["active_requests"].labels(component=component).set(count)
+            self._metrics["active_requests"].labels(component=component).set(
+                count
+            )
 
     def observe_thinking_depth(self, component: str, steps: int):
         """Observe thinking process depth."""
         if "thinking_depth" in self._metrics:
-            self._metrics["thinking_depth"].labels(component=component).observe(steps)
+            self._metrics["thinking_depth"].labels(
+                component=component
+            ).observe(steps)
 
     def observe_confidence(self, component: str, confidence: float):
         """Observe confidence score."""
         if "confidence_score" in self._metrics:
-            self._metrics["confidence_score"].labels(component=component).observe(
-                confidence
-            )
+            self._metrics["confidence_score"].labels(
+                component=component
+            ).observe(confidence)
 
     def inc_cache_hits(self, cache_type: str):
         """Increment cache hits."""
@@ -376,7 +382,9 @@ class DTAMonitoring:
     async def track_request(self, component: str, operation: str):
         """Context manager to track request metrics and timing."""
         start_time = time.time()
-        request_id = f"{component}-{operation}-{int(start_time * 1000) % 10000}"
+        request_id = (
+            f"{component}-{operation}-{int(start_time * 1000) % 10000}"
+        )
 
         # Increment active requests
         self.metrics.set_active_requests(component, 1)
@@ -496,7 +504,10 @@ class DTAMonitoring:
         await self._record_analytics(analytics_data)
 
     async def set_component_health(
-        self, component: str, status: str, details: dict[str, Any] | None = None
+        self,
+        component: str,
+        status: str,
+        details: dict[str, Any] | None = None,
     ):
         """Update component health status."""
         with self._health_lock:
@@ -512,7 +523,11 @@ class DTAMonitoring:
         # Check for health-based alerts
         if status in ["unhealthy", "critical", "error"]:
             await self._create_alert(
-                AlertLevel.WARNING if status == "unhealthy" else AlertLevel.ERROR,
+                (
+                    AlertLevel.WARNING
+                    if status == "unhealthy"
+                    else AlertLevel.ERROR
+                ),
                 component,
                 f"Component {component} status: {status}",
                 {"status": status, "details": details},
@@ -529,12 +544,17 @@ class DTAMonitoring:
         if not component_statuses:
             overall_status = "unknown"
         elif any(
-            status in ["critical", "error"] for status in component_statuses.values()
+            status in ["critical", "error"]
+            for status in component_statuses.values()
         ):
             overall_status = "critical"
-        elif any(status == "unhealthy" for status in component_statuses.values()):
+        elif any(
+            status == "unhealthy" for status in component_statuses.values()
+        ):
             overall_status = "degraded"
-        elif all(status == "healthy" for status in component_statuses.values()):
+        elif all(
+            status == "healthy" for status in component_statuses.values()
+        ):
             overall_status = "healthy"
         else:
             overall_status = "unknown"
@@ -543,7 +563,9 @@ class DTAMonitoring:
         active_alerts = [alert for alert in self.alerts if not alert.resolved]
 
         # Calculate basic error rate and response time metrics
-        error_rate = 0.0  # Will be enhanced when metrics collection is expanded
+        error_rate = (
+            0.0  # Will be enhanced when metrics collection is expanded
+        )
         avg_response_time = 100.0  # Default response time in ms
 
         return DTAHealthStatus(
@@ -557,7 +579,11 @@ class DTAMonitoring:
         )
 
     async def _create_alert(
-        self, level: AlertLevel, component: str, message: str, metrics: dict[str, Any]
+        self,
+        level: AlertLevel,
+        component: str,
+        message: str,
+        metrics: dict[str, Any],
     ):
         """Create and track a new alert."""
         alert = DTAAlert(
@@ -601,7 +627,10 @@ class DTAMonitoring:
                     AlertLevel.ERROR,
                     component,
                     f"High error rate detected: {error_rate:.2%}",
-                    {"error_rate": error_rate, "recent_errors": len(recent_alerts)},
+                    {
+                        "error_rate": error_rate,
+                        "recent_errors": len(recent_alerts),
+                    },
                 )
 
     async def _record_analytics(self, data: dict[str, Any]):
@@ -626,10 +655,14 @@ class DTAMonitoring:
 
         # Calculate summary statistics
         thinking_events = [
-            e for e in recent_events if e.get("event_type") == "thinking_process"
+            e
+            for e in recent_events
+            if e.get("event_type") == "thinking_process"
         ]
         cache_events = [
-            e for e in recent_events if e.get("event_type") == "cache_operation"
+            e
+            for e in recent_events
+            if e.get("event_type") == "cache_operation"
         ]
 
         summary = {
@@ -637,13 +670,17 @@ class DTAMonitoring:
             "total_events": len(recent_events),
             "thinking_processes": len(thinking_events),
             "cache_operations": len(cache_events),
-            "avg_confidence": sum(e.get("confidence", 0) for e in thinking_events)
+            "avg_confidence": sum(
+                e.get("confidence", 0) for e in thinking_events
+            )
             / max(len(thinking_events), 1),
             "avg_thinking_steps": sum(
                 e.get("thinking_steps", 0) for e in thinking_events
             )
             / max(len(thinking_events), 1),
-            "cache_hit_rate": sum(1 for e in cache_events if e.get("hit", False))
+            "cache_hit_rate": sum(
+                1 for e in cache_events if e.get("hit", False)
+            )
             / max(len(cache_events), 1),
         }
 
@@ -685,7 +722,9 @@ def create_monitoring(config: dict[str, Any] | None = None) -> DTAMonitoring:
                 config_dict = config.to_dict()
             else:
                 config_dict = {
-                    k: v for k, v in config.__dict__.items() if not k.startswith("_")
+                    k: v
+                    for k, v in config.__dict__.items()
+                    if not k.startswith("_")
                 }
             default_config.update(config_dict)
         else:
@@ -714,7 +753,10 @@ async def example_monitoring_usage():
 
         # Record thinking process
         await monitoring.record_thinking_process(
-            "preprocessor", thinking_steps=5, confidence=0.85, reasoning_quality="high"
+            "preprocessor",
+            thinking_steps=5,
+            confidence=0.85,
+            reasoning_quality="high",
         )
 
         # Record cache operation

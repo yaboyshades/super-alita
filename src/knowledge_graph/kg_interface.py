@@ -141,7 +141,9 @@ class KnowledgeGraphInterface:
             if self._is_similar_goal(context.goal, pattern.goal_template):
                 # Update pattern success rate with exponential moving average
                 alpha = 0.1  # Learning rate
-                pattern.success_rate = alpha * 1.0 + (1 - alpha) * pattern.success_rate
+                pattern.success_rate = (
+                    alpha * 1.0 + (1 - alpha) * pattern.success_rate
+                )
                 pattern.usage_count += 1
                 pattern.last_updated = time.time()
 
@@ -149,15 +151,10 @@ class KnowledgeGraphInterface:
         """Check if a goal matches a pattern template."""
         import re
 
-        goal_words = set(goal.lower().split())
+        set(goal.lower().split())
         template_parts = template.lower().split("|")
 
-        for part in template_parts:
-            # Simple regex matching
-            if re.search(part, goal.lower()):
-                return True
-
-        return False
+        return any(re.search(part, goal.lower()) for part in template_parts)
 
     def query(self, query: KnowledgeQuery) -> KnowledgeQueryResult:
         """Query the knowledge graph for relevant information."""
@@ -169,7 +166,9 @@ class KnowledgeGraphInterface:
         result.entities = relevant_entities[: query.max_results]
 
         # Find relevant relations
-        relevant_relations = self._find_relevant_relations(query, relevant_entities)
+        relevant_relations = self._find_relevant_relations(
+            query, relevant_entities
+        )
         result.relations = relevant_relations
 
         # Find relevant patterns
@@ -187,7 +186,9 @@ class KnowledgeGraphInterface:
 
         return result
 
-    def _find_relevant_entities(self, query: KnowledgeQuery) -> list[KnowledgeEntity]:
+    def _find_relevant_entities(
+        self, query: KnowledgeQuery
+    ) -> list[KnowledgeEntity]:
         """Find entities relevant to the query."""
         candidates = []
 
@@ -248,7 +249,9 @@ class KnowledgeGraphInterface:
 
         return list(set(relevant_relations))  # Remove duplicates
 
-    def _find_relevant_patterns(self, query: KnowledgeQuery) -> list[PlanningPattern]:
+    def _find_relevant_patterns(
+        self, query: KnowledgeQuery
+    ) -> list[PlanningPattern]:
         """Find planning patterns relevant to the query."""
         candidates = []
 
@@ -270,7 +273,8 @@ class KnowledgeGraphInterface:
 
         # Sort by relevance and success rate
         candidates.sort(
-            key=lambda x: (x[0] * x[1].success_rate, x[1].usage_count), reverse=True
+            key=lambda x: (x[0] * x[1].success_rate, x[1].usage_count),
+            reverse=True,
         )
 
         return [pattern for _, pattern in candidates]
@@ -349,8 +353,8 @@ class KnowledgeGraphInterface:
             )
 
         for pattern in patterns:
-            scores[f"pattern_{pattern.id}"] = self._calculate_pattern_relevance(
-                query, pattern
+            scores[f"pattern_{pattern.id}"] = (
+                self._calculate_pattern_relevance(query, pattern)
             )
 
         return scores
@@ -371,7 +375,8 @@ class KnowledgeGraphInterface:
                 for domain, pattern_ids in self.patterns_by_domain.items()
             },
             "average_pattern_success_rate": (
-                sum(p.success_rate for p in self.patterns.values()) / len(self.patterns)
+                sum(p.success_rate for p in self.patterns.values())
+                / len(self.patterns)
                 if self.patterns
                 else 0.0
             ),

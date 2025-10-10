@@ -52,7 +52,9 @@ class StrategySelector:
             self._cfg = json.load(f)
 
     def _save(self) -> None:
-        self._cfg["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        self._cfg["updated_at"] = time.strftime(
+            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+        )
         with open(self.config_file, "w", encoding="utf-8") as f:
             json.dump(self._cfg, f, indent=2)
 
@@ -70,7 +72,9 @@ class StrategySelector:
         elif algo == "ucb1":
             bandit = UCB1Bandit()
         elif algo == "epsilon":
-            bandit = EpsilonGreedyBandit(epsilon=float(spec.get("epsilon", 0.1)))
+            bandit = EpsilonGreedyBandit(
+                epsilon=float(spec.get("epsilon", 0.1))
+            )
         else:
             raise ValueError(f"Unsupported algorithm: {algo}")
 
@@ -89,11 +93,14 @@ class StrategySelector:
         self, task_type: str, context: dict[str, Any] | None = None
     ) -> StrategyDecision:
         bandit = self._get_algo(task_type)
-        decision = bandit.select_arm(context=context or {"task_type": task_type})
+        decision = bandit.select_arm(
+            context=context or {"task_type": task_type}
+        )
 
         # Resolve metadata from config
         arms = {
-            arm["id"]: arm for arm in self._cfg["task_types"][task_type].get("arms", [])
+            arm["id"]: arm
+            for arm in self._cfg["task_types"][task_type].get("arms", [])
         }
         meta = arms.get(decision.arm_id, {}).get("metadata", {})
 
@@ -108,7 +115,9 @@ class StrategySelector:
             timestamp=decision.timestamp,
         )
 
-    def feedback(self, task_type: str, decision_id: str, reward: float) -> bool:
+    def feedback(
+        self, task_type: str, decision_id: str, reward: float
+    ) -> bool:
         bandit = self._get_algo(task_type)
         ok = bandit.update_reward(decision_id=decision_id, reward=reward)
         if ok:

@@ -80,7 +80,9 @@ class TestEventRegistration:
 
     def test_register_same_version(self):
         """Test registering same version (idempotent)."""
-        descriptor1 = EventDescriptor(name="test_event", version=1, description="First")
+        descriptor1 = EventDescriptor(
+            name="test_event", version=1, description="First"
+        )
         descriptor2 = EventDescriptor(
             name="test_event", version=1, description="Second"
         )
@@ -170,9 +172,14 @@ class TestEventValidation:
         schema = {
             "type": "object",
             "required": ["field1", "field2"],
-            "properties": {"field1": {"type": "string"}, "field2": {"type": "number"}},
+            "properties": {
+                "field1": {"type": "string"},
+                "field2": {"type": "number"},
+            },
         }
-        register_event(EventDescriptor(name="with_schema", version=1, schema=schema))
+        register_event(
+            EventDescriptor(name="with_schema", version=1, schema=schema)
+        )
 
         # Event without schema
         register_event(EventDescriptor(name="no_schema", version=1))
@@ -266,7 +273,9 @@ class TestCoreSeedEvents:
         ]
 
         for event_name in expected_events:
-            assert event_name in EVENT_REGISTRY, f"Core event {event_name} not found"
+            assert (
+                event_name in EVENT_REGISTRY
+            ), f"Core event {event_name} not found"
 
     def test_tool_call_schema(self):
         """Test tool_call event has proper schema."""

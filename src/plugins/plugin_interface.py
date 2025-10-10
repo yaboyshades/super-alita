@@ -46,7 +46,9 @@ class PluginInterface(ABC):
         pass
 
     @abstractmethod
-    async def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
+    async def process_event(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Process an event and return result if applicable
 
@@ -117,7 +119,9 @@ class BasePlugin(PluginInterface):
         self.logger.info(f"Plugin {self.name} initialized")
         return True
 
-    async def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
+    async def process_event(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Default event processing - override in subclasses"""
         if not self.is_enabled:
             return None
@@ -130,7 +134,9 @@ class BasePlugin(PluginInterface):
             self.logger.error(f"Error processing event in {self.name}: {e}")
             return None
 
-    async def _handle_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
+    async def _handle_event(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Override this method to handle specific events"""
         return None
 
@@ -204,11 +210,15 @@ class PluginRegistry:
             try:
                 await plugin.cleanup()
             except Exception as e:
-                self.logger.error(f"Error cleaning up plugin {plugin.name}: {e}")
+                self.logger.error(
+                    f"Error cleaning up plugin {plugin.name}: {e}"
+                )
 
     def get_all_status(self) -> dict[str, dict[str, Any]]:
         """Get status of all plugins"""
-        return {name: plugin.get_status() for name, plugin in self.plugins.items()}
+        return {
+            name: plugin.get_status() for name, plugin in self.plugins.items()
+        }
 
 
 # Example plugin implementation
@@ -218,9 +228,15 @@ class EchoPlugin(BasePlugin):
     def __init__(self):
         super().__init__("echo_plugin")
 
-    async def _handle_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
+    async def _handle_event(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Echo the event back"""
-        return {"type": "echo_response", "original_event": event, "plugin": self.name}
+        return {
+            "type": "echo_response",
+            "original_event": event,
+            "plugin": self.name,
+        }
 
     def get_capabilities(self) -> list[str]:
         return ["echo", "debug"]
@@ -236,7 +252,9 @@ if __name__ == "__main__":
 
         # Mock event bus
         class MockEventBus:
-            async def emit(self, event_type: str, data: dict[str, Any]) -> None:
+            async def emit(
+                self, event_type: str, data: dict[str, Any]
+            ) -> None:
                 pass
 
             async def subscribe(self, event_type: str, handler: Any) -> None:

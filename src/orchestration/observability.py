@@ -96,7 +96,8 @@ class OrchestatorObserver:
             run_id,
             {
                 "run_id": run_id,
-                "session_id": (event.get("meta") or {}).get("session_id") or (event.get("meta") or {}).get("session"),
+                "session_id": (event.get("meta") or {}).get("session_id")
+                or (event.get("meta") or {}).get("session"),
                 "counts": {"events": 0, "abilities": 0},
                 "stages": {},
                 "errors": [],
@@ -110,13 +111,19 @@ class OrchestatorObserver:
             stats["started_at"] = event.get("timestamp")
         elif kind == "StageCompleted":
             stage_name = data.get("name", "unknown")
-            stage_info = stats["stages"].setdefault(stage_name, {
-                "duration_ms": 0,
-                "status": "started",
-            })
+            stage_info = stats["stages"].setdefault(
+                stage_name,
+                {
+                    "duration_ms": 0,
+                    "status": "started",
+                },
+            )
             stage_info["duration_ms"] = int(data.get("duration_ms", 0))
             stage_info["status"] = data.get("status", "ok")
-        elif kind in {"AbilityInvocationStarted", "AbilityInvocationCompleted"}:
+        elif kind in {
+            "AbilityInvocationStarted",
+            "AbilityInvocationCompleted",
+        }:
             stats["counts"]["abilities"] += 1
         elif kind == "RunError":
             error_type = data.get("error_type") or "UNKNOWN"
@@ -128,7 +135,9 @@ class OrchestatorObserver:
                 "total_duration_ms": data.get("total_duration_ms"),
                 "stages": stats["stages"],
                 "errors": stats["errors"],
-                "abilities_invoked": data.get("abilities_invoked", stats["counts"]["abilities"]),
+                "abilities_invoked": data.get(
+                    "abilities_invoked", stats["counts"]["abilities"]
+                ),
                 "constitutional_score": event.get("constitutional_score"),
             }
             self._recent_runs.append(summary)
@@ -181,7 +190,9 @@ class OrchestatorObserver:
         success_count = sum(
             1 for stage in stages.values() if stage.get("status") == "success"
         )
-        total_duration = sum(stage.get("duration_ms", 0) for stage in stages.values())
+        total_duration = sum(
+            stage.get("duration_ms", 0) for stage in stages.values()
+        )
 
         entry = LogEntry(
             timestamp=time.time(),
@@ -209,9 +220,15 @@ class OrchestatorObserver:
 
         # Emit metrics
         self._emit_metric(
-            "run_duration_ms", total_duration, "milliseconds", run_id, session_id
+            "run_duration_ms",
+            total_duration,
+            "milliseconds",
+            run_id,
+            session_id,
         )
-        self._emit_metric("stages_executed", len(stages), "count", run_id, session_id)
+        self._emit_metric(
+            "stages_executed", len(stages), "count", run_id, session_id
+        )
         self._emit_metric(
             "success_rate",
             success_count / len(stages) if stages else 0,
@@ -220,7 +237,9 @@ class OrchestatorObserver:
             session_id,
         )
 
-    def log_stage_started(self, run_id: str, session_id: str, stage: str) -> None:
+    def log_stage_started(
+        self, run_id: str, session_id: str, stage: str
+    ) -> None:
         """Log stage start."""
         entry = LogEntry(
             timestamp=time.time(),
@@ -267,10 +286,17 @@ class OrchestatorObserver:
             run_id,
             session_id,
         )
-        self._emit_metric(f"stage_{stage}_success", 1, "count", run_id, session_id)
+        self._emit_metric(
+            f"stage_{stage}_success", 1, "count", run_id, session_id
+        )
 
     def log_stage_failed(
-        self, run_id: str, session_id: str, stage: str, duration_ms: int, error: str
+        self,
+        run_id: str,
+        session_id: str,
+        stage: str,
+        duration_ms: int,
+        error: str,
     ) -> None:
         """Log stage failure."""
         entry = LogEntry(
@@ -286,14 +312,18 @@ class OrchestatorObserver:
             data={
                 "stage_type": self._classify_stage(stage),
                 "error_type": (
-                    type(error).__name__ if hasattr(error, "__class__") else "unknown"
+                    type(error).__name__
+                    if hasattr(error, "__class__")
+                    else "unknown"
                 ),
             },
         )
         self._emit_log(entry)
 
         # Emit metrics
-        self._emit_metric(f"stage_{stage}_failure", 1, "count", run_id, session_id)
+        self._emit_metric(
+            f"stage_{stage}_failure", 1, "count", run_id, session_id
+        )
 
     def log_sdd_validation_started(
         self, run_id: str, session_id: str, phase: str, content_summary: str
@@ -419,7 +449,9 @@ class OrchestatorObserver:
             stage=None,
             data={
                 "violated_article": article,
-                "violation_severity": violation_details.get("severity", "unknown"),
+                "violation_severity": violation_details.get(
+                    "severity", "unknown"
+                ),
                 "violation_details": violation_details,
             },
         )
@@ -427,7 +459,11 @@ class OrchestatorObserver:
 
         # Emit metrics
         self._emit_metric(
-            f"constitutional_violation_{article}", 1, "count", run_id, session_id
+            f"constitutional_violation_{article}",
+            1,
+            "count",
+            run_id,
+            session_id,
         )
 
     def _classify_stage(self, stage: str) -> str:
@@ -525,7 +561,9 @@ class OrchestatorObserver:
                 "total_logs": len(logs),
                 "total_metrics": len(metrics),
                 "log_levels": {
-                    level.value: len([log for log in logs if log.level == level])
+                    level.value: len(
+                        [log for log in logs if log.level == level]
+                    )
                     for level in LogLevel
                 },
                 "event_types": {

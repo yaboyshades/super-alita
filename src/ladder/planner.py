@@ -85,7 +85,9 @@ class LadderPlanner:
             config: Planner configuration options
         """
         self.decomposer = decomposer or DefaultLLMDecomposer()
-        self.bandit_policy = bandit_policy or UCB1Policy(tools=["default_tool"])
+        self.bandit_policy = bandit_policy or UCB1Policy(
+            tools=["default_tool"]
+        )
         self.config = config or PlannerConfig()
 
         # Execution state
@@ -146,7 +148,9 @@ class LadderPlanner:
 
         return self.task_graph
 
-    async def _decompose_task_hierarchically(self, task_id: str, depth: int) -> None:
+    async def _decompose_task_hierarchically(
+        self, task_id: str, depth: int
+    ) -> None:
         """Recursively decompose a task into subtasks.
 
         Args:
@@ -245,10 +249,7 @@ class LadderPlanner:
                 return True
 
         # Check task length (short tasks are often atomic)
-        if len(task.description.split()) <= 5:
-            return True
-
-        return False
+        return len(task.description.split()) <= 5
 
     def _optimize_task_ordering(self) -> None:
         """Optimize task ordering for efficient execution."""
@@ -258,7 +259,9 @@ class LadderPlanner:
         # Apply energy-based optimization
         self._apply_energy_optimization(execution_order)
 
-    def _apply_energy_optimization(self, execution_order: list[list[str]]) -> None:
+    def _apply_energy_optimization(
+        self, execution_order: list[list[str]]
+    ) -> None:
         """Apply energy-based optimization to task ordering.
 
         Args:
@@ -267,7 +270,9 @@ class LadderPlanner:
         # For now, just prioritize shorter tasks first within each parallel group
         for group in execution_order:
             group.sort(
-                key=lambda task_id: len(self.task_graph.get_task(task_id).description)
+                key=lambda task_id: len(
+                    self.task_graph.get_task(task_id).description
+                )
             )
 
     def _validate_plan(self) -> None:
@@ -282,7 +287,7 @@ class LadderPlanner:
 
         # Validate task dependencies
         for task_id in self.task_graph.get_all_task_ids():
-            task = self.task_graph.get_task(task_id)
+            self.task_graph.get_task(task_id)
             dependencies = self.task_graph.get_dependencies(task_id)
 
             # Check dependency validity

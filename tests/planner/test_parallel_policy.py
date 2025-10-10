@@ -15,7 +15,9 @@ def test_parallelization_when_conditions_met():
         Step(estimated_time=4, tool="b"),
         Step(estimated_time=6, tool="c"),
     ]
-    assert should_parallelize(substeps, parallel_threshold=2, min_parallel_benefit=3)
+    assert should_parallelize(
+        substeps, parallel_threshold=2, min_parallel_benefit=3
+    )
 
 
 def test_no_parallelization_with_shared_dependencies():

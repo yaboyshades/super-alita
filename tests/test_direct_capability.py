@@ -38,7 +38,9 @@ async def test_capability_directly():
     if "diffs" in latest:
         print(f'Generated diffs: {len(latest["diffs"])}')
         for diff in latest["diffs"]:
-            print(f'  - {diff["path"]} (confidence: {diff.get("confidence", "N/A")})')
+            print(
+                f'  - {diff["path"]} (confidence: {diff.get("confidence", "N/A")})'
+            )
 
     print("\n3. Testing gate validation...")
     # Test what the gate is looking for

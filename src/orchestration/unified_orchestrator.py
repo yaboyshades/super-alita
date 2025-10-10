@@ -82,6 +82,7 @@ stable event emission.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 import uuid
@@ -139,12 +140,16 @@ class UnifiedRunConfig:
         return cls(
             prompt=prompt,
             run_id=args.get("run_id") or str(uuid.uuid4()),
-            session_id=(args.get("session_id") or args.get("session") or "default"),
+            session_id=(
+                args.get("session_id") or args.get("session") or "default"
+            ),
             enable_specification=bool(args.get("enable_specification", False)),
             enable_planning=bool(args.get("enable_planning", True)),
             enable_tasks=bool(args.get("enable_tasks", False)),
             enable_consensus=bool(args.get("enable_consensus", True)),
-            enable_code_generation=bool(args.get("enable_code_generation", False)),
+            enable_code_generation=bool(
+                args.get("enable_code_generation", False)
+            ),
             enable_validation=bool(args.get("enable_validation", False)),
             enable_scoring=bool(args.get("enable_scoring", False)),
             test_first=bool(args.get("test_first", True)),
@@ -192,7 +197,9 @@ class UnifiedOrchestrator:
         sequence = 0
         ledger_writer = None
         if RUN_LEDGER_ENABLED:
-            ledger_writer = RunLedgerWriter(RUN_LEDGER_PATH, enable_shadow=not CANONICAL_EVENTS_ENABLED)
+            ledger_writer = RunLedgerWriter(
+                RUN_LEDGER_PATH, enable_shadow=not CANONICAL_EVENTS_ENABLED
+            )
         stage_counter = 0
         abilities_invoked = 0
         run_corr = _new_correlation("run")
@@ -207,15 +214,11 @@ class UnifiedOrchestrator:
             payload = event.to_dict()
             await self._emit(payload)
             if ledger_writer is not None:
-                try:
+                with contextlib.suppress(Exception):
                     ledger_writer.append(event)
-                except Exception:
-                    pass
             if observer is not None:
-                try:
+                with contextlib.suppress(Exception):
                     observer.record_canonical_event(payload)
-                except Exception:
-                    pass
             return payload
 
         run_started_payload = await emit(
@@ -281,7 +284,9 @@ class UnifiedOrchestrator:
                     "circuit_state",
                 )
             }
-            reliability_info["correlation_id"] = reliability_result.get("correlation_id") or stage_corr
+            reliability_info["correlation_id"] = (
+                reliability_result.get("correlation_id") or stage_corr
+            )
 
             if reliability_result["status"] == "skipped":
                 stages_output[name] = {
@@ -578,7 +583,9 @@ class UnifiedOrchestrator:
             ):
                 yield event
 
-        async for event in stage("consensus", config.enable_consensus, do_consensus):
+        async for event in stage(
+            "consensus", config.enable_consensus, do_consensus
+        ):
             yield event
         if stages_output.get("consensus", {}).get("status") == "success":
             consensus_out = stages_output["consensus"].get("output")
@@ -632,14 +639,13 @@ class UnifiedOrchestrator:
             "aggregate": aggregate,
         }
         yield terminated_payload
+
     async def _emit(self, event: dict[str, Any]) -> None:
         try:
             if self.event_bus is not None:
                 await self.event_bus.emit(event)
         except Exception:  # pragma: no cover - emission failures non-fatal
             pass
-
-
 
 
 def _iso_now() -> str:
@@ -713,7 +719,10 @@ def _final_output_preview(stages_output: dict[str, Any]) -> str | None:
 
 
 def _count_stage_successes(stages: dict[str, Any]) -> int:
-    return sum(1 for data in stages.values() if data.get("status") == "success")
+    return sum(
+        1 for data in stages.values() if data.get("status") == "success"
+    )
+
 
 def _summarize(output: Any) -> dict[str, Any]:
     if output is None:
@@ -739,8 +748,13 @@ def _truncate(obj: Any, limit: int = 5000) -> Any:
 def _aggregate(stages: dict[str, Any]) -> dict[str, Any]:
     agg: dict[str, Any] = {}
     if "consensus" in stages and stages["consensus"]["status"] == "success":
-        agg["consensus_text"] = stages["consensus"]["output"].get("consensus_text")
-    if "code_generation" in stages and stages["code_generation"]["status"] == "success":
+        agg["consensus_text"] = stages["consensus"]["output"].get(
+            "consensus_text"
+        )
+    if (
+        "code_generation" in stages
+        and stages["code_generation"]["status"] == "success"
+    ):
         fp = stages["code_generation"]["output"].get("file_path")
         if fp:
             agg["written_files"] = [fp]

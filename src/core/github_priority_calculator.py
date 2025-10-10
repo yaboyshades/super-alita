@@ -21,7 +21,9 @@ class EnhancedPriorityMetrics(BaseModel):
     """Enhanced priority metrics combining base and GitHub-specific factors."""
 
     # Base priority factors
-    impact: float = Field(default=5.0, ge=1.0, le=10.0, description="Task impact score")
+    impact: float = Field(
+        default=5.0, ge=1.0, le=10.0, description="Task impact score"
+    )
     urgency: float = Field(
         default=5.0, ge=1.0, le=10.0, description="Task urgency score"
     )
@@ -87,7 +89,9 @@ class GitHubPriorityCalculator:
         }
 
     def calculate_priority(
-        self, metrics: EnhancedPriorityMetrics, context: dict[str, Any] | None = None
+        self,
+        metrics: EnhancedPriorityMetrics,
+        context: dict[str, Any] | None = None,
     ) -> float:
         """Calculate enhanced priority score with GitHub metrics."""
 
@@ -118,14 +122,18 @@ class GitHubPriorityCalculator:
         # Clamp to reasonable range
         return max(0.1, min(100.0, final_priority))
 
-    def _calculate_base_priority(self, metrics: EnhancedPriorityMetrics) -> float:
+    def _calculate_base_priority(
+        self, metrics: EnhancedPriorityMetrics
+    ) -> float:
         """Calculate base priority using impact, urgency, effort formula."""
         if metrics.effort <= 0:
             metrics.effort = 1.0  # Avoid division by zero
 
         return (metrics.impact * metrics.urgency) / metrics.effort
 
-    def _calculate_github_adjustments(self, metrics: EnhancedPriorityMetrics) -> float:
+    def _calculate_github_adjustments(
+        self, metrics: EnhancedPriorityMetrics
+    ) -> float:
         """Calculate GitHub-specific priority adjustments."""
 
         if not metrics.github_metrics:
@@ -149,7 +157,8 @@ class GitHubPriorityCalculator:
         # Critical/urgent labels
         critical_labels = ["critical", "urgent", "hotfix", "security"]
         if any(
-            label.lower() in critical_labels for label in github_metrics.issue_labels
+            label.lower() in critical_labels
+            for label in github_metrics.issue_labels
         ):
             adjustment *= self.github_weights["critical_label"]
 
@@ -162,7 +171,9 @@ class GitHubPriorityCalculator:
             adjustment *= self.github_weights["merge_conflicts"]
 
         # High activity (comments/reviews) indicates importance
-        total_activity = github_metrics.comment_count + github_metrics.review_count
+        total_activity = (
+            github_metrics.comment_count + github_metrics.review_count
+        )
         if total_activity > 10:
             adjustment *= self.github_weights["high_activity"]
 
@@ -195,7 +206,9 @@ class GitHubPriorityCalculator:
 
         return adjustment
 
-    def _calculate_social_adjustments(self, metrics: EnhancedPriorityMetrics) -> float:
+    def _calculate_social_adjustments(
+        self, metrics: EnhancedPriorityMetrics
+    ) -> float:
         """Calculate social/community factor adjustments."""
 
         adjustment = 1.0
@@ -211,7 +224,9 @@ class GitHubPriorityCalculator:
 
         return adjustment
 
-    def _calculate_risk_adjustments(self, metrics: EnhancedPriorityMetrics) -> float:
+    def _calculate_risk_adjustments(
+        self, metrics: EnhancedPriorityMetrics
+    ) -> float:
         """Calculate technical risk adjustments."""
 
         adjustment = 1.0
@@ -250,7 +265,9 @@ class GitHubPriorityCalculator:
             AttentionLevel.CRITICAL: 9.0,
         }
 
-        calculated_urgency = urgency_mapping.get(event.attention_level, base_urgency)
+        calculated_urgency = urgency_mapping.get(
+            event.attention_level, base_urgency
+        )
 
         # Estimate impact based on event type
         impact_mapping = {
@@ -261,7 +278,9 @@ class GitHubPriorityCalculator:
             "review_submitted": 4.0,
         }
 
-        calculated_impact = impact_mapping.get(event.event_type.value, base_impact)
+        calculated_impact = impact_mapping.get(
+            event.event_type.value, base_impact
+        )
 
         # Create basic GitHub metrics from event payload
         github_metrics = GitHubPriorityMetrics()
@@ -295,18 +314,22 @@ class GitHubPriorityCalculator:
         )
 
     def create_priority_metrics_from_task(
-        self, task: TaskRequest, github_metrics: GitHubPriorityMetrics | None = None
+        self,
+        task: TaskRequest,
+        github_metrics: GitHubPriorityMetrics | None = None,
     ) -> EnhancedPriorityMetrics:
         """Create priority metrics from task request."""
 
         # Map task priority to impact/urgency
-        priority_scale = task.priority / 10.0  # Normalize to 0-1
+        task.priority / 10.0  # Normalize to 0-1
 
         # Calculate age if task has timestamp in metadata
         age_hours = 0.0
         if "created_at" in task.metadata:
             try:
-                created_at = datetime.fromisoformat(task.metadata["created_at"])
+                created_at = datetime.fromisoformat(
+                    task.metadata["created_at"]
+                )
                 age_hours = (
                     datetime.now(UTC) - created_at
                 ).total_seconds() / 3600
@@ -359,7 +382,9 @@ class GitHubPriorityCalculator:
 
         # Temporal factors
         if metrics.age_hours > 48:
-            factors.append(f"Old item ({metrics.age_hours:.1f}h) - increasing urgency")
+            factors.append(
+                f"Old item ({metrics.age_hours:.1f}h) - increasing urgency"
+            )
         if metrics.deadline_hours and metrics.deadline_hours <= 24:
             factors.append("Approaching deadline - high urgency")
 

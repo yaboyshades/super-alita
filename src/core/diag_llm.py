@@ -20,11 +20,16 @@ if project_root not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from src.core.llm_client import LLMUnavailable, generate  # noqa: E402
-from src.core.settings import LLM_MODEL, LLM_RETRIES, LLM_TIMEOUT_SEC  # noqa: E402
+from src.core.settings import (
+    LLM_MODEL,
+    LLM_RETRIES,
+    LLM_TIMEOUT_SEC,
+)  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 log = logging.getLogger("diag_llm")
 
@@ -73,14 +78,18 @@ async def test_llm():
         return False
     except Exception:
         elapsed = time.time() - start_time
-        log.exception("❌ Unexpected error during LLM test (%.2f seconds)", elapsed)
+        log.exception(
+            "❌ Unexpected error during LLM test (%.2f seconds)", elapsed
+        )
         return False
     else:
         return True
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Diagnose LLM provider integration")
+    parser = argparse.ArgumentParser(
+        description="Diagnose LLM provider integration"
+    )
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose logging"
     )

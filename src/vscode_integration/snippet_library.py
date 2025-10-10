@@ -25,7 +25,9 @@ class SnippetLibrary(PluginInterface):
         await self._ensure_snippets_exist()
         return True
 
-    async def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
+    async def process_event(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Process snippet-related events."""
         event_type = event.get("type")
 
@@ -48,7 +50,9 @@ class SnippetLibrary(PluginInterface):
             with open(python_snippets_path, "w", encoding="utf-8") as f:
                 json.dump(python_snippets, f, indent=2, ensure_ascii=False)
 
-    async def _get_snippets_for_language(self, language: str) -> dict[str, Any]:
+    async def _get_snippets_for_language(
+        self, language: str
+    ) -> dict[str, Any]:
         """Get snippets for specified language."""
         if language == "python":
             return {"snippets": self._get_python_snippets()}
@@ -297,7 +301,9 @@ class SnippetLibrary(PluginInterface):
         except Exception:
             return False
 
-    async def get_snippets_by_category(self, category: str) -> list[dict[str, Any]]:
+    async def get_snippets_by_category(
+        self, category: str
+    ) -> list[dict[str, Any]]:
         """Get snippets filtered by category."""
         python_snippets = self._get_python_snippets()
 
@@ -332,9 +338,7 @@ class SnippetLibrary(PluginInterface):
         matching_snippets = []
         for name, snippet in python_snippets.items():
             # Search in name, description, and prefix
-            search_text = (
-                f"{name} {snippet.get('description', '')} {snippet.get('prefix', '')}"
-            )
+            search_text = f"{name} {snippet.get('description', '')} {snippet.get('prefix', '')}"
             if query_lower in search_text.lower():
                 snippet["name"] = name
                 matching_snippets.append(snippet)

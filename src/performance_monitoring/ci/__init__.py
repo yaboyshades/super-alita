@@ -10,8 +10,8 @@ from .quality_gates import (
 
 __all__ = [
     "QualityGatePipeline",
-    "ConstitutionalGate", 
+    "ConstitutionalGate",
     "PerformanceGate",
     "SecurityGate",
-    "QualityGateResult"
+    "QualityGateResult",
 ]

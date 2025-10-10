@@ -26,7 +26,9 @@ class ToolSpec(TypedDict, total=False):
 
 
 @runtime_checkable
-class ToolProvidingPlugin(Protocol):  # pragma: no cover - structural typing helper
+class ToolProvidingPlugin(
+    Protocol
+):  # pragma: no cover - structural typing helper
     """Protocol for plugins that expose tooling interfaces used by the REUG flow."""
 
     name: str

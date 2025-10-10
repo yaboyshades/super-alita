@@ -188,7 +188,10 @@ class DecisionPolicyEngine:
         return decision
 
     async def provide_feedback(
-        self, decision_id: str, reward: float, metadata: dict[str, Any] | None = None
+        self,
+        decision_id: str,
+        reward: float,
+        metadata: dict[str, Any] | None = None,
     ) -> bool:
         """
         Provide reward feedback for a previous decision.
@@ -213,7 +216,9 @@ class DecisionPolicyEngine:
         bandit = self.bandits[policy_id]
 
         # Update bandit with reward
-        success = bandit.update_reward(decision.bandit_decision.decision_id, reward)
+        success = bandit.update_reward(
+            decision.bandit_decision.decision_id, reward
+        )
 
         if success:
             decision.reward = reward
@@ -239,7 +244,9 @@ class DecisionPolicyEngine:
         policy_decisions = [
             d for d in self.decisions.values() if d.policy_id == policy_id
         ]
-        decisions_with_feedback = [d for d in policy_decisions if d.feedback_received]
+        decisions_with_feedback = [
+            d for d in policy_decisions if d.feedback_received
+        ]
 
         return {
             "policy": {

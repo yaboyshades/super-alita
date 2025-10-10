@@ -62,7 +62,10 @@ class AutogenCreatorPlugin(PluginInterface):
             data = getattr(event, "data", {})
 
         desc = str(
-            data.get("description") or data.get("task") or data.get("message") or ""
+            data.get("description")
+            or data.get("task")
+            or data.get("message")
+            or ""
         ).strip()
 
         if not desc:

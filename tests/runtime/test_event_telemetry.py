@@ -41,7 +41,9 @@ async def test_plugin_events_include_telemetry_fields(monkeypatch) -> None:
         ) -> bool:
             return True
 
-        async def delete_file(self, path: str) -> bool:  # pragma: no cover - unused
+        async def delete_file(
+            self, path: str
+        ) -> bool:  # pragma: no cover - unused
             return True
 
         async def list_directory(self, path: str):  # pragma: no cover - unused
@@ -54,10 +56,16 @@ async def test_plugin_events_include_telemetry_fields(monkeypatch) -> None:
             cwd: str | None = None,
             env: dict[str, str] | None = None,
         ) -> dict[str, Any]:  # pragma: no cover - unused
-            return {"stdout": "", "stderr": "", "exit_code": 0, "execution_time": 0}
+            return {
+                "stdout": "",
+                "stderr": "",
+                "exit_code": 0,
+                "execution_time": 0,
+            }
 
     monkeypatch.setattr(
-        "src.plugins.puter_plugin.PuterApiClient", lambda *args, **kwargs: DummyClient()
+        "src.plugins.puter_plugin.PuterApiClient",
+        lambda *args, **kwargs: DummyClient(),
     )
 
     puter = PuterPlugin()
@@ -104,7 +112,9 @@ async def test_plugin_events_include_telemetry_fields(monkeypatch) -> None:
         source_plugin="client",
     )
     await perplex._handle_search_request(search_event)
-    result_evt = next(e for e in bus.events if e.event_type == "perplexica_result")
+    result_evt = next(
+        e for e in bus.events if e.event_type == "perplexica_result"
+    )
     assert result_evt.source_plugin == "perplexica_search"
     assert result_evt.correlation_id
     assert isinstance(result_evt.timestamp, datetime)

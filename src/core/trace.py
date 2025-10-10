@@ -89,7 +89,11 @@ def trace_component_call(component: str):
                 _tracer.log(
                     "component_call",
                     component,
-                    {"function": func.__name__, "success": False, "error": str(e)},
+                    {
+                        "function": func.__name__,
+                        "success": False,
+                        "error": str(e),
+                    },
                     duration_ms,
                 )
                 raise
@@ -114,7 +118,11 @@ def trace_component_call(component: str):
                 _tracer.log(
                     "component_call",
                     component,
-                    {"function": func.__name__, "success": False, "error": str(e)},
+                    {
+                        "function": func.__name__,
+                        "success": False,
+                        "error": str(e),
+                    },
                     duration_ms,
                 )
                 raise

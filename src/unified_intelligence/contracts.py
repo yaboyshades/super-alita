@@ -82,7 +82,10 @@ class FusionConfig(BaseModel):
         }
     )
     modifiers: dict[str, float] = Field(
-        default_factory=lambda: {"code_task_boost": 0.15, "constitutional_boost": 0.15}
+        default_factory=lambda: {
+            "code_task_boost": 0.15,
+            "constitutional_boost": 0.15,
+        }
     )
     confidence_floor: float = 0.5
     decision_thresholds: dict[str, float] = Field(

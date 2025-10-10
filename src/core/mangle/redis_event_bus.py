@@ -173,7 +173,9 @@ class RedisEventBus:
                 await pipe.execute()
 
             self._events_published += 1
-            logger.debug(f"Published event {event.event_id} to channel {channel}")
+            logger.debug(
+                f"Published event {event.event_id} to channel {channel}"
+            )
 
         except Exception as e:
             logger.error(f"Failed to emit event {event.event_id}: {e}")
@@ -240,7 +242,10 @@ class RedisEventBus:
             event_type: Type of events to unsubscribe from
             handler: Handler function to remove
         """
-        if event_type in self._subscribers and handler in self._subscribers[event_type]:
+        if (
+            event_type in self._subscribers
+            and handler in self._subscribers[event_type]
+        ):
             self._subscribers[event_type].remove(handler)
 
             # Remove empty subscriber lists
@@ -251,7 +256,9 @@ class RedisEventBus:
                 if self._pubsub:
                     channel = self._get_channel_name(event_type)
                     await self._pubsub.unsubscribe(channel)
-                    logger.info(f"Unsubscribed from events of type '{event_type}'")
+                    logger.info(
+                        f"Unsubscribed from events of type '{event_type}'"
+                    )
 
     async def get_event_history(
         self, event_type: str, limit: int = 100, start_time: str | None = None
@@ -285,7 +292,9 @@ class RedisEventBus:
             for _stream_id, fields in results:
                 try:
                     # Reconstruct event
-                    event_data = {k.decode(): v.decode() for k, v in fields.items()}
+                    event_data = {
+                        k.decode(): v.decode() for k, v in fields.items()
+                    }
 
                     from ..events import deserialize_event
 
@@ -293,7 +302,9 @@ class RedisEventBus:
                     events.append(event)
 
                 except Exception as e:
-                    logger.warning(f"Failed to deserialize event from stream: {e}")
+                    logger.warning(
+                        f"Failed to deserialize event from stream: {e}"
+                    )
                     continue
 
             return events
@@ -308,7 +319,9 @@ class RedisEventBus:
             return
 
         self._running = True
-        self._subscription_task = asyncio.create_task(self._subscription_loop())
+        self._subscription_task = asyncio.create_task(
+            self._subscription_loop()
+        )
 
     async def _subscription_loop(self) -> None:
         """Main subscription loop for processing Redis messages."""
@@ -320,7 +333,9 @@ class RedisEventBus:
                 try:
                     # Get message with timeout
                     message = await asyncio.wait_for(
-                        self._pubsub.get_message(ignore_subscribe_messages=True),
+                        self._pubsub.get_message(
+                            ignore_subscribe_messages=True
+                        ),
                         timeout=1.0,
                     )
 
@@ -363,7 +378,9 @@ class RedisEventBus:
                         else:
                             handler(event)
                     except Exception as e:
-                        logger.error(f"Handler error for event {event.event_id}: {e}")
+                        logger.error(
+                            f"Handler error for event {event.event_id}: {e}"
+                        )
 
             self._events_received += 1
 
@@ -414,11 +431,15 @@ class RedisEventBus:
                 await self.disconnect()
                 await self.connect()
 
-                logger.info(f"Reconnected to Redis after {attempt + 1} attempts")
+                logger.info(
+                    f"Reconnected to Redis after {attempt + 1} attempts"
+                )
                 return
 
             except Exception as e:
-                logger.warning(f"Reconnection attempt {attempt + 1} failed: {e}")
+                logger.warning(
+                    f"Reconnection attempt {attempt + 1} failed: {e}"
+                )
 
         logger.error("Failed to reconnect to Redis after maximum attempts")
 

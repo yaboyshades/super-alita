@@ -66,13 +66,17 @@ from cortex.planner.parallel_wrapper import ParallelLadderWrapper
 
 
 class _SuccessRunnable:
-    async def ainvoke(self, input: dict[str, str]) -> str:  # pragma: no cover - trivial
+    async def ainvoke(
+        self, input: dict[str, str]
+    ) -> str:  # pragma: no cover - trivial
         await asyncio.sleep(0.01)
         return "ok"
 
 
 class _FailRunnable:
-    async def ainvoke(self, input: dict[str, str]) -> str:  # pragma: no cover - trivial
+    async def ainvoke(
+        self, input: dict[str, str]
+    ) -> str:  # pragma: no cover - trivial
         raise RuntimeError("boom")
 
 

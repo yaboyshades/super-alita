@@ -78,7 +78,9 @@ async def main():
         if result.get("stdout"):
             print(f"Stdout: {result['stdout'][:200]}...")
     else:
-        print(f"❌ MCP server test failed: {result.get('error', 'Unknown error')}")
+        print(
+            f"❌ MCP server test failed: {result.get('error', 'Unknown error')}"
+        )
         if result.get("stderr"):
             print(f"Stderr: {result['stderr'][:200]}...")
 

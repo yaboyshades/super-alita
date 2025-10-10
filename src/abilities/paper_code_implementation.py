@@ -61,7 +61,9 @@ class MultiHeadAttention(nn.Module):
         """Compute scaled dot-product attention"""
 
         # Compute attention scores
-        scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(self.d_k)
+        scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(
+            self.d_k
+        )
 
         # Apply mask if provided
         if mask is not None:
@@ -123,7 +125,9 @@ class MultiHeadAttention(nn.Module):
 class TransformerBlock(nn.Module):
     """Single transformer block with attention and feed-forward layers"""
 
-    def __init__(self, d_model: int, num_heads: int, d_ff: int, dropout: float = 0.1):
+    def __init__(
+        self, d_model: int, num_heads: int, d_ff: int, dropout: float = 0.1
+    ):
         super().__init__()
 
         self.attention = MultiHeadAttention(d_model, num_heads, dropout)
@@ -155,7 +159,10 @@ class TransformerBlock(nn.Module):
 
 
 def create_paper_code_implementation(
-    d_model: int = 512, num_heads: int = 8, num_layers: int = 6, d_ff: int = 2048
+    d_model: int = 512,
+    num_heads: int = 8,
+    num_layers: int = 6,
+    d_ff: int = 2048,
 ) -> nn.Module:
     """Factory function to create paper implementation"""
 
@@ -163,7 +170,10 @@ def create_paper_code_implementation(
         def __init__(self):
             super().__init__()
             self.layers = nn.ModuleList(
-                [TransformerBlock(d_model, num_heads, d_ff) for _ in range(num_layers)]
+                [
+                    TransformerBlock(d_model, num_heads, d_ff)
+                    for _ in range(num_layers)
+                ]
             )
 
         def forward(

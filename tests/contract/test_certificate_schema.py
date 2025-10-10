@@ -28,7 +28,9 @@ class TestCertificateSchemaContract:
         with open(schema_path) as f:
             return json.load(f)
 
-    def test_valid_certificate_validates_against_schema(self, certificate_schema):
+    def test_valid_certificate_validates_against_schema(
+        self, certificate_schema
+    ):
         """Test that a valid certificate passes schema validation."""
         # This test MUST FAIL - no certificate generation exists yet
         from src.calculus_gate.certificate import PerformanceCertificate
@@ -53,7 +55,9 @@ class TestCertificateSchemaContract:
                 field in cert_dict
             ), f"Required field '{field}' missing from certificate"
 
-    def test_certificate_derivative_arrays_minimum_length(self, certificate_schema):
+    def test_certificate_derivative_arrays_minimum_length(
+        self, certificate_schema
+    ):
         """Test that derivative arrays meet minimum length requirements."""
         from src.calculus_gate.certificate import PerformanceCertificate
 
@@ -71,7 +75,12 @@ class TestCertificateSchemaContract:
         from src.calculus_gate.certificate import PerformanceCertificate
 
         # Valid function names should work
-        valid_names = ["test_function", "_private_func", "CamelCase", "func123"]
+        valid_names = [
+            "test_function",
+            "_private_func",
+            "CamelCase",
+            "func123",
+        ]
         for name in valid_names:
             cert = PerformanceCertificate.generate_for_function(name)
             cert_dict = cert.to_dict()
@@ -144,7 +153,9 @@ class TestCertificateSchemaContract:
         assert len(sample_set["memory_peaks"]) == input_count
         assert len(sample_set["memory_deltas"]) == input_count
 
-    def test_certificate_confidence_intervals_structure(self, certificate_schema):
+    def test_certificate_confidence_intervals_structure(
+        self, certificate_schema
+    ):
         """Test confidence interval arrays have correct structure."""
         from src.calculus_gate.certificate import PerformanceCertificate
 
@@ -158,7 +169,9 @@ class TestCertificateSchemaContract:
                 assert (
                     len(interval) == 2
                 ), "Each confidence interval must have exactly 2 values"
-                assert interval[0] <= interval[1], "Lower bound must be <= upper bound"
+                assert (
+                    interval[0] <= interval[1]
+                ), "Lower bound must be <= upper bound"
 
     def test_certificate_violations_structure(self, certificate_schema):
         """Test that violation arrays have correct [input_size, value] structure."""
@@ -172,13 +185,21 @@ class TestCertificateSchemaContract:
                 assert (
                     len(violation) == 2
                 ), "Each violation must have [input_size, value]"
-                assert isinstance(violation[0], int), "Input size must be integer"
-                assert isinstance(violation[1], (int, float)), "Value must be numeric"
+                assert isinstance(
+                    violation[0], int
+                ), "Input size must be integer"
+                assert isinstance(
+                    violation[1], int | float
+                ), "Value must be numeric"
 
         if "curvature_violations" in cert_dict:
             for violation in cert_dict["curvature_violations"]:
                 assert (
                     len(violation) == 2
                 ), "Each violation must have [input_size, value]"
-                assert isinstance(violation[0], int), "Input size must be integer"
-                assert isinstance(violation[1], (int, float)), "Value must be numeric"
+                assert isinstance(
+                    violation[0], int
+                ), "Input size must be integer"
+                assert isinstance(
+                    violation[1], int | float
+                ), "Value must be numeric"

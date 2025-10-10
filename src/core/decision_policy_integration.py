@@ -34,8 +34,12 @@ class DecisionPolicyWithMemory:
             }
             self.engine.register_capability(cap)  # type: ignore[attr-defined]
 
-    async def enhance_context_with_memory(self, goal_desc: str) -> dict[str, Any]:
-        if not self.neural_store or not hasattr(self.neural_store, "similarity_search"):
+    async def enhance_context_with_memory(
+        self, goal_desc: str
+    ) -> dict[str, Any]:
+        if not self.neural_store or not hasattr(
+            self.neural_store, "similarity_search"
+        ):
             return {"memories": [], "memory_confidence": 0.0}
         memories = await self.neural_store.similarity_search(goal_desc, top_k=5)  # type: ignore[attr-defined]
         return {

@@ -8,7 +8,11 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 from typing import Any
 
-from src.core.global_workspace import AttentionLevel, GlobalWorkspace, WorkspaceEvent
+from src.core.global_workspace import (
+    AttentionLevel,
+    GlobalWorkspace,
+    WorkspaceEvent,
+)
 from src.core.neural_atom import NeuralAtom, NeuralAtomMetadata, NeuralStore
 from src.core.plugin_interface import PluginInterface
 from src.core.schemas import (
@@ -62,7 +66,10 @@ class ToolExecutorPlugin(PluginInterface):
         self.cache_timestamps: dict[str, float] = {}
 
     async def setup(
-        self, workspace: GlobalWorkspace, store: NeuralStore, config: dict[str, Any]
+        self,
+        workspace: GlobalWorkspace,
+        store: NeuralStore,
+        config: dict[str, Any],
     ):
         """Initialize the Tool Executor Plugin with workspace and store."""
         await super().setup(workspace, store, config)
@@ -71,7 +78,9 @@ class ToolExecutorPlugin(PluginInterface):
         self.store = store
 
         # Configure execution settings
-        self.max_concurrent_executions = config.get("max_concurrent_execution", 10)
+        self.max_concurrent_executions = config.get(
+            "max_concurrent_execution", 10
+        )
         self.execution_timeout = config.get("execution_timeout", 30.0)
         self.cache_ttl = config.get("tool_cache_ttl", 300)
 
@@ -90,7 +99,9 @@ class ToolExecutorPlugin(PluginInterface):
         await super().start()
 
         if self.workspace:
-            self.workspace.subscribe("tool_executor", self._handle_workspace_event)
+            self.workspace.subscribe(
+                "tool_executor", self._handle_workspace_event
+            )
             logger.info("Tool Executor Plugin subscribed to Global Workspace")
 
     async def shutdown(self):
@@ -120,13 +131,19 @@ class ToolExecutorPlugin(PluginInterface):
                     await self._handle_tool_discovery_request(event.data)
 
         except Exception as e:
-            logger.error(f"Error handling workspace event in Tool Executor: {e}")
+            logger.error(
+                f"Error handling workspace event in Tool Executor: {e}"
+            )
 
     async def _handle_execution_request(self, request: ToolExecutionRequest):
         """Handle individual tool execution request."""
-        execution_id = request.execution_id or f"exec_{int(time.time() * 1000)}"
+        execution_id = (
+            request.execution_id or f"exec_{int(time.time() * 1000)}"
+        )
 
-        logger.info(f"⚡ EXECUTOR: Processing execution request {execution_id}")
+        logger.info(
+            f"⚡ EXECUTOR: Processing execution request {execution_id}"
+        )
 
         try:
             # Check execution limits
@@ -169,7 +186,10 @@ class ToolExecutorPlugin(PluginInterface):
             # Check cache first
             cache_key = tool_name or task_description or "unknown"
             if cache_key in self.tool_cache:
-                if time.time() - self.cache_timestamps[cache_key] < self.cache_ttl:
+                if (
+                    time.time() - self.cache_timestamps[cache_key]
+                    < self.cache_ttl
+                ):
                     return self.tool_cache[cache_key]
                 # Cache expired
                 del self.tool_cache[cache_key]
@@ -190,7 +210,8 @@ class ToolExecutorPlugin(PluginInterface):
                 for atom in self.store.get_all():
                     confidence_score = atom.can_handle(task_description)
                     if (
-                        confidence_score > best_score and confidence_score > 0.5
+                        confidence_score > best_score
+                        and confidence_score > 0.5
                     ):  # Minimum confidence threshold
                         best_score = confidence_score
                         best_atom = atom
@@ -217,7 +238,10 @@ class ToolExecutorPlugin(PluginInterface):
         self.cache_timestamps[cache_key] = time.time()
 
     async def _execute_neural_atom(
-        self, execution_id: str, request: ToolExecutionRequest, atom: NeuralAtom
+        self,
+        execution_id: str,
+        request: ToolExecutionRequest,
+        atom: NeuralAtom,
     ):
         """Execute a Neural Atom with monitoring and safety."""
         start_time = time.time()
@@ -232,7 +256,8 @@ class ToolExecutorPlugin(PluginInterface):
             }
             current_concurrent = len(self.active_executions)
             self.execution_stats["concurrent_executions_peak"] = max(
-                self.execution_stats["concurrent_executions_peak"], current_concurrent
+                self.execution_stats["concurrent_executions_peak"],
+                current_concurrent,
             )
 
         self.execution_stats["total_executions"] += 1
@@ -242,7 +267,8 @@ class ToolExecutorPlugin(PluginInterface):
 
             # Execute with timeout
             result = await asyncio.wait_for(
-                atom.safe_execute(request.parameters), timeout=self.execution_timeout
+                atom.safe_execute(request.parameters),
+                timeout=self.execution_timeout,
             )
 
             execution_time = time.time() - start_time
@@ -320,12 +346,19 @@ class ToolExecutorPlugin(PluginInterface):
                 result=result,
                 error=error,
                 execution_time=execution_time,
-                status=ExecutionStatus.COMPLETED if success else ExecutionStatus.FAILED,
+                status=(
+                    ExecutionStatus.COMPLETED
+                    if success
+                    else ExecutionStatus.FAILED
+                ),
                 atom_used=atom_metadata.name if atom_metadata else None,
             )
 
             await self.workspace.update(
-                data={"type": "tool_execution_result", **execution_result.model_dump()},
+                data={
+                    "type": "tool_execution_result",
+                    **execution_result.model_dump(),
+                },
                 source="tool_executor",
                 attention_level=(
                     AttentionLevel.HIGH if success else AttentionLevel.CRITICAL
@@ -339,7 +372,9 @@ class ToolExecutorPlugin(PluginInterface):
         except Exception as e:
             logger.error(f"Failed to send execution result: {e}")
 
-    async def _handle_batch_execution_request(self, request_data: dict[str, Any]):
+    async def _handle_batch_execution_request(
+        self, request_data: dict[str, Any]
+    ):
         """Handle batch execution of multiple tools."""
         batch_id = request_data.get("batch_id", f"batch_{int(time.time())}")
         requests = request_data.get("requests", [])
@@ -357,7 +392,9 @@ class ToolExecutorPlugin(PluginInterface):
             # Execute all requests concurrently
             tasks = []
             for request in execution_requests:
-                task = asyncio.create_task(self._handle_execution_request(request))
+                task = asyncio.create_task(
+                    self._handle_execution_request(request)
+                )
                 tasks.append(task)
 
             # Wait for all executions to complete
@@ -386,7 +423,9 @@ class ToolExecutorPlugin(PluginInterface):
                 attention_level=AttentionLevel.CRITICAL,
             )
 
-    async def _handle_tool_discovery_request(self, request_data: dict[str, Any]):
+    async def _handle_tool_discovery_request(
+        self, request_data: dict[str, Any]
+    ):
         """Handle tool discovery and capability matching requests."""
         query = request_data.get("query", "")
         limit = request_data.get("limit", 10)
@@ -418,7 +457,11 @@ class ToolExecutorPlugin(PluginInterface):
                         "capabilities": atom.metadata.capabilities,
                         "confidence_score": confidence,
                         "version": atom.metadata.version,
-                        "tags": list(atom.metadata.tags) if atom.metadata.tags else [],
+                        "tags": (
+                            list(atom.metadata.tags)
+                            if atom.metadata.tags
+                            else []
+                        ),
                         "usage_count": atom.metadata.usage_count,
                         "success_rate": atom.metadata.success_rate,
                     }
@@ -439,7 +482,11 @@ class ToolExecutorPlugin(PluginInterface):
         except Exception as e:
             logger.error(f"Tool discovery failed: {e}")
             await self.workspace.update(
-                data={"type": "tool_discovery_failed", "query": query, "error": str(e)},
+                data={
+                    "type": "tool_discovery_failed",
+                    "query": query,
+                    "error": str(e),
+                },
                 source="tool_executor",
                 attention_level=AttentionLevel.MEDIUM,
             )
@@ -513,7 +560,9 @@ class ToolExecutorPlugin(PluginInterface):
                     "description": atom.metadata.description,
                     "capabilities": atom.metadata.capabilities,
                     "version": atom.metadata.version,
-                    "tags": list(atom.metadata.tags) if atom.metadata.tags else [],
+                    "tags": (
+                        list(atom.metadata.tags) if atom.metadata.tags else []
+                    ),
                     "usage_count": atom.metadata.usage_count,
                     "success_rate": atom.metadata.success_rate,
                     "avg_execution_time": atom.metadata.avg_execution_time,

@@ -108,7 +108,9 @@ async def test_mcp_abstraction():
 
     # Test abstract endpoint
     try:
-        abstract_resp = requests.post(f"{base_url}/tools/mcp/abstract", json={})
+        abstract_resp = requests.post(
+            f"{base_url}/tools/mcp/abstract", json={}
+        )
         if abstract_resp.status_code == 200:
             abstract_data = abstract_resp.json()
             print(
@@ -126,9 +128,13 @@ async def test_mcp_abstraction():
         catalog_resp = requests.get(f"{base_url}/tools/mcp/catalog")
         if catalog_resp.status_code == 200:
             catalog_api_data = catalog_resp.json()
-            print(f"✅ /tools/mcp/catalog endpoint: {len(catalog_api_data)} tools")
+            print(
+                f"✅ /tools/mcp/catalog endpoint: {len(catalog_api_data)} tools"
+            )
         else:
-            print(f"❌ /tools/mcp/catalog endpoint failed: {catalog_resp.status_code}")
+            print(
+                f"❌ /tools/mcp/catalog endpoint failed: {catalog_resp.status_code}"
+            )
     except Exception as e:
         print(f"❌ /tools/mcp/catalog request error: {e}")
 
@@ -139,7 +145,9 @@ async def test_mcp_abstraction():
             tools_catalog_data = tools_catalog_resp.json()
             tool_names = [t.get("name") for t in tools_catalog_data]
 
-            print(f"✅ /tools/catalog endpoint: {len(tools_catalog_data)} total tools")
+            print(
+                f"✅ /tools/catalog endpoint: {len(tools_catalog_data)} total tools"
+            )
 
             # Check if our test tool is included
             if "test_calculator" in tool_names:

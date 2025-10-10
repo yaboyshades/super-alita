@@ -41,7 +41,9 @@ class PuterPlugin(PluginInterface):
         self.api_key = config.get("api_key")
         self.timeout = config.get("timeout", 30)
         self.max_retries = config.get("max_retries", 3)
-        self.retriable_statuses = set(config.get("retriable_statuses", [502, 503, 504]))
+        self.retriable_statuses = set(
+            config.get("retriable_statuses", [502, 503, 504])
+        )
         self.skip_healthcheck = bool(config.get("skip_healthcheck", False))
 
         self.current_directory = "/"
@@ -75,7 +77,9 @@ class PuterPlugin(PluginInterface):
         # Health check unless skipped
         if not self.skip_healthcheck:
             try:
-                await self._make_request("GET", "/api/health", expect_json=True)
+                await self._make_request(
+                    "GET", "/api/health", expect_json=True
+                )
                 logger.info("Successfully connected to Puter instance")
             except Exception as exc:  # pragma: no cover - network failure
                 logger.error("Failed to connect to Puter: %s", exc)
@@ -147,7 +151,9 @@ class PuterPlugin(PluginInterface):
                         status in self.retriable_statuses
                         and retry_count < self.max_retries
                     ):
-                        await asyncio.sleep(min(2**retry_count + random.random(), 8))
+                        await asyncio.sleep(
+                            min(2**retry_count + random.random(), 8)
+                        )
                         return await self._make_request(
                             method,
                             endpoint,
@@ -167,9 +173,15 @@ class PuterPlugin(PluginInterface):
 
                 # Return JSON object if available, otherwise wrap text
                 if parsed is not None:
-                    return parsed if isinstance(parsed, dict) else {"data": parsed}
+                    return (
+                        parsed
+                        if isinstance(parsed, dict)
+                        else {"data": parsed}
+                    )
                 # Non-JSON success
-                txt = raw_text if raw_text is not None else await response.text()
+                txt = (
+                    raw_text if raw_text is not None else await response.text()
+                )
                 return {"data": txt}
         except aiohttp.ClientError as exc:
             if retry_count < self.max_retries:
@@ -208,7 +220,11 @@ class PuterPlugin(PluginInterface):
     ) -> bool:
         """Write file content to Puter."""
         full_path = self._resolve_path(path)
-        data = {"path": full_path, "content": content, "create_dirs": create_dirs}
+        data = {
+            "path": full_path,
+            "content": content,
+            "create_dirs": create_dirs,
+        }
         await self._make_request("POST", "/api/fs/write", data=data)
         return True
 
@@ -224,14 +240,19 @@ class PuterPlugin(PluginInterface):
         """Delete a file."""
         full_path = self._resolve_path(path)
         await self._make_request(
-            "DELETE", "/api/fs/delete", params={"path": full_path}, expect_json=True
+            "DELETE",
+            "/api/fs/delete",
+            params={"path": full_path},
+            expect_json=True,
         )
         return True
 
     async def create_directory(self, path: str) -> bool:
         """Create a directory."""
         full_path = self._resolve_path(path)
-        await self._make_request("POST", "/api/fs/mkdir", data={"path": full_path})
+        await self._make_request(
+            "POST", "/api/fs/mkdir", data={"path": full_path}
+        )
         return True
 
     # Process execution
@@ -259,7 +280,9 @@ class PuterPlugin(PluginInterface):
             self.current_directory = new_path
             return self.current_directory
         except PuterAPIError as exc:
-            raise PuterAPIError(f"Directory does not exist: {new_path}") from exc
+            raise PuterAPIError(
+                f"Directory does not exist: {new_path}"
+            ) from exc
 
     def get_current_directory(self) -> str:
         """Get current working directory."""

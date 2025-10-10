@@ -19,7 +19,11 @@ class DummyLLM:
 def test_prompt_bundle_and_reminders():
     os.environ["CORTEX_PROMPT_REMINDERS"] = "1"
     tools = [
-        ToolSpec(name="todo.write", description="...", args_schema={"type": "object"})
+        ToolSpec(
+            name="todo.write",
+            description="...",
+            args_schema={"type": "object"},
+        )
     ]
     history = [{"role": "user", "content": "please fix failing tests"}]
     rem = ReminderEngine()
@@ -38,7 +42,10 @@ def test_subagent_isolation_and_summary():
         {
             "tool_call": {
                 "tool": "todo.write",
-                "args": {"parent_title": "Fix", "subtasks": [{"title": "Reproduce"}]},
+                "args": {
+                    "parent_title": "Fix",
+                    "subtasks": [{"title": "Reproduce"}],
+                },
             }
         },
         {"content": "Final summary: Investigated and planned [done]"},

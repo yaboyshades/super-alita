@@ -46,13 +46,17 @@ class NativeDeepCodePlugin(PluginInterface):
         super().__init__()
         self._latest_results: dict[str, Any] | None = None
         self._active_requests: dict[str, dict[str, Any]] = {}
-        self._results_cache = Path(tempfile.gettempdir()) / "deepcode_native_cache.json"
+        self._results_cache = (
+            Path(tempfile.gettempdir()) / "deepcode_native_cache.json"
+        )
 
     @property
     def name(self) -> str:
         return "native_deepcode"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         logger.info("Native DeepCode plugin setup complete")
 
@@ -137,7 +141,9 @@ class NativeDeepCodePlugin(PluginInterface):
             },
         ]
 
-    async def invoke_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    async def invoke_tool(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
         """Native tool invocation - no external API needed"""
         if tool_name == "deepcode_request":
             return await self._native_deepcode_request(**args)
@@ -454,10 +460,16 @@ pip install requests beautifulsoup4
                 },
             ],
             "tests": [
-                {"path": "tests/abilities/test_web_scraper.py", "content": test_content}
+                {
+                    "path": "tests/abilities/test_web_scraper.py",
+                    "content": test_content,
+                }
             ],
             "docs": [
-                {"path": "docs/abilities/web_scraper.md", "content": docs_content}
+                {
+                    "path": "docs/abilities/web_scraper.md",
+                    "content": docs_content,
+                }
             ],
             "confidence": 0.85,
             "proposal_id": f"native_webscraper_{sha256(requirements.encode()).hexdigest()[:8]}",
@@ -828,7 +840,9 @@ if __name__ == "__main__":
         """Generate research paper implementation - intelligently analyze requirements"""
 
         # Instead of hardcoding architectures, intelligently generate based on requirements
-        return await self._generate_intelligent_implementation(requirements, repo_path)
+        return await self._generate_intelligent_implementation(
+            requirements, repo_path
+        )
 
     async def _generate_intelligent_implementation(
         self, requirements: str, repo_path: str
@@ -858,7 +872,9 @@ if __name__ == "__main__":
                 {
                     "path": f"tests/abilities/test_{base_name}_paper_code_implementation.py",
                     "change_type": "add",
-                    "new_content": self._generate_adaptive_tests(base_name, concepts),
+                    "new_content": self._generate_adaptive_tests(
+                        base_name, concepts
+                    ),
                     "confidence": 0.90,
                 },
                 {
@@ -873,7 +889,9 @@ if __name__ == "__main__":
             "tests": [
                 {
                     "path": f"tests/abilities/test_{base_name}_paper_code_implementation.py",
-                    "content": self._generate_adaptive_tests(base_name, concepts),
+                    "content": self._generate_adaptive_tests(
+                        base_name, concepts
+                    ),
                 }
             ],
             "docs": [
@@ -904,10 +922,20 @@ if __name__ == "__main__":
         arch_patterns = {
             "transformer": ["transformer", "attention", "bert", "gpt"],
             "resnet": ["resnet", "residual", "skip connection"],
-            "gan": ["gan", "generative adversarial", "generator", "discriminator"],
+            "gan": [
+                "gan",
+                "generative adversarial",
+                "generator",
+                "discriminator",
+            ],
             "cnn": ["convolutional", "conv", "feature map"],
             "rnn": ["rnn", "lstm", "gru", "recurrent"],
-            "alita": ["alita", "conversational", "multi-modal", "information-seeking"],
+            "alita": [
+                "alita",
+                "conversational",
+                "multi-modal",
+                "information-seeking",
+            ],
             "neural_symbolic": ["symbolic", "reasoning", "logic", "knowledge"],
             "memory": ["memory", "episodic", "working memory", "retrieval"],
             "fusion": ["fusion", "multi-modal", "cross-modal", "integration"],
@@ -941,18 +969,26 @@ if __name__ == "__main__":
                 concepts["components"].append(comp)
 
         # Extract domain-specific terms
-        if "conversational" in requirements_lower or "dialog" in requirements_lower:
+        if (
+            "conversational" in requirements_lower
+            or "dialog" in requirements_lower
+        ):
             concepts["domains"].append("conversational_ai")
         if "vision" in requirements_lower or "image" in requirements_lower:
             concepts["domains"].append("computer_vision")
         if "nlp" in requirements_lower or "language" in requirements_lower:
             concepts["domains"].append("natural_language")
-        if "multimodal" in requirements_lower or "multi-modal" in requirements_lower:
+        if (
+            "multimodal" in requirements_lower
+            or "multi-modal" in requirements_lower
+        ):
             concepts["domains"].append("multimodal")
 
         return concepts
 
-    def _determine_architecture_type(self, concepts: dict[str, list[str]]) -> str:
+    def _determine_architecture_type(
+        self, concepts: dict[str, list[str]]
+    ) -> str:
         """Determine the primary architecture type from concepts"""
         architectures = concepts.get("architectures", [])
 
@@ -978,7 +1014,9 @@ if __name__ == "__main__":
             else:
                 return "neural_network"
 
-    def _generate_filename(self, concepts: dict[str, list[str]], arch_type: str) -> str:
+    def _generate_filename(
+        self, concepts: dict[str, list[str]], arch_type: str
+    ) -> str:
         """Generate appropriate filename based on concepts"""
         architectures = concepts.get("architectures", [])
 
@@ -1026,7 +1064,9 @@ from typing import Optional, Dict, List, Tuple, Union, Any
         else:
             return header + self._generate_generic_neural_network(concepts)
 
-    def _generate_alita_architecture(self, concepts: dict[str, list[str]]) -> str:
+    def _generate_alita_architecture(
+        self, concepts: dict[str, list[str]]
+    ) -> str:
         """Generate Alita conversational AI architecture"""
         return '''
 class MultiModalFusion(nn.Module):
@@ -1232,7 +1272,9 @@ if __name__ == "__main__":
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
 '''
 
-    def _generate_transformer_architecture(self, concepts: dict[str, list[str]]) -> str:
+    def _generate_transformer_architecture(
+        self, concepts: dict[str, list[str]]
+    ) -> str:
         """Generate transformer architecture based on concepts"""
         return '''
 class TransformerModel(nn.Module):
@@ -1254,7 +1296,9 @@ def create_paper_code_implementation(**kwargs) -> nn.Module:
     return TransformerModel(**kwargs)
 '''
 
-    def _generate_resnet_architecture(self, concepts: dict[str, list[str]]) -> str:
+    def _generate_resnet_architecture(
+        self, concepts: dict[str, list[str]]
+    ) -> str:
         """Generate ResNet architecture based on concepts"""
         return '''
 class ResNetModel(nn.Module):
@@ -1280,7 +1324,9 @@ def create_paper_code_implementation(**kwargs) -> nn.Module:
     return ResNetModel(**kwargs)
 '''
 
-    def _generate_multimodal_architecture(self, concepts: dict[str, list[str]]) -> str:
+    def _generate_multimodal_architecture(
+        self, concepts: dict[str, list[str]]
+    ) -> str:
         """Generate multimodal fusion architecture"""
         return '''
 class MultiModalModel(nn.Module):
@@ -1321,7 +1367,9 @@ def create_paper_code_implementation(**kwargs) -> nn.Module:
     return MemoryNetwork(**kwargs)
 '''
 
-    def _generate_generic_neural_network(self, concepts: dict[str, list[str]]) -> str:
+    def _generate_generic_neural_network(
+        self, concepts: dict[str, list[str]]
+    ) -> str:
         """Generate generic neural network based on concepts"""
         return '''
 class GenericNeuralNetwork(nn.Module):
@@ -2266,7 +2314,10 @@ if __name__ == "__main__":
             except Exception as e:
                 logger.warning(f"Failed to load cached results: {e}")
 
-        return {"status": "no_results", "message": "No generation results available"}
+        return {
+            "status": "no_results",
+            "message": "No generation results available",
+        }
 
     async def _native_deepcode_apply(
         self, paths: list[str] | None = None

@@ -9,7 +9,9 @@ from .base_gate import Gate
 # Basic static patterns
 RE_EVAL = re.compile(r"\beval\s*\(")
 RE_OS_SYSTEM = re.compile(r"\bos\.system\s*\(")
-RE_SHELL_TRUE = re.compile(r"subprocess\.(?:Popen|run|call)\(.*shell\s*=\s*True", re.S)
+RE_SHELL_TRUE = re.compile(
+    r"subprocess\.(?:Popen|run|call)\(.*shell\s*=\s*True", re.S
+)
 
 
 class SafetyGate(Gate):
@@ -18,19 +20,25 @@ class SafetyGate(Gate):
     def __init__(self, api_client):
         self.api = api_client
 
-    def validate_latest(self, latest: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+    def validate_latest(
+        self, latest: dict[str, Any]
+    ) -> tuple[bool, dict[str, Any]]:
         diffs = list(latest.get("diffs") or [])
         reasons: list[str] = []
         for d in diffs:
             path = d.get("path", "")
             code = d.get("new_content") or ""
-            if path.endswith((".py", ".md", ".json", ".yml", ".yaml", ".rst", ".txt")):
+            if path.endswith(
+                (".py", ".md", ".json", ".yml", ".yaml", ".rst", ".txt")
+            ):
                 if RE_EVAL.search(code):
                     reasons.append(f"{path}: eval() detected")
                 if RE_OS_SYSTEM.search(code):
                     reasons.append(f"{path}: os.system() detected")
                 if RE_SHELL_TRUE.search(code):
-                    reasons.append(f"{path}: subprocess(..., shell=True) detected")
+                    reasons.append(
+                        f"{path}: subprocess(..., shell=True) detected"
+                    )
                 res = self.api.secure_scan_code(code)
                 for it in res.get("result", {}).get("issues", []):
                     reasons.append(
@@ -50,7 +58,9 @@ class RequiredPathsGate(Gate):
         self.required_paths = required_paths
         self.required_docs = required_docs or []
 
-    def validate_latest(self, latest: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+    def validate_latest(
+        self, latest: dict[str, Any]
+    ) -> tuple[bool, dict[str, Any]]:
         diffs = list(latest.get("diffs") or [])
         paths = [d.get("path") for d in diffs if d.get("path")]
         reasons: list[str] = []
@@ -72,7 +82,9 @@ class PytestGate(Gate):
         self.api = api_client
         self.args = args or ["-q"]
 
-    def validate_latest(self, latest: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+    def validate_latest(
+        self, latest: dict[str, Any]
+    ) -> tuple[bool, dict[str, Any]]:
         # We could analyze latest diffs to determine which tests to run,
         # but for now we run all tests as configured
         _ = latest  # Acknowledged unused for now
@@ -88,7 +100,9 @@ class CombinedGate(Gate):
     def __init__(self, *gates: Gate):
         self.gates = list(gates)
 
-    def validate_latest(self, latest: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+    def validate_latest(
+        self, latest: dict[str, Any]
+    ) -> tuple[bool, dict[str, Any]]:
         all_ok = True
         info: dict[str, Any] = {"reasons": []}
         paths = None

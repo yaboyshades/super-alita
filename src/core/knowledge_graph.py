@@ -120,7 +120,9 @@ class KGRelationship:
         if not self.id:
             self.id = str(uuid4())
 
-    def update_weight(self, new_weight: float, provenance: ProvenanceAnnotation):
+    def update_weight(
+        self, new_weight: float, provenance: ProvenanceAnnotation
+    ):
         """Update relationship weight with provenance"""
         self.weight = new_weight
         self.version += 1
@@ -179,7 +181,9 @@ class EventProcessor:
 
         return entities, relationships
 
-    async def _extract_tool_entities(self, event: dict[str, Any]) -> list[KGEntity]:
+    async def _extract_tool_entities(
+        self, event: dict[str, Any]
+    ) -> list[KGEntity]:
         """Extract entities from tool call events"""
         entities = []
 
@@ -226,7 +230,10 @@ class EventProcessor:
                     event.get("timestamp", datetime.now(UTC).isoformat())
                 ),
                 confidence_score=1.0,
-                evidence={"event_type": "dynamic_tool_created", "tool_data": tool_data},
+                evidence={
+                    "event_type": "dynamic_tool_created",
+                    "tool_data": tool_data,
+                },
             )
 
             dynamic_tool_entity = KGEntity(
@@ -245,7 +252,9 @@ class EventProcessor:
 
         return entities
 
-    async def _extract_user_entities(self, event: dict[str, Any]) -> list[KGEntity]:
+    async def _extract_user_entities(
+        self, event: dict[str, Any]
+    ) -> list[KGEntity]:
         """Extract entities from user input events"""
         entities = []
 
@@ -259,7 +268,10 @@ class EventProcessor:
                 event.get("timestamp", datetime.now(UTC).isoformat())
             ),
             confidence_score=1.0,
-            evidence={"event_type": "user_input", "input_length": len(user_input)},
+            evidence={
+                "event_type": "user_input",
+                "input_length": len(user_input),
+            },
         )
 
         user_entity = KGEntity(
@@ -276,7 +288,9 @@ class EventProcessor:
 
         return entities
 
-    async def _extract_response_entities(self, event: dict[str, Any]) -> list[KGEntity]:
+    async def _extract_response_entities(
+        self, event: dict[str, Any]
+    ) -> list[KGEntity]:
         """Extract entities from response generation events"""
         entities = []
 
@@ -394,7 +408,10 @@ class EventProcessor:
                     event.get("timestamp", datetime.now(UTC).isoformat())
                 ),
                 confidence_score=0.9,
-                evidence={"event_type": "state_transition", "trigger": trigger},
+                evidence={
+                    "event_type": "state_transition",
+                    "trigger": trigger,
+                },
             )
 
             # State triggers state relationship
@@ -431,7 +448,9 @@ class KnowledgeGraphEnricher:
     async def _process_event_for_kg(self, event: dict[str, Any]):
         """Process event for knowledge graph enrichment"""
         try:
-            entities, relationships = await self.event_processor.process_event(event)
+            entities, relationships = await self.event_processor.process_event(
+                event
+            )
 
             # Add or update entities
             for entity in entities:
@@ -458,7 +477,9 @@ class KnowledgeGraphEnricher:
             )
 
         except Exception as e:
-            logger.error("Error processing event for KG enrichment: %s", str(e))
+            logger.error(
+                "Error processing event for KG enrichment: %s", str(e)
+            )
 
     async def _add_or_update_entity(self, entity: KGEntity):
         """Add or update entity in knowledge graph"""
@@ -466,7 +487,8 @@ class KnowledgeGraphEnricher:
             # Update existing entity
             existing = self.entities[entity.id]
             existing.update_properties(
-                entity.properties, entity.provenance[0] if entity.provenance else None
+                entity.properties,
+                entity.provenance[0] if entity.provenance else None,
             )
         else:
             # Add new entity
@@ -480,7 +502,11 @@ class KnowledgeGraphEnricher:
             new_weight = min(existing.weight + 0.1, 2.0)  # Cap at 2.0
             existing.update_weight(
                 new_weight,
-                relationship.provenance[0] if relationship.provenance else None,
+                (
+                    relationship.provenance[0]
+                    if relationship.provenance
+                    else None
+                ),
             )
         else:
             # Add new relationship
@@ -497,7 +523,9 @@ class KnowledgeGraphEnricher:
 
         for relationship in self.relationships.values():
             rel_type = relationship.relationship_type.value
-            relationship_types[rel_type] = relationship_types.get(rel_type, 0) + 1
+            relationship_types[rel_type] = (
+                relationship_types.get(rel_type, 0) + 1
+            )
 
         return {
             "total_entities": len(self.entities),
@@ -513,8 +541,12 @@ class KnowledgeGraphEnricher:
     def export_graph(self) -> dict[str, Any]:
         """Export the knowledge graph in JSON format"""
         return {
-            "entities": [entity.to_dict() for entity in self.entities.values()],
-            "relationships": [rel.to_dict() for rel in self.relationships.values()],
+            "entities": [
+                entity.to_dict() for entity in self.entities.values()
+            ],
+            "relationships": [
+                rel.to_dict() for rel in self.relationships.values()
+            ],
             "metadata": {
                 "exported_at": datetime.now(UTC).isoformat(),
                 "total_entities": len(self.entities),

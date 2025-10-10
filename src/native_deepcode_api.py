@@ -52,7 +52,9 @@ class NativeDeepCodeAPI:
         """Native implementation of deepcode_request"""
         plugin = self._get_plugin()
         if not plugin:
-            logger.warning("No native DeepCode plugin available, falling back to mock")
+            logger.warning(
+                "No native DeepCode plugin available, falling back to mock"
+            )
             return {"status": "mock", "message": "No native plugin configured"}
 
         try:

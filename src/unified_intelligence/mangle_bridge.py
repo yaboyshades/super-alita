@@ -25,7 +25,9 @@ class MangleBridge:
 
     def __init__(self, workspace_path: str | None = None):
         """Initialize the Mangle bridge with optional workspace path."""
-        self.workspace_path = Path(workspace_path) if workspace_path else Path.cwd()
+        self.workspace_path = (
+            Path(workspace_path) if workspace_path else Path.cwd()
+        )
         self.mangle_available = False
         self.fact_generator = None
         self.reasoner = None
@@ -119,9 +121,9 @@ class MangleBridge:
 
             # Query the reasoner
             result = self.reasoner.query(question)
-            if hasattr(self.reasoner, 'clear_injected_facts'):
+            if hasattr(self.reasoner, "clear_injected_facts"):
                 self.reasoner.clear_injected_facts()
-            if hasattr(result, 'success'):
+            if hasattr(result, "success"):
                 if result.success:
                     return result.format_for_display()
                 return f"Query failed: {result.error_message}"
@@ -131,7 +133,9 @@ class MangleBridge:
             logger.warning(f"Knowledge base query failed: {e}")
             return f"Query failed: {str(e)}"
 
-    def _extract_insights(self, facts: list[str], question: str) -> dict[str, Any]:
+    def _extract_insights(
+        self, facts: list[str], question: str
+    ) -> dict[str, Any]:
         """Extract additional insights from facts and question context."""
         insights = {
             "code_patterns": [],
@@ -158,7 +162,9 @@ class MangleBridge:
 
             # Code pattern detection
             if "untested" in question.lower():
-                insights["code_patterns"].append("Analyzing test coverage patterns")
+                insights["code_patterns"].append(
+                    "Analyzing test coverage patterns"
+                )
 
                 # Find potentially untested functions
                 tested_functions = set()
@@ -166,13 +172,17 @@ class MangleBridge:
                     # Extract function names being tested
                     # This is a simplified heuristic
                     if "test_" in test_fact:
-                        tested_name = test_fact.replace("test_", "").split("(")[0]
+                        tested_name = test_fact.replace("test_", "").split(
+                            "("
+                        )[0]
                         tested_functions.add(tested_name)
 
                 all_functions = set()
                 for func_fact in function_facts:
                     # Extract function names
-                    func_name = func_fact.split("(")[1].split(",")[0].strip("\"'")
+                    func_name = (
+                        func_fact.split("(")[1].split(",")[0].strip("\"'")
+                    )
                     all_functions.add(func_name)
 
                 untested = all_functions - tested_functions
@@ -191,7 +201,9 @@ class MangleBridge:
                 )
 
             if "dependency" in question.lower():
-                insights["code_patterns"].append("Analyzing dependency patterns")
+                insights["code_patterns"].append(
+                    "Analyzing dependency patterns"
+                )
 
         except Exception as e:
             logger.warning(f"Insight extraction failed: {e}")
@@ -339,7 +351,9 @@ class MangleBridge:
 
         except Exception as e:
             logger.warning(f"Complexity analysis failed: {e}")
-            return self._error_response(f"Complexity analysis failed: {str(e)}")
+            return self._error_response(
+                f"Complexity analysis failed: {str(e)}"
+            )
 
     def _analyze_dependencies(self) -> dict[str, Any]:
         """Analyze dependencies using Mangle facts."""
@@ -374,7 +388,9 @@ class MangleBridge:
 
         except Exception as e:
             logger.warning(f"Dependency analysis failed: {e}")
-            return self._error_response(f"Dependency analysis failed: {str(e)}")
+            return self._error_response(
+                f"Dependency analysis failed: {str(e)}"
+            )
 
     def _unavailable_response(self, message: str) -> dict[str, Any]:
         """Return response when Mangle is unavailable."""
@@ -456,7 +472,9 @@ class MangleBridge:
             try:
                 facts = self._generate_facts()
                 if not facts:
-                    validation["warnings"].append("No facts generated from workspace")
+                    validation["warnings"].append(
+                        "No facts generated from workspace"
+                    )
                 else:
                     validation["valid"] = True
 

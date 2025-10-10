@@ -55,7 +55,9 @@ class FakePuterServer:
     async def list_directory(self, request: web.Request) -> web.Response:
         path = request.query.get("path", "/")
         if path not in self.directories:
-            return web.json_response({"error": "Directory not found"}, status=404)
+            return web.json_response(
+                {"error": "Directory not found"}, status=404
+            )
         items = []
         for item in self.directories[path]:
             full = f"{path.rstrip('/')}/{item}"

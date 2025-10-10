@@ -38,7 +38,12 @@ class MockMessageStore:
 async def test_option_trainer_learns() -> None:
     store = MockMessageStore()
 
-    config = {"device": "cpu", "batch_size": 2, "update_frequency": 4, "ppo_epochs": 1}
+    config = {
+        "device": "cpu",
+        "batch_size": 2,
+        "update_frequency": 4,
+        "ppo_epochs": 1,
+    }
 
     trainer = OptionTrainer()
     bus = MockBus()
@@ -46,7 +51,11 @@ async def test_option_trainer_learns() -> None:
     await trainer.start()
 
     # Create an option by publishing an event that the trainer subscribes to
-    subproblem_event_data = {"subproblem_id": "sp_1", "feature_id": "f_1", "kappa": 1.0}
+    subproblem_event_data = {
+        "subproblem_id": "sp_1",
+        "feature_id": "f_1",
+        "kappa": 1.0,
+    }
 
     # The plugin's emit_event calls create_event, so the test should do the same
     # to simulate how the event bus would receive the event.
@@ -56,7 +65,8 @@ async def test_option_trainer_learns() -> None:
 
     # Get the option_id from the event emitted by the trainer
     option_created_event = next(
-        (e for e in bus.emitted_events if e.event_type == "option_created"), None
+        (e for e in bus.emitted_events if e.event_type == "option_created"),
+        None,
     )
     assert option_created_event is not None
     opt_id = option_created_event.option_id
@@ -93,7 +103,11 @@ async def test_option_trainer_learns() -> None:
 
     # Check for training event
     training_update_event = next(
-        (e for e in bus.emitted_events if e.event_type == "option_training_update"),
+        (
+            e
+            for e in bus.emitted_events
+            if e.event_type == "option_training_update"
+        ),
         None,
     )
     assert training_update_event is not None

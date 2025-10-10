@@ -31,7 +31,7 @@ __author__ = "Super Alita Development Team"
 
 __all__ = [
     "PerformanceMonitor",
-    "TelemetryBridge", 
+    "TelemetryBridge",
     "ConstitutionalEngine",
     "DashboardInterface",
     "create_optimization_suite",

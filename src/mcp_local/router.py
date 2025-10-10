@@ -1,4 +1,5 @@
 """Backward compatibility shim for src.mcp_local.router."""
+
 from __future__ import annotations
 
 import warnings

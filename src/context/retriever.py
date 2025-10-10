@@ -10,7 +10,10 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 DOC_PATHS = {
     "architecture": PROJECT_ROOT / "ADVANCED_DEVELOPMENT_PATTERNS.md",
     "agents": PROJECT_ROOT / "AGENTS.md",
-    "consensus": PROJECT_ROOT / "src" / "abilities" / "enhanced_consensus_ability.py",
+    "consensus": PROJECT_ROOT
+    / "src"
+    / "abilities"
+    / "enhanced_consensus_ability.py",
     "reug": PROJECT_ROOT / "src" / "reug_runtime" / "router.py",
     "quick_reference": PROJECT_ROOT / "AGENT_QUICK_REFERENCE.md",
 }
@@ -19,7 +22,9 @@ DOC_PATHS = {
 _context_cache: dict[str, dict] = {}
 
 
-async def fetch_context(query: str, max_results: int = 3) -> list[dict[str, str]]:
+async def fetch_context(
+    query: str, max_results: int = 3
+) -> list[dict[str, str]]:
     """
     Fetch relevant context based on the query.
     Uses a combination of keyword matching and semantic similarity.
@@ -64,7 +69,7 @@ async def fetch_context(query: str, max_results: int = 3) -> list[dict[str, str]
                 continue
 
         # Find matching snippets
-        for snippet_id, snippet_data in source_content.items():
+        for _snippet_id, snippet_data in source_content.items():
             content = snippet_data["content"].lower()
             # Calculate simple relevance score based on keyword matches
             matching_keywords = sum(1 for k in keywords if k in content)
@@ -80,7 +85,8 @@ async def fetch_context(query: str, max_results: int = 3) -> list[dict[str, str]
     # Sort by relevance and limit results
     results.sort(key=lambda x: x["relevance"], reverse=True)
     return [
-        {"title": r["title"], "snippet": r["snippet"]} for r in results[:max_results]
+        {"title": r["title"], "snippet": r["snippet"]}
+        for r in results[:max_results]
     ]
 
 

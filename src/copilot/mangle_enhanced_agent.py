@@ -40,7 +40,9 @@ class MangleEnhancedAgent:
         enhancement = self.mangle_ability.enhance_user_input(user_input)
 
         # Determine response strategy based on input type
-        response_strategy = self._determine_response_strategy(user_input, enhancement)
+        response_strategy = self._determine_response_strategy(
+            user_input, enhancement
+        )
 
         # Generate enhanced response
         response = await self._generate_enhanced_response(
@@ -62,7 +64,12 @@ class MangleEnhancedAgent:
         # Constitutional compliance questions
         if any(
             word in user_lower
-            for word in ["constitutional", "compliance", "violation", "article"]
+            for word in [
+                "constitutional",
+                "compliance",
+                "violation",
+                "article",
+            ]
         ):
             return "constitutional_analysis"
 
@@ -113,29 +120,41 @@ class MangleEnhancedAgent:
                 response.update(await self._handle_mangle_query(user_input))
 
             elif strategy == "constitutional_analysis":
-                response.update(await self._handle_constitutional_analysis(user_input))
+                response.update(
+                    await self._handle_constitutional_analysis(user_input)
+                )
 
             elif strategy == "quality_analysis":
-                response.update(await self._handle_quality_analysis(user_input))
+                response.update(
+                    await self._handle_quality_analysis(user_input)
+                )
 
             elif strategy == "specification_analysis":
-                response.update(await self._handle_specification_analysis(user_input))
+                response.update(
+                    await self._handle_specification_analysis(user_input)
+                )
 
             elif strategy == "implementation_guidance":
                 response.update(
-                    await self._handle_implementation_guidance(user_input, context)
+                    await self._handle_implementation_guidance(
+                        user_input, context
+                    )
                 )
 
             else:  # contextual_response
                 response.update(
-                    await self._handle_contextual_response(user_input, enhancement)
+                    await self._handle_contextual_response(
+                        user_input, enhancement
+                    )
                 )
 
         except Exception as e:
             response["response"] = (
                 f"I encountered an issue with Mangle analysis: {str(e)}"
             )
-            response["insights"].append("Mangle reasoning temporarily unavailable")
+            response["insights"].append(
+                "Mangle reasoning temporarily unavailable"
+            )
 
         return response
 
@@ -155,7 +174,9 @@ class MangleEnhancedAgent:
             "mangle_results": result,
         }
 
-    async def _handle_constitutional_analysis(self, user_input: str) -> dict[str, Any]:
+    async def _handle_constitutional_analysis(
+        self, user_input: str
+    ) -> dict[str, Any]:
         """Handle constitutional compliance analysis."""
         # Run constitutional validation
         const_results = self.sdd_framework.validate_constitutional_compliance()
@@ -190,11 +211,16 @@ class MangleEnhancedAgent:
             "constitutional_results": const_results,
         }
 
-    async def _handle_quality_analysis(self, user_input: str) -> dict[str, Any]:
+    async def _handle_quality_analysis(
+        self, user_input: str
+    ) -> dict[str, Any]:
         """Handle code quality analysis."""
         analysis_result = await self.mangle_ability.execute_tool(
             "mangle_analyze_context",
-            {"context_type": "workspace", "focus_areas": ["quality", "coverage"]},
+            {
+                "context_type": "workspace",
+                "focus_areas": ["quality", "coverage"],
+            },
         )
 
         summary = analysis_result.get("summary", "Analysis completed")
@@ -216,7 +242,9 @@ class MangleEnhancedAgent:
             "quality_results": analysis_result,
         }
 
-    async def _handle_specification_analysis(self, user_input: str) -> dict[str, Any]:
+    async def _handle_specification_analysis(
+        self, user_input: str
+    ) -> dict[str, Any]:
         """Handle specification-related analysis."""
         # Check for incomplete features and orphaned specs
         try:
@@ -230,23 +258,17 @@ class MangleEnhancedAgent:
             response_text = "📋 **Specification Analysis**:\n\n"
 
             if incomplete_features:
-                response_text += (
-                    f"**Incomplete Features**: {len(incomplete_features)} found\n"
-                )
+                response_text += f"**Incomplete Features**: {len(incomplete_features)} found\n"
                 for feature in incomplete_features[:3]:
                     response_text += f"- {feature}\n"
 
             if orphaned_specs:
-                response_text += (
-                    f"**Orphaned Specifications**: {len(orphaned_specs)} found\n"
-                )
+                response_text += f"**Orphaned Specifications**: {len(orphaned_specs)} found\n"
                 for spec in orphaned_specs[:3]:
                     response_text += f"- {spec}\n"
 
             if not incomplete_features and not orphaned_specs:
-                response_text += (
-                    "All specifications appear to be complete and connected to code!"
-                )
+                response_text += "All specifications appear to be complete and connected to code!"
 
             insights = [
                 f"Incomplete features: {len(incomplete_features)}",
@@ -274,14 +296,14 @@ class MangleEnhancedAgent:
 
         # Apply constitutional principles
         guidance += "**Constitutional Principles to Follow:**\n"
+        guidance += "1. **Library-First**: Research existing solutions before implementing\n"
         guidance += (
-            "1. **Library-First**: Research existing solutions before implementing\n"
+            "2. **Test-First**: Write tests before implementation (TDD)\n"
         )
-        guidance += "2. **Test-First**: Write tests before implementation (TDD)\n"
+        guidance += "3. **Simplicity**: Keep functions under 50 lines, complexity under 10\n"
         guidance += (
-            "3. **Simplicity**: Keep functions under 50 lines, complexity under 10\n"
+            "4. **Integration**: Test with real dependencies, not mocks\n"
         )
-        guidance += "4. **Integration**: Test with real dependencies, not mocks\n"
         guidance += "5. **Clarity**: Write clear, unambiguous code with documentation\n"
         guidance += "6. **Counterfactual**: Document why you chose this approach over alternatives\n\n"
 
@@ -295,7 +317,9 @@ class MangleEnhancedAgent:
             if suggestions:
                 guidance += "**Context-Specific Suggestions:**\n"
                 for suggestion in suggestions:
-                    guidance += f"- {suggestion['message']}: {suggestion['action']}\n"
+                    guidance += (
+                        f"- {suggestion['message']}: {suggestion['action']}\n"
+                    )
 
         return {
             "response": guidance,
@@ -316,16 +340,16 @@ class MangleEnhancedAgent:
 
         if auto_analysis:
             if "error" in auto_analysis:
-                response_text += (
-                    "Note: Code knowledge graph analysis is currently unavailable."
-                )
+                response_text += "Note: Code knowledge graph analysis is currently unavailable."
             else:
                 result_count = auto_analysis.get("result_count", 0)
                 if result_count > 0:
                     response_text += f"I notice there are {result_count} related items in your codebase that might be relevant. "
 
         # Add available Mangle capabilities
-        available_patterns = enhancement["mangle_context"].get("available_patterns", [])
+        available_patterns = enhancement["mangle_context"].get(
+            "available_patterns", []
+        )
         if available_patterns:
             response_text += f"\n\nI can also help you analyze your codebase. Try asking: '{available_patterns[0]}'"
 

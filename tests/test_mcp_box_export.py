@@ -22,4 +22,3 @@ def test_export_mangle_to_mcp_box(tmp_path: Path) -> None:
     res = export_mangle_to_mcp_box(dir_=str(out_dir))  # type: ignore[arg-type]
     assert res.get("catalog", 0) >= 2
     assert any(p.name.endswith(".json") for p in out_dir.glob("*.json"))
-

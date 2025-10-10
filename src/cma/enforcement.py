@@ -57,7 +57,9 @@ class CMAEnforcer:
         warnings: list[str] = []
 
         # Phase enforcement
-        phases_completed = [p.strip().lower() for p in (phases_completed or [])]
+        phases_completed = [
+            p.strip().lower() for p in (phases_completed or [])
+        ]
         for req in self.config.require_phases:
             if req.lower() not in phases_completed:
                 reasons.append(
@@ -110,13 +112,17 @@ class CMAEnforcer:
             blueprint_text=blueprint_text, phases_completed=phases_completed
         )
         if not report["ok"]:
-            parts = ["CMA enforcement failed:"] + [f"- {r}" for r in report["reasons"]]
+            parts = ["CMA enforcement failed:"] + [
+                f"- {r}" for r in report["reasons"]
+            ]
             raise CMAEnforcementError("\n".join(parts))
 
     # ------------------------
     # Internal helpers
     # ------------------------
-    def _parse_blueprint(self, text: str, reasons: list[str]) -> dict[str, Any] | None:
+    def _parse_blueprint(
+        self, text: str, reasons: list[str]
+    ) -> dict[str, Any] | None:
         try:
             obj = safe_load(text)
             if not isinstance(obj, dict):
@@ -137,7 +143,9 @@ class CMAEnforcer:
 
         def ensure(key_group: tuple[str, ...], label: str) -> None:
             if not has_any(*key_group):
-                reasons.append(f"Blueprint missing required component: {label}")
+                reasons.append(
+                    f"Blueprint missing required component: {label}"
+                )
 
         ensure(("persona_profile", "Persona Profile"), "Persona Profile")
         ensure(
@@ -145,7 +153,9 @@ class CMAEnforcer:
             "Narrative State Machine",
         )
         ensure(("sensory_palette", "Sensory Palette"), "Sensory Palette")
-        ensure(("thematic_blueprint", "Thematic Blueprint"), "Thematic Blueprint")
+        ensure(
+            ("thematic_blueprint", "Thematic Blueprint"), "Thematic Blueprint"
+        )
 
         # Library-First signal: expect explicit library/template usage record
         if not has_any(
@@ -188,4 +198,3 @@ def load_blueprint_from_env() -> tuple[str | None, list[str]]:
         return inline, phases
 
     return None, phases
-

@@ -1,6 +1,12 @@
 """CodeAct - Python action space loop with sandboxed execution."""
 
-from .actions import AgentFinish, BrowseInteractive, CmdRun, FileEdit, IPythonRunCell
+from .actions import (
+    AgentFinish,
+    BrowseInteractive,
+    CmdRun,
+    FileEdit,
+    IPythonRunCell,
+)
 from .observation import Observation
 from .runner import CodeActRunner
 from .sandbox import PythonSandbox, SandboxError, SandboxResult

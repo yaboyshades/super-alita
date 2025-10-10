@@ -30,7 +30,9 @@ class MemoryManagerAtom(PluginInterface):
     def name(self) -> str:
         return "memory_manager"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         """Initialize the memory manager atom."""
         await super().setup(event_bus, store, config)
         logger.info("MemoryManagerAtom setup complete")
@@ -39,7 +41,9 @@ class MemoryManagerAtom(PluginInterface):
         """Start the memory manager atom."""
         await super().start()
         await self.subscribe("tool_call", self._handle_tool_call)
-        logger.info("MemoryManagerAtom started - ready to handle memory operations")
+        logger.info(
+            "MemoryManagerAtom started - ready to handle memory operations"
+        )
 
     async def shutdown(self) -> None:
         """Shutdown the memory manager atom."""
@@ -71,7 +75,9 @@ class MemoryManagerAtom(PluginInterface):
                 tool_call_id = getattr(event, "tool_call_id", "unknown")
                 conversation_id = getattr(event, "conversation_id", "default")
                 session_id = getattr(event, "session_id", "default")
-                params = getattr(event, "parameters", getattr(event, "params", {}))
+                params = getattr(
+                    event, "parameters", getattr(event, "params", {})
+                )
 
             if tool_name != "memory_manager":
                 return  # Not for us
@@ -87,7 +93,9 @@ class MemoryManagerAtom(PluginInterface):
                     content = params.get("content", "")
                     if not content.strip():
                         result["error"] = "No content provided to save"
-                    elif self.store is not None and hasattr(self.store, "upsert"):
+                    elif self.store is not None and hasattr(
+                        self.store, "upsert"
+                    ):
                         memory_id = await self.store.upsert(
                             content={"text": content, "type": "user_note"},
                             hierarchy_path=["memory", "user_notes"],
@@ -138,14 +146,18 @@ class MemoryManagerAtom(PluginInterface):
                     logger.warning(f"Unknown memory action: {action}")
 
             except Exception as e:
-                logger.error(f"Failed to process memory operation: {e}", exc_info=True)
+                logger.error(
+                    f"Failed to process memory operation: {e}", exc_info=True
+                )
                 result["error"] = (
                     f"Operation failed: {str(e)[:MAX_TEXT_PREVIEW_LENGTH]}"
                 )
                 success = False
 
             # CRITICAL: Always publish a ToolResultEvent in response to a ToolCallEvent
-            if self.event_bus is not None and hasattr(self.event_bus, "publish"):
+            if self.event_bus is not None and hasattr(
+                self.event_bus, "publish"
+            ):
                 try:
                     await self.event_bus.publish(
                         ToolResultEvent(
@@ -156,7 +168,9 @@ class MemoryManagerAtom(PluginInterface):
                             success=success,
                             result=result,
                             error=(
-                                "" if success else result.get("error", "Unknown error")
+                                ""
+                                if success
+                                else result.get("error", "Unknown error")
                             ),
                         )
                     )
@@ -169,12 +183,16 @@ class MemoryManagerAtom(PluginInterface):
                         exc_info=True,
                     )
             else:
-                logger.warning("Event bus not available for publishing ToolResultEvent")
+                logger.warning(
+                    "Event bus not available for publishing ToolResultEvent"
+                )
 
             logger.info(f"✅ MemoryManager completed: {action}")
 
         except Exception as e:
-            logger.error(f"Error in memory manager tool call: {e}", exc_info=True)
+            logger.error(
+                f"Error in memory manager tool call: {e}", exc_info=True
+            )
 
             # CRITICAL: Always emit a ToolResultEvent even on failure
             # Extract IDs defensively for error case with improved logic
@@ -192,19 +210,27 @@ class MemoryManagerAtom(PluginInterface):
 
             # Secondary extraction from nested tool structure
             if hasattr(event, "tool") and isinstance(event.tool, dict):
-                conversation_id = event.tool.get("conversation_id", conversation_id)
+                conversation_id = event.tool.get(
+                    "conversation_id", conversation_id
+                )
                 session_id = event.tool.get("session_id", session_id)
                 tool_call_id = event.tool.get("call_id", tool_call_id)
 
             # Ensure we have meaningful IDs for debugging
             if tool_call_id == "unknown":
-                tool_call_id = f"error_{id(event)}"  # Use object ID as fallback
+                tool_call_id = (
+                    f"error_{id(event)}"  # Use object ID as fallback
+                )
 
             error_message = f"Memory manager error: {e!s}"
             if len(error_message) > MAX_TEXT_PREVIEW_LENGTH:
-                error_message = error_message[: MAX_TEXT_PREVIEW_LENGTH - 3] + "..."
+                error_message = (
+                    error_message[: MAX_TEXT_PREVIEW_LENGTH - 3] + "..."
+                )
 
-            if self.event_bus is not None and hasattr(self.event_bus, "publish"):
+            if self.event_bus is not None and hasattr(
+                self.event_bus, "publish"
+            ):
                 try:
                     await self.event_bus.publish(
                         ToolResultEvent(

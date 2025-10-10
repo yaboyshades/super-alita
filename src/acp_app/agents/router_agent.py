@@ -13,8 +13,12 @@ class RouterAgent:
     def __init__(self):
         self.classifier = ClassifyAgent()
 
-    async def run(self, messages: list[Message]) -> AsyncGenerator[Message, None]:
-        yield Message(parts=[MessagePart(text="Routing: Sending to classifier...")])
+    async def run(
+        self, messages: list[Message]
+    ) -> AsyncGenerator[Message, None]:
+        yield Message(
+            parts=[MessagePart(text="Routing: Sending to classifier...")]
+        )
 
         async for result in self.classifier.run(messages):
             yield result

@@ -99,7 +99,9 @@ async def demo_chemistry_water_molecule():
     registry.add_atom(oxygen)
     registry.add_atom(carbon)
 
-    print(f"📦 Created {len(registry.list_ids())} atoms: {registry.list_ids()}")
+    print(
+        f"📦 Created {len(registry.list_ids())} atoms: {registry.list_ids()}"
+    )
 
     # Import chemistry components
     try:
@@ -143,7 +145,9 @@ async def demo_chemistry_water_molecule():
                 print(f"  Task: '{task['description']}'")
                 print(f"  → Selected: {best_atom} (score: {score:.3f})")
             else:
-                print(f"  Task: '{task['description']}' → No suitable atom found")
+                print(
+                    f"  Task: '{task['description']}' → No suitable atom found"
+                )
 
         # Auto-assemble molecules
         print("\n⚗️ Auto-assembling molecules:")

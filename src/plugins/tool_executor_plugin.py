@@ -47,9 +47,13 @@ class ToolExecutorPlugin(PluginInterface):
         await super().setup(event_bus, store, config)
 
         # Get configuration
-        self.max_concurrent_executions = config.get("max_concurrent_executions", 3)
+        self.max_concurrent_executions = config.get(
+            "max_concurrent_executions", 3
+        )
         self.execution_timeout = config.get("execution_timeout_seconds", 300)
-        self.enable_parallel_execution = config.get("enable_parallel_execution", False)
+        self.enable_parallel_execution = config.get(
+            "enable_parallel_execution", False
+        )
 
         logger.info("Tool executor plugin setup complete")
 
@@ -60,7 +64,9 @@ class ToolExecutorPlugin(PluginInterface):
         # Subscribe to plan execution events
         await self.subscribe("plan_ready", self._execute_plan)
         await self.subscribe("tool_call_request", self._execute_tool_call)
-        await self.subscribe("execution_status_request", self._handle_status_request)
+        await self.subscribe(
+            "execution_status_request", self._handle_status_request
+        )
         await self.subscribe(
             "tool_call", self._handle_atom_tool_execution
         )  # For composed atoms
@@ -71,7 +77,9 @@ class ToolExecutorPlugin(PluginInterface):
             "user_message", self._handle_tool_commands
         )  # For direct tool calls
 
-        logger.info("Tool executor plugin started - ready to execute plans and tools")
+        logger.info(
+            "Tool executor plugin started - ready to execute plans and tools"
+        )
 
     async def shutdown(self) -> None:
         """Shutdown the plugin."""
@@ -87,7 +95,9 @@ class ToolExecutorPlugin(PluginInterface):
         try:
             plan_id = getattr(event, "plan_id", None)
             plan_data = getattr(event, "plan", None)
-            goal_description = getattr(event, "goal_description", "Unknown goal")
+            goal_description = getattr(
+                event, "goal_description", "Unknown goal"
+            )
             session_id = getattr(event, "session_id", "unknown")
 
             if not plan_id or not plan_data:
@@ -149,7 +159,9 @@ class ToolExecutorPlugin(PluginInterface):
                     execution_id, success=False, reason=str(e)
                 )
 
-    def _extract_plan_steps(self, plan_data: dict[str, Any]) -> list[dict[str, Any]]:
+    def _extract_plan_steps(
+        self, plan_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Extract executable steps from plan data."""
         steps = []
 
@@ -180,9 +192,13 @@ class ToolExecutorPlugin(PluginInterface):
             for i, step in enumerate(steps):
                 normalized_step = {
                     "step_id": f"step_{i + 1}",
-                    "action": step.get("action", step.get("name", f"action_{i + 1}")),
+                    "action": step.get(
+                        "action", step.get("name", f"action_{i + 1}")
+                    ),
                     "description": step.get("description", ""),
-                    "parameters": step.get("parameters", step.get("metadata", {})),
+                    "parameters": step.get(
+                        "parameters", step.get("metadata", {})
+                    ),
                     "timeout": step.get("timeout", 30),
                 }
                 normalized_steps.append(normalized_step)
@@ -209,7 +225,9 @@ class ToolExecutorPlugin(PluginInterface):
                 execution_record["current_step"] = step
                 step_id = step["step_id"]
 
-                logger.info(f"Executing step {i + 1}/{len(steps)}: {step['action']}")
+                logger.info(
+                    f"Executing step {i + 1}/{len(steps)}: {step['action']}"
+                )
 
                 # Execute the step
                 step_result = await self._execute_single_step(step)
@@ -238,8 +256,12 @@ class ToolExecutorPlugin(PluginInterface):
                         steps_total=execution_record["steps_total"],
                     )
                 else:
-                    error_msg = step_result.get("error", "Step execution failed")
-                    execution_record["errors"].append(f"Step {step_id}: {error_msg}")
+                    error_msg = step_result.get(
+                        "error", "Step execution failed"
+                    )
+                    execution_record["errors"].append(
+                        f"Step {step_id}: {error_msg}"
+                    )
 
                     # Emit step failure event
                     await self.emit_event(
@@ -251,7 +273,9 @@ class ToolExecutorPlugin(PluginInterface):
 
                     # For now, continue with other steps even if one fails
                     # In the future, this could be configurable
-                    logger.warning(f"Step {step_id} failed but continuing: {error_msg}")
+                    logger.warning(
+                        f"Step {step_id} failed but continuing: {error_msg}"
+                    )
 
             # Success if we completed at least some steps
             success = execution_record["steps_completed"] > 0
@@ -262,7 +286,9 @@ class ToolExecutorPlugin(PluginInterface):
             execution_record["errors"].append(f"Execution error: {e!s}")
             return False
 
-    async def _execute_single_step(self, step: dict[str, Any]) -> dict[str, Any]:
+    async def _execute_single_step(
+        self, step: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute a single step and return the result."""
         start_time = datetime.now()
 
@@ -332,12 +358,16 @@ class ToolExecutorPlugin(PluginInterface):
 
                 if not tool_code:
                     # Try to get from memory manager
-                    tool_memory = memory_manager.get_tool_from_library(tool_name)
+                    tool_memory = memory_manager.get_tool_from_library(
+                        tool_name
+                    )
                     if tool_memory:
                         tool_code = tool_memory.code
 
                 if tool_code:
-                    logger.info(f"🔧 Executing secure dynamic tool: {tool_name}")
+                    logger.info(
+                        f"🔧 Executing secure dynamic tool: {tool_name}"
+                    )
 
                     # Execute with security and audit trail
                     response = generator.execute_dynamic_tool(
@@ -357,9 +387,13 @@ class ToolExecutorPlugin(PluginInterface):
                         "memory_id": response.get("memory_id"),
                         "security_validated": True,
                     }
-                logger.warning(f"No executable code found for tool: {tool_name}")
+                logger.warning(
+                    f"No executable code found for tool: {tool_name}"
+                )
                 # Fallback to mock execution for compatibility
-                return await self._mock_dynamic_tool_execution(tool_name, parameters)
+                return await self._mock_dynamic_tool_execution(
+                    tool_name, parameters
+                )
             logger.warning(f"Invalid tool data format for: {tool_key}")
             return {
                 "success": False,
@@ -438,7 +472,9 @@ class ToolExecutorPlugin(PluginInterface):
             tool_name = event.tool_name
             tool_args = event.arguments
 
-            logger.info(f"Executing tool call: {tool_name} with args: {tool_args}")
+            logger.info(
+                f"Executing tool call: {tool_name} with args: {tool_args}"
+            )
 
             if tool_name in self.available_tools:
                 tool = self.available_tools[tool_name]
@@ -573,10 +609,14 @@ class ToolExecutorPlugin(PluginInterface):
     async def get_execution_stats(self) -> dict[str, Any]:
         """Get execution statistics."""
         completed_success = sum(
-            1 for exec in self.execution_history if exec.get("status") == "completed"
+            1
+            for exec in self.execution_history
+            if exec.get("status") == "completed"
         )
         completed_failed = sum(
-            1 for exec in self.execution_history if exec.get("status") == "failed"
+            1
+            for exec in self.execution_history
+            if exec.get("status") == "failed"
         )
 
         return {
@@ -584,7 +624,8 @@ class ToolExecutorPlugin(PluginInterface):
             "total_completed": len(self.execution_history),
             "successful_executions": completed_success,
             "failed_executions": completed_failed,
-            "success_rate": completed_success / max(len(self.execution_history), 1),
+            "success_rate": completed_success
+            / max(len(self.execution_history), 1),
         }
 
     async def _handle_atom_tool_execution(self, event) -> None:
@@ -745,7 +786,9 @@ class ToolExecutorPlugin(PluginInterface):
             if tool_name in safe_globals:
                 tool_function = safe_globals[tool_name]
             else:
-                raise ValueError(f"Function '{tool_name}' not found in tool code")
+                raise ValueError(
+                    f"Function '{tool_name}' not found in tool code"
+                )
 
             # Prepare parameters for execution including event bus and metadata
             exec_params = parameters.copy()
@@ -827,7 +870,9 @@ class ToolExecutorPlugin(PluginInterface):
             tool_name = tool_match.group(1)
             args = args_match.group(1) if args_match else ""
 
-            logger.info(f"🔧 Direct tool execution: {tool_name} with args: {args}")
+            logger.info(
+                f"🔧 Direct tool execution: {tool_name} with args: {args}"
+            )
 
             # Handle specific tools
             if tool_name == "prime_counter":
@@ -835,20 +880,24 @@ class ToolExecutorPlugin(PluginInterface):
 
                 await self.event_bus._redis.publish(
                     "agent_reply",
-                    json.dumps({"text": f"🔧 Tool executed → stdout: {result}"}),
+                    json.dumps(
+                        {"text": f"🔧 Tool executed → stdout: {result}"}
+                    ),
                 )
 
                 logger.info(f"✅ Tool {tool_name} executed → stdout: {result}")
 
             else:
                 await self.event_bus._redis.publish(
-                    "agent_reply", json.dumps({"text": f"❌ Unknown tool: {tool_name}"})
+                    "agent_reply",
+                    json.dumps({"text": f"❌ Unknown tool: {tool_name}"}),
                 )
 
         except Exception as e:
             logger.error(f"Error handling atom-run command: {e}")
             await self.event_bus._redis.publish(
-                "agent_reply", json.dumps({"text": f"❌ Tool execution error: {e}"})
+                "agent_reply",
+                json.dumps({"text": f"❌ Tool execution error: {e}"}),
             )
 
     async def _execute_prime_counter(self, args: str) -> str:
@@ -885,7 +934,9 @@ class ToolExecutorPlugin(PluginInterface):
             logger.error(f"Prime counter execution failed: {e}")
             return f"Error: {e!s}"
 
-    async def _execute_python_code(self, code: str, params: dict[str, Any]) -> str:
+    async def _execute_python_code(
+        self, code: str, params: dict[str, Any]
+    ) -> str:
         """Execute Python code safely with subprocess"""
         try:
             import asyncio
@@ -894,14 +945,19 @@ class ToolExecutorPlugin(PluginInterface):
             import tempfile
 
             # Create temporary file with code
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".py", delete=False
+            ) as f:
                 f.write(code)
                 temp_file = f.name
 
             try:
                 # Execute with timeout
                 proc = await asyncio.create_subprocess_exec(
-                    "python", temp_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                    "python",
+                    temp_file,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                 )
 
                 stdout, stderr = await asyncio.wait_for(

@@ -69,7 +69,7 @@ class MangleValidator:
 
             if meta:
                 for k, v in meta.items():
-                    if isinstance(v, (int, float)):
+                    if isinstance(v, int | float):
                         tfacts.append(f"{k}({v})")
                     elif isinstance(v, str):
                         safe_v = v.replace("'", " ")
@@ -80,7 +80,7 @@ class MangleValidator:
             confidence_penalty = 0.0
 
             rules_data = json.loads(rules_file.read_text(encoding="utf-8"))
-            for rule_id, meta_rule in rules_data.items():
+            for _rule_id, meta_rule in rules_data.items():
                 body = meta_rule.get("body") or meta_rule.get("rule") or ""
                 if not body:
                     continue
@@ -101,7 +101,9 @@ class MangleValidator:
                             if reason:
                                 violations.append(str(reason))
                     except Exception as e:
-                        logger.warning(f"Error processing violation result: {e}")
+                        logger.warning(
+                            f"Error processing violation result: {e}"
+                        )
                         continue
 
             # If any violations found, calculate penalty and return details
@@ -154,7 +156,7 @@ class MangleValidator:
 
             # Add parameter facts
             for k, v in params.items():
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     tfacts.append(f"param('{k}', {v})")
                 elif isinstance(v, str):
                     safe_v = v.replace("'", " ")
@@ -165,7 +167,7 @@ class MangleValidator:
             # Add context facts
             if context:
                 for k, v in context.items():
-                    if isinstance(v, (int, float)):
+                    if isinstance(v, int | float):
                         tfacts.append(f"context('{k}', {v})")
                     elif isinstance(v, str):
                         safe_v = v.replace("'", " ")
@@ -177,7 +179,7 @@ class MangleValidator:
             denied_reasons = []
 
             rules_data = json.loads(rules_file.read_text(encoding="utf-8"))
-            for rule_id, meta_rule in rules_data.items():
+            for _rule_id, meta_rule in rules_data.items():
                 body = meta_rule.get("body") or meta_rule.get("rule") or ""
                 if not body:
                     continue
@@ -246,7 +248,7 @@ class MangleValidator:
 
             if meta:
                 for k, v in meta.items():
-                    if isinstance(v, (int, float)):
+                    if isinstance(v, int | float):
                         tfacts.append(f"{k}({v})")
                     elif isinstance(v, str):
                         safe_v = v.replace("'", " ")
@@ -257,7 +259,7 @@ class MangleValidator:
             reasons = []
 
             rules_data = json.loads(rules_file.read_text(encoding="utf-8"))
-            for rule_id, meta_rule in rules_data.items():
+            for _rule_id, meta_rule in rules_data.items():
                 body = meta_rule.get("body") or meta_rule.get("rule") or ""
                 if not body:
                     continue
@@ -288,7 +290,9 @@ class MangleValidator:
                 return {
                     "method": methods[0],
                     "reason": (
-                        reasons[0] if reasons else f"Selected via rule: {methods[0]}"
+                        reasons[0]
+                        if reasons
+                        else f"Selected via rule: {methods[0]}"
                     ),
                 }
 
@@ -346,7 +350,7 @@ class MangleValidator:
 
             if meta:
                 for k, v in meta.items():
-                    if isinstance(v, (int, float)):
+                    if isinstance(v, int | float):
                         tfacts.append(f"{k}({v})")
                     elif isinstance(v, str):
                         safe_v = v.replace("'", " ")
@@ -356,7 +360,7 @@ class MangleValidator:
             invalid_claims = []
 
             rules_data = json.loads(rules_file.read_text(encoding="utf-8"))
-            for rule_id, meta_rule in rules_data.items():
+            for _rule_id, meta_rule in rules_data.items():
                 body = meta_rule.get("body") or meta_rule.get("rule") or ""
                 if not body:
                     continue
@@ -396,7 +400,9 @@ class MangleValidator:
             return {
                 "verified": verified,
                 "invalid_claims": invalid_claims,
-                "confidence_adjustment": (0.0 if verified else confidence_adjustment),
+                "confidence_adjustment": (
+                    0.0 if verified else confidence_adjustment
+                ),
             }
         except Exception as e:
             logger.warning(f"Claim verification error: {e}")

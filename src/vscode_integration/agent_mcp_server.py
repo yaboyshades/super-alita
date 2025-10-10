@@ -22,6 +22,7 @@ Environment Variables:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -54,6 +55,7 @@ except Exception:
             # Accept/retain any extra keys without failing
             for k, v in kwargs.items():
                 setattr(self, k, v)
+
 
 try:
     from mcp.types import NotificationOptions  # type: ignore
@@ -137,7 +139,10 @@ try:
     MCP_AVAILABLE = True
 except ImportError as e:
     print(f"❌ MCP import failed at: {e}", file=sys.stderr)
-    print(f"Install with: `pip install mcp` - Original error: {e!r}", file=sys.stderr)
+    print(
+        f"Install with: `pip install mcp` - Original error: {e!r}",
+        file=sys.stderr,
+    )
     MCP_AVAILABLE = False
 
 # Import agent integration
@@ -155,12 +160,14 @@ logger = logging.getLogger(__name__)
 # Optional MCP tool event emission (best-effort)
 _MCP_EVENT_BUS = None  # lazy init
 
+
 def _get_event_bus():  # pragma: no cover
     global _MCP_EVENT_BUS
     if _MCP_EVENT_BUS is not None:
         return _MCP_EVENT_BUS
     try:
         from src.core.event_bus import EventBus
+
         bus = EventBus()
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -173,7 +180,10 @@ def _get_event_bus():  # pragma: no cover
         _MCP_EVENT_BUS = None
     return _MCP_EVENT_BUS
 
-async def _emit_tool_event(phase: str, name: str, correlation_id: str, detail: dict) -> None:
+
+async def _emit_tool_event(
+    phase: str, name: str, correlation_id: str, detail: dict
+) -> None:
     payload = {
         "phase": phase,
         "tool": name,
@@ -204,7 +214,9 @@ class SuperAlitaMcpServer:
         if workspace_env := os.getenv("WORKSPACE_FOLDER"):
             self.workspace_folder = Path(workspace_env)
 
-        logger.info(f"Super Alita MCP Server initializing in: {self.workspace_folder}")
+        logger.info(
+            f"Super Alita MCP Server initializing in: {self.workspace_folder}"
+        )
 
     async def initialize_agent(self) -> bool:
         """Initialize the Super Alita Agent."""
@@ -241,7 +253,11 @@ class SuperAlitaMcpServer:
                 Tool(
                     name="get_development_status",
                     description="Get comprehensive development status including tasks, completion rate, and recommendations",
-                    inputSchema={"type": "object", "properties": {}, "required": []},
+                    inputSchema={
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                    },
                 ),
                 Tool(
                     name="create_development_task",
@@ -249,7 +265,10 @@ class SuperAlitaMcpServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "title": {"type": "string", "description": "Task title"},
+                            "title": {
+                                "type": "string",
+                                "description": "Task title",
+                            },
                             "description": {
                                 "type": "string",
                                 "description": "Task description",
@@ -306,7 +325,11 @@ class SuperAlitaMcpServer:
                 Tool(
                     name="get_agent_recommendations",
                     description="Get intelligent recommendations for the developer based on current state",
-                    inputSchema={"type": "object", "properties": {}, "required": []},
+                    inputSchema={
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                    },
                 ),
                 Tool(
                     name="execute_agent_command",
@@ -376,8 +399,14 @@ class SuperAlitaMcpServer:
                                 ],
                                 "default": "weighted_vote",
                             },
-                            "confidence_threshold": {"type": "number", "default": 0.7},
-                            "temperature_range": {"type": "number", "default": 0.2},
+                            "confidence_threshold": {
+                                "type": "number",
+                                "default": 0.7,
+                            },
+                            "temperature_range": {
+                                "type": "number",
+                                "default": 0.2,
+                            },
                         },
                         "required": ["prompt"],
                     },
@@ -391,7 +420,11 @@ class SuperAlitaMcpServer:
                             "path": {"type": "string", "default": "src"},
                             "mode": {
                                 "type": "string",
-                                "enum": ["default", "semantic_only", "no_semantic"],
+                                "enum": [
+                                    "default",
+                                    "semantic_only",
+                                    "no_semantic",
+                                ],
                                 "default": "default",
                             },
                         },
@@ -415,14 +448,20 @@ class SuperAlitaMcpServer:
                     description="Return textual refactoring suggestions for a path",
                     inputSchema={
                         "type": "object",
-                        "properties": {"path": {"type": "string", "default": "src"}},
+                        "properties": {
+                            "path": {"type": "string", "default": "src"}
+                        },
                         "required": ["path"],
                     },
                 ),
                 Tool(
                     name="check_mangle_status",
                     description="Report whether Mangle semantic engine is available",
-                    inputSchema={"type": "object", "properties": {}, "required": []},
+                    inputSchema={
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                    },
                 ),
             ]
 
@@ -434,7 +473,8 @@ class SuperAlitaMcpServer:
             if not self.agent:
                 return [
                     TextContent(
-                        type="text", text="❌ Super Alita Agent not initialized"
+                        type="text",
+                        text="❌ Super Alita Agent not initialized",
                     )
                 ]
 
@@ -442,7 +482,9 @@ class SuperAlitaMcpServer:
                 arguments = arguments or {}
                 started_at = time.time()
                 corr_id = str(uuid.uuid4())
-                await _emit_tool_event("started", name, corr_id, {"args": arguments})
+                await _emit_tool_event(
+                    "started", name, corr_id, {"args": arguments}
+                )
 
                 if name == "get_development_status":
                     result = await self.agent.get_development_status()
@@ -458,7 +500,9 @@ class SuperAlitaMcpServer:
                 elif name == "complete_development_task":
                     task_id = arguments.get("task_id", "")
                     notes = arguments.get("notes", "")
-                    result = await self.agent.complete_development_task(task_id, notes)
+                    result = await self.agent.complete_development_task(
+                        task_id, notes
+                    )
 
                 elif name == "plan_with_ladder":
                     goal = arguments.get("goal", "")
@@ -471,7 +515,9 @@ class SuperAlitaMcpServer:
                 elif name == "execute_agent_command":
                     command = arguments.get("command", "")
                     kwargs = arguments.get("kwargs", {})
-                    result = await self.agent.execute_agent_command(command, **kwargs)
+                    result = await self.agent.execute_agent_command(
+                        command, **kwargs
+                    )
 
                 elif name == "get_development_insights":
                     query = arguments.get("query", "")
@@ -479,7 +525,9 @@ class SuperAlitaMcpServer:
 
                 elif name == "plan_development_task":
                     task_description = arguments.get("task_description", "")
-                    result = await self.agent.plan_development_task(task_description)
+                    result = await self.agent.plan_development_task(
+                        task_description
+                    )
 
                 elif name == "deepconf_consensus":
                     # Delegate to runtime's ability execution endpoint
@@ -497,9 +545,9 @@ class SuperAlitaMcpServer:
                             )
                             data = (
                                 resp.json()
-                                if resp.headers.get("content-type", "").startswith(
-                                    "application/json"
-                                )
+                                if resp.headers.get(
+                                    "content-type", ""
+                                ).startswith("application/json")
                                 else {
                                     "status": resp.status_code,
                                     "text": await resp.aread(),
@@ -514,6 +562,7 @@ class SuperAlitaMcpServer:
 
                 elif name == "scan_refactor_hotspots":
                     from pathlib import Path as _Path
+
                     try:
                         from tools.refactor_hotspots import (
                             CodeAnalyzer,
@@ -525,10 +574,17 @@ class SuperAlitaMcpServer:
                         path = arguments.get("path", "src")
                         mode = arguments.get("mode", "default")
                         analyzer = CodeAnalyzer()
-                        if mode == "semantic_only" and not mangle_is_available():
-                            result = {"error": "semantic_only requested but Mangle not available"}
+                        if (
+                            mode == "semantic_only"
+                            and not mangle_is_available()
+                        ):
+                            result = {
+                                "error": "semantic_only requested but Mangle not available"
+                            }
                         else:
-                            if mode == "no_semantic" and hasattr(analyzer, "mangle"):
+                            if mode == "no_semantic" and hasattr(
+                                analyzer, "mangle"
+                            ):
                                 analyzer.mangle = None
                             root = _Path(path)
                             ops = analyzer.scan_directory(root)
@@ -565,8 +621,11 @@ class SuperAlitaMcpServer:
 
                 elif name == "get_refactor_suggestions":
                     from pathlib import Path as _Path
+
                     try:
-                        from tools.refactor_hotspots import AutonomousRefactoringAgent
+                        from tools.refactor_hotspots import (
+                            AutonomousRefactoringAgent,
+                        )
                     except Exception as e:
                         result = {"error": f"import_failed: {e}"}
                     else:
@@ -574,12 +633,19 @@ class SuperAlitaMcpServer:
                         agent = AutonomousRefactoringAgent(_Path(p))
                         plan = agent.analyze_project()
                         suggestions = agent.suggest_improvements(plan)
-                        result = {"path": p, "suggestions": suggestions, "count": len(suggestions)}
+                        result = {
+                            "path": p,
+                            "suggestions": suggestions,
+                            "count": len(suggestions),
+                        }
 
                 elif name == "check_mangle_status":
                     try:
                         from tools.refactor_hotspots import mangle_is_available
-                        result = {"mangle_available": bool(mangle_is_available())}
+
+                        result = {
+                            "mangle_available": bool(mangle_is_available())
+                        }
                     except Exception as e:
                         result = {"mangle_available": False, "error": str(e)}
 
@@ -592,22 +658,27 @@ class SuperAlitaMcpServer:
                     "completed",
                     name,
                     corr_id,
-                    {"duration_s": round(time.time() - started_at, 3), "ok": True},
+                    {
+                        "duration_s": round(time.time() - started_at, 3),
+                        "ok": True,
+                    },
                 )
                 return [TextContent(type="text", text=result_text)]
 
             except Exception as e:
                 error_text = f"❌ Tool execution error: {str(e)}"
                 logger.error(error_text)
-                try:
+                with contextlib.suppress(Exception):
                     await _emit_tool_event(
                         "failed",
                         name,
-                        corr_id if 'corr_id' in locals() else str(uuid.uuid4()),
+                        (
+                            corr_id
+                            if "corr_id" in locals()
+                            else str(uuid.uuid4())
+                        ),
                         {"error": str(e)},
                     )
-                except Exception:
-                    pass
                 return [TextContent(type="text", text=error_text)]
 
         self.server = server
@@ -674,16 +745,24 @@ async def run_mcp_server():
         except BaseExceptionGroup as eg:
             # Python 3.11+: handle ExceptionGroup explicitly
             logger.error(
-                "MCP server failed with %s sub-exception(s):", len(eg.exceptions)
+                "MCP server failed with %s sub-exception(s):",
+                len(eg.exceptions),
             )
             for i, e in enumerate(eg.exceptions, 1):
                 logger.exception(
-                    "TaskGroup sub-exception #%s: %s", i, type(e).__name__, exc_info=e
+                    "TaskGroup sub-exception #%s: %s",
+                    i,
+                    type(e).__name__,
+                    exc_info=e,
                 )
-            raise RuntimeError("MCP server failed with TaskGroup exceptions") from eg
+            raise RuntimeError(
+                "MCP server failed with TaskGroup exceptions"
+            ) from eg
         except Exception as e:
             # Handle single exceptions or fallback for older Python versions
-            logger.exception("MCP server error: %s", type(e).__name__, exc_info=e)
+            logger.exception(
+                "MCP server error: %s", type(e).__name__, exc_info=e
+            )
             raise
 
     except Exception as e:

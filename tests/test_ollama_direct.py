@@ -43,7 +43,9 @@ def test_consensus_direct():
     # Now test the Super Alita health to see the specific LLM error
     try:
         print("\n🏥 Checking Super Alita health...")
-        health_response = requests.get("http://127.0.0.1:8080/healthz", timeout=10)
+        health_response = requests.get(
+            "http://127.0.0.1:8080/healthz", timeout=10
+        )
         if health_response.status_code in [200, 503]:
             health_data = health_response.json()
             print(f"📊 Health status: {health_data.get('status', 'unknown')}")
@@ -55,7 +57,9 @@ def test_consensus_direct():
                 error = llm_status.get("error", "Unknown error")
                 print(f"❌ LLM component error: {error}")
             else:
-                print(f"✅ LLM component: {llm_status.get('status', 'unknown')}")
+                print(
+                    f"✅ LLM component: {llm_status.get('status', 'unknown')}"
+                )
 
         else:
             print(f"❌ Health check failed: {health_response.status_code}")

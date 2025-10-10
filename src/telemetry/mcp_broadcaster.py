@@ -80,7 +80,10 @@ class MCPTelemetryBroadcaster:
         await self.broadcast_event(
             event_type="broadcaster_shutdown",
             source="mcp_telemetry_broadcaster",
-            data={"status": "inactive", "runtime": time.time() - self.start_time},
+            data={
+                "status": "inactive",
+                "runtime": time.time() - self.start_time,
+            },
         )
 
     async def broadcast_event(
@@ -120,7 +123,9 @@ class MCPTelemetryBroadcaster:
 
             # Add to event history
             self.events.append(event)
-            self.event_counts[event_type] = self.event_counts.get(event_type, 0) + 1
+            self.event_counts[event_type] = (
+                self.event_counts.get(event_type, 0) + 1
+            )
 
             # Maintain max events limit
             if len(self.events) > self.max_events:
@@ -170,7 +175,9 @@ class MCPTelemetryBroadcaster:
             "runtime_seconds": runtime,
             "total_events": len(self.events),
             "event_counts_by_type": dict(self.event_counts),
-            "events_per_second": len(self.events) / runtime if runtime > 0 else 0,
+            "events_per_second": (
+                len(self.events) / runtime if runtime > 0 else 0
+            ),
             "recent_events": [
                 {
                     "timestamp": event.timestamp,

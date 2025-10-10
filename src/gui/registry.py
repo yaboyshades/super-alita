@@ -68,7 +68,9 @@ class GUIRegistry:
 
     # --- Schema Helpers -------------------------------------------------------
     def schema_to_fields(self, schema: dict[str, Any]) -> list[dict[str, Any]]:
-        props = schema.get("properties", {}) if isinstance(schema, dict) else {}
+        props = (
+            schema.get("properties", {}) if isinstance(schema, dict) else {}
+        )
         order = list(props.keys())
         fields: list[dict[str, Any]] = []
         for name in order:

@@ -117,7 +117,9 @@ class CoArchitectMCPConnector:
             await self.start()
 
         # Register with MCP
-        success = await self._mcp.register_tool(tool_name, tool_schema, handler)
+        success = await self._mcp.register_tool(
+            tool_name, tool_schema, handler
+        )
 
         if success:
             # Add to registered tools
@@ -240,7 +242,10 @@ class CoArchitectMCPConnector:
         if self._initialized:
             # Record shutdown in memory
             self._memory_atom.store(
-                {"event_type": "shutdown", "timestamp": asyncio.get_event_loop().time()}
+                {
+                    "event_type": "shutdown",
+                    "timestamp": asyncio.get_event_loop().time(),
+                }
             )
 
             # Shutdown MCP integration
@@ -311,7 +316,10 @@ class CoArchitectMCPPlugin(PluginInterface):
             return {"success": True, "tools": tools}
 
         # Default response for unhandled events
-        return {"success": False, "error": f"Unhandled event type: {event_type}"}
+        return {
+            "success": False,
+            "error": f"Unhandled event type: {event_type}",
+        }
 
     async def shutdown(self) -> None:
         """Shutdown the plugin."""

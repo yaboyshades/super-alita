@@ -1,4 +1,5 @@
 """Lightweight observability primitives used by the research agent."""
+
 from __future__ import annotations
 
 import json

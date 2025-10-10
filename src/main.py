@@ -139,10 +139,16 @@ if FASTAPI_AVAILABLE:
                 keys.append(k1)
             k_many = os.getenv("ALITA_API_KEYS", "")
             if k_many:
-                keys.extend([x.strip() for x in k_many.split(",") if x.strip()])
+                keys.extend(
+                    [x.strip() for x in k_many.split(",") if x.strip()]
+                )
             self.keys: set[str] = set(keys)
-            self.header_name: str = os.getenv("ALITA_API_HEADER", "Authorization")
-            self.query_param: str = os.getenv("ALITA_API_QUERY_PARAM", "api_key")
+            self.header_name: str = os.getenv(
+                "ALITA_API_HEADER", "Authorization"
+            )
+            self.query_param: str = os.getenv(
+                "ALITA_API_QUERY_PARAM", "api_key"
+            )
 
     _api_settings = _APISettings()
     _admin_key = os.getenv("ALITA_ADMIN_KEY", "").strip()
@@ -212,7 +218,9 @@ if FASTAPI_AVAILABLE:
             key = request.query_params.get(_api_settings.query_param)  # type: ignore
 
         if not key:
-            raise HTTPException(status_code=401, detail="Valid API key required")
+            raise HTTPException(
+                status_code=401, detail="Valid API key required"
+            )
 
         # Accept if env whitelist contains key
         if _api_settings.keys and key in _api_settings.keys:
@@ -234,7 +242,9 @@ if FASTAPI_AVAILABLE:
 
     async def require_admin(request: Request) -> None:  # type: ignore
         hdr = request.headers.get(_api_settings.header_name, "").strip()
-        candidate = hdr[7:].strip() if hdr.lower().startswith("bearer ") else hdr
+        candidate = (
+            hdr[7:].strip() if hdr.lower().startswith("bearer ") else hdr
+        )
         if _admin_key and candidate == _admin_key:
             return None
         if _open_reg:
@@ -271,13 +281,11 @@ if FASTAPI_AVAILABLE:
             ident, _rl_default_limit, _rl_default_window
         )
         # Surface rate window to request for downstream emitters (SSE/JSON)
-        try:
+        with suppress(Exception):
             request.state.rate_limit_info = {
                 **info,
                 "limit": _rl_default_limit,
             }
-        except Exception:
-            pass
         # Add rate limit headers if response is available (non-SSE endpoints)
         try:
             if response is not None and hasattr(response, "headers"):
@@ -286,7 +294,9 @@ if FASTAPI_AVAILABLE:
                     max(0, info.get("remaining", 0))
                 )
                 if "reset_in" in info:
-                    response.headers["X-RateLimit-Reset-In"] = str(info["reset_in"])
+                    response.headers["X-RateLimit-Reset-In"] = str(
+                        info["reset_in"]
+                    )
         except Exception:
             pass
         if not allowed:
@@ -308,7 +318,9 @@ if FASTAPI_AVAILABLE:
 
 
 class JsonFormatter(logging.Formatter):
-    def format(self, record: logging.LogRecord) -> str:  # pragma: no cover - simple
+    def format(
+        self, record: logging.LogRecord
+    ) -> str:  # pragma: no cover - simple
         data = {
             "time": self.formatTime(record, "%Y-%m-%dT%H:%M:%S"),
             "level": record.levelname,
@@ -349,7 +361,9 @@ def _configure_logging() -> Path:
 
 def _hash_json(obj: Any) -> str:
     with contextlib.suppress(Exception):
-        h = hashlib.sha256(json.dumps(obj, sort_keys=True).encode("utf-8")).hexdigest()
+        h = hashlib.sha256(
+            json.dumps(obj, sort_keys=True).encode("utf-8")
+        ).hexdigest()
         return h[:16]
     return "na"
 
@@ -390,9 +404,9 @@ except Exception as e:  # pragma: no cover
 
                 async def gen() -> AsyncGenerator[str, None]:
                     # Get model identity
-                    llm = getattr(globals().get("app"), "state", object()).__dict__.get(
-                        "llm_model"
-                    )
+                    llm = getattr(
+                        globals().get("app"), "state", object()
+                    ).__dict__.get("llm_model")
                     model_identity = {
                         "model": "unknown",
                         "provider": "unknown",
@@ -415,7 +429,9 @@ except Exception as e:  # pragma: no cover
                     yield f"data: {start_data}\n\n"
 
                     # Process the message and generate response
-                    response_content = await process_chat_message(message, session_id)
+                    response_content = await process_chat_message(
+                        message, session_id
+                    )
 
                     # Stream the response in chunks
                     for chunk in response_content.split():
@@ -434,7 +450,9 @@ except Exception as e:  # pragma: no cover
 
                 async def error_gen() -> AsyncGenerator[str, None]:
                     error_msg = f"Sorry, I encountered an error: {str(ex)}"
-                    error_data = json.dumps({"type": "content", "content": error_msg})
+                    error_data = json.dumps(
+                        {"type": "content", "content": error_msg}
+                    )
                     yield f"data: {error_data}\n\n"
                     yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
@@ -658,7 +676,9 @@ class SimpleAbilityRegistry:
         self._contracts[tid] = contract
         self._known.add(tid)
 
-    async def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    async def execute(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
         # Validate args against contract schema (best-effort JSON Schema)
         try:
             contract = self._contracts.get(tool_name, {})
@@ -720,7 +740,9 @@ class SimpleAbilityRegistry:
             for candidate_ref in [ref, "main", "master"]:
                 try:
                     url = f"https://raw.githubusercontent.com/{owner}/{repo}/{candidate_ref}/{path}"
-                    with urllib.request.urlopen(url, timeout=5) as resp:  # nosec B310
+                    with urllib.request.urlopen(
+                        url, timeout=5
+                    ) as resp:  # nosec B310
                         raw_bytes = resp.read()
                     content = raw_bytes.decode("utf-8", errors="replace")
                     if len(content) > truncate_at:
@@ -728,7 +750,9 @@ class SimpleAbilityRegistry:
                         truncated = True
                     url_main = url
                     break
-                except Exception as e:  # pragma: no cover - network variability
+                except (
+                    Exception
+                ) as e:  # pragma: no cover - network variability
                     err = str(e)
             return {
                 "content": content,
@@ -785,7 +809,9 @@ class SimpleAbilityRegistry:
                     "fetch_github_raw",
                     {"owner": owner, "repo": repo, "path": path},
                 )
-            brainstorm = await self.execute("brainstorm_mcp_stub", {"task": task})
+            brainstorm = await self.execute(
+                "brainstorm_mcp_stub", {"task": task}
+            )
             run_instructions = [
                 "# 1. Create virtual environment",
                 "python -m venv .venv",
@@ -821,7 +847,9 @@ class SimpleKG:
             "description": f"Assist session {session_id}",
         }
 
-    async def create_atom(self, atom_type: str, content: Any) -> dict[str, Any]:
+    async def create_atom(
+        self, atom_type: str, content: Any
+    ) -> dict[str, Any]:
         atom: dict[str, Any] = {
             "id": f"atom_{len(self.atoms)}",
             "type": atom_type,
@@ -897,7 +925,9 @@ async def process_chat_message(message: str, session_id: str) -> str:
                 "'Transformer encoder') and I'll generate an implementation."
             )
 
-        if any(w in message_lower for w in ["scrape", "scraper", "website", "web"]):
+        if any(
+            w in message_lower for w in ["scrape", "scraper", "website", "web"]
+        ):
             return (
                 "I can scaffold a custom web scraper. Tell me the site and the "
                 "data fields you need. I'll produce a robust, parse-ready "
@@ -998,9 +1028,9 @@ if FASTAPI_AVAILABLE:
                 return []
             return tools
 
-        ability_reg = getattr(globals().get("app"), "state", object()).__dict__.get(
-            "ability_registry"
-        )
+        ability_reg = getattr(
+            globals().get("app"), "state", object()
+        ).__dict__.get("ability_registry")
         llm_tools = _openai_tools_from_registry(ability_reg)
 
         # Try direct Ollama connection first for gpt-oss:20b model
@@ -1028,14 +1058,18 @@ if FASTAPI_AVAILABLE:
                         "POST", f"{ollama_host}/api/chat", json=payload
                     ) as response:
                         if response.status_code == 200:
-                            print(f"✅ Ollama connected ({response.status_code})")
+                            print(
+                                f"✅ Ollama connected ({response.status_code})"
+                            )
                             content_received = False
                             async for line in response.aiter_lines():
                                 if not line.strip():
                                     continue
                                 try:
                                     data = json.loads(line)
-                                    msg_content = data.get("message", {}).get("content")
+                                    msg_content = data.get("message", {}).get(
+                                        "content"
+                                    )
                                     if msg_content:
                                         content_received = True
                                         yield msg_content
@@ -1046,7 +1080,9 @@ if FASTAPI_AVAILABLE:
                                 except json.JSONDecodeError:
                                     continue
                         else:
-                            print(f"❌ Ollama HTTP error: {response.status_code}")
+                            print(
+                                f"❌ Ollama HTTP error: {response.status_code}"
+                            )
 
         except Exception as e:
             print(f"❌ Ollama connection failed: {e}")
@@ -1151,7 +1187,9 @@ if FASTAPI_AVAILABLE:
                 "and much more. What would you like to work on today?"
             )
         # Check for standalone help requests
-        elif prompt_lower in help_patterns or prompt_lower == "what can you do?":
+        elif (
+            prompt_lower in help_patterns or prompt_lower == "what can you do?"
+        ):
             response = (
                 "I can assist you with:\n"
                 "• Code generation and refactoring\n"
@@ -1182,7 +1220,9 @@ if FASTAPI_AVAILABLE:
             await asyncio.sleep(0.03)
             yield {"type": "content", "content": token}
 
-    def _sse_pack(event_type: str, payload: dict, ev_id: str | None = None) -> str:
+    def _sse_pack(
+        event_type: str, payload: dict, ev_id: str | None = None
+    ) -> str:
         parts: list[str] = []
         if event_type:
             parts.append(f"event: {event_type}")
@@ -1213,9 +1253,9 @@ if FASTAPI_AVAILABLE:
                 llm = (
                     getattr(chat_stream_endpoint, "_llm", None)
                     or getattr(chat_router, "app_llm", None)
-                    or getattr(globals().get("app"), "state", object()).__dict__.get(
-                        "llm_model"
-                    )
+                    or getattr(
+                        globals().get("app"), "state", object()
+                    ).__dict__.get("llm_model")
                 )
                 accumulated: list[str] = []
 
@@ -1238,10 +1278,10 @@ if FASTAPI_AVAILABLE:
                     start_payload["rate_limit"] = rl_info
                 yield _sse_pack("start", start_payload, ev_id)
                 # Track user turn in history (streaming mode)
-                try:
-                    _get_session_messages(sid).append({"role": "user", "content": q})
-                except Exception:
-                    pass
+                with suppress(Exception):
+                    _get_session_messages(sid).append(
+                        {"role": "user", "content": q}
+                    )
                 async for chunk in generate_reply_chunks(q, sid, llm):
                     # Support both legacy string tokens and typed dict events
                     if isinstance(chunk, str):
@@ -1256,11 +1296,15 @@ if FASTAPI_AVAILABLE:
                                 accumulated.append(tok)
                             payload = {"content": tok}
                         else:
-                            payload = {k: v for k, v in chunk.items() if k != "type"}
+                            payload = {
+                                k: v for k, v in chunk.items() if k != "type"
+                            }
                         yield _sse_pack(str(et), payload, ev_id)
                     else:
                         # Fallback: stringify unknown chunks
-                        yield _sse_pack("content", {"content": str(chunk)}, ev_id)
+                        yield _sse_pack(
+                            "content", {"content": str(chunk)}, ev_id
+                        )
                     now = time.time()
                     if now - last_heartbeat > 15:
                         # Heartbeat comment frame to keep connection alive behind proxies
@@ -1311,12 +1355,21 @@ if FASTAPI_AVAILABLE:
                 pass
 
         # Track user turn
-        _get_session_messages(session_id).append({"role": "user", "content": prompt})
+        _get_session_messages(session_id).append(
+            {"role": "user", "content": prompt}
+        )
         full = "".join(
-            [chunk async for chunk in generate_reply_chunks(prompt, session_id, llm)]
+            [
+                chunk
+                async for chunk in generate_reply_chunks(
+                    prompt, session_id, llm
+                )
+            ]
         )
         # Store assistant reply
-        _get_session_messages(session_id).append({"role": "assistant", "content": full})
+        _get_session_messages(session_id).append(
+            {"role": "assistant", "content": full}
+        )
         return JSONResponse(
             {
                 "type": "message",
@@ -1331,7 +1384,9 @@ if FASTAPI_AVAILABLE:
 
     class QueryRequest(BaseModel):  # type: ignore[misc,valid-type]
         prompt: str
-        mode: str = "hybrid"  # accepted but not enforced in this minimal gateway
+        mode: str = (
+            "hybrid"  # accepted but not enforced in this minimal gateway
+        )
         session: str | None = None
         stream: bool = False
         max_tokens: int | None = None
@@ -1394,10 +1449,17 @@ if FASTAPI_AVAILABLE:
 
         # Non-streaming path: join chunks
         full = "".join(
-            [chunk async for chunk in generate_reply_chunks(req.prompt, sid, llm)]
+            [
+                chunk
+                async for chunk in generate_reply_chunks(req.prompt, sid, llm)
+            ]
         )
-        _get_session_messages(sid).append({"role": "user", "content": req.prompt})
-        _get_session_messages(sid).append({"role": "assistant", "content": full})
+        _get_session_messages(sid).append(
+            {"role": "user", "content": req.prompt}
+        )
+        _get_session_messages(sid).append(
+            {"role": "assistant", "content": full}
+        )
         payload = {
             "answer": full,
             "session": sid,
@@ -1468,7 +1530,11 @@ if FASTAPI_AVAILABLE:
             # Manually feed some sample data for the demo
             team_orchestrator.consume_event(
                 "workflow.todo_resolution.completed",
-                {"context": {"todo_text": "Refactor the authentication logic"}},
+                {
+                    "context": {
+                        "todo_text": "Refactor the authentication logic"
+                    }
+                },
             )
             team_orchestrator.consume_event(
                 "workflow.todo_resolution.completed",
@@ -1498,9 +1564,15 @@ if FASTAPI_AVAILABLE:
     async def rotate_key(request: Request) -> Any:  # type: ignore
         # Requires presenting a valid existing key in Authorization header
         hdr = request.headers.get(_api_settings.header_name, "")
-        key = hdr[7:].strip() if hdr.lower().startswith("bearer ") else hdr.strip()
+        key = (
+            hdr[7:].strip()
+            if hdr.lower().startswith("bearer ")
+            else hdr.strip()
+        )
         if not key:
-            raise HTTPException(status_code=401, detail="present API key to rotate")
+            raise HTTPException(
+                status_code=401, detail="present API key to rotate"
+            )
         store = _get_api_store()
         if not store.verify(key):
             raise HTTPException(status_code=401, detail="invalid API key")
@@ -1524,13 +1596,19 @@ if FASTAPI_AVAILABLE:
         elif body.key_id:
             ok = store.revoke_by_id(body.key_id)
         else:
-            raise HTTPException(status_code=400, detail="key or key_id required")
+            raise HTTPException(
+                status_code=400, detail="key or key_id required"
+            )
         return {"status": "revoked" if ok else "noop"}
 
     @auth_router.get("/keys/me")  # type: ignore
     async def whoami(request: Request) -> Any:  # type: ignore
         hdr = request.headers.get(_api_settings.header_name, "")
-        key = hdr[7:].strip() if hdr.lower().startswith("bearer ") else hdr.strip()
+        key = (
+            hdr[7:].strip()
+            if hdr.lower().startswith("bearer ")
+            else hdr.strip()
+        )
         if not key:
             raise HTTPException(status_code=401, detail="present API key")
         store = _get_api_store()
@@ -1783,7 +1861,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                             data=data,  # type: ignore[arg-type]
                             session_id=str(session_id) if session_id else None,
                             conversation_id=(
-                                str(conversation_id) if conversation_id else None
+                                str(conversation_id)
+                                if conversation_id
+                                else None
                             ),
                             metadata=meta if isinstance(meta, dict) else None,
                         )
@@ -1817,7 +1897,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
         # Register Enhanced / external Consensus sampling tool
         try:
-            print("🔧 DEBUG: Starting consensus tool registration (adapter-aware)...")
+            print(
+                "🔧 DEBUG: Starting consensus tool registration (adapter-aware)..."
+            )
             ability_reg = app.state.ability_registry  # type: ignore
 
             # Decide whether to use adapter (env-driven)
@@ -1830,7 +1912,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                         "base_url": "http://localhost:11434/v1",
                         "model_name": "gpt-oss:20b",
                         "timeout": 60.0,
-                        "grpc_url": os.getenv("CONSENSUS_GRPC_URL", "localhost:50051"),
+                        "grpc_url": os.getenv(
+                            "CONSENSUS_GRPC_URL", "localhost:50051"
+                        ),
                     }
                 )
                 await consensus_provider.initialize()  # local provider init
@@ -1851,7 +1935,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     }
                 )
                 await consensus_provider.initialize()
-                print("🔧 DEBUG: Local enhanced consensus provider initialized")
+                print(
+                    "🔧 DEBUG: Local enhanced consensus provider initialized"
+                )
 
             consensus_contract = {
                 "tool_id": "deepconf_consensus",
@@ -1983,7 +2069,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
         # Register MCP Brainstorming ability (Alita integration)
         try:
-            print("🔧 DEBUG: Starting MCP Brainstorming ability registration...")
+            print(
+                "🔧 DEBUG: Starting MCP Brainstorming ability registration..."
+            )
             from src.abilities.alita_mcp_brainstorming import (
                 AlitaMCPBrainstormingAbility,
             )
@@ -1991,7 +2079,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             # Initialize MCP Brainstorming ability
             mcp_brainstorming_config = {
                 "model": os.getenv("ALITA_MCP_MODEL", "claude-3-7-sonnet"),
-                "temperature": float(os.getenv("ALITA_MCP_TEMPERATURE", "0.7")),
+                "temperature": float(
+                    os.getenv("ALITA_MCP_TEMPERATURE", "0.7")
+                ),
                 "max_tokens": int(os.getenv("ALITA_MCP_MAX_TOKENS", "2000")),
                 "constitutional_threshold": float(
                     os.getenv("ALITA_CONSTITUTIONAL_THRESHOLD", "0.75")
@@ -2060,14 +2150,18 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 f"threshold={mcp_brainstorming_config['constitutional_threshold']})"
             )
         except Exception as e:  # noqa: BLE001
-            print(f"❌ DEBUG: Failed to register MCP Brainstorming ability: {e}")
+            print(
+                f"❌ DEBUG: Failed to register MCP Brainstorming ability: {e}"
+            )
             import traceback
 
             traceback.print_exc()
 
         # Register Script Generator ability (Alita integration)
         try:
-            print("🔧 DEBUG: Starting Script Generator ability registration...")
+            print(
+                "🔧 DEBUG: Starting Script Generator ability registration..."
+            )
             from src.abilities.alita_script_generator import (
                 AlitaScriptGeneratorAbility,
             )
@@ -2078,9 +2172,15 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     "ALITA_SCRIPT_MODEL",
                     os.getenv("ALITA_MCP_MODEL", "claude-3-7-sonnet"),
                 ),
-                "temperature": float(os.getenv("ALITA_SCRIPT_TEMPERATURE", "0.7")),
-                "max_tokens": int(os.getenv("ALITA_SCRIPT_MAX_TOKENS", "4000")),
-                "max_github_results": int(os.getenv("ALITA_MAX_GITHUB_RESULTS", "5")),
+                "temperature": float(
+                    os.getenv("ALITA_SCRIPT_TEMPERATURE", "0.7")
+                ),
+                "max_tokens": int(
+                    os.getenv("ALITA_SCRIPT_MAX_TOKENS", "4000")
+                ),
+                "max_github_results": int(
+                    os.getenv("ALITA_MAX_GITHUB_RESULTS", "5")
+                ),
                 "constitutional_threshold": float(
                     os.getenv("ALITA_CONSTITUTIONAL_THRESHOLD", "0.75")
                 ),
@@ -2179,7 +2279,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 f"max_tokens={script_generator_config['max_tokens']})"
             )
         except Exception as e:  # noqa: BLE001
-            print(f"❌ DEBUG: Failed to register Script Generator ability: {e}")
+            print(
+                f"❌ DEBUG: Failed to register Script Generator ability: {e}"
+            )
             import traceback
 
             traceback.print_exc()
@@ -2203,7 +2305,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             }
 
             register_mangle_abilities(app.state.ability_registry, mangle_config)  # type: ignore
-            register_mangle_plugin(None, mangle_config)  # plugin_registry not needed
+            register_mangle_plugin(
+                None, mangle_config
+            )  # plugin_registry not needed
             print("✅ DEBUG: Mangle integration registered successfully!")
 
         except Exception as e:
@@ -2371,7 +2475,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             async def _paper_extract_text(
                 args: dict[str, Any],
             ) -> dict[str, Any]:
-                return await paper_tool.extract_text_from_pdf(args.get("pdf_path", ""))
+                return await paper_tool.extract_text_from_pdf(
+                    args.get("pdf_path", "")
+                )
 
             ability_reg.register_tool(
                 contract={
@@ -2503,7 +2609,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 spec = (args.get("spec") or "").strip()
                 style_guides = (args.get("style_guides") or "").strip() or None
                 constraints = (args.get("constraints") or "").strip() or None
-                prompt = _code_prompt(language, spec, style_guides, constraints)
+                prompt = _code_prompt(
+                    language, spec, style_guides, constraints
+                )
                 result = await ability_reg.execute(  # type: ignore
                     "deepconf_consensus",
                     {
@@ -2564,7 +2672,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 test_write: dict[str, Any] | None = None
                 if test_first:
                     test_lang = (
-                        args.get("test_language") or args.get("language") or "python"
+                        args.get("test_language")
+                        or args.get("language")
+                        or "python"
                     ).strip()
                     test_spec = (
                         args.get("test_spec") or args.get("spec") or ""
@@ -2598,7 +2708,11 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                             "Use idiomatic testing for the language (pytest for Python).",
                             "Include realistic edge cases. Avoid placeholders like TODO/FIXME.",
                             "Prefer deterministic tests without external network calls.",
-                            *([f"Specification: {test_spec}"] if test_spec else []),
+                            *(
+                                [f"Specification: {test_spec}"]
+                                if test_spec
+                                else []
+                            ),
                         ]
                     )
                     t_res = await ability_reg.execute(  # type: ignore
@@ -2617,11 +2731,18 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     )
                     # Append to existing test file when present
                     prior = await ability_reg.execute("repo_read_file", {"file_path": test_file_path})  # type: ignore
-                    if prior and not prior.get("error") and prior.get("content"):
-                        new_content = (prior.get("content") or "") + "\n\n" + t_code
+                    if (
+                        prior
+                        and not prior.get("error")
+                        and prior.get("content")
+                    ):
+                        new_content = (
+                            (prior.get("content") or "") + "\n\n" + t_code
+                        )
                     else:
                         new_content = (
-                            f"# Auto-generated tests for {file_path}\n\n" + t_code
+                            f"# Auto-generated tests for {file_path}\n\n"
+                            + t_code
                         )
                     test_write = await ability_reg.execute(  # type: ignore
                         "repo_write_file",
@@ -2806,7 +2927,8 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                             "rule": str(r.get("rule") or "").strip(),
                         }
                         for r in (parsed.get("rules", []) or [])
-                        if isinstance(r, dict) and str(r.get("rule") or "").strip()
+                        if isinstance(r, dict)
+                        and str(r.get("rule") or "").strip()
                     ]
                 else:
                     facts, rules = _fallback_parse(raw)
@@ -2877,7 +2999,11 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                         if explain_result is not None
                         else {}
                     ),
-                    **({"synthesis": synth_result} if synth_result is not None else {}),
+                    **(
+                        {"synthesis": synth_result}
+                        if synth_result is not None
+                        else {}
+                    ),
                     **({"validations": validations} if validations else {}),
                 }
 
@@ -2954,15 +3080,25 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     qualifiers.append(f"language:{language}")
                 if repo:
                     qualifiers.append(f"repo:{repo}")
-                q_full = "+".join([quote_plus(q)] + [quote_plus(x) for x in qualifiers])
+                q_full = "+".join(
+                    [quote_plus(q)] + [quote_plus(x) for x in qualifiers]
+                )
                 per_page = max(1, min(int(args.get("per_page", 10) or 10), 50))
                 page = max(1, min(int(args.get("page", 1) or 1), 10))
                 url = f"https://api.github.com/search/code?q={q_full}&per_page={per_page}&page={page}"
-                req = urllib.request.Request(url, headers=_gh_headers())  # nosec B310
+                req = urllib.request.Request(
+                    url, headers=_gh_headers()
+                )  # nosec B310
                 try:
-                    with urllib.request.urlopen(req, timeout=8) as resp:  # nosec B310
-                        data = json.loads(resp.read().decode("utf-8", errors="replace"))
-                except Exception as e:  # pragma: no cover - network variability
+                    with urllib.request.urlopen(
+                        req, timeout=8
+                    ) as resp:  # nosec B310
+                        data = json.loads(
+                            resp.read().decode("utf-8", errors="replace")
+                        )
+                except (
+                    Exception
+                ) as e:  # pragma: no cover - network variability
                     return {"error": str(e), "url": url}
                 items = []
                 for it in data.get("items", []) or []:
@@ -2979,7 +3115,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 return {
                     "items": items,
                     "total_count": data.get("total_count", len(items)),
-                    "incomplete_results": data.get("incomplete_results", False),
+                    "incomplete_results": data.get(
+                        "incomplete_results", False
+                    ),
                     "url": url,
                 }
 
@@ -3020,10 +3158,16 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     f"https://api.github.com/search/repositories?q={quote_plus(q)}&sort={quote_plus(sort)}&order={quote_plus(order)}"
                     f"&per_page={per_page}&page={page}"
                 )
-                req = urllib.request.Request(url, headers=_gh_headers())  # nosec B310
+                req = urllib.request.Request(
+                    url, headers=_gh_headers()
+                )  # nosec B310
                 try:
-                    with urllib.request.urlopen(req, timeout=8) as resp:  # nosec B310
-                        data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                    with urllib.request.urlopen(
+                        req, timeout=8
+                    ) as resp:  # nosec B310
+                        data = json.loads(
+                            resp.read().decode("utf-8", errors="replace")
+                        )
                 except Exception as e:  # pragma: no cover
                     return {"error": str(e), "url": url}
                 items = []
@@ -3094,15 +3238,25 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     qualifiers.append(f"language:{language}")
                 if repo:
                     qualifiers.append(f"repo:{repo}")
-                q_full = "+".join([quote_plus(q)] + [quote_plus(x) for x in qualifiers])
+                q_full = "+".join(
+                    [quote_plus(q)] + [quote_plus(x) for x in qualifiers]
+                )
                 per_page = max(1, min(int(args.get("per_page", 10) or 10), 25))
                 page = max(1, min(int(args.get("page", 1) or 1), 5))
                 url = f"https://api.github.com/search/code?q={q_full}&per_page={per_page}&page={page}"
-                req = urllib.request.Request(url, headers=_gh_headers())  # nosec B310
+                req = urllib.request.Request(
+                    url, headers=_gh_headers()
+                )  # nosec B310
                 try:
-                    with urllib.request.urlopen(req, timeout=8) as resp:  # nosec B310
-                        data = json.loads(resp.read().decode("utf-8", errors="replace"))
-                except Exception as e:  # pragma: no cover - network variability
+                    with urllib.request.urlopen(
+                        req, timeout=8
+                    ) as resp:  # nosec B310
+                        data = json.loads(
+                            resp.read().decode("utf-8", errors="replace")
+                        )
+                except (
+                    Exception
+                ) as e:  # pragma: no cover - network variability
                     return {"ok": False, "error": str(e), "url": url}
 
                 raw_items = data.get("items", []) or []
@@ -3315,7 +3469,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 if not base:
                     return {"error": "missing prompt"}
                 n = max(2, min(int(args.get("variants", 4) or 4), 8))
-                domain = (args.get("domain") or "python").lower()
+                (args.get("domain") or "python").lower()
 
                 def make_variant(p: str, kind: str) -> str:
                     blocks = {
@@ -3338,7 +3492,10 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                         body = "\n".join([blocks[k] for k in order])
                     elif kind == "short":
                         body = "\n".join(
-                            [blocks[k] for k in ["role", "constraints", "format"]]
+                            [
+                                blocks[k]
+                                for k in ["role", "constraints", "format"]
+                            ]
                         )
                     else:  # mixed
                         random.shuffle(order)
@@ -3346,7 +3503,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     return f"{p}\n\n{body}"
 
                 variants: list[dict[str, Any]] = []
-                for i in range(n):
+                for _i in range(n):
                     kind = random.choice(
                         ["long", "short", "mixed"]
                     )  # non-deterministic variety
@@ -3362,7 +3519,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     ]:
                         if key.lower() in v.lower():
                             score += 1
-                    variants.append({"prompt": v, "score": score, "kind": kind})
+                    variants.append(
+                        {"prompt": v, "score": score, "kind": kind}
+                    )
 
                 best = (
                     max(variants, key=lambda x: x["score"])
@@ -3389,9 +3548,13 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 executor=_prompt_evolve,
             )
 
-            print("? DEBUG: Python verification + prompt evolution tools registered")
+            print(
+                "? DEBUG: Python verification + prompt evolution tools registered"
+            )
         except Exception as e:
-            print(f"? DEBUG: Failed to register verification/evolution tools: {e}")
+            print(
+                f"? DEBUG: Failed to register verification/evolution tools: {e}"
+            )
             import traceback
 
             traceback.print_exc()
@@ -3568,7 +3731,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 use_discovery = bool(args.get("use_github_discovery", True))
                 test_first = bool(args.get("test_first", True))
                 constraints = args.get("constraints") or []
-                context: dict[str, Any] = args.get("context") or {}
+                args.get("context") or {}
 
                 result: dict[str, Any] = {"goal": goal}
 
@@ -3597,7 +3760,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
                 # 3) Optional constraints verification (if enabled)
                 z3_summary: dict[str, Any] | None = None
-                if constraints and os.getenv("ALITA_ENABLE_Z3", "false").lower() in {
+                if constraints and os.getenv(
+                    "ALITA_ENABLE_Z3", "false"
+                ).lower() in {
                     "1",
                     "true",
                     "yes",
@@ -3610,7 +3775,8 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                         ver = await ability_reg.execute(  # type: ignore
                             "z3_verify",
                             {
-                                "constraints": analysis.get("minimized") or constraints,
+                                "constraints": analysis.get("minimized")
+                                or constraints,
                                 "timeout_s": 10,
                             },
                         )
@@ -3798,7 +3964,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             @unified_router.get("/stream")  # type: ignore
             async def unified_stream_get(request: Request):  # type: ignore
                 params = request.query_params  # type: ignore[attr-defined]
-                prompt = (params.get("q") or params.get("prompt") or "").strip()
+                prompt = (
+                    params.get("q") or params.get("prompt") or ""
+                ).strip()
                 if not prompt:
                     from fastapi.responses import JSONResponse  # type: ignore
 
@@ -3830,8 +3998,12 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     },
                 )
 
-            app.include_router(unified_router)  # Already has prefix="/v1/unified"
-            print("? DEBUG: Unified orchestration ability + endpoints registered")
+            app.include_router(
+                unified_router
+            )  # Already has prefix="/v1/unified"
+            print(
+                "? DEBUG: Unified orchestration ability + endpoints registered"
+            )
         except Exception as e:  # noqa: BLE001
             print(f"? DEBUG: Failed to register unified orchestration: {e}")
             import traceback
@@ -3843,7 +4015,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             from src.security.integration import integrate_security_resilience
 
             # Integrate security and resilience features
-            security_middleware = integrate_security_resilience(app)
+            integrate_security_resilience(app)
 
             print("? DEBUG: Security & Resilience components integrated")
         except Exception as e:
@@ -3960,7 +4132,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     # If optimizer is enabled, attempt to rewrite body
                     if (
                         RT_SETTINGS is not None
-                        and getattr(RT_SETTINGS, "message_optimizer_enabled", False)
+                        and getattr(
+                            RT_SETTINGS, "message_optimizer_enabled", False
+                        )
                         and apply_all is not None
                     ):
                         raw = await request.body()  # type: ignore
@@ -4076,13 +4250,11 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     _abilities_admin_only = os.getenv(
         "ALITA_ABILITIES_ADMIN_ONLY", "false"
     ).lower() in {"1", "true", "yes", "on"}
-    _ability_whitelist: set[str] = set(
-        [
-            x.strip()
-            for x in (os.getenv("ALITA_ABILITY_WHITELIST", "") or "").split(",")
-            if x.strip()
-        ]
-    )
+    _ability_whitelist: set[str] = {
+        x.strip()
+        for x in (os.getenv("ALITA_ABILITY_WHITELIST", "") or "").split(",")
+        if x.strip()
+    }
 
     @app.post("/ability/execute/{tool_id}")  # type: ignore
     async def execute_ability(
@@ -4237,14 +4409,17 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         try:
             lines = code.count("\n") + 1
             words = len(code.split())
-            complexity = min(1.0, (lines * max(1, words // max(1, lines))) / 500)
+            complexity = min(
+                1.0, (lines * max(1, words // max(1, lines))) / 500
+            )
             coupling = code.count("import ") + code.count("from ")
             coupling_score = min(1.0, coupling / 10)
             overall = max(
                 0.0,
                 min(
                     1.0,
-                    base_conf * (1 - (complexity * 0.5 + coupling_score * 0.3)),
+                    base_conf
+                    * (1 - (complexity * 0.5 + coupling_score * 0.3)),
                 ),
             )
             return {
@@ -4278,9 +4453,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             "individual_responses": [],
             "confidence_scores": [],
         }
-        if ability_registry and getattr(ability_registry, "knows", lambda *_: False)(
-            "deepconf_consensus"
-        ):
+        if ability_registry and getattr(
+            ability_registry, "knows", lambda *_: False
+        )("deepconf_consensus"):
             prompt = (
                 "Analyze this code for patterns, improvements, and reasoning.\n\n"
                 f"Language: {req.language}\nFile: {req.file_name}\n"
@@ -4455,7 +4630,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             if exists:
                 with open(tf, encoding="utf-8") as f:
                     # Read last non-empty JSON line (best-effort)
-                    for line in reversed(f.readlines()[-200:]):  # limit tail scan
+                    for line in reversed(
+                        f.readlines()[-200:]
+                    ):  # limit tail scan
                         line = line.strip()
                         if not line:
                             continue
@@ -4480,7 +4657,8 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             status = (
                 "ok"
                 if last_event
-                and last_event.get("type") in {"AbilitySucceeded", "AbilityCalled"}
+                and last_event.get("type")
+                in {"AbilitySucceeded", "AbilityCalled"}
                 else "degraded"
             )
         return {
@@ -4557,7 +4735,9 @@ if __name__ == "__main__":
             results["event_bus"] = True
         with contextlib.suppress(Exception):
             contract = app.state.ability_registry.get_available_tools_schema()[0]  # type: ignore
-            results["ability_registry"] = await app.state.ability_registry.health_check(
+            results[
+                "ability_registry"
+            ] = await app.state.ability_registry.health_check(
                 contract
             )  # type: ignore
         with contextlib.suppress(Exception):

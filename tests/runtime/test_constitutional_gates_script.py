@@ -9,11 +9,16 @@ import subprocess
 from pathlib import Path
 
 SCRIPT_PATH = (
-    Path(__file__).resolve().parents[2] / "scripts" / "lib" / "constitutional-gates.sh"
+    Path(__file__).resolve().parents[2]
+    / "scripts"
+    / "lib"
+    / "constitutional-gates.sh"
 )
 
 
-def run_script(tmp_path: Path, spec_text: str, plan_text: str) -> dict[str, object]:
+def run_script(
+    tmp_path: Path, spec_text: str, plan_text: str
+) -> dict[str, object]:
     """Write artifacts to disk and execute the gate script."""
     spec_file = tmp_path / "spec.md"
     plan_file = tmp_path / "plan.md"

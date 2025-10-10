@@ -18,7 +18,9 @@ from mcp_server_wrapper import app  # type: ignore
 
 async def _run():
     # 1) Add a fact
-    res_fact = await app._handle_call("mangle_add_fact", {"fact": "project('demo')"})
+    res_fact = await app._handle_call(
+        "mangle_add_fact", {"fact": "project('demo')"}
+    )
     assert res_fact.get("success"), res_fact
 
     # 2) Add a rule (does not require the mangle binary)
@@ -39,4 +41,3 @@ async def _run():
 
 def test_mcp_mangle_smoke():
     asyncio.run(_run())
-

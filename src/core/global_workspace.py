@@ -52,7 +52,9 @@ class GlobalWorkspace:
         self._events: list[WorkspaceEvent] = []
         self._subscribers: dict[str, Callable] = {}
         self._attention_focus: set[str] = set()
-        logger.info("Global Workspace initialized with max_events=%d", max_events)
+        logger.info(
+            "Global Workspace initialized with max_events=%d", max_events
+        )
 
     def subscribe(self, subscriber_id: str, callback: Callable):
         """
@@ -133,7 +135,9 @@ class GlobalWorkspace:
             try:
                 # Create async task for parallel notification
                 task = asyncio.create_task(
-                    self._safe_notify_subscriber(subscriber_id, callback, event)
+                    self._safe_notify_subscriber(
+                        subscriber_id, callback, event
+                    )
                 )
                 notification_tasks.append(task)
                 event.subscribers_notified.add(subscriber_id)
@@ -175,7 +179,10 @@ class GlobalWorkspace:
 
         except Exception as e:
             logger.error(
-                "Error notifying subscriber '%s': %s", subscriber_id, e, exc_info=True
+                "Error notifying subscriber '%s': %s",
+                subscriber_id,
+                e,
+                exc_info=True,
             )
 
     def set_attention_focus(self, subscriber_ids: set[str]) -> None:
@@ -195,7 +202,9 @@ class GlobalWorkspace:
     def clear_attention_focus(self) -> None:
         """Clear attention focus, returning to normal broadcast mode."""
         self._attention_focus.clear()
-        logger.info("Attention focus cleared - returning to normal broadcast mode")
+        logger.info(
+            "Attention focus cleared - returning to normal broadcast mode"
+        )
 
     def get_recent_events(
         self,
@@ -221,7 +230,9 @@ class GlobalWorkspace:
 
         # Filter by attention level if specified
         if attention_level:
-            events = [e for e in events if e.attention_level == attention_level]
+            events = [
+                e for e in events if e.attention_level == attention_level
+            ]
 
         # Return most recent events
         return events[-event_limit:] if events else []
@@ -241,7 +252,11 @@ class GlobalWorkspace:
             "attention_focus_size": len(self._attention_focus),
             "recent_events_by_level": {
                 level.value: len(
-                    [e for e in self._events[-100:] if e.attention_level == level]
+                    [
+                        e
+                        for e in self._events[-100:]
+                        if e.attention_level == level
+                    ]
                 )
                 for level in AttentionLevel
             },

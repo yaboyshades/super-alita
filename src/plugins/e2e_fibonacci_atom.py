@@ -7,7 +7,11 @@ logger = logging.getLogger(__name__)
 
 
 async def e2e_fibonacci(
-    event_bus=None, tool_call_id="", session_id="", conversation_id="", **kwargs
+    event_bus=None,
+    tool_call_id="",
+    session_id="",
+    conversation_id="",
+    **kwargs,
 ):
     """
     End-to-end fibonacci test
@@ -21,7 +25,9 @@ async def e2e_fibonacci(
     try:
         # End-to-end fibonacci test
         # Fibonacci calculation logic
-        n = kwargs.get("n", kwargs.get("number", 10))  # Default to 10 if not specified
+        n = kwargs.get(
+            "n", kwargs.get("number", 10)
+        )  # Default to 10 if not specified
         if n <= 0:
             value = 0
         elif n == 1:
@@ -31,7 +37,11 @@ async def e2e_fibonacci(
             for _ in range(n):
                 a, b = b, a + b
             value = a
-        result = {"value": value, "n": n, "description": f"fibonacci({n}) = {value}"}
+        result = {
+            "value": value,
+            "n": n,
+            "description": f"fibonacci({n}) = {value}",
+        }
         success = True
         logger.info("e2e_fibonacci executed successfully")
 
@@ -62,6 +72,8 @@ async def e2e_fibonacci(
             logger.debug("e2e_fibonacci result event published")
 
         except Exception as e:
-            logger.error(f"e2e_fibonacci failed to publish result event: {e!s}")
+            logger.error(
+                f"e2e_fibonacci failed to publish result event: {e!s}"
+            )
 
     return result

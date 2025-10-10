@@ -35,7 +35,9 @@ def forge(spec: dict[str, Any]) -> Path:
     description = str(spec.get("description", ""))
     schema = spec.get("input_schema", {})
     if not isinstance(schema, dict):
-        raise TypeError("input_schema must be a mapping of arg names to type strings")
+        raise TypeError(
+            "input_schema must be a mapping of arg names to type strings"
+        )
     code = str(spec.get("code", ""))
 
     args_sig = ", ".join(f"{arg}: {typ}" for arg, typ in schema.items())
@@ -61,7 +63,9 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description="Forge MCP tool modules from a spec file"
     )
-    parser.add_argument("--spec", required=True, help="Path to JSON tool specification")
+    parser.add_argument(
+        "--spec", required=True, help="Path to JSON tool specification"
+    )
     args = parser.parse_args(argv)
     spec = json.loads(Path(args.spec).read_text())
     forge(spec)

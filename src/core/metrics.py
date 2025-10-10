@@ -11,17 +11,23 @@ class MetricsCollector(ABC):
     """Abstract interface for metrics collection"""
 
     @abstractmethod
-    def counter(self, name: str, labels: dict[str, str] | None = None) -> "Counter":
+    def counter(
+        self, name: str, labels: dict[str, str] | None = None
+    ) -> "Counter":
         """Get or create a counter metric"""
         pass
 
     @abstractmethod
-    def histogram(self, name: str, labels: dict[str, str] | None = None) -> "Histogram":
+    def histogram(
+        self, name: str, labels: dict[str, str] | None = None
+    ) -> "Histogram":
         """Get or create a histogram metric"""
         pass
 
     @abstractmethod
-    def gauge(self, name: str, labels: dict[str, str] | None = None) -> "Gauge":
+    def gauge(
+        self, name: str, labels: dict[str, str] | None = None
+    ) -> "Gauge":
         """Get or create a gauge metric"""
         pass
 
@@ -216,10 +222,14 @@ METRICS_SPEC = {
 class NoOpMetricsCollector(MetricsCollector):
     """No-op metrics collector for testing/disabled metrics"""
 
-    def counter(self, name: str, labels: dict[str, str] | None = None) -> Counter:
+    def counter(
+        self, name: str, labels: dict[str, str] | None = None
+    ) -> Counter:
         return NoOpCounter()
 
-    def histogram(self, name: str, labels: dict[str, str] | None = None) -> Histogram:
+    def histogram(
+        self, name: str, labels: dict[str, str] | None = None
+    ) -> Histogram:
         return NoOpHistogram()
 
     def gauge(self, name: str, labels: dict[str, str] | None = None) -> Gauge:

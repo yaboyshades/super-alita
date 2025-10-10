@@ -13,7 +13,11 @@ from datetime import datetime
 from typing import Any
 
 from src.core.events import AtomGapEvent
-from src.core.neural_atom import NeuralAtomMetadata, NeuralStore, TextualMemoryAtom
+from src.core.neural_atom import (
+    NeuralAtomMetadata,
+    NeuralStore,
+    TextualMemoryAtom,
+)
 from src.core.secure_executor import get_tool_registry
 
 logger = logging.getLogger(__name__)
@@ -50,7 +54,9 @@ class PlanExecutor:
         # Subscribe to tool results to complete the execution loop
         asyncio.create_task(self._setup_subscriptions())
 
-        logger.info("PlanExecutor initialized - ready for closed-loop execution")
+        logger.info(
+            "PlanExecutor initialized - ready for closed-loop execution"
+        )
 
     async def _setup_subscriptions(self):
         """Set up event subscriptions for tool results."""
@@ -65,7 +71,9 @@ class PlanExecutor:
             plan = self._create_plan(goal, tools_needed)
             self.active_plans[plan_id] = plan
 
-            logger.info(f"🎯 Starting plan execution: {plan_id} with {len(plan)} steps")
+            logger.info(
+                f"🎯 Starting plan execution: {plan_id} with {len(plan)} steps"
+            )
 
             # Persist plan for recovery
             await self._persist_plan(plan_id, goal, plan)
@@ -79,7 +87,9 @@ class PlanExecutor:
                     step.status == "failed"
                     and step.error == "Service offline - no retry needed"
                 ):
-                    logger.warning("Stopping plan execution due to service offline")
+                    logger.warning(
+                        "Stopping plan execution due to service offline"
+                    )
                     break
 
             # Generate summary
@@ -112,7 +122,10 @@ class PlanExecutor:
                 plan.append(
                     Step(
                         tool="code_runner",
-                        params={"code": f"# Code for: {goal}", "language": "python"},
+                        params={
+                            "code": f"# Code for: {goal}",
+                            "language": "python",
+                        },
                     )
                 )
             elif tool == "memory_manager":
@@ -164,7 +177,9 @@ class PlanExecutor:
             return "Previous search results or conversation content"
 
         # Handle explicit save commands
-        if goal_lower.startswith("save ") or goal_lower.startswith("remember "):
+        if goal_lower.startswith("save ") or goal_lower.startswith(
+            "remember "
+        ):
             return goal[goal_lower.index(" ") + 1 :].strip()
 
         # Default: use the goal as-is
@@ -177,7 +192,9 @@ class PlanExecutor:
         # Idempotency check - avoid re-executing completed or running steps
         if step.status != "pending":
             logger.debug(
-                "Step %s already processed (status: %s)", step_idx + 1, step.status
+                "Step %s already processed (status: %s)",
+                step_idx + 1,
+                step.status,
             )
             return
 
@@ -193,7 +210,9 @@ class PlanExecutor:
         all_available_tools = set(known_tools + registry.list_tools())
 
         if step.tool not in all_available_tools:
-            logger.info(f"🔍 Gap detected: Tool '{step.tool}' not found in registry")
+            logger.info(
+                f"🔍 Gap detected: Tool '{step.tool}' not found in registry"
+            )
 
             # Emit AtomGapEvent to trigger CREATOR
             gap_event = AtomGapEvent(
@@ -210,7 +229,9 @@ class PlanExecutor:
 
             # 2️⃣ Return early to pause execution while gap is being filled
             step.status = "gap_detected"
-            step.error = f"Tool '{step.tool}' not available - gap creation in progress"
+            step.error = (
+                f"Tool '{step.tool}' not available - gap creation in progress"
+            )
 
             # Wait a moment for CREATOR to work, then retry
             await asyncio.sleep(2)  # Give CREATOR time to work
@@ -218,7 +239,9 @@ class PlanExecutor:
             # Check if tool is now available after CREATOR work
             updated_registry = get_tool_registry()
             if step.tool in updated_registry.list_tools():
-                logger.info(f"✅ Tool '{step.tool}' now available after gap fill")
+                logger.info(
+                    f"✅ Tool '{step.tool}' now available after gap fill"
+                )
                 step.status = "pending"  # Reset to retry
             else:
                 step.status = "failed"
@@ -284,7 +307,9 @@ class PlanExecutor:
                 )
                 await asyncio.sleep(wait_time)
             else:
-                logger.error(f"Step {step_idx + 1} failed after {max_retries} attempts")
+                logger.error(
+                    f"Step {step_idx + 1} failed after {max_retries} attempts"
+                )
                 step.end_time = time.time()
                 raise Exception(f"Step execution failed: {step.error}")
 
@@ -347,7 +372,9 @@ class PlanExecutor:
             raise Exception("Result not found in store")
 
         except TimeoutError:
-            raise TimeoutError(f"Tool result timeout after {timeout}s") from None
+            raise TimeoutError(
+                f"Tool result timeout after {timeout}s"
+            ) from None
         finally:
             # Clean up waiter
             if result_key in self.result_waiters:
@@ -356,7 +383,9 @@ class PlanExecutor:
     async def _handle_tool_result(self, event):
         """Handle incoming tool results - fixed to match by conversation_id."""
         try:
-            data = event.model_dump() if hasattr(event, "model_dump") else event
+            data = (
+                event.model_dump() if hasattr(event, "model_dump") else event
+            )
 
             conversation_id = data.get("conversation_id")
             result = data.get("result")
@@ -414,7 +443,9 @@ class PlanExecutor:
         except Exception as e:
             logger.error(f"Error handling tool result: {e}")
 
-    async def _summarize(self, plan_id: str, goal: str, plan: list[Step]) -> str:
+    async def _summarize(
+        self, plan_id: str, goal: str, plan: list[Step]
+    ) -> str:
         """Generate final summary of execution."""
         successful_steps = [s for s in plan if s.status == "success"]
         failed_steps = [s for s in plan if s.status == "failed"]
@@ -445,7 +476,12 @@ class PlanExecutor:
         """Use LLM to create intelligent summary."""
         try:
             plan_data = [
-                {"step": i + 1, "tool": s.tool, "status": s.status, "result": s.result}
+                {
+                    "step": i + 1,
+                    "tool": s.tool,
+                    "status": s.status,
+                    "result": s.result,
+                }
                 for i, s in enumerate(plan)
             ]
 
@@ -461,10 +497,14 @@ Focus on the key findings or outcomes, not the technical steps.
             return response.text.strip()
 
         except Exception as e:
-            logger.warning(f"LLM summary failed: {e}, using rule-based summary")
+            logger.warning(
+                f"LLM summary failed: {e}, using rule-based summary"
+            )
             successful_steps = [s for s in plan if s.status == "success"]
             failed_steps = [s for s in plan if s.status == "failed"]
-            return await self._rule_summarize(goal, successful_steps, failed_steps)
+            return await self._rule_summarize(
+                goal, successful_steps, failed_steps
+            )
 
     async def _rule_summarize(
         self, goal: str, successful_steps: list[Step], failed_steps: list[Step]
@@ -473,7 +513,9 @@ Focus on the key findings or outcomes, not the technical steps.
         summary_parts = [f"✅ **Goal Completed**: {goal}"]
 
         if successful_steps:
-            summary_parts.append(f"📋 **Completed**: {len(successful_steps)} steps")
+            summary_parts.append(
+                f"📋 **Completed**: {len(successful_steps)} steps"
+            )
 
             # Add detailed result content
             for i, step in enumerate(successful_steps[:2], 1):  # Top 2 results
@@ -486,7 +528,9 @@ Focus on the key findings or outcomes, not the technical steps.
                         summary_parts.append(
                             f"\n🌐 **Web Results** ({len(web_results)} found):"
                         )
-                        for idx, hit in enumerate(web_results[:3], 1):  # Top 3 web hits
+                        for idx, hit in enumerate(
+                            web_results[:3], 1
+                        ):  # Top 3 web hits
                             title = hit.get("title", "No title")[:80]
                             url = hit.get("url", "")
                             snippet = hit.get("snippet", "")[:100]
@@ -500,7 +544,9 @@ Focus on the key findings or outcomes, not the technical steps.
                         for idx, hit in enumerate(
                             github_results[:3], 1
                         ):  # Top 3 GitHub hits
-                            title = hit.get("title", hit.get("full_name", "Unknown"))
+                            title = hit.get(
+                                "title", hit.get("full_name", "Unknown")
+                            )
                             url = hit.get("url", "")
                             description = hit.get(
                                 "snippet", hit.get("description", "")
@@ -549,7 +595,9 @@ Focus on the key findings or outcomes, not the technical steps.
             del self.active_plans[plan_id]
 
         # Remove result waiters (should be empty by now)
-        keys_to_remove = [k for k in self.result_waiters if k.startswith(plan_id)]
+        keys_to_remove = [
+            k for k in self.result_waiters if k.startswith(plan_id)
+        ]
         for key in keys_to_remove:
             del self.result_waiters[key]
 
@@ -560,5 +608,7 @@ Focus on the key findings or outcomes, not the technical steps.
         return {
             "active_plans": len(self.active_plans),
             "pending_results": len(self.result_waiters),
-            "total_steps": sum(len(plan) for plan in self.active_plans.values()),
+            "total_steps": sum(
+                len(plan) for plan in self.active_plans.values()
+            ),
         }

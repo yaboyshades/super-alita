@@ -58,7 +58,9 @@ class KnowledgeGraphAdapter:
         await self.event_bus.subscribe(
             "planning_completed", self._handle_planning_completed
         )
-        await self.event_bus.subscribe("planning_error", self._handle_planning_error)
+        await self.event_bus.subscribe(
+            "planning_error", self._handle_planning_error
+        )
 
         # Emit KG ready event
         await self.event_bus.emit(
@@ -142,7 +144,8 @@ class KnowledgeGraphAdapter:
             goal_entities = [
                 e
                 for e in self.kg.entities.values()
-                if e.entity_type == EntityType.GOAL and e.name == session_info["goal"]
+                if e.entity_type == EntityType.GOAL
+                and e.name == session_info["goal"]
             ]
 
             if goal_entities:
@@ -229,11 +232,13 @@ class KnowledgeGraphAdapter:
         ):
             return "research"
         elif any(
-            word in goal_lower for word in ["write", "document", "report", "article"]
+            word in goal_lower
+            for word in ["write", "document", "report", "article"]
         ):
             return "documentation"
         elif any(
-            word in goal_lower for word in ["test", "debug", "fix", "troubleshoot"]
+            word in goal_lower
+            for word in ["test", "debug", "fix", "troubleshoot"]
         ):
             return "testing_debugging"
         elif any(
@@ -264,7 +269,11 @@ class KnowledgeGraphAdapter:
             goal=goal,
             domain=domain,
             context=context,
-            entity_types={EntityType.PATTERN, EntityType.GOAL, EntityType.OUTCOME},
+            entity_types={
+                EntityType.PATTERN,
+                EntityType.GOAL,
+                EntityType.OUTCOME,
+            },
             max_results=5,
             include_patterns=True,
         )
@@ -299,7 +308,9 @@ class KnowledgeGraphAdapter:
                 {
                     "description": entity.description,
                     "success": entity.properties.get("success", False),
-                    "execution_time": entity.properties.get("execution_time", 0.0),
+                    "execution_time": entity.properties.get(
+                        "execution_time", 0.0
+                    ),
                 }
                 for entity in result.entities
                 if entity.entity_type == EntityType.OUTCOME

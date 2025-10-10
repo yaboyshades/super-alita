@@ -18,10 +18,10 @@ from .scalability_manager import ScalabilityManager
 from .security_hardening import SecurityHardening
 
 __all__ = [
-    'PerformanceOptimizer',
-    'ScalabilityManager',
-    'SecurityHardening',
-    'ResourceManager'
+    "PerformanceOptimizer",
+    "ScalabilityManager",
+    "SecurityHardening",
+    "ResourceManager",
 ]
 
 
@@ -41,8 +41,8 @@ async def create_optimization_suite(config=None):
     await resource_manager.start()
 
     return {
-        'performance': performance_optimizer,
-        'scalability': scalability_manager,
-        'security': security_hardening,
-        'resources': resource_manager
+        "performance": performance_optimizer,
+        "scalability": scalability_manager,
+        "security": security_hardening,
+        "resources": resource_manager,
     }

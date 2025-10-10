@@ -133,7 +133,9 @@ class AdaptiveNeuralAtom(NeuralAtom):
                 input_data, None, execution_time, False, prediction
             )
 
-            logger.error(f"🧠 Adaptive execution failed: {self.metadata.name} - {e}")
+            logger.error(
+                f"🧠 Adaptive execution failed: {self.metadata.name} - {e}"
+            )
 
             return {
                 "result": None,
@@ -170,11 +172,17 @@ class AdaptiveNeuralAtom(NeuralAtom):
 
             for pattern in similar_patterns:
                 execution_times.extend(pattern.execution_times)
-                success_rates.extend([1.0 if s else 0.0 for s in pattern.success_rates])
+                success_rates.extend(
+                    [1.0 if s else 0.0 for s in pattern.success_rates]
+                )
                 confidence_scores.extend(pattern.confidence_scores)
 
-            predicted_duration = np.mean(execution_times) if execution_times else 1.0
-            predicted_success_rate = np.mean(success_rates) if success_rates else 0.5
+            predicted_duration = (
+                np.mean(execution_times) if execution_times else 1.0
+            )
+            predicted_success_rate = (
+                np.mean(success_rates) if success_rates else 0.5
+            )
             pattern_confidence = (
                 np.mean(confidence_scores) if confidence_scores else 0.5
             )
@@ -232,7 +240,9 @@ class AdaptiveNeuralAtom(NeuralAtom):
 
         # Update performance trend
         if len(self.learning_metrics.confidence_history) >= 10:
-            recent_performance = np.mean(self.learning_metrics.confidence_history[-10:])
+            recent_performance = np.mean(
+                self.learning_metrics.confidence_history[-10:]
+            )
             older_performance = (
                 np.mean(self.learning_metrics.confidence_history[-20:-10])
                 if len(self.learning_metrics.confidence_history) >= 20
@@ -300,7 +310,9 @@ class AdaptiveNeuralAtom(NeuralAtom):
         # Generic signature
         return f"object_{type(input_data).__name__}_hash{hash(str(input_data)) % 10000}"
 
-    def _find_similar_patterns(self, input_signature: str) -> list[ExecutionPattern]:
+    def _find_similar_patterns(
+        self, input_signature: str
+    ) -> list[ExecutionPattern]:
         """Find execution patterns similar to the given input signature"""
         target_pattern_id = self._create_pattern_id(input_signature)
         similar_patterns = []
@@ -319,7 +331,9 @@ class AdaptiveNeuralAtom(NeuralAtom):
                     similar_patterns.append(pattern)
 
         # Sort by frequency and recency
-        similar_patterns.sort(key=lambda p: (p.frequency, p.last_seen), reverse=True)
+        similar_patterns.sort(
+            key=lambda p: (p.frequency, p.last_seen), reverse=True
+        )
 
         return similar_patterns[:10]  # Return top 10 similar patterns
 
@@ -387,7 +401,9 @@ class AdaptiveNeuralAtom(NeuralAtom):
 
         return features
 
-    def _calculate_efficiency(self, actual_time: float, predicted_time: float) -> float:
+    def _calculate_efficiency(
+        self, actual_time: float, predicted_time: float
+    ) -> float:
         """Calculate execution efficiency compared to prediction"""
         if predicted_time <= 0:
             return 1.0 if actual_time <= 1.0 else 0.5
@@ -406,14 +422,21 @@ class AdaptiveNeuralAtom(NeuralAtom):
 
         # Components of adaptation score
         success_rate = (
-            self.learning_metrics.success_count / self.learning_metrics.execution_count
+            self.learning_metrics.success_count
+            / self.learning_metrics.execution_count
         )
 
         confidence_improvement = 0.0
         if len(self.learning_metrics.confidence_history) >= 10:
-            recent_confidence = np.mean(self.learning_metrics.confidence_history[-5:])
-            older_confidence = np.mean(self.learning_metrics.confidence_history[-10:-5])
-            confidence_improvement = max(0.0, recent_confidence - older_confidence)
+            recent_confidence = np.mean(
+                self.learning_metrics.confidence_history[-5:]
+            )
+            older_confidence = np.mean(
+                self.learning_metrics.confidence_history[-10:-5]
+            )
+            confidence_improvement = max(
+                0.0, recent_confidence - older_confidence
+            )
 
         performance_trend_score = max(
             0.0, min(1.0, self.learning_metrics.performance_trend + 0.5)
@@ -541,7 +564,12 @@ class AdaptiveTextProcessor(AdaptiveNeuralAtom):
     def get_embedding(self) -> list[float]:
         """Generate semantic embedding for this text processor"""
         # Simple embedding based on capabilities and performance
-        base_embedding = [0.8, 0.9, 0.7, 0.6]  # text, processing, adaptive, learning
+        base_embedding = [
+            0.8,
+            0.9,
+            0.7,
+            0.6,
+        ]  # text, processing, adaptive, learning
 
         # Add performance-based features
         if self.learning_metrics.execution_count > 0:
@@ -568,8 +596,17 @@ class AdaptiveTextProcessor(AdaptiveNeuralAtom):
         base_confidence = 0.0
 
         # Check for text processing keywords
-        text_keywords = ["text", "process", "analyze", "parse", "extract", "transform"]
-        if any(keyword in task_description.lower() for keyword in text_keywords):
+        text_keywords = [
+            "text",
+            "process",
+            "analyze",
+            "parse",
+            "extract",
+            "transform",
+        ]
+        if any(
+            keyword in task_description.lower() for keyword in text_keywords
+        ):
             base_confidence = 0.8
 
         # Adjust confidence based on learning
@@ -581,7 +618,9 @@ class AdaptiveTextProcessor(AdaptiveNeuralAtom):
             )
             adaptation_bonus = self._calculate_adaptation_score() * 0.2
 
-            adjusted_confidence = base_confidence * success_rate + adaptation_bonus
+            adjusted_confidence = (
+                base_confidence * success_rate + adaptation_bonus
+            )
             return max(0.0, min(1.0, adjusted_confidence))
 
         return base_confidence
@@ -594,7 +633,11 @@ class AdaptiveMemoryAtom(AdaptiveNeuralAtom):
         metadata = NeuralAtomMetadata(
             name=f"adaptive_memory_{uuid.uuid4().hex[:8]}",
             description="Adaptive memory storage with learning capabilities",
-            capabilities=["memory_storage", "adaptive_retrieval", "pattern_learning"],
+            capabilities=[
+                "memory_storage",
+                "adaptive_retrieval",
+                "pattern_learning",
+            ],
             version="1.0.0",
         )
         super().__init__(metadata)
@@ -652,7 +695,8 @@ class AdaptiveMemoryAtom(AdaptiveNeuralAtom):
             len(self.content) / 10000.0,  # Content length
             self.access_frequency / 100.0,  # Access frequency
             len(self.retrieval_patterns) / 10.0,  # Pattern diversity
-            (datetime.now() - self.last_accessed).total_seconds() / 86400.0,  # Recency
+            (datetime.now() - self.last_accessed).total_seconds()
+            / 86400.0,  # Recency
         ]
 
         # Add content hash features
@@ -680,7 +724,9 @@ class AdaptiveMemoryAtom(AdaptiveNeuralAtom):
             "stored",
             "saved",
         ]
-        if any(keyword in task_description.lower() for keyword in memory_keywords):
+        if any(
+            keyword in task_description.lower() for keyword in memory_keywords
+        ):
             base_confidence = 0.9
 
         # Check for content relevance (simplified)

@@ -21,7 +21,9 @@ class IMetricsSink(Protocol):
 class NoopMetricsSink(IMetricsSink):
     """A metrics sink that discards all data."""
 
-    def record_timing(self, name: str, value_ms: float, tags: dict[str, Any]) -> None:
+    def record_timing(
+        self, name: str, value_ms: float, tags: dict[str, Any]
+    ) -> None:
         pass
 
     def increment_counter(self, name: str, tags: dict[str, Any]) -> None:
@@ -46,7 +48,9 @@ class Telemetry:
             duration_ms = (end_time - start_time) * 1000
             self.sink.record_timing(name, duration_ms, tags or {})
 
-    def increment_counter(self, name: str, tags: dict[str, Any] = None) -> None:
+    def increment_counter(
+        self, name: str, tags: dict[str, Any] = None
+    ) -> None:
         """Increments a named counter."""
         self.counters[name] = self.counters.get(name, 0) + 1
         self.sink.increment_counter(name, tags or {})

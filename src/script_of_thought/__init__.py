@@ -5,7 +5,12 @@ Provides parsing and execution of Perplexity-style scripts.
 """
 
 from .interpreter import ScriptOfThoughtInterpreter, StepExecutionResult
-from .parser import ScriptOfThought, ScriptOfThoughtParser, ScriptStep, StepType
+from .parser import (
+    ScriptOfThought,
+    ScriptOfThoughtParser,
+    ScriptStep,
+    StepType,
+)
 
 __all__ = [
     "ScriptOfThought",

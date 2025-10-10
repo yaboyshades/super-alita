@@ -20,7 +20,9 @@ class Subproblem(BaseModel):
     feature_id: str
     name: str
 
-    kappa: float = Field(default=1.0, ge=0.0, le=10.0)  # Intrinsic attainment weight
+    kappa: float = Field(
+        default=1.0, ge=0.0, le=10.0
+    )  # Intrinsic attainment weight
     extrinsic_weight: float = Field(default=1.0, ge=0.0, le=1.0)
 
     termination_features: list[str] = Field(default_factory=list)
@@ -57,13 +59,17 @@ class SubproblemManager(PluginInterface):
     def name(self) -> str:
         return "oak_subproblem_manager"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         self.subproblems: dict[str, Subproblem] = {}
         self.feature_to_subproblems: dict[str, list[str]] = {}
 
         # Legacy config approach using get_config
-        self.min_utility_threshold = self.get_config("min_utility_threshold", 0.2)
+        self.min_utility_threshold = self.get_config(
+            "min_utility_threshold", 0.2
+        )
         self.kappa_range = self.get_config("kappa_range", (0.1, 5.0))
         self.kappa_values = self.get_config("kappa_values", [0.5, 1.0, 2.0])
 
@@ -73,11 +79,17 @@ class SubproblemManager(PluginInterface):
         self.cfg.setdefault("max_per_feature", 5)
 
         # Subscribe to both legacy and modern event patterns
-        await self.subscribe("feature_utility_update", self.handle_utility_update)
+        await self.subscribe(
+            "feature_utility_update", self.handle_utility_update
+        )
         await self.subscribe("option_created", self.link_option_to_subproblem)
         await self.subscribe("subproblem_terminated", self.handle_termination)
-        await self.subscribe("oak.feature_utility_updated", self.handle_feature_utility)
-        await self.subscribe("oak.option_completed", self.handle_option_completed)
+        await self.subscribe(
+            "oak.feature_utility_updated", self.handle_feature_utility
+        )
+        await self.subscribe(
+            "oak.option_completed", self.handle_option_completed
+        )
 
     async def start(self) -> None:
         await super().start()
@@ -99,9 +111,9 @@ class SubproblemManager(PluginInterface):
         if not feature_id:
             return
         existing = self.feature_to_sub.get(feature_id, [])
-        if utility < float(self.cfg["min_utility_threshold"]) or len(existing) >= int(
-            self.cfg["max_per_feature"]
-        ):
+        if utility < float(self.cfg["min_utility_threshold"]) or len(
+            existing
+        ) >= int(self.cfg["max_per_feature"]):
             return
         for k in self.kappa_values:
             sp = await self._create_subproblem(feature_id, k)
@@ -125,7 +137,9 @@ class SubproblemManager(PluginInterface):
             if s in self.subproblems
         }
         if utility > 0.7 and len(existing) < 5:
-            new_k = min(self.kappa_range[1], (max(existing) * 1.5) if existing else 3.0)
+            new_k = min(
+                self.kappa_range[1], (max(existing) * 1.5) if existing else 3.0
+            )
             if new_k not in existing:
                 sp = await self._create_subproblem(fid, new_k)
                 if sp:
@@ -161,7 +175,9 @@ class SubproblemManager(PluginInterface):
             content=json.dumps(sp_dict),
             meta={"feature_id": feature_id, "kappa": kappa},
         )
-        await self.store.persist(event_type="atom_created", payload=new_atom.to_dict())
+        await self.store.persist(
+            event_type="atom_created", payload=new_atom.to_dict()
+        )
         return sp
 
     async def link_option_to_subproblem(self, event: dict[str, Any]):

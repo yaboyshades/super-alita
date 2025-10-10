@@ -1,4 +1,5 @@
 """Unified MCP server package."""
+
 from __future__ import annotations
 
 from .fastmcp import FastMCP

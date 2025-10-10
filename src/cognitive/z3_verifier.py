@@ -56,8 +56,14 @@ class ConstraintComplexityAnalyzer:
             base = 2.0
         return base + 0.3 * var_count
 
-    async def analyze(self, constraints: list[dict[str, Any]]) -> dict[str, Any]:
-        out: dict[str, Any] = {"constraints": {}, "total_variables": 0, "overall_complexity": 0.0}
+    async def analyze(
+        self, constraints: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "constraints": {},
+            "total_variables": 0,
+            "overall_complexity": 0.0,
+        }
         all_vars: set[str] = set()
         total_cost = 0.0
         for idx, c in enumerate(constraints):
@@ -90,10 +96,14 @@ class ScalableZ3Verifier:
         self.max_timeout = max(self.base_timeout, int(max_timeout))
         self.analyzer = ConstraintComplexityAnalyzer()
 
-    async def analyze_constraints(self, constraints: list[dict[str, Any]]) -> dict[str, Any]:
+    async def analyze_constraints(
+        self, constraints: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         return await self.analyzer.analyze(constraints)
 
-    async def minimize_constraints(self, constraints: list[dict[str, Any]], analysis: dict[str, Any]) -> list[dict[str, Any]]:
+    async def minimize_constraints(
+        self, constraints: list[dict[str, Any]], analysis: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         # Keep type/correctness constraints always; defer performance/style when cost is high
         essential: list[dict[str, Any]] = []
         nice: list[dict[str, Any]] = []
@@ -104,7 +114,13 @@ class ScalableZ3Verifier:
             cost = float(cm.get(key, {}).get("estimated_cost", 1.0))
             cost_map[key] = cost
             kind = str(c.get("type") or "").lower()
-            if kind in {"type_constraint", "correctness", "eq", "ineq", "relation"}:
+            if kind in {
+                "type_constraint",
+                "correctness",
+                "eq",
+                "ineq",
+                "relation",
+            }:
                 essential.append(c)
             elif kind in {"performance_constraint", "style_constraint"}:
                 nice.append(c)
@@ -113,7 +129,9 @@ class ScalableZ3Verifier:
 
         # add nice-to-have if within budget
         budget = 10.0
-        current = sum(cost_map.get(str(constraints.index(c)), 1.0) for c in essential)
+        current = sum(
+            cost_map.get(str(constraints.index(c)), 1.0) for c in essential
+        )
         for c in nice:
             ckey = str(constraints.index(c))
             ccost = cost_map.get(ckey, 1.0)
@@ -127,7 +145,9 @@ class ScalableZ3Verifier:
         to = int(self.base_timeout * (1.0 + comp / 5.0))
         return min(max(1, to), self.max_timeout)
 
-    async def verify(self, constraints: list[dict[str, Any]], timeout_s: int | None = None) -> dict[str, Any]:
+    async def verify(
+        self, constraints: list[dict[str, Any]], timeout_s: int | None = None
+    ) -> dict[str, Any]:
         if not Z3_AVAILABLE:
             return {"is_valid": False, "error": "z3-solver not installed"}
         solver = Solver()
@@ -176,4 +196,3 @@ class ScalableZ3Verifier:
 
         res = solver.check()
         return {"is_valid": bool(res == sat), "solver_result": str(res)}
-

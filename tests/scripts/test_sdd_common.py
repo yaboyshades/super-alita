@@ -27,11 +27,16 @@ def test_log_json_reuses_cached_python_path() -> None:
         check=True,
     )
 
-    output_lines = [line for line in result.stdout.splitlines() if line.strip()]
+    output_lines = [
+        line for line in result.stdout.splitlines() if line.strip()
+    ]
     assert len(output_lines) == 2
 
     parsed = [json.loads(line) for line in output_lines]
-    assert [entry["message"] for entry in parsed] == ["first message", "second message"]
+    assert [entry["message"] for entry in parsed] == [
+        "first message",
+        "second message",
+    ]
     assert all(entry["level"] == "info" for entry in parsed)
 
     trace_lines: list[str] = []
@@ -51,7 +56,8 @@ def test_log_json_reuses_cached_python_path() -> None:
     assert first_log_index is not None, "log_json invocation was not traced"
 
     detection_after_first_log = any(
-        "command -v python" in line for line in trace_lines[first_log_index + 1 :]
+        "command -v python" in line
+        for line in trace_lines[first_log_index + 1 :]
     )
     assert (
         not detection_after_first_log
@@ -62,4 +68,6 @@ def test_log_json_reuses_cached_python_path() -> None:
         for line in trace_lines[: first_log_index + 1]
         if "command -v python" in line
     ]
-    assert detection_before_first_log, "expected at least one interpreter detection"
+    assert (
+        detection_before_first_log
+    ), "expected at least one interpreter detection"

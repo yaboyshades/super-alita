@@ -51,7 +51,9 @@ async def test_deepcode_diffs_mirrored_to_puter():
 
     await asyncio.sleep(0.5)
 
-    write_events = [e for e in bus.events if e.event_type == "puter_file_write"]
+    write_events = [
+        e for e in bus.events if e.event_type == "puter_file_write"
+    ]
     expected_paths = {
         "docs/deepcode_result.md",
         "src/new_dir/deepcode_module.py",
@@ -75,5 +77,7 @@ async def test_deepcode_diffs_mirrored_to_puter():
         )
 
     assert len(puter.operation_history) == len(expected_paths)
-    hist_paths = {atom.operation_data["file_path"] for atom in puter.operation_history}
+    hist_paths = {
+        atom.operation_data["file_path"] for atom in puter.operation_history
+    }
     assert hist_paths == expected_paths

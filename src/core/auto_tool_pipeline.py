@@ -31,7 +31,9 @@ class AutoToolPipeline:
     async def _handle_gap(self, event):
         """Handle requests for new atoms/tools."""
         try:
-            data = event.model_dump() if hasattr(event, "model_dump") else event
+            data = (
+                event.model_dump() if hasattr(event, "model_dump") else event
+            )
             goal = data.get("goal", "")
             data.get("session_id", "default")
             if not goal:
@@ -40,7 +42,9 @@ class AutoToolPipeline:
             logger.info(f"🎯 Processing atom gap request: {goal}")
             # Generate tool specification
             spec = await self._brainstorm_spec(goal)
-            logger.info(f"📋 Generated spec for tool: {spec.get('key', 'unknown')}")
+            logger.info(
+                f"📋 Generated spec for tool: {spec.get('key', 'unknown')}"
+            )
             # Generate code
             code = await self._generate_code(spec)
             logger.info(f"💻 Generated code (length: {len(code)} chars)")
@@ -107,7 +111,9 @@ class AutoToolPipeline:
         json_schema = '{\n  "key": "<python_identifier>",\n  "name": "<human_readable_name>",\n  "description": "<what_it_does>",\n  "signature": {"param1": {"type": "str", "description": "parameter description"}},\n  "dependencies": ["requests"],\n  "example": {"param1": "example_value"}\n}'
         # Format the prompt using template
         prompt = self.prompt_manager.get_prompt(
-            "auto_tool_pipeline.brainstorm_spec", goal=goal, json_schema=json_schema
+            "auto_tool_pipeline.brainstorm_spec",
+            goal=goal,
+            json_schema=json_schema,
         )
         try:
             raw = await self.llm.generate(prompt, max_tokens=400)
@@ -164,7 +170,9 @@ class AutoToolPipeline:
             logger.error(f"Error generating code: {e}")
             raise
 
-    async def _test_code(self, code: str, spec: dict[str, Any]) -> tuple[bool, str]:
+    async def _test_code(
+        self, code: str, spec: dict[str, Any]
+    ) -> tuple[bool, str]:
         """Test the generated code in sandbox."""
         # Create test module with robust class detection
         module_code = textwrap.dedent(
@@ -215,7 +223,10 @@ if __name__ == "__main__":
                 result = json.loads(output)
                 if result.get("success"):
                     return True, f"Test passed: {result['result']['summary']}"
-                return False, f"Test failed: {result.get('error', 'Unknown error')}"
+                return (
+                    False,
+                    f"Test failed: {result.get('error', 'Unknown error')}",
+                )
             except json.JSONDecodeError:
                 return False, f"Invalid test output: {output}"
         else:

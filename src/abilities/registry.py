@@ -38,7 +38,13 @@ def validate_ability_registration(
         errors.append("invalid version (expected x.y.z)")
 
     # Methods
-    for method in ("initialize", "validate_input", "execute", "health_check", "shutdown"):
+    for method in (
+        "initialize",
+        "validate_input",
+        "execute",
+        "health_check",
+        "shutdown",
+    ):
         if not callable(getattr(obj, method, None)):
             errors.append(f"missing method: {method}")
 
@@ -58,12 +64,16 @@ def validate_ability_registration(
                 errors.append("input_schema.properties must be a dict")
             req = in_schema.get("required", [])
             if req is not None and not isinstance(req, list):
-                errors.append("input_schema.required must be a list if present")
+                errors.append(
+                    "input_schema.required must be a list if present"
+                )
             # If required present, required keys should exist in properties
             if isinstance(req, list) and isinstance(props, dict):
                 for k in req:
                     if k not in props:
-                        errors.append(f"input_schema.required key '{k}' missing in properties")
+                        errors.append(
+                            f"input_schema.required key '{k}' missing in properties"
+                        )
 
         # Output schema checks
         if not isinstance(out_schema, dict):
@@ -76,16 +86,22 @@ def validate_ability_registration(
                 errors.append("output_schema.properties must be a dict")
             oreq = out_schema.get("required", [])
             if oreq is not None and not isinstance(oreq, list):
-                errors.append("output_schema.required must be a list if present")
+                errors.append(
+                    "output_schema.required must be a list if present"
+                )
             # success must be declared and required
             if isinstance(oprops, dict):
                 success_prop = oprops.get("success")
                 if not isinstance(success_prop, dict):
-                    errors.append("output_schema.properties.success missing or not a dict")
+                    errors.append(
+                        "output_schema.properties.success missing or not a dict"
+                    )
                 else:
                     stype = success_prop.get("type")
                     if stype != "boolean":
-                        errors.append("output_schema.properties.success.type must be 'boolean'")
+                        errors.append(
+                            "output_schema.properties.success.type must be 'boolean'"
+                        )
             if isinstance(oreq, list) and "success" not in oreq:
                 errors.append("output_schema.required must include 'success'")
 
@@ -94,4 +110,4 @@ def validate_ability_registration(
 
 def list_ability_names(abilities: dict[str, Any]) -> list[str]:
     """List registered ability names from a mapping."""
-    return sorted(list(abilities.keys()))
+    return sorted(abilities.keys())

@@ -91,7 +91,9 @@ class EnergyBasedPrioritizer:
                 return self.last_prioritization
 
         # Calculate priorities
-        priorities = self.priority_engine.calculate_priorities(task_graph, context)
+        priorities = self.priority_engine.calculate_priorities(
+            task_graph, context
+        )
 
         # Calculate metrics
         executable_count = sum(1 for p in priorities if p.can_execute)
@@ -155,7 +157,9 @@ class EnergyBasedPrioritizer:
 
         return self.priority_engine.get_next_tasks(count)
 
-    def mark_task_completed(self, task_id: str, completion_time: float | None = None):
+    def mark_task_completed(
+        self, task_id: str, completion_time: float | None = None
+    ):
         """Mark a task as completed.
 
         This updates the priority engine's understanding of which
@@ -311,9 +315,9 @@ class EnergyBasedPrioritizer:
         # Calculate trends
         recent_results = self.prioritization_history[-5:]  # Last 5 results
 
-        avg_calculation_time = sum(r.calculation_time for r in recent_results) / len(
-            recent_results
-        )
+        avg_calculation_time = sum(
+            r.calculation_time for r in recent_results
+        ) / len(recent_results)
 
         avg_energy_trend = [r.average_energy for r in recent_results]
         avg_confidence_trend = [r.average_confidence for r in recent_results]

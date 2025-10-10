@@ -154,7 +154,9 @@ class MathExpressionTool(Tool):
                 },
             }
 
-            result = await self.sandbox.evaluate_expression(expression, context)
+            result = await self.sandbox.evaluate_expression(
+                expression, context
+            )
             return ToolResult(
                 success=True, data=result, metadata={"expression": expression}
             )
@@ -173,7 +175,11 @@ class DataAnalysisTool(Tool):
             "required": True,
             "description": "Analysis operation to perform",
         },
-        "data": {"type": "array", "required": True, "description": "Data to analyze"},
+        "data": {
+            "type": "array",
+            "required": True,
+            "description": "Data to analyze",
+        },
         "options": {
             "type": "object",
             "required": False,
@@ -205,7 +211,9 @@ class DataAnalysisTool(Tool):
                 error=result.get("error"),
                 metadata={
                     "operation": operation,
-                    "data_length": len(data) if isinstance(data, list) else None,
+                    "data_length": (
+                        len(data) if isinstance(data, list) else None
+                    ),
                 },
             )
         except Exception as e:
@@ -335,7 +343,9 @@ class ToolsRegistry:
         """Execute a tool by name"""
         tool = self.get_tool(tool_name)
         if not tool:
-            return ToolResult(success=False, error=f"Tool '{tool_name}' not found")
+            return ToolResult(
+                success=False, error=f"Tool '{tool_name}' not found"
+            )
 
         try:
             return await tool.execute(**kwargs)
@@ -394,13 +404,17 @@ async def example_usage():
 
     # Execute math expression
     result2 = await registry.execute_tool(
-        "math_expression", expression="sqrt(16) + log(e)", variables={"e": 2.718281828}
+        "math_expression",
+        expression="sqrt(16) + log(e)",
+        variables={"e": 2.718281828},
     )
     print("\nMath expression result:", result2.to_dict())
 
     # Execute data analysis
     result3 = await registry.execute_tool(
-        "data_analysis", operation="summary", data=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        "data_analysis",
+        operation="summary",
+        data=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     )
     print("\nData analysis result:", result3.to_dict())
 

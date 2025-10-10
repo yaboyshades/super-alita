@@ -38,7 +38,9 @@ class KnowledgeGraphPlugin(PluginInterface):
         # Subscribe to all events if event bus is available
         if self.event_bus:
             await self.event_bus.subscribe("*", self.handlers.handle_event)
-            print(f"📊 Knowledge Graph Plugin initialized (DB: {self.db_path})")
+            print(
+                f"📊 Knowledge Graph Plugin initialized (DB: {self.db_path})"
+            )
         else:
             print(
                 f"📊 Knowledge Graph Plugin initialized without event bus (DB: {self.db_path})"
@@ -105,7 +107,10 @@ class KnowledgeGraphPlugin(PluginInterface):
         return related_atoms
 
     def create_manual_concept(
-        self, name: str, description: str, properties: dict[str, Any] | None = None
+        self,
+        name: str,
+        description: str,
+        properties: dict[str, Any] | None = None,
     ) -> str:
         """Create a concept atom manually"""
         if not self.handlers:
@@ -114,7 +119,10 @@ class KnowledgeGraphPlugin(PluginInterface):
         return self.handlers.create_concept_atom(name, description, properties)
 
     def create_manual_entity(
-        self, name: str, entity_type: str, attributes: dict[str, Any] | None = None
+        self,
+        name: str,
+        entity_type: str,
+        attributes: dict[str, Any] | None = None,
     ) -> str:
         """Create an entity atom manually"""
         if not self.handlers:
@@ -148,7 +156,9 @@ class KnowledgeGraphPlugin(PluginInterface):
 
         all_atoms = {}
         for atom_type in AtomType:
-            atoms = self.knowledge_store.get_atoms_by_type(atom_type, limit=1000)
+            atoms = self.knowledge_store.get_atoms_by_type(
+                atom_type, limit=1000
+            )
             all_atoms[atom_type.value] = [atom.to_dict() for atom in atoms]
 
         # Get all bonds

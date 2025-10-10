@@ -6,8 +6,12 @@ def test_compose_chat_prompt_deterministic():
     user = "What can you do?"
     files = ["a.txt: alpha", "b.txt: beta"]
     signals = ["note this", "remember that"]
-    result1 = compose_chat_prompt(banner, user, files, signals, token_budget=10)
-    result2 = compose_chat_prompt(banner, user, files, signals, token_budget=10)
+    result1 = compose_chat_prompt(
+        banner, user, files, signals, token_budget=10
+    )
+    result2 = compose_chat_prompt(
+        banner, user, files, signals, token_budget=10
+    )
     assert result1 == result2
     assert len(result1.hints["text"]) <= 40  # 10 tokens ≈ 40 chars
     assert result1.hints["content_hash"] == result2.hints["content_hash"]

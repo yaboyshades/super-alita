@@ -19,7 +19,10 @@ class FakeDC(DeepCodeClientInterface):
         return {"steps": ["A", "B"], "confidence": 0.72}
 
     async def collect_references(self, plan: dict[str, Any]) -> dict[str, Any]:
-        return {"snippets": [{"path": "x.py", "code": "print(1)"}], "confidence": 0.79}
+        return {
+            "snippets": [{"path": "x.py", "code": "print(1)"}],
+            "confidence": 0.79,
+        }
 
     async def generate_code(
         self, plan: dict[str, Any], refs: dict[str, Any]

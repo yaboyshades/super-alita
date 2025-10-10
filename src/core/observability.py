@@ -130,7 +130,9 @@ class ObservabilityManager:
     - Error tracking
     """
 
-    def __init__(self, level: ObservabilityLevel = ObservabilityLevel.STANDARD):
+    def __init__(
+        self, level: ObservabilityLevel = ObservabilityLevel.STANDARD
+    ):
         self.level = level
         self.logger = logging.getLogger(__name__)
 
@@ -147,7 +149,9 @@ class ObservabilityManager:
         # Performance tracking
         self.operation_times: dict[str, list[float]] = {}
 
-        self.logger.info(f"Observability manager initialized with level: {level.name}")
+        self.logger.info(
+            f"Observability manager initialized with level: {level.name}"
+        )
 
     def create_correlation_context(
         self,
@@ -258,7 +262,10 @@ class ObservabilityManager:
                 payload={
                     "operation": operation,
                     "duration_ms": duration_ms,
-                    "error_details": {"type": type(e).__name__, "message": str(e)},
+                    "error_details": {
+                        "type": type(e).__name__,
+                        "message": str(e),
+                    },
                 },
                 observability_level=ObservabilityLevel.STANDARD,
             )
@@ -267,7 +274,9 @@ class ObservabilityManager:
         finally:
             # Cleanup active correlation
             if correlation_context.correlation_id in self.active_correlations:
-                del self.active_correlations[correlation_context.correlation_id]
+                del self.active_correlations[
+                    correlation_context.correlation_id
+                ]
 
     def emit_event(
         self,
@@ -344,19 +353,27 @@ class ObservabilityManager:
 
         if correlation_id:
             filtered_events = [
-                e for e in filtered_events if e.correlation_id == correlation_id
+                e
+                for e in filtered_events
+                if e.correlation_id == correlation_id
             ]
 
         if session_id:
-            filtered_events = [e for e in filtered_events if e.session_id == session_id]
+            filtered_events = [
+                e for e in filtered_events if e.session_id == session_id
+            ]
 
         if event_category:
             filtered_events = [
-                e for e in filtered_events if e.event_category == event_category
+                e
+                for e in filtered_events
+                if e.event_category == event_category
             ]
 
         if since:
-            filtered_events = [e for e in filtered_events if e.timestamp >= since]
+            filtered_events = [
+                e for e in filtered_events if e.timestamp >= since
+            ]
 
         # Sort by timestamp (most recent first)
         filtered_events.sort(key=lambda e: e.timestamp, reverse=True)
@@ -366,7 +383,9 @@ class ObservabilityManager:
 
         return filtered_events
 
-    def get_performance_stats(self, operation: str | None = None) -> dict[str, Any]:
+    def get_performance_stats(
+        self, operation: str | None = None
+    ) -> dict[str, Any]:
         """Get performance statistics for operations"""
         if operation:
             times = self.operation_times.get(operation, [])
@@ -385,7 +404,8 @@ class ObservabilityManager:
             return {
                 "total_operations": len(self.operation_times),
                 "operations": [
-                    self.get_performance_stats(op) for op in self.operation_times
+                    self.get_performance_stats(op)
+                    for op in self.operation_times
                 ],
             }
 
@@ -524,7 +544,10 @@ def trace_sync(operation_name: str | None = None):
                     payload={
                         "operation": op_name,
                         "duration_ms": duration_ms,
-                        "error_details": {"type": type(e).__name__, "message": str(e)},
+                        "error_details": {
+                            "type": type(e).__name__,
+                            "message": str(e),
+                        },
                     },
                     duration_ms=duration_ms,
                     success=False,

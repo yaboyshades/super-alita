@@ -14,7 +14,9 @@ class TestMathematicalProperties:
     """Property-based tests for mathematical function properties."""
 
     @given(
-        st.lists(st.floats(min_value=0.1, max_value=1000.0), min_size=5, max_size=15)
+        st.lists(
+            st.floats(min_value=0.1, max_value=1000.0), min_size=5, max_size=15
+        )
     )
     def test_monotonicity_detection(self, runtime_data):
         """Test detection of monotonic behavior in runtime data."""
@@ -57,7 +59,9 @@ class TestMathematicalProperties:
 
         # Second derivatives should be mostly positive
         second_derivs = analyzer.compute_second_derivatives()
-        positive_ratio = sum(1 for d in second_derivs if d >= -0.1) / len(second_derivs)
+        positive_ratio = sum(1 for d in second_derivs if d >= -0.1) / len(
+            second_derivs
+        )
         assert positive_ratio >= 0.7  # 70% should be positive
 
     @given(st.integers(min_value=4, max_value=20))
@@ -78,10 +82,16 @@ class TestMathematicalProperties:
 
         # Second derivatives should be mostly negative
         second_derivs = analyzer.compute_second_derivatives()
-        negative_ratio = sum(1 for d in second_derivs if d <= 0.1) / len(second_derivs)
+        negative_ratio = sum(1 for d in second_derivs if d <= 0.1) / len(
+            second_derivs
+        )
         assert negative_ratio >= 0.7  # 70% should be negative
 
-    @given(st.lists(st.floats(min_value=0.1, max_value=100.0), min_size=6, max_size=12))
+    @given(
+        st.lists(
+            st.floats(min_value=0.1, max_value=100.0), min_size=6, max_size=12
+        )
+    )
     def test_complexity_classification(self, base_times):
         """Test classification of algorithmic complexity patterns."""
         assume(len(set(base_times)) >= 4)
@@ -129,7 +139,9 @@ class TestMathematicalProperties:
             assert growth_rate > 1.0  # Should detect super-linear growth
 
     @given(
-        st.lists(st.floats(min_value=0.001, max_value=10.0), min_size=5, max_size=15)
+        st.lists(
+            st.floats(min_value=0.001, max_value=10.0), min_size=5, max_size=15
+        )
     )
     def test_smoothness_assessment(self, runtime_data):
         """Test assessment of function smoothness."""
@@ -146,8 +158,12 @@ class TestMathematicalProperties:
 
         # Noisy data (add random jumps)
         np.random.seed(42)
-        noise = np.random.normal(0, np.std(runtime_data) * 0.5, len(runtime_data))
-        noisy_data = [runtime_data[i] + noise[i] for i in range(len(runtime_data))]
+        noise = np.random.normal(
+            0, np.std(runtime_data) * 0.5, len(runtime_data)
+        )
+        noisy_data = [
+            runtime_data[i] + noise[i] for i in range(len(runtime_data))
+        ]
 
         analyzer_noisy = CalculusAnalyzer()
         analyzer_noisy.fit_curve(input_sizes, noisy_data)
@@ -161,7 +177,11 @@ class TestMathematicalProperties:
         assert 0 <= smoothness_smooth <= 1
         assert 0 <= smoothness_noisy <= 1
 
-    @given(st.lists(st.floats(min_value=0.1, max_value=50.0), min_size=6, max_size=10))
+    @given(
+        st.lists(
+            st.floats(min_value=0.1, max_value=50.0), min_size=6, max_size=10
+        )
+    )
     def test_inflection_point_detection(self, runtime_data):
         """Test detection of inflection points in runtime curves."""
         from src.calculus_gate.fitting import CalculusAnalyzer
@@ -211,7 +231,9 @@ class TestMathematicalProperties:
         assert asymptotic_power["growth_type"] in ["polynomial", "power_law"]
 
     @given(
-        st.lists(st.floats(min_value=0.01, max_value=100.0), min_size=5, max_size=12)
+        st.lists(
+            st.floats(min_value=0.01, max_value=100.0), min_size=5, max_size=12
+        )
     )
     def test_stability_analysis(self, runtime_data):
         """Test analysis of numerical stability in computations."""
@@ -234,7 +256,7 @@ class TestMathematicalProperties:
 
         # Stability should be a boolean or score
         stability = stability_report["numerical_stability"]
-        assert isinstance(stability, (bool, float, int))
+        assert isinstance(stability, bool | float | int)
 
     @given(st.integers(min_value=3, max_value=20))
     def test_periodicity_detection(self, n_points):
@@ -252,7 +274,7 @@ class TestMathematicalProperties:
 
         # Should return period length or None
         if periodicity is not None:
-            assert isinstance(periodicity, (int, float))
+            assert isinstance(periodicity, int | float)
             assert periodicity > 0
 
         # Should also provide confidence in detection

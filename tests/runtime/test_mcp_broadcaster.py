@@ -9,7 +9,9 @@ from src.telemetry.mcp_broadcaster import EventTypes, MCPTelemetryBroadcaster
 @pytest.mark.asyncio
 async def test_broadcaster_uses_telemetry_api(monkeypatch) -> None:
     emitted: list[dict] = []
-    telemetry_module = types.SimpleNamespace(emit=lambda evt: emitted.append(evt))
+    telemetry_module = types.SimpleNamespace(
+        emit=lambda evt: emitted.append(evt)
+    )
     monkeypatch.setitem(sys.modules, "cortex.telemetry", telemetry_module)
 
     broadcaster = MCPTelemetryBroadcaster()

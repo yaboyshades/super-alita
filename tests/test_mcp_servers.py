@@ -61,7 +61,9 @@ def test_server_import(server_path: str, description: str) -> bool:
                 print(f"     Output: {result.stdout.strip()}")
             return True
         else:
-            print(f"  ❌ {description} import failed (exit code {result.returncode})")
+            print(
+                f"  ❌ {description} import failed (exit code {result.returncode})"
+            )
             if result.stderr:
                 print(f"     Error: {result.stderr.strip()}")
             return False
@@ -95,7 +97,11 @@ def test_basic_execution(server_path: str, description: str) -> bool:
 
         # Start process and let it run briefly
         process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
         )
 
         # Wait a bit to see if it crashes immediately
@@ -108,7 +114,9 @@ def test_basic_execution(server_path: str, description: str) -> bool:
             return True
         else:
             stdout, stderr = process.communicate()
-            print(f"  ❌ {description} exited immediately (code {process.returncode})")
+            print(
+                f"  ❌ {description} exited immediately (code {process.returncode})"
+            )
             if stdout:
                 print(f"     Output: {stdout.strip()}")
             if stderr:
@@ -133,7 +141,9 @@ def main():
             "description": "Super Alita MCP Wrapper",
         },
         {
-            "path": str(repo_root / "mcp_server" / "src" / "mcp_server" / "server.py"),
+            "path": str(
+                repo_root / "mcp_server" / "src" / "mcp_server" / "server.py"
+            ),
             "description": "Standalone MCP Server",
         },
     ]
@@ -142,7 +152,9 @@ def main():
     if shutil.which("node"):
         servers.append(
             {
-                "path": str(repo_root / "agentic-tools-mcp" / "dist" / "index.js"),
+                "path": str(
+                    repo_root / "agentic-tools-mcp" / "dist" / "index.js"
+                ),
                 "description": "Agentic Tools MCP Server",
             }
         )
@@ -187,7 +199,9 @@ def main():
             print(f"❌ {description}: NEEDS ATTENTION")
             broken_servers.append(description)
 
-    print(f"\n📈 Status: {len(working_servers)}/{len(servers)} servers working")
+    print(
+        f"\n📈 Status: {len(working_servers)}/{len(servers)} servers working"
+    )
 
     if broken_servers:
         print(f"\n🔧 Servers needing fixes: {', '.join(broken_servers)}")

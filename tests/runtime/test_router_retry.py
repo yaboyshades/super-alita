@@ -72,7 +72,8 @@ def test_timeout_then_retry(monkeypatch):
     app = _mk_app(monkeypatch)
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "go", "session_id": "rt"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "go", "session_id": "rt"},
     )
     text = resp.text
     assert "ok after retry" in text
@@ -146,7 +147,9 @@ def _mk_app(monkeypatch):
 def test_timeout_then_retry(monkeypatch):
     app = _mk_app(monkeypatch)
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "go", "session_id": "rt"})
+    resp = client.post(
+        "/v1/chat/stream", json={"message": "go", "session_id": "rt"}
+    )
     text = resp.text
     assert "ok after retry" in text
     evts = app.state.event_bus.events

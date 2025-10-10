@@ -100,7 +100,9 @@ class TaskGraph:
         if task_id not in self.tasks:
             raise ValueError(f"Task {task_id} not found in graph")
         if depends_on not in self.tasks:
-            raise ValueError(f"Dependency task {depends_on} not found in graph")
+            raise ValueError(
+                f"Dependency task {depends_on} not found in graph"
+            )
         if task_id == depends_on:
             raise ValueError("Task cannot depend on itself")
 
@@ -205,9 +207,13 @@ class TaskGraph:
             return self._execution_order.copy()
 
         # Kahn's algorithm for topological sorting
-        in_degree = {task_id: len(self.dependencies[task_id]) for task_id in self.tasks}
+        in_degree = {
+            task_id: len(self.dependencies[task_id]) for task_id in self.tasks
+        }
 
-        queue = deque([task_id for task_id, degree in in_degree.items() if degree == 0])
+        queue = deque(
+            [task_id for task_id, degree in in_degree.items() if degree == 0]
+        )
         result = []
 
         while queue:
@@ -247,7 +253,8 @@ class TaskGraph:
 
                 # Check if all dependencies are satisfied
                 deps_satisfied = all(
-                    dep_id not in remaining for dep_id in self.dependencies[task_id]
+                    dep_id not in remaining
+                    for dep_id in self.dependencies[task_id]
                 )
 
                 if deps_satisfied:
@@ -255,7 +262,9 @@ class TaskGraph:
 
             if not current_group:
                 # This shouldn't happen with a valid DAG
-                raise GraphValidationError("Unable to find next parallel group")
+                raise GraphValidationError(
+                    "Unable to find next parallel group"
+                )
 
             groups.append(current_group)
             remaining -= set(current_group)
@@ -284,7 +293,9 @@ class TaskGraph:
             total_time = 0.0
 
             for group in parallel_groups:
-                group_max_energy = max(self.tasks[task_id].energy for task_id in group)
+                group_max_energy = max(
+                    self.tasks[task_id].energy for task_id in group
+                )
                 total_time += group_max_energy
 
             return total_time
@@ -337,24 +348,34 @@ class TaskGraph:
             colors[task_id] = BLACK
             return False
 
-        return any(dfs(task_id) for task_id in self.tasks if colors[task_id] == WHITE)
+        return any(
+            dfs(task_id) for task_id in self.tasks if colors[task_id] == WHITE
+        )
 
     def update_metrics(self) -> None:
         """Update execution metrics based on current task states."""
         self.metrics.completed_tasks = sum(
-            1 for task in self.tasks.values() if task.status == TaskStatus.COMPLETED
+            1
+            for task in self.tasks.values()
+            if task.status == TaskStatus.COMPLETED
         )
 
         self.metrics.failed_tasks = sum(
-            1 for task in self.tasks.values() if task.status == TaskStatus.FAILED
+            1
+            for task in self.tasks.values()
+            if task.status == TaskStatus.FAILED
         )
 
         self.metrics.pending_tasks = sum(
-            1 for task in self.tasks.values() if task.status == TaskStatus.PENDING
+            1
+            for task in self.tasks.values()
+            if task.status == TaskStatus.PENDING
         )
 
         self.metrics.running_tasks = sum(
-            1 for task in self.tasks.values() if task.status == TaskStatus.IN_PROGRESS
+            1
+            for task in self.tasks.values()
+            if task.status == TaskStatus.IN_PROGRESS
         )
 
         self.metrics.consumed_energy = sum(
@@ -409,9 +430,12 @@ class TaskGraph:
         """Serialize graph to dictionary."""
         return {
             "name": self.name,
-            "tasks": {task_id: task.to_dict() for task_id, task in self.tasks.items()},
+            "tasks": {
+                task_id: task.to_dict() for task_id, task in self.tasks.items()
+            },
             "dependencies": {
-                task_id: list(deps) for task_id, deps in self.dependencies.items()
+                task_id: list(deps)
+                for task_id, deps in self.dependencies.items()
             },
             "metrics": {
                 "total_tasks": self.metrics.total_tasks,
@@ -516,7 +540,9 @@ class TaskGraph:
         )
 
 
-def merge_task_graphs(graphs: list[TaskGraph], name: str = "MergedGraph") -> TaskGraph:
+def merge_task_graphs(
+    graphs: list[TaskGraph], name: str = "MergedGraph"
+) -> TaskGraph:
     """
     Merge multiple task graphs into a single graph.
 

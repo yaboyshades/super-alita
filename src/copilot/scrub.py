@@ -16,7 +16,9 @@ from re import Pattern
 # scanning but provide a basic safeguard before prompts are sent to a model.
 _SECRET_PATTERNS: tuple[Pattern[str], ...] = (
     # Generic API key or token assignments, e.g. ``API_KEY=abc123``
-    re.compile(r"(api[_-]?key|secret|token|password)\s*[:=]\s*[^\s]+", re.IGNORECASE),
+    re.compile(
+        r"(api[_-]?key|secret|token|password)\s*[:=]\s*[^\s]+", re.IGNORECASE
+    ),
     # PEM formatted private keys
     re.compile(
         r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+?-----END [A-Z ]*PRIVATE KEY-----",
@@ -25,7 +27,9 @@ _SECRET_PATTERNS: tuple[Pattern[str], ...] = (
 )
 
 
-def scrub_prompt(text: str, patterns: Iterable[Pattern[str]] | None = None) -> str:
+def scrub_prompt(
+    text: str, patterns: Iterable[Pattern[str]] | None = None
+) -> str:
     """Remove sensitive substrings from ``text``.
 
     Each configured pattern is replaced with ``"[REDACTED]"``.  The operation is

@@ -63,7 +63,9 @@ def _base_kwargs(
         ),
         (
             lambda run_id: make_stage_started_event(
-                **_base_kwargs(run_id, 1, correlation_id="stage-plan", stage="plan"),
+                **_base_kwargs(
+                    run_id, 1, correlation_id="stage-plan", stage="plan"
+                ),
                 name="plan",
                 index=0,
             ),
@@ -136,7 +138,13 @@ def _base_kwargs(
                 error_type=None,
             ),
             EventKind.ABILITY_INVOCATION_COMPLETED,
-            {"ability", "duration_ms", "result_preview", "status", "error_type"},
+            {
+                "ability",
+                "duration_ms",
+                "result_preview",
+                "status",
+                "error_type",
+            },
         ),
         (
             lambda run_id: make_run_log_event(
@@ -159,7 +167,14 @@ def _base_kwargs(
                 retryable=True,
             ),
             EventKind.RUN_ERROR,
-            {"scope", "stage", "ability", "error_type", "message", "retryable"},
+            {
+                "scope",
+                "stage",
+                "ability",
+                "error_type",
+                "message",
+                "retryable",
+            },
         ),
         (
             lambda run_id: make_run_terminated_event(

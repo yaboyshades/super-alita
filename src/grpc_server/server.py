@@ -113,7 +113,9 @@ class ConstitutionalGrpcServer:
             )
 
             # Add main servicer to server
-            pb2_grpc.add_SuperAlitaAgentServicer_to_server(self.servicer, self.server)
+            pb2_grpc.add_SuperAlitaAgentServicer_to_server(
+                self.servicer, self.server
+            )
 
             # Setup health checking (Article I: Library-First)
             if self.enable_health_checking:
@@ -146,7 +148,9 @@ class ConstitutionalGrpcServer:
             listen_addr = f"{self.host}:{self.port}"
             self.server.add_insecure_port(listen_addr)
 
-            logger.info(f"Constitutional gRPC server setup complete on {listen_addr}")
+            logger.info(
+                f"Constitutional gRPC server setup complete on {listen_addr}"
+            )
 
         except Exception as e:
             logger.error(f"Constitutional server setup failed: {e}")

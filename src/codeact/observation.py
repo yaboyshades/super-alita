@@ -21,4 +21,8 @@ class Observation:
         """Convert this observation into an atom dictionary."""
         content = self.stdout or self.error or ""
         atom_id = generate_atom_id("OBSERVATION", "", content, namespace)
-        return {"atom_id": atom_id, "atom_type": "OBSERVATION", "content": content}
+        return {
+            "atom_id": atom_id,
+            "atom_type": "OBSERVATION",
+            "content": content,
+        }

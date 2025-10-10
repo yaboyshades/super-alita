@@ -32,7 +32,10 @@ def test_simple_consensus_sync():
                 json={
                     "model": model_name,
                     "messages": [
-                        {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "system",
+                            "content": "You are a helpful assistant.",
+                        },
                         {"role": "user", "content": prompt},
                     ],
                     "max_tokens": 50,
@@ -72,11 +75,15 @@ def test_simple_consensus_sync():
         response_counts[resp] = response_counts.get(resp, 0) + 1
 
     # Find most common response
-    consensus_text = max(response_counts.keys(), key=lambda x: response_counts[x])
-    consensus_confidence = response_counts[consensus_text] / len(valid_responses)
+    consensus_text = max(
+        response_counts.keys(), key=lambda x: response_counts[x]
+    )
+    consensus_confidence = response_counts[consensus_text] / len(
+        valid_responses
+    )
 
     # Create result
-    result = {
+    {
         "consensus_text": consensus_text,
         "consensus_confidence": consensus_confidence,
         "aggregation_method": "simple_vote",

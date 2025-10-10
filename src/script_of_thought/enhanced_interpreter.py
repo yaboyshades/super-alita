@@ -367,7 +367,7 @@ class EnhancedScriptOfThoughtInterpreter:
             step_results = []
             total_violations = 0
 
-            for i, step in enumerate(
+            for _i, step in enumerate(
                 script.steps if hasattr(script, "steps") else []
             ):
                 step_result = await self._execute_step_enhanced(
@@ -645,12 +645,12 @@ class EnhancedScriptOfThoughtInterpreter:
             ),
             "recommendations": recommendations,
             "execution_modes_used": list(
-                set(
+                {
                     exec.get("execution_context", {}).get(
                         "execution_mode", "unknown"
                     )
                     for exec in self.execution_history
-                )
+                }
             ),
         }
 

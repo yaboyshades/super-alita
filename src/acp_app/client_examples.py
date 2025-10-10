@@ -26,7 +26,9 @@ async def run_sync_example():
     print(f"Classify response: {response}")
 
     messages = [
-        Message(parts=[MessagePart(text="what is retrieval augmented generation")])
+        Message(
+            parts=[MessagePart(text="what is retrieval augmented generation")]
+        )
     ]
     response = await client.run_sync("search", messages)
     print(f"Search response: {response}")

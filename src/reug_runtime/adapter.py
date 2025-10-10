@@ -12,7 +12,9 @@ from typing import Any
 
 try:  # pragma: no cover - optional dependency
     from langchain_core.runnables import RunnableLambda as _LCRunnableLambda
-    from langchain_core.runnables import RunnableSequence as _LCRunnableSequence
+    from langchain_core.runnables import (
+        RunnableSequence as _LCRunnableSequence,
+    )
 
     HAS_LANGCHAIN = True
 except Exception:  # pragma: no cover - no langchain at runtime

@@ -30,7 +30,7 @@ def test_plan_composition_and_rationale():
     event = plan_mgr.propose_plan("test query")
     plan = event.plan
 
-    # The plan should start with AtomA and expand to AtomB and AtomC 
+    # The plan should start with AtomA and expand to AtomB and AtomC
     # (since contracts allow full chain)
     step_ids = [step.atom_id for step in plan.steps]
     assert step_ids[0] == "AtomA"
@@ -38,7 +38,10 @@ def test_plan_composition_and_rationale():
     assert "AtomC" in step_ids  # AtomC should be chained after AtomB
     # Rationale should mention the starting atom and that it expanded
     assert "Selected 'AtomA' as starting atom" in plan.rationale
-    assert "Expanded with" in plan.rationale or "No further expansion" in plan.rationale
+    assert (
+        "Expanded with" in plan.rationale
+        or "No further expansion" in plan.rationale
+    )
 
 
 def test_plan_caching_reuse():

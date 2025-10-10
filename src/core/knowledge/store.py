@@ -129,7 +129,9 @@ class KnowledgeStore:
 
     def _setup_database(self):
         """Initialize SQLite database with required tables"""
-        self.connection = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        self.connection = sqlite3.connect(
+            str(self.db_path), check_same_thread=False
+        )
         self.connection.row_factory = sqlite3.Row  # Enable dict-like access
 
         # Create atoms table
@@ -190,7 +192,9 @@ class KnowledgeStore:
         content_str = json.dumps(content, sort_keys=True)
         return hashlib.sha256(content_str.encode()).hexdigest()
 
-    def _generate_atom_id(self, atom_type: AtomType, content: dict[str, Any]) -> str:
+    def _generate_atom_id(
+        self, atom_type: AtomType, content: dict[str, Any]
+    ) -> str:
         """Generate deterministic atom ID"""
         # Create a deterministic hash from atom type and content
         content_str = json.dumps(content, sort_keys=True)
@@ -382,7 +386,9 @@ class KnowledgeStore:
             }
         )
 
-    def get_atoms_by_type(self, atom_type: AtomType, limit: int = 100) -> list[Atom]:
+    def get_atoms_by_type(
+        self, atom_type: AtomType, limit: int = 100
+    ) -> list[Atom]:
         """Retrieve atoms by type"""
         cursor = self.connection.execute(
             "SELECT * FROM atoms WHERE atom_type = ? ORDER BY created_at DESC LIMIT ?",
@@ -457,7 +463,9 @@ class KnowledgeStore:
 
         return bonds
 
-    def search_atoms_by_content(self, search_term: str, limit: int = 50) -> list[Atom]:
+    def search_atoms_by_content(
+        self, search_term: str, limit: int = 50
+    ) -> list[Atom]:
         """Search atoms by content (simple text search)"""
         cursor = self.connection.execute(
             """

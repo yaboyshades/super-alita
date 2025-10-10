@@ -166,7 +166,9 @@ class ToolInstance:
     # Metrics and monitoring
     metrics: ToolMetrics = None
     error_log: list[dict[str, Any]] = field(default_factory=list)
-    state_history: list[tuple[ToolState, datetime, str]] = field(default_factory=list)
+    state_history: list[tuple[ToolState, datetime, str]] = field(
+        default_factory=list
+    )
 
     def __post_init__(self):
         if self.metrics is None and self.tool_definition:
@@ -220,7 +222,9 @@ class ToolInstance:
             return True
         return False
 
-    def record_error(self, error_type: str, message: str, details: dict = None) -> None:
+    def record_error(
+        self, error_type: str, message: str, details: dict = None
+    ) -> None:
         """Record an error for this tool instance"""
         error_entry = {
             "timestamp": datetime.now(UTC).isoformat(),
@@ -252,12 +256,14 @@ class ToolInstance:
         # Check if in failing state
         if self.state == ToolState.FAILING:
             return (
-                self.metrics.restart_count < self.tool_definition.max_restart_attempts
+                self.metrics.restart_count
+                < self.tool_definition.max_restart_attempts
             )
         # Check if health checks are failing
         if self.health_check_failures >= 3:
             return (
-                self.metrics.restart_count < self.tool_definition.max_restart_attempts
+                self.metrics.restart_count
+                < self.tool_definition.max_restart_attempts
             )
         return False
 
@@ -275,14 +281,18 @@ class ToolRegistry:
         self.tool_instances: dict[str, ToolInstance] = {}
         self.name_to_id_mapping: dict[str, str] = {}
         # Indexing for efficient lookups
-        self.capability_index: dict[str, set[str]] = {}  # capability -> tool_ids
+        self.capability_index: dict[str, set[str]] = (
+            {}
+        )  # capability -> tool_ids
         self.category_index: dict[str, set[str]] = {}  # category -> tool_ids
         self.tag_index: dict[str, set[str]] = {}  # tag -> tool_ids
 
     def register_tool_definition(self, definition: ToolDefinition) -> bool:
         """Register a new tool definition"""
         if definition.tool_id in self.tool_definitions:
-            self.logger.warning(f"Tool definition already exists: {definition.tool_id}")
+            self.logger.warning(
+                f"Tool definition already exists: {definition.tool_id}"
+            )
             return False
         # Validate definition
         if not definition.name or not definition.description:
@@ -319,7 +329,9 @@ class ToolRegistry:
         """Get tool instance by ID"""
         return self.tool_instances.get(instance_id)
 
-    def find_tools_by_capability(self, capability: str) -> list[ToolDefinition]:
+    def find_tools_by_capability(
+        self, capability: str
+    ) -> list[ToolDefinition]:
         """Find tools that provide a specific capability"""
         tool_ids = self.capability_index.get(capability, set())
         return [self.tool_definitions[tool_id] for tool_id in tool_ids]
@@ -452,7 +464,9 @@ class ToolHealthMonitor:
                     return health_result
                 elif isinstance(health_result, bool):
                     return (
-                        HealthStatus.HEALTHY if health_result else HealthStatus.CRITICAL
+                        HealthStatus.HEALTHY
+                        if health_result
+                        else HealthStatus.CRITICAL
                     )
                 elif isinstance(health_result, dict):
                     return self._parse_health_result(health_result)
@@ -463,7 +477,9 @@ class ToolHealthMonitor:
             instance.record_error("health_check_error", str(e))
             return HealthStatus.CRITICAL
 
-    async def _default_health_check(self, instance: ToolInstance) -> HealthStatus:
+    async def _default_health_check(
+        self, instance: ToolInstance
+    ) -> HealthStatus:
         """Default health check implementation"""
         # Check if instance is in valid state
         if instance.state not in [ToolState.ACTIVE, ToolState.DEGRADED]:
@@ -506,7 +522,9 @@ class ToolHealthMonitor:
                 for instance in active_instances:
                     try:
                         # Perform health check
-                        new_health_status = await self.check_tool_health(instance)
+                        new_health_status = await self.check_tool_health(
+                            instance
+                        )
                         # Update instance health
                         old_health_status = instance.health_status
                         instance.health_status = new_health_status
@@ -565,11 +583,19 @@ class ToolHealthMonitor:
             self.logger.warning(f"Could not emit health change event: {e}")
         # Update tool state based on health
         if new_status == HealthStatus.CRITICAL:
-            instance.transition_state(ToolState.FAILING, "Health check critical")
-        elif new_status == HealthStatus.WARNING and instance.state == ToolState.ACTIVE:
-            instance.transition_state(ToolState.DEGRADED, "Health check warning")
+            instance.transition_state(
+                ToolState.FAILING, "Health check critical"
+            )
         elif (
-            new_status == HealthStatus.HEALTHY and instance.state == ToolState.DEGRADED
+            new_status == HealthStatus.WARNING
+            and instance.state == ToolState.ACTIVE
+        ):
+            instance.transition_state(
+                ToolState.DEGRADED, "Health check warning"
+            )
+        elif (
+            new_status == HealthStatus.HEALTHY
+            and instance.state == ToolState.DEGRADED
         ):
             instance.transition_state(ToolState.ACTIVE, "Health recovered")
 
@@ -603,7 +629,9 @@ class DependencyResolver:
         self.registry = registry
         self.logger = logging.getLogger(__name__)
 
-    def resolve_dependencies(self, tool_instance: ToolInstance) -> DependencyStatus:
+    def resolve_dependencies(
+        self, tool_instance: ToolInstance
+    ) -> DependencyStatus:
         """Resolve dependencies for a tool instance"""
         if not tool_instance.tool_definition:
             return DependencyStatus.FAILED
@@ -615,8 +643,12 @@ class DependencyResolver:
         # Get available capabilities from active tools
         available_capabilities = self._get_available_capabilities()
         # Check required dependencies
-        satisfied_required = set(required_caps).issubset(available_capabilities)
-        satisfied_optional = set(optional_caps).intersection(available_capabilities)
+        satisfied_required = set(required_caps).issubset(
+            available_capabilities
+        )
+        satisfied_optional = set(optional_caps).intersection(
+            available_capabilities
+        )
         # Update instance dependency info
         tool_instance.resolved_dependencies = list(
             set(required_caps).intersection(available_capabilities)
@@ -699,7 +731,9 @@ class DependencyResolver:
                         graph[provider_tool.tool_id].append(tool_def.tool_id)
                         in_degree[tool_def.tool_id] += 1
         # Topological sort using Kahn's algorithm
-        queue = [tool_id for tool_id, degree in in_degree.items() if degree == 0]
+        queue = [
+            tool_id for tool_id, degree in in_degree.items() if degree == 0
+        ]
         result = []
         while queue:
             current = queue.pop(0)
@@ -709,8 +743,12 @@ class DependencyResolver:
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
         # Convert IDs back to definitions
-        id_to_def = {tool_def.tool_id: tool_def for tool_def in tool_definitions}
-        return [id_to_def[tool_id] for tool_id in result if tool_id in id_to_def]
+        id_to_def = {
+            tool_def.tool_id: tool_def for tool_def in tool_definitions
+        }
+        return [
+            id_to_def[tool_id] for tool_id in result if tool_id in id_to_def
+        ]
 
     def _get_available_capabilities(self) -> set[str]:
         """Get all capabilities available from active tools"""
@@ -720,7 +758,9 @@ class DependencyResolver:
                 instance.tool_definition
                 and instance.health_status == HealthStatus.HEALTHY
             ):
-                capabilities.update(instance.tool_definition.provides_capabilities)
+                capabilities.update(
+                    instance.tool_definition.provides_capabilities
+                )
         return capabilities
 
 
@@ -737,7 +777,10 @@ class IntelligentToolSelector:
         self.selection_history: dict[str, list[dict[str, Any]]] = {}
 
     def select_tools_for_request(
-        self, user_input: str, conversation_id: str, context: dict[str, Any] = None
+        self,
+        user_input: str,
+        conversation_id: str,
+        context: dict[str, Any] = None,
     ) -> list[ToolInstance]:
         """Select optimal tools for a user request"""
         context = context or {}
@@ -754,7 +797,9 @@ class IntelligentToolSelector:
         keywords = self._extract_keywords(user_input)
         relevant_capabilities = self._map_keywords_to_capabilities(keywords)
         for capability in relevant_capabilities:
-            tool_definitions = self.registry.find_tools_by_capability(capability)
+            tool_definitions = self.registry.find_tools_by_capability(
+                capability
+            )
             for tool_def in tool_definitions:
                 # Find active instances of this tool
                 active_instances = [
@@ -762,13 +807,16 @@ class IntelligentToolSelector:
                     for instance in self.registry.get_active_instances()
                     if (
                         instance.tool_definition
-                        and instance.tool_definition.tool_id == tool_def.tool_id
+                        and instance.tool_definition.tool_id
+                        == tool_def.tool_id
                         and instance.is_healthy()
                     )
                 ]
                 if active_instances:
                     # Select best instance based on performance
-                    best_instance = self._select_best_instance(active_instances)
+                    best_instance = self._select_best_instance(
+                        active_instances
+                    )
                     if best_instance not in selected_tools:
                         selected_tools.append(best_instance)
         # If no tools found, try fallback selection
@@ -825,7 +873,11 @@ class IntelligentToolSelector:
             "these",
             "those",
         }
-        return [word for word in keywords if word not in stopwords and len(word) > 2]
+        return [
+            word
+            for word in keywords
+            if word not in stopwords and len(word) > 2
+        ]
 
     def _map_keywords_to_capabilities(self, keywords: list[str]) -> set[str]:
         """Map keywords to tool capabilities"""
@@ -857,7 +909,9 @@ class IntelligentToolSelector:
                 capabilities.update(keyword_capability_map[keyword])
         return capabilities
 
-    def _select_best_instance(self, instances: list[ToolInstance]) -> ToolInstance:
+    def _select_best_instance(
+        self, instances: list[ToolInstance]
+    ) -> ToolInstance:
         """Select the best instance based on performance metrics"""
         if len(instances) == 1:
             return instances[0]
@@ -879,7 +933,9 @@ class IntelligentToolSelector:
                     activity_score = max(0, 1.0 - (hours_since_activity / 24))
                     score += activity_score * 0.2
                 # Lower restart count is better
-                restart_penalty = min(instance.metrics.restart_count * 0.1, 0.1)
+                restart_penalty = min(
+                    instance.metrics.restart_count * 0.1, 0.1
+                )
                 score -= restart_penalty
             scored_instances.append((score, instance))
         # Sort by score (highest first)
@@ -909,7 +965,10 @@ class IntelligentToolSelector:
         return active_general[:2]  # Limit to 2 fallback tools
 
     def _record_selection(
-        self, conversation_id: str, user_input: str, selected_tools: list[ToolInstance]
+        self,
+        conversation_id: str,
+        user_input: str,
+        selected_tools: list[ToolInstance],
     ) -> None:
         """Record tool selection for learning purposes"""
         if conversation_id not in self.selection_history:
@@ -942,12 +1001,16 @@ class IntelligentToolSelector:
             for selection in history:
                 for tool_info in selection["selected_tools"]:
                     tool_name = tool_info["tool_name"]
-                    tool_usage_count[tool_name] = tool_usage_count.get(tool_name, 0) + 1
+                    tool_usage_count[tool_name] = (
+                        tool_usage_count.get(tool_name, 0) + 1
+                    )
         return {
             "total_conversations": len(self.selection_history),
             "total_selections": total_selections,
             "tool_usage_frequency": dict(
-                sorted(tool_usage_count.items(), key=lambda x: x[1], reverse=True)
+                sorted(
+                    tool_usage_count.items(), key=lambda x: x[1], reverse=True
+                )
             ),
             "average_tools_per_selection": (
                 total_selections / len(self.selection_history)
@@ -960,7 +1023,9 @@ class IntelligentToolSelector:
 class ToolLifecycleManager:
     """Main tool lifecycle management orchestrator"""
 
-    def __init__(self, comm_hub, response_router, event_bus):  # Assuming these exist
+    def __init__(
+        self, comm_hub, response_router, event_bus
+    ):  # Assuming these exist
         self.comm_hub = comm_hub
         self.response_router = response_router
         self.event_bus = event_bus
@@ -969,7 +1034,9 @@ class ToolLifecycleManager:
         self.registry = ToolRegistry()
         self.health_monitor = ToolHealthMonitor(self.registry, event_bus)
         self.dependency_resolver = DependencyResolver(self.registry)
-        self.tool_selector = IntelligentToolSelector(self.registry, response_router)
+        self.tool_selector = IntelligentToolSelector(
+            self.registry, response_router
+        )
         # Lifecycle management
         self._running = False
         self._cleanup_task: asyncio.Task | None = None
@@ -1024,7 +1091,9 @@ class ToolLifecycleManager:
             return False
         try:
             # Check dependencies
-            dep_status = self.dependency_resolver.resolve_dependencies(instance)
+            dep_status = self.dependency_resolver.resolve_dependencies(
+                instance
+            )
             if dep_status == DependencyStatus.UNSATISFIED:
                 self.logger.error(
                     f"Dependencies not satisfied for tool: {instance.tool_definition.name}"
@@ -1034,13 +1103,17 @@ class ToolLifecycleManager:
             if not instance.transition_state(
                 ToolState.INITIALIZING, "Starting activation"
             ):
-                self.logger.error(f"Cannot activate tool in state: {instance.state}")
+                self.logger.error(
+                    f"Cannot activate tool in state: {instance.state}"
+                )
                 return False
             # Perform activation
             success = await self._perform_activation(instance)
             if success:
                 # Transition to active
-                instance.transition_state(ToolState.ACTIVE, "Activation successful")
+                instance.transition_state(
+                    ToolState.ACTIVE, "Activation successful"
+                )
                 # Register with communication hub if it's a plugin
                 if instance.tool_definition:
                     # This would integrate with actual plugin loading
@@ -1059,12 +1132,16 @@ class ToolLifecycleManager:
                 )
                 return True
             else:
-                instance.transition_state(ToolState.FAILING, "Activation failed")
+                instance.transition_state(
+                    ToolState.FAILING, "Activation failed"
+                )
                 return False
         except Exception as e:
             self.logger.error(f"Error activating tool {instance_id}: {e}")
             instance.record_error("activation_error", str(e))
-            instance.transition_state(ToolState.FAILING, f"Activation error: {e}")
+            instance.transition_state(
+                ToolState.FAILING, f"Activation error: {e}"
+            )
             return False
 
     async def deactivate_tool(self, instance_id: str) -> bool:
@@ -1089,7 +1166,11 @@ class ToolLifecycleManager:
             # Transition to inactive
             instance.transition_state(
                 ToolState.INACTIVE,
-                "Deactivation successful" if success else "Deactivation with errors",
+                (
+                    "Deactivation successful"
+                    if success
+                    else "Deactivation with errors"
+                ),
             )
             self.logger.info(
                 f"Deactivated tool: {instance.tool_definition.name if instance.tool_definition else instance_id}"
@@ -1101,7 +1182,10 @@ class ToolLifecycleManager:
             return False
 
     async def process_user_request(
-        self, user_input: str, conversation_id: str, context: dict[str, Any] = None
+        self,
+        user_input: str,
+        conversation_id: str,
+        context: dict[str, Any] = None,
     ) -> dict[str, Any]:
         """Process a user request using appropriate tools"""
         try:
@@ -1208,7 +1292,9 @@ class ToolLifecycleManager:
                 for instance in all_instances:
                     # Remove destroyed instances
                     if instance.state == ToolState.DESTROYED:
-                        self.registry.remove_tool_instance(instance.instance_id)
+                        self.registry.remove_tool_instance(
+                            instance.instance_id
+                        )
                         continue
                     # Clean up old inactive instances (older than 1 hour)
                     if (
@@ -1224,7 +1310,8 @@ class ToolLifecycleManager:
                                 f"Cleaning up old inactive tool: {instance.tool_definition.name if instance.tool_definition else instance.instance_id}"
                             )
                             instance.transition_state(
-                                ToolState.DESTROYED, "Cleanup due to inactivity"
+                                ToolState.DESTROYED,
+                                "Cleanup due to inactivity",
                             )
                 # Sleep before next cleanup cycle
                 await asyncio.sleep(300)  # 5 minutes

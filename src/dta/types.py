@@ -68,7 +68,9 @@ class Synthesis(BaseModel):
 class StateUpdate(BaseModel):
     """State update directives for cognitive processing."""
 
-    directive: str = "ignore"  # ignore, memory_stream_add, context_update, etc.
+    directive: str = (
+        "ignore"  # ignore, memory_stream_add, context_update, etc.
+    )
     memory_stream_add: dict[str, Any] | None = None
     context_updates: dict[str, Any] | None = None
     system_notifications: list[str] = Field(default_factory=list)

@@ -94,12 +94,17 @@ class DTAValidationResult:
     @property
     def is_valid(self) -> bool:
         """Check if validation passed."""
-        return self.overall_status in [ValidationResult.PASS, ValidationResult.WARNING]
+        return self.overall_status in [
+            ValidationResult.PASS,
+            ValidationResult.WARNING,
+        ]
 
     @property
     def has_warnings(self) -> bool:
         """Check if there are any warning-level issues."""
-        return any(issue.severity == ValidationResult.WARNING for issue in self.issues)
+        return any(
+            issue.severity == ValidationResult.WARNING for issue in self.issues
+        )
 
     @property
     def has_errors(self) -> bool:
@@ -113,7 +118,9 @@ class DTAValidationResult:
         self, validation_type: ValidationType
     ) -> list[ValidationIssue]:
         """Get all issues of a specific type."""
-        return [issue for issue in self.issues if issue.type == validation_type]
+        return [
+            issue for issue in self.issues if issue.type == validation_type
+        ]
 
     def to_dict(self) -> dict[str, Any]:
         """Convert validation result to dictionary format."""
@@ -137,7 +144,9 @@ class BaseValidator(ABC):
         self.config = config or {}
         self.enabled = self.config.get("enabled", True)
         self.level = ValidationLevel(self.config.get("level", "normal"))
-        self.logger = logging.getLogger(f"dta.validator.{self.__class__.__name__}")
+        self.logger = logging.getLogger(
+            f"dta.validator.{self.__class__.__name__}"
+        )
 
     @abstractmethod
     async def validate(
@@ -207,7 +216,10 @@ class SyntaxValidator(BaseValidator):
 
         # Check if it looks like Python code
         if not self._looks_like_python_code(data):
-            if self.level in [ValidationLevel.STRICT, ValidationLevel.PARANOID]:
+            if self.level in [
+                ValidationLevel.STRICT,
+                ValidationLevel.PARANOID,
+            ]:
                 issues.append(
                     self.create_issue(
                         ValidationResult.WARNING,
@@ -221,7 +233,9 @@ class SyntaxValidator(BaseValidator):
         code_blocks = self._extract_code_blocks(data)
 
         for i, code_block in enumerate(code_blocks):
-            block_issues = await self._validate_code_block(code_block, f"block_{i}")
+            block_issues = await self._validate_code_block(
+                code_block, f"block_{i}"
+            )
             issues.extend(block_issues)
 
         return issues
@@ -263,7 +277,9 @@ class SyntaxValidator(BaseValidator):
 
         # Filter for Python-like code
         python_inline = [
-            match for match in inline_matches if self._looks_like_python_code(match)
+            match
+            for match in inline_matches
+            if self._looks_like_python_code(match)
         ]
 
         if python_inline:
@@ -384,7 +400,9 @@ class SemanticValidator(BaseValidator):
 
         # Extract reasoning components if available
         thinking_trace = context.get("thinking_trace", "") if context else ""
-        reasoning_summary = context.get("reasoning_summary", "") if context else ""
+        reasoning_summary = (
+            context.get("reasoning_summary", "") if context else ""
+        )
         python_code = context.get("python_code", "") if context else ""
 
         # Validate reasoning consistency
@@ -463,7 +481,9 @@ class SemanticValidator(BaseValidator):
 
         return issues
 
-    async def _check_logical_flow(self, thinking_trace: str) -> list[ValidationIssue]:
+    async def _check_logical_flow(
+        self, thinking_trace: str
+    ) -> list[ValidationIssue]:
         """Check logical flow in thinking process."""
         issues = []
 
@@ -486,12 +506,18 @@ class SemanticValidator(BaseValidator):
 
         # Check for contradictions (basic patterns)
         contradiction_patterns = [
-            (r"\bnot\s+\w+.*\n.*\bis\s+\w+", "Potential contradiction detected"),
+            (
+                r"\bnot\s+\w+.*\n.*\bis\s+\w+",
+                "Potential contradiction detected",
+            ),
             (
                 r"\bimpossible.*\n.*\bpossible",
                 "Contradiction in possibility assessment",
             ),
-            (r"\bcannot.*\n.*\bcan\b", "Contradiction in capability assessment"),
+            (
+                r"\bcannot.*\n.*\bcan\b",
+                "Contradiction in capability assessment",
+            ),
         ]
 
         for pattern, message in contradiction_patterns:
@@ -573,7 +599,9 @@ class ConfidenceValidator(BaseValidator):
             return []
 
         issues = []
-        confidence_score = context.get("confidence_score", 0.5) if context else 0.5
+        confidence_score = (
+            context.get("confidence_score", 0.5) if context else 0.5
+        )
 
         # Validate confidence score range
         if not (0.0 <= confidence_score <= 1.0):
@@ -587,7 +615,9 @@ class ConfidenceValidator(BaseValidator):
             )
 
         # Check for overconfidence patterns
-        reasoning_summary = context.get("reasoning_summary", "") if context else ""
+        reasoning_summary = (
+            context.get("reasoning_summary", "") if context else ""
+        )
         if confidence_score > 0.9 and reasoning_summary:
             uncertainty_indicators = [
                 "maybe",
@@ -668,7 +698,9 @@ class SafetyValidator(BaseValidator):
 
         return issues
 
-    async def _check_sensitive_patterns(self, text: str, issues: list[ValidationIssue]):
+    async def _check_sensitive_patterns(
+        self, text: str, issues: list[ValidationIssue]
+    ):
         """Check for sensitive information patterns."""
 
         sensitive_patterns = [
@@ -694,7 +726,8 @@ class SafetyValidator(BaseValidator):
             if re.search(pattern, text, re.IGNORECASE):
                 severity = (
                     ValidationResult.FAIL
-                    if self.level in [ValidationLevel.STRICT, ValidationLevel.PARANOID]
+                    if self.level
+                    in [ValidationLevel.STRICT, ValidationLevel.PARANOID]
                     else ValidationResult.WARNING
                 )
                 issues.append(
@@ -706,12 +739,17 @@ class SafetyValidator(BaseValidator):
                     )
                 )
 
-    async def _check_harmful_content(self, text: str, issues: list[ValidationIssue]):
+    async def _check_harmful_content(
+        self, text: str, issues: list[ValidationIssue]
+    ):
         """Check for potentially harmful content."""
 
         harmful_patterns = [
             (r"\bdelete\s+.*\bfiles?\b", "File deletion instruction detected"),
-            (r"\bformat\s+.*\bdrive\b", "Drive formatting instruction detected"),
+            (
+                r"\bformat\s+.*\bdrive\b",
+                "Drive formatting instruction detected",
+            ),
             (r"\brm\s+-rf\s+/", "Dangerous file removal command detected"),
             (r"\bdel\s+/[sS]\s+", "Dangerous deletion command detected"),
             (r"\bshutdown\s+", "System shutdown command detected"),
@@ -729,11 +767,16 @@ class SafetyValidator(BaseValidator):
                     )
                 )
 
-    async def _check_injection_patterns(self, text: str, issues: list[ValidationIssue]):
+    async def _check_injection_patterns(
+        self, text: str, issues: list[ValidationIssue]
+    ):
         """Check for code injection patterns."""
 
         injection_patterns = [
-            (r";\s*(drop|delete|update|insert)\s+", "SQL injection pattern detected"),
+            (
+                r";\s*(drop|delete|update|insert)\s+",
+                "SQL injection pattern detected",
+            ),
             (r"<script\b", "Script injection pattern detected"),
             (r"javascript\s*:", "JavaScript injection pattern detected"),
             (r"data\s*:\s*text/html", "HTML injection pattern detected"),
@@ -793,7 +836,9 @@ class PIIValidator(BaseValidator):
 
         return issues
 
-    async def _check_pii_patterns(self, text: str, issues: list[ValidationIssue]):
+    async def _check_pii_patterns(
+        self, text: str, issues: list[ValidationIssue]
+    ):
         """Check for PII using pattern matching."""
 
         # Common non-PII phrases to exclude
@@ -873,7 +918,9 @@ class PIIValidator(BaseValidator):
                     )
                 )
 
-    async def _check_nlp_entities(self, text: str, issues: list[ValidationIssue]):
+    async def _check_nlp_entities(
+        self, text: str, issues: list[ValidationIssue]
+    ):
         """Check for PII using NLP entity recognition."""
         if not self.nlp_model:
             return
@@ -881,7 +928,14 @@ class PIIValidator(BaseValidator):
         try:
             doc = self.nlp_model(text)
 
-            pii_entity_types = {"PERSON", "ORG", "GPE", "MONEY", "DATE", "TIME"}
+            pii_entity_types = {
+                "PERSON",
+                "ORG",
+                "GPE",
+                "MONEY",
+                "DATE",
+                "TIME",
+            }
 
             for ent in doc.ents:
                 if ent.label_ in pii_entity_types:
@@ -922,13 +976,17 @@ class ValidationPipeline:
     def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.enabled = self.config.get("enabled", True)
-        self.validation_level = ValidationLevel(self.config.get("level", "normal"))
+        self.validation_level = ValidationLevel(
+            self.config.get("level", "normal")
+        )
 
         # Initialize validators
         self.validators = {
             "syntax": SyntaxValidator(self.config.get("syntax", {})),
             "semantic": SemanticValidator(self.config.get("semantic", {})),
-            "confidence": ConfidenceValidator(self.config.get("confidence", {})),
+            "confidence": ConfidenceValidator(
+                self.config.get("confidence", {})
+            ),
             "safety": SafetyValidator(self.config.get("safety", {})),
             "pii": PIIValidator(self.config.get("pii", {})),
         }
@@ -970,7 +1028,9 @@ class ValidationPipeline:
         validation_metadata = {
             "validation_level": self.validation_level.value,
             "validators_run": [],
-            "total_validators": len([v for v in self.validators.values() if v.enabled]),
+            "total_validators": len(
+                [v for v in self.validators.values() if v.enabled]
+            ),
         }
 
         # Run each enabled validator
@@ -984,7 +1044,9 @@ class ValidationPipeline:
 
                 all_issues.extend(validator_issues)
                 validation_metadata["validators_run"].append(validator_name)
-                validation_metadata[f"{validator_name}_issues"] = len(validator_issues)
+                validation_metadata[f"{validator_name}_issues"] = len(
+                    validator_issues
+                )
 
             except Exception as e:
                 self.logger.error(f"Error in {validator_name} validator: {e}")
@@ -1003,10 +1065,14 @@ class ValidationPipeline:
         overall_status = self._determine_overall_status(all_issues)
 
         # Calculate confidence score
-        confidence_score = self._calculate_confidence_score(all_issues, context)
+        confidence_score = self._calculate_confidence_score(
+            all_issues, context
+        )
 
         # Calculate processing time
-        processing_time_ms = (asyncio.get_event_loop().time() - start_time) * 1000
+        processing_time_ms = (
+            asyncio.get_event_loop().time() - start_time
+        ) * 1000
 
         # Create final result
         result = DTAValidationResult(
@@ -1048,7 +1114,9 @@ class ValidationPipeline:
         """Calculate confidence score based on validation results."""
 
         # Start with baseline confidence from context or default
-        base_confidence = context.get("confidence_score", 0.8) if context else 0.8
+        base_confidence = (
+            context.get("confidence_score", 0.8) if context else 0.8
+        )
 
         # Reduce confidence based on issues
         confidence_penalty = 0.0
@@ -1062,7 +1130,9 @@ class ValidationPipeline:
                 confidence_penalty += 0.1
 
         # Apply penalty and ensure bounds
-        final_confidence = max(0.0, min(1.0, base_confidence - confidence_penalty))
+        final_confidence = max(
+            0.0, min(1.0, base_confidence - confidence_penalty)
+        )
 
         return final_confidence
 
@@ -1130,7 +1200,9 @@ def create_validation_pipeline(
                             validator_config
                         )
                     else:
-                        default_config["validators"][validator_name] = validator_config
+                        default_config["validators"][
+                            validator_name
+                        ] = validator_config
             else:
                 default_config[key] = value
 
@@ -1166,9 +1238,7 @@ async def example_validation_usage():
        - Yes, this is a straightforward mathematical calculation
     """
 
-    reasoning_summary = (
-        "User wants to calculate circle area with radius 5 using π * r² formula"
-    )
+    reasoning_summary = "User wants to calculate circle area with radius 5 using π * r² formula"
     confidence_level = 0.9
     python_code = 'use_tool("calculator", expression="3.14159 * 5 * 5")'
 

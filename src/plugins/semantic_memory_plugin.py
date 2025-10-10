@@ -39,12 +39,18 @@ try:
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
-    logger.warning("Google Generative AI not available, using fallback embedding")
+    logger.warning(
+        "Google Generative AI not available, using fallback embedding"
+    )
 from src.core.config import EMBEDDING_DIM, EMBEDDING_MODEL_NAME
 from src.core.event_bus import EventBus
 from src.core.events import MemoryUpsertEvent
 from src.core.genealogy import get_global_tracer, trace_atom_birth
-from src.core.neural_atom import NeuralAtomMetadata, NeuralStore, TextualMemoryAtom
+from src.core.neural_atom import (
+    NeuralAtomMetadata,
+    NeuralStore,
+    TextualMemoryAtom,
+)
 from src.core.plugin_interface import PluginInterface
 
 logger = logging.getLogger(__name__)
@@ -149,7 +155,9 @@ class SemanticMemoryPlugin(PluginInterface):
         self._cache_max_size = self._config["cache_size"]
 
         # Configure Gemini API
-        api_key = self._config.get("gemini_api_key") or os.getenv("GEMINI_API_KEY")
+        api_key = self._config.get("gemini_api_key") or os.getenv(
+            "GEMINI_API_KEY"
+        )
         if not api_key:
             logger.warning(
                 "Gemini API key not configured - embeddings will use fallback"
@@ -219,7 +227,9 @@ class SemanticMemoryPlugin(PluginInterface):
             self._chroma_client = chromadb.PersistentClient(
                 path=db_path,
                 settings=Settings(
-                    anonymized_telemetry=False, allow_reset=False, is_persistent=True
+                    anonymized_telemetry=False,
+                    allow_reset=False,
+                    is_persistent=True,
                 ),
             )
 
@@ -264,7 +274,9 @@ class SemanticMemoryPlugin(PluginInterface):
 
                             # Recreate the collection to ensure clean state
                             collection_name = self._config["collection_name"]
-                            self._chroma_client.delete_collection(collection_name)
+                            self._chroma_client.delete_collection(
+                                collection_name
+                            )
                             self._collection = self._chroma_client.get_or_create_collection(
                                 name=collection_name,
                                 metadata={
@@ -273,7 +285,9 @@ class SemanticMemoryPlugin(PluginInterface):
                                     "hnsw:search_ef": 50,
                                     "description": "Super Alita semantic memory storage",
                                     "version": self.version,
-                                    "created_at": datetime.now(UTC).isoformat(),
+                                    "created_at": datetime.now(
+                                        UTC
+                                    ).isoformat(),
                                     "embedding_dimension": expected_dim,  # Track expected dimension
                                 },
                             )
@@ -296,7 +310,9 @@ class SemanticMemoryPlugin(PluginInterface):
             )
 
         except Exception as e:
-            logger.critical(f"Failed to initialize ChromaDB: {e}", exc_info=True)
+            logger.critical(
+                f"Failed to initialize ChromaDB: {e}", exc_info=True
+            )
             raise RuntimeError(f"ChromaDB initialization failed: {e}") from e
 
     async def _test_embedding_api(self):
@@ -313,10 +329,15 @@ class SemanticMemoryPlugin(PluginInterface):
                 timeout=10.0,
             )
 
-            if "embedding" in test_response and len(test_response["embedding"]) > 0:
+            if (
+                "embedding" in test_response
+                and len(test_response["embedding"]) > 0
+            ):
                 logger.info("Gemini embedding API test successful")
             else:
-                logger.warning("Gemini embedding API test returned unexpected response")
+                logger.warning(
+                    "Gemini embedding API test returned unexpected response"
+                )
 
         except Exception as e:
             logger.warning(f"Gemini embedding API test failed: {e}")
@@ -348,10 +369,13 @@ class SemanticMemoryPlugin(PluginInterface):
                     content = {
                         k: v
                         for k, v in metadata.items()
-                        if k not in ["hierarchy_path", "owner_plugin", "created_at"]
+                        if k
+                        not in ["hierarchy_path", "owner_plugin", "created_at"]
                     }
 
-                    hierarchy_path = metadata.get("hierarchy_path", "").split("::")
+                    hierarchy_path = metadata.get("hierarchy_path", "").split(
+                        "::"
+                    )
                     metadata.get("owner_plugin", "unknown")
 
                     # Create memory metadata
@@ -388,11 +412,15 @@ class SemanticMemoryPlugin(PluginInterface):
                 except Exception as e:
                     logger.error(f"Failed to load memory {memory_id}: {e}")
 
-            logger.info(f"Successfully loaded {loaded_count} memories into NeuralStore")
+            logger.info(
+                f"Successfully loaded {loaded_count} memories into NeuralStore"
+            )
             self._stats["memories_retrieved"] = loaded_count
 
         except Exception as e:
-            logger.error(f"Error loading existing memories: {e}", exc_info=True)
+            logger.error(
+                f"Error loading existing memories: {e}", exc_info=True
+            )
 
     # === Public API Methods ===
 
@@ -427,10 +455,14 @@ class SemanticMemoryPlugin(PluginInterface):
         # Generate embeddings for uncached texts
         new_embeddings = []
         if uncached_texts:
-            new_embeddings = await self._generate_embeddings_batch(uncached_texts)
+            new_embeddings = await self._generate_embeddings_batch(
+                uncached_texts
+            )
 
             # Cache new embeddings
-            for text, embedding in zip(uncached_texts, new_embeddings, strict=False):
+            for text, embedding in zip(
+                uncached_texts, new_embeddings, strict=False
+            ):
                 text_hash = str(hash(text))
                 self._embedding_cache[text_hash] = embedding
 
@@ -449,13 +481,17 @@ class SemanticMemoryPlugin(PluginInterface):
             result_embeddings[i] = embedding
 
         # Place new embeddings
-        for i, embedding in zip(uncached_indices, new_embeddings, strict=False):
+        for i, embedding in zip(
+            uncached_indices, new_embeddings, strict=False
+        ):
             result_embeddings[i] = embedding
 
         self._stats["embeddings_generated"] += len(uncached_texts)
         return result_embeddings
 
-    async def _generate_embeddings_batch(self, texts: list[str]) -> list[np.ndarray]:
+    async def _generate_embeddings_batch(
+        self, texts: list[str]
+    ) -> list[np.ndarray]:
         """Generate embeddings with batch processing and error handling."""
         model = self._config["embedding_model"]
         dimension = self._config["embedding_dimension"]
@@ -484,14 +520,17 @@ class SemanticMemoryPlugin(PluginInterface):
                     )
                     # Add fallback embeddings for failed batch
                     fallback_embeddings = [
-                        np.zeros(dimension, dtype=np.float32) for _ in batch_texts
+                        np.zeros(dimension, dtype=np.float32)
+                        for _ in batch_texts
                     ]
                     embeddings.extend(fallback_embeddings)
 
             return embeddings
 
         except Exception as e:
-            logger.error(f"Complete embedding generation failed: {e}", exc_info=True)
+            logger.error(
+                f"Complete embedding generation failed: {e}", exc_info=True
+            )
             return [np.zeros(dimension, dtype=np.float32) for _ in texts]
 
     async def _process_embedding_batch(
@@ -526,7 +565,10 @@ class SemanticMemoryPlugin(PluginInterface):
                 timeout=30.0,  # Longer timeout for batches
             )
 
-            return [np.array(emb, dtype=np.float32) for emb in response["embedding"]]
+            return [
+                np.array(emb, dtype=np.float32)
+                for emb in response["embedding"]
+            ]
 
         except TimeoutError:
             logger.error(f"Embedding timeout for batch of {len(texts)} texts")
@@ -562,7 +604,9 @@ class SemanticMemoryPlugin(PluginInterface):
             str: The stable memory ID
         """
         if not self.is_running or not self._collection or not self.store:
-            raise RuntimeError("SemanticMemoryPlugin is not properly initialized")
+            raise RuntimeError(
+                "SemanticMemoryPlugin is not properly initialized"
+            )
 
         # Generate stable ID
         stable_id = memory_id or f"mem_{uuid.uuid4().hex[:12]}"
@@ -572,7 +616,9 @@ class SemanticMemoryPlugin(PluginInterface):
             hierarchy_context = (
                 " -> ".join(hierarchy_path) if hierarchy_path else "root"
             )
-            content_text = self._create_embedding_text(content, hierarchy_context)
+            content_text = self._create_embedding_text(
+                content, hierarchy_context
+            )
 
             # Generate semantic embedding
             embeddings = await self.embed_text([content_text])
@@ -582,7 +628,12 @@ class SemanticMemoryPlugin(PluginInterface):
             atom_metadata = NeuralAtomMetadata(
                 name=stable_id,
                 description=f"Memory: {content_text[:100]}...",
-                capabilities=["memory", "storage", "retrieval", "semantic_search"],
+                capabilities=[
+                    "memory",
+                    "storage",
+                    "retrieval",
+                    "semantic_search",
+                ],
                 version="1.0.0",
             )
 
@@ -629,7 +680,9 @@ class SemanticMemoryPlugin(PluginInterface):
             )
 
             # 3. Update internal tracking
-            hierarchy_key = "::".join(hierarchy_path) if hierarchy_path else "root"
+            hierarchy_key = (
+                "::".join(hierarchy_path) if hierarchy_path else "root"
+            )
             if hierarchy_key not in self._memory_hierarchies:
                 self._memory_hierarchies[hierarchy_key] = []
 
@@ -690,7 +743,9 @@ class SemanticMemoryPlugin(PluginInterface):
             List of memory records with content and similarity scores
         """
         if not self.is_running or not self.store:
-            raise RuntimeError("SemanticMemoryPlugin is not properly initialized")
+            raise RuntimeError(
+                "SemanticMemoryPlugin is not properly initialized"
+            )
 
         try:
             # Generate query embedding
@@ -725,14 +780,20 @@ class SemanticMemoryPlugin(PluginInterface):
                     "memory_id": atom_key,
                     "content": atom.value,
                     "similarity_score": float(similarity_score),
-                    "hierarchy_path": atom.lineage_metadata.get("hierarchy", []),
+                    "hierarchy_path": atom.lineage_metadata.get(
+                        "hierarchy", []
+                    ),
                 }
 
                 if include_metadata:
                     result["metadata"] = {
-                        "owner_plugin": atom.lineage_metadata.get("owner", "unknown"),
+                        "owner_plugin": atom.lineage_metadata.get(
+                            "owner", "unknown"
+                        ),
                         "created_at": atom.lineage_metadata.get("created_at"),
-                        "content_type": atom.lineage_metadata.get("content_type"),
+                        "content_type": atom.lineage_metadata.get(
+                            "content_type"
+                        ),
                         "birth_event": atom.birth_event,
                         "fitness_score": atom.fitness_score,
                         "activation_count": atom.activation_count,
@@ -746,7 +807,9 @@ class SemanticMemoryPlugin(PluginInterface):
             # Update statistics
             self._stats["memories_retrieved"] += len(results)
 
-            logger.debug(f"Query '{query_text}' returned {len(results)} results")
+            logger.debug(
+                f"Query '{query_text}' returned {len(results)} results"
+            )
             return results
 
         except Exception as e:
@@ -764,7 +827,8 @@ class SemanticMemoryPlugin(PluginInterface):
                 else None
             ),
             "average_memories_per_hierarchy": (
-                sum(self._hierarchy_stats.values()) / len(self._hierarchy_stats)
+                sum(self._hierarchy_stats.values())
+                / len(self._hierarchy_stats)
                 if self._hierarchy_stats
                 else 0
             ),
@@ -797,7 +861,9 @@ class SemanticMemoryPlugin(PluginInterface):
             for memory_id in memory_ids:
                 atom = self.store.get(memory_id)
                 if atom and atom.vector is not None:
-                    memories_with_vectors.append((memory_id, atom.vector, atom.value))
+                    memories_with_vectors.append(
+                        (memory_id, atom.vector, atom.value)
+                    )
 
             # Find highly similar pairs for consolidation
             consolidated_ids = []
@@ -883,7 +949,9 @@ class SemanticMemoryPlugin(PluginInterface):
             return "observation"
         return "general"
 
-    def _flatten_content_for_metadata(self, content: dict[str, Any]) -> dict[str, str]:
+    def _flatten_content_for_metadata(
+        self, content: dict[str, Any]
+    ) -> dict[str, str]:
         """Flatten content for ChromaDB metadata storage."""
         flattened = {}
         for key, value in content.items():
@@ -967,7 +1035,9 @@ class SemanticMemoryPlugin(PluginInterface):
 
     async def _periodic_cleanup(self):
         """Periodic cleanup of cache and statistics."""
-        cleanup_interval = self._config.get("cleanup_interval_hours", 24) * 3600
+        cleanup_interval = (
+            self._config.get("cleanup_interval_hours", 24) * 3600
+        )
 
         while self.is_running:
             try:
@@ -1038,7 +1108,9 @@ class SemanticMemoryPlugin(PluginInterface):
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Error in memory consolidation: {e}", exc_info=True)
+                logger.error(
+                    f"Error in memory consolidation: {e}", exc_info=True
+                )
 
     # === Health Check and Statistics ===
 
@@ -1055,7 +1127,9 @@ class SemanticMemoryPlugin(PluginInterface):
             # Check ChromaDB connection
             if not self._collection:
                 health_info["status"] = "unhealthy"
-                health_info["issues"].append("ChromaDB collection not available")
+                health_info["issues"].append(
+                    "ChromaDB collection not available"
+                )
             else:
                 # Test ChromaDB operation
                 try:
@@ -1063,7 +1137,9 @@ class SemanticMemoryPlugin(PluginInterface):
                     health_info["metrics"]["chromadb_count"] = count
                 except Exception as e:
                     health_info["status"] = "unhealthy"
-                    health_info["issues"].append(f"ChromaDB operation failed: {e}")
+                    health_info["issues"].append(
+                        f"ChromaDB operation failed: {e}"
+                    )
 
             # Check NeuralStore integration
             if not self.store:
@@ -1085,14 +1161,20 @@ class SemanticMemoryPlugin(PluginInterface):
                         "Embedding API returned invalid response"
                     )
             except Exception as e:
-                health_info["issues"].append(f"Embedding API failed: {str(e)[:100]}")
+                health_info["issues"].append(
+                    f"Embedding API failed: {str(e)[:100]}"
+                )
 
             # Add cache statistics
             health_info["metrics"].update(
                 {
                     "cache_size": len(self._embedding_cache),
                     "cache_hit_rate": self._stats["cache_hits"]
-                    / max(1, self._stats["cache_hits"] + self._stats["cache_misses"]),
+                    / max(
+                        1,
+                        self._stats["cache_hits"]
+                        + self._stats["cache_misses"],
+                    ),
                     "total_memories": self._stats["total_memory_size"],
                     "memories_created": self._stats["memories_created"],
                 }
@@ -1120,11 +1202,14 @@ class SemanticMemoryPlugin(PluginInterface):
             # Add performance metrics
             base_stats["performance"] = {
                 "cache_hit_rate": self._stats["cache_hits"]
-                / max(1, self._stats["cache_hits"] + self._stats["cache_misses"]),
+                / max(
+                    1, self._stats["cache_hits"] + self._stats["cache_misses"]
+                ),
                 "average_memories_per_hierarchy": hierarchy_stats.get(
                     "average_memories_per_hierarchy", 0
                 ),
-                "cache_utilization": len(self._embedding_cache) / self._cache_max_size,
+                "cache_utilization": len(self._embedding_cache)
+                / self._cache_max_size,
             }
 
             # Add ChromaDB statistics if available

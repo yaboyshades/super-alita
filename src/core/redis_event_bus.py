@@ -49,7 +49,9 @@ class RedisEventBus:
         self._running = False
         self._initialized = True
 
-        logger.info(f"RedisEventBus initialized (host={host}, port={port}, db={db})")
+        logger.info(
+            f"RedisEventBus initialized (host={host}, port={port}, db={db})"
+        )
 
     async def connect(self) -> None:
         """Connect to Redis server."""
@@ -124,7 +126,9 @@ class RedisEventBus:
             channel = f"alita:{event_type}"
 
             await self._redis.publish(channel, serialized_data)
-            logger.debug(f"Published event '{event_type}' to Redis channel '{channel}'")
+            logger.debug(
+                f"Published event '{event_type}' to Redis channel '{channel}'"
+            )
 
         except Exception as e:
             logger.error(f"Failed to emit event '{event_type}': {e}")
@@ -215,7 +219,9 @@ class RedisEventBus:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(None, handler, event)
                     except Exception as e:
-                        logger.error(f"Error in event handler {handler.__name__}: {e}")
+                        logger.error(
+                            f"Error in event handler {handler.__name__}: {e}"
+                        )
 
         except Exception as e:
             logger.error(f"Error handling Redis message: {e}")

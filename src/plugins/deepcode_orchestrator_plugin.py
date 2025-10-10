@@ -42,7 +42,9 @@ class DeepCodeClientInterface(Protocol):
 
 
 class _StubDeepCodeClient(DeepCodeClientInterface):
-    async def plan(self, request: Mapping[str, Any]) -> Mapping[str, Any]:  # noqa: D401
+    async def plan(
+        self, request: Mapping[str, Any]
+    ) -> Mapping[str, Any]:  # noqa: D401
         return {
             "steps": ["draft plan", "produce impl"],
             "confidence": 0.73,
@@ -129,7 +131,9 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
     def __init__(self, client: DeepCodeClientInterface | None = None):
         super().__init__()
         # Allow environment-configured real client
-        self._client: DeepCodeClientInterface = client or self._maybe_real_client()
+        self._client: DeepCodeClientInterface = (
+            client or self._maybe_real_client()
+        )
         self._active: dict[str, dict[str, Any]] = {}
         self._tasks: list[asyncio.Task[None]] = []
         self._obs: ObservabilityManager | None = None  # type: ignore[name-defined]
@@ -146,7 +150,9 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
             return _StubDeepCodeClient()
         client = DeepCodeHTTPClient()
         if getattr(client, "enabled", False):  # type: ignore[attr-defined]
-            logger.info("DeepCode HTTP client enabled (DEEPCODE_API_URL configured)")
+            logger.info(
+                "DeepCode HTTP client enabled (DEEPCODE_API_URL configured)"
+            )
             return client  # type: ignore[return-value]
         return _StubDeepCodeClient()
 
@@ -154,17 +160,23 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
     def name(self) -> str:
         return "deepcode_orchestrator"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         self._obs = (
-            config.get("observability_manager") if isinstance(config, dict) else None
+            config.get("observability_manager")
+            if isinstance(config, dict)
+            else None
         )
         logger.info("DeepCode Orchestrator setup complete")
 
     async def start(self) -> None:
         await super().start()
         await self.subscribe("deepcode_request", self._on_request)
-        logger.info("DeepCode Orchestrator started (listening for deepcode_request)")
+        logger.info(
+            "DeepCode Orchestrator started (listening for deepcode_request)"
+        )
 
     async def shutdown(self) -> None:
         logger.info("DeepCode Orchestrator shutting down")
@@ -204,7 +216,9 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
             correlation_id=correlation_id,
             timestamp=_utcnow(),
         )
-        task: asyncio.Task[None] = asyncio.create_task(self._run_pipeline(request_id))
+        task: asyncio.Task[None] = asyncio.create_task(
+            self._run_pipeline(request_id)
+        )
         self._tasks.append(task)
         task.add_done_callback(
             lambda t: self._tasks.remove(t) if t in self._tasks else None
@@ -267,7 +281,9 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                         ).encode("utf-8")
                     ).hexdigest()[:16]
                 )
-            diffs = normalize_diffs(impl.get("diffs", []), proposed_by=self.name)
+            diffs = normalize_diffs(
+                impl.get("diffs", []), proposed_by=self.name
+            )
 
             # --- Advanced analysis: risk scoring (moved here after diffs) ---
             def _score_diff(d: dict[str, Any]) -> dict[str, Any]:
@@ -300,11 +316,13 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                 ]
                 token_hits = [tok for tok in critical_tokens if tok in unified]
                 token_factor = min(len(token_hits) * 0.2, 0.6)
-                test_related = path.startswith("tests/") or "test_" in os.path.basename(
-                    str(path)
-                )
+                test_related = path.startswith(
+                    "tests/"
+                ) or "test_" in os.path.basename(str(path))
                 test_factor = -0.15 if test_related else 0.0
-                raw_score = size_factor + ext_factor + token_factor + test_factor
+                raw_score = (
+                    size_factor + ext_factor + token_factor + test_factor
+                )
                 score = max(0.0, min(raw_score, 1.0))
                 factors: dict[str, Any] = {
                     "size_factor": round(size_factor, 3),
@@ -314,22 +332,28 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                 }
                 if token_hits:
                     factors["tokens"] = token_hits
-                return {**d, "risk_score": round(score, 3), "risk_factors": factors}
+                return {
+                    **d,
+                    "risk_score": round(score, 3),
+                    "risk_factors": factors,
+                }
 
             enriched_diffs = [_score_diff(d) for d in diffs]
             risk_summary: dict[str, Any]
             if enriched_diffs:
-                avg_risk = sum(d.get("risk_score", 0.0) for d in enriched_diffs) / len(
-                    enriched_diffs
-                )
-                high_risk = [d for d in enriched_diffs if d.get("risk_score", 0) >= 0.7]
+                avg_risk = sum(
+                    d.get("risk_score", 0.0) for d in enriched_diffs
+                ) / len(enriched_diffs)
+                high_risk = [
+                    d for d in enriched_diffs if d.get("risk_score", 0) >= 0.7
+                ]
                 suggested_tests: list[str] = []
                 for d in enriched_diffs:
                     pth = str(d.get("path", ""))
                     if pth.endswith(".py") and "tests/" not in pth:
-                        candidate = "tests/test_" + os.path.basename(pth).replace(
-                            ".py", ".py"
-                        )
+                        candidate = "tests/test_" + os.path.basename(
+                            pth
+                        ).replace(".py", ".py")
                         suggested_tests.append(candidate)
                 risk_summary = {
                     "average_risk": round(avg_risk, 3),
@@ -410,7 +434,9 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
                         json.dumps(self._latest, indent=2), encoding="utf-8"
                     )
                 except Exception as e:  # pragma: no cover
-                    logger.warning("Failed writing latest deepcode proposal: %s", e)
+                    logger.warning(
+                        "Failed writing latest deepcode proposal: %s", e
+                    )
         except asyncio.CancelledError:
             await self.emit_event(
                 "deepcode_pipeline_failed",
@@ -504,7 +530,9 @@ class DeepCodeOrchestratorPlugin(PluginInterface):
             return self._latest
         if self._latest_path.exists():  # lazy load if available
             try:
-                self._latest = json.loads(self._latest_path.read_text(encoding="utf-8"))
+                self._latest = json.loads(
+                    self._latest_path.read_text(encoding="utf-8")
+                )
                 return self._latest
             except Exception:  # pragma: no cover
                 return None

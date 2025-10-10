@@ -12,6 +12,8 @@ recursive rule processing.
 """
 
 import asyncio
+import builtins
+import contextlib
 import json
 import logging
 import os
@@ -54,7 +56,9 @@ class MangleAbility:
         self.config = config or {}
         self.binary_path = self.config.get("binary_path", MANGLE_BIN_PATH)
         self.timeout = self.config.get("timeout", DEFAULT_TIMEOUT_SECONDS)
-        self.knowledge_base_dir = self.config.get("knowledge_base_dir", "./data/mangle")
+        self.knowledge_base_dir = self.config.get(
+            "knowledge_base_dir", "./data/mangle"
+        )
         self.grpc_target = self.config.get(
             "grpc_target", os.environ.get("MANGLE_GRPC_ADDR")
         )
@@ -71,7 +75,9 @@ class MangleAbility:
                         "Mangle gRPC health not OK; will fall back to CLI when needed"
                     )
             except Exception as e:
-                logger.info(f"Mangle gRPC client init failed: {e}; using CLI fallback")
+                logger.info(
+                    f"Mangle gRPC client init failed: {e}; using CLI fallback"
+                )
 
         # Create knowledge base directory if it doesn't exist
         Path(self.knowledge_base_dir).mkdir(parents=True, exist_ok=True)
@@ -199,13 +205,15 @@ class MangleAbility:
                 logger.info(f"Remote MangleQuery exception; falling back: {e}")
 
         # Create temporary file with knowledge base and query
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".mgl", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".mgl", delete=False
+        ) as f:
             # Add all facts
             for fact in self.facts:
                 f.write(f"{fact}\n")
 
             # Add all rules
-            for rule_name, rule in self.rules.items():
+            for _rule_name, rule in self.rules.items():
                 f.write(f"{rule}\n")
 
             # Add the query
@@ -217,7 +225,13 @@ class MangleAbility:
             try:
                 try:
                     # Execute via proc helper first
-                    cmd = [self.binary_path, "query", "--format", "json", f.name]
+                    cmd = [
+                        self.binary_path,
+                        "query",
+                        "--format",
+                        "json",
+                        f.name,
+                    ]
                     stdout = await proc.arun(cmd, timeout=self.timeout)
                     if not stdout.strip() or stdout.strip() == "[]":
                         raise RuntimeError("Empty stdout; retry with hint")
@@ -256,18 +270,25 @@ class MangleAbility:
                         "remote": False,
                     }
                 else:
-                    return {"success": True, "results": [], "count": 0, "remote": False}
+                    return {
+                        "success": True,
+                        "results": [],
+                        "count": 0,
+                        "remote": False,
+                    }
             finally:
                 # Clean up temporary file
-                try:
+                with contextlib.suppress(Exception):
                     os.unlink(f.name)
-                except Exception:
-                    pass
 
     async def grpc_health(self) -> dict[str, Any]:
         """Return gRPC connectivity health info if configured."""
         if not self.grpc_client:
-            return {"configured": False, "ok": False, "message": "grpc_target not set"}
+            return {
+                "configured": False,
+                "ok": False,
+                "message": "grpc_target not set",
+            }
         try:
             h = self.grpc_client.get_health()
             return {
@@ -353,7 +374,9 @@ class MangleAbility:
             Results with explanation of the logical reasoning steps
         """
         # Execute with explanation flag
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".mgl", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".mgl", delete=False
+        ) as f:
             # Add all facts and rules
             for fact in self.facts:
                 f.write(f"{fact}\n")
@@ -385,12 +408,16 @@ class MangleAbility:
                         timeout=self.timeout,
                     )
 
-                result: subprocess.CompletedProcess[str] = await asyncio.to_thread(
-                    _call
+                result: subprocess.CompletedProcess[str] = (
+                    await asyncio.to_thread(_call)
                 )
-                results = json.loads(result.stdout) if result.stdout.strip() else []
+                results = (
+                    json.loads(result.stdout) if result.stdout.strip() else []
+                )
                 explanation = (
-                    result.stderr if result.stderr else "No explanation available"
+                    result.stderr
+                    if result.stderr
+                    else "No explanation available"
                 )
                 return {
                     "success": True,
@@ -401,10 +428,8 @@ class MangleAbility:
             except Exception as e:
                 return {"success": False, "error": str(e)}
             finally:
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     os.unlink(f.name)
-                except:
-                    pass
 
     async def run_rule(
         self, rule: str, query: str, *, temp_facts: list[str] | None = None
@@ -424,7 +449,9 @@ class MangleAbility:
         if not query.endswith("?"):
             query = f"{query}?"
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".mgl", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".mgl", delete=False
+        ) as f:
             # Include ephemeral facts first so they are easy to see
             for tf in temp_facts or []:
                 f.write(f"{tf}\n")
@@ -443,7 +470,13 @@ class MangleAbility:
             try:
                 try:
                     stdout = await proc.arun(
-                        [self.binary_path, "query", "--format", "json", f.name],
+                        [
+                            self.binary_path,
+                            "query",
+                            "--format",
+                            "json",
+                            f.name,
+                        ],
                         timeout=self.timeout,
                     )
                     if not stdout.strip() or stdout.strip() == "[]":
@@ -473,10 +506,8 @@ class MangleAbility:
                 data = json.loads(stdout) if stdout.strip() else []
                 return {"success": True, "results": data, "count": len(data)}
             finally:
-                try:
+                with contextlib.suppress(Exception):
                     os.unlink(f.name)
-                except Exception:
-                    pass
 
     async def rule_catalog(self) -> dict[str, Any]:
         """Return a list of discovered Mangle rules from disk or current session."""
@@ -506,7 +537,8 @@ class MangleAbility:
                     {
                         "id": name,
                         "name": name,
-                        "description": body[:60] + ("..." if len(body) > 60 else ""),
+                        "description": body[:60]
+                        + ("..." if len(body) > 60 else ""),
                     }
                 )
         return {"success": True, "rules": catalog, "count": len(catalog)}
@@ -539,7 +571,11 @@ class MangleAbility:
         try:
             rules_file = Path("./data/mangle/rules.json")
             if not rules_file.exists():
-                return {"valid": True, "violations": [], "confidence_penalty": 0.0}
+                return {
+                    "valid": True,
+                    "violations": [],
+                    "confidence_penalty": 0.0,
+                }
 
             # Build temp facts about the output and context
             # Truncate to avoid oversized facts; escape single quotes
@@ -549,7 +585,7 @@ class MangleAbility:
                 tfacts.append(f"domain('{domain}')")
             if meta:
                 for k, v in meta.items():
-                    if isinstance(v, (int, float)):
+                    if isinstance(v, int | float):
                         tfacts.append(f"{k}({v})")
                     elif isinstance(v, str):
                         safe_v = v.replace("'", "\\'")
@@ -568,7 +604,9 @@ class MangleAbility:
                 if pred != "violation":
                     continue
 
-                res = await self.run_rule(body, "violation(Reason)", temp_facts=tfacts)
+                res = await self.run_rule(
+                    body, "violation(Reason)", temp_facts=tfacts
+                )
                 if res.get("success") and res.get("count", 0) > 0:
                     try:
                         for result in res.get("results", []):
@@ -631,16 +669,25 @@ class ManglePluginInterface(BasePlugin):
             self.mangle_ability = MangleAbility(mangle_config)
 
             # Subscribe to relevant events
-            await event_bus.subscribe("request_mangle_query", self.handle_mangle_query)
-            await event_bus.subscribe("request_mangle_fact_add", self.handle_add_fact)
-            await event_bus.subscribe("request_mangle_rule_add", self.handle_add_rule)
             await event_bus.subscribe(
-                "request_mangle_dependency_analysis", self.handle_dependency_analysis
+                "request_mangle_query", self.handle_mangle_query
+            )
+            await event_bus.subscribe(
+                "request_mangle_fact_add", self.handle_add_fact
+            )
+            await event_bus.subscribe(
+                "request_mangle_rule_add", self.handle_add_rule
+            )
+            await event_bus.subscribe(
+                "request_mangle_dependency_analysis",
+                self.handle_dependency_analysis,
             )
             await event_bus.subscribe(
                 "request_mangle_knowledge_graph", self.handle_knowledge_graph
             )
-            await event_bus.subscribe("request_mangle_explain", self.handle_explain)
+            await event_bus.subscribe(
+                "request_mangle_explain", self.handle_explain
+            )
 
             logger.info("Mangle plugin initialized successfully")
             return True
@@ -648,7 +695,9 @@ class ManglePluginInterface(BasePlugin):
             logger.error(f"Failed to initialize Mangle plugin: {e}")
             return False
 
-    async def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
+    async def process_event(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Process an event from the event bus.
 
         Args:
@@ -661,7 +710,9 @@ class ManglePluginInterface(BasePlugin):
         event_type = event.get("event_type")
 
         if not self.mangle_ability:
-            logger.warning(f"Received {event_type} but Mangle ability not initialized")
+            logger.warning(
+                f"Received {event_type} but Mangle ability not initialized"
+            )
             return None
 
         # Event handling is delegated to specific handlers via subscriptions
@@ -674,7 +725,9 @@ class ManglePluginInterface(BasePlugin):
             event: Event with query parameters
         """
         if not self.mangle_ability:
-            await self._send_error_response(event, "Mangle ability not initialized")
+            await self._send_error_response(
+                event, "Mangle ability not initialized"
+            )
             return
 
         try:
@@ -682,19 +735,25 @@ class ManglePluginInterface(BasePlugin):
             params = event.get("params")
 
             if not query:
-                await self._send_error_response(event, "Query parameter missing")
+                await self._send_error_response(
+                    event, "Query parameter missing"
+                )
                 return
 
             result = await self.mangle_ability.query(query, params)
 
             # Send response event
             response_event = create_event(
-                "mangle_query_response", request_id=event.get("id"), result=result
+                "mangle_query_response",
+                request_id=event.get("id"),
+                result=result,
             )
             await self.event_bus.publish(response_event)
 
         except Exception as e:
-            await self._send_error_response(event, f"Error executing query: {str(e)}")
+            await self._send_error_response(
+                event, f"Error executing query: {str(e)}"
+            )
 
     async def handle_add_fact(self, event: dict[str, Any]) -> None:
         """Handle a request to add a fact to the Mangle knowledge base.
@@ -703,26 +762,34 @@ class ManglePluginInterface(BasePlugin):
             event: Event with fact information
         """
         if not self.mangle_ability:
-            await self._send_error_response(event, "Mangle ability not initialized")
+            await self._send_error_response(
+                event, "Mangle ability not initialized"
+            )
             return
 
         try:
             fact = event.get("fact")
 
             if not fact:
-                await self._send_error_response(event, "Fact parameter missing")
+                await self._send_error_response(
+                    event, "Fact parameter missing"
+                )
                 return
 
             result = await self.mangle_ability.add_fact(fact)
 
             # Send response event
             response_event = create_event(
-                "mangle_fact_add_response", request_id=event.get("id"), result=result
+                "mangle_fact_add_response",
+                request_id=event.get("id"),
+                result=result,
             )
             await self.event_bus.publish(response_event)
 
         except Exception as e:
-            await self._send_error_response(event, f"Error adding fact: {str(e)}")
+            await self._send_error_response(
+                event, f"Error adding fact: {str(e)}"
+            )
 
     async def handle_add_rule(self, event: dict[str, Any]) -> None:
         """Handle a request to add a rule to the Mangle knowledge base.
@@ -731,7 +798,9 @@ class ManglePluginInterface(BasePlugin):
             event: Event with rule information
         """
         if not self.mangle_ability:
-            await self._send_error_response(event, "Mangle ability not initialized")
+            await self._send_error_response(
+                event, "Mangle ability not initialized"
+            )
             return
 
         try:
@@ -739,19 +808,25 @@ class ManglePluginInterface(BasePlugin):
             rule = event.get("rule")
 
             if not name or not rule:
-                await self._send_error_response(event, "Name or rule parameter missing")
+                await self._send_error_response(
+                    event, "Name or rule parameter missing"
+                )
                 return
 
             result = await self.mangle_ability.add_rule(name, rule)
 
             # Send response event
             response_event = create_event(
-                "mangle_rule_add_response", request_id=event.get("id"), result=result
+                "mangle_rule_add_response",
+                request_id=event.get("id"),
+                result=result,
             )
             await self.event_bus.publish(response_event)
 
         except Exception as e:
-            await self._send_error_response(event, f"Error adding rule: {str(e)}")
+            await self._send_error_response(
+                event, f"Error adding rule: {str(e)}"
+            )
 
     async def handle_dependency_analysis(self, event: dict[str, Any]) -> None:
         """Handle a request to analyze dependencies.
@@ -760,7 +835,9 @@ class ManglePluginInterface(BasePlugin):
             event: Event with dependency information
         """
         if not self.mangle_ability:
-            await self._send_error_response(event, "Mangle ability not initialized")
+            await self._send_error_response(
+                event, "Mangle ability not initialized"
+            )
             return
 
         try:
@@ -772,7 +849,9 @@ class ManglePluginInterface(BasePlugin):
                 )
                 return
 
-            result = await self.mangle_ability.analyze_dependencies(dependencies)
+            result = await self.mangle_ability.analyze_dependencies(
+                dependencies
+            )
 
             # Send response event
             response_event = create_event(
@@ -794,7 +873,9 @@ class ManglePluginInterface(BasePlugin):
             event: Event with query and context information
         """
         if not self.mangle_ability:
-            await self._send_error_response(event, "Mangle ability not initialized")
+            await self._send_error_response(
+                event, "Mangle ability not initialized"
+            )
             return
 
         try:
@@ -802,10 +883,14 @@ class ManglePluginInterface(BasePlugin):
             context = event.get("context")
 
             if not query:
-                await self._send_error_response(event, "Query parameter missing")
+                await self._send_error_response(
+                    event, "Query parameter missing"
+                )
                 return
 
-            result = await self.mangle_ability.knowledge_graph_query(query, context)
+            result = await self.mangle_ability.knowledge_graph_query(
+                query, context
+            )
 
             # Send response event
             response_event = create_event(
@@ -827,21 +912,27 @@ class ManglePluginInterface(BasePlugin):
             event: Event with query information
         """
         if not self.mangle_ability:
-            await self._send_error_response(event, "Mangle ability not initialized")
+            await self._send_error_response(
+                event, "Mangle ability not initialized"
+            )
             return
 
         try:
             query = event.get("query")
 
             if not query:
-                await self._send_error_response(event, "Query parameter missing")
+                await self._send_error_response(
+                    event, "Query parameter missing"
+                )
                 return
 
             result = await self.mangle_ability.explain_query_results(query)
 
             # Send response event
             response_event = create_event(
-                "mangle_explain_response", request_id=event.get("id"), result=result
+                "mangle_explain_response",
+                request_id=event.get("id"),
+                result=result,
             )
             await self.event_bus.publish(response_event)
 

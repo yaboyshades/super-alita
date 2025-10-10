@@ -100,8 +100,12 @@ class MetricsRegistry:
 
                 # Export buckets
                 for bucket, count in hist_data["buckets"].items():
-                    bucket_str = "+Inf" if bucket == float("inf") else str(bucket)
-                    bucket_labels = self._add_label(labels_str, "le", bucket_str)
+                    bucket_str = (
+                        "+Inf" if bucket == float("inf") else str(bucket)
+                    )
+                    bucket_labels = self._add_label(
+                        labels_str, "le", bucket_str
+                    )
                     lines.append(f"{name}_bucket{bucket_labels} {count}")
 
                 # Export sum and count
@@ -110,19 +114,25 @@ class MetricsRegistry:
 
         return "\n".join(lines)
 
-    def get_counter(self, name: str, labels: dict[str, str] | None = None) -> int:
+    def get_counter(
+        self, name: str, labels: dict[str, str] | None = None
+    ) -> int:
         """Get current counter value"""
         with self._data_lock:
             key = self._make_key(name, labels)
             return self._counters.get(key, 0)
 
-    def get_gauge(self, name: str, labels: dict[str, str] | None = None) -> float:
+    def get_gauge(
+        self, name: str, labels: dict[str, str] | None = None
+    ) -> float:
         """Get current gauge value"""
         with self._data_lock:
             key = self._make_key(name, labels)
             return self._gauges.get(key, 0.0)
 
-    def _make_key(self, name: str, labels: dict[str, str] | None = None) -> str:
+    def _make_key(
+        self, name: str, labels: dict[str, str] | None = None
+    ) -> str:
         """Create a unique key for the metric"""
         if not labels:
             return name
@@ -182,7 +192,9 @@ def increment_counter(
     get_metrics_registry().increment_counter(name, value, labels)
 
 
-def set_gauge(name: str, value: float, labels: dict[str, str] | None = None) -> None:
+def set_gauge(
+    name: str, value: float, labels: dict[str, str] | None = None
+) -> None:
     """Convenience function to set a gauge"""
     get_metrics_registry().set_gauge(name, value, labels)
 

@@ -75,13 +75,17 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
         # Enhance with Mangle-based analysis
         try:
             # Analyze existing solutions
-            existing_solutions = self._analyze_existing_solutions(request.user_input)
+            existing_solutions = self._analyze_existing_solutions(
+                request.user_input
+            )
 
             # Check for similar features
             similar_features = self._find_similar_features(request.user_input)
 
             # Predict constitutional compliance issues
-            compliance_predictions = self._predict_compliance_issues(request.user_input)
+            compliance_predictions = self._predict_compliance_issues(
+                request.user_input
+            )
 
             # Update response with enhanced analysis
             base_response.analysis_results.update(
@@ -112,9 +116,10 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
 
         # If a raw specification was provided instead of a path, materialize it
         materialized_request = request
-        if getattr(request, "specification_path", None) in (None, "") and getattr(
-            request, "specification", None
-        ):
+        if getattr(request, "specification_path", None) in (
+            None,
+            "",
+        ) and getattr(request, "specification", None):
             try:
                 # Determine feature id and directory
                 feature_id = (
@@ -162,7 +167,9 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
             reuse_opportunities = self._find_reuse_opportunities(feature_id)
 
             # Assess integration complexity
-            integration_complexity = self._assess_integration_complexity(feature_id)
+            integration_complexity = self._assess_integration_complexity(
+                feature_id
+            )
 
             # Update response with enhanced analysis
             base_response.analysis_results.update(
@@ -261,12 +268,15 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
         logger.info("Running comprehensive constitutional validation")
 
         # Get Mangle-based constitutional validation
-        mangle_results = self.mangle_reasoner.validate_constitutional_compliance()
+        mangle_results = (
+            self.mangle_reasoner.validate_constitutional_compliance()
+        )
 
         # Get traditional constitutional scoring
         try:
             traditional_score = self.constitutional_scorer.score_specification(
-                "Comprehensive constitutional analysis of the current " "codebase."
+                "Comprehensive constitutional analysis of the current "
+                "codebase."
             )
         except Exception as e:
             logger.warning(f"Traditional scoring failed: {e}")
@@ -277,7 +287,9 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
             "mangle_analysis": {
                 article: {
                     "violations": result.raw_results,
-                    "count": (len(result.raw_results) if result.raw_results else 0),
+                    "count": (
+                        len(result.raw_results) if result.raw_results else 0
+                    ),
                     "success": result.success,
                     "error": result.error_message,
                 }
@@ -312,7 +324,9 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
             ),
         }
 
-        self._last_analysis_results["constitutional_compliance"] = compliance_report
+        self._last_analysis_results["constitutional_compliance"] = (
+            compliance_report
+        )
         return compliance_report
 
     def trace_code_to_spec(self, code_element: str) -> dict[str, Any]:
@@ -364,7 +378,9 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
             "quality_issues": {
                 issue_type: {
                     "items": result.raw_results,
-                    "count": (len(result.raw_results) if result.raw_results else 0),
+                    "count": (
+                        len(result.raw_results) if result.raw_results else 0
+                    ),
                     "success": result.success,
                 }
                 for issue_type, result in quality_results.items()
@@ -372,7 +388,9 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
             "incomplete_work": {
                 work_type: {
                     "items": result.raw_results,
-                    "count": (len(result.raw_results) if result.raw_results else 0),
+                    "count": (
+                        len(result.raw_results) if result.raw_results else 0
+                    ),
                     "success": result.success,
                 }
                 for work_type, result in incomplete_results.items()
@@ -403,11 +421,15 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
     def _analyze_existing_solutions(self, _user_input: str) -> dict[str, Any]:
         """Analyze existing solutions that might address the user request."""
         # Query for similar functions or features
-        similar_funcs = self.mangle_reasoner.query("function(Func, File, Module)")
+        similar_funcs = self.mangle_reasoner.query(
+            "function(Func, File, Module)"
+        )
 
         return {
             "existing_functions": (
-                len(similar_funcs.raw_results) if similar_funcs.raw_results else 0
+                len(similar_funcs.raw_results)
+                if similar_funcs.raw_results
+                else 0
             ),
             "analysis_performed": similar_funcs.success,
         }
@@ -418,7 +440,9 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
 
         return {
             "existing_specs": (
-                len(specs_result.raw_results) if specs_result.raw_results else 0
+                len(specs_result.raw_results)
+                if specs_result.raw_results
+                else 0
             ),
             "analysis_performed": specs_result.success,
         }
@@ -438,7 +462,9 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
 
     def _analyze_dependencies(self, _feature_id: str) -> dict[str, Any]:
         """Analyze code dependencies for a feature."""
-        deps_result = self.mangle_reasoner.query("imports(Module, ImportedModule)")
+        deps_result = self.mangle_reasoner.query(
+            "imports(Module, ImportedModule)"
+        )
 
         return {
             "total_dependencies": (
@@ -455,7 +481,9 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
             return [result[0] for result in funcs_result.raw_results if result]
         return []
 
-    def _assess_integration_complexity(self, _feature_id: str) -> dict[str, Any]:
+    def _assess_integration_complexity(
+        self, _feature_id: str
+    ) -> dict[str, Any]:
         """Assess integration complexity for a feature."""
         hotspots = self.mangle_reasoner.query("dependency_hotspot(Module)")
 
@@ -553,7 +581,9 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
             ),
         }
 
-    def _generate_compliance_recommendations(self, mangle_results: dict) -> list[str]:
+    def _generate_compliance_recommendations(
+        self, mangle_results: dict
+    ) -> list[str]:
         """Generate recommendations for improving constitutional compliance."""
         recommendations = []
 
@@ -604,7 +634,9 @@ class EnhancedSDDFramework(ConstitutionalSDDPipeline):
         for issue_type, result in quality_results.items():
             if result.raw_results and len(result.raw_results) > 0:
                 if "Untested" in issue_type:
-                    recommendations.append("Add unit tests for untested functions")
+                    recommendations.append(
+                        "Add unit tests for untested functions"
+                    )
                 elif "Complex" in issue_type:
                     recommendations.append(
                         "Refactor complex functions into smaller components"

@@ -33,7 +33,9 @@ async def test_wildcard_subscription_fan_out_limited():
     wildcard_handler = AsyncMock()
     specific_handler_a = AsyncMock()
     specific_handler_b = AsyncMock()
-    dummy_handler_c = AsyncMock()  # Dummy handler for channel_c to ensure subscription
+    dummy_handler_c = (
+        AsyncMock()
+    )  # Dummy handler for channel_c to ensure subscription
 
     # Subscribe handlers
     await event_bus.subscribe("*", wildcard_handler)
@@ -88,10 +90,14 @@ async def test_wildcard_subscription_fan_out_limited():
     assert (
         specific_handler_b.call_count == 1
     ), "Channel B handler should receive 1 event"
-    assert dummy_handler_c.call_count == 1, "Channel C handler should receive 1 event"
+    assert (
+        dummy_handler_c.call_count == 1
+    ), "Channel C handler should receive 1 event"
 
     # Validate event content reached handlers correctly
-    wildcard_calls = [call_args[0][0] for call_args in wildcard_handler.call_args_list]
+    wildcard_calls = [
+        call_args[0][0] for call_args in wildcard_handler.call_args_list
+    ]
     assert len(wildcard_calls) == 3
 
     # Check that wildcard handler received events from all channels
@@ -148,7 +154,9 @@ async def test_wildcard_no_duplicate_calls():
     await asyncio.sleep(0.2)
 
     # Handler should only be called once, not twice
-    assert multi_handler.call_count == 1, "Handler should not receive duplicate events"
+    assert (
+        multi_handler.call_count == 1
+    ), "Handler should not receive duplicate events"
 
     # Validate the event content
     event_received = multi_handler.call_args[0][0]

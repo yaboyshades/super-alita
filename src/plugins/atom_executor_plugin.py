@@ -84,7 +84,9 @@ class AtomExecutorPlugin(PluginInterface):
             if not atom_data:
                 await self.event_bus._redis.publish(
                     "agent_reply",
-                    json.dumps({"text": f"❌ Atom '{tool_name}' not found in memory"}),
+                    json.dumps(
+                        {"text": f"❌ Atom '{tool_name}' not found in memory"}
+                    ),
                 )
                 return
 
@@ -160,11 +162,17 @@ class AtomExecutorPlugin(PluginInterface):
                         return atom_data
 
             # Try searching by content if direct lookup fails
-            if hasattr(self.store, "embed_text") and hasattr(self.store, "attention"):
+            if hasattr(self.store, "embed_text") and hasattr(
+                self.store, "attention"
+            ):
                 try:
-                    query_vec = await self.store.embed_text([f"Tool: {tool_name}"])
+                    query_vec = await self.store.embed_text(
+                        [f"Tool: {tool_name}"]
+                    )
                     if query_vec and len(query_vec) > 0:
-                        memories = await self.store.attention(query_vec[0], top_k=5)
+                        memories = await self.store.attention(
+                            query_vec[0], top_k=5
+                        )
 
                         for key, score in memories:
                             atom = self.store.get(key)
@@ -182,7 +190,9 @@ class AtomExecutorPlugin(PluginInterface):
                     logger.warning(f"Semantic search for atom failed: {e}")
 
             # Check with atom creator plugin if available
-            for plugin_name, plugin in getattr(self.event_bus, "_plugins", {}).items():
+            for plugin_name, plugin in getattr(
+                self.event_bus, "_plugins", {}
+            ).items():
                 if hasattr(plugin, "get_atom"):
                     atom_data = await plugin.get_atom(tool_name)
                     if atom_data:
@@ -227,7 +237,9 @@ class AtomExecutorPlugin(PluginInterface):
                 stdin_data = ""
 
             # Create temporary file for code
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".py", delete=False
+            ) as f:
                 f.write(full_code)
                 temp_file = f.name
 
@@ -292,7 +304,9 @@ class AtomExecutorPlugin(PluginInterface):
             return {"total_executions": 0, "success_rate": 0.0}
 
         successful = sum(
-            1 for record in self.execution_history if record["result"]["success"]
+            1
+            for record in self.execution_history
+            if record["result"]["success"]
         )
 
         return {

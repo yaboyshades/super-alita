@@ -12,7 +12,9 @@ def test_header_fields_clean():
         last,
     )
     release = next(l for l in lines if l.startswith("- Current Release:"))
-    assert re.fullmatch(r"- Current Release: <!-- AGENTS:RELEASE -->[\w\.\-]+", release)
+    assert re.fullmatch(
+        r"- Current Release: <!-- AGENTS:RELEASE -->[\w\.\-]+", release
+    )
 
 
 def test_plugin_table_integrity():

@@ -17,10 +17,15 @@ import torch.nn as nn
 class TransformerModel(nn.Module):
     """Transformer implementation based on requirements"""
 
-    def __init__(self, d_model: int = 512, num_heads: int = 8, num_layers: int = 6):
+    def __init__(
+        self, d_model: int = 512, num_heads: int = 8, num_layers: int = 6
+    ):
         super().__init__()
         self.layers = nn.ModuleList(
-            [nn.TransformerEncoderLayer(d_model, num_heads) for _ in range(num_layers)]
+            [
+                nn.TransformerEncoderLayer(d_model, num_heads)
+                for _ in range(num_layers)
+            ]
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

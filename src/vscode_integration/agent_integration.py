@@ -35,7 +35,9 @@ try:
     from core.event_bus import EventBus
 
     # Import Cortex components for enhanced development assistance
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))  # Add project root
+    sys.path.insert(
+        0, str(Path(__file__).parent.parent.parent)
+    )  # Add project root
     from cortex.adapters.leanrag_adapter import build_situation_brief
     from cortex.config.planner_config import PlannerConfig
     from cortex.kg.leanrag import LeanRAG
@@ -139,7 +141,9 @@ class SuperAlitaAgent:
                 # For now, skip LADDER planner initialization as it requires
                 # proper interface implementations (KG, Bandit, Store, Orchestrator)
                 # This will be implemented in a future iteration
-                logger.warning("LADDER planner requires full interface implementations")
+                logger.warning(
+                    "LADDER planner requires full interface implementations"
+                )
                 logger.info("Continuing with todo manager only...")
 
             except Exception as e:
@@ -181,7 +185,9 @@ class SuperAlitaAgent:
                 "pending": len(pending_tasks),
                 "high_priority": len(high_priority_tasks),
             },
-            "completion_rate": len(completed_tasks) / len(tasks) if tasks else 0,
+            "completion_rate": (
+                len(completed_tasks) / len(tasks) if tasks else 0
+            ),
             "pending_tasks": [
                 {
                     "id": t["id"],
@@ -191,7 +197,9 @@ class SuperAlitaAgent:
                 }
                 for t in pending_tasks
             ],
-            "next_suggested_actions": self._suggest_next_actions(pending_tasks),
+            "next_suggested_actions": self._suggest_next_actions(
+                pending_tasks
+            ),
             "integration_status": {
                 "vscode_todos": "✅ Connected",
                 "ladder_planner": (
@@ -214,14 +222,18 @@ class SuperAlitaAgent:
             if "test" in title and "fail" in title:
                 suggestions.append(f"🧪 Fix test failures in: {task['title']}")
             elif "router" in title:
-                suggestions.append(f"🔀 Implement router logic: {task['title']}")
+                suggestions.append(
+                    f"🔀 Implement router logic: {task['title']}"
+                )
             elif "integration" in title:
                 suggestions.append(f"🔗 Complete integration: {task['title']}")
             else:
                 suggestions.append(f"📝 Work on: {task['title']}")
 
         if not suggestions:
-            suggestions.append("🎉 All tasks complete! Consider planning new features.")
+            suggestions.append(
+                "🎉 All tasks complete! Consider planning new features."
+            )
 
         return suggestions[:3]  # Top 3 suggestions
 
@@ -306,7 +318,9 @@ class SuperAlitaAgent:
             print(f"❌ Failed to update task {task_id}: {e}")
             raise
 
-    async def plan_with_ladder(self, goal: str, mode: str = "shadow") -> dict[str, Any]:
+    async def plan_with_ladder(
+        self, goal: str, mode: str = "shadow"
+    ) -> dict[str, Any]:
         """Use LADDER planner to create a plan for a development goal."""
         if not self.ladder_planner:
             return {
@@ -373,11 +387,15 @@ class SuperAlitaAgent:
             )
 
         if not recommendations:
-            recommendations.append("✨ All systems green! Ready for new challenges")
+            recommendations.append(
+                "✨ All systems green! Ready for new challenges"
+            )
 
         return recommendations
 
-    async def execute_agent_command(self, command: str, **kwargs) -> dict[str, Any]:
+    async def execute_agent_command(
+        self, command: str, **kwargs
+    ) -> dict[str, Any]:
         """Execute agent commands for development automation."""
         command = command.lower().strip()
 
@@ -387,9 +405,13 @@ class SuperAlitaAgent:
 
             elif command == "create_task":
                 title = kwargs.get("title", "New Development Task")
-                description = kwargs.get("description", "Created by Super Alita Agent")
+                description = kwargs.get(
+                    "description", "Created by Super Alita Agent"
+                )
                 priority = kwargs.get("priority", "medium")
-                return await self.create_development_task(title, description, priority)
+                return await self.create_development_task(
+                    title, description, priority
+                )
 
             elif command == "complete_task":
                 task_id = kwargs.get("task_id")
@@ -404,7 +426,9 @@ class SuperAlitaAgent:
                 return await self.plan_with_ladder(goal, mode)
 
             elif command == "recommendations":
-                return {"recommendations": await self.get_agent_recommendations()}
+                return {
+                    "recommendations": await self.get_agent_recommendations()
+                }
 
             elif command == "help":
                 return {
@@ -581,7 +605,9 @@ class SuperAlitaAgent:
             "🔍 Code review for potential improvements",
         ]
 
-    async def plan_development_task(self, task_description: str) -> dict[str, Any]:
+    async def plan_development_task(
+        self, task_description: str
+    ) -> dict[str, Any]:
         """Use Cortex planning capabilities to break down development tasks."""
         if not CORTEX_AVAILABLE:
             return {
@@ -695,7 +721,9 @@ async def demo_agent_integration():
         print(f"  • {cmd}")
 
     print("\n✅ Agent Integration Demo Complete!")
-    print("🚀 The super-alita agent is now hooked up and ready for development!")
+    print(
+        "🚀 The super-alita agent is now hooked up and ready for development!"
+    )
 
     await agent.shutdown()
     return True

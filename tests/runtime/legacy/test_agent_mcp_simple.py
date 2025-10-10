@@ -100,7 +100,9 @@ class SimpleAgentMcpServer:
                 )
             else:
                 return CallToolResult(
-                    content=[TextContent(type="text", text=f"Unknown tool: {name}")],
+                    content=[
+                        TextContent(type="text", text=f"Unknown tool: {name}")
+                    ],
                     isError=True,
                 )
 
@@ -133,7 +135,9 @@ async def main():
         print(f"  - {tool.name}: {tool.description}")
 
     print("\n🧪 Testing ping tool:")
-    result = await server._handle_call_tool("ping", {"message": "Hello from MCP!"})
+    result = await server._handle_call_tool(
+        "ping", {"message": "Hello from MCP!"}
+    )
     print(f"Result: {result}")
 
     print("\n✅ Simple MCP server test complete!")

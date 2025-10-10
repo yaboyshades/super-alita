@@ -31,7 +31,8 @@ def test_model_stream_timeout() -> None:
     app = _mk_app()
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "mst"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "hi", "session_id": "mst"},
     )
     assert resp.status_code == 200
     assert "[ERROR: model_stream_timeout]" in resp.text

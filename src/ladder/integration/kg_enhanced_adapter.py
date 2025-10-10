@@ -137,7 +137,9 @@ class KGEnhancedLadderAdapter:
             start_time = time.time()
 
             # Get KG-enhanced context
-            enhanced_context = self.planner.get_enhanced_context(query, context)
+            enhanced_context = self.planner.get_enhanced_context(
+                query, context
+            )
 
             # Create plan using KG-enhanced LADDER
             plan = await self.planner.create_plan(
@@ -176,8 +178,12 @@ class KGEnhancedLadderAdapter:
                 "kg_enhanced": True,
                 "kg_context": {
                     "domain": enhanced_context.get("domain", "general"),
-                    "patterns_found": enhanced_context.get("patterns_found", 0),
-                    "similar_goals": enhanced_context.get("similar_goals_found", 0),
+                    "patterns_found": enhanced_context.get(
+                        "patterns_found", 0
+                    ),
+                    "similar_goals": enhanced_context.get(
+                        "similar_goals_found", 0
+                    ),
                     "historical_outcomes": enhanced_context.get(
                         "historical_outcomes", 0
                     ),
@@ -218,7 +224,8 @@ class KGEnhancedLadderAdapter:
         # Update rolling averages
         total_plans = self.metrics.total_plans
         self.metrics.average_planning_time = (
-            self.metrics.average_planning_time * (total_plans - 1) + planning_time
+            self.metrics.average_planning_time * (total_plans - 1)
+            + planning_time
         ) / total_plans
 
         if result.execution_time:
@@ -230,7 +237,9 @@ class KGEnhancedLadderAdapter:
         # KG-specific metrics
         if enhanced_context.get("kg_enhanced"):
             self.metrics.kg_queries_made += 1
-            self.metrics.kg_patterns_used += enhanced_context.get("patterns_found", 0)
+            self.metrics.kg_patterns_used += enhanced_context.get(
+                "patterns_found", 0
+            )
 
     async def _handle_planning_request(self, event: BaseEvent) -> None:
         """Handle planning requests from the event bus."""
@@ -258,9 +267,9 @@ class KGEnhancedLadderAdapter:
         event_data = event.model_dump() if hasattr(event, "model_dump") else {}
 
         # Log KG learning for debugging
-        session_id = event_data.get("session_id", "")
-        success = event_data.get("success", False)
-        domain = event_data.get("domain", "general")
+        event_data.get("session_id", "")
+        event_data.get("success", False)
+        event_data.get("domain", "general")
 
         # Could add additional learning logic here
         pass
@@ -269,11 +278,15 @@ class KGEnhancedLadderAdapter:
         """Get current integration metrics with KG statistics."""
         success_rate = 0.0
         if self.metrics.total_plans > 0:
-            success_rate = self.metrics.successful_executions / self.metrics.total_plans
+            success_rate = (
+                self.metrics.successful_executions / self.metrics.total_plans
+            )
 
         kg_usage_rate = 0.0
         if self.metrics.total_plans > 0:
-            kg_usage_rate = self.metrics.kg_queries_made / self.metrics.total_plans
+            kg_usage_rate = (
+                self.metrics.kg_queries_made / self.metrics.total_plans
+            )
 
         base_metrics = {
             "total_plans": self.metrics.total_plans,

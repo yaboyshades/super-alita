@@ -27,11 +27,15 @@ class OakCoordinator(PluginInterface):
         self.subproblem_manager = SubproblemManager()
         self.option_trainer = OptionTrainer()
         self.prediction_engine = PredictionEngine()
-        self.planning_engine = PlanningEngine(option_source=self.option_trainer)
+        self.planning_engine = PlanningEngine(
+            option_source=self.option_trainer
+        )
         self.curation_manager = CurationManager()
         self._task: asyncio.Task | None = None
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         cfg = config or {}
         await self.feature_engine.setup(
@@ -40,7 +44,9 @@ class OakCoordinator(PluginInterface):
         await self.subproblem_manager.setup(
             event_bus, store, cfg.get("subproblem_manager", {})
         )
-        await self.option_trainer.setup(event_bus, store, cfg.get("option_trainer", {}))
+        await self.option_trainer.setup(
+            event_bus, store, cfg.get("option_trainer", {})
+        )
         await self.prediction_engine.setup(
             event_bus, store, cfg.get("prediction_engine", {})
         )

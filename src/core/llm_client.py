@@ -32,7 +32,9 @@ _GEMINI_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
 # Configure Gemini once at module level
 if not _GEMINI_KEY:
-    logger.warning("GEMINI_API_KEY/GOOGLE_API_KEY is not set - LLM features disabled")
+    logger.warning(
+        "GEMINI_API_KEY/GOOGLE_API_KEY is not set - LLM features disabled"
+    )
     _gemini_model = None
 else:
     genai.configure(api_key=_GEMINI_KEY)
@@ -70,7 +72,9 @@ async def _call_gemini(prompt: str, *, timeout: float = 20.0) -> str:
                     pass
             return ""
 
-        return await asyncio.wait_for(asyncio.to_thread(_sync_call), timeout=timeout)
+        return await asyncio.wait_for(
+            asyncio.to_thread(_sync_call), timeout=timeout
+        )
     except TimeoutError as e:
         raise LLMUnavailable(f"Gemini call timed out after {timeout}s") from e
     except Exception as e:
@@ -79,7 +83,11 @@ async def _call_gemini(prompt: str, *, timeout: float = 20.0) -> str:
 
 
 async def generate(
-    prompt: str, *, timeout: float = 20.0, retries: int = 3, backoff: float = 0.8
+    prompt: str,
+    *,
+    timeout: float = 20.0,
+    retries: int = 3,
+    backoff: float = 0.8,
 ) -> str:
     """
     Public entrypoint for LLM generation. Gemini-only with retry logic.
@@ -110,11 +118,15 @@ async def generate(
                 )
                 await asyncio.sleep(delay)
             else:
-                logger.error("Gemini call failed after %d attempts: %s", retries, e)
+                logger.error(
+                    "Gemini call failed after %d attempts: %s", retries, e
+                )
                 break
 
     # If we get here, all retries failed
-    raise LLMUnavailable(f"All {retries} LLM attempts failed. Last error: {last_err}")
+    raise LLMUnavailable(
+        f"All {retries} LLM attempts failed. Last error: {last_err}"
+    )
 
 
 # Legacy compatibility

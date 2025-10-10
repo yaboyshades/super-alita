@@ -4,7 +4,10 @@ from typing import Any
 
 import pytest
 
-from src.orchestration.unified_orchestrator import UnifiedOrchestrator, UnifiedRunConfig
+from src.orchestration.unified_orchestrator import (
+    UnifiedOrchestrator,
+    UnifiedRunConfig,
+)
 
 
 class RecordingEventBus:

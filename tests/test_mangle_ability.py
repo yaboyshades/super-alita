@@ -41,14 +41,14 @@ def mock_mangle_ability(monkeypatch):
 
         # Mock different responses based on the command
         if "--explain" in cmd:
-            stderr_data = (
-                "Explanation steps:\n1. Fact a(1) matches\n2. Rule r1 applies\n"
-            )
+            stderr_data = "Explanation steps:\n1. Fact a(1) matches\n2. Rule r1 applies\n"
 
         if "vulnerable" in " ".join(cmd):
             stdout_data = '[{"Name": "log4j", "Version": "2.14.0"}]'
 
-        return MockProcess(stdout=stdout_data, stderr=stderr_data, returncode=0)
+        return MockProcess(
+            stdout=stdout_data, stderr=stderr_data, returncode=0
+        )
 
     monkeypatch.setattr(subprocess, "run", mock_run)
 
@@ -72,7 +72,9 @@ def mock_mangle_ability(monkeypatch):
 async def test_add_fact(mock_mangle_ability):
     """Test adding facts to the knowledge base."""
     # Add a fact
-    result = await mock_mangle_ability.add_fact("dependency('log4j', '2.14.0')")
+    result = await mock_mangle_ability.add_fact(
+        "dependency('log4j', '2.14.0')"
+    )
 
     assert result["success"] is True
     assert "dependency('log4j', '2.14.0')." in mock_mangle_ability.facts
@@ -151,7 +153,13 @@ async def test_knowledge_graph_query(mock_mangle_ability):
     await mock_mangle_ability.add_fact("depends_on('lib1', 'lib2')")
 
     # Define context for the query
-    context = [{"relation": "vulnerable", "subject": "lib2", "object": "CVE-2023-1234"}]
+    context = [
+        {
+            "relation": "vulnerable",
+            "subject": "lib2",
+            "object": "CVE-2023-1234",
+        }
+    ]
 
     # Execute knowledge graph query
     result = await mock_mangle_ability.knowledge_graph_query(

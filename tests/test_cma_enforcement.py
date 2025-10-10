@@ -29,4 +29,3 @@ acceptance_criteria: []
         phases_completed=["alignment_and_scoping", "blueprint_finalization"],
     )
     assert report["ok"] is True
-

@@ -14,6 +14,7 @@ def prepare_ml_dataset(data_pattern: str, label_column: str = "target"):
     y = df[label_column]
     return X, y
 
+
 def cross_validate_multiple_datasets(pattern: str, model, cv: int = 5):
     """Cross-validate a model across many datasets matched by pattern."""
     # Import here to avoid heavy dependency at module import time

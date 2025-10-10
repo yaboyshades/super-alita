@@ -186,7 +186,9 @@ class TestCircuitBreaker:
         """Test half-open max calls limit"""
         # Set to half-open state
         circuit_breaker.state = CircuitBreakerState.HALF_OPEN
-        circuit_breaker.half_open_calls = circuit_breaker.config.half_open_max_calls
+        circuit_breaker.half_open_calls = (
+            circuit_breaker.config.half_open_max_calls
+        )
 
         async def success_func():
             return "success"
@@ -276,7 +278,9 @@ class TestErrorRecoveryOrchestrator:
     def test_register_circuit_breaker(self, orchestrator):
         """Test circuit breaker registration"""
         config = CircuitBreakerConfig()
-        circuit_breaker = orchestrator.register_circuit_breaker("test_cb", config)
+        circuit_breaker = orchestrator.register_circuit_breaker(
+            "test_cb", config
+        )
 
         assert "test_cb" in orchestrator.circuit_breakers
         assert circuit_breaker.name == "test_cb"
@@ -311,7 +315,10 @@ class TestErrorRecoveryOrchestrator:
             error_message="Test error",
         )
 
-        custom_actions = [RecoveryAction.FALLBACK, RecoveryAction.ALERT_OPERATOR]
+        custom_actions = [
+            RecoveryAction.FALLBACK,
+            RecoveryAction.ALERT_OPERATOR,
+        ]
         await orchestrator.handle_error(error_context, custom_actions)
 
         # Should still record error
@@ -326,7 +333,9 @@ class TestErrorRecoveryOrchestrator:
 
         # Medium severity
         context_medium = ErrorContext(severity=ErrorSeverity.MEDIUM)
-        actions_medium = orchestrator._determine_recovery_actions(context_medium)
+        actions_medium = orchestrator._determine_recovery_actions(
+            context_medium
+        )
         assert RecoveryAction.RETRY in actions_medium
         assert RecoveryAction.FALLBACK in actions_medium
 
@@ -338,7 +347,9 @@ class TestErrorRecoveryOrchestrator:
 
         # Critical severity
         context_critical = ErrorContext(severity=ErrorSeverity.CRITICAL)
-        actions_critical = orchestrator._determine_recovery_actions(context_critical)
+        actions_critical = orchestrator._determine_recovery_actions(
+            context_critical
+        )
         assert RecoveryAction.CIRCUIT_BREAK in actions_critical
         assert RecoveryAction.FALLBACK in actions_critical
         assert RecoveryAction.ALERT_OPERATOR in actions_critical
@@ -376,7 +387,9 @@ class TestErrorRecoveryOrchestrator:
         result = await orchestrator._handle_circuit_break(error_context)
 
         assert result is True
-        assert "test_component_circuit_breaker" in orchestrator.circuit_breakers
+        assert (
+            "test_component_circuit_breaker" in orchestrator.circuit_breakers
+        )
 
     @pytest.mark.asyncio
     async def test_handle_fallback_recovery(self, orchestrator):
@@ -465,7 +478,9 @@ class TestErrorRecoveryOrchestrator:
         assert "test_cb" in status["circuit_breakers"]
         assert status["error_statistics"]["total_errors"] == 1
         assert (
-            status["error_statistics"]["error_patterns"]["test_component:ValueError"]
+            status["error_statistics"]["error_patterns"][
+                "test_component:ValueError"
+            ]
             == 2
         )
 
@@ -601,7 +616,9 @@ class TestIntegrationScenarios:
         ]
 
         # Handle errors concurrently
-        tasks = [orchestrator.handle_error(context) for context in error_contexts]
+        tasks = [
+            orchestrator.handle_error(context) for context in error_contexts
+        ]
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 

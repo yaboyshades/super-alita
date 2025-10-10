@@ -57,6 +57,8 @@ if __name__ == "__main__":
     print("  - Alita: DeepCode — Analyze Workspace")
     print("  - Alita: DeepCode — Generate From Prompt")
     print("")
-    print("⚙️  Make sure VS Code setting 'alita.runtime.host' = 'http://127.0.0.1:8080'")
+    print(
+        "⚙️  Make sure VS Code setting 'alita.runtime.host' = 'http://127.0.0.1:8080'"
+    )
 
     uvicorn.run(app, host="127.0.0.1", port=8080, log_level="info")

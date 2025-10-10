@@ -12,7 +12,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .models import AlertEvent, DerivativeCertificate, RuntimeSampleSet, TargetFunction
+from .models import (
+    AlertEvent,
+    DerivativeCertificate,
+    RuntimeSampleSet,
+    TargetFunction,
+)
 
 
 class CalculusGateEncoder(json.JSONEncoder):
@@ -23,7 +28,11 @@ class CalculusGateEncoder(json.JSONEncoder):
         if isinstance(obj, datetime):
             return obj.isoformat()
         elif isinstance(
-            obj, (TargetFunction, RuntimeSampleSet, DerivativeCertificate, AlertEvent)
+            obj,
+            TargetFunction
+            | RuntimeSampleSet
+            | DerivativeCertificate
+            | AlertEvent,
         ):
             return obj.to_dict() if hasattr(obj, "to_dict") else obj.__dict__
         elif isinstance(obj, Path):
@@ -44,7 +53,9 @@ def deserialize_certificate(json_str: str) -> DerivativeCertificate:
 
 def serialize_sample_set(sample_set: RuntimeSampleSet) -> str:
     """Serialize runtime sample set to JSON string."""
-    return json.dumps(sample_set_to_dict(sample_set), cls=CalculusGateEncoder, indent=2)
+    return json.dumps(
+        sample_set_to_dict(sample_set), cls=CalculusGateEncoder, indent=2
+    )
 
 
 def deserialize_sample_set(json_str: str) -> RuntimeSampleSet:
@@ -105,8 +116,12 @@ def certificate_from_dict(data: dict[str, Any]) -> DerivativeCertificate:
         first_derivatives=data.get("first_derivatives", []),
         second_derivatives=data.get("second_derivatives", []),
         lipschitz_constant=data.get("lipschitz_constant", 0.0),
-        derivative_confidence_intervals=data.get("derivative_confidence_intervals", []),
-        curvature_confidence_intervals=data.get("curvature_confidence_intervals", []),
+        derivative_confidence_intervals=data.get(
+            "derivative_confidence_intervals", []
+        ),
+        curvature_confidence_intervals=data.get(
+            "curvature_confidence_intervals", []
+        ),
         bootstrap_iterations=data.get("bootstrap_iterations", 1000),
         slope_violations=data.get("slope_violations", []),
         curvature_violations=data.get("curvature_violations", []),
@@ -287,7 +302,8 @@ def create_mcp_response(
         + (
             1
             if certificate.lipschitz_violation
-            and certificate.lipschitz_constant > certificate.lipschitz_limit * 2
+            and certificate.lipschitz_constant
+            > certificate.lipschitz_limit * 2
             else 0
         )
     )
@@ -330,7 +346,9 @@ def create_mcp_response(
         },
         "performance_metrics": {
             "sample_count": (
-                certificate.sample_set.sample_count if certificate.sample_set else 0
+                certificate.sample_set.sample_count
+                if certificate.sample_set
+                else 0
             ),
             "lipschitz_constant": certificate.lipschitz_constant,
         },

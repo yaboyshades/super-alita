@@ -165,7 +165,9 @@ class ConstitutionalQualityScorecard:
         score = 1.0  # Base score
 
         context_indicators = ["context", "background", "scenario", "situation"]
-        if any(indicator in prompt.lower() for indicator in context_indicators):
+        if any(
+            indicator in prompt.lower() for indicator in context_indicators
+        ):
             score += 1
 
         # Check for domain-specific context
@@ -178,7 +180,14 @@ class ConstitutionalQualityScorecard:
         """Score output format specification (0-3 points)."""
         score = 1.0  # Base score
 
-        format_indicators = ["format", "output", "return", "json", "yaml", "list"]
+        format_indicators = [
+            "format",
+            "output",
+            "return",
+            "json",
+            "yaml",
+            "list",
+        ]
         if any(indicator in prompt.lower() for indicator in format_indicators):
             score += 2
 
@@ -192,8 +201,16 @@ class ConstitutionalQualityScorecard:
         """Score reasoning request (0-3 points)."""
         score = 1.0  # Base score
 
-        reasoning_indicators = ["explain", "justify", "reasoning", "why", "because"]
-        if any(indicator in prompt.lower() for indicator in reasoning_indicators):
+        reasoning_indicators = [
+            "explain",
+            "justify",
+            "reasoning",
+            "why",
+            "because",
+        ]
+        if any(
+            indicator in prompt.lower() for indicator in reasoning_indicators
+        ):
             score += 2
 
         return min(3.0, score)
@@ -203,7 +220,9 @@ class ConstitutionalQualityScorecard:
         score = 3.0  # Start with perfect score
 
         ambiguous_words = ["maybe", "possibly", "might", "could", "perhaps"]
-        ambiguous_count = sum(1 for word in ambiguous_words if word in prompt.lower())
+        ambiguous_count = sum(
+            1 for word in ambiguous_words if word in prompt.lower()
+        )
 
         # Penalize ambiguous language
         score -= min(3.0, ambiguous_count * 0.5)
@@ -214,8 +233,16 @@ class ConstitutionalQualityScorecard:
         """Score library-first compliance (0-3 points)."""
         score = 1.0  # Base score
 
-        library_indicators = ["library", "existing", "use", "leverage", "framework"]
-        if any(indicator in prompt.lower() for indicator in library_indicators):
+        library_indicators = [
+            "library",
+            "existing",
+            "use",
+            "leverage",
+            "framework",
+        ]
+        if any(
+            indicator in prompt.lower() for indicator in library_indicators
+        ):
             score += 2
 
         return min(3.0, score)
@@ -235,11 +262,15 @@ class ConstitutionalQualityScorecard:
         score = 2.0  # Default score
 
         complexity_indicators = ["complex", "sophisticated", "advanced"]
-        if any(indicator in prompt.lower() for indicator in complexity_indicators):
+        if any(
+            indicator in prompt.lower() for indicator in complexity_indicators
+        ):
             score -= 1
 
         simplicity_indicators = ["simple", "clear", "straightforward"]
-        if any(indicator in prompt.lower() for indicator in simplicity_indicators):
+        if any(
+            indicator in prompt.lower() for indicator in simplicity_indicators
+        ):
             score += 1
 
         return min(3.0, max(0.0, score))
@@ -248,8 +279,15 @@ class ConstitutionalQualityScorecard:
         """Score integration testing emphasis (0-3 points)."""
         score = 1.0  # Base score
 
-        integration_indicators = ["integration", "end-to-end", "e2e", "workflow"]
-        if any(indicator in prompt.lower() for indicator in integration_indicators):
+        integration_indicators = [
+            "integration",
+            "end-to-end",
+            "e2e",
+            "workflow",
+        ]
+        if any(
+            indicator in prompt.lower() for indicator in integration_indicators
+        ):
             score += 2
 
         return min(3.0, score)
@@ -259,7 +297,10 @@ class ConstitutionalQualityScorecard:
         score = 1.0  # Base score
 
         justification_indicators = ["because", "since", "reason", "justify"]
-        if any(indicator in prompt.lower() for indicator in justification_indicators):
+        if any(
+            indicator in prompt.lower()
+            for indicator in justification_indicators
+        ):
             score += 2
 
         return min(3.0, score)

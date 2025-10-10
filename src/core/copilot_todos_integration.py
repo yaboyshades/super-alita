@@ -35,7 +35,9 @@ class CopilotTodoItem(BaseModel):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
     due_date: datetime | None = Field(default=None, description="Due date")
-    tags: list[str] = Field(default_factory=list, description="Associated tags")
+    tags: list[str] = Field(
+        default_factory=list, description="Associated tags"
+    )
     context: dict[str, Any] = Field(
         default_factory=dict, description="Additional context"
     )
@@ -59,7 +61,9 @@ class CopilotTodosIntegration(PluginInterface):
         self.config = config or {}
 
         # API configuration
-        self.base_url = self.config.get("copilot_api_base", "http://localhost:3000")
+        self.base_url = self.config.get(
+            "copilot_api_base", "http://localhost:3000"
+        )
         self.api_timeout = self.config.get("api_timeout", 30.0)
         self.sync_interval = self.config.get("sync_interval", 300)  # 5 minutes
 
@@ -94,9 +98,15 @@ class CopilotTodosIntegration(PluginInterface):
         await self._find_kg_task_manager()
 
         # Register for events
-        await self.event_bus.subscribe("task_created", self._handle_task_created)
-        await self.event_bus.subscribe("task_updated", self._handle_task_updated)
-        await self.event_bus.subscribe("task_completed", self._handle_task_completed)
+        await self.event_bus.subscribe(
+            "task_created", self._handle_task_created
+        )
+        await self.event_bus.subscribe(
+            "task_updated", self._handle_task_updated
+        )
+        await self.event_bus.subscribe(
+            "task_completed", self._handle_task_completed
+        )
 
         # Start background sync if enabled
         if self.config.get("auto_sync", True):
@@ -123,7 +133,9 @@ class CopilotTodosIntegration(PluginInterface):
 
     # API Methods
 
-    async def create_todo(self, todo_item: CopilotTodoItem) -> CopilotTodoItem | None:
+    async def create_todo(
+        self, todo_item: CopilotTodoItem
+    ) -> CopilotTodoItem | None:
         """Create a new todo item via Copilot API."""
         try:
             if not self.http_client:
@@ -152,7 +164,9 @@ class CopilotTodosIntegration(PluginInterface):
                 logger.error("HTTP client not initialized")
                 return None
 
-            response = await self.http_client.put(f"/api/todos/{todo_id}", json=updates)
+            response = await self.http_client.put(
+                f"/api/todos/{todo_id}", json=updates
+            )
             response.raise_for_status()
 
             result = response.json()
@@ -176,7 +190,9 @@ class CopilotTodosIntegration(PluginInterface):
             response.raise_for_status()
 
             result = response.json()
-            todos = [CopilotTodoItem(**item) for item in result.get("todos", [])]
+            todos = [
+                CopilotTodoItem(**item) for item in result.get("todos", [])
+            ]
             logger.info(f"Retrieved {len(todos)} Copilot todos")
             return todos
 
@@ -203,7 +219,9 @@ class CopilotTodosIntegration(PluginInterface):
 
     # Synchronization Methods
 
-    async def sync_task_to_todo(self, task: GraphTaskNode) -> CopilotTodoItem | None:
+    async def sync_task_to_todo(
+        self, task: GraphTaskNode
+    ) -> CopilotTodoItem | None:
         """Sync a knowledge graph task to Copilot todo."""
         try:
             # Check if task already has a corresponding todo
@@ -217,7 +235,9 @@ class CopilotTodosIntegration(PluginInterface):
                 "description": task.description,
                 "completed": task.status == TaskStatus.COMPLETED,
                 "priority": self._map_task_priority_to_todo(task.priority),
-                "due_date": task.due_date.isoformat() if task.due_date else None,
+                "due_date": (
+                    task.due_date.isoformat() if task.due_date else None
+                ),
                 "tags": list(task.tags),
                 "context": {
                     **task.context,
@@ -253,7 +273,9 @@ class CopilotTodosIntegration(PluginInterface):
             logger.error(f"Failed to sync task {task.task_id} to todo: {e}")
             return None
 
-    async def sync_todo_to_task(self, todo: CopilotTodoItem) -> GraphTaskNode | None:
+    async def sync_todo_to_task(
+        self, todo: CopilotTodoItem
+    ) -> GraphTaskNode | None:
         """Sync a Copilot todo to knowledge graph task."""
         try:
             if not self.kg_task_manager:
@@ -280,7 +302,9 @@ class CopilotTodosIntegration(PluginInterface):
                     "last_modified_by": "copilot_todos_integration",
                 }
 
-                task = await self.kg_task_manager.update_task(task_id, **task_updates)
+                task = await self.kg_task_manager.update_task(
+                    task_id, **task_updates
+                )
             else:
                 # Create new task
                 from .schemas import TaskType
@@ -371,7 +395,9 @@ class CopilotTodosIntegration(PluginInterface):
             except Exception as e:
                 logger.error(f"Error in periodic sync: {e}")
 
-    async def _enrich_task_context(self, task: GraphTaskNode) -> dict[str, Any]:
+    async def _enrich_task_context(
+        self, task: GraphTaskNode
+    ) -> dict[str, Any]:
         """Enrich task context with knowledge graph information."""
         enrichment = {
             "graph_metrics": {
@@ -478,7 +504,9 @@ async def discover_copilot_endpoints() -> dict[str, str]:
 
             for base_url in base_urls:
                 try:
-                    response = await client.get(f"{base_url}/api/health", timeout=5.0)
+                    response = await client.get(
+                        f"{base_url}/api/health", timeout=5.0
+                    )
                     if response.status_code == 200:
                         endpoints[base_url] = "available"
                         logger.info(f"Found Copilot API at: {base_url}")
@@ -501,7 +529,9 @@ async def test_copilot_api_connection(base_url: str) -> dict[str, Any]:
     }
 
     try:
-        async with httpx.AsyncClient(base_url=base_url, timeout=10.0) as client:
+        async with httpx.AsyncClient(
+            base_url=base_url, timeout=10.0
+        ) as client:
             # Test health endpoint
             health_response = await client.get("/api/health")
             if health_response.status_code == 200:

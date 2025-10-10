@@ -82,8 +82,20 @@ def sample_consensus_request():
 def sample_http_responses():
     """Create sample HTTP responses for mocking."""
     return [
-        {"choices": [{"message": {"content": "The capital of France is Paris."}}]},
-        {"choices": [{"message": {"content": "Paris is the capital city of France."}}]},
+        {
+            "choices": [
+                {"message": {"content": "The capital of France is Paris."}}
+            ]
+        },
+        {
+            "choices": [
+                {
+                    "message": {
+                        "content": "Paris is the capital city of France."
+                    }
+                }
+            ]
+        },
         {"choices": [{"message": {"content": "France's capital is Paris."}}]},
     ]
 
@@ -98,9 +110,13 @@ class TestEnhancedConsensusProvider:
         assert consensus_provider.timeout == 30.0
         assert hasattr(consensus_provider, "_client")
 
-    async def test_consensus_request_validation(self, sample_consensus_request):
+    async def test_consensus_request_validation(
+        self, sample_consensus_request
+    ):
         """Test that ConsensusRequest validates properly."""
-        assert sample_consensus_request.prompt == "What is the capital of France?"
+        assert (
+            sample_consensus_request.prompt == "What is the capital of France?"
+        )
         assert sample_consensus_request.num_samples == 3
         assert sample_consensus_request.method == ConsensusMethod.WEIGHTED_VOTE
         assert 0.0 <= sample_consensus_request.confidence_threshold <= 1.0
@@ -113,7 +129,9 @@ class TestEnhancedConsensusProvider:
         with patch.object(consensus_provider, "_client") as mock_client:
             mock_response = Mock()
             mock_response.json.return_value = {
-                "choices": [{"message": {"content": "Paris is the capital of France."}}]
+                "choices": [
+                    {"message": {"content": "Paris is the capital of France."}}
+                ]
             }
             mock_client.post.return_value = mock_response
 
@@ -126,7 +144,8 @@ class TestEnhancedConsensusProvider:
             assert result.aggregation_method == "weighted_vote"
             assert result.consensus_confidence > 0.0
             assert (
-                len(result.individual_responses) == sample_consensus_request.num_samples
+                len(result.individual_responses)
+                == sample_consensus_request.num_samples
             )
 
     async def test_confidence_based_consensus(
@@ -163,7 +182,9 @@ class TestEnhancedConsensusProvider:
             }
             mock_client.post.return_value = mock_response
 
-            sample_consensus_request.method = ConsensusMethod.SEMANTIC_SIMILARITY
+            sample_consensus_request.method = (
+                ConsensusMethod.SEMANTIC_SIMILARITY
+            )
             result = await consensus_provider.consensus_sampling(
                 sample_consensus_request
             )
@@ -235,7 +256,9 @@ class TestEnhancedConsensusProvider:
         )
 
         assert isinstance(result, ConsensusResponse)
-        assert result.aggregation_method == sample_consensus_request.method.value
+        assert (
+            result.aggregation_method == sample_consensus_request.method.value
+        )
 
     @pytest.mark.parametrize(
         "method",
@@ -247,7 +270,9 @@ class TestEnhancedConsensusProvider:
             ConsensusMethod.ENSEMBLE_RANKING,
         ],
     )
-    async def test_all_consensus_methods_parametrized(self, consensus_provider, method):
+    async def test_all_consensus_methods_parametrized(
+        self, consensus_provider, method
+    ):
         """Test all consensus methods with parametrization."""
         request = ConsensusRequest(
             prompt="Test prompt for all methods",
@@ -258,11 +283,15 @@ class TestEnhancedConsensusProvider:
         with patch.object(consensus_provider, "_client") as mock_client:
             mock_response = Mock()
             mock_response.json.return_value = {
-                "choices": [{"message": {"content": f"Response for {method.value}"}}]
+                "choices": [
+                    {"message": {"content": f"Response for {method.value}"}}
+                ]
             }
             mock_client.post.return_value = mock_response
 
-            result = await consensus_provider.consensus_sampling(request=request)
+            result = await consensus_provider.consensus_sampling(
+                request=request
+            )
 
             assert isinstance(result, ConsensusResponse)
             assert result.aggregation_method == method.value
@@ -295,7 +324,9 @@ class TestEdgeCases:
 
         with patch.object(provider, "_client") as mock_client:
             mock_client.post.side_effect = httpx.HTTPStatusError(
-                "Model not found", request=Mock(), response=Mock(status_code=404)
+                "Model not found",
+                request=Mock(),
+                response=Mock(status_code=404),
             )
 
             with pytest.raises(httpx.HTTPStatusError):
@@ -332,7 +363,9 @@ class TestEdgeCases:
             }
             mock_client.post.return_value = mock_response
 
-            result = await consensus_provider.consensus_sampling(request=request)
+            result = await consensus_provider.consensus_sampling(
+                request=request
+            )
 
             assert isinstance(result, ConsensusResponse)
             assert (
@@ -351,11 +384,15 @@ class TestEdgeCases:
         with patch.object(consensus_provider, "_client") as mock_client:
             mock_response = Mock()
             mock_response.json.return_value = {
-                "choices": [{"message": {"content": "Low confidence response"}}]
+                "choices": [
+                    {"message": {"content": "Low confidence response"}}
+                ]
             }
             mock_client.post.return_value = mock_response
 
-            result = await consensus_provider.consensus_sampling(request=request)
+            result = await consensus_provider.consensus_sampling(
+                request=request
+            )
 
             assert isinstance(result, ConsensusResponse)
             # Should handle cases where no response meets the threshold
@@ -384,11 +421,15 @@ class TestIntegration:
 
         with patch.object(consensus_provider, "_client") as mock_client:
             mock_client.post.side_effect = [
-                Mock(json=lambda: {"choices": [{"message": {"content": resp}}]})
+                Mock(
+                    json=lambda: {"choices": [{"message": {"content": resp}}]}
+                )
                 for resp in responses
             ]
 
-            result = await consensus_provider.consensus_sampling(request=request)
+            result = await consensus_provider.consensus_sampling(
+                request=request
+            )
 
             assert isinstance(result, ConsensusResponse)
             assert result.aggregation_method == "weighted_vote"
@@ -419,7 +460,9 @@ class TestIntegration:
         with patch.object(consensus_provider, "_client") as mock_client:
             mock_response = Mock()
             mock_response.json.return_value = {
-                "choices": [{"message": {"content": "AI is a technology field"}}]
+                "choices": [
+                    {"message": {"content": "AI is a technology field"}}
+                ]
             }
             mock_client.post.return_value = mock_response
 
@@ -456,7 +499,9 @@ class TestPerformance:
             # Create concurrent tasks
             tasks = []
             for prompt, method in requests_data:
-                request = ConsensusRequest(prompt=prompt, num_samples=2, method=method)
+                request = ConsensusRequest(
+                    prompt=prompt, num_samples=2, method=method
+                )
                 task = consensus_provider.consensus_sampling(request=request)
                 tasks.append(task)
 
@@ -486,13 +531,17 @@ class TestPerformance:
             mock_client.post.return_value = mock_response
 
             start_time = time.time()
-            result = await consensus_provider.consensus_sampling(request=request)
+            result = await consensus_provider.consensus_sampling(
+                request=request
+            )
             end_time = time.time()
 
             response_time = end_time - start_time
 
             assert isinstance(result, ConsensusResponse)
-            assert response_time < 5.0  # Should complete within 5 seconds with mocking
+            assert (
+                response_time < 5.0
+            )  # Should complete within 5 seconds with mocking
 
 
 # Pytest configuration and test discovery

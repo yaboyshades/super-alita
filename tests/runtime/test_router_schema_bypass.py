@@ -38,14 +38,17 @@ def test_schema_bypass(monkeypatch):
     config.SETTINGS.schema_enforce = False
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "sb"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "hi", "session_id": "sb"},
     )
     text = resp.text
     config.SETTINGS.schema_enforce = old_enforce
     assert "ok bad arg" in text
     evts = app.state.event_bus.events
     assert any(e["type"] == "SchemaBypass" for e in evts)
-    terminals = [e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}]
+    terminals = [
+        e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}
+    ]
     assert len(terminals) == 1
     assert terminals[0]["type"] == "TaskSucceeded"
     calls = [e for e in evts if e["type"] == "AbilityCalled"]
@@ -84,13 +87,17 @@ def test_schema_bypass(monkeypatch):
     old_enforce = config.SETTINGS.schema_enforce
     config.SETTINGS.schema_enforce = False
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "hi", "session_id": "sb"})
+    resp = client.post(
+        "/v1/chat/stream", json={"message": "hi", "session_id": "sb"}
+    )
     text = resp.text
     config.SETTINGS.schema_enforce = old_enforce
     assert "ok bad arg" in text
     evts = app.state.event_bus.events
     assert any(e["type"] == "SchemaBypass" for e in evts)
-    terminals = [e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}]
+    terminals = [
+        e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}
+    ]
     assert len(terminals) == 1
     assert terminals[0]["type"] == "TaskSucceeded"
     calls = [e for e in evts if e["type"] == "AbilityCalled"]

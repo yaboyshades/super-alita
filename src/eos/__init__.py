@@ -15,7 +15,7 @@ from .state_machine import EOSStateMachine, State, Transition
 __version__ = "0.9.0"
 __all__ = [
     "EOSValidator",
-    "EOSSchema", 
+    "EOSSchema",
     "EOSStateMachine",
     "State",
     "Transition",
@@ -25,8 +25,8 @@ __all__ = [
     "ExpertGating",
     "LadderOperators",
     "Lift",
-    "Decompose", 
+    "Decompose",
     "Synthesize",
     "Descend",
-    "EOSOrchestrator"
+    "EOSOrchestrator",
 ]

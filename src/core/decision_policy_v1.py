@@ -252,7 +252,10 @@ class DecisionPolicyEngine:
 
         for _, capability in self.capabilities.items():
             # Basic text matching (can be enhanced with embeddings)
-            if self.text_similarity(goal.description, capability.description) > 0.3:
+            if (
+                self.text_similarity(goal.description, capability.description)
+                > 0.3
+            ):
                 candidates.append(capability)
 
             # Schema compatibility check
@@ -275,7 +278,9 @@ class DecisionPolicyEngine:
         """Calculate match score using weighted factors"""
 
         schema_fit = self.schema_fitness(goal, capability)
-        text_sim = self.text_similarity(goal.description, capability.description)
+        text_sim = self.text_similarity(
+            goal.description, capability.description
+        )
         precond_sat = self.precondition_satisfaction(capability, ctx)
         historical = self.historical_success(capability)
         risk_penalty = self.risk_penalty(capability, goal.risk_level)
@@ -294,7 +299,9 @@ class DecisionPolicyEngine:
         """Calculate I/O schema compatibility"""
         goal_slots = set(goal.slots.keys())
         cap_inputs = set(
-            capability.schema.get("input_schema", {}).get("properties", {}).keys()
+            capability.schema.get("input_schema", {})
+            .get("properties", {})
+            .keys()
         )
 
         if not cap_inputs:
@@ -305,7 +312,9 @@ class DecisionPolicyEngine:
 
         return overlap / max(1, union)
 
-    def schema_compatible(self, goal: Goal, capability: CapabilityNode) -> bool:
+    def schema_compatible(
+        self, goal: Goal, capability: CapabilityNode
+    ) -> bool:
         """Check basic schema compatibility"""
         return self.schema_fitness(goal, capability) > 0.2
 
@@ -344,7 +353,9 @@ class DecisionPolicyEngine:
 
         return wins / attempts
 
-    def risk_penalty(self, capability: CapabilityNode, risk_level: RiskLevel) -> float:
+    def risk_penalty(
+        self, capability: CapabilityNode, risk_level: RiskLevel
+    ) -> float:
         """Calculate risk penalty based on side effects"""
         if not capability.side_effects:
             return 0.0
@@ -369,7 +380,9 @@ class DecisionPolicyEngine:
         return capability.circuit_open
 
     def pick_strategy(
-        self, scored_candidates: list[tuple[float, CapabilityNode, float]], goal: Goal
+        self,
+        scored_candidates: list[tuple[float, CapabilityNode, float]],
+        goal: Goal,
     ) -> StrategyType:
         """Select execution strategy based on candidates and goal"""
 
@@ -379,7 +392,10 @@ class DecisionPolicyEngine:
         top_utility = scored_candidates[0][0]
 
         # Single dominant candidate
-        if len(scored_candidates) == 1 or top_utility > scored_candidates[1][0] + 0.2:
+        if (
+            len(scored_candidates) == 1
+            or top_utility > scored_candidates[1][0] + 0.2
+        ):
             return StrategyType.SINGLE_BEST
 
         # Check for dependencies
@@ -406,7 +422,9 @@ class DecisionPolicyEngine:
 
         return StrategyType.SINGLE_BEST
 
-    def safe_fallback_plan(self, goal: Goal, budget: Budget | None) -> ExecutionPlan:
+    def safe_fallback_plan(
+        self, goal: Goal, budget: Budget | None
+    ) -> ExecutionPlan:
         """Create safe fallback plan when no good candidates found"""
         plan_steps = [
             {"say": f"I understand you want to: {goal.description}"},
@@ -457,7 +475,9 @@ class DecisionPolicyEngine:
 
         # Update average reward using exponential moving average
         alpha = 0.1
-        stats["avg_reward"] = (1 - alpha) * stats["avg_reward"] + alpha * reward
+        stats["avg_reward"] = (1 - alpha) * stats[
+            "avg_reward"
+        ] + alpha * reward
 
 
 class IntentClassifier:
@@ -505,7 +525,13 @@ class IntentClassifier:
             return IntentType.MODIFY
 
         # Analysis keywords
-        analyze_keywords = ["analyze", "check", "validate", "test", "benchmark"]
+        analyze_keywords = [
+            "analyze",
+            "check",
+            "validate",
+            "test",
+            "benchmark",
+        ]
         if any(keyword in message_lower for keyword in analyze_keywords):
             return IntentType.ANALYZE
 
@@ -594,7 +620,9 @@ class UtilityCalculator:
 
         return utility
 
-    def estimate_success_probability(self, capability: CapabilityNode) -> float:
+    def estimate_success_probability(
+        self, capability: CapabilityNode
+    ) -> float:
         """Estimate success probability from historical data"""
         if capability.attempts == 0:
             return 0.5  # No history, assume 50%
@@ -655,8 +683,12 @@ class PlanBuilder:
             plan = self.build_guardrail_plan(goal)
 
         # Calculate confidence and cost
-        confidence = self.calculate_plan_confidence(scored_candidates, strategy)
-        estimated_cost = self.calculate_estimated_cost(scored_candidates, strategy)
+        confidence = self.calculate_plan_confidence(
+            scored_candidates, strategy
+        )
+        estimated_cost = self.calculate_estimated_cost(
+            scored_candidates, strategy
+        )
 
         return ExecutionPlan(
             run_id=run_id,
@@ -683,7 +715,9 @@ class PlanBuilder:
         ]
 
     def build_sequential_plan(
-        self, scored_candidates: list[tuple[float, CapabilityNode, float]], goal: Goal
+        self,
+        scored_candidates: list[tuple[float, CapabilityNode, float]],
+        goal: Goal,
     ) -> list[dict[str, Any]]:
         """Build sequential execution plan"""
         plan = [{"say": "Starting sequential execution..."}]
@@ -704,7 +738,9 @@ class PlanBuilder:
         return plan
 
     def build_parallel_plan(
-        self, _scored_candidates: list[tuple[float, CapabilityNode, float]], _goal: Goal
+        self,
+        _scored_candidates: list[tuple[float, CapabilityNode, float]],
+        _goal: Goal,
     ) -> list[dict[str, Any]]:
         """Build parallel execution plan"""
         return [
@@ -714,7 +750,9 @@ class PlanBuilder:
         ]
 
     def build_delegate_plan(
-        self, _scored_candidates: list[tuple[float, CapabilityNode, float]], _goal: Goal
+        self,
+        _scored_candidates: list[tuple[float, CapabilityNode, float]],
+        _goal: Goal,
     ) -> list[dict[str, Any]]:
         """Build delegation plan"""
         return [
@@ -781,10 +819,15 @@ class PlanBuilder:
             return scored_candidates[0][1].cost_hint
         else:
             # Sum costs for multiple capabilities
-            return sum(candidate.cost_hint for _, candidate, _ in scored_candidates[:3])
+            return sum(
+                candidate.cost_hint
+                for _, candidate, _ in scored_candidates[:3]
+            )
 
     def identify_risk_factors(
-        self, scored_candidates: list[tuple[float, CapabilityNode, float]], goal: Goal
+        self,
+        scored_candidates: list[tuple[float, CapabilityNode, float]],
+        goal: Goal,
     ) -> list[str]:
         """Identify potential risk factors"""
         risk_factors = []
@@ -901,7 +944,11 @@ def create_example_plan_for_bootstrap() -> dict[str, Any]:
     """Create example plan DSL for the bootstrap scenario"""
     return {
         "run_id": "r_bootstrap_example",
-        "budget": {"max_steps": 20, "max_tool_calls": 10, "timeout_ms": 120000},
+        "budget": {
+            "max_steps": 20,
+            "max_tool_calls": 10,
+            "timeout_ms": 120000,
+        },
         "plan": [
             {"say": "Starting repo sync…"},
             {
@@ -921,13 +968,20 @@ def create_example_plan_for_bootstrap() -> dict[str, Any]:
                 "tool": "deps.install",
                 "args": {
                     "cwd": "~/super-alita",
-                    "requirements": ["requirements.txt", "requirements-test.txt"],
+                    "requirements": [
+                        "requirements.txt",
+                        "requirements-test.txt",
+                    ],
                 },
                 "assign": "deps",
             },
             {
                 "tool": "runtime.start",
-                "args": {"kind": "uvicorn", "cwd": "~/super-alita", "port": 8080},
+                "args": {
+                    "kind": "uvicorn",
+                    "cwd": "~/super-alita",
+                    "port": 8080,
+                },
                 "assign": "srv",
             },
             {
@@ -942,7 +996,10 @@ def create_example_plan_for_bootstrap() -> dict[str, Any]:
             {
                 "else": [
                     {"say": "Health check failed; dumping logs…"},
-                    {"tool": "runtime.logs", "args": {"id": "{{srv.id}}", "tail": 200}},
+                    {
+                        "tool": "runtime.logs",
+                        "args": {"id": "{{srv.id}}", "tail": 200},
+                    },
                 ]
             },
             {"say": "Done."},

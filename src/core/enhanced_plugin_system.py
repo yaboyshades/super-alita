@@ -7,7 +7,10 @@ import contextlib
 import logging
 from typing import Any
 
-from src.core.plugin_loader import load_plugin_manifest, load_plugins_from_manifest
+from src.core.plugin_loader import (
+    load_plugin_manifest,
+    load_plugins_from_manifest,
+)
 from src.core.plugin_registry import register_plugin
 
 logger = logging.getLogger(__name__)
@@ -39,7 +42,9 @@ async def initialize_enhanced_plugin_system(app: Any) -> dict[str, Any]:
         # Get event bus from app state
         event_bus = getattr(app.state, "event_bus", None)
         if not event_bus:
-            logger.error("Event bus not available - plugin initialization failed")
+            logger.error(
+                "Event bus not available - plugin initialization failed"
+            )
             return {}
 
         # Load plugins using manifest
@@ -91,7 +96,9 @@ async def _fallback_to_manual_plugins(app: Any) -> dict[str, Any]:
     try:
         # Import existing plugins (keeping the current behavior)
         with contextlib.suppress(Exception):
-            from src.core.copilot_snippet_optimizer import SnippetOptimizedCopilotPlugin
+            from src.core.copilot_snippet_optimizer import (
+                SnippetOptimizedCopilotPlugin,
+            )
             from src.plugins.autogen_creator_plugin import AutogenCreatorPlugin
             from src.plugins.deepcode_generator_plugin import (
                 DeepCodeGeneratorBridgePlugin,
@@ -101,7 +108,9 @@ async def _fallback_to_manual_plugins(app: Any) -> dict[str, Any]:
             )
             from src.plugins.mcp_adapter_plugin import MCPAdapterPlugin
             from src.plugins.native_deepcode_plugin import NativeDeepCodePlugin
-            from src.plugins.native_perplexica_plugin import NativePerplexicaPlugin
+            from src.plugins.native_perplexica_plugin import (
+                NativePerplexicaPlugin,
+            )
             from src.plugins.telemetry_pipeline import TelemetryPipelinePlugin
 
             # Create plugin instances
@@ -130,13 +139,17 @@ async def _fallback_to_manual_plugins(app: Any) -> dict[str, Any]:
                     logger.info(f"✅ Fallback loaded plugin: {name}")
 
                 except Exception as e:
-                    logger.error(f"❌ Failed to load fallback plugin {name}: {e}")
+                    logger.error(
+                        f"❌ Failed to load fallback plugin {name}: {e}"
+                    )
 
             # Store in app state
             app.state.plugins = list(plugins.values())
             app.state.plugin_names = list(plugins.keys())
 
-            logger.info(f"🔄 Fallback plugin loading completed: {len(plugins)} plugins")
+            logger.info(
+                f"🔄 Fallback plugin loading completed: {len(plugins)} plugins"
+            )
 
     except Exception as e:
         logger.error(f"❌ Fallback plugin loading failed: {e}")
@@ -157,7 +170,9 @@ async def _expose_plugin_tools(app: Any, plugins: dict[str, Any]) -> None:
     try:
         ability_reg = getattr(app.state, "ability_registry", None)
         if not ability_reg:
-            logger.warning("Ability registry not available - plugin tools not exposed")
+            logger.warning(
+                "Ability registry not available - plugin tools not exposed"
+            )
             return
 
         tool_count = 0
@@ -179,7 +194,9 @@ async def _expose_plugin_tools(app: Any, plugins: dict[str, Any]) -> None:
                         )
 
             except Exception as e:
-                logger.error(f"❌ Failed to expose tools from plugin {name}: {e}")
+                logger.error(
+                    f"❌ Failed to expose tools from plugin {name}: {e}"
+                )
 
         if tool_count > 0:
             logger.info(f"🛠️  Total plugin tools exposed: {tool_count}")
@@ -251,7 +268,9 @@ def get_plugin_health_status(app: Any) -> dict[str, Any]:
         }
 
         for i, plugin in enumerate(plugins):
-            plugin_name = plugin_names[i] if i < len(plugin_names) else f"plugin_{i}"
+            plugin_name = (
+                plugin_names[i] if i < len(plugin_names) else f"plugin_{i}"
+            )
 
             # Try to get plugin status
             try:
@@ -278,4 +297,9 @@ def get_plugin_health_status(app: Any) -> dict[str, Any]:
         return health_info
 
     except Exception as e:
-        return {"plugin_count": 0, "plugins": {}, "status": "error", "error": str(e)}
+        return {
+            "plugin_count": 0,
+            "plugins": {},
+            "status": "error",
+            "error": str(e),
+        }

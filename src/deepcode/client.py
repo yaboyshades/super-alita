@@ -74,7 +74,9 @@ class DeepCodeHTTPClient:
         with contextlib.suppress(Exception):  # type: ignore[name-defined]
             await self._client.aclose()
 
-    async def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+    async def _post(
+        self, path: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         if not self._cfg.enabled:
             raise DeepCodeHTTPError(
                 "DeepCode HTTP client not enabled (missing DEEPCODE_API_URL)"
@@ -91,7 +93,9 @@ class DeepCodeHTTPClient:
         except Exception as e:  # pragma: no cover - network failure
             raise DeepCodeHTTPError(f"Request failed: {e}") from e
         if resp.status_code >= 400:
-            raise DeepCodeHTTPError(f"HTTP {resp.status_code}: {resp.text[:200]}")
+            raise DeepCodeHTTPError(
+                f"HTTP {resp.status_code}: {resp.text[:200]}"
+            )
         try:
             return resp.json()
         except Exception as e:  # pragma: no cover - malformed JSON
@@ -107,7 +111,9 @@ class DeepCodeHTTPClient:
     async def generate_code(
         self, plan: dict[str, Any], references: dict[str, Any]
     ) -> dict[str, Any]:
-        return await self._post("/generate", {"plan": plan, "references": references})
+        return await self._post(
+            "/generate", {"plan": plan, "references": references}
+        )
 
     async def validate(self, implementation: dict[str, Any]) -> dict[str, Any]:
         return await self._post("/validate", implementation)

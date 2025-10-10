@@ -20,8 +20,10 @@ AtomId = str
 class VectorIndex:
     """Placeholder for a semantic vector index that can find similar atoms."""
 
-    def find_similar(self, query: str, top_k: int = 3) -> list[tuple[AtomId, float]]:
-        # In a real implementation, this would return a list of 
+    def find_similar(
+        self, query: str, top_k: int = 3
+    ) -> list[tuple[AtomId, float]]:
+        # In a real implementation, this would return a list of
         # (atom_id, similarity_score).
         # Here we return an empty list by default; in tests or integration,
         # this should be overridden.
@@ -59,7 +61,9 @@ class GraphStore:
         """Get atoms that can follow the given atom (direct neighbors)."""
         return list(self.adjacency.get(atom_id, []))
 
-    def is_contract_compatible(self, from_atom: AtomId, to_atom: AtomId) -> bool:
+    def is_contract_compatible(
+        self, from_atom: AtomId, to_atom: AtomId
+    ) -> bool:
         """Check if output of `from_atom` satisfies input of `to_atom`."""
         out_fields = self.output_contract.get(from_atom, set())
         in_fields = self.input_contract.get(to_atom, set())
@@ -71,7 +75,9 @@ class GraphStore:
 @dataclass
 class PlanStep:
     atom_id: AtomId
-    description: str | None = None  # optional human-readable description of the atom
+    description: str | None = (
+        None  # optional human-readable description of the atom
+    )
 
 
 @dataclass
@@ -140,7 +146,9 @@ class Planner:
         if not candidates:
             # No relevant atoms found; return an empty plan event
             empty_plan = Plan(rationale="No relevant atoms found for query.")
-            logger.warning("No candidates from vector index for query", query=query)
+            logger.warning(
+                "No candidates from vector index for query", query=query
+            )
             return PlanProposedEvent(query=query, plan=empty_plan)
         # Sort candidates by highest similarity score first
         candidates.sort(key=lambda x: x[1], reverse=True)
@@ -151,9 +159,13 @@ class Planner:
         for atom_id, score in candidates:
             # Start a new plan with this atom as the root
             plan = Plan()
-            plan.add_step(atom_id, description=f"Root atom (similarity={score:.2f})")
+            plan.add_step(
+                atom_id, description=f"Root atom (similarity={score:.2f})"
+            )
             logger.debug(
-                "Trying atom as plan root", atom_id=atom_id, similarity=f"{score:.2f}"
+                "Trying atom as plan root",
+                atom_id=atom_id,
+                similarity=f"{score:.2f}",
             )
             # Expand the plan using graph connections (up to max_steps)
             self._expand_plan(plan)
@@ -161,11 +173,11 @@ class Planner:
                 continue  # this candidate couldn't even form a valid single-step plan
             # We got a plan (at least the root). Record rationale and select it.
             chosen_plan = plan
-            rationale = f"Selected '{atom_id}' as starting atom (score {score:.2f})."
+            rationale = (
+                f"Selected '{atom_id}' as starting atom (score {score:.2f})."
+            )
             if len(plan) > 1:
-                rationale += (
-                    f" Expanded with {len(plan)-1} further step(s) via graph links."
-                )
+                rationale += f" Expanded with {len(plan)-1} further step(s) via graph links."
             else:
                 rationale += " No further expansion was possible."
             logger.info(
@@ -181,7 +193,9 @@ class Planner:
                 rationale="No valid plan could be composed from candidates."
             )
             logger.warning("Planner failed to compose a plan", query=query)
-            self._add_to_cache(query, failed_plan)  # cache the failure (optional)
+            self._add_to_cache(
+                query, failed_plan
+            )  # cache the failure (optional)
             return PlanProposedEvent(query=query, plan=failed_plan)
 
         # Attach the rationale to the chosen plan
@@ -199,12 +213,16 @@ class Planner:
             current_atom = plan.steps[-1].atom_id
             neighbors = self.graph_store.get_neighbors(current_atom)
             if not neighbors:
-                logger.debug("No neighbors to expand from atom", atom_id=current_atom)
+                logger.debug(
+                    "No neighbors to expand from atom", atom_id=current_atom
+                )
                 break
             next_atom = None
             # Pick the first neighbor that has contract compatibility
             for candidate in neighbors:
-                if self.graph_store.is_contract_compatible(current_atom, candidate):
+                if self.graph_store.is_contract_compatible(
+                    current_atom, candidate
+                ):
                     next_atom = candidate
                     break
             if not next_atom:
@@ -214,9 +232,13 @@ class Planner:
                 )
                 break
             # Add the compatible neighbor to the plan and continue expanding
-            plan.add_step(next_atom, description="Chained from " + current_atom)
+            plan.add_step(
+                next_atom, description="Chained from " + current_atom
+            )
             logger.debug(
-                "Added atom to plan chain", from_atom=current_atom, to_atom=next_atom
+                "Added atom to plan chain",
+                from_atom=current_atom,
+                to_atom=next_atom,
             )
             # Loop will continue until max_steps or no more expansion possible
 

@@ -211,7 +211,9 @@ class ConstitutionalScorer:
         )
 
         # Article VI: Counterfactual Justification
-        article_scores["Article VI"] = self._score_counterfactual_code(code, violations)
+        article_scores["Article VI"] = self._score_counterfactual_code(
+            code, violations
+        )
 
         overall_score = self._calculate_weighted_score(article_scores)
         recommendations = self._generate_recommendations(violations)
@@ -252,7 +254,9 @@ class ConstitutionalScorer:
             "available",
         ]
 
-        library_mentions = sum(1 for word in library_indicators if word in spec_lower)
+        library_mentions = sum(
+            1 for word in library_indicators if word in spec_lower
+        )
         if library_mentions == 0:
             score -= 0.4
             violations.append(
@@ -266,9 +270,16 @@ class ConstitutionalScorer:
             )
 
         # Check for custom implementation warnings
-        custom_indicators = ["build from scratch", "custom", "new implementation"]
+        custom_indicators = [
+            "build from scratch",
+            "custom",
+            "new implementation",
+        ]
         if any(phrase in spec_lower for phrase in custom_indicators):
-            if "justification" not in spec_lower and "because" not in spec_lower:
+            if (
+                "justification" not in spec_lower
+                and "because" not in spec_lower
+            ):
                 score -= 0.3
                 violations.append(
                     ConstitutionalViolation(
@@ -302,7 +313,9 @@ class ConstitutionalScorer:
             "validation",
         ]
 
-        test_mentions = sum(1 for word in test_indicators if word in spec_lower)
+        test_mentions = sum(
+            1 for word in test_indicators if word in spec_lower
+        )
         if test_mentions == 0:
             score -= 0.5
             violations.append(
@@ -365,7 +378,12 @@ class ConstitutionalScorer:
             )
 
         # Check for simplicity mentions
-        simplicity_indicators = ["simple", "clear", "straightforward", "minimal"]
+        simplicity_indicators = [
+            "simple",
+            "clear",
+            "straightforward",
+            "minimal",
+        ]
         if not any(word in spec_lower for word in simplicity_indicators):
             score -= 0.2
             violations.append(
@@ -436,7 +454,9 @@ class ConstitutionalScorer:
         ]
 
         ambiguous_count = sum(
-            1 for phrase in ambiguous_phrases if phrase in specification.lower()
+            1
+            for phrase in ambiguous_phrases
+            if phrase in specification.lower()
         )
         if ambiguous_count > 0:
             score -= min(0.5, ambiguous_count * 0.1)
@@ -462,7 +482,9 @@ class ConstitutionalScorer:
         ]
 
         structure_count = sum(
-            1 for phrase in structure_indicators if phrase in specification.lower()
+            1
+            for phrase in structure_indicators
+            if phrase in specification.lower()
         )
         if structure_count == 0:
             score -= 0.3
@@ -517,7 +539,10 @@ class ConstitutionalScorer:
         return max(0.0, score)
 
     def _score_library_first_code(
-        self, code: str, parsed_ast: ast.AST, violations: list[ConstitutionalViolation]
+        self,
+        code: str,
+        parsed_ast: ast.AST,
+        violations: list[ConstitutionalViolation],
     ) -> float:
         """Score Article I: Library-First Development for code."""
         score = 1.0
@@ -526,7 +551,7 @@ class ConstitutionalScorer:
         imports = [
             node
             for node in ast.walk(parsed_ast)
-            if isinstance(node, (ast.Import, ast.ImportFrom))
+            if isinstance(node, ast.Import | ast.ImportFrom)
         ]
 
         if not imports:
@@ -543,14 +568,21 @@ class ConstitutionalScorer:
 
         # Check for custom implementations of common functionality
         function_defs = [
-            node for node in ast.walk(parsed_ast) if isinstance(node, ast.FunctionDef)
+            node
+            for node in ast.walk(parsed_ast)
+            if isinstance(node, ast.FunctionDef)
         ]
 
         for func in function_defs:
             func_name = func.name.lower()
             if any(
                 pattern in func_name
-                for pattern in ["json_parse", "http_request", "hash_", "encrypt"]
+                for pattern in [
+                    "json_parse",
+                    "http_request",
+                    "hash_",
+                    "encrypt",
+                ]
             ):
                 score -= 0.2
                 violations.append(
@@ -596,18 +628,25 @@ class ConstitutionalScorer:
         return max(0.0, score)
 
     def _score_simplicity_code(
-        self, code: str, parsed_ast: ast.AST, violations: list[ConstitutionalViolation]
+        self,
+        code: str,
+        parsed_ast: ast.AST,
+        violations: list[ConstitutionalViolation],
     ) -> float:
         """Score Article III: Simplicity Gate for code."""
         score = 1.0
 
         # Check function length (max 50 lines)
         function_defs = [
-            node for node in ast.walk(parsed_ast) if isinstance(node, ast.FunctionDef)
+            node
+            for node in ast.walk(parsed_ast)
+            if isinstance(node, ast.FunctionDef)
         ]
 
         for func in function_defs:
-            func_lines = func.end_lineno - func.lineno + 1 if func.end_lineno else 1
+            func_lines = (
+                func.end_lineno - func.lineno + 1 if func.end_lineno else 1
+            )
             if func_lines > 50:
                 score -= 0.3
                 violations.append(
@@ -654,8 +693,12 @@ class ConstitutionalScorer:
             "test_system",
         ]
 
-        if not any(pattern in code.lower() for pattern in integration_patterns):
-            if file_path and not ("test_" in file_path or "_test.py" in file_path):
+        if not any(
+            pattern in code.lower() for pattern in integration_patterns
+        ):
+            if file_path and not (
+                "test_" in file_path or "_test.py" in file_path
+            ):
                 score -= 0.4
                 violations.append(
                     ConstitutionalViolation(
@@ -670,14 +713,19 @@ class ConstitutionalScorer:
         return max(0.0, score)
 
     def _score_clarity_code(
-        self, code: str, parsed_ast: ast.AST, violations: list[ConstitutionalViolation]
+        self,
+        code: str,
+        parsed_ast: ast.AST,
+        violations: list[ConstitutionalViolation],
     ) -> float:
         """Score Article V: Clarity and Unambiguity for code."""
         score = 1.0
 
         # Check for docstrings
         function_defs = [
-            node for node in ast.walk(parsed_ast) if isinstance(node, ast.FunctionDef)
+            node
+            for node in ast.walk(parsed_ast)
+            if isinstance(node, ast.FunctionDef)
         ]
 
         functions_without_docstrings = 0
@@ -728,7 +776,9 @@ class ConstitutionalScorer:
             "chosen because",
         ]
 
-        if not any(pattern in code.lower() for pattern in justification_patterns):
+        if not any(
+            pattern in code.lower() for pattern in justification_patterns
+        ):
             score -= 0.3
             violations.append(
                 ConstitutionalViolation(
@@ -747,7 +797,9 @@ class ConstitutionalScorer:
         max_depth = depth
 
         for child in ast.iter_child_nodes(node):
-            if isinstance(child, (ast.If, ast.For, ast.While, ast.With, ast.Try)):
+            if isinstance(
+                child, ast.If | ast.For | ast.While | ast.With | ast.Try
+            ):
                 child_depth = self._calculate_max_nesting(child, depth + 1)
                 max_depth = max(max_depth, child_depth)
             else:
@@ -756,7 +808,9 @@ class ConstitutionalScorer:
 
         return max_depth
 
-    def _calculate_weighted_score(self, article_scores: dict[str, float]) -> float:
+    def _calculate_weighted_score(
+        self, article_scores: dict[str, float]
+    ) -> float:
         """Calculate weighted overall score from article scores."""
         total_weight = sum(self.article_weights.values())
         weighted_sum = sum(
@@ -786,7 +840,9 @@ class ConstitutionalScorer:
             else:
                 violation = article_violations[0]
                 if violation.suggestion:
-                    recommendations.append(f"{article}: {violation.suggestion}")
+                    recommendations.append(
+                        f"{article}: {violation.suggestion}"
+                    )
 
         # Add general recommendations
         if len(violations) > 5:

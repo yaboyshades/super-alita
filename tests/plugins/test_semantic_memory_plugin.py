@@ -61,7 +61,9 @@ class TestSemanticMemoryPlugin:
             pytest.skip("SemanticMemoryPlugin not available")
 
     @pytest.mark.asyncio
-    @patch("src.plugins.semantic_memory_plugin.google.generativeai.GenerativeModel")
+    @patch(
+        "src.plugins.semantic_memory_plugin.google.generativeai.GenerativeModel"
+    )
     async def test_embedding_generation(
         self, mock_genai, mock_event_bus, mock_store, mock_config
     ):
@@ -72,7 +74,9 @@ class TestSemanticMemoryPlugin:
             # Mock the generative AI model
             mock_model = Mock()
             mock_genai.return_value = mock_model
-            mock_model.embed_content.return_value = {"embedding": [0.1, 0.2, 0.3]}
+            mock_model.embed_content.return_value = {
+                "embedding": [0.1, 0.2, 0.3]
+            }
 
             plugin = SemanticMemoryPlugin()
             await plugin.setup(mock_event_bus, mock_store, mock_config)
@@ -85,7 +89,9 @@ class TestSemanticMemoryPlugin:
             pytest.skip("SemanticMemoryPlugin not available")
 
     @pytest.mark.asyncio
-    async def test_memory_storage(self, mock_event_bus, mock_store, mock_config):
+    async def test_memory_storage(
+        self, mock_event_bus, mock_store, mock_config
+    ):
         """Test memory storage functionality."""
         try:
             from src.plugins.semantic_memory_plugin import SemanticMemoryPlugin
@@ -97,7 +103,9 @@ class TestSemanticMemoryPlugin:
             mock_store.upsert = AsyncMock()
 
             # Test memory storage
-            await plugin.store_memory("test_id", "test content", ["tag1", "tag2"])
+            await plugin.store_memory(
+                "test_id", "test content", ["tag1", "tag2"]
+            )
 
             # Verify store was called
             mock_store.upsert.assert_called_once()
@@ -106,7 +114,9 @@ class TestSemanticMemoryPlugin:
             pytest.skip("SemanticMemoryPlugin not available")
 
     @pytest.mark.asyncio
-    async def test_memory_retrieval(self, mock_event_bus, mock_store, mock_config):
+    async def test_memory_retrieval(
+        self, mock_event_bus, mock_store, mock_config
+    ):
         """Test memory retrieval functionality."""
         try:
             from src.plugins.semantic_memory_plugin import SemanticMemoryPlugin
@@ -151,7 +161,9 @@ class TestSemanticMemoryFallback:
         assert all(0 <= x <= 1 for x in embedding)
 
     @pytest.mark.asyncio
-    async def test_memory_operations_without_plugin(self, mock_event_bus, mock_store):
+    async def test_memory_operations_without_plugin(
+        self, mock_event_bus, mock_store
+    ):
         """Test that memory operations can work without the specific plugin."""
         # This tests the interface can be mocked for development
 
@@ -180,7 +192,9 @@ class TestSemanticMemoryFallback:
         plugin = MockMemoryPlugin()
 
         # Test storage
-        await plugin.store_memory("test1", "Python programming", ["code", "tutorial"])
+        await plugin.store_memory(
+            "test1", "Python programming", ["code", "tutorial"]
+        )
         assert "test1" in plugin.memories
 
         # Test retrieval

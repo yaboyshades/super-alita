@@ -107,13 +107,19 @@ class EnergyCalculator:
         )
 
         # 4. Calculate complexity score
-        metrics.complexity_score = self._calculate_complexity_score(task, reasoning)
+        metrics.complexity_score = self._calculate_complexity_score(
+            task, reasoning
+        )
 
         # 5. Calculate dependency score
-        metrics.dependency_score = self._calculate_dependency_score(task, reasoning)
+        metrics.dependency_score = self._calculate_dependency_score(
+            task, reasoning
+        )
 
         # 6. Calculate recency bonus
-        metrics.recency_bonus = self._calculate_recency_bonus(task, context, reasoning)
+        metrics.recency_bonus = self._calculate_recency_bonus(
+            task, context, reasoning
+        )
 
         # 7. Calculate context relevance
         metrics.context_relevance = self._calculate_context_relevance(
@@ -134,7 +140,9 @@ class EnergyCalculator:
             reasoning=reasoning,
         )
 
-    def _calculate_effort_score(self, task: Task, reasoning: list[str]) -> float:
+    def _calculate_effort_score(
+        self, task: Task, reasoning: list[str]
+    ) -> float:
         """Calculate effort score based on task characteristics."""
         effort = 0.5  # Default medium effort
 
@@ -174,10 +182,14 @@ class EnergyCalculator:
 
         if high_count > low_count:
             effort = min(0.9, 0.5 + (high_count - low_count) * 0.1)
-            reasoning.append(f"High effort task detected ({high_count} indicators)")
+            reasoning.append(
+                f"High effort task detected ({high_count} indicators)"
+            )
         elif low_count > high_count:
             effort = max(0.1, 0.5 - (low_count - high_count) * 0.1)
-            reasoning.append(f"Low effort task detected ({low_count} indicators)")
+            reasoning.append(
+                f"Low effort task detected ({low_count} indicators)"
+            )
 
         return effort
 
@@ -208,7 +220,9 @@ class EnergyCalculator:
                 return 0.5
 
             # Calculate weighted success rate
-            success_rates = [pattern.success_rate for pattern in result.patterns]
+            success_rates = [
+                pattern.success_rate for pattern in result.patterns
+            ]
             avg_success = sum(success_rates) / len(success_rates)
 
             reasoning.append(
@@ -217,7 +231,9 @@ class EnergyCalculator:
             return max(0.1, min(0.95, avg_success))
 
         except Exception as e:
-            reasoning.append(f"Error calculating success probability: {str(e)}")
+            reasoning.append(
+                f"Error calculating success probability: {str(e)}"
+            )
             return 0.5  # Safe default
 
     def _calculate_pattern_confidence(
@@ -246,21 +262,25 @@ class EnergyCalculator:
 
             # Calculate confidence based on pattern relevance and count
             max_relevance = max(
-                result.relevance_scores.get(p.pattern_name, 0.0) for p in patterns
+                result.relevance_scores.get(p.pattern_name, 0.0)
+                for p in patterns
             )
             # More patterns = higher confidence, diminishing returns
             pattern_count_factor = min(1.0, len(patterns) / 3.0)
 
             confidence = (max_relevance + pattern_count_factor) / 2.0
             reasoning.append(
-                f"Pattern confidence {confidence:.2f} from " f"{len(patterns)} patterns"
+                f"Pattern confidence {confidence:.2f} from "
+                f"{len(patterns)} patterns"
             )
             return confidence
 
         except Exception:
             return 0.0
 
-    def _calculate_complexity_score(self, task: Task, reasoning: list[str]) -> float:
+    def _calculate_complexity_score(
+        self, task: Task, reasoning: list[str]
+    ) -> float:
         """Calculate task complexity score."""
         complexity = 0.5  # Default medium complexity
 
@@ -287,11 +307,15 @@ class EnergyCalculator:
         complex_count = sum(1 for kw in complex_keywords if kw in desc_lower)
         if complex_count > 0:
             complexity += min(0.3, complex_count * 0.1)
-            reasoning.append(f"Complexity increased by {complex_count} indicators")
+            reasoning.append(
+                f"Complexity increased by {complex_count} indicators"
+            )
 
         return min(1.0, complexity)
 
-    def _calculate_dependency_score(self, task: Task, reasoning: list[str]) -> float:
+    def _calculate_dependency_score(
+        self, task: Task, reasoning: list[str]
+    ) -> float:
         """Calculate dependency complexity score."""
         # For now, simple dependency count
         dependency_count = (
@@ -354,7 +378,9 @@ class EnergyCalculator:
                     max_bonus = max(max_bonus, bonus)
 
             if max_bonus > 0.1:
-                reasoning.append(f"Recency bonus {max_bonus:.2f} from recent successes")
+                reasoning.append(
+                    f"Recency bonus {max_bonus:.2f} from recent successes"
+                )
 
             return max_bonus
 
@@ -379,11 +405,15 @@ class EnergyCalculator:
         context_keywords = context.get("keywords", [])
         if context_keywords:
             desc_lower = task.description.lower()
-            matches = sum(1 for kw in context_keywords if kw.lower() in desc_lower)
+            matches = sum(
+                1 for kw in context_keywords if kw.lower() in desc_lower
+            )
             if matches > 0:
                 keyword_bonus = min(0.2, matches * 0.05)
                 relevance += keyword_bonus
-                reasoning.append(f"Keyword relevance bonus: {keyword_bonus:.2f}")
+                reasoning.append(
+                    f"Keyword relevance bonus: {keyword_bonus:.2f}"
+                )
 
         return min(1.0, relevance)
 
@@ -397,7 +427,10 @@ class EnergyCalculator:
             for kw in ["code", "program", "function", "class", "method"]
         ):
             return "software_development"
-        elif any(kw in desc_lower for kw in ["research", "analyze", "study", "paper"]):
+        elif any(
+            kw in desc_lower
+            for kw in ["research", "analyze", "study", "paper"]
+        ):
             return "research"
         else:
             return "general"
@@ -428,13 +461,18 @@ class EnergyCalculator:
         dependency_penalty = metrics.dependency_score * 0.1
 
         energy = (
-            base_energy - success_reduction - recency_reduction + dependency_penalty
+            base_energy
+            - success_reduction
+            - recency_reduction
+            + dependency_penalty
         )
 
         # Normalize to 0-1 range
         energy = max(0.0, min(1.0, energy))
 
-        reasoning.append(f"Final energy: {energy:.3f} (lower = higher priority)")
+        reasoning.append(
+            f"Final energy: {energy:.3f} (lower = higher priority)"
+        )
         return energy
 
     def _calculate_confidence(self, metrics: EnergyMetrics) -> float:

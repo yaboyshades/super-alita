@@ -32,7 +32,9 @@ class TargetFunction:
     lipschitz_limit: float = 10.0  # Max Lipschitz constant
 
     # Input Generation Strategy
-    input_generator: str = "default"  # Strategy name for generating test inputs
+    input_generator: str = (
+        "default"  # Strategy name for generating test inputs
+    )
     input_config: dict[str, Any] = field(default_factory=dict)
 
     # Metadata
@@ -45,14 +47,20 @@ class TargetFunction:
         if self.min_input_size <= 0:
             raise ValueError("min_input_size must be positive")
         if self.max_input_size <= self.min_input_size:
-            raise ValueError("max_input_size must be greater than min_input_size")
+            raise ValueError(
+                "max_input_size must be greater than min_input_size"
+            )
         if self.sample_count < 3:
             raise ValueError("sample_count must be at least 3")
         if self.warmup_runs < 1:
             raise ValueError("warmup_runs must be at least 1")
         if any(
             limit <= 0
-            for limit in [self.slope_limit, self.curvature_limit, self.lipschitz_limit]
+            for limit in [
+                self.slope_limit,
+                self.curvature_limit,
+                self.lipschitz_limit,
+            ]
         ):
             raise ValueError("All threshold limits must be positive")
 
@@ -70,9 +78,15 @@ class RuntimeSampleSet:
     input_sizes: list[int] = field(
         default_factory=list
     )  # Input sizes tested (strictly increasing)
-    wall_times: list[float] = field(default_factory=list)  # Wall clock times in seconds
-    cpu_times: list[float] = field(default_factory=list)  # CPU times in seconds
-    memory_peaks: list[int] = field(default_factory=list)  # Peak memory usage in bytes
+    wall_times: list[float] = field(
+        default_factory=list
+    )  # Wall clock times in seconds
+    cpu_times: list[float] = field(
+        default_factory=list
+    )  # CPU times in seconds
+    memory_peaks: list[int] = field(
+        default_factory=list
+    )  # Peak memory usage in bytes
     memory_deltas: list[int] = field(
         default_factory=list
     )  # Memory allocated during execution
@@ -102,7 +116,9 @@ class RuntimeSampleSet:
             len(self.memory_deltas),
         ]
         if len(set(lengths)) > 1:
-            raise ValueError("All measurement arrays must have the same length")
+            raise ValueError(
+                "All measurement arrays must have the same length"
+            )
 
         # Check input sizes are strictly increasing
         if not all(
@@ -197,12 +213,16 @@ class DerivativeCertificate:
     certificate_grade: str = "A"  # "A", "B", or "F"
 
     # Analysis Quality
-    fitting_method: str = "cubic_spline"  # "cubic_spline", "savgol_fallback", etc.
+    fitting_method: str = (
+        "cubic_spline"  # "cubic_spline", "savgol_fallback", etc.
+    )
     fitting_quality_score: float = 0.0  # R² or similar goodness-of-fit
     noise_handling_applied: bool = False  # Whether noise mitigation was used
 
     # Historical Context
-    baseline_comparison: str | None = None  # Previous certificate ID for comparison
+    baseline_comparison: str | None = (
+        None  # Previous certificate ID for comparison
+    )
     trend_analysis: dict[str, Any] = field(
         default_factory=dict
     )  # Trend indicators vs baseline
@@ -215,7 +235,11 @@ class DerivativeCertificate:
         # Validate threshold limits
         if any(
             limit <= 0
-            for limit in [self.slope_limit, self.curvature_limit, self.lipschitz_limit]
+            for limit in [
+                self.slope_limit,
+                self.curvature_limit,
+                self.lipschitz_limit,
+            ]
         ):
             raise ValueError("All threshold limits must be positive")
 
@@ -239,7 +263,9 @@ class DerivativeCertificate:
             "build_id": self.build_id,
             "analysis_timestamp": self.analysis_timestamp.isoformat(),
             "certificate_version": self.certificate_version,
-            "sample_set": self._sample_set_to_dict() if self.sample_set else None,
+            "sample_set": (
+                self._sample_set_to_dict() if self.sample_set else None
+            ),
             "fitted_curve_params": self.fitted_curve_params,
             "first_derivatives": self.first_derivatives,
             "second_derivatives": self.second_derivatives,
@@ -307,17 +333,23 @@ class AlertEvent:
     certificate_id: str = ""  # Reference to full certificate
 
     # Violation Details
-    threshold_name: str = ""  # "slope_limit", "curvature_limit", "lipschitz_limit"
+    threshold_name: str = (
+        ""  # "slope_limit", "curvature_limit", "lipschitz_limit"
+    )
     threshold_value: float = 0.0  # Configured limit that was exceeded
     actual_value: float = 0.0  # Measured value that exceeded limit
     violation_magnitude: float = 0.0  # How much the limit was exceeded (ratio)
 
     # Location Information
-    input_size_at_violation: int | None = None  # Input size where violation occurred
+    input_size_at_violation: int | None = (
+        None  # Input size where violation occurred
+    )
     derivative_type: str = ""  # "first", "second", "lipschitz"
 
     # Actionable Information
-    suggested_actions: list[str] = field(default_factory=list)  # Recommended next steps
+    suggested_actions: list[str] = field(
+        default_factory=list
+    )  # Recommended next steps
     related_files: list[str] = field(
         default_factory=list
     )  # Files that might need review
@@ -343,7 +375,9 @@ class AlertEvent:
 
         valid_derivative_types = ["first", "second", "lipschitz", ""]
         if self.derivative_type not in valid_derivative_types:
-            raise ValueError(f"Invalid derivative_type: {self.derivative_type}")
+            raise ValueError(
+                f"Invalid derivative_type: {self.derivative_type}"
+            )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert alert event to dictionary for JSON serialization."""

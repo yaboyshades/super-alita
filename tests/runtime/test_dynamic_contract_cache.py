@@ -78,7 +78,8 @@ def test_contract_cached_and_reused():
     app = _mk_app()
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "cache"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "hi", "session_id": "cache"},
     )
     text = resp.text
     assert "done" in text

@@ -10,7 +10,8 @@ from time import time
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -38,13 +39,19 @@ async def collect_live_metrics() -> dict[str, float]:
         mailbox_size = registry.get_gauge("sa_fsm_mailbox_size")
         mailbox_max = max(registry.get_gauge("sa_fsm_mailbox_size_max"), 1)
         active_ops = registry.get_gauge("sa_fsm_active_operations")
-        stale_completions = registry.get_counter("sa_fsm_stale_completions_total")
+        stale_completions = registry.get_counter(
+            "sa_fsm_stale_completions_total"
+        )
         total_ops = max(registry.get_counter("sa_fsm_operations_total"), 1)
-        ignored_triggers = registry.get_counter("sa_fsm_ignored_triggers_total")
+        ignored_triggers = registry.get_counter(
+            "sa_fsm_ignored_triggers_total"
+        )
 
         metrics["mailbox_pressure"] = mailbox_size / mailbox_max
         metrics["stale_rate"] = stale_completions / total_ops
-        metrics["concurrency_load"] = active_ops / 5.0  # Assume 5 max concurrent
+        metrics["concurrency_load"] = (
+            active_ops / 5.0
+        )  # Assume 5 max concurrent
         metrics["ignored_triggers_rate"] = ignored_triggers / total_ops
 
         logger.info(f"Collected live metrics: {metrics}")
@@ -96,7 +103,9 @@ async def sync_metrics_to_todos():
 
         classifications = {}
         for name, value in smoothed_metrics.items():
-            classification, should_act = classifier.classify_metric(name, value)
+            classification, should_act = classifier.classify_metric(
+                name, value
+            )
             classifications[name] = (classification, should_act)
             action_icon = "🚨" if should_act else "✅"
             logger.info(f"  {name}: {classification} {action_icon}")
@@ -163,7 +172,11 @@ async def sync_metrics_to_todos():
 
     except Exception as e:
         logger.error(f"❌ Synchronization failed: {e}", exc_info=True)
-        return {"success": False, "error": str(e), "elapsed_s": time() - start_time}
+        return {
+            "success": False,
+            "error": str(e),
+            "elapsed_s": time() - start_time,
+        }
 
 
 def demo_anti_thrash_protection():
@@ -199,7 +212,9 @@ def demo_anti_thrash_protection():
 
     alert_summary = classifier.get_alert_summary()
     logger.info(f"Final state: {alert_summary['alert_count']} active alerts")
-    logger.info("✅ Anti-thrash protection working - oscillations handled gracefully")
+    logger.info(
+        "✅ Anti-thrash protection working - oscillations handled gracefully"
+    )
 
 
 async def main():

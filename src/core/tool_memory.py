@@ -41,7 +41,9 @@ class DynamicToolMemoryManager:
     def __init__(self, store=None):
         self.store = store
         self.tool_atoms: dict[str, DynamicToolAtom] = {}
-        self.tool_library: dict[str, str] = {}  # tool_name -> memory_id mapping
+        self.tool_library: dict[str, str] = (
+            {}
+        )  # tool_name -> memory_id mapping
 
     def store_dynamic_tool_atom(
         self,
@@ -94,10 +96,14 @@ class DynamicToolMemoryManager:
                     owner_plugin="planner",
                 )
 
-                logger.info(f"Stored dynamic tool atom: {tool_name} ({memory_id})")
+                logger.info(
+                    f"Stored dynamic tool atom: {tool_name} ({memory_id})"
+                )
 
             except Exception as e:
-                logger.error(f"Failed to store tool atom in persistent memory: {e}")
+                logger.error(
+                    f"Failed to store tool atom in persistent memory: {e}"
+                )
 
         return memory_id
 
@@ -131,7 +137,9 @@ class DynamicToolMemoryManager:
                         return tool_atom
 
             except Exception as e:
-                logger.error(f"Failed to load tool from persistent memory: {e}")
+                logger.error(
+                    f"Failed to load tool from persistent memory: {e}"
+                )
 
         return None
 
@@ -178,7 +186,9 @@ class DynamicToolMemoryManager:
         try:
             # Search in persistent memory
             memories = self.store.query(
-                query=description, hierarchy_path=["dynamic_tools"], limit=limit
+                query=description,
+                hierarchy_path=["dynamic_tools"],
+                limit=limit,
             )
 
             similar_tools = []
@@ -202,7 +212,11 @@ class DynamicToolMemoryManager:
 
     def get_tools_by_user(self, user_id: str) -> list[DynamicToolAtom]:
         """Get tools created by a specific user"""
-        return [atom for atom in self.tool_atoms.values() if atom.invoked_by == user_id]
+        return [
+            atom
+            for atom in self.tool_atoms.values()
+            if atom.invoked_by == user_id
+        ]
 
     def get_tools_by_context(self, context_id: str) -> list[DynamicToolAtom]:
         """Get tools created in a specific context"""
@@ -212,7 +226,9 @@ class DynamicToolMemoryManager:
             if atom.executed_in_context == context_id
         ]
 
-    def promote_tool_to_library(self, memory_id: str, tool_name: str = None) -> bool:
+    def promote_tool_to_library(
+        self, memory_id: str, tool_name: str = None
+    ) -> bool:
         """Promote a tool execution to the permanent library"""
         if memory_id in self.tool_atoms:
             tool_atom = self.tool_atoms[memory_id]
@@ -321,12 +337,18 @@ def format_tool_response(
     return response
 
 
-def prompt_save_tool(user_id: str, tool_name: str, success_rate: float = 1.0) -> str:
+def prompt_save_tool(
+    user_id: str, tool_name: str, success_rate: float = 1.0
+) -> str:
     """Generate prompt to ask user about saving tool to library"""
     if success_rate >= 0.8:
-        recommendation = "This tool worked well and could be useful in the future."
+        recommendation = (
+            "This tool worked well and could be useful in the future."
+        )
     elif success_rate >= 0.5:
-        recommendation = "This tool had mixed results but might be worth keeping."
+        recommendation = (
+            "This tool had mixed results but might be worth keeping."
+        )
     else:
         recommendation = (
             "This tool had issues but you might want to keep it for reference."

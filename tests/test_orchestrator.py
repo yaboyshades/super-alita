@@ -14,7 +14,9 @@ def orchestrator() -> HardenedOrchestrator:
     return HardenedOrchestrator()
 
 
-def test_orchestrator_initialization(orchestrator: HardenedOrchestrator) -> None:
+def test_orchestrator_initialization(
+    orchestrator: HardenedOrchestrator,
+) -> None:
     assert orchestrator.config is not None
     assert hasattr(orchestrator, "_calculate_weights")
     assert hasattr(orchestrator, "_fuse_and_decide")
@@ -22,7 +24,15 @@ def test_orchestrator_initialization(orchestrator: HardenedOrchestrator) -> None
 
 def test_fusion_config_defaults() -> None:
     config = FusionConfig()
-    assert pytest.approx(config.mangle_base + config.constitution_base + config.workflow_base, rel=1e-6) == 1.0
+    assert (
+        pytest.approx(
+            config.mangle_base
+            + config.constitution_base
+            + config.workflow_base,
+            rel=1e-6,
+        )
+        == 1.0
+    )
 
 
 def test_orchestrator_run_smoke(orchestrator: HardenedOrchestrator) -> None:

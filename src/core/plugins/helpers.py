@@ -27,7 +27,9 @@ def safe_publish(
         pub = event_bus.publish
     if pub is None:
         if on_warn:
-            on_warn(f"safe_publish: no emit/publish on event_bus for {channel}")
+            on_warn(
+                f"safe_publish: no emit/publish on event_bus for {channel}"
+            )
         return False
     pub(channel, payload)
     return True
@@ -54,7 +56,9 @@ async def asafe_publish(
         return False
     if cand is None:  # double-check (static analyzers)
         if on_warn:
-            on_warn(f"asafe_publish: internal error (no callable) for {channel}")
+            on_warn(
+                f"asafe_publish: internal error (no callable) for {channel}"
+            )
         return False
     try:
         res = cand(channel, payload)

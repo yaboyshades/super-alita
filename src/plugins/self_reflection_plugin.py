@@ -82,7 +82,9 @@ class SelfReflectionPlugin(PluginInterface):
 
         # Critical: Get reference to orchestrator to access plugin registry
         plugin_config = config.get(self.name, {})
-        self._orchestrator_instance = plugin_config.get("orchestrator_instance")
+        self._orchestrator_instance = plugin_config.get(
+            "orchestrator_instance"
+        )
 
         if not self._orchestrator_instance:
             logger.warning(
@@ -103,7 +105,9 @@ class SelfReflectionPlugin(PluginInterface):
 
     async def shutdown(self) -> None:
         """Clean shutdown of the plugin."""
-        logger.info(f"SelfReflectionPlugin shutting down. Final stats: {self._stats}")
+        logger.info(
+            f"SelfReflectionPlugin shutting down. Final stats: {self._stats}"
+        )
         self._is_running = False
 
     async def _handle_tool_call(self, event: ToolCallEvent) -> None:
@@ -235,16 +239,22 @@ class SelfReflectionPlugin(PluginInterface):
             # Get additional tool information from LLM planner if available
             llm_planner = plugins.get("llm_planner")
             if llm_planner and hasattr(llm_planner, "_tool_definitions"):
-                for tool_name, tool_def in llm_planner._tool_definitions.items():
+                for (
+                    tool_name,
+                    tool_def,
+                ) in llm_planner._tool_definitions.items():
                     # Enhance existing tool info or add new entries
                     existing_tool = next(
-                        (t for t in available_tools if t["name"] == tool_name), None
+                        (t for t in available_tools if t["name"] == tool_name),
+                        None,
                     )
                     if existing_tool:
                         existing_tool["llm_description"] = tool_def.get(
                             "description", ""
                         )
-                        existing_tool["examples"] = tool_def.get("examples", [])
+                        existing_tool["examples"] = tool_def.get(
+                            "examples", []
+                        )
                     else:
                         # Add tools that might be defined in LLM planner but not as plugins
                         available_tools.append(
@@ -273,7 +283,9 @@ class SelfReflectionPlugin(PluginInterface):
                 "capabilities": [],
             }
 
-    async def _analyze_gaps(self, parameters: dict[str, Any]) -> dict[str, Any]:
+    async def _analyze_gaps(
+        self, parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Analyze potential capability gaps based on requested functionality.
 
@@ -497,9 +509,9 @@ class SelfReflectionPlugin(PluginInterface):
                         example_matches += 1
 
             if common_words or example_matches:
-                match_score = (len(common_words) * 0.7 + example_matches * 0.3) / max(
-                    len(task_words), 1
-                )
+                match_score = (
+                    len(common_words) * 0.7 + example_matches * 0.3
+                ) / max(len(task_words), 1)
                 matches.append(
                     {
                         "tool_name": tool["name"],
@@ -558,7 +570,11 @@ class SelfReflectionPlugin(PluginInterface):
             )
 
             # Check health of critical plugins
-            critical_plugins = ["llm_planner", "memory_manager", "conversation"]
+            critical_plugins = [
+                "llm_planner",
+                "memory_manager",
+                "conversation",
+            ]
             status["critical_plugins_status"] = {}
 
             for plugin_name in critical_plugins:
@@ -568,7 +584,9 @@ class SelfReflectionPlugin(PluginInterface):
                     if hasattr(plugin, "health_check"):
                         try:
                             health = await plugin.health_check()
-                            status["critical_plugins_status"][plugin_name] = health
+                            status["critical_plugins_status"][
+                                plugin_name
+                            ] = health
                         except Exception as e:
                             status["critical_plugins_status"][plugin_name] = {
                                 "status": "error",

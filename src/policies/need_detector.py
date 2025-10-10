@@ -10,12 +10,18 @@ class NeedDetector:
     KINDS: dict[str, list[Pattern]] = {
         "web_scraper": [
             re.compile(r"\b(scrap(?:e|er|ing)|crawl(?:er|ing)?)\b", re.I),
-            re.compile(r"\bextract (?:price|product|listing|sku|catalog)\b", re.I),
-            re.compile(r"\be-?commerce|price\s*(?:tracker|fetch|pull|harvest)\b", re.I),
+            re.compile(
+                r"\bextract (?:price|product|listing|sku|catalog)\b", re.I
+            ),
+            re.compile(
+                r"\be-?commerce|price\s*(?:tracker|fetch|pull|harvest)\b", re.I
+            ),
         ],
         "etl_task": [
             re.compile(r"\bETL\b|\bextract-?transform-?load\b", re.I),
-            re.compile(r"\bdata (?:pipeline|ingestion|normaliz(?:e|ation))\b", re.I),
+            re.compile(
+                r"\bdata (?:pipeline|ingestion|normaliz(?:e|ation))\b", re.I
+            ),
         ],
         "api_client": [
             re.compile(
@@ -25,17 +31,24 @@ class NeedDetector:
             ),
         ],
         "report_generator": [
-            re.compile(r"\breport\b|\bsummary\b|\bexport (?:csv|xlsx|pdf)\b", re.I),
+            re.compile(
+                r"\breport\b|\bsummary\b|\bexport (?:csv|xlsx|pdf)\b", re.I
+            ),
         ],
         "paper2code": [
-            re.compile(r"\b(paper|research|algorithm|implement|reproduce)\b", re.I),
-            re.compile(r"\b(transformer|attention|neural|network|model)\b", re.I),
+            re.compile(
+                r"\b(paper|research|algorithm|implement|reproduce)\b", re.I
+            ),
+            re.compile(
+                r"\b(transformer|attention|neural|network|model)\b", re.I
+            ),
             re.compile(r"\b(machine learning|deep learning|AI|ML)\b", re.I),
             re.compile(r"\b(pytorch|tensorflow|numpy|sklearn)\b", re.I),
         ],
         "ml_algorithm": [
             re.compile(
-                r"\b(classification|regression|clustering|optimization)\b", re.I
+                r"\b(classification|regression|clustering|optimization)\b",
+                re.I,
             ),
             re.compile(r"\b(gradient|backprop|training|learning)\b", re.I),
             re.compile(r"\b(embedding|encoder|decoder|layer)\b", re.I),

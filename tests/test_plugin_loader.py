@@ -37,7 +37,9 @@ class TestPluginManifest:
             ],
         }
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", delete=False
+        ) as f:
             yaml.dump(manifest_data, f)
             temp_path = f.name
 
@@ -51,17 +53,23 @@ class TestPluginManifest:
 
     def test_load_missing_file(self):
         """Test loading non-existent manifest file."""
-        with pytest.raises(PluginManifestError, match="Plugin manifest not found"):
+        with pytest.raises(
+            PluginManifestError, match="Plugin manifest not found"
+        ):
             load_plugin_manifest("nonexistent.yaml")
 
     def test_load_invalid_yaml(self):
         """Test loading invalid YAML."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", delete=False
+        ) as f:
             f.write("invalid: yaml: content: [")
             temp_path = f.name
 
         try:
-            with pytest.raises(PluginManifestError, match="Failed to parse YAML"):
+            with pytest.raises(
+                PluginManifestError, match="Failed to parse YAML"
+            ):
                 load_plugin_manifest(temp_path)
         finally:
             Path(temp_path).unlink()
@@ -70,12 +78,16 @@ class TestPluginManifest:
         """Test loading manifest without plugins key."""
         manifest_data = {"version": 1}
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", delete=False
+        ) as f:
             yaml.dump(manifest_data, f)
             temp_path = f.name
 
         try:
-            with pytest.raises(PluginManifestError, match="missing 'plugins' key"):
+            with pytest.raises(
+                PluginManifestError, match="missing 'plugins' key"
+            ):
                 load_plugin_manifest(temp_path)
         finally:
             Path(temp_path).unlink()
@@ -84,7 +96,9 @@ class TestPluginManifest:
         """Test loading manifest with invalid plugin format."""
         manifest_data = {"version": 1, "plugins": ["not_a_dict"]}
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", delete=False
+        ) as f:
             yaml.dump(manifest_data, f)
             temp_path = f.name
 
@@ -103,7 +117,9 @@ class TestPluginManifest:
             "plugins": [{"name": "test"}],  # Missing module
         }
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", delete=False
+        ) as f:
             yaml.dump(manifest_data, f)
             temp_path = f.name
 
@@ -133,7 +149,11 @@ class TestDependencyValidation:
         """Test validation with satisfied dependencies."""
         plugins = [
             {"name": "plugin1", "module": "test:Test1"},
-            {"name": "plugin2", "module": "test:Test2", "depends_on": ["plugin1"]},
+            {
+                "name": "plugin2",
+                "module": "test:Test2",
+                "depends_on": ["plugin1"],
+            },
         ]
 
         missing = validate_dependencies(plugins)
@@ -155,7 +175,11 @@ class TestDependencyValidation:
     def test_validate_invalid_dependency_format(self):
         """Test validation with invalid dependency format."""
         plugins = [
-            {"name": "plugin1", "module": "test:Test1", "depends_on": "not_a_list"}
+            {
+                "name": "plugin1",
+                "module": "test:Test1",
+                "depends_on": "not_a_list",
+            }
         ]
 
         missing = validate_dependencies(plugins)
@@ -169,10 +193,16 @@ class TestPluginDiscovery:
         """Test that only enabled plugins are discovered."""
         plugins = [
             {"name": "enabled", "module": "test:MockPlugin", "enabled": True},
-            {"name": "disabled", "module": "test:MockPlugin", "enabled": False},
+            {
+                "name": "disabled",
+                "module": "test:MockPlugin",
+                "enabled": False,
+            },
         ]
 
-        with patch("src.core.plugin_loader.importlib.import_module") as mock_import:
+        with patch(
+            "src.core.plugin_loader.importlib.import_module"
+        ) as mock_import:
             mock_module = MagicMock()
             mock_plugin_class = MagicMock()
             mock_module.MockPlugin = mock_plugin_class
@@ -191,7 +221,9 @@ class TestPluginDiscovery:
             {"name": "medium", "module": "test:MockPlugin", "priority": 50},
         ]
 
-        with patch("src.core.plugin_loader.importlib.import_module") as mock_import:
+        with patch(
+            "src.core.plugin_loader.importlib.import_module"
+        ) as mock_import:
             mock_module = MagicMock()
             mock_plugin_class = MagicMock()
             mock_module.MockPlugin = mock_plugin_class
@@ -213,7 +245,9 @@ class TestPluginDiscovery:
         """Test discovery with import error."""
         plugins = [{"name": "missing", "module": "nonexistent:Class"}]
 
-        with patch("src.core.plugin_loader.importlib.import_module") as mock_import:
+        with patch(
+            "src.core.plugin_loader.importlib.import_module"
+        ) as mock_import:
             mock_import.side_effect = ImportError("Module not found")
 
             with pytest.raises(PluginLoadError, match="Cannot import module"):
@@ -223,12 +257,16 @@ class TestPluginDiscovery:
         """Test discovery with missing class in module."""
         plugins = [{"name": "missing_class", "module": "test:MissingClass"}]
 
-        with patch("src.core.plugin_loader.importlib.import_module") as mock_import:
+        with patch(
+            "src.core.plugin_loader.importlib.import_module"
+        ) as mock_import:
             mock_module = MagicMock()
             del mock_module.MissingClass  # Ensure class doesn't exist
             mock_import.return_value = mock_module
 
-            with pytest.raises(PluginLoadError, match="Class 'MissingClass' not found"):
+            with pytest.raises(
+                PluginLoadError, match="Class 'MissingClass' not found"
+            ):
                 discover_plugins(plugins)
 
 
@@ -312,7 +350,11 @@ class TestPluginOrderValidation:
         """Test validation with disabled dependency."""
         plugins = [
             {"name": "base", "module": "test:Base", "enabled": False},
-            {"name": "dependent", "module": "test:Dependent", "depends_on": ["base"]},
+            {
+                "name": "dependent",
+                "module": "test:Dependent",
+                "depends_on": ["base"],
+            },
         ]
 
         warnings = validate_plugin_order(plugins)

@@ -1,4 +1,5 @@
 """Performance marker shim used in test environments."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

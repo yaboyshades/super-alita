@@ -227,8 +227,14 @@ async def test_async_service_mock():
 @pytest.mark.asyncio
 async def test_async_service_with_patch():
     """Using patch decorator for async mocking."""
-    with patch.object(ApiService, "fetch_user", new_callable=AsyncMock) as mock_fetch:
-        mock_fetch.return_value = {"id": 42, "name": "Test User", "active": False}
+    with patch.object(
+        ApiService, "fetch_user", new_callable=AsyncMock
+    ) as mock_fetch:
+        mock_fetch.return_value = {
+            "id": 42,
+            "name": "Test User",
+            "active": False,
+        }
 
         service = ApiService()
         result = await service.fetch_user(42)
@@ -425,7 +431,9 @@ class TestAsyncApiService:
 # ===== Custom Matchers (Jest's expect.extend equivalent) =====
 
 
-def assert_between(value: float, min_val: float, max_val: float, message: str = ""):
+def assert_between(
+    value: float, min_val: float, max_val: float, message: str = ""
+):
     """
     Jest equivalent:
     expect.extend({
@@ -437,14 +445,17 @@ def assert_between(value: float, min_val: float, max_val: float, message: str = 
     """
     if not (min_val <= value <= max_val):
         raise AssertionError(
-            message or f"Expected {value} to be between {min_val} and {max_val}"
+            message
+            or f"Expected {value} to be between {min_val} and {max_val}"
         )
 
 
 def test_custom_assertion():
     """Using custom assertion helper."""
     result = add(5, 7)
-    assert_between(result, 10, 15, "Addition result should be in expected range")
+    assert_between(
+        result, 10, 15, "Addition result should be in expected range"
+    )
 
 
 # ===== Test Configuration and Markers =====

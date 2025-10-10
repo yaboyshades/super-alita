@@ -150,7 +150,9 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())  # Prevent "No handler" warnings
 
 # Package initialization message
-logger.debug(f"DTA 2.0 Cognitive Airlock package initialized (version {__version__})")
+logger.debug(
+    f"DTA 2.0 Cognitive Airlock package initialized (version {__version__})"
+)
 
 
 def get_version() -> str:

@@ -6,7 +6,10 @@ import pytest
 from src.core.event_bus import EventBus
 from src.core.navigation import NavigationConfig, NeuralNavigator
 from src.core.temporal_graph import TemporalGraph
-from src.plugins.cortex_adapter_plugin import CortexAdapterPlugin, GitHubCopilotCortex
+from src.plugins.cortex_adapter_plugin import (
+    CortexAdapterPlugin,
+    GitHubCopilotCortex,
+)
 
 
 @pytest.mark.asyncio
@@ -14,18 +17,26 @@ async def test_cortex_adapter_learning_flow():
     bus = AsyncMock(spec=EventBus)
     g = TemporalGraph()
     g.create_atom("rate limiter", "topic", {})
-    nav = NeuralNavigator(graph=g, config=NavigationConfig(enable_telemetry=False))
+    nav = NeuralNavigator(
+        graph=g, config=NavigationConfig(enable_telemetry=False)
+    )
 
     adapter = CortexAdapterPlugin(event_bus=bus, graph=g, navigator=nav)
     adapter.register_cortex("github_copilot", GitHubCopilotCortex())
 
     await adapter.handle_reasoning_request(
-        {"data": {"prompt": "Implement a rate limiter", "context": {"user": "t"}}}
+        {
+            "data": {
+                "prompt": "Implement a rate limiter",
+                "context": {"user": "t"},
+            }
+        }
     )
     assert bus.publish.called
     payloads = [c.args[0] for c in bus.publish.call_args_list]
     assert any(
-        getattr(p, "event_type", getattr(p, "type", None)) == "cortex_knowledge_learned"
+        getattr(p, "event_type", getattr(p, "type", None))
+        == "cortex_knowledge_learned"
         for p in payloads
     )
     assert len(g.atoms) >= 2
@@ -42,7 +53,9 @@ async def test_cortex_adapter_learning_flow():
 async def test_gap_event_triggers_reasoning_request():
     bus = AsyncMock(spec=EventBus)
     g = TemporalGraph()
-    nav = NeuralNavigator(graph=g, config=NavigationConfig(enable_telemetry=False))
+    nav = NeuralNavigator(
+        graph=g, config=NavigationConfig(enable_telemetry=False)
+    )
     adapter = CortexAdapterPlugin(event_bus=bus, graph=g, navigator=nav)
     adapter.register_cortex("github_copilot", GitHubCopilotCortex())
 
@@ -61,7 +74,9 @@ async def test_gap_event_triggers_reasoning_request():
 async def test_budget_and_circuit_breaker_paths():
     bus = AsyncMock(spec=EventBus)
     g = TemporalGraph()
-    nav = NeuralNavigator(graph=g, config=NavigationConfig(enable_telemetry=False))
+    nav = NeuralNavigator(
+        graph=g, config=NavigationConfig(enable_telemetry=False)
+    )
     adapter = CortexAdapterPlugin(event_bus=bus, graph=g, navigator=nav)
     adapter._budget_max_per_min = 1
     adapter._circuit.failure_threshold = 1
@@ -69,7 +84,8 @@ async def test_budget_and_circuit_breaker_paths():
     await adapter.handle_reasoning_request({"data": {"prompt": "B"}})
     payloads = [c.args[0] for c in bus.publish.call_args_list]
     assert any(
-        getattr(p, "event_type", getattr(p, "type", None)) == "cortex_budget_exceeded"
+        getattr(p, "event_type", getattr(p, "type", None))
+        == "cortex_budget_exceeded"
         for p in payloads
     )
 
@@ -85,6 +101,7 @@ async def test_budget_and_circuit_breaker_paths():
     await adapter.handle_reasoning_request({"data": {"prompt": "C"}})
     payloads2 = [c.args[0] for c in bus.publish.call_args_list]
     assert any(
-        getattr(p, "event_type", getattr(p, "type", None)) == "cortex_circuit_open"
+        getattr(p, "event_type", getattr(p, "type", None))
+        == "cortex_circuit_open"
         for p in payloads2
     )

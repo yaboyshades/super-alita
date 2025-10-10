@@ -16,7 +16,9 @@ from typing import Any
 DEFAULT_STATUS = "info"
 
 
-def _split_status(entry: str, default_status: str = DEFAULT_STATUS) -> tuple[str, str]:
+def _split_status(
+    entry: str, default_status: str = DEFAULT_STATUS
+) -> tuple[str, str]:
     """Split a raw ``status::message`` entry.
 
     Args:

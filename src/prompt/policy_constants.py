@@ -38,7 +38,12 @@ KEYWORD_PROFILES: dict[str, list[str]] = {
         "analysis",
         "result",
     ],
-    "concept_analysis": ["definition", "intuition", "limitation", "future work"],
+    "concept_analysis": [
+        "definition",
+        "intuition",
+        "limitation",
+        "future work",
+    ],
 }
 
 # Compression directive thresholds (readability vs completeness)

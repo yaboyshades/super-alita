@@ -100,7 +100,6 @@ class NeuralAtom(Generic[T]):
         self.activation_count = 0
         self.fitness_score = 0.0
 
-
         self.activation_threshold = 0.5
         self.decay_rate = 0.95
         self.refractory_period = 0.1
@@ -174,13 +173,14 @@ class NeuralAtom(Generic[T]):
     async def execute(self, input_data: Any) -> Any:
         """Execute the Neural Atom's core functionality."""
 
-
     def get_embedding(self) -> list[float]:
         """Return (and cache) the semantic embedding for this atom."""
 
         if self._semantic_embedding is None:
             if isinstance(self.vector, np.ndarray):
-                self._semantic_embedding = self.vector.astype(np.float32).tolist()
+                self._semantic_embedding = self.vector.astype(
+                    np.float32
+                ).tolist()
             else:
                 self._semantic_embedding = list(self.vector)
         return self._semantic_embedding
@@ -258,7 +258,9 @@ class NeuralAtom(Generic[T]):
                 "metadata": self.metadata,
             }
 
-    def _update_performance_metrics(self, execution_time: float, success: bool) -> None:
+    def _update_performance_metrics(
+        self, execution_time: float, success: bool
+    ) -> None:
         """Update metadata statistics based on execution outcome."""
 
         self.metadata.usage_count += 1
@@ -268,7 +270,8 @@ class NeuralAtom(Generic[T]):
         else:
             alpha = 0.1
             self.metadata.avg_execution_time = (
-                alpha * execution_time + (1 - alpha) * self.metadata.avg_execution_time
+                alpha * execution_time
+                + (1 - alpha) * self.metadata.avg_execution_time
             )
 
         success_value = 1.0 if success else 0.0
@@ -277,12 +280,12 @@ class NeuralAtom(Generic[T]):
         else:
             alpha = 0.1
             self.metadata.success_rate = (
-                alpha * success_value + (1 - alpha) * self.metadata.success_rate
+                alpha * success_value
+                + (1 - alpha) * self.metadata.success_rate
             )
 
     @property
     def average_latency_ms(self) -> float:
-
         """Average execution latency in milliseconds."""
 
         """Return average execution latency in milliseconds."""
@@ -318,7 +321,9 @@ class NeuralAtom(Generic[T]):
             self.depth = len(self.parent_keys)
             self.signature = self._generate_darwin_godel_signature()
 
-    def update_fitness(self, performance_score: float, weight: float = 0.1) -> None:
+    def update_fitness(
+        self, performance_score: float, weight: float = 0.1
+    ) -> None:
         self.fitness_score = (
             1 - weight
         ) * self.fitness_score + weight * performance_score
@@ -400,7 +405,6 @@ class LegacyNeuralAtom(Generic[T]):
         self.bias = float(bias)
         self.active = True  # Whether this atom is currently active
 
-
         return self.metadata.avg_execution_time * 1000.0
 
     def _generate_darwin_godel_signature(self) -> str:
@@ -441,7 +445,9 @@ class LegacyNeuralAtom(Generic[T]):
 
         return 0.0
 
-    def update_fitness(self, performance_score: float, weight: float = 0.1) -> None:
+    def update_fitness(
+        self, performance_score: float, weight: float = 0.1
+    ) -> None:
         """Update fitness score using exponential moving average."""
         self.fitness_score = (
             1 - weight
@@ -477,7 +483,9 @@ class NeuralStore:
 
     def __init__(self, learning_rate: float = 0.01):
         self._atoms: dict[str, NeuralAtom] = {}
-        self._keys: list[str] = []  # Guarantees a stable order for matrix operations
+        self._keys: list[str] = (
+            []
+        )  # Guarantees a stable order for matrix operations
         self._key_idx: dict[str, int] = {}
         self._adjacency: sp.lil_matrix | None = None
         self._lr = learning_rate
@@ -573,9 +581,13 @@ class NeuralStore:
                 # Create new smaller adjacency matrix
                 new_size = n - 1
                 if new_size > 0:
-                    new_adj = sp.lil_matrix((new_size, new_size), dtype=np.float32)
+                    new_adj = sp.lil_matrix(
+                        (new_size, new_size), dtype=np.float32
+                    )
                     # Copy rows and columns, skipping the deleted index
-                    row_indices = list(range(old_idx)) + list(range(old_idx + 1, n))
+                    row_indices = list(range(old_idx)) + list(
+                        range(old_idx + 1, n)
+                    )
                     col_indices = row_indices
                     for new_row, old_row in enumerate(row_indices):
                         for new_col, old_col in enumerate(col_indices):
@@ -605,7 +617,9 @@ class NeuralStore:
         len(self._keys)
         # 1. Gather all current activation vectors and biases
         vectors = np.array([self._atoms[k].vector for k in self._keys])
-        biases = np.array([self._atoms[k].bias for k in self._keys]).reshape(-1, 1)
+        biases = np.array([self._atoms[k].bias for k in self._keys]).reshape(
+            -1, 1
+        )
 
         # 2. Calculate incoming signals for all neurons at once
         # We use the transposed adjacency matrix for incoming connections
@@ -649,7 +663,9 @@ class NeuralStore:
         similarities = np.dot(matrix, query_vec) / (matrix_norms * query_norm)
 
         # Apply fitness weighting - atoms with higher fitness get slight boost
-        fitness_scores = np.array([self._atoms[k].fitness_score for k in self._keys])
+        fitness_scores = np.array(
+            [self._atoms[k].fitness_score for k in self._keys]
+        )
         weighted_similarities = similarities * (
             1.0 + 0.1 * fitness_scores
         )  # 10% fitness boost
@@ -658,12 +674,17 @@ class NeuralStore:
         if top_k >= n:
             top_indices = np.argsort(weighted_similarities)[::-1]
         else:
-            top_indices = np.argpartition(weighted_similarities, -top_k)[-top_k:]
+            top_indices = np.argpartition(weighted_similarities, -top_k)[
+                -top_k:
+            ]
             top_indices = top_indices[
                 np.argsort(weighted_similarities[top_indices])[::-1]
             ]
 
-        return [(self._keys[i], float(weighted_similarities[i])) for i in top_indices]
+        return [
+            (self._keys[i], float(weighted_similarities[i]))
+            for i in top_indices
+        ]
 
     async def genealogy_attention(
         self, query_atom_key: str, generations: int = 3, top_k: int = 5
@@ -704,7 +725,8 @@ class NeuralStore:
             if key != query_atom_key:
                 atom = self._atoms[key]
                 sim = np.dot(query_vec, atom.vector) / (
-                    np.linalg.norm(query_vec) * np.linalg.norm(atom.vector) + 1e-9
+                    np.linalg.norm(query_vec) * np.linalg.norm(atom.vector)
+                    + 1e-9
                 )
                 relationship = (
                     "ancestor"
@@ -787,7 +809,9 @@ class NeuralStore:
         if not self._atoms:
             return {"total_atoms": 0, "total_synapses": 0}
 
-        synapse_count = self._adjacency.nnz if self._adjacency is not None else 0
+        synapse_count = (
+            self._adjacency.nnz if self._adjacency is not None else 0
+        )
 
         # Calculate connectivity statistics
         avg_degree = synapse_count / len(self._atoms) if self._atoms else 0
@@ -801,7 +825,9 @@ class NeuralStore:
 
         return {
             "total_atoms": len(self._atoms),
-            "active_atoms": sum(1 for atom in self._atoms.values() if atom.active),
+            "active_atoms": sum(
+                1 for atom in self._atoms.values() if atom.active
+            ),
             "total_synapses": synapse_count,
             "average_degree": avg_degree,
             "max_genealogy_depth": max_depth,
@@ -813,7 +839,10 @@ class NeuralStore:
             },
             "genealogy_depth_distribution": depth_distribution,
             "learning_rate": self._lr,
-            "memory_usage_estimate_mb": len(self._atoms) * 1024 * 4 / (1024 * 1024),
+            "memory_usage_estimate_mb": len(self._atoms)
+            * 1024
+            * 4
+            / (1024 * 1024),
         }
 
     def _get_depth_distribution(self) -> dict[int, int]:
@@ -853,7 +882,9 @@ class NeuralStore:
             nodes.append(
                 {
                     "key": atom.key,
-                    "value": str(atom.value)[:100],  # Truncate for serialization
+                    "value": str(atom.value)[
+                        :100
+                    ],  # Truncate for serialization
                     "vector": atom.vector.tolist(),
                     "fitness_score": atom.fitness_score,
                     "depth": atom.depth,
@@ -908,7 +939,9 @@ class NeuralStore:
             for text in texts:
                 body = {"content": {"parts": [{"text": text}]}}
                 async with httpx.AsyncClient(timeout=30) as client:
-                    response = await client.post(url, headers=headers, json=body)
+                    response = await client.post(
+                        url, headers=headers, json=body
+                    )
                     response.raise_for_status()
                     result = response.json()
                     embedding = np.array(
@@ -945,7 +978,9 @@ class NeuralStore:
                     if content.get("type") == "tool" or "signature" in content:
                         tools.append(
                             {
-                                "key": content.get("key", result.get("memory_id", "")),
+                                "key": content.get(
+                                    "key", result.get("memory_id", "")
+                                ),
                                 "name": content.get("name", ""),
                                 "description": content.get("description", ""),
                                 "signature": content.get("signature", {}),
@@ -961,7 +996,10 @@ class NeuralStore:
                         "name": "Web & Code Search",
                         "description": "Search web and GitHub for information",
                         "signature": {
-                            "query": {"type": "string", "description": "Search query"},
+                            "query": {
+                                "type": "string",
+                                "description": "Search query",
+                            },
                             "web_k": {"type": "integer", "default": 5},
                             "github_k": {"type": "integer", "default": 3},
                         },
@@ -976,7 +1014,9 @@ class NeuralStore:
             logger.error(f"Error getting available tools: {e}")
             return []
 
-    async def register_tool(self, tool_key: str, tool_metadata: dict[str, Any]):
+    async def register_tool(
+        self, tool_key: str, tool_metadata: dict[str, Any]
+    ):
         """Register a new tool in the neural store."""
         try:
             tool_data = {
@@ -1002,7 +1042,9 @@ class NeuralStore:
         try:
             # This would need to be implemented based on your ChromaDB setup
             # For now, just log the intent
-            logger.info("Expired memory cleanup requested (not yet implemented)")
+            logger.info(
+                "Expired memory cleanup requested (not yet implemented)"
+            )
 
         except Exception as e:
             logger.error(f"Error during expired memory cleanup: {e}")
@@ -1011,7 +1053,9 @@ class NeuralStore:
         """Downvote unused atoms based on usage telemetry."""
         try:
             # This would analyze usage patterns and adjust ratings
-            logger.info("Unused atom downvoting requested (not yet implemented)")
+            logger.info(
+                "Unused atom downvoting requested (not yet implemented)"
+            )
 
         except Exception as e:
             logger.error(f"Error during unused atom downvoting: {e}")
@@ -1079,7 +1123,9 @@ def create_skill_atom(
         key=atom_metadata.name,
         value=skill_data,
         vector=embedding_vector,
-        parent_keys=[atom.key for atom in parent_atoms] if parent_atoms else [],
+        parent_keys=(
+            [atom.key for atom in parent_atoms] if parent_atoms else []
+        ),
         birth_event=f"skill_creation:{skill_name}",
         lineage_metadata={
             "creation_method": "skill_discovery",
@@ -1125,7 +1171,9 @@ def create_memory_atom(
         key=atom_metadata.name,
         value=memory_data,
         vector=embedding_vector,
-        parent_keys=[atom.key for atom in parent_atoms] if parent_atoms else [],
+        parent_keys=(
+            [atom.key for atom in parent_atoms] if parent_atoms else []
+        ),
         birth_event=f"memory_creation:{memory_type}",
         lineage_metadata={
             "memory_type": memory_type,
@@ -1171,7 +1219,9 @@ def create_goal_atom(
         key=atom_metadata.name,
         value=goal_data,
         vector=embedding_vector,
-        parent_keys=[atom.key for atom in parent_atoms] if parent_atoms else [],
+        parent_keys=(
+            [atom.key for atom in parent_atoms] if parent_atoms else []
+        ),
         birth_event=f"goal_creation:{goal_id}",
         lineage_metadata={
             "goal_type": "primary",
@@ -1187,7 +1237,10 @@ def create_goal_atom(
 
 
 def create_memory_chunk_atom(
-    key: str, content: dict[str, Any], hierarchy_path: list[str], vector: np.ndarray
+    key: str,
+    content: dict[str, Any],
+    hierarchy_path: list[str],
+    vector: np.ndarray,
 ) -> NeuralAtom:
     """Create a structured memory atom for hierarchical storage."""
 
@@ -1211,7 +1264,10 @@ class TextualMemoryAtom(NeuralAtom[str]):
     """Concrete neural atom for textual memory content."""
 
     def __init__(
-        self, metadata: NeuralAtomMetadata, content: str, embedding_client: Any = None
+        self,
+        metadata: NeuralAtomMetadata,
+        content: str,
+        embedding_client: Any = None,
     ) -> None:
         super().__init__(
             key=metadata.name,
@@ -1295,23 +1351,31 @@ class TextualMemoryAtom(NeuralAtom[str]):
     def get_embedding(self) -> list[float]:
         """Generates or retrieves the semantic embedding for the memory content."""
         if self._semantic_embedding is None:
-            if self._embedding_client and hasattr(self._embedding_client, "embed_text"):
+            if self._embedding_client and hasattr(
+                self._embedding_client, "embed_text"
+            ):
                 try:
-                    self._semantic_embedding = self._embedding_client.embed_text(
-                        self.content
+                    self._semantic_embedding = (
+                        self._embedding_client.embed_text(self.content)
                     )
                 except Exception as e:
-                    logger.warning(f"Failed to generate embedding for memory: {e}")
+                    logger.warning(
+                        f"Failed to generate embedding for memory: {e}"
+                    )
                     self._semantic_embedding = self._generate_simple_embedding(
                         self.content
                     )
             else:
                 # Fallback to simple hash-based embedding
-                self._semantic_embedding = self._generate_simple_embedding(self.content)
+                self._semantic_embedding = self._generate_simple_embedding(
+                    self.content
+                )
 
         vector_array = np.asarray(self._semantic_embedding, dtype=np.float32)
         if vector_array.ndim != 1:
-            raise ValueError("TextualMemoryAtom embeddings must be one-dimensional")
+            raise ValueError(
+                "TextualMemoryAtom embeddings must be one-dimensional"
+            )
         self.vector = vector_array
         return list(vector_array)
 

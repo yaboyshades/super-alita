@@ -49,7 +49,11 @@ async def test_echo_roundtrip(client: Client):
 @pytest.mark.asyncio
 async def test_classify_agent(client: Client):
     messages = [
-        Message(parts=[MessagePart(text="This is a test message for classification")])
+        Message(
+            parts=[
+                MessagePart(text="This is a test message for classification")
+            ]
+        )
     ]
     response = await client.run_sync("classify", messages)
 
@@ -76,7 +80,9 @@ async def test_router_stream(client: Client):
 @pytest.mark.asyncio
 async def test_search_agent(client: Client):
     messages = [
-        Message(parts=[MessagePart(text="what is RAG", metadata={"mode": "web"})])
+        Message(
+            parts=[MessagePart(text="what is RAG", metadata={"mode": "web"})]
+        )
     ]
     response = await client.run_sync("search", messages)
 

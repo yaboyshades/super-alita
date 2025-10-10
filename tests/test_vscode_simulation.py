@@ -116,7 +116,9 @@ async def main():
     print("=" * 60)
     print("📋 VS Code Integration Test Summary:")
     print(f"   Analyze Command: {'✅ PASS' if analyze_success else '❌ FAIL'}")
-    print(f"   Generate Command: {'✅ PASS' if generate_success else '❌ FAIL'}")
+    print(
+        f"   Generate Command: {'✅ PASS' if generate_success else '❌ FAIL'}"
+    )
 
     if analyze_success and generate_success:
         print("\n🎉 All VS Code DeepCode commands working correctly!")

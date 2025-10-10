@@ -8,7 +8,10 @@ import logging
 from typing import Any
 
 from src.core.events import BaseEvent
-from src.core.meta_learning_creator import MetaLearningCreator, ToolGenerationRequest
+from src.core.meta_learning_creator import (
+    MetaLearningCreator,
+    ToolGenerationRequest,
+)
 from src.core.plugin_interface import PluginInterface
 
 logger = logging.getLogger(__name__)
@@ -36,11 +39,15 @@ class MetaLearningCreatorPlugin(PluginInterface):
         await super().start()
 
         # Subscribe to tool generation and learning events
-        await self.subscribe("tool_generation_request", self._handle_tool_generation)
+        await self.subscribe(
+            "tool_generation_request", self._handle_tool_generation
+        )
         await self.subscribe(
             "tool_execution_result", self._handle_learning_from_execution
         )
-        await self.subscribe("pattern_learning_request", self._handle_pattern_learning)
+        await self.subscribe(
+            "pattern_learning_request", self._handle_pattern_learning
+        )
 
         logger.info("🧠 Meta Learning Creator Plugin started")
 
@@ -50,7 +57,9 @@ class MetaLearningCreatorPlugin(PluginInterface):
     async def _handle_tool_generation(self, event: BaseEvent):
         """Handle requests for tool generation"""
         try:
-            capability_description = event.data.get("capability_description", "")
+            capability_description = event.data.get(
+                "capability_description", ""
+            )
             success_criteria = event.data.get("success_criteria", [])
             constraints = event.data.get("constraints", {})
             context = event.data.get("context", {})
@@ -127,7 +136,9 @@ class MetaLearningCreatorPlugin(PluginInterface):
                 context=context,
             )
 
-            logger.info(f"🧠 Learned from execution: {tool_name} (success={success})")
+            logger.info(
+                f"🧠 Learned from execution: {tool_name} (success={success})"
+            )
 
         except Exception:
             logger.exception("❌ Learning from execution error")
@@ -181,14 +192,20 @@ class MetaLearningCreatorPlugin(PluginInterface):
                         "success_rate": gen.success_rate,
                         "validation_passed": gen.validation_passed,
                     }
-                    for gen in list(self.creator.generation_history.values())[-5:]
+                    for gen in list(self.creator.generation_history.values())[
+                        -5:
+                    ]
                 ],
             }
 
             # Emit creator summary event
             await self.emit_event(
                 "creator_summary",
-                {"source_plugin": self.name, "summary": summary, "success": True},
+                {
+                    "source_plugin": self.name,
+                    "summary": summary,
+                    "success": True,
+                },
             )
 
             return summary

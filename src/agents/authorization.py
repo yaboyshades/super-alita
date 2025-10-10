@@ -33,7 +33,8 @@ class AuthorizationManager:
     ) -> None:
         self._client = http_client or httpx.AsyncClient()
         self._model_prefs: dict[str, MutableSet[str]] = {
-            model: set(scopes) for model, scopes in (model_preferences or {}).items()
+            model: set(scopes)
+            for model, scopes in (model_preferences or {}).items()
         }
         self.access_token: str | None = None
         self.scopes: set[str] = set()

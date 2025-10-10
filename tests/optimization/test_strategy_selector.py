@@ -15,8 +15,16 @@ def test_strategy_selector_select_and_feedback(tmp_path: Path) -> None:
                     "code_review": {
                         "algorithm": "thompson",
                         "arms": [
-                            {"id": "a", "name": "A", "metadata": {"style": "concise"}},
-                            {"id": "b", "name": "B", "metadata": {"style": "steps"}},
+                            {
+                                "id": "a",
+                                "name": "A",
+                                "metadata": {"style": "concise"},
+                            },
+                            {
+                                "id": "b",
+                                "name": "B",
+                                "metadata": {"style": "steps"},
+                            },
                         ],
                         "stats": {},
                     }

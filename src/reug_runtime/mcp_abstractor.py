@@ -30,7 +30,7 @@ def _props_from_schema(schema: dict[str, Any] | None) -> list[str]:
         return []
     props = schema.get("properties")
     if isinstance(props, dict):
-        return sorted([p for p in props.keys() if isinstance(p, str)])
+        return sorted([p for p in props if isinstance(p, str)])
     return []
 
 
@@ -53,7 +53,9 @@ def _compute_signature(spec: dict[str, Any]) -> str:
 
 
 def _normalize_spec(spec: dict[str, Any]) -> dict[str, Any]:
-    tool_id = _sanitize_tool_id(spec.get("tool_id") or spec.get("name") or "tool")
+    tool_id = _sanitize_tool_id(
+        spec.get("tool_id") or spec.get("name") or "tool"
+    )
     desc = (spec.get("description") or "").strip()
     action = (spec.get("action") or "").strip().lower() or "custom"
     in_schema = spec.get("input_schema") or {"type": "object"}
@@ -126,7 +128,10 @@ def abstract_mcp_box(box_dir: str | Path = ".mcp_box") -> dict[str, Any]:
                 # Record file and alias if different id
                 if cid in canonical:
                     canonical[cid].setdefault("files", []).append(p.name)
-                    if tool_id != cid and tool_id not in canonical[cid]["aliases"]:
+                    if (
+                        tool_id != cid
+                        and tool_id not in canonical[cid]["aliases"]
+                    ):
                         canonical[cid]["aliases"].append(tool_id)
                         id_aliases.setdefault(cid, []).append(tool_id)
 

@@ -69,7 +69,9 @@ class PriorityEngine:
 
         # State tracking
         self.last_rebalance: float = 0.0
-        self.execution_history: dict[str, float] = {}  # task_id -> completion_time
+        self.execution_history: dict[str, float] = (
+            {}
+        )  # task_id -> completion_time
         self.current_priorities: dict[str, TaskPriority] = {}
 
     def calculate_priorities(
@@ -87,7 +89,6 @@ class PriorityEngine:
             List of TaskPriority sorted by priority (highest first)
         """
         context = context or {}
-        all_priorities = []
 
         # 1. Calculate energy for all tasks
         task_energies = {}
@@ -96,20 +97,28 @@ class PriorityEngine:
             if task is None:
                 continue
             if self._should_consider_task(task, context):
-                energy = self.energy_calculator.calculate_task_energy(task, context)
+                energy = self.energy_calculator.calculate_task_energy(
+                    task, context
+                )
                 task_energies[task.id] = energy
 
         # 2. Apply priority strategy
         if self.config.strategy == PriorityStrategy.ENERGY_ONLY:
-            priorities = self._prioritize_by_energy_only(task_energies, context)
+            priorities = self._prioritize_by_energy_only(
+                task_energies, context
+            )
         elif self.config.strategy == PriorityStrategy.ENERGY_DEPENDENCY:
             priorities = self._prioritize_energy_dependency(
                 task_graph, task_energies, context
             )
         elif self.config.strategy == PriorityStrategy.BALANCED:
-            priorities = self._prioritize_balanced(task_graph, task_energies, context)
+            priorities = self._prioritize_balanced(
+                task_graph, task_energies, context
+            )
         else:  # ADAPTIVE
-            priorities = self._prioritize_adaptive(task_graph, task_energies, context)
+            priorities = self._prioritize_adaptive(
+                task_graph, task_energies, context
+            )
 
         # 3. Assign ranks and update state
         for i, priority in enumerate(priorities):
@@ -120,7 +129,9 @@ class PriorityEngine:
 
         return priorities
 
-    def _should_consider_task(self, task: Task, context: dict[str, Any]) -> bool:
+    def _should_consider_task(
+        self, task: Task, context: dict[str, Any]
+    ) -> bool:
         """Check if task should be considered for prioritization."""
         # Skip completed tasks
         if hasattr(task, "status") and task.status == "completed":
@@ -244,8 +255,12 @@ class PriorityEngine:
                 # Estimate when dependencies will complete
                 max_dependency_time = 0.0
                 for dep_id in priority.blocked_by:
-                    dep_completion = self._estimate_task_completion_time(dep_id)
-                    max_dependency_time = max(max_dependency_time, dep_completion)
+                    dep_completion = self._estimate_task_completion_time(
+                        dep_id
+                    )
+                    max_dependency_time = max(
+                        max_dependency_time, dep_completion
+                    )
 
                 priority.estimated_start_time = max_dependency_time
             else:
@@ -288,7 +303,9 @@ class PriorityEngine:
             )
         elif task_count > 10:
             # Many tasks - use balanced approach
-            return self._prioritize_balanced(task_graph, task_energies, context)
+            return self._prioritize_balanced(
+                task_graph, task_energies, context
+            )
         else:
             # Simple case - use energy only
             return self._prioritize_by_energy_only(task_energies, context)
@@ -305,7 +322,9 @@ class PriorityEngine:
     def should_rebalance(self) -> bool:
         """Check if priorities should be recalculated."""
         current_time = time.time()
-        return (current_time - self.last_rebalance) > self.config.rebalance_interval
+        return (
+            current_time - self.last_rebalance
+        ) > self.config.rebalance_interval
 
     def get_next_tasks(self, count: int = 1) -> list[TaskPriority]:
         """Get the next N highest priority executable tasks."""
@@ -314,11 +333,15 @@ class PriorityEngine:
         ]
 
         # Sort by priority score
-        executable_priorities.sort(key=lambda p: p.priority_score, reverse=True)
+        executable_priorities.sort(
+            key=lambda p: p.priority_score, reverse=True
+        )
 
         return executable_priorities[:count]
 
-    def mark_task_completed(self, task_id: str, completion_time: float | None = None):
+    def mark_task_completed(
+        self, task_id: str, completion_time: float | None = None
+    ):
         """Mark a task as completed for future priority calculations."""
         if completion_time is None:
             completion_time = time.time()

@@ -7,7 +7,9 @@ class Bus:
     def __init__(self) -> None:
         self.subscriptions: list[tuple[str, object]] = []
 
-    async def emit(self, event_type: str, **kwargs) -> None:  # pragma: no cover
+    async def emit(
+        self, event_type: str, **kwargs
+    ) -> None:  # pragma: no cover
         self.subscriptions.append((event_type, kwargs))
 
     async def subscribe(self, event_type: str, handler) -> None:

@@ -73,11 +73,17 @@ class AdvancedConsensusAggregator:
 
         # Apply consensus method
         if method == "weighted_vote":
-            result = await self._weighted_vote_consensus(texts, confidences, threshold)
+            result = await self._weighted_vote_consensus(
+                texts, confidences, threshold
+            )
         elif method == "borda_count":
-            result = await self._borda_count_consensus(texts, confidences, threshold)
+            result = await self._borda_count_consensus(
+                texts, confidences, threshold
+            )
         elif method == "condorcet":
-            result = await self._condorcet_consensus(texts, confidences, threshold)
+            result = await self._condorcet_consensus(
+                texts, confidences, threshold
+            )
         elif method == "confidence_ranking":
             result = await self._confidence_ranking_consensus(
                 texts, confidences, threshold
@@ -115,7 +121,8 @@ class AdvancedConsensusAggregator:
         stats = self.method_stats[method]
         stats["usage_count"] += 1
         stats["avg_confidence"] = (
-            stats["avg_confidence"] * (stats["usage_count"] - 1) + result["confidence"]
+            stats["avg_confidence"] * (stats["usage_count"] - 1)
+            + result["confidence"]
         ) / stats["usage_count"]
         stats["total_processing_time"] += processing_time
 
@@ -161,7 +168,7 @@ class AdvancedConsensusAggregator:
             return {"consensus_text": "", "confidence": 0.0}
 
         # Create unique text list
-        unique_texts = list(set(t.strip() for t in texts if t.strip()))
+        unique_texts = list({t.strip() for t in texts if t.strip()})
         if not unique_texts:
             return {"consensus_text": "", "confidence": 0.0}
 
@@ -192,7 +199,9 @@ class AdvancedConsensusAggregator:
 
         best_text = max(borda_scores, key=borda_scores.get)
         max_possible_score = n * sum(confidences)
-        consensus_confidence = borda_scores[best_text] / max(1.0, max_possible_score)
+        consensus_confidence = borda_scores[best_text] / max(
+            1.0, max_possible_score
+        )
 
         return {
             "consensus_text": best_text,
@@ -210,7 +219,7 @@ class AdvancedConsensusAggregator:
         if not texts:
             return {"consensus_text": "", "confidence": 0.0}
 
-        unique_texts = list(set(t.strip() for t in texts if t.strip()))
+        unique_texts = list({t.strip() for t in texts if t.strip()})
         if len(unique_texts) <= 1:
             return {
                 "consensus_text": unique_texts[0] if unique_texts else "",
@@ -240,12 +249,16 @@ class AdvancedConsensusAggregator:
                         elif sim_b > sim_a:
                             score_b += conf
 
-                    comparison_matrix[i][j] = score_a / (score_a + score_b + 1e-8)
+                    comparison_matrix[i][j] = score_a / (
+                        score_a + score_b + 1e-8
+                    )
 
         # Find Condorcet winner (beats all others in pairwise comparisons)
         condorcet_scores = []
         for i in range(n):
-            wins = sum(1 for j in range(n) if i != j and comparison_matrix[i][j] > 0.5)
+            wins = sum(
+                1 for j in range(n) if i != j and comparison_matrix[i][j] > 0.5
+            )
             condorcet_scores.append(wins)
 
         # Select winner
@@ -343,7 +356,9 @@ class AdvancedConsensusAggregator:
         consensus_text = best_item[1]
 
         # Calculate cluster confidence
-        cluster_confidence = cluster_scores[best_cluster_idx] / len(best_cluster)
+        cluster_confidence = cluster_scores[best_cluster_idx] / len(
+            best_cluster
+        )
 
         return {
             "consensus_text": consensus_text,
@@ -438,7 +453,9 @@ class EnhancedDeepConfPipeline:
         self.confidence_threshold = confidence_threshold
 
         # Initialize components
-        self.consensus_aggregator = AdvancedConsensusAggregator(confidence_threshold)
+        self.consensus_aggregator = AdvancedConsensusAggregator(
+            confidence_threshold
+        )
         self.confidence_calibrator = MultiDomainConfidenceCalibrator()
 
         # Caching and performance tracking
@@ -495,7 +512,9 @@ class EnhancedDeepConfPipeline:
                 # Vary temperature for diversity if adaptive sampling is enabled
                 if self.enable_adaptive_sampling and num_samples > 1:
                     temp_variation = 0.1 * (i - num_samples // 2)
-                    adjusted_temp = max(0.1, min(1.0, temperature + temp_variation))
+                    adjusted_temp = max(
+                        0.1, min(1.0, temperature + temp_variation)
+                    )
                 else:
                     adjusted_temp = temperature
 
@@ -531,10 +550,13 @@ class EnhancedDeepConfPipeline:
                 raise Exception("All generation attempts failed")
 
             # Apply consensus mechanism
-            consensus_result = await self.consensus_aggregator.aggregate_responses(
-                samples,
-                method=consensus_method,
-                confidence_threshold=confidence_threshold or self.confidence_threshold,
+            consensus_result = (
+                await self.consensus_aggregator.aggregate_responses(
+                    samples,
+                    method=consensus_method,
+                    confidence_threshold=confidence_threshold
+                    or self.confidence_threshold,
+                )
             )
 
             # Apply confidence calibration if domain is specified
@@ -544,7 +566,9 @@ class EnhancedDeepConfPipeline:
                         [consensus_result["confidence"]], domain=domain
                     )
                 )
-                consensus_result["calibrated_confidence"] = calibrated_confidence[0]
+                consensus_result["calibrated_confidence"] = (
+                    calibrated_confidence[0]
+                )
 
             # Add pipeline metadata
             processing_time = time.time() - start_time
@@ -598,7 +622,9 @@ class EnhancedDeepConfPipeline:
         # Simple hash-based cache key
         import hashlib
 
-        key_data = f"{prompt}:{num_samples}:{method}:{temperature}:{max_tokens}"
+        key_data = (
+            f"{prompt}:{num_samples}:{method}:{temperature}:{max_tokens}"
+        )
         return hashlib.md5(key_data.encode()).hexdigest()
 
     def _update_cache_hit_rate(self):

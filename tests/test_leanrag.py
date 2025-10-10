@@ -10,7 +10,9 @@ def _mk_graph():
     g = nx.DiGraph()
     # Create base nodes (files/functions), connect related ones
     for i in range(24):
-        g.add_node(f"n{i}", name=f"Entity{i}", description=f"desc {i}", type="entity")
+        g.add_node(
+            f"n{i}", name=f"Entity{i}", description=f"desc {i}", type="entity"
+        )
     # Create two dense clusters with a few cross-links
     for i in range(0, 10):
         for j in range(i + 1, 10):

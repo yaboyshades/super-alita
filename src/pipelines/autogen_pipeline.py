@@ -201,7 +201,9 @@ async def autogen_any(
 
     if not kinds:
         await _emit(
-            bus, "autogen.skipped", {"reason": "no_signals", "desc": description}
+            bus,
+            "autogen.skipped",
+            {"reason": "no_signals", "desc": description},
         )
         return {"status": "skipped", "reason": "no_signals"}
 
@@ -258,7 +260,9 @@ async def autogen_any(
             )
             if ok:
                 paths = info.get("paths") or []
-                apply_res = await api.deepcode_apply(paths=paths if paths else None)
+                apply_res = await api.deepcode_apply(
+                    paths=paths if paths else None
+                )
                 await _emit(
                     bus,
                     "autogen.applied",
@@ -324,7 +328,9 @@ async def autogen_any(
                 },
             )
             # OaK outcome feedback
-            await _emit(bus, "oak.outcome_feedback", {"kind": kind, "success": False})
+            await _emit(
+                bus, "oak.outcome_feedback", {"kind": kind, "success": False}
+            )
             results.setdefault("failed", []).append(kind)
 
     return results

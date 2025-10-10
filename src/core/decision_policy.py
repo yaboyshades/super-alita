@@ -188,7 +188,10 @@ class DecisionPolicyEngine:
             }
 
     async def decide_and_plan(
-        self, message: str, ctx: Dict[str, Any], budget: Optional[Budget] = None
+        self,
+        message: str,
+        ctx: Dict[str, Any],
+        budget: Optional[Budget] = None,
     ) -> ExecutionPlan:
         """Main decision entry point"""
 
@@ -265,7 +268,10 @@ class DecisionPolicyEngine:
 
         for _cap_id, capability in self.capabilities.items():
             # Basic text matching (can be enhanced with embeddings)
-            if self.text_similarity(goal.description, capability.description) > 0.3:
+            if (
+                self.text_similarity(goal.description, capability.description)
+                > 0.3
+            ):
                 candidates.append(capability)
 
             # Schema compatibility check
@@ -288,7 +294,9 @@ class DecisionPolicyEngine:
         """Calculate match score using weighted factors"""
 
         schema_fit = self.schema_fitness(goal, capability)
-        text_sim = self.text_similarity(goal.description, capability.description)
+        text_sim = self.text_similarity(
+            goal.description, capability.description
+        )
         precond_sat = self.precondition_satisfaction(capability, ctx)
         historical = self.historical_success(capability)
         risk_penalty = self.risk_penalty(capability, goal.risk_level)
@@ -308,7 +316,9 @@ class DecisionPolicyEngine:
         # Simplified implementation - can be enhanced with actual schema validation
         goal_slots = set(goal.slots.keys())
         cap_inputs = set(
-            capability.schema.get("input_schema", {}).get("properties", {}).keys()
+            capability.schema.get("input_schema", {})
+            .get("properties", {})
+            .keys()
         )
 
         if not cap_inputs:
@@ -357,7 +367,9 @@ class DecisionPolicyEngine:
 
         return wins / attempts
 
-    def risk_penalty(self, capability: CapabilityNode, risk_level: RiskLevel) -> float:
+    def risk_penalty(
+        self, capability: CapabilityNode, risk_level: RiskLevel
+    ) -> float:
         """Calculate risk penalty based on side effects"""
         if not capability.side_effects:
             return 0.0
@@ -383,7 +395,9 @@ class DecisionPolicyEngine:
         return capability.circuit_open
 
     def pick_strategy(
-        self, scored_candidates: List[Tuple[float, CapabilityNode, float]], goal: Goal
+        self,
+        scored_candidates: List[Tuple[float, CapabilityNode, float]],
+        goal: Goal,
     ) -> StrategyType:
         """Select execution strategy based on candidates and goal"""
 
@@ -393,7 +407,10 @@ class DecisionPolicyEngine:
         top_utility = scored_candidates[0][0]
 
         # Single dominant candidate
-        if len(scored_candidates) == 1 or top_utility > scored_candidates[1][0] + 0.2:
+        if (
+            len(scored_candidates) == 1
+            or top_utility > scored_candidates[1][0] + 0.2
+        ):
             return StrategyType.SINGLE_BEST
 
         # Check for dependencies
@@ -420,7 +437,9 @@ class DecisionPolicyEngine:
 
         return StrategyType.SINGLE_BEST
 
-    def safe_fallback_plan(self, goal: Goal, budget: Optional[Budget]) -> ExecutionPlan:
+    def safe_fallback_plan(
+        self, goal: Goal, budget: Optional[Budget]
+    ) -> ExecutionPlan:
         """Create safe fallback plan when no good candidates found"""
         plan_steps = [
             {"say": f"I understand you want to: {goal.description}"},
@@ -465,7 +484,9 @@ class DecisionPolicyEngine:
 
         # Update average reward using exponential moving average
         alpha = 0.1
-        stats["avg_reward"] = (1 - alpha) * stats["avg_reward"] + alpha * reward
+        stats["avg_reward"] = (1 - alpha) * stats[
+            "avg_reward"
+        ] + alpha * reward
 
 
 class IntentClassifier:
@@ -513,7 +534,13 @@ class IntentClassifier:
             return IntentType.MODIFY
 
         # Analysis keywords
-        analyze_keywords = ["analyze", "check", "validate", "test", "benchmark"]
+        analyze_keywords = [
+            "analyze",
+            "check",
+            "validate",
+            "test",
+            "benchmark",
+        ]
         if any(keyword in message_lower for keyword in analyze_keywords):
             return IntentType.ANALYZE
 
@@ -602,7 +629,9 @@ class UtilityCalculator:
 
         return utility
 
-    def estimate_success_probability(self, capability: CapabilityNode) -> float:
+    def estimate_success_probability(
+        self, capability: CapabilityNode
+    ) -> float:
         """Estimate success probability from historical data"""
         if capability.attempts == 0:
             return 0.5  # No history, assume 50%
@@ -663,8 +692,12 @@ class PlanBuilder:
             plan = self.build_guardrail_plan(goal)
 
         # Calculate confidence and cost
-        confidence = self.calculate_plan_confidence(scored_candidates, strategy)
-        estimated_cost = self.calculate_estimated_cost(scored_candidates, strategy)
+        confidence = self.calculate_plan_confidence(
+            scored_candidates, strategy
+        )
+        estimated_cost = self.calculate_estimated_cost(
+            scored_candidates, strategy
+        )
 
         return ExecutionPlan(
             run_id=run_id,
@@ -691,7 +724,9 @@ class PlanBuilder:
         ]
 
     def build_sequential_plan(
-        self, scored_candidates: List[Tuple[float, CapabilityNode, float]], goal: Goal
+        self,
+        scored_candidates: List[Tuple[float, CapabilityNode, float]],
+        goal: Goal,
     ) -> List[Dict[str, Any]]:
         """Build sequential execution plan"""
         plan = [{"say": "Starting sequential execution..."}]
@@ -712,7 +747,9 @@ class PlanBuilder:
         return plan
 
     def build_parallel_plan(
-        self, scored_candidates: List[Tuple[float, CapabilityNode, float]], goal: Goal
+        self,
+        scored_candidates: List[Tuple[float, CapabilityNode, float]],
+        goal: Goal,
     ) -> List[Dict[str, Any]]:
         """Build parallel execution plan"""
         return [
@@ -722,7 +759,9 @@ class PlanBuilder:
         ]
 
     def build_delegate_plan(
-        self, scored_candidates: List[Tuple[float, CapabilityNode, float]], goal: Goal
+        self,
+        scored_candidates: List[Tuple[float, CapabilityNode, float]],
+        goal: Goal,
     ) -> List[Dict[str, Any]]:
         """Build delegation plan"""
         return [
@@ -789,10 +828,15 @@ class PlanBuilder:
             return scored_candidates[0][1].cost_hint
         else:
             # Sum costs for multiple capabilities
-            return sum(candidate.cost_hint for _, candidate, _ in scored_candidates[:3])
+            return sum(
+                candidate.cost_hint
+                for _, candidate, _ in scored_candidates[:3]
+            )
 
     def identify_risk_factors(
-        self, scored_candidates: List[Tuple[float, CapabilityNode, float]], goal: Goal
+        self,
+        scored_candidates: List[Tuple[float, CapabilityNode, float]],
+        goal: Goal,
     ) -> List[str]:
         """Identify potential risk factors"""
         risk_factors = []

@@ -31,7 +31,9 @@ class OptionExecutorPlugin(PluginInterface):
     def name(self) -> str:
         return "option_executor"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         self.option_mapping = self.get_config(
             "option_mapping", OPTION_TO_ACTION_MAPPING
@@ -83,7 +85,9 @@ class OptionExecutorPlugin(PluginInterface):
                     tool_name=tool_name,
                     parameters=populated_params,
                     session_id=event.session_id,
-                    conversation_id=getattr(event, "conversation_id", event.session_id),
+                    conversation_id=getattr(
+                        event, "conversation_id", event.session_id
+                    ),
                     tool_call_id=f"tc_{uuid.uuid4()}",
                 )
             )

@@ -26,7 +26,9 @@ async def test_mcp_tools():
         result = await app._handle_call(
             "find_missing_docstrings", {"root": "src", "include_tests": False}
         )
-        print(f"✅ Found {result.get('count', 0)} functions missing docstrings")
+        print(
+            f"✅ Found {result.get('count', 0)} functions missing docstrings"
+        )
         if result.get("functions"):
             print(f"   First few: {result['functions'][:3]}")
     except Exception as e:
@@ -40,7 +42,9 @@ async def test_mcp_tools():
             result = await app._handle_call(
                 "format_and_lint_selection", {"target_path": str(test_file)}
             )
-            print(f"✅ Formatting result: stdout={len(result.get('stdout', ''))} chars")
+            print(
+                f"✅ Formatting result: stdout={len(result.get('stdout', ''))} chars"
+            )
         else:
             print("⚠️  Test file not found, skipping format test")
     except Exception as e:

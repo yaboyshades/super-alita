@@ -43,7 +43,7 @@ def test_imports():
     try:
         from abilities.simple_mangle_ability import MangleReasoningAbility
 
-        ability = MangleReasoningAbility()
+        MangleReasoningAbility()
         print("✅ simple_mangle_ability works!")
     except Exception as e:
         print(f"❌ simple_mangle_ability failed: {e}")

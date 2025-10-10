@@ -26,7 +26,9 @@ async def initialize_capability_system():
 
         # Log issues if any
         if audit_results["issues"]:
-            logger.warning(f"Found {len(audit_results['issues'])} capability issues")
+            logger.warning(
+                f"Found {len(audit_results['issues'])} capability issues"
+            )
             for issue in audit_results["issues"][:3]:  # Log first 3
                 logger.warning(f"Issue: {issue['description']}")
 
@@ -60,7 +62,10 @@ def search_capabilities_for_task(task_description: str) -> list:
 
     # Return capability details
     return [
-        {"name": cap_name, "capability": capability_registry.get_capability(cap_name)}
+        {
+            "name": cap_name,
+            "capability": capability_registry.get_capability(cap_name),
+        }
         for cap_name in all_matches
         if capability_registry.get_capability(cap_name)
     ]
@@ -123,7 +128,9 @@ def recommend_capability_improvements() -> list:
 
     # Check for error capabilities
     error_caps = [
-        cap for cap in capability_registry.list_capabilities() if cap.error_message
+        cap
+        for cap in capability_registry.list_capabilities()
+        if cap.error_message
     ]
 
     if error_caps:
@@ -158,7 +165,11 @@ async def audit_and_report() -> dict:
             "audit_results": None,
             "missing_capabilities": [],
             "improvement_recommendations": ["Fix audit system errors"],
-            "quick_stats": {"total_capabilities": 0, "by_type": {}, "health_score": 0},
+            "quick_stats": {
+                "total_capabilities": 0,
+                "by_type": {},
+                "health_score": 0,
+            },
         }
 
 

@@ -118,7 +118,9 @@ class PerformanceCertificate:
         cls, function_name: str, build_id: str
     ) -> RuntimeSampleSet:
         """Create minimal sample set for testing purposes."""
-        sample_set = RuntimeSampleSet(target_function=function_name, build_id=build_id)
+        sample_set = RuntimeSampleSet(
+            target_function=function_name, build_id=build_id
+        )
 
         # Add minimal test data
         sample_set.add_sample(10, 0.01, 0.009, 1000, 500)
@@ -130,7 +132,10 @@ class PerformanceCertificate:
     @classmethod
     def _perform_analysis(cls, certificate: DerivativeCertificate) -> None:
         """Perform complete mathematical analysis on the certificate."""
-        if not certificate.sample_set or certificate.sample_set.sample_count < 3:
+        if (
+            not certificate.sample_set
+            or certificate.sample_set.sample_count < 3
+        ):
             return
 
         # Set up analyzer
@@ -139,18 +144,27 @@ class PerformanceCertificate:
         try:
             # Fit curve to wall time data
             analyzer.fit_curve(
-                certificate.sample_set.input_sizes, certificate.sample_set.wall_times
+                certificate.sample_set.input_sizes,
+                certificate.sample_set.wall_times,
             )
 
             # Store fitting metadata
             certificate.fitting_method = analyzer.fitting_method
             certificate.fitting_quality_score = analyzer.fitting_quality_score
-            certificate.noise_handling_applied = analyzer.noise_handling_applied
+            certificate.noise_handling_applied = (
+                analyzer.noise_handling_applied
+            )
 
             # Compute derivatives
-            certificate.first_derivatives = analyzer.compute_first_derivatives()
-            certificate.second_derivatives = analyzer.compute_second_derivatives()
-            certificate.lipschitz_constant = analyzer.compute_lipschitz_constant()
+            certificate.first_derivatives = (
+                analyzer.compute_first_derivatives()
+            )
+            certificate.second_derivatives = (
+                analyzer.compute_second_derivatives()
+            )
+            certificate.lipschitz_constant = (
+                analyzer.compute_lipschitz_constant()
+            )
 
             # Compute confidence intervals
             try:
@@ -173,7 +187,9 @@ class PerformanceCertificate:
 
         except Exception as e:
             # Analysis failed
-            print(f"Warning: Analysis failed for {certificate.function_name}: {e}")
+            print(
+                f"Warning: Analysis failed for {certificate.function_name}: {e}"
+            )
             certificate.certificate_grade = "F"
             certificate.overall_compliance = False
 
@@ -213,7 +229,9 @@ class PerformanceCertificate:
                         certificate.sample_set.input_sizes
                     ):
                         input_size = certificate.sample_set.input_sizes[i]
-                        curvature_violations.append((input_size, abs_derivative))
+                        curvature_violations.append(
+                            (input_size, abs_derivative)
+                        )
 
         certificate.curvature_violations = curvature_violations
         certificate.passes_curvature_gate = len(curvature_violations) == 0
@@ -251,7 +269,8 @@ class PerformanceCertificate:
 
         if (
             certificate.lipschitz_violation
-            and certificate.lipschitz_constant > certificate.lipschitz_limit * 2
+            and certificate.lipschitz_constant
+            > certificate.lipschitz_limit * 2
         ):
             severe_violations += 1
 
@@ -398,7 +417,9 @@ class PerformanceCertificate:
             + (1 if baseline_certificate.lipschitz_violation else 0)
         )
 
-        comparison["violation_change"] = current_violations - baseline_violations
+        comparison["violation_change"] = (
+            current_violations - baseline_violations
+        )
 
         # Determine trend
         if (
@@ -433,7 +454,9 @@ class PerformanceCertificate:
             certificate: Certificate to update
             baseline_certificate: Baseline for comparison
         """
-        comparison = cls.compare_with_baseline(certificate, baseline_certificate)
+        comparison = cls.compare_with_baseline(
+            certificate, baseline_certificate
+        )
         certificate.baseline_comparison = baseline_certificate.certificate_id
         certificate.trend_analysis = comparison
 
@@ -442,7 +465,9 @@ class CertificateGrader:
     """Grades performance certificates based on compliance and severity."""
 
     @staticmethod
-    def calculate_compliance_score(certificate: DerivativeCertificate) -> float:
+    def calculate_compliance_score(
+        certificate: DerivativeCertificate,
+    ) -> float:
         """
         Calculate numerical compliance score (0.0 to 1.0).
 
@@ -503,7 +528,9 @@ class CertificateGrader:
         if certificate.fitting_quality_score > 0:
             quality_factor = 0.9 + 0.1 * certificate.fitting_quality_score
 
-        final_score = max(0.0, min(1.0, (base_score - penalty) * quality_factor))
+        final_score = max(
+            0.0, min(1.0, (base_score - penalty) * quality_factor)
+        )
         return final_score
 
     @staticmethod

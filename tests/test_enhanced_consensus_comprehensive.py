@@ -40,7 +40,9 @@ class EnhancedConsensusValidator:
 
                 components = health.get("components", {})
                 for component, status in components.items():
-                    status_icon = "✅" if status.get("status") == "ok" else "❌"
+                    status_icon = (
+                        "✅" if status.get("status") == "ok" else "❌"
+                    )
                     print(
                         f"   {status_icon} {component}: {status.get('status', 'unknown')}"
                     )
@@ -57,7 +59,9 @@ class EnhancedConsensusValidator:
     def check_tools_catalog(self) -> bool:
         """Check if consensus tool is available."""
         try:
-            response = requests.get(f"{self.base_url}/tools/catalog", timeout=10)
+            response = requests.get(
+                f"{self.base_url}/tools/catalog", timeout=10
+            )
             if response.status_code == 200:
                 tools = response.json()
                 consensus_tool = None
@@ -69,7 +73,9 @@ class EnhancedConsensusValidator:
 
                 if consensus_tool:
                     print("✅ Enhanced consensus tool found in catalog")
-                    print(f"   Description: {consensus_tool.get('description', 'N/A')}")
+                    print(
+                        f"   Description: {consensus_tool.get('description', 'N/A')}"
+                    )
 
                     # Check for enhanced parameters
                     input_schema = consensus_tool.get("input_schema", {})
@@ -81,7 +87,9 @@ class EnhancedConsensusValidator:
                         "temperature_range",
                     ]
                     found_enhanced = [
-                        param for param in enhanced_params if param in properties
+                        param
+                        for param in enhanced_params
+                        if param in properties
                     ]
 
                     if found_enhanced:
@@ -103,7 +111,9 @@ class EnhancedConsensusValidator:
             print(f"❌ Tools catalog error: {e}")
             return False
 
-    def test_consensus_method(self, method: str, prompt: str) -> dict[str, Any]:
+    def test_consensus_method(
+        self, method: str, prompt: str
+    ) -> dict[str, Any]:
         """Test a specific consensus method."""
         print(f"\n🔍 Testing {method} with: '{prompt[:50]}...'")
 
@@ -132,8 +142,13 @@ class EnhancedConsensusValidator:
                     result = response.json()
                     return self._analyze_consensus_result(method, result)
                 else:
-                    print(f"   ❌ Tool execution failed: {response.status_code}")
-                    return {"success": False, "error": f"HTTP {response.status_code}"}
+                    print(
+                        f"   ❌ Tool execution failed: {response.status_code}"
+                    )
+                    return {
+                        "success": False,
+                        "error": f"HTTP {response.status_code}",
+                    }
 
             except Exception:
                 # Fallback: test the enhanced provider directly
@@ -155,7 +170,9 @@ class EnhancedConsensusValidator:
 
             sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
-            from abilities.enhanced_consensus_ability import EnhancedConsensusProvider
+            from abilities.enhanced_consensus_ability import (
+                EnhancedConsensusProvider,
+            )
 
             async def run_direct_test():
                 provider = EnhancedConsensusProvider(
@@ -207,10 +224,11 @@ class EnhancedConsensusValidator:
             print(f"   📈 Method: {aggregation_method}")
 
             # Validate method-specific features
-            validation_success = True
 
             if method == "weighted_vote" and confidence_scores:
-                avg_confidence = sum(confidence_scores) / len(confidence_scores)
+                avg_confidence = sum(confidence_scores) / len(
+                    confidence_scores
+                )
                 print(f"   ⚖️  Avg confidence: {avg_confidence:.3f}")
 
             elif method == "confidence_based":
@@ -221,11 +239,13 @@ class EnhancedConsensusValidator:
             elif method == "semantic_similarity":
                 similarity_scores = metadata.get("similarity_scores", [])
                 if similarity_scores:
-                    avg_similarity = sum(similarity_scores) / len(similarity_scores)
+                    avg_similarity = sum(similarity_scores) / len(
+                        similarity_scores
+                    )
                     print(f"   🔗 Avg similarity: {avg_similarity:.3f}")
 
             elif method == "ensemble_ranking":
-                ensemble_scores = metadata.get("ensemble_scores", [])
+                metadata.get("ensemble_scores", [])
                 components = metadata.get("scoring_components", [])
                 print(f"   🏆 Ranking components: {components}")
 
@@ -266,7 +286,9 @@ class EnhancedConsensusValidator:
         successful_tests = 0
 
         for i, method in enumerate(self.methods, 1):
-            print(f"\n--- Method {i}/{len(self.methods)}: {method.upper()} ---")
+            print(
+                f"\n--- Method {i}/{len(self.methods)}: {method.upper()} ---"
+            )
             method_results = []
 
             for j, prompt in enumerate(self.test_prompts, 1):
@@ -294,18 +316,24 @@ class EnhancedConsensusValidator:
         # Method-specific summary
         for method in self.methods:
             method_results = results[method]
-            method_success = sum(1 for r in method_results if r.get("success", False))
+            method_success = sum(
+                1 for r in method_results if r.get("success", False)
+            )
             method_total = len(method_results)
             print(
                 f"   {method}: {method_success}/{method_total} ({(method_success/method_total)*100:.1f}%)"
             )
 
-        overall_success = successful_tests >= (total_tests * 0.8)  # 80% success rate
+        overall_success = successful_tests >= (
+            total_tests * 0.8
+        )  # 80% success rate
 
         if overall_success:
             print("\n🎉 Enhanced Consensus System: READY FOR PRODUCTION!")
         else:
-            print("\n⚠️  Enhanced Consensus System: Needs attention before production")
+            print(
+                "\n⚠️  Enhanced Consensus System: Needs attention before production"
+            )
 
         return {
             "success": overall_success,

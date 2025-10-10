@@ -58,25 +58,37 @@ class FakeAbilityRegistry:
     async def register(self, contract: dict[str, Any]) -> None:
         tid = contract["tool_id"]
         self._known.add(tid)
-        self._impls.setdefault(tid, lambda **kwargs: {"ok": True, "args": kwargs})
+        self._impls.setdefault(
+            tid, lambda **kwargs: {"ok": True, "args": kwargs}
+        )
 
-    async def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    async def execute(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
         self._calls.append({"tool": tool_name, "args": dict(args)})
         impl = self._impls.get(tool_name)
         if impl is None:
             return {"ok": True, "args": args}
-        fn = getattr(impl, "aexecute", None) or getattr(impl, "run", None) or impl
+        fn = (
+            getattr(impl, "aexecute", None)
+            or getattr(impl, "run", None)
+            or impl
+        )
         sig = inspect.signature(fn)
         params = sig.parameters
         accepts_var_kw = any(
             p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()
         )
-        unexpected = [k for k in args if k not in params] if not accepts_var_kw else []
+        unexpected = (
+            [k for k in args if k not in params] if not accepts_var_kw else []
+        )
         if unexpected:
             raise TypeError(
                 f"Unexpected argument(s): {', '.join(sorted(unexpected))} for tool '{tool_name}'"
             )
-        filtered = {k: v for k, v in args.items() if accepts_var_kw or k in params}
+        filtered = {
+            k: v for k, v in args.items() if accepts_var_kw or k in params
+        }
         if inspect.iscoroutinefunction(fn):
             return await fn(**filtered)
         return fn(**filtered)
@@ -96,7 +108,9 @@ class FakeKG:
             "description": f"answer user in session {session_id}",
         }
 
-    async def create_atom(self, atom_type: str, content: Any) -> dict[str, Any]:
+    async def create_atom(
+        self, atom_type: str, content: Any
+    ) -> dict[str, Any]:
         atom = {
             "id": f"atom_{len(self.atoms)}",
             "type": atom_type,

@@ -60,7 +60,9 @@ class ConversationContext:
     conversation_id: str
     user_id: str = ""
     session_start: datetime = field(default_factory=lambda: datetime.now(UTC))
-    last_interaction: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_interaction: datetime = field(
+        default_factory=lambda: datetime.now(UTC)
+    )
 
     # Conversation state
     current_intent: IntentType = IntentType.QUESTION
@@ -260,9 +262,30 @@ class CapabilityMatcher:
                 "check",
                 "performance",
             ],
-            "creation": ["create", "make", "build", "generate", "produce", "develop"],
-            "debugging": ["debug", "fix", "error", "problem", "issue", "bug", "broken"],
-            "planning": ["plan", "strategy", "organize", "structure", "roadmap"],
+            "creation": [
+                "create",
+                "make",
+                "build",
+                "generate",
+                "produce",
+                "develop",
+            ],
+            "debugging": [
+                "debug",
+                "fix",
+                "error",
+                "problem",
+                "issue",
+                "bug",
+                "broken",
+            ],
+            "planning": [
+                "plan",
+                "strategy",
+                "organize",
+                "structure",
+                "roadmap",
+            ],
             "memory": ["remember", "recall", "store", "history", "past"],
             "search": ["find", "search", "look", "discover", "locate"],
             "collaboration": [
@@ -273,10 +296,28 @@ class CapabilityMatcher:
                 "collaborate",
                 "work",
             ],
-            "refactoring": ["refactor", "improve", "optimize", "clean", "restructure"],
-            "metrics": ["metrics", "measurement", "statistics", "data", "performance"],
+            "refactoring": [
+                "refactor",
+                "improve",
+                "optimize",
+                "clean",
+                "restructure",
+            ],
+            "metrics": [
+                "metrics",
+                "measurement",
+                "statistics",
+                "data",
+                "performance",
+            ],
             "repair": ["repair", "fix", "correct", "resolve", "solve"],
-            "organization": ["organize", "schedule", "plan", "structure", "manage"],
+            "organization": [
+                "organize",
+                "schedule",
+                "plan",
+                "structure",
+                "manage",
+            ],
         }
 
     def find_capability_matches(
@@ -493,7 +534,8 @@ class ResponseRouter:
         high_confidence_matches = [
             m
             for m in matches
-            if m.confidence in [ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH]
+            if m.confidence
+            in [ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH]
         ]
 
         if len(high_confidence_matches) > 1:
@@ -527,7 +569,9 @@ class ResponseRouter:
         # Select plugins based on strategy
         if strategy == ResponseStrategy.SINGLE_BEST:
             selected_plugins = [matches[0].plugin_name] if matches else []
-            confidence = matches[0].confidence if matches else ConfidenceLevel.LOW
+            confidence = (
+                matches[0].confidence if matches else ConfidenceLevel.LOW
+            )
         elif strategy in [
             ResponseStrategy.MULTI_AGENT,
             ResponseStrategy.COLLABORATIVE,
@@ -536,7 +580,9 @@ class ResponseRouter:
             # Take top 3 matches
             selected_plugins = [m.plugin_name for m in matches[:3]]
             confidence = (
-                ConfidenceLevel.HIGH if len(matches) >= 2 else ConfidenceLevel.MEDIUM
+                ConfidenceLevel.HIGH
+                if len(matches) >= 2
+                else ConfidenceLevel.MEDIUM
             )
         elif strategy == ResponseStrategy.SEQUENTIAL:
             # Take top 2-4 matches for sequential processing
@@ -559,7 +605,9 @@ class ResponseRouter:
         reasoning = f"Selected {strategy.value} strategy for {intent.value} intent with {len(matches)} capability matches"
 
         # Estimate processing time
-        estimated_time = self._estimate_processing_time(strategy, len(selected_plugins))
+        estimated_time = self._estimate_processing_time(
+            strategy, len(selected_plugins)
+        )
 
         # Create fallback options
         fallback_options = self._generate_fallback_options(matches, strategy)
@@ -597,7 +645,9 @@ class ResponseRouter:
         return base_time * multiplier
 
     def _generate_fallback_options(
-        self, matches: list[CapabilityMatch], primary_strategy: ResponseStrategy
+        self,
+        matches: list[CapabilityMatch],
+        primary_strategy: ResponseStrategy,
     ) -> list[tuple[list[str], ResponseStrategy]]:
         """Generate fallback routing options"""
         fallbacks = []
@@ -610,9 +660,15 @@ class ResponseRouter:
                 )
 
             # Fallback to multi-agent if not already selected
-            if primary_strategy != ResponseStrategy.MULTI_AGENT and len(matches) >= 2:
+            if (
+                primary_strategy != ResponseStrategy.MULTI_AGENT
+                and len(matches) >= 2
+            ):
                 fallbacks.append(
-                    ([m.plugin_name for m in matches[:2]], ResponseStrategy.MULTI_AGENT)
+                    (
+                        [m.plugin_name for m in matches[:2]],
+                        ResponseStrategy.MULTI_AGENT,
+                    )
                 )
 
         return fallbacks[:2]  # Limit to 2 fallback options
@@ -628,7 +684,9 @@ class ResponseRouter:
             return {"error": f"Unsupported strategy: {decision.strategy}"}
 
         try:
-            result = await strategy_handler(decision, user_input, conversation_id)
+            result = await strategy_handler(
+                decision, user_input, conversation_id
+            )
 
             # Record success
             context = self.active_contexts.get(conversation_id)
@@ -640,7 +698,9 @@ class ResponseRouter:
             return result
 
         except Exception as e:
-            self.logger.error(f"Error executing strategy {decision.strategy}: {e}")
+            self.logger.error(
+                f"Error executing strategy {decision.strategy}: {e}"
+            )
 
             # Record failure
             context = self.active_contexts.get(conversation_id)
@@ -651,10 +711,14 @@ class ResponseRouter:
 
             # Try fallback if available
             if decision.fallback_options:
-                self.logger.info(f"Trying fallback strategy for {conversation_id}")
+                self.logger.info(
+                    f"Trying fallback strategy for {conversation_id}"
+                )
 
                 try:
-                    fallback_plugins, fallback_strategy = decision.fallback_options[0]
+                    fallback_plugins, fallback_strategy = (
+                        decision.fallback_options[0]
+                    )
 
                     fallback_decision = RoutingDecision(
                         selected_plugins=fallback_plugins,
@@ -665,7 +729,9 @@ class ResponseRouter:
                         fallback_options=[],
                     )
 
-                    fallback_handler = self.strategy_handlers.get(fallback_strategy)
+                    fallback_handler = self.strategy_handlers.get(
+                        fallback_strategy
+                    )
                     if fallback_handler:
                         fallback_result = await fallback_handler(
                             fallback_decision, user_input, conversation_id
@@ -744,7 +810,9 @@ class ResponseRouter:
                     "conversation_id": conversation_id,
                     "strategy": "multi_agent",
                     "peer_plugins": [
-                        p for p in decision.selected_plugins if p != plugin_name
+                        p
+                        for p in decision.selected_plugins
+                        if p != plugin_name
                     ],
                 },
                 priority=MessagePriority.HIGH,
@@ -765,7 +833,9 @@ class ResponseRouter:
     ) -> dict[str, Any]:
         """Handle collaborative strategy"""
         if len(decision.selected_plugins) < 2:
-            return {"error": "Collaborative strategy requires at least 2 plugins"}
+            return {
+                "error": "Collaborative strategy requires at least 2 plugins"
+            }
 
         # Send coordination message to all plugins
         coordination_message = PluginMessage(
@@ -834,7 +904,9 @@ class ResponseRouter:
             return {"error": "No plugins selected"}
 
         # Send parallel execution requests
-        correlation_id = f"parallel_{conversation_id}_{datetime.now(UTC).timestamp()}"
+        correlation_id = (
+            f"parallel_{conversation_id}_{datetime.now(UTC).timestamp()}"
+        )
         results = []
 
         for plugin_name in decision.selected_plugins:

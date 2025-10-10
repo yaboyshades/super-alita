@@ -13,11 +13,11 @@ from .opentelemetry_config import (
 
 __all__ = [
     "OpenTelemetryCollector",
-    "ServiceLevelObjectives", 
+    "ServiceLevelObjectives",
     "TelemetrySpan",
     "get_telemetry_collector",
     "telemetry_trace",
     "telemetry_span",
     "telemetry_span_sync",
-    "start_prometheus_server"
+    "start_prometheus_server",
 ]

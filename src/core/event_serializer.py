@@ -39,12 +39,16 @@ class EventSerializer:
                 # Fallback for basic events
                 event_dict = {
                     "event_type": getattr(event, "event_type", "unknown"),
-                    "source_plugin": getattr(event, "source_plugin", "unknown"),
+                    "source_plugin": getattr(
+                        event, "source_plugin", "unknown"
+                    ),
                     "timestamp": datetime.now().isoformat(),
                 }
                 # Add all other attributes
                 for attr in dir(event):
-                    if not attr.startswith("_") and not callable(getattr(event, attr)):
+                    if not attr.startswith("_") and not callable(
+                        getattr(event, attr)
+                    ):
                         event_dict[attr] = getattr(event, attr)
 
             # Handle datetime objects
@@ -61,7 +65,9 @@ class EventSerializer:
             return json_str.encode("utf-8")
 
         except Exception as e:
-            raise EventSerializerError(f"Failed to serialize event {event}: {e}") from e
+            raise EventSerializerError(
+                f"Failed to serialize event {event}: {e}"
+            ) from e
 
     def deserialize(self, data: bytes) -> BaseEvent:
         """
@@ -86,7 +92,9 @@ class EventSerializer:
             event_module = event_dict.pop("_event_module", "src.core.events")
 
             # Convert timestamp strings back to datetime if needed
-            if "timestamp" in event_dict and isinstance(event_dict["timestamp"], str):
+            if "timestamp" in event_dict and isinstance(
+                event_dict["timestamp"], str
+            ):
                 try:
                     event_dict["timestamp"] = datetime.fromisoformat(
                         event_dict["timestamp"]
@@ -106,4 +114,6 @@ class EventSerializer:
                 return BaseEvent(**event_dict)
 
         except Exception as e:
-            raise EventSerializerError(f"Failed to deserialize event data: {e}") from e
+            raise EventSerializerError(
+                f"Failed to deserialize event data: {e}"
+            ) from e

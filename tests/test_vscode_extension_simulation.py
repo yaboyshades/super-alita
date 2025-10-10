@@ -142,6 +142,8 @@ if __name__ == "__main__":
             print(
                 "5. Start runtime: make run-ollama (or set env vars + python -m src.main)"
             )
-            print("6. Use Command Palette > 'Alita: Chat via Runtime (Stream)'")
+            print(
+                "6. Use Command Palette > 'Alita: Chat via Runtime (Stream)'"
+            )
 
     print("=" * 70)

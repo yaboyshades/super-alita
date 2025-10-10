@@ -121,7 +121,10 @@ async def test_ladder_eventbus_integration():
 
     # Run 3 concurrent requests
     concurrent_results = await asyncio.gather(
-        make_request(1), make_request(2), make_request(3), return_exceptions=True
+        make_request(1),
+        make_request(2),
+        make_request(3),
+        return_exceptions=True,
     )
 
     successful_requests = sum(

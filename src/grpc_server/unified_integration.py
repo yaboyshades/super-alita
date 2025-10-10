@@ -88,11 +88,15 @@ class ConstitutionalUnifiedIntegration:
         - Article III: Simple, clear initialization sequence
         """
         try:
-            logger.info("🔄 Initializing constitutional unified integration...")
+            logger.info(
+                "🔄 Initializing constitutional unified integration..."
+            )
 
             # Initialize unified intelligence orchestrator (Article I: Library-First)
             logger.info("🧠 Starting unified intelligence layer...")
-            self.unified_agent = UnifiedSuperAlita(config_path=self.config_path)
+            self.unified_agent = UnifiedSuperAlita(
+                config_path=self.config_path
+            )
 
             # Initialize in background to avoid blocking
             # Note: In production, you might want to await this initialization
@@ -125,7 +129,9 @@ class ConstitutionalUnifiedIntegration:
             )
 
         except Exception as e:
-            logger.error(f"❌ Constitutional integration initialization failed: {e}")
+            logger.error(
+                f"❌ Constitutional integration initialization failed: {e}"
+            )
             await self.cleanup()
             raise
 
@@ -146,7 +152,9 @@ class ConstitutionalUnifiedIntegration:
             # Log constitutional compliance status
             await self._log_constitutional_status()
 
-            logger.info("✅ Constitutional unified integration started successfully")
+            logger.info(
+                "✅ Constitutional unified integration started successfully"
+            )
             logger.info(
                 f"🌐 gRPC server available at {self.grpc_host}:{self.grpc_port}"
             )
@@ -180,7 +188,9 @@ class ConstitutionalUnifiedIntegration:
             # Final constitutional compliance report
             await self._log_final_compliance_report()
 
-            logger.info("✅ Constitutional unified integration stopped gracefully")
+            logger.info(
+                "✅ Constitutional unified integration stopped gracefully"
+            )
 
         except Exception as e:
             logger.error(f"❌ Error stopping constitutional integration: {e}")
@@ -248,7 +258,9 @@ class ConstitutionalUnifiedIntegration:
                 "grpc_server": {
                     "available": self.grpc_server is not None,
                     "running": (
-                        self.grpc_server.is_running() if self.grpc_server else False
+                        self.grpc_server.is_running()
+                        if self.grpc_server
+                        else False
                     ),
                     "host": self.grpc_host,
                     "port": self.grpc_port,
@@ -256,7 +268,9 @@ class ConstitutionalUnifiedIntegration:
                 "unified_agent": {
                     "available": self.unified_agent is not None,
                     "plugins_count": (
-                        len(self.unified_agent.plugins) if self.unified_agent else 0
+                        len(self.unified_agent.plugins)
+                        if self.unified_agent
+                        else 0
                     ),
                 },
                 "mangle_reasoner": {
@@ -281,10 +295,15 @@ class ConstitutionalUnifiedIntegration:
                     self.mangle_reasoner.validate_constitutional_compliance()
                 )
                 total_violations = sum(
-                    len(result.raw_results) for result in compliance_results.values()
+                    len(result.raw_results)
+                    for result in compliance_results.values()
                 )
-                status["constitutional_compliance"]["violations"] = total_violations
-                status["constitutional_compliance"]["compliant"] = total_violations == 0
+                status["constitutional_compliance"][
+                    "violations"
+                ] = total_violations
+                status["constitutional_compliance"]["compliant"] = (
+                    total_violations == 0
+                )
             except Exception as e:
                 logger.warning(f"Constitutional compliance check failed: {e}")
 
@@ -308,7 +327,8 @@ class ConstitutionalUnifiedIntegration:
             )
 
             total_violations = sum(
-                len(result.raw_results) for result in compliance_results.values()
+                len(result.raw_results)
+                for result in compliance_results.values()
             )
 
             if total_violations > 0:
@@ -340,7 +360,9 @@ class ConstitutionalUnifiedIntegration:
             logger.info(
                 f"   Articles Enforced: {compliance.get('articles_enforced', 0)}"
             )
-            logger.info(f"   Validation: {compliance.get('validation_enabled', False)}")
+            logger.info(
+                f"   Validation: {compliance.get('validation_enabled', False)}"
+            )
 
             if "violations" in compliance:
                 violations = compliance["violations"]

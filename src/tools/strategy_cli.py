@@ -9,7 +9,9 @@ from src.core.optimization.strategy_selector import StrategySelector
 
 def cmd_select(args: argparse.Namespace) -> int:
     ss = StrategySelector(config_path=args.config)
-    decision = ss.select(task_type=args.task_type, context={"user": args.user or "cli"})
+    decision = ss.select(
+        task_type=args.task_type, context={"user": args.user or "cli"}
+    )
     out = {
         "decision_id": decision.decision_id,
         "task_type": decision.task_type,

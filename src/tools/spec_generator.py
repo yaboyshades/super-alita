@@ -55,7 +55,8 @@ def draft_tool_spec(need_statement: str) -> ToolSpec:
     Heuristics only; developer is expected to refine as needed.
     """
     name = sanitize_slug(
-        need_statement.replace("I need", "").replace("to", "").strip() or "new_tool"
+        need_statement.replace("I need", "").replace("to", "").strip()
+        or "new_tool"
     )
     if not name:
         name = "new_tool"
@@ -65,7 +66,10 @@ def draft_tool_spec(need_statement: str) -> ToolSpec:
     inputs = {
         "type": "object",
         "properties": {
-            "source": {"type": "string", "description": "Input source or path"},
+            "source": {
+                "type": "string",
+                "description": "Input source or path",
+            },
             "options": {"type": "object", "additionalProperties": True},
         },
         "required": ["source"],

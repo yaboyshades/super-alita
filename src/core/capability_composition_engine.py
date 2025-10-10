@@ -100,7 +100,9 @@ class CapabilityCompositionEngine:
         capable_start_nodes = [
             node_id
             for node_id, node_data in self.capability_graph.nodes(data=True)
-            if self._can_handle_input_pattern(node_data["node"], input_signature)
+            if self._can_handle_input_pattern(
+                node_data["node"], input_signature
+            )
         ]
 
         if not capable_start_nodes:
@@ -113,7 +115,9 @@ class CapabilityCompositionEngine:
         capable_end_nodes = [
             node_id
             for node_id, node_data in self.capability_graph.nodes(data=True)
-            if self._can_produce_output_pattern(node_data["node"], output_signature)
+            if self._can_produce_output_pattern(
+                node_data["node"], output_signature
+            )
         ]
 
         if not capable_end_nodes:
@@ -155,10 +159,13 @@ class CapabilityCompositionEngine:
         # Return best path as ExecutionNodes
         best_path, _ = max(best_paths, key=lambda x: x[1])
         execution_nodes = [
-            self.capability_graph.nodes[node_id]["node"] for node_id in best_path
+            self.capability_graph.nodes[node_id]["node"]
+            for node_id in best_path
         ]
 
-        logger.info(f"🔗 Discovered execution path: {len(execution_nodes)} nodes")
+        logger.info(
+            f"🔗 Discovered execution path: {len(execution_nodes)} nodes"
+        )
         return execution_nodes
 
     async def learn_composition_pattern(
@@ -193,11 +200,15 @@ class CapabilityCompositionEngine:
             and performance_metrics.get("efficiency", 0)
             > self.composition_success_threshold
         ):
-            await self._reinforce_pattern(pattern_signature, performance_metrics)
+            await self._reinforce_pattern(
+                pattern_signature, performance_metrics
+            )
 
         # Learn from failures
         if not success:
-            await self._analyze_failure_pattern(pattern_signature, execution_trace)
+            await self._analyze_failure_pattern(
+                pattern_signature, execution_trace
+            )
 
         # Discover meta-patterns
         if len(self.composition_history) % 10 == 0:  # Every 10 compositions
@@ -225,25 +236,30 @@ class CapabilityCompositionEngine:
         if success_rate < 0.6:
             # Poor success rate: increase conservatism
             evolved_strategy["risk_tolerance"] = max(
-                0.1, evolved_strategy.get("risk_tolerance", 0.5) - self.adaptation_rate
+                0.1,
+                evolved_strategy.get("risk_tolerance", 0.5)
+                - self.adaptation_rate,
             )
             evolved_strategy["exploration_rate"] = max(
                 0.1,
-                evolved_strategy.get("exploration_rate", 0.3) - self.adaptation_rate,
+                evolved_strategy.get("exploration_rate", 0.3)
+                - self.adaptation_rate,
             )
 
         elif success_rate > 0.8 and efficiency < 0.6:
             # Good success but poor efficiency: increase optimization
             evolved_strategy["optimization_focus"] = min(
                 1.0,
-                evolved_strategy.get("optimization_focus", 0.5) + self.adaptation_rate,
+                evolved_strategy.get("optimization_focus", 0.5)
+                + self.adaptation_rate,
             )
 
         elif success_rate > 0.8 and efficiency > 0.7:
             # High performance: increase exploration
             evolved_strategy["exploration_rate"] = min(
                 0.9,
-                evolved_strategy.get("exploration_rate", 0.3) + self.adaptation_rate,
+                evolved_strategy.get("exploration_rate", 0.3)
+                + self.adaptation_rate,
             )
 
         # Adapt composition preferences
@@ -270,7 +286,9 @@ class CapabilityCompositionEngine:
         connections = connections or []
 
         # Add node to graph
-        self.capability_graph.add_node(execution_node.node_id, node=execution_node)
+        self.capability_graph.add_node(
+            execution_node.node_id, node=execution_node
+        )
 
         # Add edges for connections
         for edge in connections:
@@ -282,7 +300,9 @@ class CapabilityCompositionEngine:
                     edge.source_id, edge.target_id, edge_data=edge
                 )
 
-        logger.info(f"🔗 Registered capability: {execution_node.execution_signature}")
+        logger.info(
+            f"🔗 Registered capability: {execution_node.execution_signature}"
+        )
 
     def _can_handle_input_pattern(
         self, node: ExecutionNode, input_signature: str
@@ -305,7 +325,8 @@ class CapabilityCompositionEngine:
     def _pattern_matches(self, pattern: str, signature: str) -> bool:
         """Simple pattern matching - can be enhanced with regex/ML"""
         return (
-            pattern.lower() in signature.lower() or signature.lower() in pattern.lower()
+            pattern.lower() in signature.lower()
+            or signature.lower() in pattern.lower()
         )
 
     async def _evaluate_execution_path(
@@ -331,7 +352,10 @@ class CapabilityCompositionEngine:
         return score
 
     async def _discover_novel_composition(
-        self, input_signature: str, output_signature: str, constraints: dict[str, Any]
+        self,
+        input_signature: str,
+        output_signature: str,
+        constraints: dict[str, Any],
     ) -> list[ExecutionNode]:
         """
         Discover novel ways to compose capabilities for new problems
@@ -344,7 +368,9 @@ class CapabilityCompositionEngine:
         )
         return []
 
-    def _extract_pattern_signature(self, execution_trace: list[dict[str, Any]]) -> str:
+    def _extract_pattern_signature(
+        self, execution_trace: list[dict[str, Any]]
+    ) -> str:
         """Extract a signature representing the execution pattern"""
         if not execution_trace:
             return "empty_pattern"
@@ -365,7 +391,9 @@ class CapabilityCompositionEngine:
             else:
                 speed = "slow"
 
-            element = f"{step_type}_{speed}_{'success' if success else 'failure'}"
+            element = (
+                f"{step_type}_{speed}_{'success' if success else 'failure'}"
+            )
             pattern_elements.append(element)
 
         return "->".join(pattern_elements)
@@ -389,7 +417,8 @@ class CapabilityCompositionEngine:
 
         efficiency = performance_metrics.get("efficiency", 0.5)
         pattern["avg_efficiency"] = (
-            pattern["avg_efficiency"] * (pattern["usage_count"] - 1) + efficiency
+            pattern["avg_efficiency"] * (pattern["usage_count"] - 1)
+            + efficiency
         ) / pattern["usage_count"]
 
     async def _analyze_failure_pattern(
@@ -475,7 +504,8 @@ class CapabilityCompositionEngine:
 
         return {
             "total_compositions": total_compositions,
-            "success_rate": successful_compositions / max(total_compositions, 1),
+            "success_rate": successful_compositions
+            / max(total_compositions, 1),
             "meta_patterns_discovered": len(
                 [p for p in self.meta_patterns if p.startswith("meta_")]
             ),
@@ -506,7 +536,11 @@ async def demonstrate_pure_procedural_encoding():
         node_id=str(uuid4()),
         execution_signature="input:text_stream->processing:pattern_matching->output:structured_data",
         input_patterns=["text_stream", "string_data", "unstructured_input"],
-        output_patterns=["structured_data", "parsed_content", "key_value_pairs"],
+        output_patterns=[
+            "structured_data",
+            "parsed_content",
+            "key_value_pairs",
+        ],
         success_conditions={"parsing_accuracy": 0.9, "processing_time": 2.0},
         failure_patterns=["malformed_input", "encoding_error", "timeout"],
     )
@@ -515,9 +549,20 @@ async def demonstrate_pure_procedural_encoding():
         node_id=str(uuid4()),
         execution_signature="input:structured_data->processing:transformation->output:formatted_result",
         input_patterns=["structured_data", "key_value_pairs", "json_data"],
-        output_patterns=["formatted_result", "display_ready", "standardized_format"],
-        success_conditions={"transformation_accuracy": 0.95, "processing_time": 1.0},
-        failure_patterns=["invalid_schema", "transformation_error", "memory_limit"],
+        output_patterns=[
+            "formatted_result",
+            "display_ready",
+            "standardized_format",
+        ],
+        success_conditions={
+            "transformation_accuracy": 0.95,
+            "processing_time": 1.0,
+        },
+        failure_patterns=[
+            "invalid_schema",
+            "transformation_error",
+            "memory_limit",
+        ],
     )
 
     # Register capabilities
@@ -531,7 +576,9 @@ async def demonstrate_pure_procedural_encoding():
         constraints={"max_path_length": 3, "efficiency_threshold": 0.8},
     )
 
-    logger.info(f"🔗 Discovered execution path with {len(execution_path)} steps")
+    logger.info(
+        f"🔗 Discovered execution path with {len(execution_path)} steps"
+    )
 
     # Simulate learning from execution
     execution_trace = [

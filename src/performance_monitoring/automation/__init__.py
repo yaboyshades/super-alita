@@ -9,7 +9,7 @@ from .workflow_engine import (
 
 __all__ = [
     "ConstitutionalWorkflowEngine",
-    "ValidationWorkflow", 
+    "ValidationWorkflow",
     "RemediationAction",
-    "WorkflowExecution"
+    "WorkflowExecution",
 ]

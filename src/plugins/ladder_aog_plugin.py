@@ -40,7 +40,9 @@ async def aemit_safe(plugin: PluginInterface, event):  # type: ignore
         if event_type:
             if hasattr(event, "model_dump"):
                 payload = {
-                    k: v for k, v in event.model_dump().items() if k != "event_type"
+                    k: v
+                    for k, v in event.model_dump().items()
+                    if k != "event_type"
                 }
             else:
                 payload = {
@@ -52,7 +54,9 @@ async def aemit_safe(plugin: PluginInterface, event):  # type: ignore
         else:
             await plugin.emit_event(str(event))
     except Exception:
-        logging.getLogger(__name__).warning("Fallback aemit_safe failed", exc_info=True)
+        logging.getLogger(__name__).warning(
+            "Fallback aemit_safe failed", exc_info=True
+        )
 
 
 try:  # pragma: no cover
@@ -155,8 +159,12 @@ class LADDERAOGPlugin(PluginInterface):
 
         # Subscribe to planning events
         await self.subscribe("planning_request", self._handle_planning_request)
-        await self.subscribe("diagnosis_request", self._handle_diagnosis_request)
-        await self.subscribe("plan_execution_request", self._handle_execution_request)
+        await self.subscribe(
+            "diagnosis_request", self._handle_diagnosis_request
+        )
+        await self.subscribe(
+            "plan_execution_request", self._handle_execution_request
+        )
         await self.subscribe("goal_received", self._on_goal_received)
 
         # Seed the NeuralStore with initial AOG
@@ -230,7 +238,9 @@ class LADDERAOGPlugin(PluginInterface):
             # Check if this requires dynamic tool generation
             plan = None
             if self._requires_dynamic_tool(goal_description):
-                plan = await self._plan_with_dynamic_tools(goal_description, session_id)
+                plan = await self._plan_with_dynamic_tools(
+                    goal_description, session_id
+                )
             else:
                 # Generate plan using traditional LADDER-AOG
                 plan = await self.forward_plan(
@@ -253,7 +263,9 @@ class LADDERAOGPlugin(PluginInterface):
 
                 logger.info(f"Plan generated and ready: {plan_id}")
             else:
-                logger.warning(f"Failed to generate plan for goal: {goal_description}")
+                logger.warning(
+                    f"Failed to generate plan for goal: {goal_description}"
+                )
 
                 # Emit plan failure event
                 await self.emit_event(
@@ -282,7 +294,9 @@ class LADDERAOGPlugin(PluginInterface):
         # Find the goal node using semantic search
         goal_atom = await self._find_goal_node(goal_description)
         if not goal_atom:
-            logger.warning(f"No suitable goal node found for: {goal_description}")
+            logger.warning(
+                f"No suitable goal node found for: {goal_description}"
+            )
             return None
 
         # Create plan structure
@@ -301,7 +315,9 @@ class LADDERAOGPlugin(PluginInterface):
         if success and plan.steps:
             # Calculate plan metrics
             plan.estimated_cost = await self._calculate_plan_cost(plan)
-            plan.estimated_probability = await self._calculate_plan_probability(plan)
+            plan.estimated_probability = (
+                await self._calculate_plan_probability(plan)
+            )
 
             # Store active plan
             self._active_plans[plan_id] = plan
@@ -310,10 +326,14 @@ class LADDERAOGPlugin(PluginInterface):
             if plan.path_taken:
                 await self._strengthen_pathways(plan.path_taken)
 
-            logger.info(f"Generated plan {plan_id} with {len(plan.steps)} steps")
+            logger.info(
+                f"Generated plan {plan_id} with {len(plan.steps)} steps"
+            )
             return plan
 
-        logger.warning(f"Failed to generate valid plan for goal: {goal_description}")
+        logger.warning(
+            f"Failed to generate valid plan for goal: {goal_description}"
+        )
         return None
 
     async def _traverse_forward(
@@ -351,11 +371,15 @@ class LADDERAOGPlugin(PluginInterface):
 
         if node.node_type == "OR":
             # OR node: use neuro-symbolic attention to choose best child
-            best_child = await self._choose_or_child(current_atom, node, context)
+            best_child = await self._choose_or_child(
+                current_atom, node, context
+            )
 
             if best_child:
                 return await self._traverse_forward(best_child, plan, context)
-            logger.warning(f"No suitable child found for OR node: {node.node_id}")
+            logger.warning(
+                f"No suitable child found for OR node: {node.node_id}"
+            )
             return False
 
         return False
@@ -392,7 +416,9 @@ class LADDERAOGPlugin(PluginInterface):
             return best_child
 
         # Fallback: use attention mechanism if Pilot fails
-        logger.warning("Pilot decision failed, falling back to attention mechanism")
+        logger.warning(
+            "Pilot decision failed, falling back to attention mechanism"
+        )
         if hasattr(self.store, "attention") and parent_atom.vector is not None:
             child_keys = [atom.key for atom in child_atoms]
             attention_results = await self.store.attention(
@@ -490,7 +516,9 @@ class LADDERAOGPlugin(PluginInterface):
                 )
 
                 # 5. Parse the Pilot's strategic choice
-                choice_data = await self._parse_pilot_choice(llm_response, child_atoms)
+                choice_data = await self._parse_pilot_choice(
+                    llm_response, child_atoms
+                )
 
                 if choice_data:
                     chosen_atom, reasoning = choice_data
@@ -565,9 +593,13 @@ class LADDERAOGPlugin(PluginInterface):
                     )
                     memory_section += f'\n  - key: "{key}"'
                     memory_section += f"\n    similarity_score: {score:.4f}"
-                    memory_section += f'\n    content_summary: "{content_summary}"'
+                    memory_section += (
+                        f'\n    content_summary: "{content_summary}"'
+                    )
         else:
-            memory_section = '\nrelevant_memories:\n  - "No relevant memories found."'
+            memory_section = (
+                '\nrelevant_memories:\n  - "No relevant memories found."'
+            )
 
         # Format available options
         options_section = "\navailable_options:"
@@ -629,7 +661,11 @@ task:
         Alias for _build_pilot_decision_prompt to match Cognitive Contract naming convention.
         """
         return self._build_pilot_decision_prompt(
-            goal_description, decision_point, options, relevant_memories, context
+            goal_description,
+            decision_point,
+            options,
+            relevant_memories,
+            context,
         )
 
     async def _generate_llm_response(
@@ -663,9 +699,9 @@ task:
             choice_data = json.loads(llm_response)
 
             # Handle both old and new response formats for backward compatibility
-            chosen_option = choice_data.get("best_option_index") or choice_data.get(
-                "chosen_option"
-            )
+            chosen_option = choice_data.get(
+                "best_option_index"
+            ) or choice_data.get("chosen_option")
             reasoning = choice_data.get("reasoning", "No reasoning provided")
 
             if isinstance(chosen_option, int) and 1 <= chosen_option <= len(
@@ -695,7 +731,9 @@ task:
         # Find the effect node
         effect_atom = await self._find_effect_node(effect_description)
         if not effect_atom:
-            logger.warning(f"No suitable effect node found for: {effect_description}")
+            logger.warning(
+                f"No suitable effect node found for: {effect_description}"
+            )
             return None
 
         # Traverse backward to find potential causes
@@ -765,7 +803,11 @@ task:
         factors = []
         for step_key in plan.steps:
             atom = self.store.get(step_key)
-            if atom and hasattr(atom, "value") and hasattr(atom.value, "description"):
+            if (
+                atom
+                and hasattr(atom, "value")
+                and hasattr(atom.value, "description")
+            ):
                 factors.append(atom.value.description)
 
         return factors
@@ -773,7 +815,9 @@ task:
     async def _handle_diagnosis_request(self, event: BaseEvent):
         """Handle causal diagnosis request."""
         # Implement abductive reasoning for causal diagnosis
-        logger.info("Diagnosis request received - implementing abductive reasoning")
+        logger.info(
+            "Diagnosis request received - implementing abductive reasoning"
+        )
         logger.info("Generating causal explanation for event: %s", event)
         result = {"factors": []}
         await self.emit_event("diagnosis_complete", **result)
@@ -868,7 +912,9 @@ task:
             }
         )
 
-        logger.info(f"Plan execution {'completed' if success else 'failed'}: {plan_id}")
+        logger.info(
+            f"Plan execution {'completed' if success else 'failed'}: {plan_id}"
+        )
         return success
 
     async def _execute_step(self, node: AOGNode) -> bool:
@@ -878,7 +924,9 @@ task:
             return False
 
         # Hook into the tool execution system: try HTTP tool execution, fallback to simulated
-        logger.info(f"Executing tool: {node.tool_template.get('tool', 'unknown')}")
+        logger.info(
+            f"Executing tool: {node.tool_template.get('tool', 'unknown')}"
+        )
         tool_id = (
             node.tool_template.get("tool")
             if isinstance(node.tool_template, dict)
@@ -894,7 +942,9 @@ task:
                 import os
                 import requests
 
-                base = os.getenv("LADDER_TOOL_EXEC_URL", "http://127.0.0.1:8080")
+                base = os.getenv(
+                    "LADDER_TOOL_EXEC_URL", "http://127.0.0.1:8080"
+                )
                 url = f"{base.rstrip('/')}/tools/execute/{tool_id}"
                 r = requests.post(url, json={"args": args}, timeout=6)
                 if r.status_code == 200:
@@ -975,14 +1025,25 @@ task:
         descriptions = [n["desc"] for n in nodes_data]
 
         # Try to use semantic memory for batch embedding, fallback to simple method
-        if hasattr(self, "_semantic_memory_plugin") and self._semantic_memory_plugin:
+        if (
+            hasattr(self, "_semantic_memory_plugin")
+            and self._semantic_memory_plugin
+        ):
             try:
-                vectors = await self._semantic_memory_plugin.embed_text(descriptions)
+                vectors = await self._semantic_memory_plugin.embed_text(
+                    descriptions
+                )
             except Exception as e:
-                logger.warning(f"Failed to use semantic memory for embedding: {e}")
-                vectors = [await self._create_embedding(desc) for desc in descriptions]
+                logger.warning(
+                    f"Failed to use semantic memory for embedding: {e}"
+                )
+                vectors = [
+                    await self._create_embedding(desc) for desc in descriptions
+                ]
         else:
-            vectors = [await self._create_embedding(desc) for desc in descriptions]
+            vectors = [
+                await self._create_embedding(desc) for desc in descriptions
+            ]
 
         for i, data in enumerate(nodes_data):
             key = f"{self.AOG_TAG}{data['id']}"
@@ -990,7 +1051,9 @@ task:
                 node_id=data["id"],
                 description=data["desc"],
                 type=data["type"],
-                children=[f"{self.AOG_TAG}{c}" for c in data.get("children", [])],
+                children=[
+                    f"{self.AOG_TAG}{c}" for c in data.get("children", [])
+                ],
                 tool_template=data.get("template"),
                 priority=1.0,
                 cost_estimate=1.0,
@@ -1016,7 +1079,9 @@ task:
         """
         goal_atom = self.store.get(goal_atom_key)
         if not goal_atom:
-            logger.error(f"Goal atom '{goal_atom_key}' not found for planning.")
+            logger.error(
+                f"Goal atom '{goal_atom_key}' not found for planning."
+            )
             return None
 
         plan_steps: list[str] = []
@@ -1032,7 +1097,9 @@ task:
 
             node_atom = self.store.get(current_key)
             if not node_atom or not isinstance(node_atom.value, AOGNode):
-                logger.warning(f"AOG traversal found a non-AOGNode atom: {current_key}")
+                logger.warning(
+                    f"AOG traversal found a non-AOGNode atom: {current_key}"
+                )
                 continue
 
             node: AOGNode = node_atom.value
@@ -1107,7 +1174,11 @@ task:
                 1 for h in self._execution_history if h["success"]
             ),
             "aog_nodes": len(
-                [k for k in self.store.get_all_keys() if k.startswith(self.AOG_TAG)]
+                [
+                    k
+                    for k in self.store.get_all_keys()
+                    if k.startswith(self.AOG_TAG)
+                ]
             ),
             "recent_executions": (
                 self._execution_history[-5:] if self._execution_history else []
@@ -1116,7 +1187,9 @@ task:
 
     async def health_check(self) -> dict[str, Any]:
         """Check plugin health."""
-        aog_nodes = [k for k in self.store.get_all_keys() if k.startswith(self.AOG_TAG)]
+        aog_nodes = [
+            k for k in self.store.get_all_keys() if k.startswith(self.AOG_TAG)
+        ]
 
         issues = []
         if not aog_nodes:
@@ -1132,7 +1205,9 @@ task:
             "issues": issues,
         }
 
-    async def _find_goal_node(self, goal_description: str) -> NeuralAtom | None:
+    async def _find_goal_node(
+        self, goal_description: str
+    ) -> NeuralAtom | None:
         """Find the most suitable goal node using semantic search."""
         # Create embedding for goal description
         goal_embedding = await self._create_embedding(goal_description)
@@ -1140,7 +1215,9 @@ task:
         if goal_embedding is not None:
             # Use attention to find most similar AOG node
             aog_keys = [
-                key for key in self.store.get_all_keys() if key.startswith(self.AOG_TAG)
+                key
+                for key in self.store.get_all_keys()
+                if key.startswith(self.AOG_TAG)
             ]
 
             if hasattr(self.store, "attention"):
@@ -1168,14 +1245,18 @@ task:
 
         return None
 
-    async def _find_effect_node(self, effect_description: str) -> NeuralAtom | None:
+    async def _find_effect_node(
+        self, effect_description: str
+    ) -> NeuralAtom | None:
         """Find the most suitable effect node using semantic search."""
         # Similar to _find_goal_node but for effects
         effect_embedding = await self._create_embedding(effect_description)
 
         if effect_embedding is not None and hasattr(self.store, "attention"):
             aog_keys = [
-                key for key in self.store.get_all_keys() if key.startswith(self.AOG_TAG)
+                key
+                for key in self.store.get_all_keys()
+                if key.startswith(self.AOG_TAG)
             ]
 
             attention_results = await self.store.attention(
@@ -1211,7 +1292,9 @@ task:
     ) -> AOGPlan | None:
         """Generate a secure plan using dynamically created tools with full audit trail."""
         try:
-            logger.info(f"🔧 Secure dynamic tool planning for: {goal_description}")
+            logger.info(
+                f"🔧 Secure dynamic tool planning for: {goal_description}"
+            )
 
             # Import secure dynamic tool system
             from src.core.dynamic_tool_generator import get_dynamic_generator
@@ -1273,7 +1356,9 @@ task:
                     "security_audit_id": tool_info.get("test_result", {}).get(
                         "audit_id"
                     ),
-                    "validation_passed": tool_info.get("test_result", {}).get("status")
+                    "validation_passed": tool_info.get("test_result", {}).get(
+                        "status"
+                    )
                     == "success",
                 }
             )
@@ -1318,14 +1403,27 @@ task:
         # Quantum computing
         if any(
             word in goal_lower
-            for word in ["quantum", "circuit", "qubit", "gate", "superposition"]
+            for word in [
+                "quantum",
+                "circuit",
+                "qubit",
+                "gate",
+                "superposition",
+            ]
         ):
             return "quantum_circuit"
 
         # Data analysis
         if any(
             word in goal_lower
-            for word in ["data", "analyze", "statistics", "chart", "graph", "dataset"]
+            for word in [
+                "data",
+                "analyze",
+                "statistics",
+                "chart",
+                "graph",
+                "dataset",
+            ]
         ):
             return "data_analysis"
 
@@ -1346,14 +1444,28 @@ task:
         # Text processing
         if any(
             word in goal_lower
-            for word in ["text", "language", "process", "nlp", "parse", "extract"]
+            for word in [
+                "text",
+                "language",
+                "process",
+                "nlp",
+                "parse",
+                "extract",
+            ]
         ):
             return "text_processing"
 
         # Simulation
         if any(
             word in goal_lower
-            for word in ["simulate", "model", "random", "walk", "monte", "carlo"]
+            for word in [
+                "simulate",
+                "model",
+                "random",
+                "walk",
+                "monte",
+                "carlo",
+            ]
         ):
             return "simulation"
 
@@ -1366,9 +1478,7 @@ task:
         """Store secure dynamic tool metadata in neural store for audit trail"""
         try:
             # Create embedding for the tool metadata
-            tool_text = (
-                f"Dynamic tool: {tool_info['tool_name']} for goal: {goal_description}"
-            )
+            tool_text = f"Dynamic tool: {tool_info['tool_name']} for goal: {goal_description}"
             embedding = await self._create_embedding(tool_text)
 
             # Create metadata atom
@@ -1418,7 +1528,9 @@ task:
         # In production, this would use the semantic memory plugin
         # For now, create a simple hash-based embedding
         words = text.lower().split()
-        embedding = np.zeros(EMBEDDING_DIM)  # Match NeuralAtom expected dimensions
+        embedding = np.zeros(
+            EMBEDDING_DIM
+        )  # Match NeuralAtom expected dimensions
 
         for i, word in enumerate(words):
             hash_val = hash(word) % EMBEDDING_DIM  # Use EMBEDDING_DIM modulo

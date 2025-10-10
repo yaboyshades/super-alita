@@ -21,7 +21,8 @@ from src.mcp_local.super_alita import register_super_alita_handlers
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
 logger = logging.getLogger("mcp-server")
@@ -110,7 +111,9 @@ async def {tool.name}(**params):
         # Register the tool using register_from_code
         registry.register_from_code(tool.name, tool_code)
     except Exception as e:
-        logger.exception("Error registering tool")  # exception already has traceback
+        logger.exception(
+            "Error registering tool"
+        )  # exception already has traceback
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     return ToolRegistrationResponse(success=True, name=tool.name)
@@ -124,16 +127,24 @@ async def execute_tool(request: ToolExecutionRequest) -> ToolExecutionResponse:
 
     # Check if tool exists
     if tool_name not in registry._tools:
-        raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
+        raise HTTPException(
+            status_code=404, detail=f"Tool '{tool_name}' not found"
+        )
 
     try:
         # Execute tool using ainvoke
         result = await registry.ainvoke(tool_name, params)
     except Exception as e:
-        logger.exception("Error executing tool")  # exception already includes traceback
-        return ToolExecutionResponse(tool_name=tool_name, success=False, error=str(e))
+        logger.exception(
+            "Error executing tool"
+        )  # exception already includes traceback
+        return ToolExecutionResponse(
+            tool_name=tool_name, success=False, error=str(e)
+        )
 
-    return ToolExecutionResponse(tool_name=tool_name, success=True, result=result)
+    return ToolExecutionResponse(
+        tool_name=tool_name, success=True, result=result
+    )
 
 
 @app.get("/", response_model=RootResponse)
@@ -159,7 +170,9 @@ def main() -> None:
     host = os.environ.get("MCP_HOST", "localhost")
     port = int(os.environ.get("MCP_PORT", "5678"))
 
-    logger.info("Starting MCP server on %s:%s", host, port)  # Lazy % formatting
+    logger.info(
+        "Starting MCP server on %s:%s", host, port
+    )  # Lazy % formatting
 
     # Start server
     asyncio.run(start_server(host, port))

@@ -17,7 +17,9 @@ def test_cli_specify_output_format() -> None:
         "--format",
         "json",
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=workspace_root)
+    result = subprocess.run(
+        cmd, capture_output=True, text=True, cwd=workspace_root
+    )
 
     # The command should succeed (exit code 0)
     assert result.returncode == 0, f"CLI failed: {result.stderr}"
@@ -70,7 +72,9 @@ def test_cli_specify_output_format() -> None:
     assert len(output["feature_id"]) > 0, "Feature ID should be generated"
 
     # Check that artifact content is not empty
-    assert len(output["artifact_content"]) > 0, "Artifact content should not be empty"
+    assert (
+        len(output["artifact_content"]) > 0
+    ), "Artifact content should not be empty"
 
     # Check constitutional compliance structure
     compliance = output["constitutional_compliance"]

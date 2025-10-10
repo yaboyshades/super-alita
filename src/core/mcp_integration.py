@@ -62,7 +62,9 @@ class MCPIntegration:
         )
         self._tools: dict[str, dict[str, Any]] = {}
         self._tool_handlers: dict[str, Callable] = {}
-        logger.info(f"Initialized MCP integration with base URL: {self.base_url}")
+        logger.info(
+            f"Initialized MCP integration with base URL: {self.base_url}"
+        )
 
     async def ping(self) -> bool:
         """
@@ -102,7 +104,9 @@ class MCPIntegration:
                 payload = {
                     "name": tool_name,
                     "schema": tool_schema,
-                    "description": tool_schema.get("description", f"Tool: {tool_name}"),
+                    "description": tool_schema.get(
+                        "description", f"Tool: {tool_name}"
+                    ),
                 }
                 response = await client.post(
                     f"{self.base_url}/tools/register", json=payload
@@ -115,7 +119,9 @@ class MCPIntegration:
                     self._tools[tool_name] = tool_schema
                     return True
 
-                logger.error(f"Failed to register tool '{tool_name}': {response.text}")
+                logger.error(
+                    f"Failed to register tool '{tool_name}': {response.text}"
+                )
                 return False
 
         except Exception:

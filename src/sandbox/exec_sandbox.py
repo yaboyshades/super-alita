@@ -55,7 +55,8 @@ def execute_statements(code_str: str) -> None:
         ):
             raise ValueError("Prohibited syntax in sandboxed code.")
         if isinstance(node, ast.Call) and (
-            not isinstance(node.func, ast.Name) or node.func.id not in ALLOWLIST
+            not isinstance(node.func, ast.Name)
+            or node.func.id not in ALLOWLIST
         ):
             raise ValueError("Calls only allowed to allowlisted functions.")
     code = compile(tree, "<sandbox-exec>", "exec")

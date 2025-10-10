@@ -40,7 +40,9 @@ class PipelineEvaluator:
         precision = self._calculate_precision(extracted_facts, golden_facts)
         recall = self._calculate_recall(extracted_facts, golden_facts)
         redundancy = self._calculate_redundancy(extracted_facts)
-        efficiency = self._calculate_efficiency(extracted_facts, pipeline_output)
+        efficiency = self._calculate_efficiency(
+            extracted_facts, pipeline_output
+        )
         conflicts = self._calculate_conflict_coverage(pipeline_output)
 
         return PipelineMetrics(
@@ -63,18 +65,26 @@ class PipelineEvaluator:
                     facts.append(fact)
         return facts
 
-    def _calculate_precision(self, extracted: list[str], golden: list[str]) -> float:
+    def _calculate_precision(
+        self, extracted: list[str], golden: list[str]
+    ) -> float:
         """Calculate precision: correct facts / total extracted facts."""
         if not extracted:
             return 0.0
-        correct = sum(1 for fact in extracted if any(g in fact for g in golden))
+        correct = sum(
+            1 for fact in extracted if any(g in fact for g in golden)
+        )
         return correct / len(extracted)
 
-    def _calculate_recall(self, extracted: list[str], golden: list[str]) -> float:
+    def _calculate_recall(
+        self, extracted: list[str], golden: list[str]
+    ) -> float:
         """Calculate recall: correct facts / total golden facts."""
         if not golden:
             return 1.0
-        covered = sum(1 for g in golden if any(g in fact for fact in extracted))
+        covered = sum(
+            1 for g in golden if any(g in fact for fact in extracted)
+        )
         return covered / len(golden)
 
     def _calculate_redundancy(self, extracted: list[str]) -> float:
@@ -84,7 +94,9 @@ class PipelineEvaluator:
         unique_facts = set(extracted)
         return 1.0 - (len(unique_facts) / len(extracted))
 
-    def _calculate_efficiency(self, extracted: list[str], full_output: str) -> float:
+    def _calculate_efficiency(
+        self, extracted: list[str], full_output: str
+    ) -> float:
         """Calculate token efficiency."""
         fact_tokens = sum(len(fact.split()) for fact in extracted)
         total_tokens = len(full_output.split())
@@ -95,7 +107,9 @@ class PipelineEvaluator:
         conflict_section = "# Conflicts & stance"
         if conflict_section in output:
             conflict_content = output.split(conflict_section)[1].split("#")[0]
-            return 1.0 if "No conflicts detected" not in conflict_content else 0.0
+            return (
+                1.0 if "No conflicts detected" not in conflict_content else 0.0
+            )
         return 0.0
 
 

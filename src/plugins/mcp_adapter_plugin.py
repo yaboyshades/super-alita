@@ -29,7 +29,9 @@ class MCPAdapterPlugin(PluginInterface):
     def name(self) -> str:  # pragma: no cover - trivial
         return "mcp_adapter"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         try:
             from src.mcp_local.registry import ToolRegistry  # type: ignore

@@ -44,13 +44,17 @@ async def _emit_observation(bus: Any, code: str, obs: Observation) -> None:
         {"event_type": "batch_atoms_created", "atoms": [code_atom, obs_atom]}
     )
     bond = {
-        "bond_id": _bond_id(code_atom["atom_id"], "OBSERVED", obs_atom["atom_id"]),
+        "bond_id": _bond_id(
+            code_atom["atom_id"], "OBSERVED", obs_atom["atom_id"]
+        ),
         "source_id": code_atom["atom_id"],
         "target_id": obs_atom["atom_id"],
         "bond_type": "OBSERVED",
     }
     await bus.emit({"event_type": "batch_bonds_added", "bonds": [bond]})
-    await bus.emit({"event_type": "ui_notification", "message": obs_atom["content"]})
+    await bus.emit(
+        {"event_type": "ui_notification", "message": obs_atom["content"]}
+    )
 
 
 async def handle_start(

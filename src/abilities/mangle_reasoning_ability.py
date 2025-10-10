@@ -41,14 +41,24 @@ except ImportError:
         MangleReasoner = None
 
 try:
-    from src.sdd.mangle_rules import get_available_queries, get_query_for_question
+    from src.sdd.mangle_rules import (
+        get_available_queries,
+        get_query_for_question,
+    )
 except ImportError:
     try:
-        from sdd.mangle_rules import get_available_queries, get_query_for_question
+        from sdd.mangle_rules import (
+            get_available_queries,
+            get_query_for_question,
+        )
     except ImportError:
 
         def get_available_queries():
-            return ["untested functions", "constitutional violations", "quality issues"]
+            return [
+                "untested functions",
+                "constitutional violations",
+                "quality issues",
+            ]
 
         def get_query_for_question(question):
             return None
@@ -70,9 +80,13 @@ class MangleReasoningAbility:
         self.workspace_root = workspace_root
 
         # Initialize components with fallbacks
-        self.reasoner = MangleReasoner(workspace_root) if MangleReasoner else None
+        self.reasoner = (
+            MangleReasoner(workspace_root) if MangleReasoner else None
+        )
         self.sdd_framework = (
-            EnhancedSDDFramework(Path(workspace_root)) if EnhancedSDDFramework else None
+            EnhancedSDDFramework(Path(workspace_root))
+            if EnhancedSDDFramework
+            else None
         )
         self.constitutional_scorer = (
             ConstitutionalScorer() if ConstitutionalScorer else None
@@ -103,7 +117,11 @@ class MangleReasoningAbility:
                     "properties": {
                         "context_type": {
                             "type": "string",
-                            "enum": ["current_file", "current_project", "workspace"],
+                            "enum": [
+                                "current_file",
+                                "current_project",
+                                "workspace",
+                            ],
                             "description": "Scope of analysis",
                         },
                         "focus_areas": {
@@ -141,7 +159,9 @@ class MangleReasoningAbility:
             elif tool_name == "mangle_analyze_context":
                 return await self._analyze_context(
                     parameters["context_type"],
-                    parameters.get("focus_areas", ["constitutional", "quality"]),
+                    parameters.get(
+                        "focus_areas", ["constitutional", "quality"]
+                    ),
                 )
             elif tool_name == "mangle_get_suggestions":
                 return await self._get_suggestions(parameters["code_element"])
@@ -170,7 +190,9 @@ class MangleReasoningAbility:
             "answer": answer,
             "query_used": query,
             "raw_results": results,
-            "available_patterns": get_available_queries()[:10],  # Show first 10
+            "available_patterns": get_available_queries()[
+                :10
+            ],  # Show first 10
             "suggestion": "Try asking about specific areas like 'untested functions', 'constitutional violations', or 'quality issues'",
         }
 
@@ -208,7 +230,10 @@ class MangleReasoningAbility:
 
         # Run coverage analysis
         if "coverage" in focus_areas:
-            coverage_queries = ["untested_function(Func)", "poor_test_coverage(Module)"]
+            coverage_queries = [
+                "untested_function(Func)",
+                "poor_test_coverage(Module)",
+            ]
             coverage_results = {}
             for query in coverage_queries:
                 try:
@@ -226,7 +251,9 @@ class MangleReasoningAbility:
             "focus_areas": focus_areas,
             "analysis": analysis_results,
             "summary": summary,
-            "recommendations": self._generate_recommendations(analysis_results),
+            "recommendations": self._generate_recommendations(
+                analysis_results
+            ),
         }
 
     async def _get_suggestions(self, code_element: str) -> dict[str, Any]:
@@ -288,7 +315,9 @@ class MangleReasoningAbility:
             "analysis_timestamp": "now",
         }
 
-    def _generate_analysis_summary(self, analysis_results: dict[str, Any]) -> str:
+    def _generate_analysis_summary(
+        self, analysis_results: dict[str, Any]
+    ) -> str:
         """Generate a human-readable summary of analysis results."""
         summary_parts = []
 
@@ -323,9 +352,13 @@ class MangleReasoningAbility:
         # Coverage summary
         if "coverage" in analysis_results:
             coverage_results = analysis_results["coverage"]
-            untested_count = len(coverage_results.get("untested_function(Func)", []))
+            untested_count = len(
+                coverage_results.get("untested_function(Func)", [])
+            )
             if untested_count > 0:
-                summary_parts.append(f"Found {untested_count} untested functions")
+                summary_parts.append(
+                    f"Found {untested_count} untested functions"
+                )
             else:
                 summary_parts.append("All functions appear to be tested")
 
@@ -335,7 +368,9 @@ class MangleReasoningAbility:
             else "Analysis completed successfully"
         )
 
-    def _generate_recommendations(self, analysis_results: dict[str, Any]) -> list[str]:
+    def _generate_recommendations(
+        self, analysis_results: dict[str, Any]
+    ) -> list[str]:
         """Generate actionable recommendations based on analysis."""
         recommendations = []
 
@@ -373,7 +408,9 @@ class MangleReasoningAbility:
         if "coverage" in analysis_results:
             coverage_results = analysis_results["coverage"]
             if coverage_results.get("untested_function(Func)"):
-                recommendations.append("Add test coverage for untested functions")
+                recommendations.append(
+                    "Add test coverage for untested functions"
+                )
             if coverage_results.get("poor_test_coverage(Module)"):
                 recommendations.append(
                     "Improve test coverage for modules with poor coverage"

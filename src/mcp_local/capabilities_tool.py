@@ -83,7 +83,9 @@ def _collect_plugin_capabilities() -> list[dict[str, Any]]:
         )
     except Exception as e:
         logger.warning(f"Error collecting plugin capabilities: {e}")
-        plugins.append({"name": "error_state", "status": "error", "error": str(e)})
+        plugins.append(
+            {"name": "error_state", "status": "error", "error": str(e)}
+        )
 
     return plugins
 
@@ -121,7 +123,9 @@ def _collect_event_capabilities() -> dict[str, Any]:
             if descriptor.schema:
                 event_info["schema_summary"] = {
                     "required_fields": descriptor.schema.get("required", []),
-                    "field_count": len(descriptor.schema.get("properties", {})),
+                    "field_count": len(
+                        descriptor.schema.get("properties", {})
+                    ),
                 }
 
             events["types"].append(event_info)

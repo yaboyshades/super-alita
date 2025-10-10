@@ -90,19 +90,31 @@ class PythonSandbox:
                     contextlib.redirect_stdout(stdout),
                     contextlib.redirect_stderr(stderr),
                 ):
-                    exec(compile(code, "<sandbox>", "exec"), globals_ns, globals_ns)
+                    exec(
+                        compile(code, "<sandbox>", "exec"),
+                        globals_ns,
+                        globals_ns,
+                    )
                 return SandboxResult(
                     stdout.getvalue()[-self.stdout_limit :],
                     stderr.getvalue()[-self.stderr_limit :],
                     None,
-                    {k: v for k, v in globals_ns.items() if k != "__builtins__"},
+                    {
+                        k: v
+                        for k, v in globals_ns.items()
+                        if k != "__builtins__"
+                    },
                 )
             except Exception as exc:  # noqa: BLE001 - capture for observation
                 return SandboxResult(
                     stdout.getvalue()[-self.stdout_limit :],
                     stderr.getvalue()[-self.stderr_limit :],
                     repr(exc),
-                    {k: v for k, v in globals_ns.items() if k != "__builtins__"},
+                    {
+                        k: v
+                        for k, v in globals_ns.items()
+                        if k != "__builtins__"
+                    },
                 )
 
         try:
@@ -118,7 +130,9 @@ class PythonSandbox:
                     )
                 finally:
                     os.chdir(cwd)
-            return await asyncio.wait_for(asyncio.to_thread(_execute), self.timeout)
+            return await asyncio.wait_for(
+                asyncio.to_thread(_execute), self.timeout
+            )
         except TimeoutError:
             logger.warning("Sandbox execution timed out")
             return SandboxResult("", "", "timeout", {})

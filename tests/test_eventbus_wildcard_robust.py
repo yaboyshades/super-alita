@@ -31,7 +31,9 @@ async def test_wildcard_subscription_robust_all_channels():
     specific_handler_a = AsyncMock()  # Only subscribe to one specific channel
 
     # Subscribe handlers
-    await event_bus.subscribe("*", wildcard_handler)  # Wildcard pattern subscription
+    await event_bus.subscribe(
+        "*", wildcard_handler
+    )  # Wildcard pattern subscription
     await event_bus.subscribe(
         "known_channel", specific_handler_a
     )  # One specific channel
@@ -85,7 +87,9 @@ async def test_wildcard_subscription_robust_all_channels():
     ), "Known channel handler should receive 1 event"
 
     # Validate event content reached wildcard handler correctly
-    wildcard_calls = [call_args[0][0] for call_args in wildcard_handler.call_args_list]
+    wildcard_calls = [
+        call_args[0][0] for call_args in wildcard_handler.call_args_list
+    ]
     assert len(wildcard_calls) == 4
 
     # Check that wildcard handler received events from all channels
@@ -141,16 +145,24 @@ async def test_wildcard_mixed_with_specific_subscriptions():
     # Create test events
     test_events = [
         BaseEvent(
-            event_type="alpha_channel", source_plugin="test", metadata={"id": "alpha"}
+            event_type="alpha_channel",
+            source_plugin="test",
+            metadata={"id": "alpha"},
         ),
         BaseEvent(
-            event_type="beta_channel", source_plugin="test", metadata={"id": "beta"}
+            event_type="beta_channel",
+            source_plugin="test",
+            metadata={"id": "beta"},
         ),
         BaseEvent(
-            event_type="gamma_channel", source_plugin="test", metadata={"id": "gamma"}
+            event_type="gamma_channel",
+            source_plugin="test",
+            metadata={"id": "gamma"},
         ),  # No specific subscriber
         BaseEvent(
-            event_type="delta_channel", source_plugin="test", metadata={"id": "delta"}
+            event_type="delta_channel",
+            source_plugin="test",
+            metadata={"id": "delta"},
         ),  # No specific subscriber
     ]
 
@@ -163,13 +175,17 @@ async def test_wildcard_mixed_with_specific_subscriptions():
     await asyncio.sleep(0.5)
 
     # Validate wildcard received ALL events
-    assert wildcard_handler.call_count == 4, "Wildcard should receive all 4 events"
+    assert (
+        wildcard_handler.call_count == 4
+    ), "Wildcard should receive all 4 events"
 
     # Validate specific handlers received only their events
     assert (
         specific_handler_alpha.call_count == 1
     ), "Alpha handler should receive 1 event"
-    assert specific_handler_beta.call_count == 1, "Beta handler should receive 1 event"
+    assert (
+        specific_handler_beta.call_count == 1
+    ), "Beta handler should receive 1 event"
 
     # Validate event content
     alpha_event = specific_handler_alpha.call_args[0][0]
@@ -179,7 +195,9 @@ async def test_wildcard_mixed_with_specific_subscriptions():
     assert beta_event.metadata["id"] == "beta"
 
     # Validate wildcard received all events including unsubscribed channels
-    wildcard_calls = [call_args[0][0] for call_args in wildcard_handler.call_args_list]
+    wildcard_calls = [
+        call_args[0][0] for call_args in wildcard_handler.call_args_list
+    ]
     wildcard_ids = [event_call.metadata["id"] for event_call in wildcard_calls]
 
     expected_ids = ["alpha", "beta", "gamma", "delta"]
@@ -216,13 +234,19 @@ async def test_wildcard_only_no_specific_subscriptions():
     # Create events for completely unsubscribed channels
     test_events = [
         BaseEvent(
-            event_type="random_channel_1", source_plugin="test", metadata={"test": "1"}
+            event_type="random_channel_1",
+            source_plugin="test",
+            metadata={"test": "1"},
         ),
         BaseEvent(
-            event_type="random_channel_2", source_plugin="test", metadata={"test": "2"}
+            event_type="random_channel_2",
+            source_plugin="test",
+            metadata={"test": "2"},
         ),
         BaseEvent(
-            event_type="random_channel_3", source_plugin="test", metadata={"test": "3"}
+            event_type="random_channel_3",
+            source_plugin="test",
+            metadata={"test": "3"},
         ),
     ]
 
@@ -243,7 +267,9 @@ async def test_wildcard_only_no_specific_subscriptions():
     wildcard_calls = [
         call_args[0][0] for call_args in wildcard_only_handler.call_args_list
     ]
-    test_values = [event_call.metadata["test"] for event_call in wildcard_calls]
+    test_values = [
+        event_call.metadata["test"] for event_call in wildcard_calls
+    ]
 
     assert "1" in test_values
     assert "2" in test_values

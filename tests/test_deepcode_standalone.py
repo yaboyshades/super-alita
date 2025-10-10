@@ -39,8 +39,12 @@ async def test_deepcode_endpoint():
     # Test the plugins
     print("\nTesting DeepCode plugins...")
     try:
-        from src.plugins.deepcode_generator_plugin import DeepCodeGeneratorBridgePlugin
-        from src.plugins.deepcode_orchestrator_plugin import DeepCodeOrchestratorPlugin
+        from src.plugins.deepcode_generator_plugin import (
+            DeepCodeGeneratorBridgePlugin,
+        )
+        from src.plugins.deepcode_orchestrator_plugin import (
+            DeepCodeOrchestratorPlugin,
+        )
 
         gen_plugin = DeepCodeGeneratorBridgePlugin()
         orch_plugin = DeepCodeOrchestratorPlugin()

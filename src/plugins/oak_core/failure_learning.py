@@ -60,7 +60,9 @@ def _load_events(limit: int | None = None) -> list[dict[str, Any]]:
     return out
 
 
-def cluster_failures(events: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+def cluster_failures(
+    events: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     events = events or _load_events()
     clusters: dict[str, dict[str, Any]] = {}
     by_key: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -81,7 +83,9 @@ def cluster_failures(events: list[dict[str, Any]] | None = None) -> dict[str, An
     return {"total_events": len(events), "clusters": clusters}
 
 
-def propose_resilience_patches(summary: dict[str, Any] | None = None) -> list[str]:
+def propose_resilience_patches(
+    summary: dict[str, Any] | None = None,
+) -> list[str]:
     summary = summary or cluster_failures()
     proposals: list[str] = []
     for sig, info in summary.get("clusters", {}).items():
@@ -105,7 +109,9 @@ def propose_resilience_patches(summary: dict[str, Any] | None = None) -> list[st
     return proposals
 
 
-def write_patch_proposals(summary: dict[str, Any] | None = None) -> Path | None:
+def write_patch_proposals(
+    summary: dict[str, Any] | None = None,
+) -> Path | None:
     summary = summary or cluster_failures()
     proposals = propose_resilience_patches(summary)
     if not proposals:

@@ -34,7 +34,9 @@ class InMemoryEventBus(IEventBus):
             type, list[Callable[[Any], Awaitable[None]]]
         ] = defaultdict(list)
 
-    def subscribe(self, event_type: type, handler: Callable[[Any], Awaitable[None]]) -> None:
+    def subscribe(
+        self, event_type: type, handler: Callable[[Any], Awaitable[None]]
+    ) -> None:
         """Subscribes an async handler to a specific event type."""
         self._handlers[event_type].append(handler)
 
@@ -43,4 +45,3 @@ class InMemoryEventBus(IEventBus):
         event_type: type = type(event)
         for handler in self._handlers.get(event_type, []):
             asyncio.create_task(handler(event))
-

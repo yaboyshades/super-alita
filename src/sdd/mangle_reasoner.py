@@ -96,7 +96,9 @@ class MangleReasoner:
     provides caching for performance, and formats results for different consumers.
     """
 
-    def __init__(self, workspace_root: str = ".", mangle_executable: str = "mangle"):
+    def __init__(
+        self, workspace_root: str = ".", mangle_executable: str = "mangle"
+    ):
         """
         Initialize the Mangle reasoner.
 
@@ -116,14 +118,12 @@ class MangleReasoner:
         # Query result cache
         self._query_cache: dict[str, MangleQueryResult] = {}
 
-
     def add_fact(self, fact: str) -> None:
         """Inject an additional fact into the knowledge base."""
         if not fact:
             return
         self._injected_facts.append(fact)
         self._facts_cache_valid = False
-
 
     def clear_injected_facts(self) -> None:
         """Clear all injected facts and invalidate cache."""
@@ -202,7 +202,9 @@ class MangleReasoner:
                 f"constitutional violations, quality issues, etc.",
             )
 
-    def validate_constitutional_compliance(self) -> dict[str, MangleQueryResult]:
+    def validate_constitutional_compliance(
+        self,
+    ) -> dict[str, MangleQueryResult]:
         """
         Validate code against all constitutional rules using Mangle.
 
@@ -316,17 +318,18 @@ class MangleReasoner:
         if self._facts_cache is None or not self._facts_cache_valid:
             logger.debug("Regenerating facts cache")
             facts = self.fact_generator.generate_all_facts()
-            injected = "\n".join(self._injected_facts) if self._injected_facts else ""
-            if injected:
-                combined = "\n".join([facts, injected])
-            else:
-                combined = facts
+            injected = (
+                "\n".join(self._injected_facts) if self._injected_facts else ""
+            )
+            combined = "\n".join([facts, injected]) if injected else facts
             self._facts_cache = combined + "\n\n" + MANGLE_RULES
             self._facts_cache_valid = True
 
         return self._facts_cache
 
-    def _execute_mangle_query(self, query: str, facts: str) -> MangleQueryResult:
+    def _execute_mangle_query(
+        self, query: str, facts: str
+    ) -> MangleQueryResult:
         """
         Execute a single Mangle query with error handling.
 
@@ -396,11 +399,15 @@ class MangleReasoner:
             if result.returncode == 0:
                 parsed_results = self._parse_mangle_output(result.stdout)
                 return MangleQueryResult(
-                    query=original_query, raw_results=parsed_results, success=True
+                    query=original_query,
+                    raw_results=parsed_results,
+                    success=True,
                 )
             else:
                 # Handle Mangle execution errors
-                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+                error_msg = (
+                    result.stderr.strip() if result.stderr else "Unknown error"
+                )
                 logger.warning(f"Mangle query failed: {error_msg}")
 
                 # Try to provide helpful error messages

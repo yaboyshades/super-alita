@@ -13,7 +13,10 @@ from src.core.navigation import NeuralNavigator
 from src.core.temporal_graph import TemporalGraph
 from src.orchestration.cortex_weaning import CortexWeaningOrchestrator
 from src.plugins.autonomy_tracker import AutonomyTracker
-from src.plugins.cortex_adapter_plugin import CortexAdapterPlugin, GitHubCopilotCortex
+from src.plugins.cortex_adapter_plugin import (
+    CortexAdapterPlugin,
+    GitHubCopilotCortex,
+)
 from src.plugins.knowledge_gap_detector import KnowledgeGapDetector
 
 
@@ -31,7 +34,10 @@ class CortexIntegration:
     """Main class for integrating cortex-assisted development."""
 
     def __init__(
-        self, event_bus: EventBus, graph: TemporalGraph, navigator: NeuralNavigator
+        self,
+        event_bus: EventBus,
+        graph: TemporalGraph,
+        navigator: NeuralNavigator,
     ) -> None:
         self.event_bus = event_bus
         self.graph = graph
@@ -44,9 +50,13 @@ class CortexIntegration:
             event_bus, policy=_PolicyAdapter(self.weaning_orchestrator)
         )
 
-        self.cortex_adapter.register_cortex("github_copilot", GitHubCopilotCortex())
+        self.cortex_adapter.register_cortex(
+            "github_copilot", GitHubCopilotCortex()
+        )
 
-        self.event_bus.subscribe("autonomy_update", self.handle_autonomy_update)
+        self.event_bus.subscribe(
+            "autonomy_update", self.handle_autonomy_update
+        )
 
     @property
     def name(self) -> str:
@@ -100,10 +110,14 @@ class CortexIntegration:
 
     async def get_system_status(self) -> dict[str, Any]:
         learning_stats = await self.cortex_adapter.get_learning_stats()
-        autonomy_status = await self.autonomy_tracker.get_graduation_readiness()
+        autonomy_status = (
+            await self.autonomy_tracker.get_graduation_readiness()
+        )
         return {
             "current_phase": self.weaning_orchestrator.current_phase.value,
             "learning_stats": learning_stats,
             "autonomy_status": autonomy_status,
-            "cortex_providers": list(self.cortex_adapter.cortex_providers.keys()),
+            "cortex_providers": list(
+                self.cortex_adapter.cortex_providers.keys()
+            ),
         }

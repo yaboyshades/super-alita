@@ -84,7 +84,9 @@ class TestProbeGate:
             return execution_count
 
         # Launch multiple concurrent probes
-        tasks = [asyncio.create_task(gate.try_probe(probe_func)) for _ in range(5)]
+        tasks = [
+            asyncio.create_task(gate.try_probe(probe_func)) for _ in range(5)
+        ]
 
         # First should succeed, others should raise RuntimeError
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -260,7 +262,8 @@ class TestRaceSafeCircuitBreaker:
 
         # Launch multiple concurrent probes
         tasks = [
-            asyncio.create_task(breaker.execute_probe(probe_func)) for _ in range(3)
+            asyncio.create_task(breaker.execute_probe(probe_func))
+            for _ in range(3)
         ]
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -477,7 +480,9 @@ class TestIntegrationScenarios:
         # Simulate burst of requests
         for _ in range(20):
             try:
-                result = await breaker.execute_with_breaker(sometimes_failing_func)
+                result = await breaker.execute_with_breaker(
+                    sometimes_failing_func
+                )
                 if result == "success":
                     successes += 1
             except CircuitBreakerOpenError:
@@ -489,7 +494,9 @@ class TestIntegrationScenarios:
         # Should have some successes and some circuit breaker rejections
         assert successes > 0
         metrics = breaker.get_metrics()
-        print(f"Successes: {successes}, CB rejections: {circuit_breaker_rejections}")
+        print(
+            f"Successes: {successes}, CB rejections: {circuit_breaker_rejections}"
+        )
         print(f"Metrics: {metrics}")
 
 

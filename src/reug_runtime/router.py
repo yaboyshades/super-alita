@@ -49,7 +49,9 @@ def parse_tool_calls(text: str) -> list[dict[str, Any]]:
 
     calls: list[dict[str, Any]] = []
     try:
-        for match in re.finditer(r"<tool_call>(.*?)</tool_call>", text, re.DOTALL):
+        for match in re.finditer(
+            r"<tool_call>(.*?)</tool_call>", text, re.DOTALL
+        ):
             inner = match.group(1)
             payload = json.loads(inner)
             name = payload.get("tool")
@@ -71,13 +73,18 @@ def parse_tool_calls(text: str) -> list[dict[str, Any]]:
 
 
 class Orchestrator:
-    def __init__(self, event_bus: Any, registry: Any, model: Any, correlation_id: str):
+    def __init__(
+        self, event_bus: Any, registry: Any, model: Any, correlation_id: str
+    ):
         self.event_bus = event_bus
         self.registry = registry
         self.model = model
         self.correlation_id = correlation_id
         self._mcp_box_dir = Path(os.getenv("MCP_BOX_DIR", ".mcp_box"))
-        self._last_reasoning_result: tuple[str, list[dict[str, Any]]] = ("", [])
+        self._last_reasoning_result: tuple[str, list[dict[str, Any]]] = (
+            "",
+            [],
+        )
         self._last_reasoning_result: tuple[str, list[Any]] = ("", [])
         self._last_acting_result: list[dict[str, Any]] = []
 
@@ -91,7 +98,9 @@ class Orchestrator:
             # Persistence is best-effort; never break the run
             pass
 
-    async def _ensure_tool(self, tool_name: str, tool_args: dict[str, Any]) -> bool:
+    async def _ensure_tool(
+        self, tool_name: str, tool_args: dict[str, Any]
+    ) -> bool:
         """Auto self-evolve: if a requested tool is unknown, register a minimal one.
 
         Heuristics:
@@ -105,7 +114,9 @@ class Orchestrator:
                 import json as _json
                 from pathlib import Path
 
-                idx_path = Path(os.getenv("MCP_BOX_DIR", ".mcp_box")) / "index.json"
+                idx_path = (
+                    Path(os.getenv("MCP_BOX_DIR", ".mcp_box")) / "index.json"
+                )
                 if idx_path.exists():
                     index = _json.loads(idx_path.read_text(encoding="utf-8"))
                     aliases = index.get("aliases", {}) or {}
@@ -158,7 +169,8 @@ class Orchestrator:
                             "owner": a.get("owner"),
                             "repo": a.get("repo"),
                             "path": a.get("path"),
-                        } | ({"ref": a.get("ref")} if a.get("ref") else {}),
+                        }
+                        | ({"ref": a.get("ref")} if a.get("ref") else {}),
                     )
                     return cast(dict[str, Any], result)
 
@@ -200,7 +212,9 @@ class Orchestrator:
                     },
                 }
 
-                async def _exec(a: dict[str, Any]) -> dict[str, Any]:  # url fetch
+                async def _exec(
+                    a: dict[str, Any],
+                ) -> dict[str, Any]:  # url fetch
                     url = a.get("url")
                     if not isinstance(url, str) or not url:
                         return {"error": "missing url"}
@@ -208,7 +222,9 @@ class Orchestrator:
 
                     def _do_fetch() -> dict[str, Any]:
                         try:
-                            with urllib.request.urlopen(url, timeout=8) as resp:  # nosec B310
+                            with urllib.request.urlopen(
+                                url, timeout=8
+                            ) as resp:  # nosec B310
                                 raw = resp.read()
                             text = raw.decode("utf-8", errors="replace")
                             truncated = False
@@ -216,8 +232,14 @@ class Orchestrator:
                                 text = text[:truncate]
                                 truncated = True
                             return {"content": text, "truncated": truncated}
-                        except Exception as e:  # pragma: no cover - network variability
-                            return {"content": "", "truncated": False, "error": str(e)}
+                        except (
+                            Exception
+                        ) as e:  # pragma: no cover - network variability
+                            return {
+                                "content": "",
+                                "truncated": False,
+                                "error": str(e),
+                            }
 
                     return await asyncio.to_thread(_do_fetch)
 
@@ -276,7 +298,9 @@ class Orchestrator:
             return False
 
     async def _reasoning_step(
-        self, messages: list[dict[str, Any]], tool_schemas: list[dict[str, Any]]
+        self,
+        messages: list[dict[str, Any]],
+        tool_schemas: list[dict[str, Any]],
     ) -> AsyncGenerator[dict[str, Any], None]:
         llm_response_content = ""
         tool_calls: list[Any] = []
@@ -333,7 +357,9 @@ class Orchestrator:
                 fn = tool_call.get("function", {})
                 if isinstance(fn, dict):
                     tool_name = (
-                        fn.get("name") or tool_call.get("name") or tool_call.get("tool")
+                        fn.get("name")
+                        or tool_call.get("name")
+                        or tool_call.get("tool")
                     )
                     tool_args_raw = fn.get("arguments", "{}")
                 else:
@@ -357,7 +383,9 @@ class Orchestrator:
                 )
             except Exception:
                 tool_args_obj = {}
-            tool_args: dict[str, Any] = tool_args_obj if isinstance(tool_args_obj, dict) else {}
+            tool_args: dict[str, Any] = (
+                tool_args_obj if isinstance(tool_args_obj, dict) else {}
+            )
             span_id = str(uuid.uuid4())
 
             ability_called_event = {
@@ -368,7 +396,9 @@ class Orchestrator:
             }
             # include args for UI visibility
             try:
-                ability_called_event["args"] = json.loads(json.dumps(tool_args))
+                ability_called_event["args"] = json.loads(
+                    json.dumps(tool_args)
+                )
             except Exception:
                 ability_called_event["args"] = tool_args
             await self.event_bus.emit(ability_called_event)
@@ -425,7 +455,12 @@ class Orchestrator:
 
 
 async def execute_turn(
-    user_msg: str, session_id: str, event_bus: Any, registry: Any, kg: Any, model: Any
+    user_msg: str,
+    session_id: str,
+    event_bus: Any,
+    registry: Any,
+    kg: Any,
+    model: Any,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Run a single agent turn and stream events to downstream consumers.
 
@@ -445,7 +480,9 @@ async def execute_turn(
     legacy_log: list[dict[str, Any]] = []
     ledger_writer = None
     if RUN_LEDGER_ENABLED:
-        ledger_writer = RunLedgerWriter(RUN_LEDGER_PATH, enable_shadow=not CANONICAL_EVENTS_ENABLED)
+        ledger_writer = RunLedgerWriter(
+            RUN_LEDGER_PATH, enable_shadow=not CANONICAL_EVENTS_ENABLED
+        )
 
     correlation_id = f"{session_id}-{int(time.time()*1000)}"
 
@@ -454,7 +491,9 @@ async def execute_turn(
         # Lazy import to avoid side effects when disabled
         with contextlib.suppress(Exception):
             import src.plugins.message_amplifier_plugin  # noqa: F401
-        optimized, steps = apply_all(user_msg, MessageContext(session_id=session_id))
+        optimized, steps = apply_all(
+            user_msg, MessageContext(session_id=session_id)
+        )
         if SETTINGS.message_optimizer_emit_telemetry:
             await event_bus.emit(
                 {
@@ -536,7 +575,9 @@ async def execute_turn(
     messages.append({"role": "user", "content": user_msg})
 
     if kg_context:
-        snippet = kg_context if len(kg_context) <= 512 else f"{kg_context[:509]}..."
+        snippet = (
+            kg_context if len(kg_context) <= 512 else f"{kg_context[:509]}..."
+        )
         await event_bus.emit(
             {
                 "type": "KnowledgeContextRetrieved",
@@ -550,13 +591,19 @@ async def execute_turn(
     llm_response_content = ""
 
     for _ in range(SETTINGS.max_tool_calls):
-        tool_schemas: list[dict[str, Any]] = registry.get_available_tools_schema()
+        tool_schemas: list[dict[str, Any]] = (
+            registry.get_available_tools_schema()
+        )
 
         # Run reasoning step and get results
-        async for event in orchestrator._reasoning_step(messages, tool_schemas):
+        async for event in orchestrator._reasoning_step(
+            messages, tool_schemas
+        ):
             legacy_log.append(event)
             yield event
-        llm_response_content, tool_calls_raw = orchestrator._last_reasoning_result
+        llm_response_content, tool_calls_raw = (
+            orchestrator._last_reasoning_result
+        )
         tool_calls: list[Any] = list(tool_calls_raw)
         # Fallback: derive tool calls by parsing streamed content blocks
         if not tool_calls and "<tool_call>" in llm_response_content:
@@ -586,7 +633,8 @@ async def execute_turn(
                 tcontent = tm.get("content", "")
                 if tname and isinstance(tcontent, str):
                     tool_result_block = (
-                        f'<tool_result tool="{tname}">' f"{tcontent}</tool_result>"
+                        f'<tool_result tool="{tname}">'
+                        f"{tcontent}</tool_result>"
                     )
                     messages.append(
                         {
@@ -671,7 +719,12 @@ async def execute_turn(
         return "\n".join(parts)
 
     content_out = llm_response_content or "Task complete."
-    if os.getenv("ALITA_FORMAT_ENFORCE", "false").lower() in {"1", "true", "yes", "on"}:
+    if os.getenv("ALITA_FORMAT_ENFORCE", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
         with contextlib.suppress(Exception):
             content_out = _normalize_code_blocks(content_out)
 
@@ -684,7 +737,9 @@ async def execute_turn(
         atom_fn = getattr(kg, "create_atom", None)
         if callable(atom_fn):
             final_atom = await atom_fn("final_answer", final_answer)
-            atom_id = final_atom.get("id") if isinstance(final_atom, dict) else None
+            atom_id = (
+                final_atom.get("id") if isinstance(final_atom, dict) else None
+            )
             await event_bus.emit(
                 {
                     "type": "KnowledgeAtomCreated",
@@ -718,7 +773,9 @@ async def execute_turn(
     legacy_log.append(task_succeeded_event)
     yield task_succeeded_event
 
-    await _emit_canonical_shadow(legacy_log, event_bus, correlation_id, ledger_writer)
+    await _emit_canonical_shadow(
+        legacy_log, event_bus, correlation_id, ledger_writer
+    )
 
 
 async def _emit_canonical_shadow(
@@ -734,14 +791,14 @@ async def _emit_canonical_shadow(
         for canonical in canonicalize_legacy_stream(run_id, legacy_events):
             payload = canonical.to_dict()
             if CANONICAL_EVENTS_ENABLED:
-                await event_bus.emit({"type": "CanonicalEventShadow", "event": payload})
+                await event_bus.emit(
+                    {"type": "CanonicalEventShadow", "event": payload}
+                )
             if ledger_writer is not None:
                 ledger_writer.append(canonical)
             if observer is not None:
-                try:
+                with contextlib.suppress(Exception):
                     observer.record_canonical_event(payload)
-                except Exception:
-                    pass
     except Exception:  # pragma: no cover - shadow path best-effort
         pass
 
@@ -832,7 +889,9 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
                     if hdr.lower().startswith("bearer ")
                     else hdr.strip()
                 )
-                client_host = request.client.host if request.client else "unknown"
+                client_host = (
+                    request.client.host if request.client else "unknown"
+                )
                 ident = f"key:{tok[:8]}" if tok else f"ip:{client_host}"
                 allowed, _ = await rl.is_allowed(ident, limit, window)
                 if not allowed:
@@ -845,10 +904,7 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
         pass
     raw_body = await request.json()
     body: dict[str, Any]
-    if isinstance(raw_body, dict):
-        body = raw_body
-    else:
-        body = {}
+    body = raw_body if isinstance(raw_body, dict) else {}
     user_msg = body.get("message", "")
     session_id = body.get("session_id", "default")
 

@@ -26,7 +26,9 @@ from src.core.utils import (
 class ExternalCortex(Protocol):
     """Protocol for external AI systems."""
 
-    async def reason(self, prompt: str, context: dict[str, Any]) -> dict[str, Any]: ...
+    async def reason(
+        self, prompt: str, context: dict[str, Any]
+    ) -> dict[str, Any]: ...
 
     async def analyze_problem(self, problem: str) -> list[dict[str, Any]]: ...
 
@@ -47,7 +49,9 @@ class CortexResponse:
 class GitHubCopilotCortex:
     """Deterministic stub; replace with a real provider later."""
 
-    async def reason(self, prompt: str, context: dict[str, Any]) -> dict[str, Any]:
+    async def reason(
+        self, prompt: str, context: dict[str, Any]
+    ) -> dict[str, Any]:
         return {
             "reasoning_steps": [
                 "Analyze the problem context",
@@ -88,7 +92,9 @@ class CortexAdapterPlugin(PluginInterface):
         # Hardening
         self._dedup_index: dict[str, str] = {}
         self._quarantine_ttl_seconds = 7 * 24 * 3600
-        self._circuit = CircuitBreaker(failure_threshold=5, recovery_timeout=30.0)
+        self._circuit = CircuitBreaker(
+            failure_threshold=5, recovery_timeout=30.0
+        )
         self._budget_window_start = time.time()
         self._budget_calls = 0
         self._budget_max_per_min = 60
@@ -104,7 +110,9 @@ class CortexAdapterPlugin(PluginInterface):
         await self.event_bus.subscribe(
             "reasoning_request", self.handle_reasoning_request
         )
-        await self.event_bus.subscribe("knowledge_gap", self.handle_knowledge_gap)
+        await self.event_bus.subscribe(
+            "knowledge_gap", self.handle_knowledge_gap
+        )
 
     async def start(self) -> None:  # type: ignore[override]
         self.is_running = True
@@ -148,7 +156,9 @@ class CortexAdapterPlugin(PluginInterface):
         current_knowledge = await self._build_context_from_graph(prompt)
         context.update(current_knowledge)
 
-        red_prompt, red_context, red_report = redact_prompt_and_context(prompt, context)
+        red_prompt, red_context, red_report = redact_prompt_and_context(
+            prompt, context
+        )
         prompt_hash = sha256_json(red_prompt)
         context_hash = sha256_json(red_context)
 
@@ -280,7 +290,9 @@ class CortexAdapterPlugin(PluginInterface):
                     tgt.uuid,
                     {
                         **bond_data.get("context", {}),
-                        "bond_type": bond_data.get("bond_type", "learned_relation"),
+                        "bond_type": bond_data.get(
+                            "bond_type", "learned_relation"
+                        ),
                         "reason": bond_data.get("reason", f"cortex_{source}"),
                         "cortex_source": source,
                         "confidence": response.confidence,

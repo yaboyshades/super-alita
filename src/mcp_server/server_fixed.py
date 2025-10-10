@@ -72,7 +72,9 @@ async def format_and_lint_selection(target_path: str) -> dict[str, str]:
 async def find_missing_docstrings_tool(
     root: str, include_tests: bool = False
 ) -> dict[str, Any]:
-    return await find_missing_docstrings(root=root, include_tests=include_tests)
+    return await find_missing_docstrings(
+        root=root, include_tests=include_tests
+    )
 
 
 def main() -> None:

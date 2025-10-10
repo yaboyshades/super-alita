@@ -27,13 +27,16 @@ def main():
 
     # Attempt automatic migration
     try:
-        cmd = ["python", "start.py", "--mode=test-consensus-debug"] + sys.argv[1:]
+        cmd = ["python", "start.py", "--mode=test-consensus-debug"] + sys.argv[
+            1:
+        ]
         print(f"🔄 Auto-migrating: {' '.join(cmd)}")
         subprocess.run(cmd, check=True)
     except Exception as e:
         print(f"❌ Auto-migration failed: {e}")
         print("💡 Please run manually: python start.py --help")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

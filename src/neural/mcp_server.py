@@ -77,8 +77,13 @@ class MCPServer:
                 logger.debug(f"Event {event_type} handled successfully")
                 return result
             else:
-                logger.warning(f"No handler registered for event type: {event_type}")
-                return {"status": "error", "message": f"No handler for {event_type}"}
+                logger.warning(
+                    f"No handler registered for event type: {event_type}"
+                )
+                return {
+                    "status": "error",
+                    "message": f"No handler for {event_type}",
+                }
 
         except Exception as e:
             logger.error(f"Error handling event {event_type}: {e}")

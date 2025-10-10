@@ -34,8 +34,12 @@ class RewardRule:
     rule_id: str
     name: str
     description: str
-    condition: Callable[[dict[str, Any]], bool]  # Function to check if rule applies
-    calculator: Callable[[dict[str, Any]], float]  # Function to calculate reward
+    condition: Callable[
+        [dict[str, Any]], bool
+    ]  # Function to check if rule applies
+    calculator: Callable[
+        [dict[str, Any]], float
+    ]  # Function to calculate reward
     priority: int = 0  # Higher priority rules are evaluated first
     active: bool = True
 
@@ -50,9 +54,13 @@ class RewardTracker:
 
     def __init__(self, event_bus=None):
         self.event_bus = event_bus
-        self.rewards: dict[str, list[RewardEvent]] = {}  # decision_id -> rewards
+        self.rewards: dict[str, list[RewardEvent]] = (
+            {}
+        )  # decision_id -> rewards
         self.rules: dict[str, RewardRule] = {}
-        self.pending_rewards: dict[str, list[RewardEvent]] = {}  # For delayed rewards
+        self.pending_rewards: dict[str, list[RewardEvent]] = (
+            {}
+        )  # For delayed rewards
         self.callbacks: list[Callable[[RewardEvent], None]] = []
 
     def add_reward_rule(
@@ -247,7 +255,9 @@ class RewardTracker:
             for reward in rewards_list:
                 if reward.source.startswith("rule:"):
                     rule_name = reward.source[5:]  # Remove "rule:" prefix
-                    rule_rewards[rule_name] = rule_rewards.get(rule_name, 0) + 1
+                    rule_rewards[rule_name] = (
+                        rule_rewards.get(rule_name, 0) + 1
+                    )
 
         return {
             "total_rules": len(self.rules),
@@ -287,10 +297,14 @@ class RewardTracker:
                 reward_types[reward.reward_type] = (
                     reward_types.get(reward.reward_type, 0) + 1
                 )
-                reward_sources[reward.source] = reward_sources.get(reward.source, 0) + 1
+                reward_sources[reward.source] = (
+                    reward_sources.get(reward.source, 0) + 1
+                )
                 total_value += reward.reward_value
 
-        avg_reward_value = total_value / total_rewards if total_rewards > 0 else 0
+        avg_reward_value = (
+            total_value / total_rewards if total_rewards > 0 else 0
+        )
 
         return {
             "total_decisions_with_rewards": total_decisions,

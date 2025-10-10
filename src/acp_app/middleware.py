@@ -9,7 +9,9 @@ logger = logging.getLogger(__name__)
 
 async def logging_middleware(handler: Callable, request: Any) -> Any:
     """Log all requests."""
-    logger.info(f"Request to {request.agent_id} with {len(request.messages)} messages")
+    logger.info(
+        f"Request to {request.agent_id} with {len(request.messages)} messages"
+    )
     response = await handler(request)
     logger.info(f"Response from {request.agent_id} completed")
     return response

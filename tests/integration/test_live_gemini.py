@@ -72,7 +72,9 @@ class TestLiveGeminiIntegration:
         assert isinstance(response["parameters"], dict)
         assert len(response["reasoning"]) > 0
 
-        print(f"✓ Pilot decision: {response['action']} - {response['reasoning']}")
+        print(
+            f"✓ Pilot decision: {response['action']} - {response['reasoning']}"
+        )
 
     @pytest.mark.asyncio
     async def test_self_heal_decision_structured_response(self, pilot_client):
@@ -121,7 +123,9 @@ class TestLiveGeminiIntegration:
             "RECENT_EVENTS": ["event1", "event2"],
         }
 
-        contract = await pilot_client.load_contract("pilot_decision", variables)
+        contract = await pilot_client.load_contract(
+            "pilot_decision", variables
+        )
 
         # Validate contract processing
         assert isinstance(contract, str)
@@ -143,7 +147,9 @@ class TestLiveGeminiIntegration:
     async def test_schema_version_validation(self, pilot_client):
         """Test that schema version is properly validated."""
         response = await pilot_client.pilot_decide(
-            goal="Test schema versioning", agent_state="testing", experimental=False
+            goal="Test schema versioning",
+            agent_state="testing",
+            experimental=False,
         )
 
         # Check that schema_version is present (may be None if not returned by model)
@@ -181,9 +187,13 @@ class TestLiveGeminiIntegration:
         client = GeminiPilotClient()
 
         # Mock the HTTP client to simulate timeout
-        with patch.object(client.client, "post", side_effect=asyncio.TimeoutError):
+        with patch.object(
+            client.client, "post", side_effect=asyncio.TimeoutError
+        ):
             with pytest.raises(asyncio.TimeoutError):
-                await client.pilot_decide(goal="Test timeout", agent_state="testing")
+                await client.pilot_decide(
+                    goal="Test timeout", agent_state="testing"
+                )
 
         await client.close()
         print("✓ Timeout handling works correctly")
@@ -231,11 +241,15 @@ class TestLiveGeminiIntegration:
         """Test that required contract files exist and are valid YAML."""
         import yaml
 
-        contracts_dir = Path(__file__).parent.parent.parent / "prompts" / "contracts"
+        contracts_dir = (
+            Path(__file__).parent.parent.parent / "prompts" / "contracts"
+        )
 
         # Check pilot contract
         pilot_contract = contracts_dir / "pilot_decision.yaml"
-        assert pilot_contract.exists(), f"Pilot contract not found: {pilot_contract}"
+        assert (
+            pilot_contract.exists()
+        ), f"Pilot contract not found: {pilot_contract}"
 
         with open(pilot_contract, encoding="utf-8") as f:
             pilot_data = yaml.safe_load(f)
@@ -244,7 +258,9 @@ class TestLiveGeminiIntegration:
 
         # Check self-heal contract
         heal_contract = contracts_dir / "self_heal_decision.yaml"
-        assert heal_contract.exists(), f"Self-heal contract not found: {heal_contract}"
+        assert (
+            heal_contract.exists()
+        ), f"Self-heal contract not found: {heal_contract}"
 
         with open(heal_contract, encoding="utf-8") as f:
             heal_data = yaml.safe_load(f)
@@ -269,7 +285,10 @@ async def test_end_to_end_pilot_flow():
         strategic_response = await pilot.pilot_decide(
             goal="Process user bounty: Find Python security vulnerabilities in repository",
             agent_state="idle",
-            memory_context=["Previous bounty: XSS in web app", "Security focus area"],
+            memory_context=[
+                "Previous bounty: XSS in web app",
+                "Security focus area",
+            ],
             recent_events=["user_request", "repo_scan_started"],
         )
 

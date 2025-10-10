@@ -53,7 +53,7 @@ class MangleValidator:
             tfacts.append(f"domain('{safe_domain}')")
         if meta:
             for k, v in meta.items():
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     tfacts.append(f"{k}({v})")
                 elif isinstance(v, str):
                     tfacts.append(f"{k}('{v.replace("'", ' ')}')")
@@ -68,7 +68,9 @@ class MangleValidator:
             return {"valid": True, "violations": [], "confidence_penalty": 0.0}
 
         for meta_rule in rules_data.values():
-            body = (meta_rule.get("body") or meta_rule.get("rule") or "").strip()
+            body = (
+                meta_rule.get("body") or meta_rule.get("rule") or ""
+            ).strip()
             if not body:
                 continue
             head = body.split(":-", 1)[0].strip().rstrip(".")
@@ -117,7 +119,7 @@ class MangleValidator:
         tfacts: list[str] = []
         tfacts.append(f"tool_name('{tool_name.replace("'", ' ')}')")
         for k, v in params.items():
-            if isinstance(v, (int, float)):
+            if isinstance(v, int | float):
                 tfacts.append(f"param('{k}', {v})")
             elif isinstance(v, str):
                 tfacts.append(f"param('{k}', '{v.replace("'", ' ')}')")
@@ -125,7 +127,7 @@ class MangleValidator:
                 tfacts.append(f"param('{k}', {str(v).lower()})")
         if context:
             for k, v in context.items():
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     tfacts.append(f"context('{k}', {v})")
                 elif isinstance(v, str):
                     tfacts.append(f"context('{k}', '{v.replace("'", ' ')}')")
@@ -140,7 +142,9 @@ class MangleValidator:
 
         denied_reasons: list[str] = []
         for meta_rule in rules_data.values():
-            body = (meta_rule.get("body") or meta_rule.get("rule") or "").strip()
+            body = (
+                meta_rule.get("body") or meta_rule.get("rule") or ""
+            ).strip()
             if not body:
                 continue
             head = body.split(":-", 1)[0].strip().rstrip(".")
@@ -185,7 +189,7 @@ class MangleValidator:
             tfacts.append(f"domain('{domain.replace("'", ' ')}')")
         if meta:
             for k, v in meta.items():
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     tfacts.append(f"{k}({v})")
                 elif isinstance(v, str):
                     tfacts.append(f"{k}('{v.replace("'", ' ')}')")
@@ -199,7 +203,9 @@ class MangleValidator:
         methods: list[str] = []
         reasons: list[str] = []
         for meta_rule in rules_data.values():
-            body = (meta_rule.get("body") or meta_rule.get("rule") or "").strip()
+            body = (
+                meta_rule.get("body") or meta_rule.get("rule") or ""
+            ).strip()
             if not body:
                 continue
             head = body.split(":-", 1)[0].strip().rstrip(".")
@@ -225,7 +231,9 @@ class MangleValidator:
             return {
                 "method": methods[0],
                 "reason": (
-                    reasons[0] if reasons else f"Selected {methods[0]} via rule"
+                    reasons[0]
+                    if reasons
+                    else f"Selected {methods[0]} via rule"
                 ),
             }
         return {"method": "weighted_vote", "reason": "Default (no match)"}
@@ -254,7 +262,7 @@ class MangleValidator:
         tfacts.append(f"claims_type('{claims_type}')")
         if meta:
             for k, v in meta.items():
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     tfacts.append(f"{k}({v})")
                 elif isinstance(v, str):
                     tfacts.append(f"{k}('{v.replace("'", ' ')}')")
@@ -271,7 +279,9 @@ class MangleValidator:
 
         invalid_claims: list[dict[str, str]] = []
         for meta_rule in rules_data.values():
-            body = (meta_rule.get("body") or meta_rule.get("rule") or "").strip()
+            body = (
+                meta_rule.get("body") or meta_rule.get("rule") or ""
+            ).strip()
             if not body:
                 continue
             head = body.split(":-", 1)[0].strip().rstrip(".")
@@ -290,7 +300,9 @@ class MangleValidator:
                                 {
                                     "claim": str(claim),
                                     "reason": (
-                                        str(reason) if reason else "Unverified claim"
+                                        str(reason)
+                                        if reason
+                                        else "Unverified claim"
                                     ),
                                 }
                             )

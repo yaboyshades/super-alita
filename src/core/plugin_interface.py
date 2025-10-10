@@ -62,7 +62,9 @@ class PluginInterface(ABC):
         return []
 
     @abstractmethod
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         """
         Initialize the plugin with required dependencies.
 
@@ -176,16 +178,23 @@ class PluginInterface(ABC):
                     "genealogy_depth", getattr(self.neural_atom, "depth", 0)
                 )
                 kwargs.setdefault(
-                    "darwin_godel_signature", getattr(self.neural_atom, "signature", "")
+                    "darwin_godel_signature",
+                    getattr(self.neural_atom, "signature", ""),
                 )
 
-            if "content" in kwargs and self.store and hasattr(self.store, "embed_text"):
+            if (
+                "content" in kwargs
+                and self.store
+                and hasattr(self.store, "embed_text")
+            ):
                 try:
                     embedding = await self.store.embed_text(kwargs["content"])
                     if embedding:
                         kwargs.setdefault("embedding", embedding)
                 except Exception as e:  # pragma: no cover
-                    logger.debug(f"Could not generate embedding for event: {e}")
+                    logger.debug(
+                        f"Could not generate embedding for event: {e}"
+                    )
 
             if hasattr(self.event_bus, "publish"):
                 event_object = create_event(event_type, **kwargs)
@@ -193,7 +202,9 @@ class PluginInterface(ABC):
             elif hasattr(self.event_bus, "emit"):
                 await self.event_bus.emit(event_type, **kwargs)
             else:  # pragma: no cover
-                raise RuntimeError("Event bus has neither publish nor emit method")
+                raise RuntimeError(
+                    "Event bus has neither publish nor emit method"
+                )
 
             logger.debug(f"Plugin '{self.name}' emitted event '{event_type}'")
         except Exception as e:

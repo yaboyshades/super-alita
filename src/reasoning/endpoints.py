@@ -61,8 +61,12 @@ def register_reasoning_endpoints(
         from src.main import enforce_rate_limit as _rl  # type: ignore
         from src.main import require_api_key as _req  # type: ignore
     except Exception:  # pragma: no cover - fallback when importing outside app
-        _req = lambda *_args, **_kwargs: None  # type: ignore
-        _rl = lambda *_args, **_kwargs: None  # type: ignore
+
+        def _req(*_args, **_kwargs):
+            return None  # type: ignore
+
+        def _rl(*_args, **_kwargs):
+            return None  # type: ignore
 
     @app.post("/reasoning/consensus", response_model=ConsensusResponse)  # type: ignore
     async def analyze_with_consensus(
@@ -73,12 +77,16 @@ def register_reasoning_endpoints(
     ) -> ConsensusResponse:  # type: ignore
         """Apply enhanced consensus via registered ability when available."""
         registry = getattr(app.state, "ability_registry", None)  # type: ignore[attr-defined]
-        if not registry or not getattr(registry, "knows", lambda *_: False)("deepconf_consensus"):
+        if not registry or not getattr(registry, "knows", lambda *_: False)(
+            "deepconf_consensus"
+        ):
             # Fallback minimal response
             return ConsensusResponse(
                 method=body.method,
                 confidence=0.5,
-                reasoning=["Fallback consensus: deepconf_consensus not available"],
+                reasoning=[
+                    "Fallback consensus: deepconf_consensus not available"
+                ],
                 alternatives=[],
                 samples=[],
             )
@@ -102,14 +110,18 @@ def register_reasoning_endpoints(
         try:
             res: dict[str, Any] = await registry.execute("deepconf_consensus", args)  # type: ignore
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(status_code=500, detail=f"Consensus failed: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Consensus failed: {e}"
+            )
         return ConsensusResponse(
             method=body.method,
             confidence=float(res.get("consensus_confidence", 0.5) or 0.5),
             reasoning=["Consensus aggregation complete"],
-            alternatives=list(res.get("individual_responses", [])[:3])
-            if isinstance(res.get("individual_responses", []), list)
-            else [],
+            alternatives=(
+                list(res.get("individual_responses", [])[:3])
+                if isinstance(res.get("individual_responses", []), list)
+                else []
+            ),
             samples=[],
         )
 
@@ -125,7 +137,14 @@ def register_reasoning_endpoints(
         complexity = float(body.context.get("complexity", 0.5) or 0.5)
         consistency = float(body.context.get("consistency", 0.5) or 0.5)
         coverage = float(body.context.get("coverage", 0.5) or 0.5)
-        calibrated = max(0.0, min(1.0, avg * (0.6 + 0.2 * consistency + 0.2 * coverage) - 0.1 * complexity))
+        calibrated = max(
+            0.0,
+            min(
+                1.0,
+                avg * (0.6 + 0.2 * consistency + 0.2 * coverage)
+                - 0.1 * complexity,
+            ),
+        )
         return DeepConfResponse(
             calibrated_confidence=calibrated,
             calibration_factors={
@@ -144,33 +163,50 @@ def register_reasoning_endpoints(
         insights: list[dict[str, Any]] = []
         code = body.code
         lang = (body.language or "").lower()
-        if body.analyze_architecture and ("class " in code and lang in {"python", "javascript", "typescript", "java", "csharp"}):
-            insights.append({
-                "type": "architectural",
-                "insight": "Class definition detected",
-                "confidence": 0.9,
-                "impact": "medium",
-                "suggestion": "Ensure SOLID principles and proper encapsulation",
-            })
+        if body.analyze_architecture and (
+            "class " in code
+            and lang
+            in {"python", "javascript", "typescript", "java", "csharp"}
+        ):
+            insights.append(
+                {
+                    "type": "architectural",
+                    "insight": "Class definition detected",
+                    "confidence": 0.9,
+                    "impact": "medium",
+                    "suggestion": "Ensure SOLID principles and proper encapsulation",
+                }
+            )
         if body.analyze_performance and (" for " in code or "for(" in code):
-            insights.append({
-                "type": "performance",
-                "insight": "Loop detected",
-                "confidence": 0.7,
-                "impact": "medium",
-                "suggestion": "Consider vectorization/comprehensions where applicable",
-            })
-        if body.analyze_security and any(t in code.lower() for t in ["sql", "eval", "exec", "input("]):
-            insights.append({
-                "type": "security",
-                "insight": "Potential security-sensitive usage",
-                "confidence": 0.9,
-                "impact": "high",
-                "suggestion": "Validate and sanitize inputs; avoid eval/exec",
-            })
+            insights.append(
+                {
+                    "type": "performance",
+                    "insight": "Loop detected",
+                    "confidence": 0.7,
+                    "impact": "medium",
+                    "suggestion": "Consider vectorization/comprehensions where applicable",
+                }
+            )
+        if body.analyze_security and any(
+            t in code.lower() for t in ["sql", "eval", "exec", "input("]
+        ):
+            insights.append(
+                {
+                    "type": "security",
+                    "insight": "Potential security-sensitive usage",
+                    "confidence": 0.9,
+                    "impact": "high",
+                    "suggestion": "Validate and sanitize inputs; avoid eval/exec",
+                }
+            )
         # Simple scoring
         if not insights:
-            return MangleResponse(insights=[], semantic_score=0.5, confidence=0.5)
-        score = sum(float(i.get("confidence", 0.5)) for i in insights) / len(insights)
-        return MangleResponse(insights=insights, semantic_score=score, confidence=score)
-
+            return MangleResponse(
+                insights=[], semantic_score=0.5, confidence=0.5
+            )
+        score = sum(float(i.get("confidence", 0.5)) for i in insights) / len(
+            insights
+        )
+        return MangleResponse(
+            insights=insights, semantic_score=score, confidence=score
+        )

@@ -28,7 +28,9 @@ class Priority(Enum):
 class RiskWeights:
     """Configurable weights for risk score calculation"""
 
-    mailbox_pressure: float = 0.4  # High weight - directly impacts responsiveness
+    mailbox_pressure: float = (
+        0.4  # High weight - directly impacts responsiveness
+    )
     stale_rate: float = 0.3  # Medium-high - indicates concurrency issues
     concurrency_load: float = 0.2  # Medium - system utilization
     ignored_triggers: float = 0.1  # Low - may indicate design issues
@@ -107,7 +109,9 @@ class PriorityState:
     last_change_time: float
     cooldown_until: float = 0.0
 
-    def can_downgrade(self, new_priority: Priority, min_cooldown_s: int = 1800) -> bool:
+    def can_downgrade(
+        self, new_priority: Priority, min_cooldown_s: int = 1800
+    ) -> bool:
         """Check if priority can be downgraded (with cooldown protection)"""
         current_time = time()
 
@@ -122,7 +126,9 @@ class PriorityState:
         """Check if priority can be upgraded (immediate for urgency)"""
         return new_priority < self.current_priority
 
-    def update_priority(self, new_priority: Priority, cooldown_s: int = 1800) -> bool:
+    def update_priority(
+        self, new_priority: Priority, cooldown_s: int = 1800
+    ) -> bool:
         """
         Update priority with cooldown protection.
 
@@ -156,7 +162,9 @@ class RiskEngine:
     Main risk assessment engine with state tracking and cooldown protection.
     """
 
-    def __init__(self, weights: RiskWeights | None = None, cooldown_s: int = 1800):
+    def __init__(
+        self, weights: RiskWeights | None = None, cooldown_s: int = 1800
+    ):
         self.weights = weights or RiskWeights()
         self.cooldown_s = cooldown_s
         self.priority_states: dict[str, PriorityState] = {}
@@ -214,7 +222,9 @@ class RiskEngine:
             )
 
         priority_state = self.priority_states[component]
-        priority_changed = priority_state.update_priority(new_priority, self.cooldown_s)
+        priority_changed = priority_state.update_priority(
+            new_priority, self.cooldown_s
+        )
 
         # Calculate trend
         trend = self._calculate_trend(component)

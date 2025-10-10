@@ -38,14 +38,17 @@ def test_max_tool_calls_abort(monkeypatch):
     app = _mk_app_max_calls(monkeypatch)
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "go", "session_id": "cap"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "go", "session_id": "cap"},
     )
     text = resp.text
     assert "[ERROR: Agent unable to complete request]" in text
     evts = app.state.event_bus.events
     calls = [e for e in evts if e["type"] == "AbilityCalled"]
     assert len(calls) == 1
-    terminals = [e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}]
+    terminals = [
+        e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}
+    ]
     assert len(terminals) == 1 and terminals[0]["type"] == "TaskFailed"
 
 
@@ -74,13 +77,16 @@ class SlowRegistry:
 class TimeoutLLM:
     async def stream_chat(self, messages, timeout):
         if any(
-            m["role"] == "assistant" and "<tool_error" in m["content"] for m in messages
+            m["role"] == "assistant" and "<tool_error" in m["content"]
+            for m in messages
         ):
             yield {
                 "content": '<final_answer>{"content":"gave up","citations":[]}</final_answer>'
             }
         else:
-            yield {"content": '<tool_call>{"tool":"slow","args":{}}</tool_call>'}
+            yield {
+                "content": '<tool_call>{"tool":"slow","args":{}}</tool_call>'
+            }
 
 
 def _mk_app_timeout(monkeypatch):
@@ -99,7 +105,8 @@ def test_execution_timeout(monkeypatch):
     app = _mk_app_timeout(monkeypatch)
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "go", "session_id": "to"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "go", "session_id": "to"},
     )
     assert "gave up" in resp.text
     evts = app.state.event_bus.events
@@ -136,13 +143,16 @@ class FailingRegistry:
 class BackoffLLM:
     async def stream_chat(self, messages, timeout):
         if any(
-            m["role"] == "assistant" and "<tool_error" in m["content"] for m in messages
+            m["role"] == "assistant" and "<tool_error" in m["content"]
+            for m in messages
         ):
             yield {
                 "content": '<final_answer>{"content":"done","citations":[]}</final_answer>'
             }
         else:
-            yield {"content": '<tool_call>{"tool":"flaky","args":{}}</tool_call>'}
+            yield {
+                "content": '<tool_call>{"tool":"flaky","args":{}}</tool_call>'
+            }
 
 
 def _mk_app_backoff(monkeypatch):
@@ -163,7 +173,8 @@ def test_retry_backoff(monkeypatch):
     app, registry = _mk_app_backoff(monkeypatch)
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "rb"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "hi", "session_id": "rb"},
     )
     assert "done" in resp.text
     assert len(registry.call_times) == 2

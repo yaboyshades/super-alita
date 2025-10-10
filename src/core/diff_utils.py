@@ -20,11 +20,15 @@ class DiffEntry:
     def to_dict(self) -> DiffDict:
         d = asdict(self)
         if self.new_content is not None:
-            d["new_sha"] = hashlib.sha1(self.new_content.encode("utf-8")).hexdigest()
+            d["new_sha"] = hashlib.sha1(
+                self.new_content.encode("utf-8")
+            ).hexdigest()
         return d
 
 
-def normalize_diffs(diffs: list[dict[str, Any]], *, proposed_by: str) -> list[DiffDict]:
+def normalize_diffs(
+    diffs: list[dict[str, Any]], *, proposed_by: str
+) -> list[DiffDict]:
     out: list[DiffDict] = []
     for d in diffs or []:
         entry = DiffEntry(

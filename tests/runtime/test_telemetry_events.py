@@ -5,7 +5,12 @@ from fastapi.testclient import TestClient
 
 from reug_runtime.router import router
 from tests.runtime import prefix_path
-from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG, FakeLLM
+from tests.runtime.fakes import (
+    FakeAbilityRegistry,
+    FakeEventBus,
+    FakeKG,
+    FakeLLM,
+)
 
 
 class TimedFakeEventBus(FakeEventBus):
@@ -28,7 +33,8 @@ def test_success_turn_emits_required_fields() -> None:
     app = _make_app(FakeLLM())
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "ok"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "hi", "session_id": "ok"},
     )
     assert resp.status_code == 200
     events = app.state.event_bus.events
@@ -66,12 +72,18 @@ def test_failing_turn_emits_required_fields(monkeypatch) -> None:
     monkeypatch.setattr(config.SETTINGS, "max_tool_calls", 1)
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "fail"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "hi", "session_id": "fail"},
     )
     assert resp.status_code == 200
     events = app.state.event_bus.events
     kinds = {e["type"] for e in events}
-    assert {"TaskStarted", "AbilityCalled", "AbilitySucceeded", "TaskFailed"} <= kinds
+    assert {
+        "TaskStarted",
+        "AbilityCalled",
+        "AbilitySucceeded",
+        "TaskFailed",
+    } <= kinds
     for evt in events:
         assert "correlation_id" in evt
         assert "timestamp_ms" in evt

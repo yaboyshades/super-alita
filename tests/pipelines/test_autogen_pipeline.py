@@ -16,7 +16,10 @@ class StubAPI:
         if self.step == 1:
             return {
                 "diffs": [
-                    {"path": "src/misc/foo.py", "new_content": "def x(): return 1"}
+                    {
+                        "path": "src/misc/foo.py",
+                        "new_content": "def x(): return 1",
+                    }
                 ]
             }
         # Second pass: provide required artifacts
@@ -82,6 +85,8 @@ def test_skips_when_no_need():
 
     P.LocalAPI = lambda: StubAPI()
     res = P.autogen_any(
-        description="Refactor internal string util.", iterations=2, event_bus=bus
+        description="Refactor internal string util.",
+        iterations=2,
+        event_bus=bus,
     )
     assert res["status"] == "skipped"

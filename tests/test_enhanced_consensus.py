@@ -42,9 +42,15 @@ async def test_enhanced_consensus_methods():
                 if response.status_code == 200:
                     result = response.json()
                     print(f"✅ {method}:")
-                    print(f"   Consensus: {result.get('consensus_text', 'N/A')}")
-                    print(f"   Confidence: {result.get('consensus_confidence', 0):.3f}")
-                    print(f"   Method: {result.get('aggregation_method', 'N/A')}")
+                    print(
+                        f"   Consensus: {result.get('consensus_text', 'N/A')}"
+                    )
+                    print(
+                        f"   Confidence: {result.get('consensus_confidence', 0):.3f}"
+                    )
+                    print(
+                        f"   Method: {result.get('aggregation_method', 'N/A')}"
+                    )
                     print(
                         f"   Responses: {len(result.get('individual_responses', []))}"
                     )
@@ -108,7 +114,8 @@ async def test_consensus_parameter_variations():
 
             try:
                 response = await client.post(
-                    f"{base_url}/tools/deepconf_consensus", json=test_case["params"]
+                    f"{base_url}/tools/deepconf_consensus",
+                    json=test_case["params"],
                 )
 
                 if response.status_code == 200:
@@ -117,7 +124,9 @@ async def test_consensus_parameter_variations():
                     print(
                         f"   Consensus: {result.get('consensus_text', 'N/A')[:100]}..."
                     )
-                    print(f"   Confidence: {result.get('consensus_confidence', 0):.3f}")
+                    print(
+                        f"   Confidence: {result.get('consensus_confidence', 0):.3f}"
+                    )
                     print(
                         f"   Responses: {len(result.get('individual_responses', []))}"
                     )

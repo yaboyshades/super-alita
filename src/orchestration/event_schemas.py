@@ -151,12 +151,14 @@ class EventSchemaRegistry:
         return cls.SCHEMAS.get(event_type, BaseEvent)
 
     @classmethod
-    def validate_event(cls, event_type: str, event_data: dict[str, Any]) -> bool:
+    def validate_event(
+        cls, event_type: str, event_data: dict[str, Any]
+    ) -> bool:
         """Validate event data against schema."""
         schema_class = cls.get_schema(event_type)
         try:
             # Basic validation - check required fields exist
-            schema_fields = {f.name for f in schema_class.__dataclass_fields__.values()}
+            {f.name for f in schema_class.__dataclass_fields__.values()}
             required_fields = {
                 f.name
                 for f in schema_class.__dataclass_fields__.values()
@@ -181,7 +183,9 @@ def build_run_started_event(
         "session_id": session_id,
         "prompt": prompt,
         "sdd_mode": config.get("sdd_mode", False),
-        "enabled_stages": {k: v for k, v in config.items() if k.startswith("enable_")},
+        "enabled_stages": {
+            k: v for k, v in config.items() if k.startswith("enable_")
+        },
         "configuration": config,
     }
 

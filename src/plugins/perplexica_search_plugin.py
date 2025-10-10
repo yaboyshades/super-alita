@@ -122,7 +122,9 @@ class PerplexicaSearchPlugin(PluginInterface):
     def description(self) -> str:
         return "AI-powered search with reasoning, summarization, and multi-modal capabilities"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         """Initialize the Perplexica search plugin."""
         await super().setup(event_bus, store, config)
 
@@ -131,7 +133,9 @@ class PerplexicaSearchPlugin(PluginInterface):
         self.web_agent = config.get("web_agent")
 
         # Load configuration from YAML
-        cfg_path = Path(__file__).resolve().parents[1] / "config" / "perplexica.yaml"
+        cfg_path = (
+            Path(__file__).resolve().parents[1] / "config" / "perplexica.yaml"
+        )
         try:
             cfg = safe_load(cfg_path.read_text()).get("perplexica", {})
         except Exception:
@@ -174,7 +178,9 @@ class PerplexicaSearchPlugin(PluginInterface):
         # Also handle generic "enhanced_search" events
         await self.subscribe("enhanced_search", self._handle_search_request)
 
-        logger.info("PerplexicaSearchPlugin started - ready for AI-powered search")
+        logger.info(
+            "PerplexicaSearchPlugin started - ready for AI-powered search"
+        )
 
     async def shutdown(self) -> None:
         """Clean up resources."""
@@ -211,7 +217,11 @@ class PerplexicaSearchPlugin(PluginInterface):
             if hasattr(event, "data") and isinstance(event.data, dict):
                 data = event.data
             else:
-                data = event.model_dump() if hasattr(event, "model_dump") else event
+                data = (
+                    event.model_dump()
+                    if hasattr(event, "model_dump")
+                    else event
+                )
 
             # Extract search parameters
             query = data.get("query", "")
@@ -252,7 +262,9 @@ class PerplexicaSearchPlugin(PluginInterface):
             tool_result = ToolResultEvent(
                 source_plugin=self.name,
                 conversation_id=session_id,
-                tool_call_id=data.get("tool_call_id", f"perplexica_{session_id}"),
+                tool_call_id=data.get(
+                    "tool_call_id", f"perplexica_{session_id}"
+                ),
                 session_id=session_id,
                 success=True,
                 result=response.model_dump(),
@@ -332,12 +344,15 @@ class PerplexicaSearchPlugin(PluginInterface):
                 reasoning,
                 citations,
                 follow_ups,
-            ) = await self._generate_ai_analysis(query, search_results, search_mode)
+            ) = await self._generate_ai_analysis(
+                query, search_results, search_mode
+            )
         else:
             summary = self._generate_simple_summary(query, search_results)
             reasoning = f"Found {len(search_results)} results for '{query}' using {search_mode} search."
             citations = [
-                f"[{i+1}] {r.title} - {r.url}" for i, r in enumerate(search_results[:5])
+                f"[{i+1}] {r.title} - {r.url}"
+                for i, r in enumerate(search_results[:5])
             ]
             follow_ups = []
 
@@ -360,7 +375,9 @@ class PerplexicaSearchPlugin(PluginInterface):
 
         return response
 
-    async def _search_web(self, query: str, max_results: int) -> list[dict[str, Any]]:
+    async def _search_web(
+        self, query: str, max_results: int
+    ) -> list[dict[str, Any]]:
         """Perform web search using existing WebAgentAtom if available."""
         if self.web_agent and hasattr(self.web_agent, "call"):
             try:
@@ -402,15 +419,21 @@ class PerplexicaSearchPlugin(PluginInterface):
         """Search academic sources."""
         # For academic search, we can add "academic" or "scholarly" terms
         academic_query = f"{query} academic research papers scholarly"
-        return await self._fallback_search(academic_query, max_results, "academic")
+        return await self._fallback_search(
+            academic_query, max_results, "academic"
+        )
 
-    async def _search_video(self, query: str, max_results: int) -> list[dict[str, Any]]:
+    async def _search_video(
+        self, query: str, max_results: int
+    ) -> list[dict[str, Any]]:
         """Search for videos."""
         # Could integrate with YouTube API or use video-specific search engines
         video_query = f"{query} video tutorial"
         return await self._fallback_search(video_query, max_results, "video")
 
-    async def _search_news(self, query: str, max_results: int) -> list[dict[str, Any]]:
+    async def _search_news(
+        self, query: str, max_results: int
+    ) -> list[dict[str, Any]]:
         """Search news sources."""
         news_query = f"{query} news recent"
         return await self._fallback_search(news_query, max_results, "news")
@@ -433,7 +456,9 @@ class PerplexicaSearchPlugin(PluginInterface):
     ) -> list[dict[str, Any]]:
         """Search shopping sites."""
         shopping_query = f"{query} buy purchase price"
-        return await self._fallback_search(shopping_query, max_results, "shopping")
+        return await self._fallback_search(
+            shopping_query, max_results, "shopping"
+        )
 
     async def _search_wolfram(
         self, query: str, max_results: int
@@ -441,7 +466,9 @@ class PerplexicaSearchPlugin(PluginInterface):
         """Search using Wolfram Alpha style computational queries."""
         # This would ideally integrate with Wolfram Alpha API
         computational_query = f"{query} calculate compute math"
-        return await self._fallback_search(computational_query, max_results, "wolfram")
+        return await self._fallback_search(
+            computational_query, max_results, "wolfram"
+        )
 
     async def _fallback_search(
         self, query: str, max_results: int, source: str
@@ -450,7 +477,9 @@ class PerplexicaSearchPlugin(PluginInterface):
         try:
             # Try to use the basic web search from WebAgentAtom
             if self.web_agent and hasattr(self.web_agent, "_searxng_search"):
-                results = await self.web_agent._searxng_search(query, max_results)
+                results = await self.web_agent._searxng_search(
+                    query, max_results
+                )
                 # Mark the source appropriately
                 for result in results:
                     result["source"] = source
@@ -470,14 +499,18 @@ class PerplexicaSearchPlugin(PluginInterface):
             logger.error(f"Fallback search failed: {e}")
             return []
 
-    def _dedupe_results(self, results: list[SearchResult]) -> list[SearchResult]:
+    def _dedupe_results(
+        self, results: list[SearchResult]
+    ) -> list[SearchResult]:
         """Smart deduplication: normalize domains (drop 'www.', ignore ports) and titles."""
         seen: dict[str, SearchResult] = {}
         deduped: list[SearchResult] = []
 
         for r in results:
             # Normalize domain: strip common "www." prefix and ignore ports
-            domain = (urlparse(r.url).hostname or "").lower().removeprefix("www.")
+            domain = (
+                (urlparse(r.url).hostname or "").lower().removeprefix("www.")
+            )
 
             title_sig = r.title.strip().lower()[:30]
             key = f"{domain}:{title_sig}"
@@ -564,9 +597,13 @@ Please provide a detailed analysis that synthesizes the information and highligh
                     else response_text
                 )
             if not reasoning:
-                reasoning = f"AI analysis of {len(results)} results for '{query}'"
+                reasoning = (
+                    f"AI analysis of {len(results)} results for '{query}'"
+                )
             if not citations:
-                citations = [f"[{i+1}] {r.title}" for i, r in enumerate(results[:3])]
+                citations = [
+                    f"[{i+1}] {r.title}" for i, r in enumerate(results[:3])
+                ]
             if not follow_ups:
                 follow_ups = [
                     f"What are the latest developments in {query}?",
@@ -588,12 +625,12 @@ Please provide a detailed analysis that synthesizes the information and highligh
         if results:
             summary += f"Top result: {results[0].title}"
 
-        reasoning = (
-            f"Performed {search_mode} search and retrieved {len(results)} results. "
-        )
+        reasoning = f"Performed {search_mode} search and retrieved {len(results)} results. "
         reasoning += "Results are ranked by relevance and recency."
 
-        citations = [f"[{i+1}] {r.title} - {r.url}" for i, r in enumerate(results[:5])]
+        citations = [
+            f"[{i+1}] {r.title} - {r.url}" for i, r in enumerate(results[:5])
+        ]
 
         follow_ups = [
             f"Can you provide more details about {query}?",
@@ -608,14 +645,18 @@ Please provide a detailed analysis that synthesizes the information and highligh
     ) -> str:
         """Prepare context for LLM analysis."""
         context_parts = []
-        for i, result in enumerate(results[:5]):  # Limit to top 5 for context window
+        for i, result in enumerate(
+            results[:5]
+        ):  # Limit to top 5 for context window
             context_parts.append(
                 f"{i+1}. {result.title}\n   {result.snippet}\n   Source: {result.url}\n"
             )
 
         return "\n".join(context_parts)
 
-    def _generate_simple_summary(self, query: str, results: list[SearchResult]) -> str:
+    def _generate_simple_summary(
+        self, query: str, results: list[SearchResult]
+    ) -> str:
         """Generate a simple summary without AI."""
         if not results:
             return f"No results found for '{query}'"
@@ -635,7 +676,9 @@ Please provide a detailed analysis that synthesizes the information and highligh
 
         return min((base_confidence + avg_relevance) / 2.0, 1.0)
 
-    async def get_search_history(self, limit: int = 10) -> list[PerplexicaResponse]:
+    async def get_search_history(
+        self, limit: int = 10
+    ) -> list[PerplexicaResponse]:
         """Get recent search history."""
         if not self.search_history:
             return []

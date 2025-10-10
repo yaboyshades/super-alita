@@ -71,9 +71,13 @@ class ViolationResponseProtocol:
             ],
         }
 
-    def assess_violation(self, violation: ConstitutionalViolation) -> ViolationResponse:
+    def assess_violation(
+        self, violation: ConstitutionalViolation
+    ) -> ViolationResponse:
         """Assess a violation and generate response protocol."""
-        severity_assessment = self.severity_mapping.get(violation.severity, "medium")
+        severity_assessment = self.severity_mapping.get(
+            violation.severity, "medium"
+        )
 
         corrective_actions = self._generate_corrective_actions(violation)
         estimated_effort = self._estimate_effort(violation)
@@ -185,7 +189,12 @@ class ViolationResponseProtocol:
             base_probability = 0.85  # Usually straightforward
 
         # Adjust based on severity
-        severity_modifiers = {"critical": -0.2, "high": -0.1, "medium": 0.0, "low": 0.1}
+        severity_modifiers = {
+            "critical": -0.2,
+            "high": -0.1,
+            "medium": 0.0,
+            "low": 0.1,
+        }
 
         adjusted_probability = base_probability + severity_modifiers.get(
             violation.severity, 0.0

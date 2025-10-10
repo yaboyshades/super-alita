@@ -24,7 +24,13 @@ def text_reverser(**kwargs):
         params = {
             k: v
             for k, v in kwargs.items()
-            if k not in ["event_bus", "tool_call_id", "session_id", "conversation_id"]
+            if k
+            not in [
+                "event_bus",
+                "tool_call_id",
+                "session_id",
+                "conversation_id",
+            ]
         }
 
         # --- BEGIN USER LOGIC ---
@@ -66,9 +72,13 @@ def text_reverser(**kwargs):
                         # Async context
                         loop = asyncio.get_event_loop()
                         if loop.is_running():
-                            asyncio.create_task(event_bus.publish(result_event))
+                            asyncio.create_task(
+                                event_bus.publish(result_event)
+                            )
                         else:
-                            loop.run_until_complete(event_bus.publish(result_event))
+                            loop.run_until_complete(
+                                event_bus.publish(result_event)
+                            )
                     else:
                         # Sync publish method
                         event_bus.publish(result_event)
@@ -95,7 +105,9 @@ def text_reverser(**kwargs):
                 if hasattr(kwargs["event_bus"], "publish"):
                     if hasattr(
                         asyncio, "iscoroutinefunction"
-                    ) and asyncio.iscoroutinefunction(kwargs["event_bus"].publish):
+                    ) and asyncio.iscoroutinefunction(
+                        kwargs["event_bus"].publish
+                    ):
                         loop = asyncio.get_event_loop()
                         if loop.is_running():
                             asyncio.create_task(

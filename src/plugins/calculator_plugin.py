@@ -102,7 +102,10 @@ class CalculatorPlugin(PluginInterface):
 
     async def _handle_tool_call(self, event: ToolCallEvent) -> None:
         """Handle calculator tool calls."""
-        if not isinstance(event, ToolCallEvent) or event.tool_name != "calculator":
+        if (
+            not isinstance(event, ToolCallEvent)
+            or event.tool_name != "calculator"
+        ):
             return  # Not for us
 
         logger.info(f"Processing calculator tool call: {event.tool_call_id}")
@@ -172,7 +175,9 @@ class CalculatorPlugin(PluginInterface):
             return self._eval_node(node.body)
 
         except SyntaxError:
-            raise ValueError(f"Invalid mathematical expression: {expression}") from None
+            raise ValueError(
+                f"Invalid mathematical expression: {expression}"
+            ) from None
         except Exception as e:
             raise ValueError(f"Error evaluating expression: {e!s}") from e
 
@@ -200,7 +205,9 @@ class CalculatorPlugin(PluginInterface):
                 )
             return op(left, right)
         if isinstance(node, ast.Call):
-            func_name = node.func.id if isinstance(node.func, ast.Name) else None
+            func_name = (
+                node.func.id if isinstance(node.func, ast.Name) else None
+            )
             if func_name not in self._safe_functions:
                 raise ValueError(f"Unsupported function: {func_name}")
             args = [self._eval_node(arg) for arg in node.args]
@@ -219,7 +226,11 @@ class CalculatorPlugin(PluginInterface):
         raise ValueError(f"Unsupported AST node type: {type(node).__name__}")
 
     async def _emit_tool_result(
-        self, original_event: ToolCallEvent, success: bool, result: Any, message: str
+        self,
+        original_event: ToolCallEvent,
+        success: bool,
+        result: Any,
+        message: str,
     ) -> None:
         """Emit a ToolResultEvent in response to a tool call."""
         try:
@@ -233,7 +244,9 @@ class CalculatorPlugin(PluginInterface):
             )
 
             await self.event_bus.publish(result_event)
-            logger.debug(f"Emitted tool result for call {original_event.tool_call_id}")
+            logger.debug(
+                f"Emitted tool result for call {original_event.tool_call_id}"
+            )
 
         except Exception as e:
             logger.error(f"Failed to emit tool result: {e}")

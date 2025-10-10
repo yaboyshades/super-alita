@@ -48,7 +48,9 @@ async def test_full_agent_system():
     try:
         # Get current todos
         todos = agent.get_todos()
-        print(f"✅ Current todos retrieved: {len(todos.get('todos', []))} items")
+        print(
+            f"✅ Current todos retrieved: {len(todos.get('todos', []))} items"
+        )
 
         # Add a test todo
         result = agent.add_todo("Test agent integration with LeanRAG", "high")
@@ -140,7 +142,9 @@ async def test_leanrag_integration():
 
         print("✅ LeanRAG retrieval completed:")
         print(f"   Query: {query}")
-        print(f"   Retrieved subgraph: {result['subgraph'].number_of_nodes()} nodes")
+        print(
+            f"   Retrieved subgraph: {result['subgraph'].number_of_nodes()} nodes"
+        )
         print(f"   Brief: {result['brief'][:100]}...")
 
         # Test adapter
@@ -172,10 +176,14 @@ async def main():
     print("📊 Integration Test Summary")
     print("=" * 60)
     print(f"Agent System: {'✅ PASS' if agent_success else '❌ FAIL'}")
-    print(f"LeanRAG Integration: {'✅ PASS' if leanrag_success else '❌ FAIL'}")
+    print(
+        f"LeanRAG Integration: {'✅ PASS' if leanrag_success else '❌ FAIL'}"
+    )
 
     if agent_success and leanrag_success:
-        print("\n🎉 ALL TESTS PASSED - Super Alita Agent is fully operational!")
+        print(
+            "\n🎉 ALL TESTS PASSED - Super Alita Agent is fully operational!"
+        )
         print("\nThe agent system now includes:")
         print("• Event-driven neural architecture with Redis/Memurai")
         print("• LeanRAG (RAG 3.0) with hierarchical KG aggregation")

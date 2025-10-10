@@ -50,10 +50,12 @@ class BetaCalibrator:
     def fit(self, confidence_scores: list[float], ground_truth: list[bool]):
         """Fit beta distribution parameters using method of moments"""
         if len(confidence_scores) != len(ground_truth):
-            raise ValueError("Confidence scores and ground truth must have same length")
+            raise ValueError(
+                "Confidence scores and ground truth must have same length"
+            )
 
         # Convert to numpy arrays
-        confidences = np.array(confidence_scores)
+        np.array(confidence_scores)
         truth = np.array(ground_truth, dtype=float)
 
         # Calculate empirical mean and variance
@@ -70,7 +72,9 @@ class BetaCalibrator:
                 self.alpha = 1.0
                 self.beta = 1.0
             else:
-                factor = empirical_mean * (1 - empirical_mean) / empirical_var - 1
+                factor = (
+                    empirical_mean * (1 - empirical_mean) / empirical_var - 1
+                )
                 self.alpha = empirical_mean * factor
                 self.beta = (1 - empirical_mean) * factor
 
@@ -146,7 +150,9 @@ class MultiDomainConfidenceCalibrator:
 
                 if hasattr(profile.calibrator, "predict_proba"):
                     # Sklearn-style calibrator
-                    calibrated_probs = profile.calibrator.predict_proba(scores_array)
+                    calibrated_probs = profile.calibrator.predict_proba(
+                        scores_array
+                    )
                     calibrated_scores = calibrated_probs[:, 1].tolist()
                 else:
                     # Custom calibrator
@@ -173,7 +179,9 @@ class MultiDomainConfidenceCalibrator:
         Update calibration model with new training data
         """
         if len(confidence_scores) != len(ground_truth):
-            raise ValueError("Confidence scores and ground truth must have same length")
+            raise ValueError(
+                "Confidence scores and ground truth must have same length"
+            )
 
         if len(confidence_scores) < self.min_samples_for_calibration:
             print(
@@ -372,7 +380,10 @@ class MultiDomainConfidenceCalibrator:
             if prop_in_bin > 0:
                 accuracy_in_bin = truth[in_bin].mean()
                 avg_confidence_in_bin = confidences[in_bin].mean()
-                ece += np.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
+                ece += (
+                    np.abs(avg_confidence_in_bin - accuracy_in_bin)
+                    * prop_in_bin
+                )
 
         return ece
 
@@ -385,7 +396,9 @@ class MultiDomainConfidenceCalibrator:
             with open(cache_file, "wb") as f:
                 pickle.dump(profile, f)
         except Exception as e:
-            print(f"Failed to save calibration profile for {profile.domain}: {e}")
+            print(
+                f"Failed to save calibration profile for {profile.domain}: {e}"
+            )
 
     def _load_profiles(self):
         """Load calibration profiles from cache"""
@@ -401,7 +414,9 @@ class MultiDomainConfidenceCalibrator:
                             profile = pickle.load(f)
 
                         # Check if profile is not too old
-                        age_days = (datetime.now(UTC) - profile.last_updated).days
+                        age_days = (
+                            datetime.now(UTC) - profile.last_updated
+                        ).days
                         if age_days <= self.max_cache_age_days:
                             self.profiles[profile.domain] = profile
 

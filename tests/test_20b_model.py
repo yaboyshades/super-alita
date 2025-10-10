@@ -22,7 +22,9 @@ def test_ollama_direct():
         )
         if response.status_code == 200:
             result = response.json()
-            print(f"✅ Direct Ollama Response: {result.get('response', 'No response')}")
+            print(
+                f"✅ Direct Ollama Response: {result.get('response', 'No response')}"
+            )
             return True
         else:
             print(f"❌ Ollama failed: {response.status_code}")
@@ -41,7 +43,9 @@ def test_super_alita_config():
         if response.status_code == 200:
             health = response.json()
             print(f"✅ Super Alita Health: {health}")
-            llm_status = health.get("components", {}).get("llm", {}).get("status")
+            llm_status = (
+                health.get("components", {}).get("llm", {}).get("status")
+            )
             print(f"📊 LLM Status: {llm_status}")
             return llm_status == "ok"
         else:
@@ -59,7 +63,9 @@ def test_memory_usage():
         # Run ollama ps to check loaded models
         import subprocess
 
-        result = subprocess.run(["ollama", "ps"], capture_output=True, text=True)
+        result = subprocess.run(
+            ["ollama", "ps"], capture_output=True, text=True
+        )
         if result.returncode == 0:
             print("📋 Loaded models:")
             print(result.stdout)

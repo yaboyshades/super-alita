@@ -196,7 +196,9 @@ class ReliabilityManager:
 
         # Exhausted attempts -> failure
         if stats.consecutive_failures >= self.config.circuit_break_threshold:
-            stats.circuit_open_until = time.time() + self.config.circuit_reset_after_s
+            stats.circuit_open_until = (
+                time.time() + self.config.circuit_reset_after_s
+            )
             if emit_cb:
                 await self._safe_emit(
                     emit_cb,
@@ -249,9 +251,7 @@ class ReliabilityManager:
             return self.config.classify_timeout_as_transient
         if code == ErrorCode.NETWORK_FAILURE:
             return self.config.classify_oserror_as_transient
-        if code in {ErrorCode.RATE_LIMIT, ErrorCode.ABILITY_FAILURE}:
-            return True
-        return False
+        return code in {ErrorCode.RATE_LIMIT, ErrorCode.ABILITY_FAILURE}
 
     def _classify_error(self, exc: Exception) -> str:
         code = classify_exception(exc)

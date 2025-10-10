@@ -1,4 +1,5 @@
 """Backward compatibility shim for src.mcp_local.super_alita_handlers."""
+
 from __future__ import annotations
 
 import warnings

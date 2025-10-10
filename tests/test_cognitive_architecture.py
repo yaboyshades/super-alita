@@ -94,7 +94,9 @@ class TestCognitiveAtom:
         # Test that different inputs produce different IDs
         if content:
             different_content = content + "x"
-            id3 = CognitiveAtom.generate_deterministic_id(atom_type, different_content)
+            id3 = CognitiveAtom.generate_deterministic_id(
+                atom_type, different_content
+            )
             assert id1 != id3
 
     def test_deterministic_id_generation(self):
@@ -192,7 +194,9 @@ class TestCognitiveEventStore:
 
         # Mock pattern analysis methods
         event_store._evaluate_workflow_success = MagicMock(return_value=True)
-        event_store._extract_pattern = MagicMock(return_value={"test": "pattern"})
+        event_store._extract_pattern = MagicMock(
+            return_value={"test": "pattern"}
+        )
         event_store._store_success_pattern = AsyncMock()
         event_store._calculate_pattern_confidence = MagicMock(return_value=0.9)
 
@@ -216,7 +220,9 @@ class TestCognitiveEventStore:
         assert True
 
     @pytest.mark.asyncio
-    async def test_multiple_atoms_same_correlation(self, event_store, mock_event_bus):
+    async def test_multiple_atoms_same_correlation(
+        self, event_store, mock_event_bus
+    ):
         """Test multiple atoms with same correlation ID."""
         correlation_id = "shared_workflow"
 
@@ -383,7 +389,10 @@ class TestMetacognitiveObserver:
     async def test_inefficiency_detection(self, observer):
         """Test detection of workflow inefficiencies."""
         # Simulate observation history
-        observer.observation_history = ["tool1", "tool2"] * 6  # 12 observations
+        observer.observation_history = [
+            "tool1",
+            "tool2",
+        ] * 6  # 12 observations
 
         inefficiencies = await observer.detect_inefficiencies()
 
@@ -408,10 +417,14 @@ class TestMetacognitiveObserver:
     @given(history_size=st.integers(min_value=0, max_value=50))
     @settings(max_examples=10)
     @pytest.mark.asyncio
-    async def test_inefficiency_detection_property(self, observer, history_size):
+    async def test_inefficiency_detection_property(
+        self, observer, history_size
+    ):
         """Property-based test for inefficiency detection."""
         # Generate observation history
-        observer.observation_history = [f"tool_{i % 5}" for i in range(history_size)]
+        observer.observation_history = [
+            f"tool_{i % 5}" for i in range(history_size)
+        ]
 
         inefficiencies = await observer.detect_inefficiencies()
 
@@ -443,7 +456,9 @@ class TestCreatorPluginCognitiveEnhancement:
         plugin = CreatorPlugin()
 
         # Mock the _try_import_gemini function to avoid import issues
-        with patch("plugins.creator_plugin._try_import_gemini", return_value=False):
+        with patch(
+            "plugins.creator_plugin._try_import_gemini", return_value=False
+        ):
             await plugin.setup(mock_event_bus, mock_store, {})
 
         return plugin
@@ -457,9 +472,15 @@ class TestCreatorPluginCognitiveEnhancement:
         assert hasattr(creator_plugin, "metacognitive_observer")
 
         assert isinstance(creator_plugin.cognitive_store, CognitiveEventStore)
-        assert isinstance(creator_plugin.pattern_analyzer, WorkflowPatternAnalyzer)
-        assert isinstance(creator_plugin.tool_abstractor, ToolAbstractionEngine)
-        assert isinstance(creator_plugin.metacognitive_observer, MetacognitiveObserver)
+        assert isinstance(
+            creator_plugin.pattern_analyzer, WorkflowPatternAnalyzer
+        )
+        assert isinstance(
+            creator_plugin.tool_abstractor, ToolAbstractionEngine
+        )
+        assert isinstance(
+            creator_plugin.metacognitive_observer, MetacognitiveObserver
+        )
 
     @pytest.mark.asyncio
     async def test_gap_event_cognitive_tracking(self, creator_plugin):
@@ -480,7 +501,9 @@ class TestCreatorPluginCognitiveEnhancement:
         creator_plugin.cognitive_store.append_atom = AsyncMock()
 
         # Mock tool generation to avoid file I/O
-        creator_plugin._generate_tool_code = AsyncMock(return_value="test code")
+        creator_plugin._generate_tool_code = AsyncMock(
+            return_value="test code"
+        )
         creator_plugin._save_tool = AsyncMock(return_value="test_path")
         creator_plugin._register_tool = AsyncMock()
         creator_plugin.emit_event = AsyncMock()
@@ -622,7 +645,9 @@ class TestIntegrationScenarios:
         mock_store = AsyncMock()
 
         # Create plugin with proper mocking
-        with patch("plugins.creator_plugin._try_import_gemini", return_value=False):
+        with patch(
+            "plugins.creator_plugin._try_import_gemini", return_value=False
+        ):
             plugin = CreatorPlugin()
             await plugin.setup(mock_event_bus, mock_store, {})
 
@@ -731,8 +756,12 @@ async def test_cognitive_architecture_validation():
 
     # Create workflow atoms
     atoms = [
-        CognitiveAtom("id1", "GAP_DETECTED", "plugin", {"tool": "test"}, "workflow1"),
-        CognitiveAtom("id2", "TOOL_CREATED", "plugin", {"tool": "test"}, "workflow1"),
+        CognitiveAtom(
+            "id1", "GAP_DETECTED", "plugin", {"tool": "test"}, "workflow1"
+        ),
+        CognitiveAtom(
+            "id2", "TOOL_CREATED", "plugin", {"tool": "test"}, "workflow1"
+        ),
     ]
 
     # Add atoms to store

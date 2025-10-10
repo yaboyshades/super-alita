@@ -391,10 +391,14 @@ async def mcp_agent_create_task(
     title: str, description: str, priority: str = "medium"
 ) -> dict[str, Any]:
     """MCP command: Create development task."""
-    return await agent_cycle_tool.create_development_task(title, description, priority)
+    return await agent_cycle_tool.create_development_task(
+        title, description, priority
+    )
 
 
-async def mcp_agent_complete_task(task_id: str, notes: str = "") -> dict[str, Any]:
+async def mcp_agent_complete_task(
+    task_id: str, notes: str = ""
+) -> dict[str, Any]:
     """MCP command: Complete development task."""
     return await agent_cycle_tool.complete_development_task(task_id, notes)
 

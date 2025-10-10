@@ -22,7 +22,9 @@ class _GoodAbility:
     def validate_input(self, input_data: Any) -> bool:  # noqa: ANN401, ARG002
         return True
 
-    async def execute(self, input_data: dict[str, Any]) -> dict[str, Any]:  # noqa: ARG002
+    async def execute(
+        self, input_data: dict[str, Any]
+    ) -> dict[str, Any]:  # noqa: ARG002
         return {"success": True, "data": {}}
 
     async def health_check(self) -> dict[str, Any]:
@@ -52,8 +54,16 @@ def test_validate_ability_registration(cls, valid):  # noqa: ANN001
 
 
 class _GoodAbilityWithSchemas(_GoodAbility):
-    input_schema = {"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]}
-    output_schema = {"type": "object", "properties": {"success": {"type": "boolean"}}, "required": ["success"]}
+    input_schema = {
+        "type": "object",
+        "properties": {"x": {"type": "string"}},
+        "required": ["x"],
+    }
+    output_schema = {
+        "type": "object",
+        "properties": {"success": {"type": "boolean"}},
+        "required": ["success"],
+    }
 
 
 class _BadAbilitySchemas(_GoodAbility):
@@ -75,8 +85,16 @@ def test_schema_enforcement(cls, valid):  # noqa: ANN001
 
 
 class _BadAbilityMissingSuccess(_GoodAbility):
-    input_schema = {"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]}
-    output_schema = {"type": "object", "properties": {"data": {"type": "object"}}, "required": ["data"]}
+    input_schema = {
+        "type": "object",
+        "properties": {"x": {"type": "string"}},
+        "required": ["x"],
+    }
+    output_schema = {
+        "type": "object",
+        "properties": {"data": {"type": "object"}},
+        "required": ["data"],
+    }
 
 
 def test_schema_requires_success():

@@ -14,7 +14,9 @@ def test_constitutional_gateway():
 
     # Test health endpoint
     try:
-        response = requests.get(f"{BASE_URL}/constitutional/health", timeout=10)
+        response = requests.get(
+            f"{BASE_URL}/constitutional/health", timeout=10
+        )
         print(f"✅ Health endpoint: {response.status_code}")
         print(f"   Response: {response.json()}")
     except Exception as e:
@@ -22,7 +24,9 @@ def test_constitutional_gateway():
 
     # Test capabilities endpoint
     try:
-        response = requests.get(f"{BASE_URL}/constitutional/capabilities", timeout=10)
+        response = requests.get(
+            f"{BASE_URL}/constitutional/capabilities", timeout=10
+        )
         print(f"✅ Capabilities endpoint: {response.status_code}")
         print(f"   Response: {json.dumps(response.json(), indent=2)}")
     except Exception as e:
@@ -37,7 +41,9 @@ def test_constitutional_gateway():
             "max_files": 10,
         }
         response = requests.post(
-            f"{BASE_URL}/constitutional/context/workspace", json=payload, timeout=30
+            f"{BASE_URL}/constitutional/context/workspace",
+            json=payload,
+            timeout=30,
         )
         print(f"✅ Workspace context endpoint: {response.status_code}")
         if response.status_code == 200:
@@ -58,7 +64,9 @@ def hello_world():
 """
         payload = {"content": test_code}
         response = requests.post(
-            f"{BASE_URL}/constitutional/enforce/validate", json=payload, timeout=30
+            f"{BASE_URL}/constitutional/enforce/validate",
+            json=payload,
+            timeout=30,
         )
         print(f"✅ Constitutional validation endpoint: {response.status_code}")
         if response.status_code == 200:

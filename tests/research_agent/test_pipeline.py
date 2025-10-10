@@ -1,4 +1,5 @@
 """Integration tests for the research pipeline."""
+
 from __future__ import annotations
 
 import contextlib
@@ -12,7 +13,9 @@ from research_agent.pipeline import ResearchPipeline
 
 
 class _Handler(http.server.BaseHTTPRequestHandler):
-    def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
+    def do_GET(
+        self,
+    ) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
         if "/search" not in self.path:
             self.send_response(404)
             self.end_headers()

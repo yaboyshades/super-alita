@@ -73,7 +73,9 @@ class CortexEvent:
         start_markers = [
             m for m in self.markers if m.marker_type == MarkerType.CYCLE_START
         ]
-        end_markers = [m for m in self.markers if m.marker_type == MarkerType.CYCLE_END]
+        end_markers = [
+            m for m in self.markers if m.marker_type == MarkerType.CYCLE_END
+        ]
 
         if start_markers and end_markers:
             start_time = min(m.timestamp for m in start_markers)
@@ -94,7 +96,9 @@ class CortexEvent:
                 if m.phase == phase and m.duration_ms is not None
             ]
             if phase_markers:
-                durations[phase.value] = sum(m.duration_ms for m in phase_markers)
+                durations[phase.value] = sum(
+                    m.duration_ms for m in phase_markers
+                )
 
         return durations
 

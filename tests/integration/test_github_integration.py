@@ -95,7 +95,9 @@ class TestGitHubCliTool:
     async def test_github_cli_security_validation(self):
         """Test GitHub CLI security validation."""
         # Test command with shell injection patterns
-        input_data = GitHubCliInput(command="gh issue list; rm -rf /", dry_run=True)
+        input_data = GitHubCliInput(
+            command="gh issue list; rm -rf /", dry_run=True
+        )
 
         result = await self.tool.execute(input_data)
 
@@ -127,7 +129,10 @@ class TestGitHubApiClient:
             # Mock successful response
             mock_response = MagicMock()
             mock_response.status_code = 200
-            mock_response.json.return_value = {"id": 123, "title": "Test Issue"}
+            mock_response.json.return_value = {
+                "id": 123,
+                "title": "Test Issue",
+            }
             mock_response.headers = {"x-ratelimit-remaining": "4999"}
 
             mock_client.return_value.__aenter__.return_value.get.return_value = (
@@ -165,7 +170,9 @@ class TestGitHubApiClient:
 
             from src.core.schemas import GitHubApiRequest
 
-            request = GitHubApiRequest(endpoint="repos/nonexistent/repo", method="GET")
+            request = GitHubApiRequest(
+                endpoint="repos/nonexistent/repo", method="GET"
+            )
 
             result = await self.client.make_request(request)
 
@@ -278,13 +285,16 @@ class TestGitHubPriorityCalculator:
         )
 
         priority = self.calculator.calculate_priority(metrics)
-        explanation = self.calculator.get_priority_explanation(metrics, priority)
+        explanation = self.calculator.get_priority_explanation(
+            metrics, priority
+        )
 
         assert "final_priority" in explanation
         assert "contributing_factors" in explanation
         assert "priority_category" in explanation
         assert any(
-            "Security alert" in factor for factor in explanation["contributing_factors"]
+            "Security alert" in factor
+            for factor in explanation["contributing_factors"]
         )
         assert any(
             "Blocks other PRs" in factor
@@ -316,10 +326,14 @@ class TestGitHubPriorityCalculator:
             attention_level=AttentionLevel.CRITICAL,
         )
 
-        metrics = self.calculator.create_priority_metrics_from_github_event(event)
+        metrics = self.calculator.create_priority_metrics_from_github_event(
+            event
+        )
 
         assert metrics.impact == 9.0  # Security alerts have high impact
-        assert metrics.urgency == 9.0  # Critical attention level maps to high urgency
+        assert (
+            metrics.urgency == 9.0
+        )  # Critical attention level maps to high urgency
         assert metrics.age_hours >= 0.0
 
 
@@ -357,7 +371,9 @@ class TestGitHubIntegration:
         """Test integration between different GitHub schemas."""
         # Create related schemas
         github_metrics = GitHubPriorityMetrics(
-            has_security_alert=True, comment_count=5, issue_labels=["bug", "urgent"]
+            has_security_alert=True,
+            comment_count=5,
+            issue_labels=["bug", "urgent"],
         )
 
         priority_metrics = EnhancedPriorityMetrics(
@@ -399,7 +415,9 @@ def sample_priority_metrics():
         urgency=7.0,
         effort=4.0,
         github_metrics=GitHubPriorityMetrics(
-            has_security_alert=True, comment_count=3, issue_labels=["enhancement"]
+            has_security_alert=True,
+            comment_count=3,
+            issue_labels=["enhancement"],
         ),
     )
 
@@ -425,7 +443,9 @@ class TestGitHubIntegrationE2E:
         assert result.github_event is not None
         assert result.github_event.event_type == GitHubEventType.PR_OPENED
 
-    def test_priority_calculation_with_github_data(self, sample_priority_metrics):
+    def test_priority_calculation_with_github_data(
+        self, sample_priority_metrics
+    ):
         """Test priority calculation with real GitHub data structure."""
         calculator = GitHubPriorityCalculator()
 

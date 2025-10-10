@@ -92,9 +92,9 @@ class EventBus:
             self._registered
         )  # Alias for compatibility
 
-        self._redis_subscribed: dict[
-            str, bool
-        ] = {}  # Track Redis channel subscriptions
+        self._redis_subscribed: dict[str, bool] = (
+            {}
+        )  # Track Redis channel subscriptions
         self._pubsub = None  # Redis pubsub object
 
         # Metrics tracking
@@ -158,9 +158,9 @@ class EventBus:
         try:
             # Use orjson if available for better performance and datetime handling
             if _orjson_available and orjson is not None:
-                return orjson.dumps(payload, default=self._json_serializer).decode(
-                    "utf-8"
-                )
+                return orjson.dumps(
+                    payload, default=self._json_serializer
+                ).decode("utf-8")
             else:
                 return json.dumps(payload, default=self._json_serializer)
         except Exception as e:
@@ -186,7 +186,9 @@ class EventBus:
             hasattr(obj, "__dict__")
             and hasattr(obj, "__class__")
             and hasattr(obj.__class__, "__bases__")
-            and any("Enum" in base.__name__ for base in obj.__class__.__bases__)
+            and any(
+                "Enum" in base.__name__ for base in obj.__class__.__bases__
+            )
         ):
             # Handle enum objects
             return obj.value
@@ -421,7 +423,10 @@ class EventBus:
                 if event_type == "*":
                     # Check if we're already pattern subscribed
                     current_patterns: set[str] = set()
-                    if hasattr(self._pubsub, "patterns") and self._pubsub.patterns:
+                    if (
+                        hasattr(self._pubsub, "patterns")
+                        and self._pubsub.patterns
+                    ):
                         current_patterns = {
                             (
                                 pattern.decode("utf-8")
@@ -433,7 +438,9 @@ class EventBus:
 
                     if "*" not in current_patterns:
                         await self._pubsub.psubscribe("*")
-                        self._redis_subscribed["*"] = True  # Track pattern subscription
+                        self._redis_subscribed["*"] = (
+                            True  # Track pattern subscription
+                        )
                         logger.info(
                             "✅ Pattern subscribed to Memurai: * (all channels)"
                         )
@@ -443,15 +450,24 @@ class EventBus:
                 else:
                     # Handle specific channel subscription
                     current_channels: set[str] = set()
-                    if hasattr(self._pubsub, "channels") and self._pubsub.channels:
+                    if (
+                        hasattr(self._pubsub, "channels")
+                        and self._pubsub.channels
+                    ):
                         current_channels = {
-                            ch.decode("utf-8") if isinstance(ch, bytes) else str(ch)
+                            (
+                                ch.decode("utf-8")
+                                if isinstance(ch, bytes)
+                                else str(ch)
+                            )
                             for ch in self._pubsub.channels
                         }
 
                     if event_type not in current_channels:
                         await self._pubsub.subscribe(event_type)
-                        self._redis_subscribed[event_type] = True  # Track subscription
+                        self._redis_subscribed[event_type] = (
+                            True  # Track subscription
+                        )
                         logger.info(
                             "✅ Subscribed to Memurai channel: %s",
                             event_type,
@@ -460,10 +476,14 @@ class EventBus:
                         self._redis_subscribed[event_type] = (
                             True  # Ensure tracking even if already subscribed
                         )
-                        logger.debug(f"Already subscribed to channel: {event_type}")
+                        logger.debug(
+                            f"Already subscribed to channel: {event_type}"
+                        )
             except Exception as e:
                 logger.exception(
-                    "❌ Failed to subscribe to Redis channel '%s': %s", event_type, e
+                    "❌ Failed to subscribe to Redis channel '%s': %s",
+                    event_type,
+                    e,
                 )
                 raise  # Re-raise to ensure caller knows subscription failed
 
@@ -472,7 +492,9 @@ class EventBus:
         try:
             if self._pubsub is not None:
                 await self._pubsub.subscribe(channel)
-                logger.info(f"Dynamically subscribed to new channel: {channel}")
+                logger.info(
+                    f"Dynamically subscribed to new channel: {channel}"
+                )
         except Exception as e:
             logger.exception(
                 f"Failed to dynamically subscribe to channel '{channel}': {e}"
@@ -498,7 +520,9 @@ class EventBus:
                 except RuntimeError as e:
                     # Typical when no channels yet; keep calm and carry on.
                     if "pubsub connection not set" in str(e):
-                        self.logger.debug("No channels subscribed yet, waiting...")
+                        self.logger.debug(
+                            "No channels subscribed yet, waiting..."
+                        )
                         await asyncio.sleep(0.25)
                         continue
                     raise
@@ -508,7 +532,9 @@ class EventBus:
 
                 # Skip subscription confirmation messages and heartbeat
                 if message["type"] in ["subscribe", "unsubscribe"]:
-                    self.logger.debug("📡 Redis subscription confirmed: %s", message)
+                    self.logger.debug(
+                        "📡 Redis subscription confirmed: %s", message
+                    )
                     continue
 
                 if message.get("channel") == "__heartbeat__":
@@ -523,7 +549,9 @@ class EventBus:
                 break
             except Exception as e:
                 self.logger.error(
-                    "💥 Critical error in EventBus listener loop: %s", e, exc_info=True
+                    "💥 Critical error in EventBus listener loop: %s",
+                    e,
+                    exc_info=True,
                 )
                 await asyncio.sleep(
                     0.5
@@ -542,7 +570,9 @@ class EventBus:
                 try:
                     event_data = json.loads(data)
                 except json.JSONDecodeError as e:
-                    self.logger.warning("Failed to parse message data as JSON: %s", e)
+                    self.logger.warning(
+                        "Failed to parse message data as JSON: %s", e
+                    )
                     return
             else:
                 event_data = data
@@ -558,15 +588,21 @@ class EventBus:
                 from .events import deserialize_event
 
                 event_obj = deserialize_event(event_data)
-                self.logger.debug(f"📦 Deserialized to {type(event_obj).__name__}")
+                self.logger.debug(
+                    f"📦 Deserialized to {type(event_obj).__name__}"
+                )
             except Exception as e:
-                self.logger.warning(f"Failed to deserialize event, using raw data: {e}")
+                self.logger.warning(
+                    f"Failed to deserialize event, using raw data: {e}"
+                )
                 event_obj = event_data
 
             # Get handlers for this event type
             handlers = self._handlers.get(channel, [])
             if not handlers:
-                self.logger.debug("No handlers registered for channel: %s", channel)
+                self.logger.debug(
+                    "No handlers registered for channel: %s", channel
+                )
                 self.events_dropped += 1
                 return
 

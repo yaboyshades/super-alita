@@ -32,7 +32,9 @@ class OptionNetwork(nn.Module):
             nn.Linear(hidden_dim, action_dim), nn.Softmax(dim=-1)
         )
         self.critic = nn.Linear(hidden_dim, 1)
-        self.termination = nn.Sequential(nn.Linear(hidden_dim, 1), nn.Sigmoid())
+        self.termination = nn.Sequential(
+            nn.Linear(hidden_dim, 1), nn.Sigmoid()
+        )
 
     def forward(
         self, state: torch.Tensor
@@ -113,7 +115,9 @@ class OptionTrainer(PluginInterface):
         self.step_count = 0
         self.active_executions: dict[str, dict[str, Any]] = {}
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         self.device = torch.device(self.get_config("device", "cpu"))
         self.batch_size = self.get_config("batch_size", 64)
@@ -150,9 +154,9 @@ class OptionTrainer(PluginInterface):
             subproblem_id=sp_id,
             target_features=[feature_id] if feature_id else [],
         )
-        net = OptionNetwork(option.state_dim, option.action_dim, option.hidden_dim).to(
-            self.device
-        )
+        net = OptionNetwork(
+            option.state_dim, option.action_dim, option.hidden_dim
+        ).to(self.device)
         optim = torch.optim.Adam(net.parameters(), lr=option.learning_rate)
 
         self.options[opt_id] = option
@@ -195,10 +199,15 @@ class OptionTrainer(PluginInterface):
         return vec
 
     def _intrinsic_reward(
-        self, option: Option, features_achieved: list[str], next_state: dict[str, Any]
+        self,
+        option: Option,
+        features_achieved: list[str],
+        next_state: dict[str, Any],
     ) -> float:
         for t in option.target_features:
-            if t in features_achieved or t in (next_state.get("features") or []):
+            if t in features_achieved or t in (
+                next_state.get("features") or []
+            ):
                 return 1.0
         return 0.0
 
@@ -217,7 +226,9 @@ class OptionTrainer(PluginInterface):
             if not option or not net:
                 continue
 
-            intr = self._intrinsic_reward(option, features_achieved, next_state)
+            intr = self._intrinsic_reward(
+                option, features_achieved, next_state
+            )
             total_r = reward + intr
 
             s_vec = self._state_to_vector(state)
@@ -254,15 +265,21 @@ class OptionTrainer(PluginInterface):
         optimizer = self.optimizers[opt_id]
         buf = self.replay_buffers[opt_id]
 
-        idx = np.random.choice(len(buf), min(self.batch_size, len(buf)), replace=False)
+        idx = np.random.choice(
+            len(buf), min(self.batch_size, len(buf)), replace=False
+        )
         batch = [buf[i] for i in idx]
 
         states = torch.FloatTensor([t.state for t in batch]).to(self.device)
         actions = torch.LongTensor([t.action for t in batch]).to(self.device)
         rewards = torch.FloatTensor([t.reward for t in batch]).to(self.device)
-        next_states = torch.FloatTensor([t.next_state for t in batch]).to(self.device)
+        next_states = torch.FloatTensor([t.next_state for t in batch]).to(
+            self.device
+        )
         dones = torch.FloatTensor([t.done for t in batch]).to(self.device)
-        old_logps = torch.FloatTensor([t.log_prob for t in batch]).to(self.device)
+        old_logps = torch.FloatTensor([t.log_prob for t in batch]).to(
+            self.device
+        )
         old_vals = torch.FloatTensor([t.value for t in batch]).to(self.device)
 
         with torch.no_grad():
@@ -272,7 +289,9 @@ class OptionTrainer(PluginInterface):
             gae = 0.0
             for t in reversed(range(len(rewards))):
                 delta = (
-                    rewards[t] + opt.gamma * next_vals[t] * (1 - dones[t]) - old_vals[t]
+                    rewards[t]
+                    + opt.gamma * next_vals[t] * (1 - dones[t])
+                    - old_vals[t]
                 )
                 gae = delta + opt.gamma * opt.gae_lambda * gae
                 adv[t] = gae
@@ -288,7 +307,10 @@ class OptionTrainer(PluginInterface):
             ratio = torch.exp(new_logps - old_logps)
 
             surr1 = ratio * adv
-            surr2 = torch.clamp(ratio, 1 - opt.clip_epsilon, 1 + opt.clip_epsilon) * adv
+            surr2 = (
+                torch.clamp(ratio, 1 - opt.clip_epsilon, 1 + opt.clip_epsilon)
+                * adv
+            )
             policy_loss = -torch.min(surr1, surr2).mean()
             value_loss = F.mse_loss(vals, ret)
             entropy = dist.entropy().mean()
@@ -333,9 +355,9 @@ class OptionTrainer(PluginInterface):
         opt.success_rate = (1 - alpha) * opt.success_rate + alpha * (
             1.0 if success else 0.0
         )
-        opt.avg_episode_length = (1 - alpha) * opt.avg_episode_length + alpha * len(
-            traj
-        )
+        opt.avg_episode_length = (
+            1 - alpha
+        ) * opt.avg_episode_length + alpha * len(traj)
         tot_r = sum(t.reward for t in traj) if traj else 0.0
         opt.avg_reward = (1 - alpha) * opt.avg_reward + alpha * tot_r
         await self.emit_event(

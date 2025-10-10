@@ -44,7 +44,9 @@ class PlanExecutor:
         self.active_plans: dict[str, list[Step]] = {}
         self.result_waiters: dict[str, asyncio.Event] = {}
 
-        logger.info("PlanExecutor initialized - ready for closed-loop execution")
+        logger.info(
+            "PlanExecutor initialized - ready for closed-loop execution"
+        )
 
     async def execute_plan(
         self, plan_id: str, session_id: str, goal: str, tools_needed: list[str]
@@ -55,7 +57,9 @@ class PlanExecutor:
             plan = self._create_plan(goal, tools_needed)
             self.active_plans[plan_id] = plan
 
-            logger.info(f"🎯 Starting plan execution: {plan_id} with {len(plan)} steps")
+            logger.info(
+                f"🎯 Starting plan execution: {plan_id} with {len(plan)} steps"
+            )
 
             # Persist plan for recovery
             await self._persist_plan(plan_id, goal, plan)
@@ -69,7 +73,9 @@ class PlanExecutor:
                     step.status == "failed"
                     and step.error == "Service offline - no retry needed"
                 ):
-                    logger.warning("Stopping plan execution due to service offline")
+                    logger.warning(
+                        "Stopping plan execution due to service offline"
+                    )
                     break
 
             # Generate summary
@@ -102,7 +108,10 @@ class PlanExecutor:
                 plan.append(
                     Step(
                         tool="code_runner",
-                        params={"code": f"# Code for: {goal}", "language": "python"},
+                        params={
+                            "code": f"# Code for: {goal}",
+                            "language": "python",
+                        },
                     )
                 )
             else:
@@ -186,7 +195,9 @@ class PlanExecutor:
                 )
                 await asyncio.sleep(wait_time)
             else:
-                logger.error(f"Step {step_idx + 1} failed after {max_retries} attempts")
+                logger.error(
+                    f"Step {step_idx + 1} failed after {max_retries} attempts"
+                )
                 step.end_time = time.time()
                 raise Exception(f"Step execution failed: {step.error}")
 
@@ -230,7 +241,9 @@ class PlanExecutor:
             raise Exception("Result not found in store")
 
         except TimeoutError:
-            raise TimeoutError(f"Tool result timeout after {timeout}s") from None
+            raise TimeoutError(
+                f"Tool result timeout after {timeout}s"
+            ) from None
         finally:
             # Clean up waiter
             if result_key in self.result_waiters:
@@ -239,7 +252,9 @@ class PlanExecutor:
     async def _handle_tool_result(self, event):
         """Handle incoming tool results - fixed to match by conversation_id."""
         try:
-            data = event.model_dump() if hasattr(event, "model_dump") else event
+            data = (
+                event.model_dump() if hasattr(event, "model_dump") else event
+            )
 
             conversation_id = data.get("conversation_id")
             result = data.get("result")
@@ -276,7 +291,9 @@ class PlanExecutor:
         except Exception as e:
             logger.error(f"Error handling tool result: {e}")
 
-    async def _summarize(self, plan_id: str, goal: str, plan: list[Step]) -> str:
+    async def _summarize(
+        self, plan_id: str, goal: str, plan: list[Step]
+    ) -> str:
         """Generate final summary of execution."""
         successful_steps = [s for s in plan if s.status == "success"]
         failed_steps = [s for s in plan if s.status == "failed"]
@@ -307,7 +324,12 @@ class PlanExecutor:
         """Use LLM to create intelligent summary."""
         try:
             plan_data = [
-                {"step": i + 1, "tool": s.tool, "status": s.status, "result": s.result}
+                {
+                    "step": i + 1,
+                    "tool": s.tool,
+                    "status": s.status,
+                    "result": s.result,
+                }
                 for i, s in enumerate(plan)
             ]
 
@@ -323,10 +345,14 @@ Focus on the key findings or outcomes, not the technical steps.
             return response.text.strip()
 
         except Exception as e:
-            logger.warning(f"LLM summary failed: {e}, using rule-based summary")
+            logger.warning(
+                f"LLM summary failed: {e}, using rule-based summary"
+            )
             successful_steps = [s for s in plan if s.status == "success"]
             failed_steps = [s for s in plan if s.status == "failed"]
-            return await self._rule_summarize(goal, successful_steps, failed_steps)
+            return await self._rule_summarize(
+                goal, successful_steps, failed_steps
+            )
 
     async def _rule_summarize(
         self, goal: str, successful_steps: list[Step], failed_steps: list[Step]
@@ -335,7 +361,9 @@ Focus on the key findings or outcomes, not the technical steps.
         summary_parts = [f"✅ **Goal Completed**: {goal}"]
 
         if successful_steps:
-            summary_parts.append(f"📋 **Completed**: {len(successful_steps)} steps")
+            summary_parts.append(
+                f"📋 **Completed**: {len(successful_steps)} steps"
+            )
 
             # Add key result highlights
             for i, step in enumerate(successful_steps[:2], 1):  # Top 2 results
@@ -366,7 +394,9 @@ Focus on the key findings or outcomes, not the technical steps.
             del self.active_plans[plan_id]
 
         # Remove result waiters (should be empty by now)
-        keys_to_remove = [k for k in self.result_waiters if k.startswith(plan_id)]
+        keys_to_remove = [
+            k for k in self.result_waiters if k.startswith(plan_id)
+        ]
         for key in keys_to_remove:
             del self.result_waiters[key]
 
@@ -377,5 +407,7 @@ Focus on the key findings or outcomes, not the technical steps.
         return {
             "active_plans": len(self.active_plans),
             "pending_results": len(self.result_waiters),
-            "total_steps": sum(len(plan) for plan in self.active_plans.values()),
+            "total_steps": sum(
+                len(plan) for plan in self.active_plans.values()
+            ),
         }

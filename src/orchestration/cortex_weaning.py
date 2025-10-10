@@ -105,9 +105,13 @@ class CortexWeaningOrchestrator:
     def _sustained_at_or_above(self, threshold: float) -> bool:
         if len(self.window_scores) < self.min_sustain:
             return False
-        return all(x >= threshold for x in self.window_scores[-self.min_sustain :])
+        return all(
+            x >= threshold for x in self.window_scores[-self.min_sustain :]
+        )
 
     def _sustained_below(self, threshold: float) -> bool:
         if len(self.window_scores) < self.min_sustain:
             return False
-        return all(x < threshold for x in self.window_scores[-self.min_sustain :])
+        return all(
+            x < threshold for x in self.window_scores[-self.min_sustain :]
+        )

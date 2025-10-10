@@ -1,4 +1,5 @@
 """Egress guard enforcing CMA v5.3 Codecraft rules."""
+
 from __future__ import annotations
 
 import ipaddress

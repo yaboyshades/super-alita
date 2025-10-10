@@ -8,7 +8,9 @@ from acp_sdk import Message, MessagePart
 class EchoAgent:
     """Simple echo agent for testing."""
 
-    async def run(self, messages: list[Message]) -> AsyncGenerator[Message, None]:
+    async def run(
+        self, messages: list[Message]
+    ) -> AsyncGenerator[Message, None]:
         for msg in messages:
             yield Message(
                 parts=[

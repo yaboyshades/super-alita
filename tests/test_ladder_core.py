@@ -25,7 +25,8 @@ async def main():
 
     # Create UCB1 bandit policy
     bandit_policy = UCB1Policy(
-        tools=["WebSearchTool", "CalculatorTool", "LLMTool"], exploration_factor=1.414
+        tools=["WebSearchTool", "CalculatorTool", "LLMTool"],
+        exploration_factor=1.414,
     )
     print("✅ UCB1 Bandit Policy created")
 
@@ -48,7 +49,8 @@ async def main():
     # Create a plan
     try:
         plan = await planner.create_plan(
-            goal=user_query, context={"priority": "high", "domain": "technology"}
+            goal=user_query,
+            context={"priority": "high", "domain": "technology"},
         )
 
         print("✅ Plan created successfully!")

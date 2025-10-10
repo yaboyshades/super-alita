@@ -153,7 +153,9 @@ class NeuralSymbolicBridge:
             logger.error(f"Error generating plan steps: {e}")
             return []
 
-    def _calculate_plan_confidence(self, memories: list[tuple[str, float]]) -> float:
+    def _calculate_plan_confidence(
+        self, memories: list[tuple[str, float]]
+    ) -> float:
         """Calculate confidence score for the plan (sync operation)."""
         try:
             # Simple confidence calculation based on available memories

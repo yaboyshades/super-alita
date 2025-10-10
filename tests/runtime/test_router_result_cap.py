@@ -59,13 +59,16 @@ def test_result_capping():
     app = _mk_app()
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "big"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "hi", "session_id": "big"},
     )
     text = resp.text
     assert "_artifact" in text
     evts = app.state.event_bus.events
     assert any(e["type"] == "ArtifactCreated" for e in evts)
-    terminals = [e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}]
+    terminals = [
+        e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}
+    ]
     assert len(terminals) == 1
     assert terminals[0]["type"] == "TaskSucceeded"
     calls = [e for e in evts if e["type"] == "AbilityCalled"]

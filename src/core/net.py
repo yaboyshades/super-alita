@@ -89,7 +89,9 @@ class AdaptiveConcurrencyGate:
                     for _ in range(new_limit - self._semaphore._value):
                         self._semaphore.release()
 
-                self.metrics.gauge("concurrency_limit").set(self._current_limit)
+                self.metrics.gauge("concurrency_limit").set(
+                    self._current_limit
+                )
 
     @asynccontextmanager
     async def acquire(self):
@@ -271,7 +273,9 @@ class HTTPClientManager:
 
     def get_global_stats(self) -> dict[str, Any]:
         """Get statistics for all clients"""
-        return {name: client.get_stats() for name, client in self._clients.items()}
+        return {
+            name: client.get_stats() for name, client in self._clients.items()
+        }
 
 
 class CircuitBreakerHTTPClient:
@@ -285,7 +289,9 @@ class CircuitBreakerHTTPClient:
         self.client = client
         self.circuit_breaker = circuit_breaker
 
-    async def request(self, method: str, url: str, **kwargs) -> aiohttp.ClientResponse:
+    async def request(
+        self, method: str, url: str, **kwargs
+    ) -> aiohttp.ClientResponse:
         """Make request through circuit breaker"""
 
         async def make_request():

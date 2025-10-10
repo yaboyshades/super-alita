@@ -51,7 +51,9 @@ class SystemIntrospectionPlugin(PluginInterface):
         self.enable_detailed_diagnostics = config.get(
             "enable_detailed_diagnostics", True
         )
-        self.health_check_interval = config.get("health_check_interval_seconds", 60)
+        self.health_check_interval = config.get(
+            "health_check_interval_seconds", 60
+        )
 
         logger.info("System Introspection plugin setup complete")
 
@@ -60,8 +62,12 @@ class SystemIntrospectionPlugin(PluginInterface):
         await super().start()
 
         # Subscribe to system status requests
-        await self.subscribe("system_status_request", self._handle_status_request)
-        await self.subscribe("conversation_message", self._handle_introspection_queries)
+        await self.subscribe(
+            "system_status_request", self._handle_status_request
+        )
+        await self.subscribe(
+            "conversation_message", self._handle_introspection_queries
+        )
 
         # Start periodic health monitoring
         if self.enable_detailed_diagnostics:
@@ -88,7 +94,9 @@ class SystemIntrospectionPlugin(PluginInterface):
     async def _handle_status_request(self, event) -> None:
         """Handle explicit system status requests."""
         try:
-            data = event.model_dump() if hasattr(event, "model_dump") else event
+            data = (
+                event.model_dump() if hasattr(event, "model_dump") else event
+            )
             session_id = data.get("session_id")
 
             # Perform comprehensive diagnosis
@@ -111,7 +119,9 @@ class SystemIntrospectionPlugin(PluginInterface):
     async def _handle_introspection_queries(self, event) -> None:
         """Handle conversation messages that ask for system introspection."""
         try:
-            data = event.model_dump() if hasattr(event, "model_dump") else event
+            data = (
+                event.model_dump() if hasattr(event, "model_dump") else event
+            )
             user_message = data.get("user_message", "").lower()
             data.get("session_id")
 
@@ -132,7 +142,9 @@ class SystemIntrospectionPlugin(PluginInterface):
                 "what works",
             ]
 
-            if any(keyword in user_message for keyword in introspection_keywords):
+            if any(
+                keyword in user_message for keyword in introspection_keywords
+            ):
                 # Provide detailed system analysis
                 diagnosis = await self._comprehensive_system_diagnosis()
                 response_text = self._format_user_friendly_diagnosis(
@@ -201,11 +213,17 @@ class SystemIntrospectionPlugin(PluginInterface):
             for subsystem, details in health_status["subsystems"].items():
                 if details.get("issues"):
                     health_status["issues"].extend(
-                        [f"{subsystem}: {issue}" for issue in details["issues"]]
+                        [
+                            f"{subsystem}: {issue}"
+                            for issue in details["issues"]
+                        ]
                     )
                 if details.get("recommendations"):
                     health_status["recommendations"].extend(
-                        [f"{subsystem}: {rec}" for rec in details["recommendations"]]
+                        [
+                            f"{subsystem}: {rec}"
+                            for rec in details["recommendations"]
+                        ]
                     )
 
             self.last_health_check = health_status
@@ -234,7 +252,9 @@ class SystemIntrospectionPlugin(PluginInterface):
                 else:
                     status["status"] = "critical"
                     status["issues"].append("EventBus not running")
-                    status["recommendations"].append("Restart EventBus service")
+                    status["recommendations"].append(
+                        "Restart EventBus service"
+                    )
             else:
                 status["status"] = "critical"
                 status["issues"].append("EventBus not available")
@@ -294,7 +314,9 @@ class SystemIntrospectionPlugin(PluginInterface):
             if self.store:
                 # Get basic statistics
                 stats = (
-                    self.store.get_stats() if hasattr(self.store, "get_stats") else {}
+                    self.store.get_stats()
+                    if hasattr(self.store, "get_stats")
+                    else {}
                 )
                 status["details"]["statistics"] = stats
 
@@ -334,13 +356,17 @@ class SystemIntrospectionPlugin(PluginInterface):
             # Check if memory plugin is available through event bus or direct access
             # This is a simplified check - in a real system we'd query the semantic memory plugin
 
-            if hasattr(self.store, "embed_query") and hasattr(self.store, "attention"):
+            if hasattr(self.store, "embed_query") and hasattr(
+                self.store, "attention"
+            ):
                 status["status"] = "healthy"
                 status["details"]["embedding_available"] = True
                 status["details"]["attention_available"] = True
             else:
                 status["status"] = "degraded"
-                status["issues"].append("Memory embedding or attention not available")
+                status["issues"].append(
+                    "Memory embedding or attention not available"
+                )
                 status["recommendations"].append(
                     "Enable semantic_memory plugin in config"
                 )
@@ -390,11 +416,17 @@ class SystemIntrospectionPlugin(PluginInterface):
                         )
                 except Exception as e:
                     status["status"] = "degraded"
-                    status["issues"].append(f"Gemini configuration failed: {e}")
-                    status["recommendations"].append("Check Gemini API key validity")
+                    status["issues"].append(
+                        f"Gemini configuration failed: {e}"
+                    )
+                    status["recommendations"].append(
+                        "Check Gemini API key validity"
+                    )
             else:
                 status["status"] = "critical"
-                status["issues"].append("GEMINI_API_KEY environment variable not set")
+                status["issues"].append(
+                    "GEMINI_API_KEY environment variable not set"
+                )
                 status["recommendations"].append(
                     "Set GEMINI_API_KEY environment variable"
                 )
@@ -462,14 +494,18 @@ class SystemIntrospectionPlugin(PluginInterface):
             diagnosis["configuration"] = await self._analyze_configuration()
 
             # Generate summary
-            diagnosis["summary"] = self._generate_diagnostic_summary(health_results)
+            diagnosis["summary"] = self._generate_diagnostic_summary(
+                health_results
+            )
 
             return diagnosis
 
         except Exception as e:
             logger.error(f"Error in comprehensive diagnosis: {e}")
             diagnosis["summary"]["overall_health"] = "error"
-            diagnosis["summary"]["critical_issues"].append(f"Diagnosis failed: {e}")
+            diagnosis["summary"]["critical_issues"].append(
+                f"Diagnosis failed: {e}"
+            )
             return diagnosis
 
     async def _analyze_configuration(self) -> dict[str, Any]:
@@ -498,7 +534,9 @@ class SystemIntrospectionPlugin(PluginInterface):
                     plugins_config = config_data.get("plugins", {})
                     for plugin_name, plugin_config in plugins_config.items():
                         enabled = plugin_config.get("enabled", False)
-                        config_analysis["plugin_configuration"][plugin_name] = {
+                        config_analysis["plugin_configuration"][
+                            plugin_name
+                        ] = {
                             "enabled": enabled,
                             "has_config": len(plugin_config) > 1,
                         }
@@ -517,7 +555,9 @@ class SystemIntrospectionPlugin(PluginInterface):
                                 )
 
                 except Exception as e:
-                    config_analysis["issues"].append(f"Failed to parse agent.yaml: {e}")
+                    config_analysis["issues"].append(
+                        f"Failed to parse agent.yaml: {e}"
+                    )
             else:
                 config_analysis["agent_yaml_status"] = "missing"
                 config_analysis["issues"].append(
@@ -525,7 +565,9 @@ class SystemIntrospectionPlugin(PluginInterface):
                 )
 
         except Exception as e:
-            config_analysis["issues"].append(f"Configuration analysis failed: {e}")
+            config_analysis["issues"].append(
+                f"Configuration analysis failed: {e}"
+            )
 
         return config_analysis
 
@@ -542,7 +584,9 @@ class SystemIntrospectionPlugin(PluginInterface):
         }
 
         # Analyze subsystem statuses
-        for subsystem, status_info in health_results.get("subsystems", {}).items():
+        for subsystem, status_info in health_results.get(
+            "subsystems", {}
+        ).items():
             status = status_info.get("status", "unknown")
 
             if status == "healthy":
@@ -626,28 +670,42 @@ class SystemIntrospectionPlugin(PluginInterface):
         response_parts.append("### 🎯 **Next Steps**")
 
         if "limitations" in user_query or "assess" in user_query:
-            response_parts.append("Based on your request for limitation assessment:")
+            response_parts.append(
+                "Based on your request for limitation assessment:"
+            )
             response_parts.append("")
 
             if not env_info.get("gemini_api_key_set"):
-                response_parts.append("**Priority 1**: Set your Gemini API key")
+                response_parts.append(
+                    "**Priority 1**: Set your Gemini API key"
+                )
                 response_parts.append("  ```")
-                response_parts.append("  $Env:GEMINI_API_KEY='your-api-key-here'")
+                response_parts.append(
+                    "  $Env:GEMINI_API_KEY='your-api-key-here'"
+                )
                 response_parts.append("  ```")
                 response_parts.append("")
 
             if "redis" in [issue.lower() for issue in critical_issues]:
-                response_parts.append("**Priority 2**: Start Redis/Memurai service")
-                response_parts.append("  Check that Redis is running on localhost:6379")
+                response_parts.append(
+                    "**Priority 2**: Start Redis/Memurai service"
+                )
+                response_parts.append(
+                    "  Check that Redis is running on localhost:6379"
+                )
                 response_parts.append("")
 
             if not working_features:
-                response_parts.append("**Priority 3**: Initialize core systems")
+                response_parts.append(
+                    "**Priority 3**: Initialize core systems"
+                )
                 response_parts.append(
                     "  Restart the agent with: `python launch_super_alita.py`"
                 )
                 response_parts.append("")
 
-        response_parts.append("Type 'system status' anytime for an updated diagnosis.")
+        response_parts.append(
+            "Type 'system status' anytime for an updated diagnosis."
+        )
 
         return "\n".join(response_parts)

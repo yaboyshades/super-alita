@@ -53,9 +53,15 @@ class SessionArtifactResult:
         return {
             "phase": self.phase,
             "artifact_path": self.artifact_path,
-            "guidance_path": str(self.guidance_path) if self.guidance_path else None,
+            "guidance_path": (
+                str(self.guidance_path) if self.guidance_path else None
+            ),
             "response": self.response.model_dump(mode="python"),
-            "guidance": self.guidance.model_dump(mode="python") if self.guidance else None,
+            "guidance": (
+                self.guidance.model_dump(mode="python")
+                if self.guidance
+                else None
+            ),
         }
 
 
@@ -86,13 +92,17 @@ class FeatureSession:
     ) -> SessionArtifactResult:
         request = SpecifyRequest(user_input=description, context=context or {})
         response = await self._pipeline.specify(request)
-        feature_dir = Path(response.feature_dir or Path(response.feature_path).parent)
+        feature_dir = Path(
+            response.feature_dir or Path(response.feature_path).parent
+        )
         self.feature_id = response.feature_id
         self.feature_dir = feature_dir
         self.guidance = response.next_step_guidance
         guidance_path = None
         if response.next_step_guidance:
-            guidance_path = self._repo.save_guidance(feature_dir, response.next_step_guidance)
+            guidance_path = self._repo.save_guidance(
+                feature_dir, response.next_step_guidance
+            )
         spec_path = Path(response.spec_file_path or response.feature_path)
         self._spec_path = spec_path
         artifact = self._repo.load_artifact(spec_path)
@@ -122,7 +132,9 @@ class FeatureSession:
         self.guidance = response.next_step_guidance or self.guidance
         guidance_path = None
         if response.next_step_guidance and self.feature_dir:
-            guidance_path = self._repo.save_guidance(self.feature_dir, response.next_step_guidance)
+            guidance_path = self._repo.save_guidance(
+                self.feature_dir, response.next_step_guidance
+            )
         plan_path = Path(response.plan_path)
         self._plan_path = plan_path
         artifact = self._repo.load_artifact(plan_path)
@@ -141,7 +153,9 @@ class FeatureSession:
         team_size: int = 1,
     ) -> SessionArtifactResult:
         self._ensure_feature_dir()
-        plan_path = self._plan_path or self.feature_dir / "implementation-plan.md"
+        plan_path = (
+            self._plan_path or self.feature_dir / "implementation-plan.md"
+        )
         request = TasksRequest(
             plan_path=str(plan_path),
             feature_id=self.feature_id,
@@ -152,7 +166,9 @@ class FeatureSession:
         self.guidance = response.next_step_guidance or self.guidance
         guidance_path = None
         if response.next_step_guidance and self.feature_dir:
-            guidance_path = self._repo.save_guidance(self.feature_dir, response.next_step_guidance)
+            guidance_path = self._repo.save_guidance(
+                self.feature_dir, response.next_step_guidance
+            )
         tasks_path = Path(response.tasks_path)
         artifact = self._repo.load_artifact(tasks_path)
         return SessionArtifactResult(
@@ -165,7 +181,9 @@ class FeatureSession:
 
     def _ensure_feature_dir(self) -> None:
         if not self.feature_dir:
-            raise RuntimeError("Feature directory is not set; run specify first or load session.")
+            raise RuntimeError(
+                "Feature directory is not set; run specify first or load session."
+            )
 
 
 class FeatureSessionFactory:
@@ -173,7 +191,9 @@ class FeatureSessionFactory:
 
     def __init__(self, workspace_root: Path):
         self.workspace_root = workspace_root.resolve()
-        self._pipeline = ConstitutionalSDDPipeline(workspace_root=self.workspace_root)
+        self._pipeline = ConstitutionalSDDPipeline(
+            workspace_root=self.workspace_root
+        )
         self._repository = GuidanceRepository(self.workspace_root)
 
     def create(self) -> FeatureSession:
@@ -183,14 +203,18 @@ class FeatureSessionFactory:
             workspace_root=self.workspace_root,
         )
 
-    def for_description(self, description: str, context: dict[str, object] | None | None = None) -> FeatureSession:
+    def for_description(
+        self, description: str, context: dict[str, object] | None | None = None
+    ) -> FeatureSession:
         # Currently identical to create(); reserved for future context-aware initialization.
         return self.create()
 
     def load(self, feature_id: str) -> FeatureSession:
         feature_dir = self._repository.find_feature_dir(feature_id)
         if feature_dir is None:
-            raise FileNotFoundError(f"Feature directory not found for id '{feature_id}'.")
+            raise FileNotFoundError(
+                f"Feature directory not found for id '{feature_id}'."
+            )
         guidance = self._repository.load_guidance(feature_dir)
         return FeatureSession(
             self._pipeline,
@@ -203,4 +227,3 @@ class FeatureSessionFactory:
 
     def for_feature_id(self, feature_id: str) -> FeatureSession:
         return self.load(feature_id)
-

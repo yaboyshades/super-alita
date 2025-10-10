@@ -1,4 +1,5 @@
 """Deprecated MCP server package shim."""
+
 from __future__ import annotations
 
 import warnings

@@ -87,7 +87,9 @@ async def demo_vscode_integration():
     print("  python simple_task_provider.py --action get_status")
     print()
     print("  # Complete a task")
-    print("  python simple_task_provider.py --action complete_task --task-id 5")
+    print(
+        "  python simple_task_provider.py --action complete_task --task-id 5"
+    )
     print()
 
     # Show VS Code Task Provider usage

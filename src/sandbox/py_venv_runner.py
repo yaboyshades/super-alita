@@ -13,7 +13,11 @@ from src.core.proc import run as run_proc
 
 def _venv_python(venv_dir: Path) -> str:
     win = os.name == "nt"
-    cand = venv_dir / "Scripts" / "python.exe" if win else venv_dir / "bin" / "python"
+    cand = (
+        venv_dir / "Scripts" / "python.exe"
+        if win
+        else venv_dir / "bin" / "python"
+    )
     return str(cand)
 
 
@@ -37,7 +41,8 @@ def run_in_temp_venv(code: str, *, timeout: float = 10.0) -> dict[str, Any]:
         # Try to create a virtual environment
         try:
             run_proc(
-                [sys.executable, "-m", "venv", str(tmpdir / "venv")], timeout=timeout
+                [sys.executable, "-m", "venv", str(tmpdir / "venv")],
+                timeout=timeout,
             )
             py = _venv_python(tmpdir / "venv")
             used_venv = True

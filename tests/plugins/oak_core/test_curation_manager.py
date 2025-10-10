@@ -43,5 +43,6 @@ async def test_emits_feature_utility_updated() -> None:
 
     await mgr.handle_tool_result(ResultEvent())
     assert any(
-        evt.get("event_type") == "oak.feature_utility_updated" for evt in bus.events
+        evt.get("event_type") == "oak.feature_utility_updated"
+        for evt in bus.events
     )

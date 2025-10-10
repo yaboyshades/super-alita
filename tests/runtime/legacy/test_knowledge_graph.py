@@ -12,7 +12,12 @@ from pathlib import Path
 
 from core.cortex import create_cortex_runtime
 from core.events import create_event
-from core.knowledge import AtomType, BondType, KnowledgeGraphPlugin, KnowledgeStore
+from core.knowledge import (
+    AtomType,
+    BondType,
+    KnowledgeGraphPlugin,
+    KnowledgeStore,
+)
 from core.knowledge.handlers import KnowledgeGraphEventHandlers
 from core.telemetry.simple_event_bus import SimpleEventBus
 
@@ -31,7 +36,10 @@ async def test_knowledge_store():
             print("  Creating atoms...")
             concept_atom = store.create_atom(
                 atom_type=AtomType.CONCEPT,
-                content={"name": "Machine Learning", "description": "AI technique"},
+                content={
+                    "name": "Machine Learning",
+                    "description": "AI technique",
+                },
                 metadata={"source": "test"},
             )
 
@@ -47,7 +55,10 @@ async def test_knowledge_store():
             # Test idempotency
             duplicate_atom = store.create_atom(
                 atom_type=AtomType.CONCEPT,
-                content={"name": "Machine Learning", "description": "AI technique"},
+                content={
+                    "name": "Machine Learning",
+                    "description": "AI technique",
+                },
                 metadata={"source": "test_duplicate"},
             )
 
@@ -189,7 +200,9 @@ async def test_plugin_integration():
         stats = plugin.get_statistics()
         print(f"  Knowledge graph statistics: {stats}")
 
-        assert stats["total_atoms"] >= 2  # Should have created atoms from events
+        assert (
+            stats["total_atoms"] >= 2
+        )  # Should have created atoms from events
 
         # Test search
         search_results = plugin.search_atoms("cortex")
@@ -255,7 +268,9 @@ async def test_full_integration():
 
         # Run a cognitive cycle
         context = runtime.create_context("integration_test", "test_user")
-        await runtime.process_cycle("Integrate knowledge graph with telemetry", context)
+        await runtime.process_cycle(
+            "Integrate knowledge graph with telemetry", context
+        )
 
         await asyncio.sleep(0.1)  # Let events process
 
@@ -266,7 +281,9 @@ async def test_full_integration():
         print(
             f"  Knowledge graph: {kg_stats['total_atoms']} atoms, {kg_stats['total_bonds']} bonds"
         )
-        print(f"  Telemetry: {telemetry_metrics.total_events} events collected")
+        print(
+            f"  Telemetry: {telemetry_metrics.total_events} events collected"
+        )
 
         assert kg_stats["total_atoms"] >= 1
         assert telemetry_metrics.total_events >= 1

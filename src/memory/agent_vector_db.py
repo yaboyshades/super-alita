@@ -26,7 +26,10 @@ class MemoryRecord:
 class AgentVectorDB:
     def __init__(self, root: Path | None = None, short_max: int = 50) -> None:
         self.root = (
-            root or Path(os.getenv("AGENT_MEMORY_DIR", "logs/agent_memory")).resolve()
+            root
+            or Path(
+                os.getenv("AGENT_MEMORY_DIR", "logs/agent_memory")
+            ).resolve()
         )
         self.root.mkdir(parents=True, exist_ok=True)
         self.file = self.root / "memory.jsonl"

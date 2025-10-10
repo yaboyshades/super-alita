@@ -13,9 +13,13 @@ class SearchAgent:
     def __init__(self):
         self.search_tool = PerplexicaSearchTool()
 
-    async def run(self, messages: list[Message]) -> AsyncGenerator[Message, None]:
+    async def run(
+        self, messages: list[Message]
+    ) -> AsyncGenerator[Message, None]:
         if not messages:
-            yield Message(parts=[MessagePart(text="Error: No search query provided")])
+            yield Message(
+                parts=[MessagePart(text="Error: No search query provided")]
+            )
             return
 
         query = ""
@@ -28,7 +32,9 @@ class SearchAgent:
                 mode = part.metadata["mode"]
 
         if not query.strip():
-            yield Message(parts=[MessagePart(text="Error: Empty search query")])
+            yield Message(
+                parts=[MessagePart(text="Error: Empty search query")]
+            )
             return
 
         try:
@@ -42,18 +48,28 @@ class SearchAgent:
             )
 
             yield Message(
-                parts=[MessagePart(text=f"## Search Results\n\n{result['summary']}")]
+                parts=[
+                    MessagePart(
+                        text=f"## Search Results\n\n{result['summary']}"
+                    )
+                ]
             )
 
             if result.get("reasoning"):
                 yield Message(
-                    parts=[MessagePart(text=f"\n## Reasoning\n{result['reasoning']}")]
+                    parts=[
+                        MessagePart(
+                            text=f"\n## Reasoning\n{result['reasoning']}"
+                        )
+                    ]
                 )
 
             if result.get("citations"):
                 citations_text = "\n## Sources\n"
                 for i, citation in enumerate(result["citations"], 1):
-                    citations_text += f"[{i}] {citation['title']} - {citation['url']}\n"
+                    citations_text += (
+                        f"[{i}] {citation['title']} - {citation['url']}\n"
+                    )
                 yield Message(parts=[MessagePart(text=citations_text)])
 
             if result.get("followup_questions"):

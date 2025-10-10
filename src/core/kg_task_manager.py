@@ -69,13 +69,23 @@ class GraphTaskNode(BaseModel):
     depends_on: set[str] = Field(
         default_factory=set, description="Task IDs this depends on"
     )
-    blocks: set[str] = Field(default_factory=set, description="Task IDs this blocks")
-    related_to: set[str] = Field(default_factory=set, description="Related task IDs")
+    blocks: set[str] = Field(
+        default_factory=set, description="Task IDs this blocks"
+    )
+    related_to: set[str] = Field(
+        default_factory=set, description="Related task IDs"
+    )
 
     # Graph-derived metadata
-    centrality_score: float = Field(default=0.0, description="Graph centrality metric")
-    dependency_depth: int = Field(default=0, description="Depth in dependency tree")
-    estimated_effort: float = Field(default=1.0, description="Effort estimate (hours)")
+    centrality_score: float = Field(
+        default=0.0, description="Graph centrality metric"
+    )
+    dependency_depth: int = Field(
+        default=0, description="Depth in dependency tree"
+    )
+    estimated_effort: float = Field(
+        default=1.0, description="Effort estimate (hours)"
+    )
 
     # Temporal properties
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -101,9 +111,15 @@ class TaskGraph(BaseModel):
     graph_id: str = Field(..., description="Unique graph identifier")
     name: str = Field(..., description="Graph name/title")
     description: str = Field(..., description="Graph description")
-    task_ids: set[str] = Field(default_factory=set, description="Tasks in this graph")
-    root_tasks: set[str] = Field(default_factory=set, description="Root task IDs")
-    leaf_tasks: set[str] = Field(default_factory=set, description="Leaf task IDs")
+    task_ids: set[str] = Field(
+        default_factory=set, description="Tasks in this graph"
+    )
+    root_tasks: set[str] = Field(
+        default_factory=set, description="Root task IDs"
+    )
+    leaf_tasks: set[str] = Field(
+        default_factory=set, description="Leaf task IDs"
+    )
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -161,9 +177,15 @@ class KnowledgeGraphTaskManager(PluginInterface):
         logger.info("Initializing Knowledge Graph Task Manager")
 
         # Register for relevant events
-        await self.event_bus.subscribe("task_created", self._handle_task_created)
-        await self.event_bus.subscribe("task_updated", self._handle_task_updated)
-        await self.event_bus.subscribe("task_completed", self._handle_task_completed)
+        await self.event_bus.subscribe(
+            "task_created", self._handle_task_created
+        )
+        await self.event_bus.subscribe(
+            "task_updated", self._handle_task_updated
+        )
+        await self.event_bus.subscribe(
+            "task_completed", self._handle_task_completed
+        )
         await self.event_bus.subscribe(
             "kg_entity_created", self._handle_kg_entity_created
         )
@@ -309,7 +331,11 @@ class KnowledgeGraphTaskManager(PluginInterface):
             status=TaskStatus.COMPLETED,
             completed_at=datetime.now(UTC),
             context={
-                **(self.tasks[task_id].context if task_id in self.tasks else {}),
+                **(
+                    self.tasks[task_id].context
+                    if task_id in self.tasks
+                    else {}
+                ),
                 "completion_result": result,
             },
         )
@@ -318,11 +344,15 @@ class KnowledgeGraphTaskManager(PluginInterface):
         """Retrieve a task by ID."""
         return self.tasks.get(task_id)
 
-    async def get_tasks_by_status(self, status: TaskStatus) -> list[GraphTaskNode]:
+    async def get_tasks_by_status(
+        self, status: TaskStatus
+    ) -> list[GraphTaskNode]:
         """Get all tasks with a specific status."""
         return [task for task in self.tasks.values() if task.status == status]
 
-    async def get_prioritized_tasks(self, limit: int = 10) -> list[GraphTaskNode]:
+    async def get_prioritized_tasks(
+        self, limit: int = 10
+    ) -> list[GraphTaskNode]:
         """Get tasks ordered by graph-driven priority."""
 
         # Calculate priorities if needed
@@ -399,7 +429,9 @@ class KnowledgeGraphTaskManager(PluginInterface):
 
         self.task_graphs[graph_id] = graph
 
-        logger.info(f"Created task graph {graph_id}: {name} with {len(task_ids)} tasks")
+        logger.info(
+            f"Created task graph {graph_id}: {name} with {len(task_ids)} tasks"
+        )
         return graph
 
     async def get_graph_metrics(self, graph_id: str) -> GraphMetrics | None:
@@ -409,7 +441,9 @@ class KnowledgeGraphTaskManager(PluginInterface):
         if not graph:
             return None
 
-        tasks = [self.tasks[tid] for tid in graph.task_ids if tid in self.tasks]
+        tasks = [
+            self.tasks[tid] for tid in graph.task_ids if tid in self.tasks
+        ]
 
         if not tasks:
             return GraphMetrics()
@@ -418,12 +452,16 @@ class KnowledgeGraphTaskManager(PluginInterface):
         completed_tasks = sum(
             1 for task in tasks if task.status == TaskStatus.COMPLETED
         )
-        blocked_tasks = sum(1 for task in tasks if task.status == TaskStatus.BLOCKED)
+        blocked_tasks = sum(
+            1 for task in tasks if task.status == TaskStatus.BLOCKED
+        )
 
         completion_percentage = (
             (completed_tasks / total_tasks) * 100 if total_tasks > 0 else 0
         )
-        avg_centrality = sum(task.centrality_score for task in tasks) / total_tasks
+        avg_centrality = (
+            sum(task.centrality_score for task in tasks) / total_tasks
+        )
 
         estimated_total_effort = sum(task.estimated_effort for task in tasks)
         estimated_remaining_effort = sum(
@@ -433,7 +471,9 @@ class KnowledgeGraphTaskManager(PluginInterface):
         )
 
         # Calculate critical path length (simplified)
-        critical_path_length = max((task.dependency_depth for task in tasks), default=0)
+        critical_path_length = max(
+            (task.dependency_depth for task in tasks), default=0
+        )
 
         return GraphMetrics(
             total_tasks=total_tasks,
@@ -457,7 +497,9 @@ class KnowledgeGraphTaskManager(PluginInterface):
             return []
 
         # Basic decomposition: split prompt into at most two actionable subtasks
-        parts = [p.strip() for p in decomposition_prompt.split(".") if p.strip()]
+        parts = [
+            p.strip() for p in decomposition_prompt.split(".") if p.strip()
+        ]
         subtasks: list[GraphTaskNode] = []
         for idx, p in enumerate(parts[:2], start=1):
             node = GraphTaskNode(
@@ -643,7 +685,9 @@ class KnowledgeGraphTaskManager(PluginInterface):
                 for other_node, deps in graph.items():
                     if node in deps:
                         out_degree = len(deps) if deps else 1
-                        score += 0.85 * centrality.get(other_node, 0.0) / out_degree
+                        score += (
+                            0.85 * centrality.get(other_node, 0.0) / out_degree
+                        )
 
                 new_centrality[node] = score
 
@@ -681,7 +725,9 @@ class KnowledgeGraphTaskManager(PluginInterface):
 
         return depths
 
-    def _task_priority_key(self, task: GraphTaskNode) -> tuple[int, float, int, float]:
+    def _task_priority_key(
+        self, task: GraphTaskNode
+    ) -> tuple[int, float, int, float]:
         """Generate a sort key for task prioritization."""
 
         # Priority order: critical=4, high=3, medium=2, low=1, deferred=0
@@ -701,7 +747,10 @@ class KnowledgeGraphTaskManager(PluginInterface):
         )
 
     async def _handle_status_transition(
-        self, task: GraphTaskNode, old_status: TaskStatus, new_status: TaskStatus
+        self,
+        task: GraphTaskNode,
+        old_status: TaskStatus,
+        new_status: TaskStatus,
     ):
         """Handle task status transitions."""
 

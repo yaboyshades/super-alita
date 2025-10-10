@@ -37,7 +37,13 @@ from src.utils.event_builders import build_tool_call_event
 # DTA components - conditional imports with graceful degradation
 DTA_RUNTIME_AVAILABLE = False
 try:
-    from src.dta import AsyncDTARuntime, DTAContext, DTARequest, DTAResult, DTAStatus
+    from src.dta import (
+        AsyncDTARuntime,
+        DTAContext,
+        DTARequest,
+        DTAResult,
+        DTAStatus,
+    )
     from src.dta.cache import DTACache, create_cache
     from src.dta.config import DTAConfig, create_default_config
     from src.dta.monitoring import DTAMonitoring, create_monitoring
@@ -72,7 +78,8 @@ except ImportError:
 
         async def process_request(self, request):
             return DTAResult(
-                status=DTAStatus.ERROR, metadata={"error": "DTA runtime not available"}
+                status=DTAStatus.ERROR,
+                metadata={"error": "DTA runtime not available"},
             )
 
         async def shutdown(self):
@@ -316,7 +323,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
         """Return the unique name identifier for this plugin."""
         return self._name
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         """Initialize the plugin with DTA 2.0 components."""
         await super().setup(event_bus, store, config)
         logger.info("Initializing Pythonic Preprocessor Plugin with DTA 2.0")
@@ -343,7 +352,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
                 self.monitoring = DTAMonitoring()
                 self.cache = DTACache()
 
-                logger.warning("DTA runtime not available - using fallback components")
+                logger.warning(
+                    "DTA runtime not available - using fallback components"
+                )
 
             # Initialize LLM (independent of DTA)
             await self._initialize_llm(config)
@@ -355,18 +366,24 @@ class PythonicPreprocessorPlugin(PluginInterface):
             self.dta_runtime = AsyncDTARuntime()
             self.monitoring = DTAMonitoring()
             self.cache = DTACache()
-            logger.warning("Using fallback components due to initialization error")
+            logger.warning(
+                "Using fallback components due to initialization error"
+            )
 
     async def start(self) -> None:
         """Start the plugin and subscribe to events."""
         await super().start()
 
         # Subscribe to events
-        await self.subscribe("cognitive_turn_initiated", self._handle_cognitive_turn)
+        await self.subscribe(
+            "cognitive_turn_initiated", self._handle_cognitive_turn
+        )
         await self.subscribe("conversation", self._handle_conversation_event)
         await self.subscribe("message", self._handle_message_event)
 
-        logger.info("Pythonic Preprocessor Plugin started and subscribed to events")
+        logger.info(
+            "Pythonic Preprocessor Plugin started and subscribed to events"
+        )
 
     async def shutdown(self) -> None:
         """Gracefully shutdown the plugin."""
@@ -470,9 +487,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
 
         # Fallback to direct config access
         if not api_key:
-            api_key = config.get("gemini_api_key") or config.get("llm", {}).get(
-                "api_key"
-            )
+            api_key = config.get("gemini_api_key") or config.get(
+                "llm", {}
+            ).get("api_key")
 
         # Final fallback to environment variable
         if not api_key:
@@ -493,13 +510,17 @@ class PythonicPreprocessorPlugin(PluginInterface):
         except Exception as e:
             logger.exception("Failed emitting on %s: %s", channel, e)
 
-    async def _handle_conversation_event(self, event: ConversationEvent) -> None:
+    async def _handle_conversation_event(
+        self, event: ConversationEvent
+    ) -> None:
         """Enhanced conversation handler with cognitive turn processing."""
         try:
             # Extract message content
             user_message = getattr(event, "message", str(event))
             session_id = str(getattr(event, "conversation_id", "default"))
-            conversation_id = str(getattr(event, "conversation_id", session_id))
+            conversation_id = str(
+                getattr(event, "conversation_id", session_id)
+            )
             context = getattr(event, "context", {})
 
             # Process through cognitive turn if available
@@ -520,8 +541,12 @@ class PythonicPreprocessorPlugin(PluginInterface):
                         session_id=session_id,
                         conversation_id=conversation_id,
                     )
-                    await self._emit_event("cognitive_turn_completed", turn_event)
-                    logger.info("Published cognitive turn for session %s", session_id)
+                    await self._emit_event(
+                        "cognitive_turn_completed", turn_event
+                    )
+                    logger.info(
+                        "Published cognitive turn for session %s", session_id
+                    )
 
             # Process the message through legacy DTA pipeline
             result = await self.process_user_input(user_message, session_id)
@@ -533,7 +558,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
             logger.exception("Error handling conversation event: %s", e)
             await self._emit_error_response(event, str(e))
 
-    async def _handle_cognitive_turn(self, event: CognitiveTurnInitiatedEvent) -> None:
+    async def _handle_cognitive_turn(
+        self, event: CognitiveTurnInitiatedEvent
+    ) -> None:
         """Handle cognitive turn initiated events from the ConversationPlugin."""
         try:
             # Deduplication: Create a unique key for this message
@@ -554,7 +581,8 @@ class PythonicPreprocessorPlugin(PluginInterface):
             # Skip if we've already processed this message recently
             if message_key in self._processed_messages:
                 logger.debug(
-                    "Skipping duplicate cognitive turn for: '%s'", event.user_message
+                    "Skipping duplicate cognitive turn for: '%s'",
+                    event.user_message,
                 )
                 return
 
@@ -568,12 +596,16 @@ class PythonicPreprocessorPlugin(PluginInterface):
             )
 
             # Process through the DTA 2.0 cognitive pipeline
-            result = await self.process_user_input(event.user_message, event.session_id)
+            result = await self.process_user_input(
+                event.user_message, event.session_id
+            )
 
             # Route the processing result to the appropriate handler
             await self._route_processing_result(result, event)
 
-            logger.info("✅ Cognitive turn completed for session %s", event.session_id)
+            logger.info(
+                "✅ Cognitive turn completed for session %s", event.session_id
+            )
 
         except Exception as e:
             logger.exception("Error in cognitive turn processing: %s", e)
@@ -608,9 +640,13 @@ class PythonicPreprocessorPlugin(PluginInterface):
             turn_data = {
                 "state_readout": f"Processing user request: {user_message}",
                 "activation_protocol": {
-                    "pattern_recognition": self._detect_cognitive_pattern(user_message),
+                    "pattern_recognition": self._detect_cognitive_pattern(
+                        user_message
+                    ),
                     "confidence_score": 8,
-                    "planning_requirement": self._requires_planning(user_message),
+                    "planning_requirement": self._requires_planning(
+                        user_message
+                    ),
                     "quality_speed_tradeoff": "balance",
                     "evidence_threshold": "medium",
                     "audience_level": "professional",
@@ -678,15 +714,24 @@ class PythonicPreprocessorPlugin(PluginInterface):
         """Detect the cognitive pattern type from user message."""
         message_lower = user_message.lower()
 
-        if any(word in message_lower for word in ["analyze", "explain", "why", "how"]):
+        if any(
+            word in message_lower
+            for word in ["analyze", "explain", "why", "how"]
+        ):
             return "analytical"
         if any(
-            word in message_lower for word in ["create", "build", "generate", "make"]
+            word in message_lower
+            for word in ["create", "build", "generate", "make"]
         ):
             return "creative"
-        if any(word in message_lower for word in ["fix", "debug", "error", "problem"]):
+        if any(
+            word in message_lower
+            for word in ["fix", "debug", "error", "problem"]
+        ):
             return "diagnostic"
-        if any(word in message_lower for word in ["plan", "strategy", "approach"]):
+        if any(
+            word in message_lower for word in ["plan", "strategy", "approach"]
+        ):
             return "strategic"
         return "exploratory"
 
@@ -700,7 +745,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
             "design",
             "structure",
         ]
-        return any(keyword in user_message.lower() for keyword in planning_keywords)
+        return any(
+            keyword in user_message.lower() for keyword in planning_keywords
+        )
 
     async def process_user_input(
         self, user_input: str, session_id: str = "default"
@@ -756,7 +803,8 @@ class PythonicPreprocessorPlugin(PluginInterface):
             # Check cache first
             if self.cache:
                 cached_result = await self.cache.get(
-                    "preprocessor", {"input": user_input, "session": session_id}
+                    "preprocessor",
+                    {"input": user_input, "session": session_id},
                 )
                 if cached_result:
                     metrics.cache_hit = True
@@ -781,7 +829,10 @@ class PythonicPreprocessorPlugin(PluginInterface):
 
             # Enhance result with intent information
             dta_result.metadata.update(
-                {"intent_detection": intent_result, "processing_metrics": metrics}
+                {
+                    "intent_detection": intent_result,
+                    "processing_metrics": metrics,
+                }
             )
 
             # Cache successful results
@@ -795,7 +846,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
 
             # Update metrics
             metrics.end_time = time.time()
-            metrics.total_processing_time = metrics.end_time - metrics.start_time
+            metrics.total_processing_time = (
+                metrics.end_time - metrics.start_time
+            )
             self.processing_metrics[session_id] = metrics
 
             # Record monitoring metrics
@@ -811,7 +864,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
         except Exception as e:
             logger.exception("Error processing user input: %s", e)
             metrics.end_time = time.time()
-            metrics.total_processing_time = metrics.end_time - metrics.start_time
+            metrics.total_processing_time = (
+                metrics.end_time - metrics.start_time
+            )
             self.processing_metrics[session_id] = metrics
 
             # Return error result
@@ -819,7 +874,10 @@ class PythonicPreprocessorPlugin(PluginInterface):
                 status=DTAStatus.ERROR,
                 python_code="",
                 confidence_score=0.0,
-                metadata={"processing_metrics": metrics, "error_message": str(e)},
+                metadata={
+                    "processing_metrics": metrics,
+                    "error_message": str(e),
+                },
             )
 
     async def _detect_intent(self, user_input: str) -> IntentDetectionResult:
@@ -884,13 +942,21 @@ class PythonicPreprocessorPlugin(PluginInterface):
                         intent == "tool_request"
                         and any(
                             kw in user_input_lower
-                            for kw in ["create tool", "make tool", "build tool"]
+                            for kw in [
+                                "create tool",
+                                "make tool",
+                                "build tool",
+                            ]
                         )
                     ) or (
                         intent == "code_generation"
                         and any(
                             kw in user_input_lower
-                            for kw in ["write code", "generate code", "create function"]
+                            for kw in [
+                                "write code",
+                                "generate code",
+                                "create function",
+                            ]
                         )
                     ):
                         score += 0.15
@@ -903,7 +969,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
                             "what can you do",
                         ]
                     ):
-                        score += 0.2  # High confidence boost for self-reflection
+                        score += (
+                            0.2  # High confidence boost for self-reflection
+                        )
 
                     max_score = max(max_score, score)
 
@@ -912,7 +980,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
 
         # Determine primary intent
         if intent_scores:
-            result.primary_intent = max(intent_scores.items(), key=lambda x: x[1])[0]
+            result.primary_intent = max(
+                intent_scores.items(), key=lambda x: x[1]
+            )[0]
             result.confidence = intent_scores[result.primary_intent]
 
             # Check for multi-intent scenarios
@@ -932,7 +1002,8 @@ class PythonicPreprocessorPlugin(PluginInterface):
             result.confidence < self.clarification_threshold
             or len(user_input.strip()) < 3
         ) and not (
-            result.primary_intent == "self_reflection" and len(user_input.strip()) >= 10
+            result.primary_intent == "self_reflection"
+            and len(user_input.strip()) >= 10
         ):
             result.requires_clarification = True
             result.clarification_reason = "Intent unclear or input too brief"
@@ -945,7 +1016,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
         # Enhance with LLM if available and confidence is low
         if self.gemini_model and result.confidence < 0.7:
             try:
-                llm_result = await self._enhance_intent_with_llm(user_input, result)
+                llm_result = await self._enhance_intent_with_llm(
+                    user_input, result
+                )
                 if llm_result and llm_result.confidence > result.confidence:
                     result = llm_result
             except Exception as e:
@@ -953,7 +1026,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
 
         return result
 
-    async def _extract_parameters(self, user_input: str, intent: str) -> dict[str, Any]:
+    async def _extract_parameters(
+        self, user_input: str, intent: str
+    ) -> dict[str, Any]:
         """Extract relevant parameters based on detected intent."""
         parameters = {}
 
@@ -1074,7 +1149,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
             intent_info = result.metadata.get("intent_detection", {})
             primary_intent = str(
                 getattr(
-                    intent_info, "primary_intent", getattr(result, "intent", "") or ""
+                    intent_info,
+                    "primary_intent",
+                    getattr(result, "intent", "") or "",
                 )
             )
             if getattr(intent_info, "requires_clarification", False):
@@ -1093,15 +1170,21 @@ class PythonicPreprocessorPlugin(PluginInterface):
                 await self._emit_preprocessed_action(result, original_event)
         except Exception as e:
             logger.exception("Error routing processing result: %s", e)
-            await self._emit_error_response(original_event, f"Routing failed: {e}")
+            await self._emit_error_response(
+                original_event, f"Routing failed: {e}"
+            )
 
-    async def _emit_tool_call(self, result: DTAResult, original_event: BaseEvent):
+    async def _emit_tool_call(
+        self, result: DTAResult, original_event: BaseEvent
+    ):
         """Emit a tool call event for tool-based intents."""
         try:
             intent_info = result.metadata.get("intent_detection", {})
             intent = str(
                 getattr(
-                    intent_info, "primary_intent", getattr(result, "intent", "") or ""
+                    intent_info,
+                    "primary_intent",
+                    getattr(result, "intent", "") or "",
                 )
             )
             intent_to_tool = {
@@ -1118,7 +1201,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
                 source_plugin=self._name,
                 tool_name=tool_name,
                 parameters=parameters,
-                conversation_id=getattr(original_event, "conversation_id", "default"),
+                conversation_id=getattr(
+                    original_event, "conversation_id", "default"
+                ),
                 session_id=getattr(original_event, "session_id", "default"),
                 message_id=getattr(original_event, "message_id", None),
             )
@@ -1126,7 +1211,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
             logger.info("Emitted tool call for %s (%s)", tool_name, intent)
         except Exception as e:
             logger.exception("Error emitting tool call: %s", e)
-            await self._emit_error_response(original_event, f"Tool call failed: {e}")
+            await self._emit_error_response(
+                original_event, f"Tool call failed: {e}"
+            )
 
     async def _emit_preprocessed_action(
         self, result: DTAResult, original_event: BaseEvent
@@ -1139,7 +1226,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
                 session_id=getattr(original_event, "session_id", "default"),
                 user_message=msg,
                 message_id=getattr(
-                    original_event, "message_id", f"action_{id(original_event)}"
+                    original_event,
+                    "message_id",
+                    f"action_{id(original_event)}",
                 ),
                 metadata={"type": "preprocessed_action"},
             )
@@ -1160,7 +1249,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
                 session_id=getattr(original_event, "session_id", "default"),
                 user_message=clarification_text,
                 message_id=getattr(
-                    original_event, "message_id", f"clarif_{id(original_event)}"
+                    original_event,
+                    "message_id",
+                    f"clarif_{id(original_event)}",
                 ),
                 metadata={
                     "requires_clarification": True,
@@ -1181,7 +1272,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
         try:
             note = f"Multiple intents detected. Primary: {intent_info.primary_intent}"
             if intent_info.secondary_intents:
-                note += f" | Secondary: {', '.join(intent_info.secondary_intents)}"
+                note += (
+                    f" | Secondary: {', '.join(intent_info.secondary_intents)}"
+                )
             multi_event = ConversationEvent(  # type: ignore[call-arg]
                 source_plugin=self.name,
                 session_id=getattr(original_event, "session_id", "default"),
@@ -1213,7 +1306,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
                 source_plugin=self._name,
                 tool_name="creator",
                 parameters=parameters,
-                conversation_id=getattr(original_event, "conversation_id", "default"),
+                conversation_id=getattr(
+                    original_event, "conversation_id", "default"
+                ),
                 session_id=getattr(original_event, "session_id", "default"),
                 message_id=getattr(original_event, "message_id", None),
             )
@@ -1224,12 +1319,16 @@ class PythonicPreprocessorPlugin(PluginInterface):
                 original_event, f"Code generation failed: {e}"
             )
 
-    async def _emit_direct_response(self, result: DTAResult, original_event: BaseEvent):
+    async def _emit_direct_response(
+        self, result: DTAResult, original_event: BaseEvent
+    ):
         try:
             intent_info = result.metadata.get("intent_detection", {})
             intent = str(
                 getattr(
-                    intent_info, "primary_intent", getattr(result, "intent", "") or ""
+                    intent_info,
+                    "primary_intent",
+                    getattr(result, "intent", "") or "",
                 )
             )
             if intent == "greeting":
@@ -1246,7 +1345,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
                 session_id=getattr(original_event, "session_id", "default"),
                 user_message=response_message,
                 message_id=getattr(
-                    original_event, "message_id", f"response_{id(original_event)}"
+                    original_event,
+                    "message_id",
+                    f"response_{id(original_event)}",
                 ),
                 metadata={
                     "intent": intent,
@@ -1258,7 +1359,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
         except Exception as e:
             logger.exception("Error emitting direct response: %s", e)
 
-    async def _emit_error_response(self, original_event: BaseEvent, error_message: str):
+    async def _emit_error_response(
+        self, original_event: BaseEvent, error_message: str
+    ):
         try:
             error_event = ConversationEvent(  # type: ignore[call-arg]
                 source_plugin=self.name,
@@ -1361,7 +1464,9 @@ class PythonicPreprocessorPlugin(PluginInterface):
             return True
         return len(user_input.strip()) > 50
 
-    async def _process_with_enhanced_protocol(self, user_input: str, session_id: str):
+    async def _process_with_enhanced_protocol(
+        self, user_input: str, session_id: str
+    ):
         try:
             request = CognitiveRequest(
                 user_input=user_input,
@@ -1386,6 +1491,4 @@ class PythonicPreprocessorPlugin(PluginInterface):
 __plugin_class__ = PythonicPreprocessorPlugin
 __plugin_name__ = "pythonic_preprocessor"
 __plugin_version__ = "2.0.0"
-__plugin_description__ = (
-    "DTA 2.0 Pythonic Preprocessor for intelligent intent detection and routing"
-)
+__plugin_description__ = "DTA 2.0 Pythonic Preprocessor for intelligent intent detection and routing"

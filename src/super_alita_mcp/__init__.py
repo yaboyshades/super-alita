@@ -1,4 +1,5 @@
 """Deprecated Super Alita MCP integration shim."""
+
 from __future__ import annotations
 
 import warnings

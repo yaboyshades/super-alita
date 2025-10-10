@@ -14,7 +14,10 @@ from typing import Any, cast
 
 from src.computational_env.executor import ComputationalEnvironment
 from src.core.decision_policy_v1 import DecisionPolicyEngine
-from src.core.observability import ObservabilityLevel, get_observability_manager
+from src.core.observability import (
+    ObservabilityLevel,
+    get_observability_manager,
+)
 from src.core.plugin_interface import PluginInterface
 from src.core.session import Session
 from src.core.states import StateMachine, StateType, TransitionTrigger
@@ -40,9 +43,9 @@ class REUGExecutionFlow:
     ) -> None:
         """Initialize the REUG execution flow orchestrator."""
         self.event_bus = event_bus
-        self.plugin_registry: dict[str, PluginInterface | ToolProvidingPlugin] = (
-            plugin_registry
-        )
+        self.plugin_registry: dict[
+            str, PluginInterface | ToolProvidingPlugin
+        ] = plugin_registry
         self.plugins: list[PluginInterface | ToolProvidingPlugin] = list(
             plugin_registry.values()
         )
@@ -57,7 +60,9 @@ class REUGExecutionFlow:
 
         # Computational environment & SoT
         self.computational_env = ComputationalEnvironment()
-        self.script_interpreter = ScriptOfThoughtInterpreter(self.computational_env)
+        self.script_interpreter = ScriptOfThoughtInterpreter(
+            self.computational_env
+        )
 
         # Session & state machine
         self.session = Session()
@@ -76,7 +81,11 @@ class REUGExecutionFlow:
     def _build_decision_context(self) -> dict[str, Any]:
         return {
             "session_id": self.current_session_id,
-            "history": self.session.history if hasattr(self.session, "history") else [],
+            "history": (
+                self.session.history
+                if hasattr(self.session, "history")
+                else []
+            ),
             "plugin_count": len(self.plugins),
             "timestamp": datetime.now(UTC).isoformat(),
         }
@@ -91,7 +100,10 @@ class REUGExecutionFlow:
                     "name": name,
                     "description": step.get("description", ""),
                     "type": step.get("type", "decision_policy"),
-                    "function": {"name": name, "parameters": step.get("args", {})},
+                    "function": {
+                        "name": name,
+                        "parameters": step.get("args", {}),
+                    },
                     "plugin_name": step.get("plugin", ""),
                     "sot_step_id": step.get("sot_step_id", ""),
                 }
@@ -122,7 +134,9 @@ class REUGExecutionFlow:
 
         # Reset state machine context
         self.state_machine.reset_context(self.current_session_id)
-        self.logger.info("Started REUG v9.0 session: %s", self.current_session_id)
+        self.logger.info(
+            "Started REUG v9.0 session: %s", self.current_session_id
+        )
 
         if self.event_bus:
             await self.event_bus.emit(
@@ -161,7 +175,8 @@ class REUGExecutionFlow:
 
             return {
                 "response": result.get(
-                    "response", "I encountered an issue processing your request."
+                    "response",
+                    "I encountered an issue processing your request.",
                 ),
                 "success": result.get("success", False),
                 "session_id": self.current_session_id,
@@ -183,7 +198,9 @@ class REUGExecutionFlow:
                 "success": False,
                 "session_id": self.current_session_id,
                 "error": str(e),
-                "execution_time": (datetime.now(UTC) - start_time).total_seconds(),
+                "execution_time": (
+                    datetime.now(UTC) - start_time
+                ).total_seconds(),
             }
 
     async def _run_state_machine(self) -> dict[str, Any]:
@@ -206,7 +223,9 @@ class REUGExecutionFlow:
             # Execute transition
             success = await self.state_machine.transition(next_trigger)
             if not success:
-                self.logger.warning("State transition failed: %s", next_trigger)
+                self.logger.warning(
+                    "State transition failed: %s", next_trigger
+                )
                 break
 
             transitions_count += 1
@@ -234,7 +253,9 @@ class REUGExecutionFlow:
             return {
                 "response": "I'm still processing your request.",
                 "success": False,
-                "metadata": {"current_state": self.state_machine.current_state.name},
+                "metadata": {
+                    "current_state": self.state_machine.current_state.name
+                },
             }
 
     # Concrete State Handler Implementations
@@ -249,7 +270,9 @@ class REUGExecutionFlow:
 
     async def _handle_engage_state(self) -> TransitionTrigger | None:
         """Handle ENGAGE state - process user input and detect intent"""
-        self.logger.debug("ENGAGE state: Processing user input and detecting intent")
+        self.logger.debug(
+            "ENGAGE state: Processing user input and detecting intent"
+        )
 
         try:
             user_input = self.state_machine.context.user_input
@@ -292,15 +315,20 @@ class REUGExecutionFlow:
             # **NEW: Parse Script of Thought if applicable**
             sot_parse_result = None
             if self._is_script_of_thought_format(user_input):
-                self.logger.debug("Detected Script of Thought format, parsing...")
+                self.logger.debug(
+                    "Detected Script of Thought format, parsing..."
+                )
                 try:
-                    sot_parse_result = self.script_interpreter.parser.parse_script(
-                        user_input
+                    sot_parse_result = (
+                        self.script_interpreter.parser.parse_script(user_input)
                     )
-                    self.state_machine.context.sot_parse_result = sot_parse_result
+                    self.state_machine.context.sot_parse_result = (
+                        sot_parse_result
+                    )
                     if hasattr(sot_parse_result, "steps"):
                         self.logger.info(
-                            "Parsed SoT with %d steps", len(sot_parse_result.steps)
+                            "Parsed SoT with %d steps",
+                            len(sot_parse_result.steps),
                         )
 
                     # Emit SoT parsing event
@@ -314,10 +342,14 @@ class REUGExecutionFlow:
                             > 1,  # heuristic
                         )
                 except Exception as e:  # noqa: BLE001
-                    self.logger.warning("Failed to parse as Script of Thought: %s", e)
+                    self.logger.warning(
+                        "Failed to parse as Script of Thought: %s", e
+                    )
 
             # Load memory context
-            memory_context = await self._load_memory_context(intent, user_input)
+            memory_context = await self._load_memory_context(
+                intent, user_input
+            )
             self.state_machine.context.memory_context = memory_context
 
             # Use Decision Policy instead of legacy router
@@ -327,7 +359,9 @@ class REUGExecutionFlow:
             self.state_machine.context.tools_selected = selected_tools
 
             # **ADDED: Log the chosen tools at TOOLS_ROUTED stage**
-            tool_names = [tool.get("name", "unknown") for tool in selected_tools]
+            tool_names = [
+                tool.get("name", "unknown") for tool in selected_tools
+            ]
             self.logger.info("Tool routed: %s", tool_names)
 
             # Emit context loaded event (if event bus available)
@@ -362,21 +396,29 @@ class REUGExecutionFlow:
 
             # **NEW: Execute via Script of Thought interpreter if available**
             if sot_parse_result:
-                self.logger.debug("Executing tools via Script of Thought interpreter")
+                self.logger.debug(
+                    "Executing tools via Script of Thought interpreter"
+                )
                 try:
                     # Use SoT interpreter for orchestrated execution
                     sot_results = await self.script_interpreter.execute_script(
                         sot_parse_result
                     )
-                    self.state_machine.context.sot_execution_state = sot_results
+                    self.state_machine.context.sot_execution_state = (
+                        sot_results
+                    )
 
                     # Extract computational environment results if any
                     comp_env_results = {}
                     for step_id, step_result in sot_results.items():
                         if hasattr(step_result, "computational_output"):
-                            comp_env_results[step_id] = step_result.computational_output
+                            comp_env_results[step_id] = (
+                                step_result.computational_output
+                            )
 
-                    self.state_machine.context.comp_env_results = comp_env_results
+                    self.state_machine.context.comp_env_results = (
+                        comp_env_results
+                    )
 
                     # Emit SoT execution event
                     if self.event_bus:
@@ -388,7 +430,9 @@ class REUGExecutionFlow:
                             comp_env_used=bool(comp_env_results),
                         )
 
-                    tool_results = sot_results  # Use SoT results as tool results
+                    tool_results = (
+                        sot_results  # Use SoT results as tool results
+                    )
 
                 except Exception as e:  # noqa: BLE001
                     self.logger.warning(
@@ -426,7 +470,9 @@ class REUGExecutionFlow:
                     session_id=self.current_session_id,
                     response_length=len(response) if response else 0,
                     tools_executed=len(tool_results),
-                    comp_env_used=bool(self.state_machine.context.comp_env_results),
+                    comp_env_used=bool(
+                        self.state_machine.context.comp_env_results
+                    ),
                 )
 
             return TransitionTrigger.RESPONSE_READY
@@ -457,7 +503,8 @@ class REUGExecutionFlow:
             if recovery_successful:
                 self.errors_recovered += 1
                 self.logger.info(
-                    "Successfully recovered from error (attempt %d)", error_count
+                    "Successfully recovered from error (attempt %d)",
+                    error_count,
                 )
 
                 # Emit recovery event (if event bus available)
@@ -531,7 +578,10 @@ class REUGExecutionFlow:
 
         input_lower = user_input.lower()
 
-        if any(word in input_lower for word in ["create", "make", "build", "generate"]):
+        if any(
+            word in input_lower
+            for word in ["create", "make", "build", "generate"]
+        ):
             return "create"
         elif any(
             word in input_lower
@@ -539,13 +589,18 @@ class REUGExecutionFlow:
         ):
             return "debug"
         elif any(
-            word in input_lower for word in ["explain", "how", "what", "why", "help"]
+            word in input_lower
+            for word in ["explain", "how", "what", "why", "help"]
         ):
             return "explain"
-        elif any(word in input_lower for word in ["search", "find", "look", "locate"]):
+        elif any(
+            word in input_lower
+            for word in ["search", "find", "look", "locate"]
+        ):
             return "search"
         elif any(
-            word in input_lower for word in ["analyze", "review", "check", "examine"]
+            word in input_lower
+            for word in ["analyze", "review", "check", "examine"]
         ):
             return "analyze"
         else:
@@ -588,7 +643,9 @@ class REUGExecutionFlow:
             if tool in self.plugin_registry:
                 available_tools.append(tool)
 
-        return available_tools or ["llm_planner"]  # Always fallback to llm_planner
+        return available_tools or [
+            "llm_planner"
+        ]  # Always fallback to llm_planner
 
     async def _execute_tools(
         self,
@@ -633,15 +690,22 @@ class REUGExecutionFlow:
                 plugin_name = tool.get("plugin_name", tool_name)
                 plugin = self.plugin_registry.get(plugin_name)
                 if not plugin:
-                    self.logger.warning("Tool %s not found in registry", plugin_name)
-                    results[tool_name] = {"error": f"Plugin {plugin_name} not found"}
+                    self.logger.warning(
+                        "Tool %s not found in registry", plugin_name
+                    )
+                    results[tool_name] = {
+                        "error": f"Plugin {plugin_name} not found"
+                    }
                     continue
                 if hasattr(plugin, "process_request"):
-                    result = await plugin.process_request(user_input, memory_context)
+                    result = await plugin.process_request(
+                        user_input, memory_context
+                    )
                     results[tool_name] = {"success": True, "output": result}
                 else:
                     self.logger.warning(
-                        "Plugin %s lacks process_request; marking skipped", plugin_name
+                        "Plugin %s lacks process_request; marking skipped",
+                        plugin_name,
                     )
                     results[tool_name] = {
                         "success": False,
@@ -686,9 +750,7 @@ class REUGExecutionFlow:
         if successful_tools:
             response = f"I've processed your {intent} request using {', '.join(successful_tools)}. The task has been completed."
         else:
-            response = (
-                "I've processed your request, though some tools encountered issues."
-            )
+            response = "I've processed your request, though some tools encountered issues."
 
         # **ADDED: Additional guard against empty response**
         if not response or not response.strip():
@@ -779,7 +841,9 @@ class REUGExecutionFlow:
             # Get tools from all plugins
             for plugin in self.plugins:
                 try:
-                    if isinstance(plugin, ToolProvidingPlugin):  # structural check
+                    if isinstance(
+                        plugin, ToolProvidingPlugin
+                    ):  # structural check
                         tools_candidate = plugin.get_tools()
                         if tools_candidate:
                             for tool in tools_candidate:
@@ -796,7 +860,9 @@ class REUGExecutionFlow:
                 selected_tools: list[ToolSpec] = []
                 for step in sot_parse_result.steps:
                     # Route tools for each step
-                    step_tools = self._route_tools_for_step(step, available_tools)
+                    step_tools = self._route_tools_for_step(
+                        step, available_tools
+                    )
                     selected_tools.extend(step_tools)
 
                 # **FALLBACK PATH: If no tools selected from SoT, add fallback**
@@ -829,7 +895,9 @@ class REUGExecutionFlow:
 
                 # **FALLBACK PATH: If no tools selected by routing, ensure we have something**
                 if not selected_tools:
-                    self.logger.info("No tools selected by routing - adding fallback")
+                    self.logger.info(
+                        "No tools selected by routing - adding fallback"
+                    )
                     selected_tools = self._get_fallback_tools()
 
                 return selected_tools
@@ -908,8 +976,10 @@ class REUGExecutionFlow:
 
                     if code_to_execute:
                         # Execute via computational environment
-                        comp_result = await self.computational_env.execute_code(
-                            code_to_execute
+                        comp_result = (
+                            await self.computational_env.execute_code(
+                                code_to_execute
+                            )
                         )
 
                         # Add memory context to result if needed
@@ -981,7 +1051,9 @@ class REUGExecutionFlow:
         ]
 
         for pattern in code_patterns:
-            matches = re.findall(pattern, user_input, re.DOTALL | re.IGNORECASE)
+            matches = re.findall(
+                pattern, user_input, re.DOTALL | re.IGNORECASE
+            )
             if matches:
                 return matches[0].strip()
 
@@ -1002,8 +1074,14 @@ class REUGExecutionFlow:
         if plugin_name in self.plugin_registry:
             plugin = self.plugin_registry[plugin_name]
             try:
-                result = await plugin.process_request(user_input, memory_context)
-                return {"success": True, "output": result, "execution_type": "plugin"}
+                result = await plugin.process_request(
+                    user_input, memory_context
+                )
+                return {
+                    "success": True,
+                    "output": result,
+                    "execution_type": "plugin",
+                }
             except Exception as e:
                 return {
                     "success": False,
@@ -1017,7 +1095,9 @@ class REUGExecutionFlow:
                 "execution_type": "plugin_not_found",
             }
 
-    async def _handle_create_dynamic_tool_state(self) -> TransitionTrigger | None:
+    async def _handle_create_dynamic_tool_state(
+        self,
+    ) -> TransitionTrigger | None:
         """Handle dynamic tool creation from natural language description"""
         context = self.state_machine.context
 
@@ -1038,7 +1118,9 @@ class REUGExecutionFlow:
             generator: Any = ToolSchemaGenerator()
 
             # Generate schema from description
-            schema = await generator.generate_schema_from_description(user_input)
+            schema = await generator.generate_schema_from_description(
+                user_input
+            )
 
             if not schema:
                 logger.error("Failed to generate tool schema from description")
@@ -1076,7 +1158,9 @@ class REUGExecutionFlow:
                     ],
                 }
 
-                logger.info(f"Successfully created dynamic tool: {schema.name}")
+                logger.info(
+                    f"Successfully created dynamic tool: {schema.name}"
+                )
                 return TransitionTrigger.DYNAMIC_TOOL_CREATED
             else:
                 logger.error(f"Failed to register dynamic tool: {schema.name}")
@@ -1119,7 +1203,9 @@ class REUGExecutionFlow:
     async def shutdown(self) -> None:
         """Shutdown the execution flow"""
         if self.state_machine.current_state != StateType.SHUTDOWN:
-            await self.state_machine.transition(TransitionTrigger.SHUTDOWN_REQUESTED)
+            await self.state_machine.transition(
+                TransitionTrigger.SHUTDOWN_REQUESTED
+            )
 
         self.is_running = False
 

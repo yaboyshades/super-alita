@@ -15,7 +15,10 @@ sys.path.insert(0, str(project_root))
 async def test_gpt_oss_integration():
     """Test Super Alita with Ollama gpt-oss:20b"""
     try:
-        from src.abilities.deepconf_ability import ConsensusMode, DeepConfAbility
+        from src.abilities.deepconf_ability import (
+            ConsensusMode,
+            DeepConfAbility,
+        )
 
         print("🚀 Super Alita + Ollama gpt-oss:20b Test")
         print("=" * 50)

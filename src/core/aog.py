@@ -21,7 +21,9 @@ class AOGNode(BaseModel):
     These nodes will be stored as the 'value' of a NeuralAtom in the NeuralStore.
     """
 
-    node_id: str = Field(..., description="A unique, human-readable ID for this node.")
+    node_id: str = Field(
+        ..., description="A unique, human-readable ID for this node."
+    )
     description: str = Field(
         ...,
         description="A natural language description of what this node represents (e.g., 'Analyze bounty requirements'). This will be embedded.",
@@ -38,7 +40,9 @@ class AOGNode(BaseModel):
 
     # Additional metadata for enhanced reasoning
     priority: float = Field(1.0, description="Priority weight for this node")
-    cost_estimate: float = Field(1.0, description="Estimated cost/effort for this node")
+    cost_estimate: float = Field(
+        1.0, description="Estimated cost/effort for this node"
+    )
     success_probability: float = Field(
         0.8, description="Estimated probability of success"
     )
@@ -53,7 +57,9 @@ class AOGNode(BaseModel):
     execution_count: int = Field(
         0, description="Number of times this node has been executed"
     )
-    success_count: int = Field(0, description="Number of successful executions")
+    success_count: int = Field(
+        0, description="Number of successful executions"
+    )
     last_executed: str | None = Field(
         None, description="ISO timestamp of last execution"
     )
@@ -68,7 +74,9 @@ class AOGNode(BaseModel):
             return self.success_probability
         return self.success_count / self.execution_count
 
-    def update_execution_stats(self, success: bool, timestamp: str | None = None):
+    def update_execution_stats(
+        self, success: bool, timestamp: str | None = None
+    ):
         """Update execution statistics."""
         self.execution_count += 1
         if success:
@@ -94,7 +102,9 @@ class AOGPlan(BaseModel):
     """
 
     plan_id: str = Field(..., description="Unique identifier for this plan")
-    goal_node_id: str = Field(..., description="The root goal node this plan addresses")
+    goal_node_id: str = Field(
+        ..., description="The root goal node this plan addresses"
+    )
     steps: list[str] = Field(
         ..., description="Ordered list of LEAF node IDs to execute"
     )
@@ -103,15 +113,24 @@ class AOGPlan(BaseModel):
     )
 
     # Plan metadata
-    estimated_cost: float = Field(0.0, description="Total estimated cost of the plan")
-    estimated_probability: float = Field(0.0, description="Overall success probability")
-    created_at: str = Field(..., description="ISO timestamp when plan was created")
+    estimated_cost: float = Field(
+        0.0, description="Total estimated cost of the plan"
+    )
+    estimated_probability: float = Field(
+        0.0, description="Overall success probability"
+    )
+    created_at: str = Field(
+        ..., description="ISO timestamp when plan was created"
+    )
 
     # Execution tracking
     status: str = Field(
-        "created", description="Plan status: created, executing, completed, failed"
+        "created",
+        description="Plan status: created, executing, completed, failed",
     )
-    current_step: int = Field(0, description="Index of current step being executed")
+    current_step: int = Field(
+        0, description="Index of current step being executed"
+    )
     execution_log: list[dict] = Field(
         default_factory=list, description="Log of step executions"
     )
@@ -150,13 +169,18 @@ class AOGAnalysis(BaseModel):
     Represents analysis results from the AOG reasoning system.
     """
 
-    analysis_id: str = Field(..., description="Unique identifier for this analysis")
+    analysis_id: str = Field(
+        ..., description="Unique identifier for this analysis"
+    )
     analysis_type: str = Field(
-        ..., description="Type of analysis: forward_plan, backward_diagnosis, etc."
+        ...,
+        description="Type of analysis: forward_plan, backward_diagnosis, etc.",
     )
 
     # Analysis results
-    nodes_analyzed: list[str] = Field(..., description="Node IDs that were analyzed")
+    nodes_analyzed: list[str] = Field(
+        ..., description="Node IDs that were analyzed"
+    )
     critical_path: list[str] = Field(
         default_factory=list, description="Most critical nodes in the analysis"
     )

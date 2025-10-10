@@ -28,9 +28,7 @@ class TestWebScraper:
         """Test successful page scraping"""
         # Mock response
         mock_response = Mock()
-        mock_response.content = (
-            b"<html><head><title>Test</title></head><body><h1>Header</h1></body></html>"
-        )
+        mock_response.content = b"<html><head><title>Test</title></head><body><h1>Header</h1></body></html>"
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 

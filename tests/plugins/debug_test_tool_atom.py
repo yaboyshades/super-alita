@@ -18,7 +18,10 @@ def debug_test_tool(**kwargs):
         # Test tool for complete flow debugging
         # Simple UUID generation as reliable default functionality
         value = str(uuid.uuid4())
-        result = {"uuid": value, "description": "Test tool for complete flow debugging"}
+        result = {
+            "uuid": value,
+            "description": "Test tool for complete flow debugging",
+        }
         success = True
 
     except Exception as e:

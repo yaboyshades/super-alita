@@ -61,11 +61,18 @@ class ConsensusIntegrationTester:
 
                     # Look for consensus tool
                     consensus_tool = next(
-                        (t for t in tools if t["name"] == "deepconf_consensus"), None
+                        (
+                            t
+                            for t in tools
+                            if t["name"] == "deepconf_consensus"
+                        ),
+                        None,
                     )
                     if consensus_tool:
                         print("✅ Consensus tool registered:")
-                        print(f"   Description: {consensus_tool['description']}")
+                        print(
+                            f"   Description: {consensus_tool['description']}"
+                        )
 
                         # Check schema
                         schema = consensus_tool.get("input_schema", {})
@@ -97,7 +104,9 @@ class ConsensusIntegrationTester:
                     "http://127.0.0.1:11434/v1/chat/completions",
                     json={
                         "model": "gpt-oss:20b",
-                        "messages": [{"role": "user", "content": "Capital of France?"}],
+                        "messages": [
+                            {"role": "user", "content": "Capital of France?"}
+                        ],
                         "max_tokens": 20,
                         "temperature": 0.3,
                     },
@@ -107,7 +116,9 @@ class ConsensusIntegrationTester:
                     result = response.json()
                     choices = result.get("choices", [])
                     if choices:
-                        content = choices[0].get("message", {}).get("content", "")
+                        content = (
+                            choices[0].get("message", {}).get("content", "")
+                        )
                         print(f"✅ Ollama response: {content.strip()}")
                         return True
                     else:
@@ -152,7 +163,9 @@ class ConsensusIntegrationTester:
                     # Stream the results
                     return await self._stream_consensus_results(client, run_id)
                 else:
-                    print(f"❌ REUG start failed: {start_response.status_code}")
+                    print(
+                        f"❌ REUG start failed: {start_response.status_code}"
+                    )
                     print(f"   Response: {start_response.text}")
                     return False
 
@@ -174,7 +187,8 @@ class ConsensusIntegrationTester:
         for iteration in range(30):  # Max 30 iterations
             try:
                 response = await client.post(
-                    f"{self.base_url}/tools/reug_stream_next", json={"run_id": run_id}
+                    f"{self.base_url}/tools/reug_stream_next",
+                    json={"run_id": run_id},
                 )
 
                 if response.status_code == 200:
@@ -199,12 +213,18 @@ class ConsensusIntegrationTester:
                             ]
                         ):
                             consensus_detected = True
-                            print(f"🎯 Consensus activity: {str(chunk)[:100]}...")
+                            print(
+                                f"🎯 Consensus activity: {str(chunk)[:100]}..."
+                            )
 
                         # Check for tool execution
                         if any(
                             keyword in chunk_str
-                            for keyword in ["tool_call", "tool_result", "executing"]
+                            for keyword in [
+                                "tool_call",
+                                "tool_result",
+                                "executing",
+                            ]
                         ):
                             tool_execution_detected = True
                             print(f"🔧 Tool execution: {str(chunk)[:100]}...")
@@ -215,7 +235,9 @@ class ConsensusIntegrationTester:
                             print(f"❌ Error detected: {str(chunk)[:100]}...")
 
                     if finished:
-                        print(f"✅ Stream finished after {iteration + 1} iterations")
+                        print(
+                            f"✅ Stream finished after {iteration + 1} iterations"
+                        )
                         break
 
                 elif response.status_code == 500:
@@ -241,7 +263,9 @@ class ConsensusIntegrationTester:
         print(f"   Errors detected: {error_detected}")
 
         # Success criteria: consensus detected OR tool execution detected, no errors
-        success = (consensus_detected or tool_execution_detected) and not error_detected
+        success = (
+            consensus_detected or tool_execution_detected
+        ) and not error_detected
 
         if success:
             print("🎉 Consensus integration working!")
@@ -264,11 +288,14 @@ class ConsensusIntegrationTester:
 
                 if response.status_code == 200:
                     abilities = response.json()
-                    print(f"✅ Registry accessible, {len(abilities)} abilities")
+                    print(
+                        f"✅ Registry accessible, {len(abilities)} abilities"
+                    )
 
                     # Look for consensus ability
                     consensus_found = any(
-                        "consensus" in str(ability).lower() for ability in abilities
+                        "consensus" in str(ability).lower()
+                        for ability in abilities
                     )
 
                     if consensus_found:
@@ -313,11 +340,15 @@ class ConsensusIntegrationTester:
             print(f"   {test_display}: {status}")
 
         success_rate = passed / total * 100
-        print(f"\n🎯 Overall: {passed}/{total} tests passed ({success_rate:.1f}%)")
+        print(
+            f"\n🎯 Overall: {passed}/{total} tests passed ({success_rate:.1f}%)"
+        )
 
         # Interpretation following instructions
         if passed == total:
-            print("🎉 ALL TESTS PASSED - Consensus integration is fully operational!")
+            print(
+                "🎉 ALL TESTS PASSED - Consensus integration is fully operational!"
+            )
             print("\n✅ Ready for:")
             print("   - Production deployment")
             print("   - Enhanced algorithm testing")

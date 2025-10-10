@@ -32,5 +32,7 @@ def test_search_issues_skill() -> None:
 def test_search_issues_skill_bad_signature() -> None:
     client = TestClient(app)
     payload = {"query": "dark"}
-    resp = client.post("/search/issues", json=payload, headers={"x-signature": "bad"})
+    resp = client.post(
+        "/search/issues", json=payload, headers={"x-signature": "bad"}
+    )
     assert resp.status_code == 401

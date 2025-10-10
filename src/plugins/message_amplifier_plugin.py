@@ -21,10 +21,15 @@ def _normalize(msg: str) -> str:
     return msg
 
 
-def amplify_message(message: str, ctx: MessageContext) -> tuple[str, dict[str, str]]:
+def amplify_message(
+    message: str, ctx: MessageContext
+) -> tuple[str, dict[str, str]]:
     if message.lower().startswith("noopt:"):
         # Explicit user bypass
-        return message[len("noopt:") :].lstrip(), {"step": "amplify", "bypass": "true"}
+        return message[len("noopt:") :].lstrip(), {
+            "step": "amplify",
+            "bypass": "true",
+        }
 
     original_len = len(message)
     normalized = _normalize(message)

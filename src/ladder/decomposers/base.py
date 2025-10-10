@@ -127,7 +127,9 @@ class DefaultLLMDecomposer(LadderDecomposer):
                     # Map dependency indices to actual task IDs
                     deps = []
                     for dep_idx in task_data["dependencies"]:
-                        if isinstance(dep_idx, int) and 0 <= dep_idx < len(subtasks):
+                        if isinstance(dep_idx, int) and 0 <= dep_idx < len(
+                            subtasks
+                        ):
                             deps.append(subtasks[dep_idx].id)
                     result.add_dependency(subtasks[i].id, deps)
 
@@ -146,7 +148,9 @@ class DefaultLLMDecomposer(LadderDecomposer):
         if task_type == TaskType.CODING:
             return [
                 {
-                    "description": (f"Plan implementation for: " f"{task.description}"),
+                    "description": (
+                        f"Plan implementation for: " f"{task.description}"
+                    ),
                     "tool_options": ["llm", "knowledge_graph"],
                     "energy": 2.0,
                     "dependencies": [],
@@ -287,7 +291,10 @@ class ParallelDecomposer(LadderDecomposer):
                         description=part,
                         energy=task.energy / len(parts),
                         tool_options=task.tool_options,
-                        metadata={"parent_id": task.id, "parallel_part": i + 1},
+                        metadata={
+                            "parent_id": task.id,
+                            "parallel_part": i + 1,
+                        },
                     )
                     subtasks.append(subtask)
 
@@ -320,7 +327,9 @@ class ParallelDecomposer(LadderDecomposer):
         )
 
 
-def create_decomposer(decomposer_type: DecomposerType, **kwargs) -> LadderDecomposer:
+def create_decomposer(
+    decomposer_type: DecomposerType, **kwargs
+) -> LadderDecomposer:
     """Factory function to create decomposers."""
     if decomposer_type == DecomposerType.DEFAULT:
         return DefaultLLMDecomposer(**kwargs)
@@ -342,7 +351,9 @@ def select_decomposer(
         return None
 
     # Filter decomposers that can handle this task
-    capable_decomposers = [d for d in available_decomposers if d.can_decompose(task)]
+    capable_decomposers = [
+        d for d in available_decomposers if d.can_decompose(task)
+    ]
 
     if not capable_decomposers:
         return None

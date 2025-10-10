@@ -62,7 +62,9 @@ def test_simple_consensus():
     # Check tools catalog
     print("\n🛠️  Checking tools catalog...")
     try:
-        catalog = requests.get("http://127.0.0.1:8080/tools/catalog", timeout=10)
+        catalog = requests.get(
+            "http://127.0.0.1:8080/tools/catalog", timeout=10
+        )
         if catalog.status_code == 200:
             tools = catalog.json()
             consensus_tool = None
@@ -74,7 +76,9 @@ def test_simple_consensus():
 
             if consensus_tool:
                 print("✅ Enhanced consensus tool found in catalog")
-                print(f"   Description: {consensus_tool.get('description', 'N/A')}")
+                print(
+                    f"   Description: {consensus_tool.get('description', 'N/A')}"
+                )
 
                 # Show input schema
                 input_schema = consensus_tool.get("input_schema", {})

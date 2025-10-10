@@ -141,7 +141,11 @@ SDD_VALIDATION_RULES = {
     },
     "must_define_tech_stack": {
         "description": "Plan must clearly define technology choices",
-        "required_sections": ["Technology Stack", "Architecture", "Dependencies"],
+        "required_sections": [
+            "Technology Stack",
+            "Architecture",
+            "Dependencies",
+        ],
     },
     "constitutional_compliance_check": {
         "description": "All artifacts must pass constitutional compliance threshold",
@@ -172,7 +176,10 @@ SDD_PHASE_DEPENDENCIES = {
 CONSTITUTIONAL_SDD_INTEGRATION = {
     "specify_phase": {
         "pre_hooks": ["validate_input_clarity"],
-        "post_hooks": ["score_specification_quality", "check_library_first_mindset"],
+        "post_hooks": [
+            "score_specification_quality",
+            "check_library_first_mindset",
+        ],
         "scoring_criteria": [
             "problem_definition_clarity",
             "user_story_completeness",
@@ -181,8 +188,14 @@ CONSTITUTIONAL_SDD_INTEGRATION = {
         ],
     },
     "plan_phase": {
-        "pre_hooks": ["validate_spec_exists", "check_constitutional_compliance"],
-        "post_hooks": ["validate_architecture_choices", "verify_test_first_approach"],
+        "pre_hooks": [
+            "validate_spec_exists",
+            "check_constitutional_compliance",
+        ],
+        "post_hooks": [
+            "validate_architecture_choices",
+            "verify_test_first_approach",
+        ],
         "scoring_criteria": [
             "library_first_evidence",
             "test_strategy_definition",

@@ -64,7 +64,9 @@ async def test_ladder_planner_happy_path():
     store = InMemoryTodoStore()
     orch = FakeOrchestrator()
 
-    planner = LadderPlanner(kg=kg, bandit=bandit, store=store, orchestrator=orch)
+    planner = LadderPlanner(
+        kg=kg, bandit=bandit, store=store, orchestrator=orch
+    )
     evt = UserEvent(
         query="debug the API tests", context="previous conversation history..."
     )

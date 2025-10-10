@@ -28,7 +28,10 @@ def integrate_mangle_with_deepconf(deepconf_instance):
         Enhanced DeepConf instance with Mangle validation
     """
     # Initialize Mangle if not already available
-    if not hasattr(deepconf_instance, "_mangle") or not deepconf_instance._mangle:
+    if (
+        not hasattr(deepconf_instance, "_mangle")
+        or not deepconf_instance._mangle
+    ):
         try:
             deepconf_instance._mangle = MangleAbility()
             logger.info("Initialized MangleAbility for DeepConf integration")
@@ -52,7 +55,9 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                     sample_count=request.num_samples,
                     meta={
                         "temperature": request.temperature,
-                        "temperature_range": getattr(request, "temperature_range", 0.2),
+                        "temperature_range": getattr(
+                            request, "temperature_range", 0.2
+                        ),
                         "max_tokens": request.max_tokens,
                     },
                 )
@@ -90,7 +95,9 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                 # Apply confidence penalty
                 original_confidence = response.consensus_confidence
                 adjusted_confidence = max(
-                    0.0, original_confidence - validation_result["confidence_penalty"]
+                    0.0,
+                    original_confidence
+                    - validation_result["confidence_penalty"],
                 )
                 response.consensus_confidence = adjusted_confidence
 
@@ -100,7 +107,9 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                 response.metadata["validation"] = {
                     "violations": validation_result["violations"],
                     "original_confidence": original_confidence,
-                    "confidence_penalty": validation_result["confidence_penalty"],
+                    "confidence_penalty": validation_result[
+                        "confidence_penalty"
+                    ],
                 }
 
         except Exception as e:
@@ -122,7 +131,9 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                     # Apply confidence adjustment for invalid claims
                     original_confidence = response.consensus_confidence
                     adjusted_confidence = max(
-                        0.0, original_confidence + verification["confidence_adjustment"]
+                        0.0,
+                        original_confidence
+                        + verification["confidence_adjustment"],
                     )
                     response.consensus_confidence = adjusted_confidence
 
@@ -132,7 +143,9 @@ def integrate_mangle_with_deepconf(deepconf_instance):
                     response.metadata["verification"] = {
                         "invalid_claims": verification["invalid_claims"],
                         "original_confidence": original_confidence,
-                        "confidence_adjustment": verification["confidence_adjustment"],
+                        "confidence_adjustment": verification[
+                            "confidence_adjustment"
+                        ],
                     }
 
                     logger.warning(
@@ -150,7 +163,9 @@ def integrate_mangle_with_deepconf(deepconf_instance):
     # Add tool validation capabilities
     deepconf_instance.validate_tool = validator.validate_tool_execution
 
-    logger.info("Enhanced DeepConf with Mangle validation gates and method selection")
+    logger.info(
+        "Enhanced DeepConf with Mangle validation gates and method selection"
+    )
     return deepconf_instance
 
 

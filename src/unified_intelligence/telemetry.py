@@ -59,11 +59,15 @@ class TelemetryHeaders:
 
             workflow_label = advice.get("workflow_result", {}).get("label")
             if not workflow_label:
-                workflow_label = advice.get("telemetry", {}).get("workflow_label")
+                workflow_label = advice.get("telemetry", {}).get(
+                    "workflow_label"
+                )
             if workflow_label:
                 headers[cls.WORKFLOW_HEADER] = str(workflow_label)
 
-            constitution = advice.get("constitutional_compliance", {}).get("overall_score")
+            constitution = advice.get("constitutional_compliance", {}).get(
+                "overall_score"
+            )
             formatted = _format_float(constitution)
             if formatted is not None:
                 headers[cls.CONSTITUTION_HEADER] = formatted
@@ -78,7 +82,9 @@ class TelemetryHeaders:
             if formatted is not None:
                 headers[cls.CODE_ANALYSIS_CONF_HEADER] = formatted
 
-            findings = advice.get("telemetry", {}).get("code_analysis_findings")
+            findings = advice.get("telemetry", {}).get(
+                "code_analysis_findings"
+            )
             if findings is not None:
                 headers[cls.CODE_ANALYSIS_FINDINGS_HEADER] = str(findings)
         except Exception as exc:  # pragma: no cover - defensive
@@ -88,7 +94,12 @@ class TelemetryHeaders:
 
     @classmethod
     def validate_headers(cls, headers: dict[str, str]) -> dict[str, Any]:
-        result = {"valid": True, "issues": [], "warnings": [], "suggestions": []}
+        result = {
+            "valid": True,
+            "issues": [],
+            "warnings": [],
+            "suggestions": [],
+        }
         required = [cls.DECISION_HEADER, cls.FUSED_SCORE_HEADER]
         for name in required:
             if name not in headers:
@@ -96,18 +107,30 @@ class TelemetryHeaders:
                 result["valid"] = False
 
         decision = headers.get(cls.DECISION_HEADER)
-        if decision and decision not in {"proceed", "revise", "block", "error"}:
+        if decision and decision not in {
+            "proceed",
+            "revise",
+            "block",
+            "error",
+        }:
             result["issues"].append(
                 f"Invalid decision value: {decision}. Expected one of proceed/revise/block/error"
             )
             result["valid"] = False
 
-        for score_header in (cls.FUSED_SCORE_HEADER, cls.CONSTITUTION_HEADER, cls.MANGLE_CONF_HEADER, cls.CODE_ANALYSIS_CONF_HEADER):
+        for score_header in (
+            cls.FUSED_SCORE_HEADER,
+            cls.CONSTITUTION_HEADER,
+            cls.MANGLE_CONF_HEADER,
+            cls.CODE_ANALYSIS_CONF_HEADER,
+        ):
             if score_header in headers:
                 try:
                     value = float(headers[score_header])
                 except ValueError:
-                    result["issues"].append(f"Invalid numeric header: {score_header}")
+                    result["issues"].append(
+                        f"Invalid numeric header: {score_header}"
+                    )
                     result["valid"] = False
                     continue
                 if not 0.0 <= value <= 1.0:
@@ -141,7 +164,9 @@ class TelemetryEnvelope:
         telemetry.setdefault("request_id", request_id)
         telemetry.setdefault("processing_complete", True)
 
-        envelope = cls(request_id=request_id, response=payload, telemetry=telemetry)
+        envelope = cls(
+            request_id=request_id, response=payload, telemetry=telemetry
+        )
         return asdict(envelope)
 
 
@@ -157,7 +182,9 @@ class TelemetryMiddleware:
         advice_dict = _coerce_to_dict(advice)
         return TelemetryHeaders.from_advice(advice_dict)
 
-    async def process_response(self, response: Any, advice: Any | None = None) -> Any:
+    async def process_response(
+        self, response: Any, advice: Any | None = None
+    ) -> Any:
         if advice is None:
             return response
 
@@ -170,17 +197,24 @@ class TelemetryMiddleware:
             for name, value in headers.items():
                 try:
                     response.headers[name] = value
-                except Exception:  # pragma: no cover - response may lack headers
+                except (
+                    Exception
+                ):  # pragma: no cover - response may lack headers
                     logger.debug("Response object has no headers attribute")
 
             validation = TelemetryHeaders.validate_headers(headers)
             if not validation["valid"]:
                 self.header_errors += 1
-                logger.warning("Telemetry header validation failed: %s", validation["issues"])
+                logger.warning(
+                    "Telemetry header validation failed: %s",
+                    validation["issues"],
+                )
 
-            if getattr(response, "media_type", None) == "application/json" and hasattr(response, "body"):
+            if getattr(
+                response, "media_type", None
+            ) == "application/json" and hasattr(response, "body"):
                 body = response.body
-                if isinstance(body, (bytes, bytearray)):
+                if isinstance(body, bytes | bytearray):
                     try:
                         payload = json.loads(body.decode())
                     except Exception:  # pragma: no cover - defensive parsing
@@ -188,7 +222,9 @@ class TelemetryMiddleware:
                 else:
                     payload = body
 
-                request_id = advice_dict.get("telemetry", {}).get("request_id", "unknown")
+                request_id = advice_dict.get("telemetry", {}).get(
+                    "request_id", "unknown"
+                )
                 envelope = TelemetryEnvelope.wrap_response(payload, request_id)
                 encoded = json.dumps(envelope).encode()
                 response.body = encoded

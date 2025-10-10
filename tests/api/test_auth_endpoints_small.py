@@ -22,9 +22,13 @@ async def test_auth_create_and_query_roundtrip(monkeypatch):
     app = mod.app  # type: ignore
     transport = ASGITransport(app=app)
 
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         # Create key without admin due to open registration
-        r = await client.post("/api/v1/auth/keys", json={"owner": "test@example.com"})
+        r = await client.post(
+            "/api/v1/auth/keys", json={"owner": "test@example.com"}
+        )
         assert r.status_code == 200
         api_key = r.json()["api_key"]
 
@@ -34,7 +38,9 @@ async def test_auth_create_and_query_roundtrip(monkeypatch):
 
         # With key -> 200
         headers = {"Authorization": f"Bearer {api_key}"}
-        r = await client.post("/api/v1/query", headers=headers, json={"prompt": "hi"})
+        r = await client.post(
+            "/api/v1/query", headers=headers, json={"prompt": "hi"}
+        )
         assert r.status_code == 200
         assert "answer" in r.json()
 
@@ -43,8 +49,12 @@ async def test_auth_create_and_query_roundtrip(monkeypatch):
         assert "X-RateLimit-Remaining" in r.headers
 
         # Exhaust limit quickly
-        await client.post("/api/v1/query", headers=headers, json={"prompt": "hi"})
-        r = await client.post("/api/v1/query", headers=headers, json={"prompt": "hi"})
+        await client.post(
+            "/api/v1/query", headers=headers, json={"prompt": "hi"}
+        )
+        r = await client.post(
+            "/api/v1/query", headers=headers, json={"prompt": "hi"}
+        )
         assert r.status_code in (200, 429)  # depending on limiter timing
         if r.status_code == 429:
             assert r.headers.get("Retry-After") is not None

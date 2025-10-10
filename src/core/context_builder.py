@@ -64,7 +64,9 @@ class ContextAssembler:
         return ctx
 
     @staticmethod
-    def _normalize_memory_hits(hits: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _normalize_memory_hits(
+        hits: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         out = []
         for h in hits:
             out.append(

@@ -48,7 +48,9 @@ def test_cli_plan_output_format() -> None:
         "--format",
         "json",
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=workspace_root)
+    result = subprocess.run(
+        cmd, capture_output=True, text=True, cwd=workspace_root
+    )
 
     # The command should succeed (exit code 0)
     assert result.returncode == 0, f"CLI failed: {result.stderr}"

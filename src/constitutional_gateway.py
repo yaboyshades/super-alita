@@ -24,7 +24,9 @@ from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 
 # Create the router
-constitutional_router = APIRouter(prefix="/constitutional", tags=["constitutional"])
+constitutional_router = APIRouter(
+    prefix="/constitutional", tags=["constitutional"]
+)
 
 
 # Request/Response Models
@@ -97,7 +99,9 @@ class DiagnosticResponse(BaseModel):
 
 
 # Context Provider Endpoints
-@constitutional_router.post("/context/workspace", response_model=ContextResponse)
+@constitutional_router.post(
+    "/context/workspace", response_model=ContextResponse
+)
 async def get_workspace_context(
     request: ContextRequest,
     req: Request,
@@ -138,9 +142,13 @@ async def get_workspace_context(
                             "repo_read_file",
                             {"file_path": file_info["path"], "max_lines": 200},
                         )
-                        file_info["content"] = content_result.get("content", "")
+                        file_info["content"] = content_result.get(
+                            "content", ""
+                        )
                     except Exception as e:
-                        logger.warning(f"Failed to read file {file_info['path']}: {e}")
+                        logger.warning(
+                            f"Failed to read file {file_info['path']}: {e}"
+                        )
                         file_info["content"] = f"# Error reading file: {e}"
 
         # Generate workspace summary
@@ -158,7 +166,9 @@ async def get_workspace_context(
         for file_info in files:
             if file_info.get("type") == "file":
                 ext = Path(file_info["path"]).suffix
-                summary["file_types"][ext] = summary["file_types"].get(ext, 0) + 1
+                summary["file_types"][ext] = (
+                    summary["file_types"].get(ext, 0) + 1
+                )
 
         metadata = {
             "workspace_path": request.workspace_path,
@@ -170,7 +180,9 @@ async def get_workspace_context(
 
     except Exception as e:
         logger.error(f"Workspace context error: {e}")
-        raise HTTPException(status_code=500, detail=f"Context analysis failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Context analysis failed: {e}"
+        )
 
 
 @constitutional_router.post("/context/file", response_model=dict[str, Any])
@@ -218,11 +230,15 @@ async def get_file_context(
 
     except Exception as e:
         logger.error(f"File context error: {e}")
-        raise HTTPException(status_code=500, detail=f"File context failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"File context failed: {e}"
+        )
 
 
 # Code Action Endpoints
-@constitutional_router.post("/actions/refactor", response_model=CodeActionResponse)
+@constitutional_router.post(
+    "/actions/refactor", response_model=CodeActionResponse
+)
 async def get_refactor_actions(
     request: CodeActionRequest,
     req: Request,
@@ -273,7 +289,8 @@ async def get_refactor_actions(
                                                 "character": 0,
                                             },
                                             "end": {
-                                                "line": hotspot.get("line", 0) + 1,
+                                                "line": hotspot.get("line", 0)
+                                                + 1,
                                                 "character": 0,
                                             },
                                         },
@@ -302,8 +319,14 @@ async def get_refactor_actions(
             diagnostics.append(
                 {
                     "range": {
-                        "start": {"line": issue.get("line", 0) - 1, "character": 0},
-                        "end": {"line": issue.get("line", 0) - 1, "character": 100},
+                        "start": {
+                            "line": issue.get("line", 0) - 1,
+                            "character": 0,
+                        },
+                        "end": {
+                            "line": issue.get("line", 0) - 1,
+                            "character": 100,
+                        },
                     },
                     "severity": 1 if issue.get("severity") == "HIGH" else 2,
                     "message": issue.get("message", "Security issue detected"),
@@ -318,10 +341,14 @@ async def get_refactor_actions(
 
     except Exception as e:
         logger.error(f"Refactor actions error: {e}")
-        raise HTTPException(status_code=500, detail=f"Refactor actions failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Refactor actions failed: {e}"
+        )
 
 
-@constitutional_router.post("/actions/quick-fix", response_model=dict[str, Any])
+@constitutional_router.post(
+    "/actions/quick-fix", response_model=dict[str, Any]
+)
 async def get_quick_fixes(
     request: CodeActionRequest,
     req: Request,
@@ -344,7 +371,9 @@ async def get_quick_fixes(
         for issue in scan_result.get("issues", []):
             fix_text = ""
             if "eval(" in issue.get("pattern", ""):
-                fix_text = "# Replace eval() with ast.literal_eval() for safety"
+                fix_text = (
+                    "# Replace eval() with ast.literal_eval() for safety"
+                )
             elif "exec(" in issue.get("pattern", ""):
                 fix_text = "# Replace exec() with safer alternatives"
             elif "TODO" in issue.get("pattern", ""):
@@ -433,7 +462,11 @@ async def get_inline_suggestions(
             completions.append("    pass")
             completions.append("    # TODO: Implement")
 
-        if "def " in current_line and "(" in current_line and ")" not in current_line:
+        if (
+            "def " in current_line
+            and "(" in current_line
+            and ")" not in current_line
+        ):
             completions.append("):")
 
         if "import " in current_line:
@@ -448,11 +481,15 @@ async def get_inline_suggestions(
 
     except Exception as e:
         logger.error(f"Inline suggestions error: {e}")
-        raise HTTPException(status_code=500, detail=f"Inline suggestions failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Inline suggestions failed: {e}"
+        )
 
 
 # Diagnostic Endpoints
-@constitutional_router.post("/diagnostics/analyze", response_model=DiagnosticResponse)
+@constitutional_router.post(
+    "/diagnostics/analyze", response_model=DiagnosticResponse
+)
 async def analyze_code_diagnostics(
     request: DiagnosticRequest,
     req: Request,
@@ -478,10 +515,18 @@ async def analyze_code_diagnostics(
                 all_diagnostics.append(
                     {
                         "range": {
-                            "start": {"line": issue.get("line", 0) - 1, "character": 0},
-                            "end": {"line": issue.get("line", 0) - 1, "character": 100},
+                            "start": {
+                                "line": issue.get("line", 0) - 1,
+                                "character": 0,
+                            },
+                            "end": {
+                                "line": issue.get("line", 0) - 1,
+                                "character": 100,
+                            },
                         },
-                        "severity": 1 if issue.get("severity") == "HIGH" else 2,
+                        "severity": (
+                            1 if issue.get("severity") == "HIGH" else 2
+                        ),
                         "message": issue.get("message", "Security issue"),
                         "source": "constitutional-security",
                         "code": issue.get("pattern", "security"),
@@ -523,13 +568,19 @@ async def analyze_code_diagnostics(
             summary["by_severity"][str(severity)] = (
                 summary["by_severity"].get(str(severity), 0) + 1
             )
-            summary["by_type"][diag_type] = summary["by_type"].get(diag_type, 0) + 1
+            summary["by_type"][diag_type] = (
+                summary["by_type"].get(diag_type, 0) + 1
+            )
 
         # Add general recommendations
         if not all_diagnostics:
-            recommendations.append("Code looks clean! Consider adding more tests.")
+            recommendations.append(
+                "Code looks clean! Consider adding more tests."
+            )
         elif len(all_diagnostics) > 10:
-            recommendations.append("Consider refactoring to reduce complexity.")
+            recommendations.append(
+                "Consider refactoring to reduce complexity."
+            )
 
         return DiagnosticResponse(
             diagnostics=all_diagnostics,
@@ -564,8 +615,16 @@ async def constitutional_health() -> dict[str, Any]:
 async def get_capabilities() -> dict[str, Any]:
     """Get available Constitutional Gateway capabilities."""
     return {
-        "context_providers": ["workspace_context", "file_context", "git_history"],
-        "code_actions": ["refactor_suggestions", "quick_fixes", "security_fixes"],
+        "context_providers": [
+            "workspace_context",
+            "file_context",
+            "git_history",
+        ],
+        "code_actions": [
+            "refactor_suggestions",
+            "quick_fixes",
+            "security_fixes",
+        ],
         "inline_suggestions": [
             "ai_completions",
             "pattern_completions",
@@ -624,7 +683,9 @@ async def validate_constitutional_compliance(
                 violations.append(
                     {
                         "principle": "No Mock/Placeholder Policy",
-                        "violation": issue.get("message", "Placeholder detected"),
+                        "violation": issue.get(
+                            "message", "Placeholder detected"
+                        ),
                         "line": issue.get("line", 0),
                         "severity": "high",
                     }
@@ -633,7 +694,9 @@ async def validate_constitutional_compliance(
 
         # Check for security violations
         high_security_issues = [
-            i for i in security_result.get("issues", []) if i.get("severity") == "HIGH"
+            i
+            for i in security_result.get("issues", [])
+            if i.get("severity") == "HIGH"
         ]
         for issue in high_security_issues:
             violations.append(
@@ -647,7 +710,9 @@ async def validate_constitutional_compliance(
             score -= 30
 
         compliance_status = (
-            "compliant" if score > 80 else "non_compliant" if score > 50 else "critical"
+            "compliant"
+            if score > 80
+            else "non_compliant" if score > 50 else "critical"
         )
 
         return {

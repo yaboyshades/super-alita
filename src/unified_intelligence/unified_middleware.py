@@ -174,14 +174,20 @@ class UnifiedMiddleware:
         try:
             # Add enhancement headers
             if enhancement.get("workflow_detected"):
-                response.headers["X-SDD-Workflow"] = enhancement["workflow_detected"]
+                response.headers["X-SDD-Workflow"] = enhancement[
+                    "workflow_detected"
+                ]
 
             if enhancement.get("constitutional_compliance"):
-                score = enhancement["constitutional_compliance"].get("overall_score", 0)
+                score = enhancement["constitutional_compliance"].get(
+                    "overall_score", 0
+                )
                 response.headers["X-Constitutional-Score"] = str(score)
 
             if enhancement.get("mangle_insights"):
-                insights_count = len(enhancement["mangle_insights"].get("insights", []))
+                insights_count = len(
+                    enhancement["mangle_insights"].get("insights", [])
+                )
                 response.headers["X-Mangle-Insights"] = str(insights_count)
 
             # For streaming responses, might need special handling
@@ -211,9 +217,11 @@ class UnifiedMiddleware:
                     event_data = self._extract_event_data(event)
 
                     # Enhance using unified intelligence
-                    enhancement = await self.unified_engine.enhance_interaction(
-                        user_input=event_data.get("content", ""),
-                        context={"event": event_data},
+                    enhancement = (
+                        await self.unified_engine.enhance_interaction(
+                            user_input=event_data.get("content", ""),
+                            context={"event": event_data},
+                        )
                     )
 
                     # Emit enhanced event if needed
@@ -246,7 +254,9 @@ class UnifiedMiddleware:
             # Create enhancement event
             enhancement_event = {
                 "event_type": "unified_enhancement",
-                "original_event_type": getattr(original_event, "event_type", None),
+                "original_event_type": getattr(
+                    original_event, "event_type", None
+                ),
                 "enhancement_data": enhancement,
                 "timestamp": self._get_timestamp(),
             }
@@ -279,11 +289,9 @@ class UnifiedMiddleware:
 
                     # Enhance using unified intelligence
                     if self.middleware.unified_engine:
-                        enhancement = (
-                            await self.middleware.unified_engine.enhance_interaction(
-                                user_input=content,
-                                context={"plugin": "message_handler"},
-                            )
+                        enhancement = await self.middleware.unified_engine.enhance_interaction(
+                            user_input=content,
+                            context={"plugin": "message_handler"},
                         )
 
                         # Attach enhancement to message
@@ -315,9 +323,11 @@ class UnifiedMiddleware:
 
                 # Enhance input if relevant
                 if ability_input:
-                    enhancement = await self.unified_engine.enhance_interaction(
-                        user_input=ability_input,
-                        context={"ability": original_ability.__name__},
+                    enhancement = (
+                        await self.unified_engine.enhance_interaction(
+                            user_input=ability_input,
+                            context={"ability": original_ability.__name__},
+                        )
                     )
 
                     # Add enhancement to kwargs
@@ -328,8 +338,13 @@ class UnifiedMiddleware:
                 result = await original_ability(*args, **kwargs)
 
                 # Enhance result if needed
-                if hasattr(result, "update") and "unified_enhancement" in kwargs:
-                    result["unified_enhancement"] = kwargs["unified_enhancement"]
+                if (
+                    hasattr(result, "update")
+                    and "unified_enhancement" in kwargs
+                ):
+                    result["unified_enhancement"] = kwargs[
+                        "unified_enhancement"
+                    ]
 
                 return result
 
@@ -369,7 +384,9 @@ class UnifiedMiddleware:
                 else 0
             ),
             "error_rate": (
-                self.error_count / self.request_count if self.request_count > 0 else 0
+                self.error_count / self.request_count
+                if self.request_count > 0
+                else 0
             ),
             "unified_engine_available": self.unified_engine is not None,
         }

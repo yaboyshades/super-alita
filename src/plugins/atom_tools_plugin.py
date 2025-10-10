@@ -100,7 +100,9 @@ class AtomToolsPlugin(PluginInterface):
 
         # Subscribe to tool execution requests
         await self.subscribe("tool_execution", self._handle_tool_execution)
-        await self.subscribe("tool_call_request", self._handle_tool_call_request)
+        await self.subscribe(
+            "tool_call_request", self._handle_tool_call_request
+        )
 
         logger.info(
             f"AtomToolsPlugin started - {len(self._tools_cache)} tools available"
@@ -134,7 +136,9 @@ class AtomToolsPlugin(PluginInterface):
 
                 # Register with store
                 self.store.register(atom)
-                logger.info(f"✅ Registered tool: {tool_instance.name} ({tool_key})")
+                logger.info(
+                    f"✅ Registered tool: {tool_instance.name} ({tool_key})"
+                )
 
             except Exception as e:
                 logger.error(f"❌ Failed to register tool {tool_key}: {e}")
@@ -161,7 +165,9 @@ class AtomToolsPlugin(PluginInterface):
             query_embedding = rng.random(EMBEDDING_DIM, dtype=np.float32)
 
             # Search for tool atoms
-            attention_results = await self.store.attention(query_embedding, top_k=top_k)
+            attention_results = await self.store.attention(
+                query_embedding, top_k=top_k
+            )
 
             discovered_tools = []
             for atom_key, similarity in attention_results:
@@ -177,7 +183,9 @@ class AtomToolsPlugin(PluginInterface):
                             (tool_key, similarity, self._tools_cache[tool_key])
                         )
 
-            logger.info(f"Discovered {len(discovered_tools)} tools for query: {query}")
+            logger.info(
+                f"Discovered {len(discovered_tools)} tools for query: {query}"
+            )
             return discovered_tools
 
         except Exception as e:
@@ -203,9 +211,13 @@ class AtomToolsPlugin(PluginInterface):
             # Get tool from cache
             tool = self._tools_cache.get(tool_key)
             if not tool:
-                return ToolResult(success=False, error=f"Tool not found: {tool_key}")
+                return ToolResult(
+                    success=False, error=f"Tool not found: {tool_key}"
+                )
 
-            logger.info(f"🔧 Executing tool: {tool.name} with params: {parameters}")
+            logger.info(
+                f"🔧 Executing tool: {tool.name} with params: {parameters}"
+            )
 
             # Execute tool
             result = await tool.call(**parameters)
@@ -216,7 +228,9 @@ class AtomToolsPlugin(PluginInterface):
 
             if result.success:
                 self._execution_stats["successful_executions"] += 1
-                logger.info(f"✅ Tool executed successfully in {execution_time:.2f}s")
+                logger.info(
+                    f"✅ Tool executed successfully in {execution_time:.2f}s"
+                )
             else:
                 self._execution_stats["failed_executions"] += 1
                 logger.warning(f"❌ Tool execution failed: {result.error}")
@@ -280,10 +294,14 @@ class AtomToolsPlugin(PluginInterface):
                 query = parameters.get("query", "")
                 result = await self.execute_tool(
                     tool_key,
-                    {"expression": f"# Analysis: {query}\\nprint('Analysis complete')"},
+                    {
+                        "expression": f"# Analysis: {query}\\nprint('Analysis complete')"
+                    },
                 )
             else:
-                result = ToolResult(success=False, error=f"Unknown action: {action}")
+                result = ToolResult(
+                    success=False, error=f"Unknown action: {action}"
+                )
 
             logger.info(f"Tool call result: {result.success}")
 

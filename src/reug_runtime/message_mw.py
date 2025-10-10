@@ -34,7 +34,9 @@ def clear() -> None:
     _MIDDLEWARE.clear()
 
 
-def apply_all(message: str, ctx: MessageContext) -> tuple[str, list[dict[str, str]]]:
+def apply_all(
+    message: str, ctx: MessageContext
+) -> tuple[str, list[dict[str, str]]]:
     """Run all registered middleware over the message in order.
 
     Returns the final message and a list of step metadata dicts.
@@ -50,5 +52,7 @@ def apply_all(message: str, ctx: MessageContext) -> tuple[str, list[dict[str, st
         except (
             Exception
         ) as e:  # keep robust; a faulty middleware should not break requests
-            meta.append({"step": getattr(fn, "__name__", "unknown"), "error": str(e)})
+            meta.append(
+                {"step": getattr(fn, "__name__", "unknown"), "error": str(e)}
+            )
     return out, meta

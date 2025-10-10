@@ -30,7 +30,9 @@ def cortex_context():
     """Create a test Cortex context"""
     runtime = create_cortex_runtime()
     return runtime.create_context(
-        session_id="test_session", user_id="test_user", workspace="test_workspace"
+        session_id="test_session",
+        user_id="test_user",
+        workspace="test_workspace",
     )
 
 
@@ -66,15 +68,21 @@ class TestCortexRuntime:
         assert context.metadata["custom_meta"] == "test_value"
         assert context.cycle_id in cortex_runtime.active_cycles
 
-    async def test_complete_processing_cycle(self, cortex_runtime, cortex_context):
+    async def test_complete_processing_cycle(
+        self, cortex_runtime, cortex_context
+    ):
         """Test complete perception → reasoning → action cycle"""
         await cortex_runtime.setup()
 
         try:
             # Test with text input
-            input_text = "Create a new Python function to calculate fibonacci numbers"
+            input_text = (
+                "Create a new Python function to calculate fibonacci numbers"
+            )
 
-            result = await cortex_runtime.process_cycle(input_text, cortex_context)
+            result = await cortex_runtime.process_cycle(
+                input_text, cortex_context
+            )
 
             # Verify results
             assert result.success is True
@@ -197,7 +205,10 @@ class TestCortexModules:
 
         reasoning_result = ReasoningResult(
             analysis={"intent": "command", "complexity": "high"},
-            conclusions=["User is requesting action", "High complexity task detected"],
+            conclusions=[
+                "User is requesting action",
+                "High complexity task detected",
+            ],
             confidence=0.9,
         )
 
@@ -206,8 +217,12 @@ class TestCortexModules:
         assert result.success is True
         assert result.data is not None
         assert len(result.data.actions) >= 1
-        assert "execute_task" in [action["type"] for action in result.data.actions]
-        assert "monitor_progress" in [action["type"] for action in result.data.actions]
+        assert "execute_task" in [
+            action["type"] for action in result.data.actions
+        ]
+        assert "monitor_progress" in [
+            action["type"] for action in result.data.actions
+        ]
         assert result.data.execution_plan is not None
 
 
@@ -264,7 +279,10 @@ class TestPerformanceTracking:
 
     async def test_cortex_event_creation(self):
         """Test Cortex event creation with markers"""
-        from src.core.cortex.markers import PerformanceMarker, create_cortex_event
+        from src.core.cortex.markers import (
+            PerformanceMarker,
+            create_cortex_event,
+        )
 
         markers = [
             PerformanceMarker(

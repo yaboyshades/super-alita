@@ -4,14 +4,17 @@ import pathlib
 import pytest
 
 spec = importlib.util.spec_from_file_location(
-    "curation_manager", pathlib.Path("src/plugins/oak_core/curation_manager.py")
+    "curation_manager",
+    pathlib.Path("src/plugins/oak_core/curation_manager.py"),
 )
 curation_manager = importlib.util.module_from_spec(spec)
 assert spec.loader
 try:
     spec.loader.exec_module(curation_manager)
 except SyntaxError:  # pragma: no cover - skip if plugin has syntax errors
-    pytest.skip("curation_manager.py has syntax error", allow_module_level=True)
+    pytest.skip(
+        "curation_manager.py has syntax error", allow_module_level=True
+    )
 CurationManager = curation_manager.CurationManager
 
 
@@ -47,7 +50,8 @@ async def test_curation_manager_emits_when_features_present():
     event = type("E", (), {"success": True})()
     await plugin.handle_tool_result(event)
     assert any(
-        e.event_type == "oak.feature_utility_update" and e.feature_id == "global_play"
+        e.event_type == "oak.feature_utility_update"
+        and e.feature_id == "global_play"
         for e in bus.published
     )
 
@@ -67,5 +71,7 @@ async def test_curation_manager_skips_when_features_missing(caplog):
     event = type("E", (), {"success": True})()
     await plugin.handle_tool_result(event)
 
-    assert not any(e.event_type == "oak.feature_utility_update" for e in bus.published)
+    assert not any(
+        e.event_type == "oak.feature_utility_update" for e in bus.published
+    )
     assert any("skipping utility update" in r.message for r in caplog.records)

@@ -41,7 +41,9 @@ class AutoToolsPlugin(PluginInterface):
                 def __init__(self):
                     self.model = genai.GenerativeModel("gemini-1.5-flash")
 
-                async def generate(self, prompt: str, max_tokens: int = 400) -> str:
+                async def generate(
+                    self, prompt: str, max_tokens: int = 400
+                ) -> str:
                     response = await self.model.generate_content_async(
                         prompt,
                         generation_config=genai.types.GenerationConfig(

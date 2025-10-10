@@ -12,7 +12,15 @@ from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
-COMPLEX_NODES = (ast.If, ast.For, ast.While, ast.Try, ast.BoolOp, ast.IfExp, ast.With)
+COMPLEX_NODES = (
+    ast.If,
+    ast.For,
+    ast.While,
+    ast.Try,
+    ast.BoolOp,
+    ast.IfExp,
+    ast.With,
+)
 
 
 class CodeIngester:
@@ -33,7 +41,9 @@ class CodeIngester:
         """Normalize complexity score to 0-1 range."""
         return min(1.0, score / 10.0)
 
-    def module_name_from_path(self, root: pathlib.Path, path: pathlib.Path) -> str:
+    def module_name_from_path(
+        self, root: pathlib.Path, path: pathlib.Path
+    ) -> str:
         """Convert file path to module name."""
         rel = path.relative_to(root).with_suffix("")
         parts = list(rel.parts)
@@ -56,10 +66,11 @@ class CodeIngester:
         # Collect imports
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
-                imports.extend((file_path, n.name.split(".")[0]) for n in node.names)
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    imports.append((file_path, node.module.split(".")[0]))
+                imports.extend(
+                    (file_path, n.name.split(".")[0]) for n in node.names
+                )
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imports.append((file_path, node.module.split(".")[0]))
 
         class FnVisitor(ast.NodeVisitor):
             def __init__(self, norm_complexity_func):
@@ -101,7 +112,9 @@ class CodeIngester:
         FnVisitor(self.norm_complexity).visit(tree)
         return symbols, calls, imports
 
-    def discover_tests_targets(self, test_src: str, test_mod: str) -> tuple[list, list]:
+    def discover_tests_targets(
+        self, test_src: str, test_mod: str
+    ) -> tuple[list, list]:
         """Extract test functions and their call targets."""
         try:
             tree = ast.parse(test_src)
@@ -119,8 +132,8 @@ class CodeIngester:
             def visit_FunctionDef(self, node: ast.FunctionDef):
                 qual = f"{test_mod}::{node.name}"
                 if node.name.startswith("test"):
-                    start = getattr(node, 'lineno', 0)
-                    end = getattr(node, 'end_lineno', start)
+                    start = getattr(node, "lineno", 0)
+                    end = getattr(node, "end_lineno", start)
                     test_syms.append((qual, start, end))
                     self.stack.append(qual)
                     self.generic_visit(node)
@@ -207,8 +220,10 @@ class CodeIngester:
             # Insert files
             for path in py_files:
                 rel = str(path.relative_to(root))
-                rel_path = rel.replace('\\', '/')
-                c.execute("INSERT OR IGNORE INTO file(file) VALUES (?)", (rel_path,))
+                rel_path = rel.replace("\\", "/")
+                c.execute(
+                    "INSERT OR IGNORE INTO file(file) VALUES (?)", (rel_path,)
+                )
 
             # Process files
             all_symbols = []
@@ -221,7 +236,7 @@ class CodeIngester:
 
             for path in py_files:
                 rel = str(path.relative_to(root))
-                rel_path = rel.replace('\\', '/')
+                rel_path = rel.replace("\\", "/")
                 mod = self.module_name_from_path(root, path)
 
                 try:
@@ -230,17 +245,21 @@ class CodeIngester:
                     logger.warning(f"Could not read {path}: {e}")
                     continue
 
-                if include_tests and ("/tests/" in rel_path or rel_path.startswith("tests/")):
+                if include_tests and (
+                    "/tests/" in rel_path or rel_path.startswith("tests/")
+                ):
                     tests, edges = self.discover_tests_targets(src, mod)
                     for qual, start, end in tests:
                         all_def_tests.append((qual, rel_path))
-                        all_symbols.append((qual, "function", rel_path, start, end))
+                        all_symbols.append(
+                            (qual, "function", rel_path, start, end)
+                        )
                         all_complexity.append((qual, 0.0))
                     for e in edges:
                         all_tests_targets_edges.append(e)
                 else:
-                    symbols, calls, imports = self.collect_symbols_calls_imports(
-                        src, mod, rel_path
+                    symbols, calls, imports = (
+                        self.collect_symbols_calls_imports(src, mod, rel_path)
                     )
                     for s in symbols:
                         all_symbols.append(s[:5])
@@ -278,7 +297,8 @@ class CodeIngester:
                 all_complexity,
             )
             c.executemany(
-                "INSERT OR IGNORE INTO imports(file, module) VALUES (?,?)", all_imports
+                "INSERT OR IGNORE INTO imports(file, module) VALUES (?,?)",
+                all_imports,
             )
             c.executemany(
                 "INSERT OR IGNORE INTO calls(caller, callee) VALUES (?,?)",
@@ -295,7 +315,8 @@ class CodeIngester:
 
             # Calculate dependencies
             files_index = {
-                f: True for (f,) in conn.execute("SELECT file FROM file").fetchall()
+                f: True
+                for (f,) in conn.execute("SELECT file FROM file").fetchall()
             }
 
             def module_to_path(mod: str) -> str:
@@ -307,7 +328,8 @@ class CodeIngester:
                 if target in files_index:
                     deps.add((f, target))
             c.executemany(
-                "INSERT OR IGNORE INTO dep(fileA, fileB) VALUES (?,?)", list(deps)
+                "INSERT OR IGNORE INTO dep(fileA, fileB) VALUES (?,?)",
+                list(deps),
             )
 
             conn.commit()

@@ -63,14 +63,22 @@ class ConstitutionalSDDPipeline:
             spec_file = feature_dir / "spec.md"
             branch_name = branch_name or f"{feature_id}-{feature_name}"
 
-        if not request.spec_file and request.feature_dir and not spec_file.exists():
+        if (
+            not request.spec_file
+            and request.feature_dir
+            and not spec_file.exists()
+        ):
             spec_file.touch()
 
         if request.spec_file is None and request.feature_dir is None:
             feature_id_val = (
-                feature_dir.name[:3] if feature_dir.name[:3].isdigit() else None
+                feature_dir.name[:3]
+                if feature_dir.name[:3].isdigit()
+                else None
             )
-            feature_id = feature_id_val or self._generate_feature_id(request.user_input)
+            feature_id = feature_id_val or self._generate_feature_id(
+                request.user_input
+            )
             feature_name = (
                 feature_dir.name.split("-", 1)[1]
                 if "-" in feature_dir.name
@@ -107,15 +115,21 @@ class ConstitutionalSDDPipeline:
 
         spec_file.write_text(specification, encoding="utf-8")
         metadata_path = feature_dir / "next_steps.yaml"
-        metadata_path.write_text(safe_dump(guidance.model_dump()), encoding="utf-8")
+        metadata_path.write_text(
+            safe_dump(guidance.model_dump()), encoding="utf-8"
+        )
 
         constitutional_compliance: dict[str, ConstitutionalValidation] = {}
         overall_score = 1.0
         threshold_met = True
 
         if request.constitutional_gates:
-            constitutional_compliance = self._validate_specification(specification)
-            overall_score = self._calculate_overall_score(constitutional_compliance)
+            constitutional_compliance = self._validate_specification(
+                specification
+            )
+            overall_score = self._calculate_overall_score(
+                constitutional_compliance
+            )
             threshold_met = overall_score >= self.compliance_threshold
 
         return SpecifyResponse(
@@ -130,7 +144,9 @@ class ConstitutionalSDDPipeline:
             constitutional_compliance=constitutional_compliance,
             overall_compliance_score=overall_score,
             compliance_threshold_met=threshold_met,
-            next_steps=self._summarize_next_step_guidance(guidance, threshold_met),
+            next_steps=self._summarize_next_step_guidance(
+                guidance, threshold_met
+            ),
             next_step_guidance=guidance,
             next_step_metadata_path=self._relative_to_workspace(metadata_path),
             timestamp=datetime.now(),
@@ -186,7 +202,9 @@ class ConstitutionalSDDPipeline:
             constitutional_compliance = self._validate_implementation_plan(
                 implementation_plan
             )
-            overall_score = self._calculate_overall_score(constitutional_compliance)
+            overall_score = self._calculate_overall_score(
+                constitutional_compliance
+            )
             threshold_met = overall_score >= self.compliance_threshold
 
         guidance_summary: list[str] = []
@@ -241,7 +259,9 @@ class ConstitutionalSDDPipeline:
 
         assert plan_path is not None
         if not plan_path.exists():
-            raise FileNotFoundError(f"Implementation plan not found: {plan_path}")
+            raise FileNotFoundError(
+                f"Implementation plan not found: {plan_path}"
+            )
 
         implementation_plan = plan_path.read_text(encoding="utf-8")
         feature_dir = plan_path.parent
@@ -289,8 +309,12 @@ class ConstitutionalSDDPipeline:
         threshold_met = True
 
         if request.constitutional_gates:
-            constitutional_compliance = self._validate_task_breakdown(tasks_breakdown)
-            overall_score = self._calculate_overall_score(constitutional_compliance)
+            constitutional_compliance = self._validate_task_breakdown(
+                tasks_breakdown
+            )
+            overall_score = self._calculate_overall_score(
+                constitutional_compliance
+            )
             threshold_met = overall_score >= self.compliance_threshold
 
         # Calculate estimates and critical path
@@ -330,7 +354,11 @@ class ConstitutionalSDDPipeline:
             parent_name = resolved.parent.name
             if len(parent_name) >= 3 and parent_name[:3].isdigit():
                 return parent_name[:3]
-            return parent_name.split("-", 1)[0] if "-" in parent_name else parent_name
+            return (
+                parent_name.split("-", 1)[0]
+                if "-" in parent_name
+                else parent_name
+            )
         except Exception:  # noqa: BLE001
             return "unknown"
 
@@ -338,7 +366,9 @@ class ConstitutionalSDDPipeline:
         """Generate a unique feature ID."""
         # Get next sequential number
         existing_features = [
-            d for d in self.specs_dir.iterdir() if d.is_dir() and d.name[:3].isdigit()
+            d
+            for d in self.specs_dir.iterdir()
+            if d.is_dir() and d.name[:3].isdigit()
         ]
         next_num = len(existing_features) + 1
         return f"{next_num:03d}"
@@ -422,7 +452,9 @@ class ConstitutionalSDDPipeline:
             if item.status != "complete":
                 item.status = "complete"
                 if not item.rationale:
-                    item.rationale = "Clarification resolved during planning phase."
+                    item.rationale = (
+                        "Clarification resolved during planning phase."
+                    )
         for item in updated.commands:
             action_lower = item.action.lower()
             if "/plan" in action_lower and item.status != "complete":
@@ -447,10 +479,14 @@ class ConstitutionalSDDPipeline:
         updated.generated_at = datetime.now()
         return updated
 
-    def _persist_guidance(self, feature_dir: Path, guidance: NextStepGuidance) -> str:
+    def _persist_guidance(
+        self, feature_dir: Path, guidance: NextStepGuidance
+    ) -> str:
         """Write guidance back to disk and return workspace-relative path."""
         metadata_path = feature_dir / "next_steps.yaml"
-        metadata_path.write_text(safe_dump(guidance.model_dump()), encoding="utf-8")
+        metadata_path.write_text(
+            safe_dump(guidance.model_dump()), encoding="utf-8"
+        )
         return self._relative_to_workspace(metadata_path)
 
     def _append_guidance_markdown(
@@ -508,7 +544,9 @@ class ConstitutionalSDDPipeline:
             if item.rationale:
                 description_parts.append(item.rationale)
             if item.linked_artifact:
-                description_parts.append(f"Linked artefact: {item.linked_artifact}")
+                description_parts.append(
+                    f"Linked artefact: {item.linked_artifact}"
+                )
             description = (
                 "\n".join(description_parts)
                 or "Follow up on outstanding guidance item."
@@ -662,15 +700,26 @@ class ConstitutionalSDDPipeline:
 
     def _infer_gate_for_text(self, text: str) -> str:
         lowered = text.lower()
-        if any(keyword in lowered for keyword in ("contract", "test", "coverage")):
+        if any(
+            keyword in lowered for keyword in ("contract", "test", "coverage")
+        ):
             return "test_first"
-        if any(keyword in lowered for keyword in ("data model", "model", "schema")):
+        if any(
+            keyword in lowered for keyword in ("data model", "model", "schema")
+        ):
             return "simplicity"
-        if any(keyword in lowered for keyword in ("documentation", "doc", "clarify")):
+        if any(
+            keyword in lowered
+            for keyword in ("documentation", "doc", "clarify")
+        ):
             return "clarity"
-        if any(keyword in lowered for keyword in ("integration", "environment")):
+        if any(
+            keyword in lowered for keyword in ("integration", "environment")
+        ):
             return "integration_first"
-        if any(keyword in lowered for keyword in ("research", "reuse", "library")):
+        if any(
+            keyword in lowered for keyword in ("research", "reuse", "library")
+        ):
             return "library_first"
         return "counterfactual"
 
@@ -697,17 +746,25 @@ class ConstitutionalSDDPipeline:
 
         alignments: list[ConstitutionalAlignment] = []
         for gate, gate_items in items_by_gate.items():
-            article = self.GATE_TO_ARTICLE.get(gate, gate.replace("_", " ").title())
-            summary = f"{len(gate_items)} item(s) pending to satisfy {article}."
+            article = self.GATE_TO_ARTICLE.get(
+                gate, gate.replace("_", " ").title()
+            )
+            summary = (
+                f"{len(gate_items)} item(s) pending to satisfy {article}."
+            )
             evidence = f"{metadata_reference}#{gate}"
             alignments.append(
-                ConstitutionalAlignment(gate=gate, summary=summary, evidence=evidence)
+                ConstitutionalAlignment(
+                    gate=gate, summary=summary, evidence=evidence
+                )
             )
         return alignments
 
     def _relative_to_workspace(self, path: Path) -> str:
         try:
-            return str(path.resolve().relative_to(self.workspace_root.resolve()))
+            return str(
+                path.resolve().relative_to(self.workspace_root.resolve())
+            )
         except ValueError:
             return str(path)
 
@@ -764,7 +821,9 @@ class ConstitutionalSDDPipeline:
         guidance: NextStepGuidance,
     ) -> str:
         created_date = datetime.now().strftime("%Y-%m-%d")
-        author = self._safe_format_value(context.get("author") or "SDD Framework")
+        author = self._safe_format_value(
+            context.get("author") or "SDD Framework"
+        )
         problem_description = self._safe_format_value(
             context.get("problem_description") or user_input
         )
@@ -1033,7 +1092,10 @@ class ConstitutionalSDDPipeline:
         return summary
 
     def _generate_implementation_plan(
-        self, _specification: str, tech_stack: str, _constraints: dict[str, Any]
+        self,
+        _specification: str,
+        tech_stack: str,
+        _constraints: dict[str, Any],
     ) -> str:
         """Generate implementation plan."""
         return f"""# Implementation Plan
@@ -1322,7 +1384,9 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             "Integration testing with real environments",
         ]
 
-    def _parse_structured_tasks(self, _tasks_content: str) -> list[TaskBreakdown]:
+    def _parse_structured_tasks(
+        self, _tasks_content: str
+    ) -> list[TaskBreakdown]:
         """Parse tasks content into structured format."""
         # Simple parsing - in production this would be more sophisticated
         tasks = [
@@ -1357,7 +1421,9 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         ]
         return tasks
 
-    def _calculate_critical_path(self, tasks: list[TaskBreakdown]) -> list[str]:
+    def _calculate_critical_path(
+        self, tasks: list[TaskBreakdown]
+    ) -> list[str]:
         """Calculate critical path through tasks."""
         # Simple implementation - in production would use proper scheduling
         return [task.id for task in tasks if task.priority == "critical"]

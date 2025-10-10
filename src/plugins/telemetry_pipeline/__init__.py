@@ -32,7 +32,9 @@ class TelemetryPipelinePlugin(PluginInterface):
         """Return a description of what this plugin does."""
         return "Process telemetry into high-signal prompts"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         """Initialize the plugin with required dependencies."""
         await super().setup(event_bus, store, config)
         llm_provider = config.get("llm_provider")

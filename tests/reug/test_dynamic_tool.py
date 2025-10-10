@@ -14,7 +14,9 @@ def _missing_tool(step, ctx):
 def test_dynamic_tool_and_kg(tmp_path, monkeypatch):
     monkeypatch.setenv("REUG_EVENT_LOG_DIR", str(tmp_path / "logs"))
     monkeypatch.setenv("REUG_TOOL_REGISTRY_DIR", str(tmp_path / "registry"))
-    monkeypatch.setattr(kg_store, "TRIPLE_PATH", str(tmp_path / "kg" / "triples.jsonl"))
+    monkeypatch.setattr(
+        kg_store, "TRIPLE_PATH", str(tmp_path / "kg" / "triples.jsonl")
+    )
 
     events = []
     emitter = EventEmitter(events.append)

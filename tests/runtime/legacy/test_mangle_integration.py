@@ -35,7 +35,11 @@ def mock_cortex_runtime():
     cortex = Mock()
     cortex.process_cycle = AsyncMock(return_value="Cortex processing complete")
     cortex.create_context = Mock(return_value={"session_id": "test_session"})
-    cortex.modules = {"perception": Mock(), "reasoning": Mock(), "action": Mock()}
+    cortex.modules = {
+        "perception": Mock(),
+        "reasoning": Mock(),
+        "action": Mock(),
+    }
     return cortex
 
 
@@ -128,7 +132,9 @@ class TestMangleIntegrationUnit:
     def test_mangle_integration_initialization(self, workspace_root):
         """Test Mangle integration initialization."""
         config = {"test": True}
-        integration = MangleIntegration(config=config, workspace_root=workspace_root)
+        integration = MangleIntegration(
+            config=config, workspace_root=workspace_root
+        )
 
         assert integration.config == config
         assert integration.workspace_root == workspace_root
@@ -243,7 +249,9 @@ class TestPrometheusMetrics:
         collector = PrometheusMetricsCollector()
 
         collector.set_optimization_policies(5)
-        collector.inc_optimization_decisions("policy_1", "thompson_sampling", "arm_1")
+        collector.inc_optimization_decisions(
+            "policy_1", "thompson_sampling", "arm_1"
+        )
         collector.inc_optimization_rewards("policy_1", "arm_1")
         collector.observe_optimization_reward_value("policy_1", "arm_1", 0.8)
         collector.set_optimization_arm_performance(
@@ -367,7 +375,9 @@ class TestMangleIntegrationAsync:
         await integration.stop()
         assert not integration.is_running
 
-    async def test_event_handling(self, workspace_root, mock_cortex_runtime, event_bus):
+    async def test_event_handling(
+        self, workspace_root, mock_cortex_runtime, event_bus
+    ):
         """Test event handling in Mangle integration."""
         integration = MangleIntegration(workspace_root=workspace_root)
         integration.configure(enable_redis=False, enable_metrics=True)
@@ -478,7 +488,9 @@ class TestEndToEndValidation:
         # Test system status
         status = integration.get_status()
         assert status["is_running"]
-        assert all(status["components"].values())  # All components should be available
+        assert all(
+            status["components"].values()
+        )  # All components should be available
 
         # Test health check
         health = await integration.health_check()

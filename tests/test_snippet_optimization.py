@@ -39,7 +39,9 @@ async def test_snippet_optimization():
     if result.get("suggestions"):
         print("  Top suggestions:")
         for i, suggestion in enumerate(result["suggestions"][:3], 1):
-            print(f"    {i}. {suggestion['trigger']} - {suggestion['description']}")
+            print(
+                f"    {i}. {suggestion['trigger']} - {suggestion['description']}"
+            )
             print(f"       Saves ~{suggestion['estimated_savings']} tokens")
 
     # Test token savings calculation
@@ -53,7 +55,9 @@ async def test_snippet_optimization():
 
     print("\n📈 Token Efficiency Test:")
     print(f"  Tokens saved: {savings.get('tokens_saved', 0)}")
-    print(f"  Efficiency rating: {savings.get('efficiency_rating', 'unknown')}")
+    print(
+        f"  Efficiency rating: {savings.get('efficiency_rating', 'unknown')}"
+    )
     print(f"  Savings percent: {savings.get('savings_percent', 0):.1%}")
 
     # Test optimization response generation

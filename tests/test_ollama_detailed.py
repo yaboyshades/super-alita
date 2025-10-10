@@ -48,7 +48,9 @@ async def test_simple_ollama():
                 message = data.get("message", {}).get("content", "")
                 print(f"✅ Response: {message!r}")
                 print(f"✅ Model: {data.get('model')}")
-                print(f"✅ Duration: {data.get('total_duration', 0) / 1_000_000:.1f}ms")
+                print(
+                    f"✅ Duration: {data.get('total_duration', 0) / 1_000_000:.1f}ms"
+                )
                 print("🎉 Simple Ollama test PASSED!")
                 return True
             else:

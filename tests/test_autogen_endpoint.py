@@ -28,7 +28,9 @@ async def test_autogen_endpoint():
                     return None
         except Exception as e:
             print(f"✗ Connection failed: {e}")
-            print("Note: Make sure the FastAPI server is running on localhost:8000")
+            print(
+                "Note: Make sure the FastAPI server is running on localhost:8000"
+            )
             return None
 
 

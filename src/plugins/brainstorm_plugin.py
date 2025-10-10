@@ -107,7 +107,9 @@ class BrainstormPlugin(PluginInterface):
                 logger.info("Gemini REST API configured for brainstorming")
                 self.llm_client = True  # Flag to indicate LLM is available
             else:
-                logger.warning("GEMINI_API_KEY not set - brainstorming will be limited")
+                logger.warning(
+                    "GEMINI_API_KEY not set - brainstorming will be limited"
+                )
                 self.llm_client = None
 
         except Exception as e:
@@ -124,7 +126,9 @@ class BrainstormPlugin(PluginInterface):
         await self.subscribe("atom_gap_request", self._brainstorm)
         await self.subscribe("user_message", self._handle_brainstorm_commands)
 
-        logger.info("BrainstormPlugin started - ready to identify capability gaps")
+        logger.info(
+            "BrainstormPlugin started - ready to identify capability gaps"
+        )
 
     async def shutdown(self) -> None:
         """Shutdown the brainstorm plugin."""
@@ -154,12 +158,18 @@ class BrainstormPlugin(PluginInterface):
 
             # Parse command: /brainstorm gap="web scraping"
             if "gap=" in text:
-                gap = text.split('gap="')[1].split('"')[0] if 'gap="' in text else ""
+                gap = (
+                    text.split('gap="')[1].split('"')[0]
+                    if 'gap="' in text
+                    else ""
+                )
                 if gap:
                     logger.info(f"Brainstorming atoms for gap: {gap}")
 
                     # Create gap request event
-                    gap_event = AtomGapRequestEvent(source_plugin=self.name, task=gap)
+                    gap_event = AtomGapRequestEvent(
+                        source_plugin=self.name, task=gap
+                    )
                     await self._brainstorm(gap_event)
 
                     # Send response to chat
@@ -183,7 +193,9 @@ class BrainstormPlugin(PluginInterface):
 
             # 1. List current atoms from memory
             current_atoms = await self._get_current_atoms()
-            current_names = {atom.get("tool", "unknown") for atom in current_atoms}
+            current_names = {
+                atom.get("tool", "unknown") for atom in current_atoms
+            }
 
             logger.info(
                 f"📊 Found {len(current_atoms)} existing atoms: {list(current_names)[:10]}..."
@@ -194,7 +206,9 @@ class BrainstormPlugin(PluginInterface):
                 logger.warning(
                     "LLM client not available - using fallback brainstorming"
                 )
-                new_atoms = await self._fallback_brainstorm(task, current_names)
+                new_atoms = await self._fallback_brainstorm(
+                    task, current_names
+                )
             else:
                 new_atoms = await self._llm_brainstorm(task, current_names)
 
@@ -346,17 +360,24 @@ Make the code practical and executable. Focus on filling genuine capability gaps
                 # Fallback: create neural atom directly
                 import json
 
-                from src.core.neural_atom import NeuralAtomMetadata, TextualMemoryAtom
+                from src.core.neural_atom import (
+                    NeuralAtomMetadata,
+                    TextualMemoryAtom,
+                )
 
                 metadata = NeuralAtomMetadata(
                     name=memory_id,
                     description=atom.description,
                     capabilities=[atom.tool],
                 )
-                neural_atom = TextualMemoryAtom(metadata, json.dumps(atom.model_dump()))
+                neural_atom = TextualMemoryAtom(
+                    metadata, json.dumps(atom.model_dump())
+                )
 
                 self.store.register(neural_atom)
-                logger.info(f"Stored atom {memory_id} directly in neural store")
+                logger.info(
+                    f"Stored atom {memory_id} directly in neural store"
+                )
 
         except Exception as e:
             logger.error(f"Failed to store atom {memory_id}: {e}")

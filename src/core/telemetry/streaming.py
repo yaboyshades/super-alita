@@ -132,7 +132,9 @@ class WebSocketStreamer:
                 "data": self.collector.get_metrics().to_dict(),
                 "timestamp": asyncio.get_event_loop().time(),
             }
-            await self.connection_manager.send_to_client(websocket, metrics_message)
+            await self.connection_manager.send_to_client(
+                websocket, metrics_message
+            )
 
             # Send recent events
             recent_events = self.collector.get_recent_events(limit=50)
@@ -142,7 +144,9 @@ class WebSocketStreamer:
                     "data": event.to_dict(),
                     "timestamp": event.timestamp,
                 }
-                await self.connection_manager.send_to_client(websocket, event_message)
+                await self.connection_manager.send_to_client(
+                    websocket, event_message
+                )
 
         except Exception as e:
             logger.error(f"Error sending initial state: {e}")
@@ -161,7 +165,9 @@ class WebSocketStreamer:
                     "data": self.collector.get_metrics().to_dict(),
                     "timestamp": asyncio.get_event_loop().time(),
                 }
-                await self.connection_manager.send_to_client(websocket, response)
+                await self.connection_manager.send_to_client(
+                    websocket, response
+                )
 
             elif msg_type == "get_cycle_events":
                 # Send events for specific cycle
@@ -174,7 +180,9 @@ class WebSocketStreamer:
                         "events": [event.to_dict() for event in events],
                         "timestamp": asyncio.get_event_loop().time(),
                     }
-                    await self.connection_manager.send_to_client(websocket, response)
+                    await self.connection_manager.send_to_client(
+                        websocket, response
+                    )
 
             elif msg_type == "get_phase_stats":
                 # Send phase statistics
@@ -187,7 +195,9 @@ class WebSocketStreamer:
                         "statistics": stats,
                         "timestamp": asyncio.get_event_loop().time(),
                     }
-                    await self.connection_manager.send_to_client(websocket, response)
+                    await self.connection_manager.send_to_client(
+                        websocket, response
+                    )
 
             elif msg_type == "start_streaming":
                 self.is_streaming = True
@@ -196,7 +206,9 @@ class WebSocketStreamer:
                     "streaming": True,
                     "timestamp": asyncio.get_event_loop().time(),
                 }
-                await self.connection_manager.send_to_client(websocket, response)
+                await self.connection_manager.send_to_client(
+                    websocket, response
+                )
 
             elif msg_type == "stop_streaming":
                 self.is_streaming = False
@@ -205,7 +217,9 @@ class WebSocketStreamer:
                     "streaming": False,
                     "timestamp": asyncio.get_event_loop().time(),
                 }
-                await self.connection_manager.send_to_client(websocket, response)
+                await self.connection_manager.send_to_client(
+                    websocket, response
+                )
 
         except Exception as e:
             logger.error(f"Error handling client message: {e}")
@@ -235,5 +249,7 @@ class WebSocketStreamer:
         """Get information about active connections"""
         return {
             "active_connections": self.get_connection_count(),
-            "clients": list(self.connection_manager.connection_metadata.values()),
+            "clients": list(
+                self.connection_manager.connection_metadata.values()
+            ),
         }

@@ -8,7 +8,9 @@ from pathlib import Path
 import pytest  # type: ignore[import-not-found]
 
 SCRIPT_PATHS = [
-    Path("extensions/alita-language-tools") / "scripts" / "check-task-prerequisites.sh",
+    Path("extensions/alita-language-tools")
+    / "scripts"
+    / "check-task-prerequisites.sh",
     Path("scripts") / "check-task-prerequisites.sh",
 ]
 DEFAULT_BRANCH = "001-test-feature"
@@ -16,7 +18,9 @@ EXPECTED_MISSING_JSON = '{"ok":false,"missing":["feature-spec.md","plan.md"]}'
 EXPECTED_OK_JSON = '{"ok":true,"missing":[]}'
 
 
-def _run_git_command(repo_dir: Path, *args: str) -> subprocess.CompletedProcess[str]:
+def _run_git_command(
+    repo_dir: Path, *args: str
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["git", *args],
         cwd=repo_dir,
@@ -67,7 +71,9 @@ def _run_script(
 
 
 @pytest.mark.parametrize("script_path", SCRIPT_PATHS)
-def test_reports_missing_required_documents(script_path: Path, tmp_path: Path) -> None:
+def test_reports_missing_required_documents(
+    script_path: Path, tmp_path: Path
+) -> None:
     repo_dir, _ = _init_feature_repo(tmp_path)
 
     result = _run_script(script_path, repo_dir, "--json")

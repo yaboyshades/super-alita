@@ -18,4 +18,6 @@ async def test_tool():
 
 
 success = asyncio.run(test_tool())
-print(f'Tool status: {"✅" if success else "⚠️"} (fallback will be used if needed)')
+print(
+    f'Tool status: {"✅" if success else "⚠️"} (fallback will be used if needed)'
+)

@@ -133,7 +133,9 @@ class TodoStore:
 
     def list_by_priority(self, priority: Priority) -> list[MetricTodo]:
         """List todos by priority"""
-        return [todo for todo in self._todos.values() if todo.priority == priority]
+        return [
+            todo for todo in self._todos.values() if todo.priority == priority
+        ]
 
 
 class TodoSync:
@@ -191,7 +193,9 @@ class TodoSync:
             )
 
             self.store.set(metric_key, todo)
-            logger.info(f"Created metric todo: {metric_key} (P{priority.value})")
+            logger.info(
+                f"Created metric todo: {metric_key} (P{priority.value})"
+            )
             return TodoAction.CREATE, metric_key
 
         # Check if escalation is needed
@@ -203,15 +207,22 @@ class TodoSync:
             existing.suggested_actions = suggested_actions
 
             # Update labels to include new priority
-            existing.labels = [l for l in existing.labels if not l.startswith("p")]
+            existing.labels = [
+                l for l in existing.labels if not l.startswith("p")
+            ]
             existing.labels.append(priority.value.lower())
 
             self.store.set(metric_key, existing)
-            logger.info(f"Escalated metric todo: {metric_key} to {priority.value}")
+            logger.info(
+                f"Escalated metric todo: {metric_key} to {priority.value}"
+            )
             return TodoAction.ESCALATE, metric_key
 
         # Check if update is needed (same priority but different details)
-        if existing.metric_value != metric_value or existing.description != description:
+        if (
+            existing.metric_value != metric_value
+            or existing.description != description
+        ):
             existing.updated_time = current_time
             existing.metric_value = metric_value
             existing.description = description
@@ -302,13 +313,15 @@ class TodoSync:
             thresholds = config["thresholds"]
 
             # Classify metric state
-            classification, should_act = self.metrics_classifier.classify_metric(
-                metric_name, value
+            classification, should_act = (
+                self.metrics_classifier.classify_metric(metric_name, value)
             )
 
             if should_act and classification in ["WARN", "CRIT"]:
                 # Determine priority based on classification
-                priority = Priority.P1 if classification == "CRIT" else Priority.P2
+                priority = (
+                    Priority.P1 if classification == "CRIT" else Priority.P2
+                )
 
                 # Generate description with context
                 description = f"""

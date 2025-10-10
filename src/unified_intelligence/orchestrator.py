@@ -8,6 +8,7 @@ Implements the governed pipeline with:
 - Canonical orchestration flow
 """
 
+import contextlib
 import logging
 import time
 from dataclasses import asdict, dataclass
@@ -209,7 +210,9 @@ class HardenedOrchestrator:
 
             # Step 3: Copilot enhancement (after workflow)
             copilot_start = time.time()
-            copilot_result = await self._enhance_copilot(request, workflow_result)
+            copilot_result = await self._enhance_copilot(
+                request, workflow_result
+            )
             timings["copilot"] = (time.time() - copilot_start) * 1000
             components_used.append("copilot")
 
@@ -323,7 +326,9 @@ class HardenedOrchestrator:
                 errors=[str(e)],
             )
 
-    async def _analyze_constitution(self, request: Request) -> ConstitutionResult:
+    async def _analyze_constitution(
+        self, request: Request
+    ) -> ConstitutionResult:
         """Analyze constitutional compliance."""
         try:
             from .constitutional_engine import ConstitutionalEngine
@@ -401,7 +406,9 @@ class HardenedOrchestrator:
                         break
 
             # Create temporary database for analysis
-            with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(
+                suffix=".db", delete=False
+            ) as tmp:
                 db_path = tmp.name
 
             try:
@@ -417,7 +424,9 @@ class HardenedOrchestrator:
                 # Convert findings to dict format
                 findings_dict = {}
                 for rule_name, finding_list in findings.items():
-                    findings_dict[rule_name] = [asdict(f) for f in finding_list]
+                    findings_dict[rule_name] = [
+                        asdict(f) for f in finding_list
+                    ]
 
                 # Calculate confidence based on findings
                 total_findings = sum(summary.values())
@@ -439,10 +448,8 @@ class HardenedOrchestrator:
 
             finally:
                 # Clean up temporary database
-                try:
+                with contextlib.suppress(Exception):
                     os.unlink(db_path)
-                except Exception:
-                    pass
 
         except Exception as e:
             logger.warning(f"Code analysis failed: {e}")
@@ -487,8 +494,12 @@ class HardenedOrchestrator:
         adj_work = workflow.confidence
 
         # Fuse scores (adjust weights to include code analysis)
-        total_weight = weights["mangle"] + weights["constitution"] + weights["workflow"]
-        code_weight = 1.0 - total_weight  # Give remaining weight to code analysis
+        total_weight = (
+            weights["mangle"] + weights["constitution"] + weights["workflow"]
+        )
+        code_weight = (
+            1.0 - total_weight
+        )  # Give remaining weight to code analysis
 
         fused = (
             weights["mangle"] * adj_mangle
@@ -498,7 +509,9 @@ class HardenedOrchestrator:
         )
 
         # Make decision with authority rules
-        decision = self._make_decision(fused, constitution, workflow, code_analysis)
+        decision = self._make_decision(
+            fused, constitution, workflow, code_analysis
+        )
 
         # Generate reasons and recommendations
         reasons = self._generate_reasons(
@@ -593,7 +606,9 @@ class HardenedOrchestrator:
             )
 
         if mangle.ok and mangle.findings:
-            reasons.append(f"Code analysis found {len(mangle.findings)} issues")
+            reasons.append(
+                f"Code analysis found {len(mangle.findings)} issues"
+            )
 
         if code_analysis.ok:
             total_findings = sum(code_analysis.summary.values())
@@ -645,7 +660,9 @@ class HardenedOrchestrator:
                     {
                         "action": f"Fix {finding.get('severity', 'medium')} "
                         "priority issue",
-                        "rationale": finding.get("note", "Improve code quality"),
+                        "rationale": finding.get(
+                            "note", "Improve code quality"
+                        ),
                         "refs": [],
                     }
                 )

@@ -57,7 +57,10 @@ class Memory:
         return list(self._parents.get(atom_id, []))
 
     def bfs(
-        self, start_ids: Iterable[str], direction: str = "forward", max_hops: int = 2
+        self,
+        start_ids: Iterable[str],
+        direction: str = "forward",
+        max_hops: int = 2,
     ) -> dict[str, int]:
         """Breadth-first search over the bond graph.
 

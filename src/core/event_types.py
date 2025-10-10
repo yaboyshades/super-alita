@@ -62,7 +62,9 @@ def register_event(descriptor: EventDescriptor) -> bool:
         # Same version, update if different (idempotent)
         if existing != descriptor:
             EVENT_REGISTRY[descriptor.name] = descriptor
-            logger.debug(f"Updated event type: {descriptor.name} v{descriptor.version}")
+            logger.debug(
+                f"Updated event type: {descriptor.name} v{descriptor.version}"
+            )
             return True
         return False
 
@@ -117,7 +119,9 @@ def validate_event_payload(event_name: str, payload: dict[str, Any]) -> bool:
     required_fields = descriptor.schema.get("required", [])
     for field in required_fields:
         if field not in payload:
-            logger.warning(f"Missing required field '{field}' in {event_name} event")
+            logger.warning(
+                f"Missing required field '{field}' in {event_name} event"
+            )
             return False
 
     return True
@@ -301,4 +305,6 @@ def _seed_core_events():
 
 # Initialize core events on module import
 _seed_core_events()
-logger.info(f"Event registry initialized with {len(EVENT_REGISTRY)} core event types")
+logger.info(
+    f"Event registry initialized with {len(EVENT_REGISTRY)} core event types"
+)

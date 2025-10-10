@@ -81,7 +81,9 @@ class TelemetryDashboard:
 
             return [event.to_dict() for event in events]
 
-        @self.app.get("/api/cycles/{cycle_id}/events", response_model=list[dict])
+        @self.app.get(
+            "/api/cycles/{cycle_id}/events", response_model=list[dict]
+        )
         async def get_cycle_events(cycle_id: str) -> list[dict[str, Any]]:
             """Get all events for a specific cycle"""
             events = self.collector.get_events_by_cycle(cycle_id)
@@ -93,7 +95,8 @@ class TelemetryDashboard:
             stats = self.collector.get_phase_statistics(phase)
             if not stats:
                 raise HTTPException(
-                    status_code=404, detail=f"No statistics found for phase: {phase}"
+                    status_code=404,
+                    detail=f"No statistics found for phase: {phase}",
                 )
             return stats
 
@@ -122,7 +125,9 @@ class TelemetryDashboard:
             background_tasks: BackgroundTasks, keep_last: int = 1000
         ):
             """Clear old events to prevent memory growth"""
-            background_tasks.add_task(self.collector.clear_old_events, keep_last)
+            background_tasks.add_task(
+                self.collector.clear_old_events, keep_last
+            )
             return {
                 "message": f"Scheduled clearing of old events, keeping {keep_last} most recent"
             }

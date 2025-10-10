@@ -31,7 +31,9 @@ class CodeActRunner:
         self._track_resources(obs)
         return obs
 
-    async def run(self, initial: IPythonRunCell, max_steps: int = 10) -> Observation:
+    async def run(
+        self, initial: IPythonRunCell, max_steps: int = 10
+    ) -> Observation:
         action: AgentFinish | IPythonRunCell = initial
         observation = Observation()
         for _ in range(max_steps):
@@ -46,4 +48,6 @@ class CodeActRunner:
 
     def _track_resources(self, observation: Observation) -> None:
         """Resource accounting hook."""
-        logger.debug("Resource hook - stdout %d chars", len(observation.stdout))
+        logger.debug(
+            "Resource hook - stdout %d chars", len(observation.stdout)
+        )

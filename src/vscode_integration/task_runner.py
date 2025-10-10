@@ -162,7 +162,9 @@ Examples:
         """,
     )
 
-    parser.add_argument("--task-id", required=True, help="ID of the task to operate on")
+    parser.add_argument(
+        "--task-id", required=True, help="ID of the task to operate on"
+    )
 
     parser.add_argument(
         "--action",
@@ -171,7 +173,9 @@ Examples:
         help="Action to perform on the task",
     )
 
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "--verbose", action="store_true", help="Enable verbose logging"
+    )
 
     args = parser.parse_args()
 

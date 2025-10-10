@@ -19,7 +19,11 @@ from .workflow_detector import WorkflowDetector
 
 # Optional EOS integration
 try:
-    from src.eos.mangle_integration import EOSMangleConfig, EOSMangleOrchestrator
+    from src.eos.mangle_integration import (
+        EOSMangleConfig,
+        EOSMangleOrchestrator,
+    )
+
     EOS_AVAILABLE = True
 except ImportError:
     EOSMangleOrchestrator = None
@@ -61,11 +65,11 @@ class UnifiedIntelligenceEngine:
         self.workflow_detector = WorkflowDetector()
         self.mangle_bridge = MangleBridge(workspace_path=workspace_root)
         self.copilot_enhancer = CopilotEnhancer()
-        
+
         # EOS integration
         self.enable_eos = enable_eos and EOS_AVAILABLE
         self.eos_orchestrator = None
-        
+
         # Track initialization state
         self._initialized = False
 
@@ -112,7 +116,7 @@ class UnifiedIntelligenceEngine:
                 )
             except Exception as e:
                 eos_insights = {"error": f"EOS analysis failed: {e}"}
-        
+
         # 6. Generate enhanced guidance
         copilot_enhancement = self.copilot_enhancer.enhance_response(
             user_input
@@ -142,11 +146,11 @@ class UnifiedIntelligenceEngine:
         }
 
     def _generate_recommendations(
-        self, 
-        pattern: str, 
-        compliance: dict, 
-        mangle_insights: dict, 
-        eos_insights: dict | None = None
+        self,
+        pattern: str,
+        compliance: dict,
+        mangle_insights: dict,
+        eos_insights: dict | None = None,
     ) -> list:
         """Generate actionable recommendations based on analysis."""
         recommendations = []
@@ -209,14 +213,14 @@ class UnifiedIntelligenceEngine:
                     "actions": eos_insights["orchestration_recommendations"],
                 }
             )
-        
+
         return recommendations
 
     async def _analyze_with_eos(self, user_input: str, context: dict) -> dict:
         """Analyze using EOS orchestration."""
         if not self.eos_orchestrator or not EOS_AVAILABLE:
             return {"available": False, "reason": "EOS not configured"}
-        
+
         try:
             # This is a simplified integration - would need actual EOS spec
             # For now, return basic insights
@@ -226,9 +230,9 @@ class UnifiedIntelligenceEngine:
                 "orchestration_recommendations": [
                     "Use context-adaptive problem solving",
                     "Apply semantic lifting for complex problems",
-                    "Leverage expert routing for specialized tasks"
+                    "Leverage expert routing for specialized tasks",
                 ],
-                "confidence": 0.8
+                "confidence": 0.8,
             }
         except Exception as e:
             return {"available": False, "error": str(e)}

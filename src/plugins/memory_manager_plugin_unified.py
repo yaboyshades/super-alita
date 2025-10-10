@@ -6,7 +6,11 @@ import logging
 import time
 from typing import Any
 
-from src.core.global_workspace import AttentionLevel, GlobalWorkspace, WorkspaceEvent
+from src.core.global_workspace import (
+    AttentionLevel,
+    GlobalWorkspace,
+    WorkspaceEvent,
+)
 from src.core.neural_atom import NeuralStore
 from src.core.plugin_interface import PluginInterface
 from src.core.schemas import (
@@ -82,7 +86,10 @@ class MemoryManagerPlugin(PluginInterface):
         }
 
     async def setup(
-        self, workspace: GlobalWorkspace, store: NeuralStore, config: dict[str, Any]
+        self,
+        workspace: GlobalWorkspace,
+        store: NeuralStore,
+        config: dict[str, Any],
     ):
         """Initialize the Memory Manager Plugin with workspace and store."""
         await super().setup(workspace, store, config)
@@ -91,7 +98,9 @@ class MemoryManagerPlugin(PluginInterface):
         self.store = store
 
         # Configure memory settings
-        self.working_memory_capacity = config.get("working_memory_capacity", 128)
+        self.working_memory_capacity = config.get(
+            "working_memory_capacity", 128
+        )
         self.max_episode_length = config.get("max_episode_length", 50)
 
         # Initialize vector database if available
@@ -104,28 +113,36 @@ class MemoryManagerPlugin(PluginInterface):
         if HAS_GEMINI_EMBEDDINGS:
             await self._initialize_embeddings(config)
         else:
-            logger.warning("Gemini embeddings not available - using simple hashing")
+            logger.warning(
+                "Gemini embeddings not available - using simple hashing"
+            )
 
         logger.info("Memory Manager Plugin initialized")
 
     async def _initialize_vector_store(self, config: dict[str, Any]):
         """Initialize ChromaDB for vector storage."""
         try:
-            persist_dir = config.get("chroma_persist_dir", "./data/chroma_memory")
+            persist_dir = config.get(
+                "chroma_persist_dir", "./data/chroma_memory"
+            )
 
             self.chroma_client = chromadb.PersistentClient(
                 path=persist_dir, settings=Settings(anonymized_telemetry=False)
             )
 
             # Create collections for different memory types
-            self.semantic_collection = self.chroma_client.get_or_create_collection(
-                name="semantic_memory",
-                metadata={"description": "Long-term semantic knowledge"},
+            self.semantic_collection = (
+                self.chroma_client.get_or_create_collection(
+                    name="semantic_memory",
+                    metadata={"description": "Long-term semantic knowledge"},
+                )
             )
 
-            self.episodic_collection = self.chroma_client.get_or_create_collection(
-                name="episodic_memory",
-                metadata={"description": "Experience and event sequences"},
+            self.episodic_collection = (
+                self.chroma_client.get_or_create_collection(
+                    name="episodic_memory",
+                    metadata={"description": "Experience and event sequences"},
+                )
             )
 
             logger.info("Vector store initialized successfully")
@@ -184,14 +201,18 @@ class MemoryManagerPlugin(PluginInterface):
                     await self._record_workspace_event(event)
 
         except Exception as e:
-            logger.error(f"Error handling workspace event in Memory Manager: {e}")
+            logger.error(
+                f"Error handling workspace event in Memory Manager: {e}"
+            )
 
     async def _handle_memory_request(self, request: MemoryRequest):
         """Handle memory query requests."""
         start_time = time.time()
         self.memory_stats["total_queries"] += 1
 
-        logger.info(f"🧠 MEMORY: Processing {request.memory_type.value} request")
+        logger.info(
+            f"🧠 MEMORY: Processing {request.memory_type.value} request"
+        )
 
         try:
             if request.memory_type == MemoryType.WORKING:
@@ -245,7 +266,9 @@ class MemoryManagerPlugin(PluginInterface):
 
             self.memory_stats["failed_retrievals"] += 1
 
-    async def _query_working_memory(self, request: MemoryRequest) -> dict[str, Any]:
+    async def _query_working_memory(
+        self, request: MemoryRequest
+    ) -> dict[str, Any]:
         """Query working memory."""
         query = request.query.lower() if request.query else ""
 
@@ -266,7 +289,9 @@ class MemoryManagerPlugin(PluginInterface):
 
         return {"message": "No matches found in working memory"}
 
-    async def _query_episodic_memory(self, request: MemoryRequest) -> dict[str, Any]:
+    async def _query_episodic_memory(
+        self, request: MemoryRequest
+    ) -> dict[str, Any]:
         """Query episodic memory for experiences and events."""
         if not self.episodic_collection:
             return {"error": "Episodic memory not available"}
@@ -284,10 +309,14 @@ class MemoryManagerPlugin(PluginInterface):
             if results and results["documents"]:
                 for i, doc in enumerate(results["documents"][0]):
                     distance = (
-                        results["distances"][0][i] if results["distances"] else 0.0
+                        results["distances"][0][i]
+                        if results["distances"]
+                        else 0.0
                     )
                     metadata = (
-                        results["metadatas"][0][i] if results["metadatas"] else {}
+                        results["metadatas"][0][i]
+                        if results["metadatas"]
+                        else {}
                     )
 
                     episodes.append(
@@ -306,7 +335,9 @@ class MemoryManagerPlugin(PluginInterface):
             logger.error(f"Episodic memory query failed: {e}")
             return {"error": f"Query failed: {e}"}
 
-    async def _query_semantic_memory(self, request: MemoryRequest) -> dict[str, Any]:
+    async def _query_semantic_memory(
+        self, request: MemoryRequest
+    ) -> dict[str, Any]:
         """Query semantic memory for knowledge and concepts."""
         if not self.semantic_collection:
             return {"error": "Semantic memory not available"}
@@ -324,10 +355,14 @@ class MemoryManagerPlugin(PluginInterface):
             if results and results["documents"]:
                 for i, doc in enumerate(results["documents"][0]):
                     distance = (
-                        results["distances"][0][i] if results["distances"] else 0.0
+                        results["distances"][0][i]
+                        if results["distances"]
+                        else 0.0
                     )
                     metadata = (
-                        results["metadatas"][0][i] if results["metadatas"] else {}
+                        results["metadatas"][0][i]
+                        if results["metadatas"]
+                        else {}
                     )
 
                     knowledge.append(
@@ -346,7 +381,9 @@ class MemoryManagerPlugin(PluginInterface):
             logger.error(f"Semantic memory query failed: {e}")
             return {"error": f"Query failed: {e}"}
 
-    async def _query_long_term_memory(self, request: MemoryRequest) -> dict[str, Any]:
+    async def _query_long_term_memory(
+        self, request: MemoryRequest
+    ) -> dict[str, Any]:
         """Query long-term persistent memory."""
         # Combine semantic and episodic results for comprehensive long-term query
         semantic_result = await self._query_semantic_memory(request)
@@ -450,11 +487,14 @@ class MemoryManagerPlugin(PluginInterface):
             self.current_episode["events"] = self.episode_buffer.copy()
             self.current_episode["end_time"] = time.time()
             self.current_episode["duration"] = (
-                self.current_episode["end_time"] - self.current_episode["start_time"]
+                self.current_episode["end_time"]
+                - self.current_episode["start_time"]
             )
 
             # Generate summary for storage
-            episode_summary = self._generate_episode_summary(self.current_episode)
+            episode_summary = self._generate_episode_summary(
+                self.current_episode
+            )
 
             if self.episodic_collection:
                 # Store in vector database
@@ -572,7 +612,9 @@ Episode {episode["episode_id"]} ({episode["duration"]:.1f}s):
     ):
         """Store knowledge in semantic memory."""
         if not self.semantic_collection:
-            logger.warning("Semantic memory not available for knowledge storage")
+            logger.warning(
+                "Semantic memory not available for knowledge storage"
+            )
             return
 
         try:

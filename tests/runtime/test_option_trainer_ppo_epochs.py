@@ -41,7 +41,12 @@ async def test_ppo_epochs_controls_iterations(
     await trainer.setup(
         bus,
         None,
-        {"state_dim": 2, "action_dim": 2, "batch_size": 2, "ppo_epochs": ppo_epochs},
+        {
+            "state_dim": 2,
+            "action_dim": 2,
+            "batch_size": 2,
+            "ppo_epochs": ppo_epochs,
+        },
     )
 
     class SubEvent:

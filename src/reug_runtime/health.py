@@ -38,7 +38,10 @@ async def check_health(
             await ability_registry.health_check({})
         components["ability_registry"] = {"status": "ok"}
     except Exception as e:  # pragma: no cover
-        components["ability_registry"] = {"status": "unhealthy", "error": str(e)}
+        components["ability_registry"] = {
+            "status": "unhealthy",
+            "error": str(e),
+        }
         overall = "unhealthy"
 
     # Knowledge graph
@@ -83,7 +86,9 @@ async def check_health(
                 overall = "unhealthy"
         else:
             # Fallback to old method for backwards compatibility
-            stream = llm.stream_chat([{"role": "user", "content": "ping"}], timeout=1)
+            stream = llm.stream_chat(
+                [{"role": "user", "content": "ping"}], timeout=1
+            )
             try:
                 await anext(stream)
             finally:

@@ -92,18 +92,26 @@ class ScriptOfThoughtInterpreter:
                     step_results.append(result.to_dict())
 
                     # Stop on failure if step is critical
-                    if not result.success and step.metadata.get("critical", False):
+                    if not result.success and step.metadata.get(
+                        "critical", False
+                    ):
                         break
 
             # Generate summary
             summary: dict[str, Any] = {
-                "success": all(r.success for r in self.execution_results.values()),
+                "success": all(
+                    r.success for r in self.execution_results.values()
+                ),
                 "total_steps": len(script.steps),
                 "completed_steps": len(
                     [r for r in self.execution_results.values() if r.success]
                 ),
                 "failed_steps": len(
-                    [r for r in self.execution_results.values() if not r.success]
+                    [
+                        r
+                        for r in self.execution_results.values()
+                        if not r.success
+                    ]
                 ),
                 "step_results": step_results,
                 "execution_context": {
@@ -216,7 +224,9 @@ class ScriptOfThoughtInterpreter:
         code = step.content
 
         # Execute code using computational environment
-        result = await self.computational_env.execute_code(code, session_id=session_id)
+        result = await self.computational_env.execute_code(
+            code, session_id=session_id
+        )
 
         return StepExecutionResult(
             step_id=step.step_id or 0,
@@ -256,7 +266,9 @@ class ScriptOfThoughtInterpreter:
 
         # Get previous step results for validation
         previous_results = [
-            result for result in self.execution_results.values() if result.success
+            result
+            for result in self.execution_results.values()
+            if result.success
         ]
 
         if not previous_results:
@@ -278,7 +290,10 @@ class ScriptOfThoughtInterpreter:
             step_id=step.step_id or 0,
             success=validation_result["passed"],
             data=validation_result,
-            metadata={"step_type": "validate", "criteria": validation_criteria},
+            metadata={
+                "step_type": "validate",
+                "criteria": validation_criteria,
+            },
         )
 
     def _extract_analysis_data(self, step: ScriptStep) -> list[Any]:
@@ -295,12 +310,18 @@ class ScriptOfThoughtInterpreter:
                             data.append(value)
                         elif isinstance(value, list):
                             data.extend(
-                                [v for v in value if isinstance(v, int | float)]
+                                [
+                                    v
+                                    for v in value
+                                    if isinstance(v, int | float)
+                                ]
                             )
                 elif isinstance(result.data, int | float):
                     data.append(result.data)
                 elif isinstance(result.data, list):
-                    data.extend([v for v in result.data if isinstance(v, int | float)])
+                    data.extend(
+                        [v for v in result.data if isinstance(v, int | float)]
+                    )
 
         # If no data found, return sample data
         if not data:

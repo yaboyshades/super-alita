@@ -48,7 +48,9 @@ class BaseEvent(TelemetryInfo):
     embedding: list[float] | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-    model_config = ConfigDict(extra="allow", populate_by_name=True)  # pydantic v2
+    model_config = ConfigDict(
+        extra="allow", populate_by_name=True
+    )  # pydantic v2
 
 
 # Event type aliases for back-compatibility and publisher variance
@@ -77,8 +79,12 @@ class CognitiveTurnInitiatedEvent(CognitiveEvent):
     user_message: str
     session_id: str
     conversation_id: str
-    original_event_id: str  # For traceability back to the original conversation event
-    intent_confidence: float = 0.9  # Confidence that this is truly a task request
+    original_event_id: (
+        str  # For traceability back to the original conversation event
+    )
+    intent_confidence: float = (
+        0.9  # Confidence that this is truly a task request
+    )
     cognitive_context: dict[str, Any] = Field(
         default_factory=dict
     )  # Additional context for processing
@@ -306,7 +312,9 @@ class ConversationEvent(BaseEvent):
 
     event_type: str = "conversation"
     text: str | None = None
-    user_message: str | None = Field(None, alias="message")  # Accept 'message' as alias
+    user_message: str | None = Field(
+        None, alias="message"
+    )  # Accept 'message' as alias
     role: str = "user"  # user, assistant, system
     session_id: str | None = None
     conversation_id: str | None = Field(
@@ -338,7 +346,9 @@ class ConversationEvent(BaseEvent):
         elif self.user_message and not self.text:
             self.text = self.user_message
         elif not self.text and not self.user_message:
-            raise ValueError("Either 'text' or 'user_message' must be provided")
+            raise ValueError(
+                "Either 'text' or 'user_message' must be provided"
+            )
 
         return self
 
@@ -353,7 +363,9 @@ class AtomizeTextRequest(BaseEvent):
 
     event_type: str = "atomize_text_request"
     text: str
-    anchors: list[str] | None = None  # existing atom_ids or label hints to bond to
+    anchors: list[str] | None = (
+        None  # existing atom_ids or label hints to bond to
+    )
     max_notes: int = 5  # how many NOTE atoms to propose
     context: dict[str, Any] | None = None  # For traceability (e.g., task_id)
 
@@ -450,16 +462,24 @@ class ToolResultEvent(BaseEvent):
     """Event signaling the result of a tool invocation."""
 
     event_type: str = Field(default="tool_result")
-    tool_call_id: str = Field(..., description="ID matching the original ToolCallEvent")
+    tool_call_id: str = Field(
+        ..., description="ID matching the original ToolCallEvent"
+    )
     conversation_id: str = Field(..., description="session id for routing")
     session_id: str = Field(..., description="session id for the conversation")
-    success: bool = Field(..., description="whether the tool execution succeeded")
+    success: bool = Field(
+        ..., description="whether the tool execution succeeded"
+    )
     result: dict[str, Any] = Field(
         default_factory=dict, description="tool execution results"
     )
-    error: str | None = Field(None, description="error message if execution failed")
+    error: str | None = Field(
+        None, description="error message if execution failed"
+    )
 
-    model_config = ConfigDict(frozen=True)  # makes the model hashable and immutable
+    model_config = ConfigDict(
+        frozen=True
+    )  # makes the model hashable and immutable
 
 
 class AtomCreatedEvent(BaseEvent):

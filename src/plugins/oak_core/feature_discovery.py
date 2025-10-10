@@ -47,7 +47,12 @@ class Feature(BaseModel):
     evaluator: str | None = None  # Serialized form (for registry/traceability)
 
     def compute_combined_utility(self) -> float:
-        weights = {"play": 0.4, "prediction": 0.3, "planning": 0.2, "novelty": 0.1}
+        weights = {
+            "play": 0.4,
+            "prediction": 0.3,
+            "planning": 0.2,
+            "novelty": 0.1,
+        }
         return (
             weights["play"] * self.play_utility
             + weights["prediction"] * self.prediction_utility
@@ -59,7 +64,9 @@ class Feature(BaseModel):
 class FeatureExtractor(nn.Module):
     """Neural feature extractor for function-based features."""
 
-    def __init__(self, input_dim: int, hidden_dim: int = 64, output_dim: int = 32):
+    def __init__(
+        self, input_dim: int, hidden_dim: int = 64, output_dim: int = 32
+    ):
         super().__init__()
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -98,7 +105,9 @@ class FeatureDiscoveryEngine(PluginInterface):
     def name(self) -> str:
         return "oak_feature_discovery"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
         self.max_features = self.get_config("max_features", 1000)
         self.idbd_meta_rate = self.get_config("idbd_meta_rate", 0.01)
@@ -114,7 +123,9 @@ class FeatureDiscoveryEngine(PluginInterface):
         )
         self.cfg.update(config or {})
         await self.subscribe("deliberation_tick", self.handle_tick)
-        await self.subscribe("oak.feature_utility_updated", self.handle_utility_update)
+        await self.subscribe(
+            "oak.feature_utility_updated", self.handle_utility_update
+        )
 
         self.temporal_patterns = deque(maxlen=100)
 
@@ -122,7 +133,9 @@ class FeatureDiscoveryEngine(PluginInterface):
         await super().start()
         await self.subscribe("observation", self.handle_observation)
         await self.subscribe("option_success", self.handle_option_feedback)
-        await self.subscribe("prediction_error", self.handle_prediction_feedback)
+        await self.subscribe(
+            "prediction_error", self.handle_prediction_feedback
+        )
         await self.subscribe("planning_usage", self.handle_planning_feedback)
 
     def generate_feature_id(self, composition: list[str], type_: str) -> str:
@@ -188,7 +201,9 @@ class FeatureDiscoveryEngine(PluginInterface):
 
     def _generate_conjunctions(self, features: list[Feature]) -> list[Feature]:
         out: list[Feature] = []
-        tops = sorted(features, key=lambda x: x.combined_utility, reverse=True)[:8]
+        tops = sorted(
+            features, key=lambda x: x.combined_utility, reverse=True
+        )[:8]
         for i, a in enumerate(tops):
             for b in tops[i + 1 :]:
                 comp = [a.id, b.id]
@@ -241,7 +256,9 @@ class FeatureDiscoveryEngine(PluginInterface):
             val = float(feats[idx])
             if abs(val) < 0.1:
                 continue
-            fid = self.generate_feature_id([f"func_{idx}_{val:.3f}"], "function")
+            fid = self.generate_feature_id(
+                [f"func_{idx}_{val:.3f}"], "function"
+            )
             if fid in self.features:
                 continue
             out.append(
@@ -259,9 +276,9 @@ class FeatureDiscoveryEngine(PluginInterface):
         if len(feats) < 2:
             return out
         pairs = min(3, len(feats) // 2)
-        idxs = np.random.choice(len(feats), size=2 * pairs, replace=False).reshape(
-            pairs, 2
-        )
+        idxs = np.random.choice(
+            len(feats), size=2 * pairs, replace=False
+        ).reshape(pairs, 2)
         for i, j in idxs:
             a, b = feats[i], feats[j]
             fid = self.generate_feature_id([a.id, b.id], "contrast")
@@ -310,7 +327,9 @@ class FeatureDiscoveryEngine(PluginInterface):
             content=json.dumps(f_dict),
             meta={"subtype": f.composition_type},
         )
-        await self.store.persist(event_type="atom_created", payload=new_atom.to_dict())
+        await self.store.persist(
+            event_type="atom_created", payload=new_atom.to_dict()
+        )
         await self.emit_event(
             "feature_created",
             feature_id=f.id,
@@ -345,7 +364,12 @@ class FeatureDiscoveryEngine(PluginInterface):
             f.gradient_trace = decay * f.gradient_trace + delta
             f.hessian_trace = decay * f.hessian_trace + abs(delta)
             if f.hessian_trace > 1e-8:
-                upd = f.meta_learning_rate * f.gradient_trace * delta / f.hessian_trace
+                upd = (
+                    f.meta_learning_rate
+                    * f.gradient_trace
+                    * delta
+                    / f.hessian_trace
+                )
                 f.learning_rate *= float(np.exp(np.clip(upd, -0.1, 0.1)))
                 f.learning_rate = float(np.clip(f.learning_rate, 0.0001, 1.0))
 
@@ -387,7 +411,9 @@ class FeatureDiscoveryEngine(PluginInterface):
             tgt = 1.0 - min(1.0, error)
             delta = tgt - f.prediction_utility
             f.prediction_utility = float(
-                np.clip(f.prediction_utility + f.learning_rate * delta, 0.0, 1.0)
+                np.clip(
+                    f.prediction_utility + f.learning_rate * delta, 0.0, 1.0
+                )
             )
             await self.emit_event(
                 "feature_utility_update",

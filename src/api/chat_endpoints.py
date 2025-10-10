@@ -59,10 +59,14 @@ async def send_message(
     payload: dict[str, Any],
     svc: UnifiedChatService = Depends(get_chat_service),  # noqa: B008
 ) -> Any:  # noqa: ANN401
-    session_id = payload.get("session_id") or payload.get("session") or "default"
+    session_id = (
+        payload.get("session_id") or payload.get("session") or "default"
+    )
     message = payload.get("message") or payload.get("text")
     if not isinstance(message, str) or not message.strip():  # invalid
-        return JSONResponse(status_code=400, content={"error": "Missing message"})
+        return JSONResponse(
+            status_code=400, content={"error": "Missing message"}
+        )
     use_consensus = bool(payload.get("consensus"))
     method = payload.get("consensus_method", "weighted_vote")
     samples = int(payload.get("consensus_samples", 3))
@@ -85,7 +89,9 @@ async def stream_message(
     payload: dict[str, Any],
     svc: UnifiedChatService = Depends(get_chat_service),  # noqa: B008
 ) -> StreamingResponse:  # noqa: ANN401
-    session_id = payload.get("session_id") or payload.get("session") or "default"
+    session_id = (
+        payload.get("session_id") or payload.get("session") or "default"
+    )
     message = payload.get("message") or payload.get("text")
     if not isinstance(message, str) or not message.strip():  # invalid
         return StreamingResponse(

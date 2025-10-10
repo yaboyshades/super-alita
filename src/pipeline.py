@@ -37,9 +37,13 @@ class PromptPipeline:
 
     def __init__(self) -> None:
         """Initialize the prompt pipeline."""
-        self.template_path = PROJECT_ROOT / "src" / "templates" / "templates.json"
+        self.template_path = (
+            PROJECT_ROOT / "src" / "templates" / "templates.json"
+        )
         self.load_templates()
-        self.base_url = os.environ.get("OPENAI_API_BASE", "http://localhost:11434/v1")
+        self.base_url = os.environ.get(
+            "OPENAI_API_BASE", "http://localhost:11434/v1"
+        )
         self.api_key = os.environ.get("OPENAI_API_KEY", "")
         self.model = os.environ.get("OPENAI_MODEL", "gpt-oss:20b")
 
@@ -102,7 +106,8 @@ class PromptPipeline:
             Formatted context block
         """
         template = self.templates.get(
-            "contextBlock", "=== CONTEXT ===\n• {title}: {snippet}\n=== END ==="
+            "contextBlock",
+            "=== CONTEXT ===\n• {title}: {snippet}\n=== END ===",
         )
         blocks = []
 
@@ -142,13 +147,16 @@ class PromptPipeline:
         context_block = self.format_context_block(contexts)
 
         # 3. Optimize base prompt
-        optimized = self.optimize_prompt(user_input, role, format_type, constraints)
+        optimized = self.optimize_prompt(
+            user_input, role, format_type, constraints
+        )
 
         # 4. Add DeepConf consensus information if applicable
         methods = await get_consensus_methods()
         if consensus_method in methods:
             consensus_template = self.templates.get(
-                "deepConfConsensus", "Using DeepConf consensus with method '{method}'"
+                "deepConfConsensus",
+                "Using DeepConf consensus with method '{method}'",
             )
             consensus_block = (
                 consensus_template.replace("{method}", consensus_method)

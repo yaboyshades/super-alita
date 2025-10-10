@@ -98,14 +98,20 @@ if __name__ == "__main__":
 
     print("\n" + "=" * 60)
     print("📊 SUMMARY:")
-    print(f"  ✅ Direct Ollama (Extension): {'PASS' if ollama_works else 'FAIL'}")
-    print(f"  ✅ Runtime Endpoint:         {'PASS' if runtime_works else 'FAIL'}")
+    print(
+        f"  ✅ Direct Ollama (Extension): {'PASS' if ollama_works else 'FAIL'}"
+    )
+    print(
+        f"  ✅ Runtime Endpoint:         {'PASS' if runtime_works else 'FAIL'}"
+    )
 
     if ollama_works:
         print("\n🎯 VS Code Insiders Integration Ready!")
         print("   • Use 'Alita: Invoke Agent (Ollama)' for direct calls")
         if runtime_works:
-            print("   • Use 'Alita: Chat via Runtime (Stream)' for runtime calls")
+            print(
+                "   • Use 'Alita: Chat via Runtime (Stream)' for runtime calls"
+            )
         print("   • Model default: gpt-oss:20b")
         print("   • Ollama host: http://127.0.0.1:11434")
         print("   • Runtime host: http://127.0.0.1:8080")

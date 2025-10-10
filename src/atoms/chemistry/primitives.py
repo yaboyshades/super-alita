@@ -40,7 +40,9 @@ class CatalystQuark(BaseModel):
     """A guard that modifies context without being 'consumed'."""
 
     context_modifiers: dict[str, Any] = Field(default_factory=dict)
-    pre_hooks: list[str] = Field(default_factory=list)  # e.g., ["validate_jwt"]
+    pre_hooks: list[str] = Field(
+        default_factory=list
+    )  # e.g., ["validate_jwt"]
     post_hooks: list[str] = Field(default_factory=list)  # e.g., ["log_audit"]
 
 
@@ -89,8 +91,12 @@ def bond_strength(
     perf_affinity = 1.0 - min(1.0, gap / max_latency_ms)
 
     # Get success rates
-    sr_a = getattr(getattr(atom_a, "metadata", None), "success_rate", 0.0) or 0.0
-    sr_b = getattr(getattr(atom_b, "metadata", None), "success_rate", 0.0) or 0.0
+    sr_a = (
+        getattr(getattr(atom_a, "metadata", None), "success_rate", 0.0) or 0.0
+    )
+    sr_b = (
+        getattr(getattr(atom_b, "metadata", None), "success_rate", 0.0) or 0.0
+    )
     reliability = 0.5 * (sr_a + sr_b)
 
     # weights tuned for stability & composability

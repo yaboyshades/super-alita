@@ -70,7 +70,9 @@ class TestCalculusGateWorkflowIntegration:
             return n * 2
 
         sample_set = profiler.profile_function(
-            linear_function, input_sizes=[10, 20, 50, 100, 200, 500], warmup_runs=3
+            linear_function,
+            input_sizes=[10, 20, 50, 100, 200, 500],
+            warmup_runs=3,
         )
 
         # Step 2: Analyze derivatives
@@ -91,7 +93,9 @@ class TestCalculusGateWorkflowIntegration:
 
         # Verify complete pipeline worked
         assert certificate.function_name == "linear_function"
-        assert len(certificate.first_derivatives) == len(sample_set.input_sizes)
+        assert len(certificate.first_derivatives) == len(
+            sample_set.input_sizes
+        )
         assert certificate.certificate_grade in ["A", "B", "F"]
 
     def test_analysis_with_different_complexity_functions(self):
@@ -228,7 +232,10 @@ class TestCalculusGateWorkflowIntegration:
         result = analyze_function_performance(failing_function)
 
         # Should handle gracefully
-        assert "error" in result or result["certificate"]["certificate_grade"] == "F"
+        assert (
+            "error" in result
+            or result["certificate"]["certificate_grade"] == "F"
+        )
 
         # Function with invalid return type
         def invalid_function(n):
@@ -319,4 +326,8 @@ class TestCalculusGateWorkflowIntegration:
         # Each result should be complete
         for result in results:
             assert "certificate" in result
-            assert result["certificate"]["certificate_grade"] in ["A", "B", "F"]
+            assert result["certificate"]["certificate_grade"] in [
+                "A",
+                "B",
+                "F",
+            ]

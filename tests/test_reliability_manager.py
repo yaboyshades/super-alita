@@ -49,7 +49,9 @@ async def test_permanent_failure_exhausts_retries() -> None:
             circuit_break_threshold=5,
         )
     )
-    result = await rm.execute_with_retries("perm_fail", always_fail, timeout_s=1)
+    result = await rm.execute_with_retries(
+        "perm_fail", always_fail, timeout_s=1
+    )
     assert result["status"] == "failed"
     # Should not retry permanent errors -> single attempt
     assert result["attempts"] == 1
@@ -105,7 +107,9 @@ async def test_permanent_error_no_retries() -> None:
         circuit_break_threshold=50,
     )
     rm = ReliabilityManager(cfg)
-    result = await rm.execute_with_retries("perm_once", fail_permanent, timeout_s=1)
+    result = await rm.execute_with_retries(
+        "perm_once", fail_permanent, timeout_s=1
+    )
     assert result["status"] == "failed"
     assert result["classified_error"] == "permanent"
     assert result["attempts"] == 1
@@ -127,7 +131,9 @@ async def test_transient_retries_exhausted() -> None:
         circuit_break_threshold=10,
     )
     rm = ReliabilityManager(cfg)
-    result = await rm.execute_with_retries("transient", fail_transient, timeout_s=1)
+    result = await rm.execute_with_retries(
+        "transient", fail_transient, timeout_s=1
+    )
     assert result["status"] == "failed"
     assert result["attempts"] == 4  # 1 + 3 retries
     assert result["classified_error"] == "transient"

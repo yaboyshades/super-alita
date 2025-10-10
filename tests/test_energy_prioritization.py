@@ -87,7 +87,9 @@ async def test_energy_prioritization_system():
         )
         tasks.append(task4)
 
-        print(f"✅ Created {len(tasks)} test tasks with varying characteristics")
+        print(
+            f"✅ Created {len(tasks)} test tasks with varying characteristics"
+        )
 
         # 6. Create TaskGraph
         task_graph = TaskGraph()
@@ -118,8 +120,12 @@ async def test_energy_prioritization_system():
                 f"    - Success Probability: {energy.metrics.success_probability:.3f}"
             )
             print(f"    - Complexity: {energy.metrics.complexity_score:.3f}")
-            print(f"    - Pattern Confidence: {energy.metrics.pattern_confidence:.3f}")
-            print(f"    - Context Relevance: {energy.metrics.context_relevance:.3f}")
+            print(
+                f"    - Pattern Confidence: {energy.metrics.pattern_confidence:.3f}"
+            )
+            print(
+                f"    - Context Relevance: {energy.metrics.context_relevance:.3f}"
+            )
             print(f"  Top Reasoning: {energy.reasoning[:2]}")
 
         # 8. Test Task Prioritization
@@ -127,7 +133,9 @@ async def test_energy_prioritization_system():
         print("==============================")
 
         start_time = time.time()
-        prioritization_result = prioritizer.prioritize_tasks(task_graph, context)
+        prioritization_result = prioritizer.prioritize_tasks(
+            task_graph, context
+        )
         calc_time = time.time() - start_time
 
         print(f"Prioritization completed in {calc_time:.3f}s")
@@ -136,7 +144,9 @@ async def test_energy_prioritization_system():
         print(f"Executable tasks: {prioritization_result.executable_tasks}")
         print(f"Blocked tasks: {prioritization_result.blocked_tasks}")
         print(f"Average energy: {prioritization_result.average_energy:.3f}")
-        print(f"Average confidence: {prioritization_result.average_confidence:.3f}")
+        print(
+            f"Average confidence: {prioritization_result.average_confidence:.3f}"
+        )
 
         print("\nTask Priority Ranking:")
         for i, priority in enumerate(prioritization_result.priorities):
@@ -153,7 +163,9 @@ async def test_energy_prioritization_system():
         for i, task_priority in enumerate(next_tasks):
             print(f"  {i+1}. Task: {task_priority.task_id}")
             print(f"     Priority Score: {task_priority.priority_score:.3f}")
-            print(f"     Energy Score: {task_priority.energy.energy_score:.3f}")
+            print(
+                f"     Energy Score: {task_priority.energy.energy_score:.3f}"
+            )
             print(f"     Can Execute: {task_priority.can_execute}")
 
         # 10. Test Enhanced Planner (if possible with mock)
@@ -167,10 +179,14 @@ async def test_energy_prioritization_system():
 
             # Create mock event bus
             mock_event_bus = MagicMock(spec=EventBus)
-            mock_event_bus.emit = asyncio.coroutine(lambda *args, **kwargs: None)
+            mock_event_bus.emit = asyncio.coroutine(
+                lambda *args, **kwargs: None
+            )
 
             kg_adapter = KnowledgeGraphAdapter(
-                kg_interface=kg, event_bus=mock_event_bus, source_plugin="test_plugin"
+                kg_interface=kg,
+                event_bus=mock_event_bus,
+                source_plugin="test_plugin",
             )
 
             # Initialize enhanced planner
@@ -189,9 +205,15 @@ async def test_energy_prioritization_system():
             # Test task explanation
             if prioritization_result.priorities:
                 first_task_id = prioritization_result.priorities[0].task_id
-                explanation = enhanced_planner.explain_task_priority(first_task_id)
-                print(f"✅ Task priority explanation generated for {first_task_id}")
-                print(f"   Priority rank: {explanation.get('priority_rank', 'N/A')}")
+                explanation = enhanced_planner.explain_task_priority(
+                    first_task_id
+                )
+                print(
+                    f"✅ Task priority explanation generated for {first_task_id}"
+                )
+                print(
+                    f"   Priority rank: {explanation.get('priority_rank', 'N/A')}"
+                )
                 print(
                     f"   Energy score: {explanation.get('energy_analysis', {}).get('energy_score', 'N/A')}"
                 )
@@ -216,8 +238,12 @@ async def test_energy_prioritization_system():
         if "performance" in performance:
             perf = performance["performance"]
             print("System performance:")
-            print(f"  - Average calc time: {perf['average_calculation_time']:.3f}s")
-            print(f"  - Total prioritizations: {perf['total_prioritizations']}")
+            print(
+                f"  - Average calc time: {perf['average_calculation_time']:.3f}s"
+            )
+            print(
+                f"  - Total prioritizations: {perf['total_prioritizations']}"
+            )
 
         # 12. Test Different Priority Strategies
         print("\n🎯 Testing Different Priority Strategies:")

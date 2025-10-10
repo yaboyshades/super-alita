@@ -25,7 +25,9 @@ class ExtensionDeepCodeIntegration:
             return {"enabled": False}
 
         try:
-            result = await self.engine.analyze_file(file_path, AnalysisLevel.SEMANTIC)
+            result = await self.engine.analyze_file(
+                file_path, AnalysisLevel.SEMANTIC
+            )
             return {
                 "enabled": True,
                 "file_path": file_path,
@@ -102,7 +104,11 @@ class ExtensionDeepCodeIntegration:
 
         except Exception as e:
             logger.exception(f"DeepCode workspace analysis failed: {e}")
-            return {"enabled": True, "error": str(e), "workspace_path": workspace_path}
+            return {
+                "enabled": True,
+                "error": str(e),
+                "workspace_path": workspace_path,
+            }
 
     def _calculate_file_quality_score(self, result) -> float:
         """Calculate quality score for a single file"""

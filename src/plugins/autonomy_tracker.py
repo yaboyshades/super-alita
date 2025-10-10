@@ -50,7 +50,9 @@ class AutonomyTracker(PluginInterface):
 
     async def get_graduation_readiness(self) -> dict[str, Any]:
         score = (
-            self.metrics_history[-1].autonomy_score() if self.metrics_history else 0.0
+            self.metrics_history[-1].autonomy_score()
+            if self.metrics_history
+            else 0.0
         )
         ready = score > 0.8
         return {

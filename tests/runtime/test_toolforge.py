@@ -5,7 +5,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "mcp_server" / "src"))
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[2] / "mcp_server" / "src")
+)
 from mcp_server.server import load_tools
 
 
@@ -20,7 +22,13 @@ def test_toolforge_creates_and_executes(tmp_path):
     spec_path.write_text(json.dumps(spec))
 
     subprocess.run(
-        [sys.executable, "-m", "src.agents.toolforge", "--spec", str(spec_path)],
+        [
+            sys.executable,
+            "-m",
+            "src.agents.toolforge",
+            "--spec",
+            str(spec_path),
+        ],
         check=True,
     )
 

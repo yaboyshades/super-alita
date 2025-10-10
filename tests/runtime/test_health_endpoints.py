@@ -3,7 +3,12 @@
 from fastapi.testclient import TestClient
 
 from src.main import create_app
-from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG, FakeLLM
+from tests.runtime.fakes import (
+    FakeAbilityRegistry,
+    FakeEventBus,
+    FakeKG,
+    FakeLLM,
+)
 
 
 def _app_with_deps(event_bus, registry, kg, llm):
@@ -16,7 +21,9 @@ def _app_with_deps(event_bus, registry, kg, llm):
 
 
 def test_health_endpoints_ok():
-    app = _app_with_deps(FakeEventBus(), FakeAbilityRegistry(), FakeKG(), FakeLLM())
+    app = _app_with_deps(
+        FakeEventBus(), FakeAbilityRegistry(), FakeKG(), FakeLLM()
+    )
     client = TestClient(app)
     for path in ["/health", "/healthz"]:
         resp = client.get(path)
@@ -31,7 +38,9 @@ def test_health_endpoint_dependency_failure():
         async def emit(self, event):
             raise RuntimeError("bus down")
 
-    app = _app_with_deps(BrokenBus(), FakeAbilityRegistry(), FakeKG(), FakeLLM())
+    app = _app_with_deps(
+        BrokenBus(), FakeAbilityRegistry(), FakeKG(), FakeLLM()
+    )
     client = TestClient(app)
     for path in ["/health", "/healthz"]:
         resp = client.get(path)

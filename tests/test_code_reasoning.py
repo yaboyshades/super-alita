@@ -142,13 +142,15 @@ def complex_function(x):
 """
                 )
 
-            db_path = os.path.join(tmp_dir, 'facts.db')
+            db_path = os.path.join(tmp_dir, "facts.db")
             ingester = CodeIngester(db_path)
-            stats = ingester.ingest_repository(tmp_dir)
+            ingester.ingest_repository(tmp_dir)
 
             # Check that complexity scores are reasonable
             with ingester.get_db_connection() as conn:
-                complexities = conn.execute("SELECT score FROM complexity").fetchall()
+                complexities = conn.execute(
+                    "SELECT score FROM complexity"
+                ).fetchall()
                 scores = [row["score"] for row in complexities]
 
                 assert len(scores) == 2
@@ -201,7 +203,12 @@ class TestRuleEngine:
 
         assert isinstance(findings, dict)
         # Should have entries for all rules, even if empty
-        canonical_count = len({rule_engine._canonical_rule_name(name) for name in rule_engine.rules})
+        canonical_count = len(
+            {
+                rule_engine._canonical_rule_name(name)
+                for name in rule_engine.rules
+            }
+        )
         assert len(findings) == canonical_count
 
     def test_run_specific_rule(self):
@@ -271,7 +278,7 @@ def test_simple():
                 )
 
             # Run full pipeline
-            db_path = os.path.join(tmp_dir, 'facts.db')
+            db_path = os.path.join(tmp_dir, "facts.db")
             ingester = CodeIngester(db_path)
             stats = ingester.ingest_repository(tmp_dir, include_tests=True)
 
@@ -299,7 +306,7 @@ def test_simple():
                 f.write("import a\ndef func_b(): pass")
 
             # Run analysis
-            db_path = os.path.join(tmp_dir, 'facts.db')
+            db_path = os.path.join(tmp_dir, "facts.db")
             ingester = CodeIngester(db_path)
             ingester.ingest_repository(tmp_dir)
 
@@ -313,10 +320,11 @@ def test_simple():
     def test_config_cascade_break_detection(self):
         """Test that config cascade rule flags untested settings helpers."""
         with tempfile.TemporaryDirectory() as tmp_dir:
-            settings_file = os.path.join(tmp_dir, 'src', 'core', 'settings.py')
+            settings_file = os.path.join(tmp_dir, "src", "core", "settings.py")
             os.makedirs(os.path.dirname(settings_file))
-            with open(settings_file, 'w', encoding='utf-8') as handle:
-                handle.write("""
+            with open(settings_file, "w", encoding="utf-8") as handle:
+                handle.write(
+                    """
 from typing import Any
 
 
@@ -325,18 +333,17 @@ def load_settings(env: dict[str, Any]) -> dict[str, Any]:
     for key, value in env.items():
         data[key.lower()] = value
     return data
-""")
+"""
+                )
 
-            db_path = os.path.join(tmp_dir, 'facts.db')
+            db_path = os.path.join(tmp_dir, "facts.db")
             ingester = CodeIngester(db_path)
             ingester.ingest_repository(tmp_dir, include_tests=True)
 
             rule_engine = RuleEngine(db_path)
-            findings = rule_engine.run_rule('config_cascade_breaks')
+            findings = rule_engine.run_rule("config_cascade_breaks")
 
-            assert any(f.file.endswith('settings.py') for f in findings)
-
-
+            assert any(f.file.endswith("settings.py") for f in findings)
 
 
 class TestModels:
@@ -364,7 +371,10 @@ class TestModels:
         request = CodeAnalysisRequest(
             repo_path="/test/path",
             include_tests=True,
-            rules_to_run=["untested_complex_functions", "circular_dependencies"],
+            rules_to_run=[
+                "untested_complex_functions",
+                "circular_dependencies",
+            ],
         )
 
         assert request.repo_path == "/test/path"

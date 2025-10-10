@@ -35,14 +35,18 @@ def test_execute_turn_captures_knowledge_graph_artifacts() -> None:
 
     # Knowledge graph context is retrieved and surfaced via telemetry.
     ctx_events = [
-        evt for evt in event_bus.events if evt["type"] == "KnowledgeContextRetrieved"
+        evt
+        for evt in event_bus.events
+        if evt["type"] == "KnowledgeContextRetrieved"
     ]
     assert ctx_events, "expected a KnowledgeContextRetrieved event"
     assert ctx_events[0]["session_id"] == "kg-session"
 
     # Final answer is stored as an atom and connected back to the goal.
     atom_events = [
-        evt for evt in event_bus.events if evt["type"] == "KnowledgeAtomCreated"
+        evt
+        for evt in event_bus.events
+        if evt["type"] == "KnowledgeAtomCreated"
     ]
     assert atom_events and atom_events[0]["atom_type"] == "final_answer"
     assert any(bond["type"] == "ANSWERED" for bond in kg.bonds)

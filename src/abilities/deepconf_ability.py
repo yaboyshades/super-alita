@@ -88,7 +88,9 @@ class DeepConfAbility(PluginInterface):
             )
 
             # Initialize pipeline
-            self.pipeline = EnhancedDeepConfPipeline(model_api=self.vllm_client)
+            self.pipeline = EnhancedDeepConfPipeline(
+                model_api=self.vllm_client
+            )
             # Initialize Mangle (optional)
             try:
                 self._mangle = MangleAbility()
@@ -131,7 +133,9 @@ class DeepConfAbility(PluginInterface):
             ],
         }
 
-    async def process_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
+    async def process_event(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Process an event and return result if applicable
 
@@ -279,7 +283,9 @@ class DeepConfAbility(PluginInterface):
             samples = await asyncio.gather(*tasks, return_exceptions=True)
 
             # Filter successful samples
-            valid_samples = [s for s in samples if not isinstance(s, Exception)]
+            valid_samples = [
+                s for s in samples if not isinstance(s, Exception)
+            ]
 
             if not valid_samples:
                 raise RuntimeError("No valid samples generated")
@@ -294,10 +300,8 @@ class DeepConfAbility(PluginInterface):
             # Calibrate confidence if domain specified
             final_confidence = aggregation_result["confidence"]
             if request.domain:
-                calibration_result = (
-                    await self.pipeline.confidence_calibrator.calibrate_confidence(
-                        aggregation_result["confidence"], domain=request.domain
-                    )
+                calibration_result = await self.pipeline.confidence_calibrator.calibrate_confidence(
+                    aggregation_result["confidence"], domain=request.domain
                 )
                 final_confidence = calibration_result["calibrated_confidence"]
 
@@ -343,7 +347,8 @@ class DeepConfAbility(PluginInterface):
             # Use cache if available and confidence meets threshold
             if (
                 cached_result
-                and cached_result.get("confidence", 0) >= request.confidence_threshold
+                and cached_result.get("confidence", 0)
+                >= request.confidence_threshold
             ):
                 return DeepConfResponse(
                     consensus_text=cached_result["consensus_text"],
@@ -419,8 +424,10 @@ class DeepConfAbility(PluginInterface):
             # Heuristic confidence extraction based on response length
             raw_confidence = len(response) / 1000.0  # Simple heuristic
 
-            result = await self.pipeline.confidence_calibrator.calibrate_confidence(
-                raw_confidence, domain=domain
+            result = (
+                await self.pipeline.confidence_calibrator.calibrate_confidence(
+                    raw_confidence, domain=domain
+                )
             )
             calibrations[f"response_{i}"] = result["calibrated_confidence"]
 

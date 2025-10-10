@@ -46,7 +46,11 @@ class MessageStore:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     "INSERT INTO events(type, payload, timestamp) VALUES(?, ?, ?)",
-                    (event_type, json.dumps(payload), datetime.now().isoformat()),
+                    (
+                        event_type,
+                        json.dumps(payload),
+                        datetime.now().isoformat(),
+                    ),
                 )
                 conn.commit()
             logger.debug(f"Persisted event: {event_type}")
@@ -76,7 +80,11 @@ class MessageStore:
                 (start_time, end_time),
             )
             return [
-                {"type": row[0], "payload": json.loads(row[1]), "timestamp": row[2]}
+                {
+                    "type": row[0],
+                    "payload": json.loads(row[1]),
+                    "timestamp": row[2],
+                }
                 for row in cursor.fetchall()
             ]
 
@@ -90,7 +98,9 @@ class MessageStore:
         """Clear events from store"""
         with sqlite3.connect(self.db_path) as conn:
             if event_type:
-                conn.execute("DELETE FROM events WHERE type = ?", (event_type,))
+                conn.execute(
+                    "DELETE FROM events WHERE type = ?", (event_type,)
+                )
                 logger.info(f"Cleared events of type: {event_type}")
             else:
                 conn.execute("DELETE FROM events")

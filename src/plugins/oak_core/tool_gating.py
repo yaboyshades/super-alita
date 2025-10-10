@@ -100,7 +100,9 @@ class AdvancedCircuitBreaker:
         # Logging
         self.logger = logging.getLogger(f"circuit_breaker.{tool_name}")
 
-    async def call(self, func: Callable, *args, **kwargs) -> ToolExecutionResult:
+    async def call(
+        self, func: Callable, *args, **kwargs
+    ) -> ToolExecutionResult:
         """Execute function through circuit breaker protection"""
 
         # Check for request storms
@@ -186,7 +188,9 @@ class AdvancedCircuitBreaker:
             self._record_failure(execution_result)
             return execution_result
 
-    async def _execute_with_monitoring(self, func: Callable, *args, **kwargs) -> Any:
+    async def _execute_with_monitoring(
+        self, func: Callable, *args, **kwargs
+    ) -> Any:
         """Execute function with additional monitoring"""
         if asyncio.iscoroutinefunction(func):
             return await func(*args, **kwargs)
@@ -201,7 +205,9 @@ class AdvancedCircuitBreaker:
         self.recent_requests.append(now)
 
         # Clean old requests outside the window
-        cutoff_time = now - timedelta(seconds=self.config.storm_detection_window)
+        cutoff_time = now - timedelta(
+            seconds=self.config.storm_detection_window
+        )
         self.recent_requests = [
             req for req in self.recent_requests if req > cutoff_time
         ]
@@ -287,7 +293,9 @@ class AdvancedCircuitBreaker:
             return 0.5
 
         # Get recent successful executions
-        recent_successes = [r for r in self.execution_history[-20:] if r.success]
+        recent_successes = [
+            r for r in self.execution_history[-20:] if r.success
+        ]
         if not recent_successes:
             return 0.3
 
@@ -301,9 +309,13 @@ class AdvancedCircuitBreaker:
         consistency_factor = max(0.1, 1.0 - (std_time / max(avg_time, 0.1)))
 
         # Success rate factor
-        success_rate = len(recent_successes) / min(20, len(self.execution_history))
+        success_rate = len(recent_successes) / min(
+            20, len(self.execution_history)
+        )
 
-        confidence = time_factor * 0.3 + consistency_factor * 0.3 + success_rate * 0.4
+        confidence = (
+            time_factor * 0.3 + consistency_factor * 0.3 + success_rate * 0.4
+        )
         return min(1.0, max(0.0, confidence))
 
     def _adapt_thresholds(self):
@@ -312,7 +324,9 @@ class AdvancedCircuitBreaker:
             return
 
         recent_results = self.execution_history[-50:]
-        success_rate = sum(1 for r in recent_results if r.success) / len(recent_results)
+        success_rate = sum(1 for r in recent_results if r.success) / len(
+            recent_results
+        )
 
         # Adapt failure threshold based on stability
         if success_rate > 0.9:
@@ -323,7 +337,9 @@ class AdvancedCircuitBreaker:
             )
         elif success_rate < 0.5:
             # Unstable, be more strict
-            self.adaptive_failure_threshold = max(self.config.failure_threshold // 2, 2)
+            self.adaptive_failure_threshold = max(
+                self.config.failure_threshold // 2, 2
+            )
         else:
             # Moderate stability, use default
             self.adaptive_failure_threshold = self.config.failure_threshold
@@ -365,7 +381,8 @@ class AdvancedCircuitBreaker:
             successful_recent = [r for r in recent_results if r.success]
             stats["performance"].update(
                 {
-                    "recent_success_rate": len(successful_recent) / len(recent_results),
+                    "recent_success_rate": len(successful_recent)
+                    / len(recent_results),
                     "avg_execution_time": (
                         np.mean([r.execution_time for r in successful_recent])
                         if successful_recent
@@ -454,7 +471,9 @@ class AdaptiveEVCalculator:
         # Limit history size
         max_history = 500
         if len(self.execution_rewards) > max_history:
-            self.execution_rewards = self.execution_rewards[-max_history // 2 :]
+            self.execution_rewards = self.execution_rewards[
+                -max_history // 2 :
+            ]
             self.execution_costs = self.execution_costs[-max_history // 2 :]
             self.execution_times = self.execution_times[-max_history // 2 :]
 
@@ -495,10 +514,14 @@ class AdaptiveEVCalculator:
                     else 0.0
                 ),
                 "avg_cost": (
-                    np.mean(self.execution_costs[-20:]) if self.execution_costs else 0.0
+                    np.mean(self.execution_costs[-20:])
+                    if self.execution_costs
+                    else 0.0
                 ),
                 "avg_execution_time": (
-                    np.mean(self.execution_times[-20:]) if self.execution_times else 0.0
+                    np.mean(self.execution_times[-20:])
+                    if self.execution_times
+                    else 0.0
                 ),
             },
         }
@@ -538,7 +561,9 @@ class UnifiedToolGatingSystem:
                 self.circuit_breakers[tool_name] = AdvancedCircuitBreaker(
                     tool_name, config or self.global_config
                 )
-                self.ev_calculators[tool_name] = AdaptiveEVCalculator(tool_name)
+                self.ev_calculators[tool_name] = AdaptiveEVCalculator(
+                    tool_name
+                )
                 self.logger.info(f"Registered tool: {tool_name}")
                 return True
             return False
@@ -580,7 +605,9 @@ class UnifiedToolGatingSystem:
 
         # Check if tool should be used based on EV
         if not ev_calculator.should_use_tool():
-            self.logger.info(f"Tool {tool_name} skipped due to low expected value")
+            self.logger.info(
+                f"Tool {tool_name} skipped due to low expected value"
+            )
             return ToolExecutionResult(
                 success=False,
                 execution_time=0.0,
@@ -631,7 +658,9 @@ class UnifiedToolGatingSystem:
             "tool_status": {
                 tool_name: {
                     "circuit_breaker": cb.get_stats(),
-                    "expected_value": self.ev_calculators[tool_name].get_ev_estimate(),
+                    "expected_value": self.ev_calculators[
+                        tool_name
+                    ].get_ev_estimate(),
                 }
                 for tool_name, cb in self.circuit_breakers.items()
             },

@@ -24,10 +24,14 @@ def compute_reward_from_result(result: dict[str, Any]) -> float:
     cost = float(metrics.get("cost_usd") or 0.0)
 
     lat_budget = float(
-        os.getenv("REWARD_LATENCY_BUDGET", os.getenv("PROMPT_LATENCY_BUDGET", "2.0"))
+        os.getenv(
+            "REWARD_LATENCY_BUDGET", os.getenv("PROMPT_LATENCY_BUDGET", "2.0")
+        )
     )
     cost_budget = float(
-        os.getenv("REWARD_COST_BUDGET", os.getenv("PROMPT_COST_BUDGET", "0.25"))
+        os.getenv(
+            "REWARD_COST_BUDGET", os.getenv("PROMPT_COST_BUDGET", "0.25")
+        )
     )
 
     # Convert to [0,1], where 1 means fully within budget
@@ -39,5 +43,7 @@ def compute_reward_from_result(result: dict[str, Any]) -> float:
     w_latency = 0.25
     w_cost = 0.15
 
-    reward = (w_success * success) + (w_latency * lat_score) + (w_cost * cost_score)
+    reward = (
+        (w_success * success) + (w_latency * lat_score) + (w_cost * cost_score)
+    )
     return _clamp(reward)

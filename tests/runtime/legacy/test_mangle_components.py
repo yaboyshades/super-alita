@@ -80,7 +80,9 @@ class TestPrometheusMetrics:
         collector = PrometheusMetricsCollector()
 
         collector.set_optimization_policies(5)
-        collector.inc_optimization_decisions("policy_1", "thompson_sampling", "arm_1")
+        collector.inc_optimization_decisions(
+            "policy_1", "thompson_sampling", "arm_1"
+        )
         collector.inc_optimization_rewards("policy_1", "arm_1")
         collector.observe_optimization_reward_value("policy_1", "arm_1", 0.8)
         collector.set_optimization_arm_performance(
@@ -250,11 +252,15 @@ class TestMangleComponentsIntegration:
             # Knowledge graph operations
             if i % 5 == 0:
                 collector.inc_knowledge_operations("create_atom", "success")
-                collector.observe_knowledge_operation_duration("create_atom", 0.05)
+                collector.observe_knowledge_operation_duration(
+                    "create_atom", 0.05
+                )
 
             if i % 7 == 0:
                 collector.inc_knowledge_operations("create_bond", "success")
-                collector.observe_knowledge_operation_duration("create_bond", 0.03)
+                collector.observe_knowledge_operation_duration(
+                    "create_bond", 0.03
+                )
 
             # Optimization decisions
             if i % 3 == 0:
@@ -262,7 +268,9 @@ class TestMangleComponentsIntegration:
                     "policy_1", "thompson_sampling", "arm_1"
                 )
                 collector.inc_optimization_rewards("policy_1", "arm_1")
-                collector.observe_optimization_reward_value("policy_1", "arm_1", 0.8)
+                collector.observe_optimization_reward_value(
+                    "policy_1", "arm_1", 0.8
+                )
 
         # Update system metrics
         collector.set_cortex_active_sessions(len(sessions))
@@ -285,7 +293,9 @@ class TestMangleComponentsIntegration:
         assert "super_alita_optimization_decisions_total" in metrics_text
         assert "super_alita_uptime_seconds" in metrics_text
 
-        print(f"✅ Comprehensive metrics scenario completed in {final_uptime:.3f}s")
+        print(
+            f"✅ Comprehensive metrics scenario completed in {final_uptime:.3f}s"
+        )
         print(f"✅ Metrics output length: {len(metrics_text)} characters")
 
 

@@ -22,7 +22,8 @@ LLM_MAX_TOKENS = int(_get("LLM_MAX_TOKENS", "256"))
 TRACE_ENABLED = _get("TRACE_ENABLED", "false").lower() == "true"
 
 # Canonical orchestration toggles
-CANONICAL_EVENTS_ENABLED = _get("CANONICAL_EVENTS_ENABLED", "true").lower() == "true"
+CANONICAL_EVENTS_ENABLED = (
+    _get("CANONICAL_EVENTS_ENABLED", "true").lower() == "true"
+)
 RUN_LEDGER_ENABLED = _get("RUN_LEDGER_ENABLED", "false").lower() == "true"
 RUN_LEDGER_PATH = _get("RUN_LEDGER_PATH", "data/run_ledger.ndjson")
-

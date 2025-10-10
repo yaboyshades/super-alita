@@ -68,7 +68,10 @@ SELF_HEAL_RESPONSE_SCHEMA = {
             "type": "string",
             "enum": ["retry", "restart", "rollback", "patch", "escalate"],
         },
-        "parameters": {"type": "object", "description": "Action-specific parameters."},
+        "parameters": {
+            "type": "object",
+            "description": "Action-specific parameters.",
+        },
         "confidence": {
             "type": "number",
             "minimum": 0.0,
@@ -108,16 +111,22 @@ class GeminiPilotClient:
         self.model = "gemini-2.5-pro"
         # Contracts are stored at repository_root/prompts/contracts
         self.prompts_dir = (
-            Path(__file__).resolve().parent.parent.parent / "prompts" / "contracts"
+            Path(__file__).resolve().parent.parent.parent
+            / "prompts"
+            / "contracts"
         )
 
         # HTTP client with timeouts and retries
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(60.0),
-            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
+            limits=httpx.Limits(
+                max_keepalive_connections=5, max_connections=10
+            ),
         )
 
-    async def load_contract(self, contract_name: str, variables: dict[str, Any]) -> str:
+    async def load_contract(
+        self, contract_name: str, variables: dict[str, Any]
+    ) -> str:
         """
         Load and process a cognitive contract YAML template.
 
@@ -245,7 +254,9 @@ compression: gzip
         # Prepare request payload
         payload = {
             "systemInstruction": {
-                "parts": [{"text": contract_data.get("system_instruction", "")}]
+                "parts": [
+                    {"text": contract_data.get("system_instruction", "")}
+                ]
             },
             "contents": [{"role": "user", "parts": [{"text": contract}]}],
             "generationConfig": generation_config,
@@ -261,7 +272,9 @@ compression: gzip
             )
 
         # Filter experimental features if not enabled
-        if not experimental and response.get("parameters", {}).get("experimental"):
+        if not experimental and response.get("parameters", {}).get(
+            "experimental"
+        ):
             logger.info("Skipping experimental action (EXPERIMENTAL=0)")
             return await self.pilot_decide(
                 goal,
@@ -315,7 +328,9 @@ compression: gzip
 
         payload = {
             "systemInstruction": {
-                "parts": [{"text": contract_data.get("system_instruction", "")}]
+                "parts": [
+                    {"text": contract_data.get("system_instruction", "")}
+                ]
             },
             "contents": [{"role": "user", "parts": [{"text": contract}]}],
             "generationConfig": {
@@ -339,17 +354,24 @@ compression: gzip
             Parsed response dictionary
         """
         url = f"{self.base_url}/models/{self.model}:generateContent"
-        headers = {"Content-Type": "application/json", "x-goog-api-key": self.api_key}
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": self.api_key,
+        }
 
         try:
-            response = await self.client.post(url, json=payload, headers=headers)
+            response = await self.client.post(
+                url, json=payload, headers=headers
+            )
             response.raise_for_status()
 
             result = response.json()
 
             # Extract the actual response content
             if "candidates" in result and len(result["candidates"]) > 0:
-                content = result["candidates"][0]["content"]["parts"][0]["text"]
+                content = result["candidates"][0]["content"]["parts"][0][
+                    "text"
+                ]
                 return json.loads(content)
             raise ValueError("No valid response from Gemini")
 

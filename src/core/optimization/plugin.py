@@ -12,7 +12,11 @@ from typing import Any
 
 from ..events import create_event
 from ..plugin_interface import PluginInterface
-from .policy_engine import DecisionContext, DecisionPolicyEngine, PolicyDecision
+from .policy_engine import (
+    DecisionContext,
+    DecisionPolicyEngine,
+    PolicyDecision,
+)
 from .reward_tracker import (
     RewardTracker,
     create_performance_rule,
@@ -117,7 +121,9 @@ class OptimizationPlugin(PluginInterface):
                         # Calculate automatic rewards based on cycle performance
                         context = {
                             "success": cycle_data.get("success", False),
-                            "execution_time": cycle_data.get("execution_time", 1.0),
+                            "execution_time": cycle_data.get(
+                                "execution_time", 1.0
+                            ),
                             "performance_score": cycle_data.get(
                                 "performance_score", 0.5
                             ),
@@ -149,7 +155,9 @@ class OptimizationPlugin(PluginInterface):
                 )
 
                 # Make decision
-                decision = await self.policy_engine.make_decision(policy_id, context)
+                decision = await self.policy_engine.make_decision(
+                    policy_id, context
+                )
                 self._metrics["decisions_made"] += 1
 
                 # Emit decision made event
@@ -200,7 +208,9 @@ class OptimizationPlugin(PluginInterface):
                 )
 
                 # Provide feedback to policy engine
-                await self.policy_engine.provide_feedback(decision_id, reward_value)
+                await self.policy_engine.provide_feedback(
+                    decision_id, reward_value
+                )
 
         except Exception as e:
             print(f"Error handling task completion: {e}")
@@ -313,7 +323,11 @@ class OptimizationPlugin(PluginInterface):
         return decision
 
     async def provide_feedback(
-        self, decision_id: str, reward: float, source: str = "manual", **metadata
+        self,
+        decision_id: str,
+        reward: float,
+        source: str = "manual",
+        **metadata,
     ) -> bool:
         """Provide feedback for a decision."""
         # Record in reward tracker
@@ -325,7 +339,9 @@ class OptimizationPlugin(PluginInterface):
         )
 
         # Provide to policy engine
-        return await self.policy_engine.provide_feedback(decision_id, reward, metadata)
+        return await self.policy_engine.provide_feedback(
+            decision_id, reward, metadata
+        )
 
     def get_policies(self) -> list[dict[str, Any]]:
         """Get all policies."""

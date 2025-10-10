@@ -11,7 +11,9 @@ transport = ASGITransport(app=app)
 
 @pytest.mark.asyncio
 async def test_gui_index() -> None:
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         r = await client.get("/gui")
         assert r.status_code == 200
         text = r.text.lower()
@@ -21,7 +23,9 @@ async def test_gui_index() -> None:
 
 @pytest.mark.asyncio
 async def test_gui_component_status_badge() -> None:
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         r = await client.get("/gui/components/status_badge")
         assert r.status_code == 200
         assert "badge" in r.text
@@ -29,7 +33,9 @@ async def test_gui_component_status_badge() -> None:
 
 @pytest.mark.asyncio
 async def test_gui_component_panel_snapshot() -> None:
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         r = await client.get(
             "/gui/components/panel",
             params={"props": '{"title":"T","body":"B"}'},
@@ -53,7 +59,9 @@ async def test_gui_schema_form_mapping() -> None:
             "flag": {"type": "boolean"},
         },
     }
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         r = await client.get(
             "/gui/components/schema_form",
             params={"props": json_dumps({"schema": schema})},
@@ -69,7 +77,9 @@ async def test_gui_schema_form_mapping() -> None:
 
 @pytest.mark.asyncio
 async def test_gui_list_components() -> None:
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         r = await client.get("/gui/components")
         assert r.status_code == 200
         data = r.json()

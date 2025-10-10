@@ -40,7 +40,9 @@ async def test_web_scraper_generation():
         print(f"Failed capabilities: {failed}")
 
         if applied:
-            print("\n✓ SUCCESS! Native DeepCode plugin generated and applied code!")
+            print(
+                "\n✓ SUCCESS! Native DeepCode plugin generated and applied code!"
+            )
             # Check if files were actually created
             test_files = [
                 "src/abilities/web_scraper.py",

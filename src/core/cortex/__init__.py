@@ -10,7 +10,12 @@ from .markers import (
     PerformanceMarker,
     create_cortex_event,
 )
-from .modules import ActionModule, CortexModule, PerceptionModule, ReasoningModule
+from .modules import (
+    ActionModule,
+    CortexModule,
+    PerceptionModule,
+    ReasoningModule,
+)
 from .runtime import CortexContext, CortexRuntime, create_cortex_runtime
 
 __all__ = [

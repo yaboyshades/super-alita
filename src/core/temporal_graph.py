@@ -33,13 +33,19 @@ class TemporalGraph:
     ) -> NeuralAtom:
         atom_uuid = str(uuid.uuid4())
         atom = NeuralAtom(
-            uuid=atom_uuid, content=content, atom_type=atom_type, metadata=metadata
+            uuid=atom_uuid,
+            content=content,
+            atom_type=atom_type,
+            metadata=metadata,
         )
         self.atoms[atom_uuid] = atom
         return atom
 
     def create_bond(
-        self, source_uuid: str, target_uuid: str, metadata: dict[str, Any] | None = None
+        self,
+        source_uuid: str,
+        target_uuid: str,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         if source_uuid in self.atoms and target_uuid in self.atoms:
             self.atoms[source_uuid].add_bond(target_uuid)

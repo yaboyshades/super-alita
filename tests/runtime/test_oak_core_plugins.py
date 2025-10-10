@@ -13,7 +13,9 @@ class DummyEventBus:
         self.published: list[Any] = []
         self.subscriptions: list[tuple[str, Any]] = []
 
-    async def publish(self, event: Any) -> None:  # pragma: no cover - simple stub
+    async def publish(
+        self, event: Any
+    ) -> None:  # pragma: no cover - simple stub
         self.published.append(event)
 
     async def subscribe(self, event_type: str, handler: Any) -> None:
@@ -47,11 +49,16 @@ async def test_cortex_adapter_plugin_setup_subscribes_and_sets_deps() -> None:
     graph = object()
     navigator = object()
     plugin = CortexAdapterPlugin()
-    await plugin.setup(bus, store={}, config={"graph": graph, "navigator": navigator})
+    await plugin.setup(
+        bus, store={}, config={"graph": graph, "navigator": navigator}
+    )
     assert plugin.event_bus is bus
     assert plugin.graph is graph
     assert plugin.navigator is navigator
-    assert {e for e, _ in bus.subscriptions} == {"reasoning_request", "knowledge_gap"}
+    assert {e for e, _ in bus.subscriptions} == {
+        "reasoning_request",
+        "knowledge_gap",
+    }
 
 
 @pytest.mark.asyncio
@@ -72,7 +79,9 @@ async def test_knowledge_gap_detector_emits_oak_prefixed_event() -> None:
     plugin = KnowledgeGapDetector()
     await plugin.setup(bus, store={}, config={})
     plugin.emit_event = AsyncMock()
-    await plugin._maybe_publish_gap(gap_description="desc", context={}, gap_type="test")
+    await plugin._maybe_publish_gap(
+        gap_description="desc", context={}, gap_type="test"
+    )
     plugin.emit_event.assert_called_once()
     args, _ = plugin.emit_event.call_args
     assert args[0] == "oak.knowledge_gap"

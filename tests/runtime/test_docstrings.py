@@ -9,7 +9,9 @@ def _assert_google_doc(func, sections):
     doc = inspect.getdoc(func)
     assert doc is not None, f"{func.__name__} missing docstring"
     for sec in sections:
-        assert f"{sec}:" in doc, f"{func.__name__} docstring missing '{sec}:' section"
+        assert (
+            f"{sec}:" in doc
+        ), f"{func.__name__} docstring missing '{sec}:' section"
 
 
 def test_config_getenv_docstring():

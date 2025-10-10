@@ -36,14 +36,20 @@ class TelemetryPluginWrapper:
             if hasattr(self.plugin, "emit_event"):
                 self.original_emit = self.plugin.emit_event
                 self.plugin.emit_event = self._telemetry_emit_wrapper
-                logger.debug(f"✅ Telemetry monitoring enabled for {self.plugin.name}")
+                logger.debug(
+                    f"✅ Telemetry monitoring enabled for {self.plugin.name}"
+                )
             else:
-                logger.debug(f"⚠️ Plugin {self.plugin.name} has no emit_event method")
+                logger.debug(
+                    f"⚠️ Plugin {self.plugin.name} has no emit_event method"
+                )
 
         except ImportError:
             logger.debug("⚠️ Telemetry not available - monitoring disabled")
 
-    async def _telemetry_emit_wrapper(self, event_type: str, event_data: Any, **kwargs):
+    async def _telemetry_emit_wrapper(
+        self, event_type: str, event_data: Any, **kwargs
+    ):
         """Wrapper that broadcasts events to telemetry before calling original emit."""
         try:
             # Import here to avoid circular imports
@@ -60,7 +66,9 @@ class TelemetryPluginWrapper:
             # Add specific data based on event type
             if hasattr(event_data, "__dict__"):
                 # For events with attributes, capture some metadata
-                telemetry_data["event_attributes"] = list(event_data.__dict__.keys())
+                telemetry_data["event_attributes"] = list(
+                    event_data.__dict__.keys()
+                )
             elif isinstance(event_data, dict):
                 telemetry_data["event_keys"] = list(event_data.keys())
 
@@ -73,7 +81,9 @@ class TelemetryPluginWrapper:
             )
 
         except Exception as e:
-            logger.warning(f"Failed to broadcast telemetry for {self.plugin.name}: {e}")
+            logger.warning(
+                f"Failed to broadcast telemetry for {self.plugin.name}: {e}"
+            )
 
         # Call original emit method
         if self.original_emit:
@@ -96,5 +106,7 @@ def wrap_plugin_for_telemetry(plugin: PluginInterface) -> PluginInterface:
         logger.debug(f"🔄 Plugin {plugin.name} wrapped for telemetry")
         return plugin
     except Exception as e:
-        logger.warning(f"Failed to wrap plugin {plugin.name} for telemetry: {e}")
+        logger.warning(
+            f"Failed to wrap plugin {plugin.name} for telemetry: {e}"
+        )
         return plugin

@@ -20,10 +20,12 @@ class SpecifyRequest(BaseModel):
         description="Additional context for specification generation",
     )
     constitutional_gates: bool = Field(
-        default=True, description="Whether to apply constitutional validation gates"
+        default=True,
+        description="Whether to apply constitutional validation gates",
     )
     spec_file: str | None = Field(
-        default=None, description="Optional pre-created specification file to populate"
+        default=None,
+        description="Optional pre-created specification file to populate",
     )
     branch_name: str | None = Field(
         default=None, description="Git branch created for the feature"
@@ -32,11 +34,14 @@ class SpecifyRequest(BaseModel):
         default=None, description="Directory containing feature artifacts"
     )
 
+
 class ConstitutionalValidation(BaseModel):
     """Constitutional validation result."""
 
     article: str = Field(..., description="Constitutional article name")
-    compliant: bool = Field(..., description="Whether the artifact is compliant")
+    compliant: bool = Field(
+        ..., description="Whether the artifact is compliant"
+    )
     score: float = Field(..., description="Compliance score (0.0-1.0)")
     violations: list[str] = Field(
         default_factory=list, description="List of violations if not compliant"
@@ -45,10 +50,13 @@ class ConstitutionalValidation(BaseModel):
         default_factory=list, description="Suggested improvements"
     )
 
+
 class NextStepItem(BaseModel):
     """Structured representation of an actionable next step."""
 
-    action: str = Field(..., description="Imperative statement for the follow-up item")
+    action: str = Field(
+        ..., description="Imperative statement for the follow-up item"
+    )
     owner: str = Field(
         default="unassigned",
         description="Owner responsible for resolving the item",
@@ -63,9 +71,7 @@ class NextStepItem(BaseModel):
         "integration_first",
         "clarity",
         "counterfactual",
-    ] = Field(
-        ..., description="Constitutional gate the item helps to satisfy"
-    )
+    ] = Field(..., description="Constitutional gate the item helps to satisfy")
     status: Literal["pending", "in_progress", "complete"] = Field(
         default="pending",
         description="Workflow status for the item",
@@ -73,8 +79,8 @@ class NextStepItem(BaseModel):
     rationale: str | None = Field(
         default=None, description="Reason the item exists"
     )
-    source: Literal["clarification", "artefact", "command", "reminder"] = Field(
-        ..., description="Category of the next step"
+    source: Literal["clarification", "artefact", "command", "reminder"] = (
+        Field(..., description="Category of the next step")
     )
 
 
@@ -89,7 +95,9 @@ class ConstitutionalAlignment(BaseModel):
         "clarity",
         "counterfactual",
     ] = Field(..., description="Constitutional gate name")
-    summary: str = Field(..., description="How the listed steps satisfy the gate")
+    summary: str = Field(
+        ..., description="How the listed steps satisfy the gate"
+    )
     evidence: str | None = Field(
         default=None,
         description="Pointer to supporting artefact or decision log",
@@ -99,7 +107,9 @@ class ConstitutionalAlignment(BaseModel):
 class NextStepGuidance(BaseModel):
     """Machine-readable bundle of next-step metadata."""
 
-    feature_id: str = Field(..., description="Feature identifier for the guidance")
+    feature_id: str = Field(
+        ..., description="Feature identifier for the guidance"
+    )
     generated_at: datetime = Field(
         default_factory=datetime.now,
         description="Timestamp guidance was produced",
@@ -119,14 +129,21 @@ class NextStepGuidance(BaseModel):
     )
 
 
-
 class SpecifyResponse(BaseModel):
     """Response model for /specify endpoint."""
 
-    success: bool = Field(..., description="Whether specification generation succeeded")
-    specification: str = Field(..., description="Generated specification content")
-    feature_id: str = Field(..., description="Unique identifier for the feature")
-    feature_path: str = Field(..., description="Path to the generated specification")
+    success: bool = Field(
+        ..., description="Whether specification generation succeeded"
+    )
+    specification: str = Field(
+        ..., description="Generated specification content"
+    )
+    feature_id: str = Field(
+        ..., description="Unique identifier for the feature"
+    )
+    feature_path: str = Field(
+        ..., description="Path to the generated specification"
+    )
     branch_name: str | None = Field(
         default=None, description="Git branch associated with the feature"
     )
@@ -134,17 +151,20 @@ class SpecifyResponse(BaseModel):
         default=None, description="Human-friendly feature name or slug"
     )
     spec_file_path: str | None = Field(
-        default=None, description="Alias for feature_path (kept for compatibility)"
+        default=None,
+        description="Alias for feature_path (kept for compatibility)",
     )
     feature_dir: str | None = Field(
-        default=None, description="Directory containing specification artifacts"
+        default=None,
+        description="Directory containing specification artifacts",
     )
     analysis_results: dict[str, Any] = Field(
         default_factory=dict,
         description="Additional analysis and Mangle-enhanced reasoning artifacts",
     )
     constitutional_compliance: dict[str, ConstitutionalValidation] = Field(
-        default_factory=dict, description="Constitutional validation results by article"
+        default_factory=dict,
+        description="Constitutional validation results by article",
     )
     overall_compliance_score: float = Field(
         ..., description="Overall constitutional compliance score"
@@ -164,7 +184,8 @@ class SpecifyResponse(BaseModel):
         description="Location of the persisted next-step guidance file",
     )
     timestamp: datetime = Field(
-        default_factory=datetime.now, description="When the specification was generated"
+        default_factory=datetime.now,
+        description="When the specification was generated",
     )
 
 
@@ -182,20 +203,24 @@ class PlanRequest(BaseModel):
         default=None, description="Path to the specification file"
     )
     specification: str | None = Field(
-        default=None, description="Raw specification content (alternative to path)"
+        default=None,
+        description="Raw specification content (alternative to path)",
     )
     feature_id: str | None = Field(
-        default=None, description="Optional feature identifier to use for outputs"
+        default=None,
+        description="Optional feature identifier to use for outputs",
     )
     technology_stack: str = Field(
         default="",
         description="Preferred technology stack (e.g., 'FastAPI + SQLAlchemy')",
     )
     constraints: dict[str, Any] = Field(
-        default_factory=dict, description="Additional constraints and preferences"
+        default_factory=dict,
+        description="Additional constraints and preferences",
     )
     constitutional_gates: bool = Field(
-        default=True, description="Whether to apply constitutional validation gates"
+        default=True,
+        description="Whether to apply constitutional validation gates",
     )
 
 
@@ -206,9 +231,13 @@ class PlanResponse(BaseModel):
     feature_id: str | None = Field(
         default=None, description="Feature identifier associated with the plan"
     )
-    implementation_plan: str = Field(..., description="Generated implementation plan")
+    implementation_plan: str = Field(
+        ..., description="Generated implementation plan"
+    )
     # Back-compat alias expected by some callers/tests
-    plan: str = Field(..., description="Alias of implementation_plan for compatibility")
+    plan: str = Field(
+        ..., description="Alias of implementation_plan for compatibility"
+    )
     plan_path: str = Field(..., description="Path to the generated plan file")
     supporting_documents: list[str] = Field(
         default_factory=list,
@@ -216,7 +245,9 @@ class PlanResponse(BaseModel):
     )
     analysis_results: dict[str, Any] = Field(
         default_factory=dict,
-        description=("Additional analysis and Mangle-enhanced reasoning artifacts"),
+        description=(
+            "Additional analysis and Mangle-enhanced reasoning artifacts"
+        ),
     )
     constitutional_compliance: dict[str, ConstitutionalValidation] = Field(
         default_factory=dict,
@@ -238,10 +269,12 @@ class PlanResponse(BaseModel):
         default_factory=list, description="Recommended next steps"
     )
     next_step_guidance: NextStepGuidance | None = Field(
-        default=None, description="Structured next steps carried into the plan phase"
+        default=None,
+        description="Structured next steps carried into the plan phase",
     )
     next_step_metadata_path: str | None = Field(
-        default=None, description="Path to the persisted next-step guidance file"
+        default=None,
+        description="Path to the persisted next-step guidance file",
     )
     timestamp: datetime = Field(
         default_factory=datetime.now, description="When the plan was generated"
@@ -264,17 +297,21 @@ class TasksRequest(BaseModel):
         default=None, description="Raw plan content (alternative to path)"
     )
     feature_id: str | None = Field(
-        default=None, description="Optional feature identifier to use for outputs"
+        default=None,
+        description="Optional feature identifier to use for outputs",
     )
     priority_focus: str = Field(
         default="test-first",
-        description=("Priority focus (test-first, library-first, integration-first)"),
+        description=(
+            "Priority focus (test-first, library-first, integration-first)"
+        ),
     )
     team_size: int = Field(
         default=1, description="Team size for task estimation", ge=1, le=10
     )
     constitutional_gates: bool = Field(
-        default=True, description="Whether to apply constitutional validation gates"
+        default=True,
+        description="Whether to apply constitutional validation gates",
     )
 
 
@@ -289,10 +326,12 @@ class TaskBreakdown(BaseModel):
     )
     estimated_hours: int = Field(..., description="Estimated effort in hours")
     dependencies: list[str] = Field(
-        default_factory=list, description="List of task IDs this task depends on"
+        default_factory=list,
+        description="List of task IDs this task depends on",
     )
     acceptance_criteria: list[str] = Field(
-        default_factory=list, description="Acceptance criteria for task completion"
+        default_factory=list,
+        description="Acceptance criteria for task completion",
     )
     constitutional_requirements: list[str] = Field(
         default_factory=list,
@@ -305,10 +344,15 @@ class TasksResponse(BaseModel):
 
     success: bool = Field(..., description="Whether task generation succeeded")
     feature_id: str | None = Field(
-        default=None, description="Feature identifier associated with the tasks"
+        default=None,
+        description="Feature identifier associated with the tasks",
     )
-    tasks_breakdown: str = Field(..., description="Generated tasks breakdown content")
-    tasks_path: str = Field(..., description="Path to the generated tasks file")
+    tasks_breakdown: str = Field(
+        ..., description="Generated tasks breakdown content"
+    )
+    tasks_path: str = Field(
+        ..., description="Path to the generated tasks file"
+    )
     tasks: list[TaskBreakdown] = Field(
         default_factory=list, description="Structured list of tasks"
     )
@@ -317,7 +361,8 @@ class TasksResponse(BaseModel):
         description="Additional analysis and Mangle-enhanced reasoning artifacts",
     )
     constitutional_compliance: dict[str, ConstitutionalValidation] = Field(
-        default_factory=dict, description="Constitutional validation results by article"
+        default_factory=dict,
+        description="Constitutional validation results by article",
     )
     overall_compliance_score: float = Field(
         ..., description="Overall constitutional compliance score"
@@ -335,13 +380,16 @@ class TasksResponse(BaseModel):
         default_factory=list, description="Recommended next steps"
     )
     next_step_guidance: NextStepGuidance | None = Field(
-        default=None, description="Structured next steps reused during tasks phase"
+        default=None,
+        description="Structured next steps reused during tasks phase",
     )
     next_step_metadata_path: str | None = Field(
-        default=None, description="Path to the persisted next-step guidance file"
+        default=None,
+        description="Path to the persisted next-step guidance file",
     )
     timestamp: datetime = Field(
-        default_factory=datetime.now, description="When the tasks were generated"
+        default_factory=datetime.now,
+        description="When the tasks were generated",
     )
 
 
@@ -360,4 +408,3 @@ class ConstitutionalGateResult(BaseModel):
     timestamp: datetime = Field(
         default_factory=datetime.now, description="When the gate was evaluated"
     )
-

@@ -50,14 +50,18 @@ class Action(str, Enum):
 
 
 class Directive(BaseModel):
-    def __init__(self, action: Action, reasoning: str, params: dict[str, Any] = None):
+    def __init__(
+        self, action: Action, reasoning: str, params: dict[str, Any] = None
+    ):
         self.action = action
         self.reasoning = reasoning
         self.params = params or {}
 
 
 class Outcome(BaseModel):
-    def __init__(self, success: bool, action: Action, details: dict[str, Any] = None):
+    def __init__(
+        self, success: bool, action: Action, details: dict[str, Any] = None
+    ):
         self.success = success
         self.action = action
         self.details = details or {}
@@ -82,7 +86,9 @@ class SelfHealPlugin(PluginInterface):
     def name(self) -> str:
         return self._name
 
-    async def setup(self, bus: EventBus, store: NeuralStore, cfg: dict[str, Any]):
+    async def setup(
+        self, bus: EventBus, store: NeuralStore, cfg: dict[str, Any]
+    ):
         await super().setup(bus, store, cfg)
 
         # Create health atom using the module function
@@ -129,7 +135,9 @@ class SelfHealPlugin(PluginInterface):
         directive = await self._diagnose_with_pilot(failure, root_cause)
         outcome = await self._execute(directive, failure.context)
 
-        await self._record_experience(failure, directive, outcome, root_cause, trace)
+        await self._record_experience(
+            failure, directive, outcome, root_cause, trace
+        )
 
         if self._health:
             self._health.value = "healthy" if outcome.success else "degraded"
@@ -145,7 +153,9 @@ class SelfHealPlugin(PluginInterface):
             return None
         return max(candidates, key=lambda x: x[1])[0]
 
-    def _select_action_from_history(self, failure_summary: str) -> Action | None:
+    def _select_action_from_history(
+        self, failure_summary: str
+    ) -> Action | None:
         stats = self._outcome_history.get(failure_summary)
         if not stats:
             return None
@@ -193,9 +203,13 @@ class SelfHealPlugin(PluginInterface):
                     failure_type=failure.event_type,
                     error_details=failure.summary,
                     component=failure.component,
-                    system_state=str(self._health.value) if self._health else "unknown",
+                    system_state=(
+                        str(self._health.value) if self._health else "unknown"
+                    ),
                     retry_count=failure.context.get("retry_count", 0),
-                    failure_history=[m.data for m in memories] if memories else None,
+                    failure_history=(
+                        [m.data for m in memories] if memories else None
+                    ),
                     diagnostic_data=failure.context,
                 ),
                 timeout=45,
@@ -218,7 +232,9 @@ class SelfHealPlugin(PluginInterface):
 
         except Exception as e:
             logger.error(f"Pilot unreachable: {e}")
-            return Directive(action=Action.ESCALATE, reasoning="Pilot unreachable")
+            return Directive(
+                action=Action.ESCALATE, reasoning="Pilot unreachable"
+            )
 
     async def _execute(self, d: Directive, ctx: dict[str, Any]) -> Outcome:
         """Execute healing action with real orchestration."""
@@ -228,7 +244,9 @@ class SelfHealPlugin(PluginInterface):
         try:
             if d.action == Action.RETRY:
                 # Log the retry attempt
-                logger.info(f"Retrying operation: {ctx.get('operation', 'unknown')}")
+                logger.info(
+                    f"Retrying operation: {ctx.get('operation', 'unknown')}"
+                )
                 # Record error in memory for learning
                 if hasattr(self.store, "upsert"):
                     await self.store.upsert(
@@ -244,7 +262,10 @@ class SelfHealPlugin(PluginInterface):
                 if hasattr(self.store, "upsert"):
                     await self.store.upsert(
                         content=f"Rollback initiated: {d.reasoning}",
-                        metadata={"type": "healing_action", "action": "rollback"},
+                        metadata={
+                            "type": "healing_action",
+                            "action": "rollback",
+                        },
                         hierarchy_path=["self_heal", "rollbacks"],
                     )
                 success = True
@@ -255,7 +276,10 @@ class SelfHealPlugin(PluginInterface):
                 if hasattr(self.store, "upsert"):
                     await self.store.upsert(
                         content=f"Escalated issue: {d.reasoning}",
-                        metadata={"type": "healing_action", "action": "escalate"},
+                        metadata={
+                            "type": "healing_action",
+                            "action": "escalate",
+                        },
                         hierarchy_path=["self_heal", "escalations"],
                     )
                 success = False  # Escalation means we couldn't self-heal
@@ -322,9 +346,7 @@ class SelfHealPlugin(PluginInterface):
         This method is deprecated - use _diagnose_with_pilot directly.
         """
         # Simple wrapper that returns the issue description for compatibility
-        return (
-            f"Component: {component}\nIssue: {issue_description}\nSeverity: {severity}"
-        )
+        return f"Component: {component}\nIssue: {issue_description}\nSeverity: {severity}"
 
 
 class _FailureSnapshot:

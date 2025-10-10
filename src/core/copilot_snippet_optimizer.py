@@ -57,7 +57,13 @@ PYTHON_SNIPPET_PATTERNS = {
     # Function definitions (template-based)
     "functions": {
         "triggers": ["def-", "main-", "class-"],
-        "context_keywords": ["function", "method", "class", "define", "create"],
+        "context_keywords": [
+            "function",
+            "method",
+            "class",
+            "define",
+            "create",
+        ],
         "token_cost": 12,
         "description": "Use function/class definition snippets",
     },
@@ -145,7 +151,9 @@ class SnippetIntelligenceAtom(NeuralAtom):
     async def execute(self, input_data: Any) -> Any:
         """Execute snippet intelligence operations."""
         parameters = (
-            input_data if isinstance(input_data, dict) else {"operation": "analyze"}
+            input_data
+            if isinstance(input_data, dict)
+            else {"operation": "analyze"}
         )
         operation = parameters.get("operation", "analyze")
 
@@ -195,7 +203,9 @@ class SnippetIntelligenceAtom(NeuralAtom):
                     matched_keywords.append(keyword)
 
             if score > 0:
-                confidence = min(score / len(pattern_info["context_keywords"]), 1.0)
+                confidence = min(
+                    score / len(pattern_info["context_keywords"]), 1.0
+                )
                 pattern_matches[pattern_name] = {
                     "confidence": confidence,
                     "matched_keywords": matched_keywords,
@@ -213,7 +223,9 @@ class SnippetIntelligenceAtom(NeuralAtom):
             ),
         }
 
-    async def _suggest_optimal_snippets(self, data: dict[str, Any]) -> dict[str, Any]:
+    async def _suggest_optimal_snippets(
+        self, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Suggest optimal snippets based on context analysis."""
         context = data.get("context", "")
         code_intent = data.get("code_intent", "")
@@ -241,15 +253,20 @@ class SnippetIntelligenceAtom(NeuralAtom):
                         confidence=match_info["confidence"],
                         token_cost=snippet_cost,
                         estimated_savings=savings,
-                        context_match=", ".join(match_info["matched_keywords"]),
-                        description=self.snippet_patterns[pattern_name]["description"],
+                        context_match=", ".join(
+                            match_info["matched_keywords"]
+                        ),
+                        description=self.snippet_patterns[pattern_name][
+                            "description"
+                        ],
                     )
                     suggestions.append(suggestion)
                     total_estimated_savings += savings
 
         # Sort by efficiency (savings per token cost)
         suggestions.sort(
-            key=lambda s: s.estimated_savings / max(s.token_cost, 1), reverse=True
+            key=lambda s: s.estimated_savings / max(s.token_cost, 1),
+            reverse=True,
         )
         suggestions = suggestions[:MAX_SNIPPET_SUGGESTIONS]
 
@@ -283,13 +300,21 @@ class SnippetIntelligenceAtom(NeuralAtom):
         )
 
         if optimization["recommended_approach"] == "snippet":
-            return await self._generate_snippet_response(optimization, user_request)
+            return await self._generate_snippet_response(
+                optimization, user_request
+            )
         elif optimization["recommended_approach"] == "template":
-            return await self._generate_template_response(optimization, user_request)
+            return await self._generate_template_response(
+                optimization, user_request
+            )
         elif optimization["recommended_approach"] == "hybrid":
-            return await self._generate_hybrid_response(optimization, user_request)
+            return await self._generate_hybrid_response(
+                optimization, user_request
+            )
         else:
-            return await self._generate_fallback_response(user_request, context)
+            return await self._generate_fallback_response(
+                user_request, context
+            )
 
     async def _determine_optimization_strategy(
         self, request: str, context: str
@@ -297,7 +322,11 @@ class SnippetIntelligenceAtom(NeuralAtom):
         """Determine the best optimization strategy."""
         # Get snippet suggestions
         suggestions_result = await self._suggest_optimal_snippets(
-            {"context": context, "code_intent": request, "estimated_tokens": 100}
+            {
+                "context": context,
+                "code_intent": request,
+                "estimated_tokens": 100,
+            }
         )
 
         suggestions = suggestions_result["suggestions"]
@@ -337,7 +366,9 @@ class SnippetIntelligenceAtom(NeuralAtom):
             "api",
             "endpoint",
         ]
-        return any(indicator in request.lower() for indicator in template_indicators)
+        return any(
+            indicator in request.lower() for indicator in template_indicators
+        )
 
     async def _generate_snippet_response(
         self, optimization: dict, _request: str
@@ -426,7 +457,9 @@ Use the `{snippet_trigger}` snippet for efficient {template_type} creation:
     ) -> dict[str, Any]:
         """Generate hybrid response combining snippets with minimal generation."""
         primary_suggestion = (
-            optimization["suggestions"][0] if optimization["suggestions"] else None
+            optimization["suggestions"][0]
+            if optimization["suggestions"]
+            else None
         )
 
         if not primary_suggestion:
@@ -473,7 +506,9 @@ Use the `{snippet_trigger}` snippet for efficient {template_type} creation:
             "snippets_recommended": [],
         }
 
-    async def _calculate_token_savings(self, data: dict[str, Any]) -> dict[str, Any]:
+    async def _calculate_token_savings(
+        self, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate potential token savings from snippet usage."""
         approach = data.get("approach", "generate")
         baseline_tokens = data.get("baseline_tokens", 100)
@@ -520,7 +555,9 @@ class SnippetOptimizedCopilotPlugin(CopilotAgentPlugin):
     def name(self) -> str:
         return "snippet_optimized_copilot_agent"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         """Setup the snippet-optimized Copilot agent plugin."""
         await super().setup(event_bus, store, config)
 
@@ -555,7 +592,9 @@ class SnippetOptimizedCopilotPlugin(CopilotAgentPlugin):
 
             # Check if this is a code generation request
             if self._is_code_generation_request(operation, parameters):
-                result = await self._handle_code_generation_with_optimization(event)
+                result = await self._handle_code_generation_with_optimization(
+                    event
+                )
             else:
                 result = await super()._handle_agent_mode_event(event)
 
@@ -578,7 +617,9 @@ class SnippetOptimizedCopilotPlugin(CopilotAgentPlugin):
             logger.error(f"Error in snippet-optimized agent mode event: {e}")
             await super()._handle_agent_mode_event(event)
 
-    def _is_code_generation_request(self, operation: str, parameters: dict) -> bool:
+    def _is_code_generation_request(
+        self, operation: str, parameters: dict
+    ) -> bool:
         """Determine if this is a code generation request."""
         code_indicators = [
             "generate",
@@ -593,7 +634,9 @@ class SnippetOptimizedCopilotPlugin(CopilotAgentPlugin):
             "api",
         ]
 
-        request_text = f"{operation} {parameters.get('user_request', '')}".lower()
+        request_text = (
+            f"{operation} {parameters.get('user_request', '')}".lower()
+        )
         return any(indicator in request_text for indicator in code_indicators)
 
     async def _handle_code_generation_with_optimization(
@@ -627,8 +670,12 @@ class SnippetOptimizedCopilotPlugin(CopilotAgentPlugin):
 
             # Record efficiency improvement
             baseline_tokens = 100  # Estimated baseline
-            efficiency = tokens_saved / baseline_tokens if baseline_tokens > 0 else 0
-            self.optimization_stats["efficiency_improvements"].append(efficiency)
+            efficiency = (
+                tokens_saved / baseline_tokens if baseline_tokens > 0 else 0
+            )
+            self.optimization_stats["efficiency_improvements"].append(
+                efficiency
+            )
 
         # Log optimization results
         logger.info(

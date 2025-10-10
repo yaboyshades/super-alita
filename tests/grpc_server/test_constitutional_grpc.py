@@ -32,7 +32,9 @@ from src.grpc_server.server import (
     ConstitutionalGrpcServer,
     create_constitutional_server,
 )
-from src.grpc_server.super_alita_servicer import ConstitutionalSuperAlitaServicer
+from src.grpc_server.super_alita_servicer import (
+    ConstitutionalSuperAlitaServicer,
+)
 
 
 class TestConstitutionalScore:
@@ -133,7 +135,9 @@ class TestConstitutionalValidationMiddleware:
         request = MagicMock()
         context = MagicMock()
 
-        result = await self.middleware.validate_request(request, "TestMethod", context)
+        result = await self.middleware.validate_request(
+            request, "TestMethod", context
+        )
 
         assert "compliant" in result
         assert "overall_score" in result
@@ -146,7 +150,9 @@ class TestConstitutionalValidationMiddleware:
         request = MagicMock()
         context = MagicMock()
 
-        result = await self.middleware.validate_request(request, "TestMethod", context)
+        result = await self.middleware.validate_request(
+            request, "TestMethod", context
+        )
 
         assert result["compliant"] is True
         assert result["score"] == 1.0
@@ -178,7 +184,9 @@ class TestConstitutionalValidationMiddleware:
         original_method.return_value = MagicMock()
 
         # Create intercepted method
-        intercepted = constitutional_rpc_interceptor(middleware)(original_method)
+        intercepted = constitutional_rpc_interceptor(middleware)(
+            original_method
+        )
 
         # Test execution
         self_mock = MagicMock()
@@ -216,7 +224,9 @@ class TestConstitutionalSuperAlitaServicer:
             "src.grpc_server.super_alita_servicer.constitutional_rpc_interceptor"
         ) as mock_interceptor:
             # Setup mock interceptor to call method directly
-            mock_interceptor.side_effect = lambda original_method: original_method
+            mock_interceptor.side_effect = (
+                lambda original_method: original_method
+            )
 
             response = await self.servicer.GetHealth(request, context)
 
@@ -233,7 +243,9 @@ class TestConstitutionalSuperAlitaServicer:
         with patch(
             "src.grpc_server.super_alita_servicer.constitutional_rpc_interceptor"
         ) as mock_interceptor:
-            mock_interceptor.side_effect = lambda original_method: original_method
+            mock_interceptor.side_effect = (
+                lambda original_method: original_method
+            )
 
             response = await self.servicer.GetStatus(request, context)
 
@@ -261,7 +273,9 @@ class TestConstitutionalSuperAlitaServicer:
         with patch(
             "src.grpc_server.super_alita_servicer.constitutional_rpc_interceptor"
         ) as mock_interceptor:
-            mock_interceptor.side_effect = lambda original_method: original_method
+            mock_interceptor.side_effect = (
+                lambda original_method: original_method
+            )
 
             response = await self.servicer.ProcessTask(request, context)
 
@@ -283,7 +297,9 @@ class TestConstitutionalSuperAlitaServicer:
         with patch(
             "src.grpc_server.super_alita_servicer.constitutional_rpc_interceptor"
         ) as mock_interceptor:
-            mock_interceptor.side_effect = lambda original_method: original_method
+            mock_interceptor.side_effect = (
+                lambda original_method: original_method
+            )
 
             response = await servicer.ProcessTask(request, context)
 
@@ -324,11 +340,13 @@ class TestConstitutionalSuperAlitaServicer:
         """Test constitutional validation with violations."""
         request = (
             pb2.ValidationRequest(  # type: ignore[attr-defined]
-                artifact_content="complex code", validation_type="constitutional"
+                artifact_content="complex code",
+                validation_type="constitutional",
             )
             if hasattr(pb2, "ValidationRequest")
             else MagicMock(
-                artifact_content="complex code", validation_type="constitutional"
+                artifact_content="complex code",
+                validation_type="constitutional",
             )
         )
         context = MagicMock()
@@ -355,7 +373,9 @@ class TestConstitutionalSuperAlitaServicer:
                 workflow_id="workflow_123", requirements="Test requirements"
             )
             if hasattr(pb2, "SDDWorkflowRequest")
-            else MagicMock(workflow_id="workflow_123", requirements="Test requirements")
+            else MagicMock(
+                workflow_id="workflow_123", requirements="Test requirements"
+            )
         )
         context = MagicMock()
 
@@ -551,7 +571,9 @@ class TestEndToEndIntegration:
             "has_tests": False,
         }
 
-        result = scorer.calculate_compliance_score(low_compliance_artifact, low_context)
+        result = scorer.calculate_compliance_score(
+            low_compliance_artifact, low_context
+        )
         assert result["overall_score"] < 0.75
         assert result["compliant"] is False
 
@@ -622,7 +644,9 @@ class TestUnifiedIntegration:
     @pytest.fixture
     async def integration(self):
         """Create test integration instance."""
-        from src.grpc_server.unified_integration import ConstitutionalUnifiedIntegration
+        from src.grpc_server.unified_integration import (
+            ConstitutionalUnifiedIntegration,
+        )
 
         integration = ConstitutionalUnifiedIntegration(
             grpc_host="localhost",
@@ -639,7 +663,9 @@ class TestUnifiedIntegration:
             patch(
                 "src.grpc_server.unified_integration.UnifiedSuperAlita"
             ) as mock_unified,
-            patch("src.grpc_server.unified_integration.MangleReasoner") as mock_mangle,
+            patch(
+                "src.grpc_server.unified_integration.MangleReasoner"
+            ) as mock_mangle,
         ):
 
             mock_unified.return_value = MagicMock()

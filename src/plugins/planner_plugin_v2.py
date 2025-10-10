@@ -68,7 +68,9 @@ class PlannerPluginV2(PluginInterface):
         # await self.subscribe("user_message", self._handle_user_message)
         # await self.subscribe("atom_ready", self._handle_atom_ready)
 
-        logger.info("PlannerPluginV2 started - ready to create plans from goals.")
+        logger.info(
+            "PlannerPluginV2 started - ready to create plans from goals."
+        )
 
     async def shutdown(self) -> None:
         """Shutdown the planner plugin."""
@@ -91,11 +93,15 @@ class PlannerPluginV2(PluginInterface):
         try:
             goal_description = event.goal
             session_id = event.session_id
-            parent_goal_id = getattr(event, "parent_goal_id", f"goal_{session_id}")
+            parent_goal_id = getattr(
+                event, "parent_goal_id", f"goal_{session_id}"
+            )
             subgoal_id = f"subgoal_{session_id}_{self.plan_counter}"
             self.plan_counter += 1
 
-            logger.info(f"🎯 Decomposing goal into subgoal: {goal_description}")
+            logger.info(
+                f"🎯 Decomposing goal into subgoal: {goal_description}"
+            )
 
             subgoal = Subgoal(
                 description=goal_description,
@@ -114,7 +120,9 @@ class PlannerPluginV2(PluginInterface):
             logger.info(f"✅ Emitted subgoal_defined event: {subgoal_id}")
 
         except Exception as e:
-            logger.error(f"Failed to emit subgoal_defined event: {e}", exc_info=True)
+            logger.error(
+                f"Failed to emit subgoal_defined event: {e}", exc_info=True
+            )
             await self.emit_event(
                 "agent_reply",
                 text=f"❌ Failed to process goal: {e!s}",

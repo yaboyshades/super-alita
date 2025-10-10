@@ -759,7 +759,7 @@ class DeepCodeEOSOrchestrator:
         """Extract logical premises for Mangle reasoning."""
         premises = []
 
-        for result_id, result in agent_results.items():
+        for _result_id, result in agent_results.items():
             if (
                 isinstance(result, dict)
                 and "structured_requirements" in result

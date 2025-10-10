@@ -83,18 +83,24 @@ class CreatorPlugin(PluginInterface):
             if api_key and api_key.startswith("${") and api_key.endswith("}"):
                 env_var_name = api_key[2:-1]  # Remove ${ and }
                 api_key = os.getenv(env_var_name)
-                logger.debug(f"CREATOR: Resolved environment variable {env_var_name}")
+                logger.debug(
+                    f"CREATOR: Resolved environment variable {env_var_name}"
+                )
 
             # Final fallback to environment variable
             if not api_key:
                 api_key = os.getenv("GEMINI_API_KEY", "")
                 if api_key:
-                    logger.debug("CREATOR: Using direct environment variable fallback")
+                    logger.debug(
+                        "CREATOR: Using direct environment variable fallback"
+                    )
 
             # Store API key and configure REST client
             if api_key:
                 self.api_key = api_key
-                self.model_name = config.get("llm_model", "gemini-1.5-flash") or next(
+                self.model_name = config.get(
+                    "llm_model", "gemini-1.5-flash"
+                ) or next(
                     (
                         pc.get("llm_model", "gemini-1.5-flash")
                         for pc in config.values()
@@ -113,7 +119,9 @@ class CreatorPlugin(PluginInterface):
                 )
 
         except Exception as e:
-            logger.exception(f"CREATOR: Failed to initialize Gemini client: {e}")
+            logger.exception(
+                f"CREATOR: Failed to initialize Gemini client: {e}"
+            )
             self.llm_available = False
 
         # Get tool registry reference
@@ -137,7 +145,9 @@ class CreatorPlugin(PluginInterface):
         await self.subscribe("atom_gap", self._handle_gap_event)
 
         # Subscribe to "show me you created it" requests
-        await self.subscribe("show_created_tool", self._handle_show_created_tool)
+        await self.subscribe(
+            "show_created_tool", self._handle_show_created_tool
+        )
 
         # Subscribe to compose_request events for deterministic tool creation
         await self.subscribe("compose_request", self._handle_compose_request)
@@ -154,10 +164,14 @@ class CreatorPlugin(PluginInterface):
         try:
             self.stats["gaps_detected"] += 1
 
-            logger.info(f"🔧 CREATOR: Handling gap for tool '{event.missing_tool}'")
+            logger.info(
+                f"🔧 CREATOR: Handling gap for tool '{event.missing_tool}'"
+            )
 
             # Generate tool code
-            code = await self._generate_tool_code(event.missing_tool, event.description)
+            code = await self._generate_tool_code(
+                event.missing_tool, event.description
+            )
 
             if not code:
                 logger.error(
@@ -175,7 +189,9 @@ class CreatorPlugin(PluginInterface):
                 return
 
             # Register the tool
-            await self._register_tool(event.missing_tool, code, event.description)
+            await self._register_tool(
+                event.missing_tool, code, event.description
+            )
 
             # Emit AtomReadyEvent to notify other components
             ready_event = AtomReadyEvent(
@@ -191,7 +207,9 @@ class CreatorPlugin(PluginInterface):
             await self.event_bus.publish(ready_event)
 
             self.stats["tools_created"] += 1
-            logger.info(f"✅ CREATOR: Successfully created tool '{event.missing_tool}'")
+            logger.info(
+                f"✅ CREATOR: Successfully created tool '{event.missing_tool}'"
+            )
 
         except Exception as e:
             logger.error(f"❌ CREATOR: Error handling gap event: {e}")
@@ -230,7 +248,10 @@ class CreatorPlugin(PluginInterface):
                     tool_id=tool_id,
                     name=event.tool_name,
                     code_path=str(tool_path),
-                    contract={"description": "Generated tool", "size": len(tool_code)},
+                    contract={
+                        "description": "Generated tool",
+                        "size": len(tool_code),
+                    },
                     registry_key=event.tool_name,
                 )
 
@@ -262,21 +283,29 @@ class CreatorPlugin(PluginInterface):
         try:
             # Extract tool name from goal or params
             tool_name = event.params.get("tool_name", event.goal)
-            description = event.params.get("description", f"Tool for: {event.goal}")
+            description = event.params.get(
+                "description", f"Tool for: {event.goal}"
+            )
 
-            logger.info(f"🔧 CREATOR: Handling compose_request for '{tool_name}'")
+            logger.info(
+                f"🔧 CREATOR: Handling compose_request for '{tool_name}'"
+            )
 
             # Generate tool code using the existing pipeline
             code = await self._generate_tool_code(tool_name, description)
 
             if not code:
-                logger.error(f"❌ CREATOR: Failed to generate code for '{tool_name}'")
+                logger.error(
+                    f"❌ CREATOR: Failed to generate code for '{tool_name}'"
+                )
                 self.stats["generation_errors"] += 1
                 return
 
             # Validate the generated code
             if not await self._validate_code(code):
-                logger.error(f"❌ CREATOR: Code validation failed for '{tool_name}'")
+                logger.error(
+                    f"❌ CREATOR: Code validation failed for '{tool_name}'"
+                )
                 self.stats["validation_errors"] += 1
                 return
 
@@ -291,7 +320,9 @@ class CreatorPlugin(PluginInterface):
                     "description": description,
                     "code": code,
                     "goal": event.goal,
-                    "compose_request_id": getattr(event, "request_id", "deterministic"),
+                    "compose_request_id": getattr(
+                        event, "request_id", "deterministic"
+                    ),
                 },
             )
 
@@ -306,16 +337,22 @@ class CreatorPlugin(PluginInterface):
             logger.error(f"❌ CREATOR: Error handling compose_request: {e}")
             self.stats["generation_errors"] += 1
 
-    async def _generate_tool_code(self, tool_name: str, description: str) -> str | None:
+    async def _generate_tool_code(
+        self, tool_name: str, description: str
+    ) -> str | None:
         """Generate Python code for the requested tool."""
 
         if self.llm_available:
             # Try LLM first with improved error handling
             try:
-                llm_code = await self._generate_with_llm(tool_name, description)
+                llm_code = await self._generate_with_llm(
+                    tool_name, description
+                )
                 if llm_code:
                     cleaned_code = self._clean_llm_response(llm_code)
-                    if cleaned_code and await self._validate_code(cleaned_code):
+                    if cleaned_code and await self._validate_code(
+                        cleaned_code
+                    ):
                         logger.info(
                             f"CREATOR: LLM generation successful for '{tool_name}'"
                         )
@@ -339,7 +376,9 @@ class CreatorPlugin(PluginInterface):
         )
         return self._generate_template_code(tool_name, description)
 
-    async def _generate_with_llm(self, tool_name: str, description: str) -> str | None:
+    async def _generate_with_llm(
+        self, tool_name: str, description: str
+    ) -> str | None:
         """Generate tool code using Gemini REST API."""
         try:
             # Sanitize tool name for function safety
@@ -399,11 +438,14 @@ Generate ONLY the function code, no markdown formatting or explanations."""
                             and len(result["candidates"]) > 0
                             and "content" in result["candidates"][0]
                             and "parts" in result["candidates"][0]["content"]
-                            and len(result["candidates"][0]["content"]["parts"]) > 0
+                            and len(
+                                result["candidates"][0]["content"]["parts"]
+                            )
+                            > 0
                         ):
-                            raw_code = result["candidates"][0]["content"]["parts"][0][
-                                "text"
-                            ].strip()
+                            raw_code = result["candidates"][0]["content"][
+                                "parts"
+                            ][0]["text"].strip()
                             cleaned_code = self._clean_llm_response(raw_code)
                             logger.info(
                                 f"CREATOR: Successfully generated code for {tool_name} using Gemini API"
@@ -553,7 +595,10 @@ async def {safe_name}(event_bus=None, tool_call_id="", session_id="", conversati
         """Generate smart logic based on tool name and description patterns."""
 
         # Check for fibonacci pattern
-        if "fibonacci" in tool_name.lower() or "fibonacci" in description.lower():
+        if (
+            "fibonacci" in tool_name.lower()
+            or "fibonacci" in description.lower()
+        ):
             return """        # Fibonacci calculation logic
         n = kwargs.get("n", kwargs.get("number", 10))  # Default to 10 if not specified
         if n <= 0:
@@ -618,7 +663,9 @@ async def {safe_name}(event_bus=None, tool_call_id="", session_id="", conversati
         else:
             result = {"value": str(value), "status": "completed", "type": type(value).__name__}"""
 
-    def _get_implementation_logic(self, tool_name: str, description: str) -> str:
+    def _get_implementation_logic(
+        self, tool_name: str, description: str
+    ) -> str:
         """Get specific implementation logic based on tool type."""
 
         # Smart template selection based on tool name patterns
@@ -842,7 +889,9 @@ def {tool_name}(input_data: str) -> str:
             logger.error(f"CREATOR: Code validation error: {e}")
             return False
 
-    async def _register_tool(self, tool_name: str, code: str, description: str):
+    async def _register_tool(
+        self, tool_name: str, code: str, description: str
+    ):
         """Register the generated tool in the dynamic registry."""
         try:
             # Generate deterministic tool ID
@@ -881,5 +930,7 @@ def {tool_name}(input_data: str) -> str:
             )
 
         except Exception as e:
-            logger.error(f"CREATOR: Failed to register tool '{tool_name}': {e}")
+            logger.error(
+                f"CREATOR: Failed to register tool '{tool_name}': {e}"
+            )
             raise

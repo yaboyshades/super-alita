@@ -116,9 +116,13 @@ class EnergyEnhancedLadderPlanner(KGEnhancedLadderPlanner):
         self.prioritization_metrics["total_prioritizations"] += 1
 
         # Update average calculation time
-        current_avg = self.prioritization_metrics["average_prioritization_time"]
+        current_avg = self.prioritization_metrics[
+            "average_prioritization_time"
+        ]
         total_count = self.prioritization_metrics["total_prioritizations"]
-        new_avg = (current_avg * (total_count - 1) + calculation_time) / total_count
+        new_avg = (
+            current_avg * (total_count - 1) + calculation_time
+        ) / total_count
         self.prioritization_metrics["average_prioritization_time"] = new_avg
 
         return result
@@ -187,7 +191,8 @@ class EnergyEnhancedLadderPlanner(KGEnhancedLadderPlanner):
 
         # Get prioritized task execution order
         next_tasks = self.prioritizer.get_next_tasks(
-            plan, count=self.prioritizer.priority_engine.config.max_parallel_tasks
+            plan,
+            count=self.prioritizer.priority_engine.config.max_parallel_tasks,
         )
 
         if next_tasks and self.config.debug_mode:
@@ -206,7 +211,9 @@ class EnergyEnhancedLadderPlanner(KGEnhancedLadderPlanner):
 
         return result
 
-    async def _learn_from_execution(self, plan: TaskGraph, result: ExecutionResult):
+    async def _learn_from_execution(
+        self, plan: TaskGraph, result: ExecutionResult
+    ):
         """Learn from execution results to improve future prioritization."""
         if not hasattr(result, "task_results"):
             return
@@ -215,11 +222,15 @@ class EnergyEnhancedLadderPlanner(KGEnhancedLadderPlanner):
         for task_id, task_result in result.task_results.items():
             if task_result.get("status") == "completed":
                 # Mark task as completed in prioritizer
-                completion_time = task_result.get("completion_time", time.time())
+                completion_time = task_result.get(
+                    "completion_time", time.time()
+                )
                 self.prioritizer.mark_task_completed(task_id, completion_time)
 
                 # Check if this task had better/worse energy prediction
-                priority_info = self.prioritizer.get_task_priority_info(task_id)
+                priority_info = self.prioritizer.get_task_priority_info(
+                    task_id
+                )
                 if priority_info:
                     predicted_energy = priority_info.energy.energy_score
                     actual_success = 1.0  # Task completed successfully
@@ -289,7 +300,9 @@ class EnergyEnhancedLadderPlanner(KGEnhancedLadderPlanner):
                 "can_execute": priority.can_execute,
                 "blocked_by": priority.blocked_by,
                 "estimated_start_time": priority.estimated_start_time,
-                "why_recommended": self._generate_recommendation_reasoning(priority),
+                "why_recommended": self._generate_recommendation_reasoning(
+                    priority
+                ),
             }
             recommendations.append(recommendation)
 
@@ -328,6 +341,8 @@ class EnergyEnhancedLadderPlanner(KGEnhancedLadderPlanner):
         if priority.can_execute:
             reasons.append("ready to execute immediately")
         else:
-            reasons.append(f"blocked by {len(priority.blocked_by)} dependencies")
+            reasons.append(
+                f"blocked by {len(priority.blocked_by)} dependencies"
+            )
 
         return "; ".join(reasons)

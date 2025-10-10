@@ -79,7 +79,9 @@ async def test_orchestrator_end_to_end(
     assert "Diagnose chat streaming latency" in result
 
 
-async def test_orchestrator_without_llm(sample_telemetry: list[dict[str, Any]]) -> None:
+async def test_orchestrator_without_llm(
+    sample_telemetry: list[dict[str, Any]],
+) -> None:
     """Test pipeline works without LLM provider."""
     orchestrator = TelemetryPipelineOrchestrator(None)
 

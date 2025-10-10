@@ -9,7 +9,9 @@ from acp_sdk import Message, MessagePart
 class ClassifyAgent:
     """Mock classifier agent."""
 
-    async def run(self, messages: list[Message]) -> AsyncGenerator[Message, None]:
+    async def run(
+        self, messages: list[Message]
+    ) -> AsyncGenerator[Message, None]:
         if not messages:
             yield Message(parts=[MessagePart(text='{"error": "No input"}')])
             return

@@ -26,4 +26,3 @@ def launch_ui(port: int = 8081) -> None:
         "true",
     ]
     run(cmd)
-

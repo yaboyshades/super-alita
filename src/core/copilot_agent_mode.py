@@ -94,14 +94,22 @@ class CopilotAgentAtom(NeuralAtom):
 
     def can_handle(self, task_description: str) -> float:
         """Determine if this atom can handle the task."""
-        agent_keywords = ["analyze", "summarize", "conversation", "context", "copilot"]
+        agent_keywords = [
+            "analyze",
+            "summarize",
+            "conversation",
+            "context",
+            "copilot",
+        ]
 
         task_lower = task_description.lower()
         matches = sum(1 for keyword in agent_keywords if keyword in task_lower)
 
         return min(matches / len(agent_keywords), 1.0)
 
-    async def _analyze_conversation(self, data: dict[str, Any]) -> dict[str, Any]:
+    async def _analyze_conversation(
+        self, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze conversation for patterns and insights."""
         messages = data.get("messages", [])
 
@@ -117,13 +125,17 @@ class CopilotAgentAtom(NeuralAtom):
 
             # Simple intent extraction
             if any(
-                word in content.lower() for word in ["create", "implement", "build"]
+                word in content.lower()
+                for word in ["create", "implement", "build"]
             ):
                 user_intents.append("creation")
-            elif any(word in content.lower() for word in ["fix", "debug", "error"]):
+            elif any(
+                word in content.lower() for word in ["fix", "debug", "error"]
+            ):
                 user_intents.append("debugging")
             elif any(
-                word in content.lower() for word in ["optimize", "improve", "enhance"]
+                word in content.lower()
+                for word in ["optimize", "improve", "enhance"]
             ):
                 user_intents.append("optimization")
 
@@ -153,7 +165,9 @@ class CopilotAgentAtom(NeuralAtom):
             "confidence": min(len(messages) / 10.0, 1.0),
         }
 
-    async def _summarize_conversation(self, data: dict[str, Any]) -> dict[str, Any]:
+    async def _summarize_conversation(
+        self, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Summarize conversation history for context continuity."""
         messages = data.get("messages", [])
         session_id = data.get("session_id", "unknown")
@@ -201,9 +215,14 @@ class CopilotAgentAtom(NeuralAtom):
             next_actions=self._extract_next_actions(messages),
         )
 
-        return {"summary": summary, "confidence": ANALYSIS_CONFIDENCE_THRESHOLD}
+        return {
+            "summary": summary,
+            "confidence": ANALYSIS_CONFIDENCE_THRESHOLD,
+        }
 
-    async def _extract_technical_context(self, data: dict[str, Any]) -> dict[str, Any]:
+    async def _extract_technical_context(
+        self, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Extract technical context from conversation."""
         messages = data.get("messages", [])
 
@@ -275,7 +294,9 @@ class CopilotAgentAtom(NeuralAtom):
 
         scores = {}
         for intent, keywords in intents.items():
-            scores[intent] = sum(1 for keyword in keywords if keyword in combined_text)
+            scores[intent] = sum(
+                1 for keyword in keywords if keyword in combined_text
+            )
 
         return (
             max(scores.items(), key=lambda x: x[1])[0]
@@ -289,7 +310,10 @@ class CopilotAgentAtom(NeuralAtom):
             return "starting"
 
         recent_content = " ".join(
-            [msg.get("content", "")[:MAX_MESSAGE_LENGTH] for msg in messages[-5:]]
+            [
+                msg.get("content", "")[:MAX_MESSAGE_LENGTH]
+                for msg in messages[-5:]
+            ]
         ).lower()
 
         if any(
@@ -298,11 +322,13 @@ class CopilotAgentAtom(NeuralAtom):
         ):
             return "completed"
         if any(
-            word in recent_content for word in ["working", "progress", "implementing"]
+            word in recent_content
+            for word in ["working", "progress", "implementing"]
         ):
             return "in_progress"
         if any(
-            word in recent_content for word in ["error", "failed", "issue", "problem"]
+            word in recent_content
+            for word in ["error", "failed", "issue", "problem"]
         ):
             return "blocked"
         return "ongoing"
@@ -331,12 +357,16 @@ class CopilotAgentAtom(NeuralAtom):
                     sentences = content.split(".")
                     for sentence in sentences:
                         if indicator in sentence:
-                            decisions.append(sentence.strip()[:100])  # Limit length
+                            decisions.append(
+                                sentence.strip()[:100]
+                            )  # Limit length
                             break
 
         return decisions[:RETRY_COUNT]  # Limit to 3 key decisions
 
-    def _extract_next_actions(self, messages: list[dict[str, Any]]) -> list[str]:
+    def _extract_next_actions(
+        self, messages: list[dict[str, Any]]
+    ) -> list[str]:
         """Extract next actions from conversation."""
         actions = []
 
@@ -379,7 +409,9 @@ class CopilotAgentPlugin(PluginInterface):
     def name(self) -> str:
         return "copilot_agent"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         """Setup the Copilot agent plugin."""
         await super().setup(event_bus, store, config)
 
@@ -446,7 +478,9 @@ class CopilotAgentPlugin(PluginInterface):
                     },
                 )
 
-            logger.info(f"Agent mode operation '{operation}' completed successfully")
+            logger.info(
+                f"Agent mode operation '{operation}' completed successfully"
+            )
 
         except Exception as e:
             logger.error(f"Error handling agent mode event: {e}")
@@ -474,13 +508,18 @@ class CopilotAgentPlugin(PluginInterface):
             self.conversation_cache[session_id].append(message)
 
             # Maintain cache size
-            if len(self.conversation_cache[session_id]) > MAX_CONVERSATION_HISTORY:
+            if (
+                len(self.conversation_cache[session_id])
+                > MAX_CONVERSATION_HISTORY
+            ):
                 self.conversation_cache[session_id] = self.conversation_cache[
                     session_id
                 ][-MAX_CONVERSATION_HISTORY:]
 
             # Generate summary if needed
-            if len(self.conversation_cache[session_id]) % 10 == 0:  # Every 10 messages
+            if (
+                len(self.conversation_cache[session_id]) % 10 == 0
+            ):  # Every 10 messages
                 await self._generate_conversation_summary(session_id)
 
         except Exception as e:
@@ -489,7 +528,10 @@ class CopilotAgentPlugin(PluginInterface):
     async def _generate_conversation_summary(self, session_id: str) -> None:
         """Generate conversation summary for context continuity."""
         try:
-            if not self.agent_atom or session_id not in self.conversation_cache:
+            if (
+                not self.agent_atom
+                or session_id not in self.conversation_cache
+            ):
                 return
 
             messages = self.conversation_cache[session_id]
@@ -513,14 +555,18 @@ class CopilotAgentPlugin(PluginInterface):
                     },
                 )
 
-            logger.info(f"Generated conversation summary for session {session_id}")
+            logger.info(
+                f"Generated conversation summary for session {session_id}"
+            )
 
         except Exception as e:
             logger.error(f"Error generating conversation summary: {e}")
 
 
 # Agent mode utility functions
-async def enable_agent_mode(event_bus: Any, session_id: str = "default") -> bool:
+async def enable_agent_mode(
+    event_bus: Any, session_id: str = "default"
+) -> bool:
     """Enable agent mode for enhanced Copilot interaction."""
     try:
         event = AgentModeEvent(
@@ -588,4 +634,3 @@ __all__ = [
     "enable_agent_mode",
     "summarize_conversation_history",
 ]
-

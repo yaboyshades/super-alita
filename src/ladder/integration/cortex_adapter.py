@@ -152,9 +152,15 @@ class LadderAdapter:
                 goal=query,
             )
 
-            return {"status": "error", "error": str(e), "session_id": session_id}
+            return {
+                "status": "error",
+                "error": str(e),
+                "session_id": session_id,
+            }
 
-    def _update_metrics(self, result: ExecutionResult, planning_time: float) -> None:
+    def _update_metrics(
+        self, result: ExecutionResult, planning_time: float
+    ) -> None:
         """Update integration metrics."""
         self.metrics.total_plans += 1
 
@@ -166,7 +172,8 @@ class LadderAdapter:
         # Update rolling averages
         total_plans = self.metrics.total_plans
         self.metrics.average_planning_time = (
-            self.metrics.average_planning_time * (total_plans - 1) + planning_time
+            self.metrics.average_planning_time * (total_plans - 1)
+            + planning_time
         ) / total_plans
 
         if result.execution_time:
@@ -200,7 +207,9 @@ class LadderAdapter:
         """Get current integration metrics."""
         success_rate = 0.0
         if self.metrics.total_plans > 0:
-            success_rate = self.metrics.successful_executions / self.metrics.total_plans
+            success_rate = (
+                self.metrics.successful_executions / self.metrics.total_plans
+            )
 
         return {
             "total_plans": self.metrics.total_plans,

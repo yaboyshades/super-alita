@@ -52,7 +52,9 @@ class ValidationChecklist:
 
     async def run_full_validation(self) -> dict[str, Any]:
         """Run complete validation suite."""
-        print("🔍 Starting comprehensive validation of Unified Intelligence Layer...")
+        print(
+            "🔍 Starting comprehensive validation of Unified Intelligence Layer..."
+        )
 
         # Contract-First Interfaces
         await self._validate_contract_interfaces()
@@ -102,11 +104,19 @@ class ValidationChecklist:
             test_cases = [
                 (
                     MangleResult,
-                    {"confidence": 0.85, "patterns": ["test"], "reasoning": "test"},
+                    {
+                        "confidence": 0.85,
+                        "patterns": ["test"],
+                        "reasoning": "test",
+                    },
                 ),
                 (
                     ConstitutionResult,
-                    {"compliance_score": 0.92, "violations": [], "recommendations": []},
+                    {
+                        "compliance_score": 0.92,
+                        "violations": [],
+                        "recommendations": [],
+                    },
                 ),
                 (
                     WorkflowResult,
@@ -118,7 +128,11 @@ class ValidationChecklist:
                 ),
                 (
                     CopilotEnhancement,
-                    {"enhancements": [], "confidence": 0.65, "reasoning": "test"},
+                    {
+                        "enhancements": [],
+                        "confidence": 0.65,
+                        "reasoning": "test",
+                    },
                 ),
                 (
                     UnifiedAdvice,
@@ -153,7 +167,7 @@ class ValidationChecklist:
 
             for model_cls, test_data in test_cases:
                 try:
-                    instance = model_cls(**test_data)
+                    model_cls(**test_data)
                     self.results.append(
                         ValidationResult(
                             category="Contract-First Interfaces",
@@ -209,11 +223,16 @@ class ValidationChecklist:
             }
 
             orchestrator = HardenedOrchestrator()
-            fused_score = orchestrator._calculate_weights(test_weights, test_scores)
+            fused_score = orchestrator._calculate_weights(
+                test_weights, test_scores
+            )
 
             # Verify mathematical properties
             expected_fused = sum(
-                w * s for w, s in zip(test_weights.values(), test_scores.values(), strict=False)
+                w * s
+                for w, s in zip(
+                    test_weights.values(), test_scores.values(), strict=False
+                )
             )
 
             if abs(fused_score - expected_fused) < 1e-6:
@@ -224,7 +243,10 @@ class ValidationChecklist:
                         passed=True,
                         details=f"Fusion math correct: {fused_score:.6f} ≈ {expected_fused:.6f}",
                         severity="high",
-                        metrics={"calculated": fused_score, "expected": expected_fused},
+                        metrics={
+                            "calculated": fused_score,
+                            "expected": expected_fused,
+                        },
                     )
                 )
             else:
@@ -301,7 +323,9 @@ class ValidationChecklist:
             for scenario in failure_scenarios:
                 try:
                     # This should handle failures gracefully
-                    result = await orchestrator._handle_component_failure(scenario)
+                    result = await orchestrator._handle_component_failure(
+                        scenario
+                    )
                     if result and "error_handled" in result:
                         self.results.append(
                             ValidationResult(
@@ -383,7 +407,9 @@ class ValidationChecklist:
                             )
                         )
                     else:
-                        missing = [f for f in required_fields if f not in result]
+                        missing = [
+                            f for f in required_fields if f not in result
+                        ]
                         self.results.append(
                             ValidationResult(
                                 category="Canonical Orchestration",
@@ -470,7 +496,10 @@ class ValidationChecklist:
 
             # Test fixture schema compliance
             for fixture_name, fixture_data in fixtures.items():
-                if "input" in fixture_data and "expected_output" in fixture_data:
+                if (
+                    "input" in fixture_data
+                    and "expected_output" in fixture_data
+                ):
                     self.results.append(
                         ValidationResult(
                             category="Golden Test Fixtures",
@@ -527,7 +556,9 @@ class ValidationChecklist:
                     )
                 )
             else:
-                missing = [f for f in required_header_fields if f not in headers]
+                missing = [
+                    f for f in required_header_fields if f not in headers
+                ]
                 self.results.append(
                     ValidationResult(
                         category="Telemetry Schema",
@@ -541,7 +572,9 @@ class ValidationChecklist:
 
             # Test JSON envelope structure
             test_payload = {"result": "success", "confidence": 0.85}
-            envelope = TelemetryMiddleware.create_envelope(test_payload, headers)
+            envelope = TelemetryMiddleware.create_envelope(
+                test_payload, headers
+            )
 
             required_envelope_fields = ["data", "metadata", "timestamp"]
             if all(field in envelope for field in required_envelope_fields):
@@ -555,7 +588,9 @@ class ValidationChecklist:
                     )
                 )
             else:
-                missing = [f for f in required_envelope_fields if f not in envelope]
+                missing = [
+                    f for f in required_envelope_fields if f not in envelope
+                ]
                 self.results.append(
                     ValidationResult(
                         category="Telemetry Schema",
@@ -589,8 +624,12 @@ class ValidationChecklist:
             engine = ConstitutionalEngine()
 
             # Test constitutional analysis
-            test_spec = "Implement a user authentication system with password hashing"
-            analysis = await engine.analyze_constitutional_compliance(test_spec)
+            test_spec = (
+                "Implement a user authentication system with password hashing"
+            )
+            analysis = await engine.analyze_constitutional_compliance(
+                test_spec
+            )
 
             required_compliance_fields = [
                 "compliance_score",
@@ -622,7 +661,9 @@ class ValidationChecklist:
                         )
                     )
             else:
-                missing = [f for f in required_compliance_fields if f not in analysis]
+                missing = [
+                    f for f in required_compliance_fields if f not in analysis
+                ]
                 self.results.append(
                     ValidationResult(
                         category="Constitutional Compliance",
@@ -656,10 +697,13 @@ class ValidationChecklist:
             orchestrator = HardenedOrchestrator()
 
             # Test performance with timing
-            test_input = {"prompt": "Implement a simple calculator", "context": {}}
+            test_input = {
+                "prompt": "Implement a simple calculator",
+                "context": {},
+            }
 
             start_time = time.time()
-            result = await orchestrator.orchestrate_request(test_input)
+            await orchestrator.orchestrate_request(test_input)
             end_time = time.time()
 
             execution_time = end_time - start_time
@@ -673,7 +717,10 @@ class ValidationChecklist:
                         passed=True,
                         details=f"Orchestration completed in {execution_time:.2f}s ≤ 30.0s",
                         severity="high",
-                        metrics={"execution_time": execution_time, "threshold": 30.0},
+                        metrics={
+                            "execution_time": execution_time,
+                            "threshold": 30.0,
+                        },
                     )
                 )
             else:
@@ -685,7 +732,10 @@ class ValidationChecklist:
                         details=f"Orchestration too slow: {execution_time:.2f}s > 30.0s",
                         severity="critical",
                         remediation="Optimize orchestration performance",
-                        metrics={"execution_time": execution_time, "threshold": 30.0},
+                        metrics={
+                            "execution_time": execution_time,
+                            "threshold": 30.0,
+                        },
                     )
                 )
 
@@ -783,7 +833,10 @@ def simple_function():
                 ingester = CodeIngester(":memory:")
                 stats = ingester.ingest_repository(tmp_dir)
 
-                if stats["files_processed"] > 0 and stats["symbols_extracted"] > 0:
+                if (
+                    stats["files_processed"] > 0
+                    and stats["symbols_extracted"] > 0
+                ):
                     self.results.append(
                         ValidationResult(
                             category="Code Reasoning",
@@ -915,7 +968,11 @@ def simple_function():
         failed_checks = total_checks - passed_checks
 
         critical_failures = len(
-            [r for r in self.results if not r.passed and r.severity == "critical"]
+            [
+                r
+                for r in self.results
+                if not r.passed and r.severity == "critical"
+            ]
         )
         high_failures = len(
             [r for r in self.results if not r.passed and r.severity == "high"]
@@ -929,7 +986,9 @@ def simple_function():
                 "total_checks": total_checks,
                 "passed_checks": passed_checks,
                 "failed_checks": failed_checks,
-                "pass_rate": passed_checks / total_checks if total_checks > 0 else 0,
+                "pass_rate": (
+                    passed_checks / total_checks if total_checks > 0 else 0
+                ),
                 "critical_failures": critical_failures,
                 "high_failures": high_failures,
                 "overall_passed": overall_passed,
@@ -949,7 +1008,9 @@ def simple_function():
                 "passed": category_passed,
                 "failed": category_total - category_passed,
                 "pass_rate": (
-                    category_passed / category_total if category_total > 0 else 0
+                    category_passed / category_total
+                    if category_total > 0
+                    else 0
                 ),
             }
 

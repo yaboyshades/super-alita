@@ -7,7 +7,11 @@ logger = logging.getLogger(__name__)
 
 
 async def dynamic_tool(
-    event_bus=None, tool_call_id="", session_id="", conversation_id="", **kwargs
+    event_bus=None,
+    tool_call_id="",
+    session_id="",
+    conversation_id="",
+    **kwargs,
 ):
     """
     Create a tool for: show me you created it

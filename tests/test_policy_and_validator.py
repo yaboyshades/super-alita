@@ -1,4 +1,8 @@
-from src.prompt.policy_constants import PROMPT_VERSION, SCHEMA_VERSION, build_header
+from src.prompt.policy_constants import (
+    PROMPT_VERSION,
+    SCHEMA_VERSION,
+    build_header,
+)
 from src.utils.schema_validator import validate_alg_extraction
 from src.utils.telemetry import telemetry_footer
 
@@ -21,7 +25,10 @@ def test_schema_validation_ok_minimal():
             "implementation_plan": [],
             "sources": [],
         },
-        "validation_summary": {"missing_required_fields": [], "unknown_fields": []},
+        "validation_summary": {
+            "missing_required_fields": [],
+            "unknown_fields": [],
+        },
         "telemetry": {
             "prompt_version": PROMPT_VERSION,
             "schema_version": SCHEMA_VERSION,

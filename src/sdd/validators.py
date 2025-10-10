@@ -34,9 +34,11 @@ class SDDValidator:
         """
         checks: dict[str, ValidationResult] = {}
         checks["has_user_stories"] = self._check_user_stories(content)
-        checks["has_acceptance_criteria"] = self._check_acceptance_criteria(content)
-        checks["constitutional_compliance"] = self._check_constitutional_elements(
+        checks["has_acceptance_criteria"] = self._check_acceptance_criteria(
             content
+        )
+        checks["constitutional_compliance"] = (
+            self._check_constitutional_elements(content)
         )
         scores = [c.score for c in checks.values()]
         overall = sum(scores) / len(scores) if scores else 0.0
@@ -80,11 +82,17 @@ class SDDValidator:
         matches = len(re.findall(pattern, content))
 
         if matches >= 3:
-            return ValidationResult(True, 1.0, "Good user stories", {"count": matches})
+            return ValidationResult(
+                True, 1.0, "Good user stories", {"count": matches}
+            )
         elif matches >= 1:
-            return ValidationResult(True, 0.6, "Some user stories", {"count": matches})
+            return ValidationResult(
+                True, 0.6, "Some user stories", {"count": matches}
+            )
         else:
-            return ValidationResult(False, 0.1, "No user stories", {"count": 0})
+            return ValidationResult(
+                False, 0.1, "No user stories", {"count": 0}
+            )
 
     def _check_acceptance_criteria(self, content: str) -> ValidationResult:
         """Check for acceptance criteria in content."""
@@ -100,7 +108,9 @@ class SDDValidator:
                 True, 0.6, "Some acceptance criteria", {"count": matches}
             )
         else:
-            return ValidationResult(False, 0.1, "No acceptance criteria", {"count": 0})
+            return ValidationResult(
+                False, 0.1, "No acceptance criteria", {"count": 0}
+            )
 
     def _check_constitutional_elements(self, content: str) -> ValidationResult:
         """Check for constitutional framework compliance."""

@@ -110,7 +110,9 @@ def _cmd_validate(args: argparse.Namespace) -> int:
         result = scorer.score_code(content, str(path))
     else:
         result = scorer.score_specification(content)
-    print(f"Overall: {result.overall_score:.2f} (compliant={result.is_compliant})")
+    print(
+        f"Overall: {result.overall_score:.2f} (compliant={result.is_compliant})"
+    )
     for article, score in result.article_scores.items():
         status = "OK" if score >= scorer.compliance_threshold else "FAIL"
         print(f"  - {article}: {status} ({score:.2f})")
@@ -125,40 +127,64 @@ def _cmd_validate(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Specification-Driven Development CLI")
+    p = argparse.ArgumentParser(
+        description="Specification-Driven Development CLI"
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
 
     # specify
     sp = sub.add_parser("specify", help="Create feature specification")
-    sp.add_argument("description", help="Feature description in natural language")
-    sp.add_argument("--workspace", default=".", help="Workspace root directory")
+    sp.add_argument(
+        "description", help="Feature description in natural language"
+    )
+    sp.add_argument(
+        "--workspace", default=".", help="Workspace root directory"
+    )
     sp.add_argument("--context", help="Path to JSON context file")
-    sp.add_argument("--no-gates", action="store_true", help="Disable constitutional gates")
+    sp.add_argument(
+        "--no-gates", action="store_true", help="Disable constitutional gates"
+    )
     sp.set_defaults(async_handler=_cmd_specify)
 
     # plan
     pp = sub.add_parser("plan", help="Generate implementation plan from spec")
     src = pp.add_mutually_exclusive_group(required=False)
     src.add_argument("--spec", help="Path to spec.md")
-    src.add_argument("--feature-dir", help="Feature directory containing spec.md")
+    src.add_argument(
+        "--feature-dir", help="Feature directory containing spec.md"
+    )
     pp.add_argument("--tech", help="Technology stack description")
-    pp.add_argument("--workspace", default=".", help="Workspace root directory")
-    pp.add_argument("--no-gates", action="store_true", help="Disable constitutional gates")
+    pp.add_argument(
+        "--workspace", default=".", help="Workspace root directory"
+    )
+    pp.add_argument(
+        "--no-gates", action="store_true", help="Disable constitutional gates"
+    )
     pp.set_defaults(async_handler=_cmd_plan)
 
     # tasks
     tp = sub.add_parser("tasks", help="Generate task breakdown from plan")
     src2 = tp.add_mutually_exclusive_group(required=False)
     src2.add_argument("--plan", help="Path to implementation-plan.md")
-    src2.add_argument("--feature-dir", help="Feature directory containing plan")
+    src2.add_argument(
+        "--feature-dir", help="Feature directory containing plan"
+    )
     tp.add_argument("--priority", default="test-first", help="Priority focus")
-    tp.add_argument("--team-size", type=int, default=1, help="Team size (1-10)")
-    tp.add_argument("--workspace", default=".", help="Workspace root directory")
-    tp.add_argument("--no-gates", action="store_true", help="Disable constitutional gates")
+    tp.add_argument(
+        "--team-size", type=int, default=1, help="Team size (1-10)"
+    )
+    tp.add_argument(
+        "--workspace", default=".", help="Workspace root directory"
+    )
+    tp.add_argument(
+        "--no-gates", action="store_true", help="Disable constitutional gates"
+    )
     tp.set_defaults(async_handler=_cmd_tasks)
 
     # validate
-    vp = sub.add_parser("validate", help="Validate constitutional compliance for a file")
+    vp = sub.add_parser(
+        "validate", help="Validate constitutional compliance for a file"
+    )
     vp.add_argument("path", help="Path to .py code or .md/.txt specification")
     vp.set_defaults(handler=_cmd_validate)
 
@@ -178,4 +204,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

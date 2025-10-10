@@ -94,7 +94,9 @@ def main():
     all_passed &= test_configuration_files()
     all_passed &= test_server_files()
 
-    print(f"\n{'🎉 All tests passed!' if all_passed else '⚠️  Some tests failed'}")
+    print(
+        f"\n{'🎉 All tests passed!' if all_passed else '⚠️  Some tests failed'}"
+    )
 
     if all_passed:
         print("\n💡 Ready to use:")

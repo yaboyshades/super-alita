@@ -7,7 +7,10 @@ Provides adaptive learning capabilities as a plugin service
 import logging
 from typing import Any
 
-from src.core.adaptive_neural_atom import AdaptiveMemoryAtom, AdaptiveTextProcessor
+from src.core.adaptive_neural_atom import (
+    AdaptiveMemoryAtom,
+    AdaptiveTextProcessor,
+)
 from src.core.events import BaseEvent, ToolCallEvent
 from src.core.plugin_interface import PluginInterface
 
@@ -21,7 +24,9 @@ class AdaptiveNeuralAtomPlugin(PluginInterface):
     def name(self) -> str:
         return "adaptive_neural_atom_plugin"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
 
         # Initialize adaptive components
@@ -36,8 +41,12 @@ class AdaptiveNeuralAtomPlugin(PluginInterface):
         await super().start()
 
         # Subscribe to relevant events
-        await self.subscribe("adaptive_text_request", self._handle_text_processing)
-        await self.subscribe("adaptive_memory_request", self._handle_memory_creation)
+        await self.subscribe(
+            "adaptive_text_request", self._handle_text_processing
+        )
+        await self.subscribe(
+            "adaptive_memory_request", self._handle_memory_creation
+        )
         await self.subscribe("tool_call", self._handle_tool_call)
 
         logger.info("🧠 Adaptive Neural Atom Plugin started")

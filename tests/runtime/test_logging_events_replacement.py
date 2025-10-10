@@ -65,7 +65,9 @@ async def test_sync_once_main_logs(monkeypatch, caplog):
     await sync_once.main()
 
     assert exit_code["code"] == 0
-    assert any("Sync completed successfully" in r.getMessage() for r in caplog.records)
+    assert any(
+        "Sync completed successfully" in r.getMessage() for r in caplog.records
+    )
 
 
 def test_todo_sync_logging(tmp_path, caplog):

@@ -25,7 +25,9 @@ class ToolParameterType(Enum):
 
     STRING = "string"
     INTEGER = "integer"
-    NUMBER = "number"  # Changed from FLOAT to NUMBER for JSON Schema compatibility
+    NUMBER = (
+        "number"  # Changed from FLOAT to NUMBER for JSON Schema compatibility
+    )
     BOOLEAN = "boolean"
     ARRAY = "array"
     OBJECT = "object"
@@ -78,13 +80,19 @@ class ToolSchema:
                 prop_def["items"] = {
                     "type": "object",
                     "properties": {
-                        p.name: {"type": p.type.value, "description": p.description}
+                        p.name: {
+                            "type": p.type.value,
+                            "description": p.description,
+                        }
                         for p in param.properties.values()
                     },
                 }
             elif param.type == ToolParameterType.OBJECT and param.properties:
                 prop_def["properties"] = {
-                    p.name: {"type": p.type.value, "description": p.description}
+                    p.name: {
+                        "type": p.type.value,
+                        "description": p.description,
+                    }
                     for p in param.properties.values()
                 }
 
@@ -141,8 +149,14 @@ class DynamicTool:
                 "tool_name": self.schema.name,
             }
         except Exception as e:
-            logger.error(f"Error executing dynamic tool {self.schema.name}: {e}")
-            return {"success": False, "error": str(e), "tool_name": self.schema.name}
+            logger.error(
+                f"Error executing dynamic tool {self.schema.name}: {e}"
+            )
+            return {
+                "success": False,
+                "error": str(e),
+                "tool_name": self.schema.name,
+            }
 
 
 class DynamicToolRegistry:
@@ -153,7 +167,9 @@ class DynamicToolRegistry:
         self.schemas: dict[str, ToolSchema] = {}
         self.creation_log: list[dict[str, Any]] = []
 
-    def register_tool(self, schema: ToolSchema, implementation: Callable) -> bool:
+    def register_tool(
+        self, schema: ToolSchema, implementation: Callable
+    ) -> bool:
         """Register a new dynamic tool"""
         try:
             # Validate the implementation signature matches schema
@@ -163,7 +179,9 @@ class DynamicToolRegistry:
 
             if not schema_params.issubset(impl_params):
                 missing = schema_params - impl_params
-                raise ValueError(f"Implementation missing parameters: {missing}")
+                raise ValueError(
+                    f"Implementation missing parameters: {missing}"
+                )
 
             # Create and register the tool
             tool = DynamicTool(schema, implementation)
@@ -221,7 +239,9 @@ class DynamicToolRegistry:
                 name: {
                     "call_count": tool.call_count,
                     "last_called": (
-                        tool.last_called.isoformat() if tool.last_called else None
+                        tool.last_called.isoformat()
+                        if tool.last_called
+                        else None
                     ),
                 }
                 for name, tool in self.tools.items()
@@ -328,7 +348,9 @@ async def example_dynamic_tool_usage():
         name="add_calculator",
         description="Adds two numbers together",
         parameters=[
-            ToolParameter("a", ToolParameterType.NUMBER, "First number", required=True),
+            ToolParameter(
+                "a", ToolParameterType.NUMBER, "First number", required=True
+            ),
             ToolParameter(
                 "b", ToolParameterType.NUMBER, "Second number", required=True
             ),
@@ -338,7 +360,9 @@ async def example_dynamic_tool_usage():
     )
 
     # Register the tool
-    success = dynamic_tool_registry.register_tool(calculator_schema, add_numbers)
+    success = dynamic_tool_registry.register_tool(
+        calculator_schema, add_numbers
+    )
     if success:
         print("Calculator tool registered successfully")
 

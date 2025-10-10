@@ -1,4 +1,5 @@
 """Lightweight FastMCP stub used for testing without the upstream package."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -23,6 +24,9 @@ class FastMCP:
 
     def run(self, transport: str = "stdio", **kwargs: Any) -> None:
         # In tests we do not spin up transports; just log intent.
-        print(f"[FastMCP shim] run called (app={self.app_name}, transport={transport})")
+        print(
+            f"[FastMCP shim] run called (app={self.app_name}, transport={transport})"
+        )
 
-__all__ = ['FastMCP']
+
+__all__ = ["FastMCP"]

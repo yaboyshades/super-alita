@@ -64,7 +64,8 @@ def test_circuit_breaker(monkeypatch):
     config.SETTINGS.max_retries = 0
     client = TestClient(app)
     resp = client.post(
-        prefix_path("/v1/chat/stream"), json={"message": "hi", "session_id": "cb"}
+        prefix_path("/v1/chat/stream"),
+        json={"message": "hi", "session_id": "cb"},
     )
     text = resp.text
     config.SETTINGS.max_retries = old_retries
@@ -75,7 +76,9 @@ def test_circuit_breaker(monkeypatch):
     fails = [e for e in evts if e["type"] == "AbilityFailed"]
     assert len(calls) == 3
     assert len(fails) == 3
-    terminals = [e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}]
+    terminals = [
+        e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}
+    ]
     assert len(terminals) == 1
     assert terminals[0]["type"] == "TaskSucceeded"
     succ = {e["span_id"] for e in evts if e["type"] == "AbilitySucceeded"}
@@ -145,7 +148,9 @@ def test_circuit_breaker(monkeypatch):
     old_retries = config.SETTINGS.max_retries
     config.SETTINGS.max_retries = 0
     client = TestClient(app)
-    resp = client.post("/v1/chat/stream", json={"message": "hi", "session_id": "cb"})
+    resp = client.post(
+        "/v1/chat/stream", json={"message": "hi", "session_id": "cb"}
+    )
     text = resp.text
     config.SETTINGS.max_retries = old_retries
     assert "breaker done" in text
@@ -155,7 +160,9 @@ def test_circuit_breaker(monkeypatch):
     fails = [e for e in evts if e["type"] == "AbilityFailed"]
     assert len(calls) == 3
     assert len(fails) == 3
-    terminals = [e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}]
+    terminals = [
+        e for e in evts if e["type"] in {"TaskSucceeded", "TaskFailed"}
+    ]
     assert len(terminals) == 1
     assert terminals[0]["type"] == "TaskSucceeded"
     succ = {e["span_id"] for e in evts if e["type"] == "AbilitySucceeded"}

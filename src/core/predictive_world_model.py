@@ -87,8 +87,12 @@ class PredictiveWorldModel:
         self.startup_complete = False
 
         # Learning parameters (configurable via config)
-        self.confidence_threshold = self.config.get("confidence_threshold", 0.7)
-        self.similarity_threshold = self.config.get("similarity_threshold", 0.8)
+        self.confidence_threshold = self.config.get(
+            "confidence_threshold", 0.7
+        )
+        self.similarity_threshold = self.config.get(
+            "similarity_threshold", 0.8
+        )
         self.learning_decay = self.config.get("learning_decay", 0.95)
 
         # Enhanced features configuration
@@ -96,7 +100,9 @@ class PredictiveWorldModel:
             "enable_alternative_generation", True
         )
         self.max_alternatives = self.config.get("max_alternatives", 5)
-        self.enable_risk_assessment = self.config.get("enable_risk_assessment", True)
+        self.enable_risk_assessment = self.config.get(
+            "enable_risk_assessment", True
+        )
         self.enable_learning = self.config.get("enable_learning", True)
 
         logger.info(
@@ -123,7 +129,9 @@ class PredictiveWorldModel:
             return True
 
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Predictive World Model: {e}")
+            logger.error(
+                f"❌ Failed to initialize Predictive World Model: {e}"
+            )
             return False
 
     async def startup(self) -> bool:
@@ -208,7 +216,9 @@ class PredictiveWorldModel:
             # Store initial state for later learning
             if not hasattr(self, "_pending_executions"):
                 self._pending_executions = {}
-            self._pending_executions[getattr(event, "execution_id", "unknown")] = {
+            self._pending_executions[
+                getattr(event, "execution_id", "unknown")
+            ] = {
                 "initial_state": getattr(event, "initial_state", {}),
                 "action": getattr(event, "action", "unknown_action"),
                 "start_time": datetime.now(),
@@ -300,8 +310,12 @@ class PredictiveWorldModel:
     def _validate_configuration(self) -> None:
         """Validate configuration parameters"""
         # Ensure thresholds are within valid ranges
-        self.confidence_threshold = max(0.0, min(1.0, self.confidence_threshold))
-        self.similarity_threshold = max(0.0, min(1.0, self.similarity_threshold))
+        self.confidence_threshold = max(
+            0.0, min(1.0, self.confidence_threshold)
+        )
+        self.similarity_threshold = max(
+            0.0, min(1.0, self.similarity_threshold)
+        )
         self.learning_decay = max(0.0, min(1.0, self.learning_decay))
 
         # Ensure max_alternatives is reasonable
@@ -428,7 +442,9 @@ class PredictiveWorldModel:
             "learning_active": self.enable_learning,
             "memory_usage": len(self.state_transitions),
             "model_confidence": (
-                self._calculate_model_confidence() if self.state_transitions else 0.0
+                self._calculate_model_confidence()
+                if self.state_transitions
+                else 0.0
             ),
         }
 
@@ -519,13 +535,16 @@ class PredictiveWorldModel:
         # Update success patterns with decay
         pattern_key = self._create_pattern_key(initial_state, action)
         current_success = self.success_patterns[pattern_key]
-        self.success_patterns[pattern_key] = current_success * self.learning_decay + (
-            1.0 if success else 0.0
-        ) * (1 - self.learning_decay)
+        self.success_patterns[pattern_key] = (
+            current_success * self.learning_decay
+            + (1.0 if success else 0.0) * (1 - self.learning_decay)
+        )
 
         # Learn risk patterns
         if not success:
-            risk_key = self._identify_failure_pattern(initial_state, action, context)
+            risk_key = self._identify_failure_pattern(
+                initial_state, action, context
+            )
             self.risk_patterns[risk_key].append(transition)
 
         logger.debug(
@@ -574,9 +593,15 @@ class PredictiveWorldModel:
             val1 = state1.get(key)
             val2 = state2.get(key)
 
-            if val1 is None or val2 is None or not isinstance(val1, type(val2)):
+            if (
+                val1 is None
+                or val2 is None
+                or not isinstance(val1, type(val2))
+            ):
                 similarity_scores.append(0.0)
-            elif isinstance(val1, int | float) and isinstance(val2, int | float):
+            elif isinstance(val1, int | float) and isinstance(
+                val2, int | float
+            ):
                 # Numerical similarity
                 max_val = max(abs(val1), abs(val2), 1)
                 similarity_scores.append(1.0 - abs(val1 - val2) / max_val)
@@ -588,7 +613,9 @@ class PredictiveWorldModel:
                     # Basic string similarity
                     common_chars = len(set(val1) & set(val2))
                     total_chars = len(set(val1) | set(val2))
-                    similarity_scores.append(common_chars / max(total_chars, 1))
+                    similarity_scores.append(
+                        common_chars / max(total_chars, 1)
+                    )
             elif val1 == val2:
                 similarity_scores.append(1.0)
             else:
@@ -621,7 +648,9 @@ class PredictiveWorldModel:
 
         # Risk from long execution times
         long_executions = [
-            t for t in similar_transitions if t.duration > LONG_EXECUTION_THRESHOLD
+            t
+            for t in similar_transitions
+            if t.duration > LONG_EXECUTION_THRESHOLD
         ]
         if (
             len(long_executions) / max(len(similar_transitions), 1)
@@ -690,7 +719,9 @@ class PredictiveWorldModel:
             if (
                 transition.action_taken != action
                 and transition.success
-                and self._calculate_state_similarity(state, transition.initial_state)
+                and self._calculate_state_similarity(
+                    state, transition.initial_state
+                )
                 >= self.similarity_threshold
             ):
                 # Calculate success pattern for this alternative
@@ -708,7 +739,9 @@ class PredictiveWorldModel:
                     if (
                         t.action_taken == transition.action_taken
                         and t.success
-                        and self._calculate_state_similarity(state, t.initial_state)
+                        and self._calculate_state_similarity(
+                            state, t.initial_state
+                        )
                         >= self.similarity_threshold
                     )
                 )
@@ -782,7 +815,9 @@ class PredictiveWorldModel:
         pattern_diversity_score = min(1.0, len(self.success_patterns) / 100.0)
         recent_data_score = self._calculate_recent_data_score()
 
-        return (data_volume_score + pattern_diversity_score + recent_data_score) / 3.0
+        return (
+            data_volume_score + pattern_diversity_score + recent_data_score
+        ) / 3.0
 
     def _calculate_recent_data_score(self) -> float:
         """Score based on how recent the data is"""
@@ -832,6 +867,8 @@ class PredictiveWorldModel:
             )
 
         # Sort by success rate (ascending for risky, descending for successful)
-        action_performance.sort(key=lambda x: x["success_rate"], reverse=success)
+        action_performance.sort(
+            key=lambda x: x["success_rate"], reverse=success
+        )
 
         return action_performance[:limit]

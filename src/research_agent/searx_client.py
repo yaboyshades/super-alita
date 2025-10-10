@@ -1,4 +1,5 @@
 """SearxNG client with constitutional observability and resilience."""
+
 from __future__ import annotations
 
 import json
@@ -17,12 +18,28 @@ from .metrics import Timer, log_event
 class SearxClient:
     """Minimal HTTP client that honors CMA v5.3 resilience requirements."""
 
-    def __init__(self, base_url: str | None = None, *, timeout: float = 10.0, attempts: int = 3) -> None:
-        self.base_url = (base_url or os.environ.get("SEARXNG_BASE_URL") or "http://localhost:8080").rstrip("/")
+    def __init__(
+        self,
+        base_url: str | None = None,
+        *,
+        timeout: float = 10.0,
+        attempts: int = 3,
+    ) -> None:
+        self.base_url = (
+            base_url
+            or os.environ.get("SEARXNG_BASE_URL")
+            or "http://localhost:8080"
+        ).rstrip("/")
         self.timeout = timeout
         self.attempts = attempts
 
-    def search(self, query: str, *, categories: str = "science,web", max_results: int = 8) -> list[dict[str, Any]]:
+    def search(
+        self,
+        query: str,
+        *,
+        categories: str = "science,web",
+        max_results: int = 8,
+    ) -> list[dict[str, Any]]:
         params = {"q": query, "format": "json", "categories": categories}
         url = f"{self.base_url}/search?{up.urlencode(params)}"
         allowed, reason = is_allowed(url)
@@ -39,7 +56,10 @@ class SearxClient:
                         query=query,
                         url=url,
                     )
-                    request = ur.Request(url, headers={"User-Agent": "SuperAlitaResearchAgent/0.1"})
+                    request = ur.Request(
+                        url,
+                        headers={"User-Agent": "SuperAlitaResearchAgent/0.1"},
+                    )
                     with ur.urlopen(request, timeout=self.timeout) as resp:
                         payload = resp.read().decode("utf-8")
                     log_event(
@@ -55,12 +75,20 @@ class SearxClient:
                         {
                             "title": str(item.get("title", "")),
                             "url": str(item.get("url", "")),
-                            "snippet": str(item.get("content") or item.get("snippet", "")),
+                            "snippet": str(
+                                item.get("content") or item.get("snippet", "")
+                            ),
                         }
                         for item in results[:max_results]
                     ]
                     return normalized
-                except (ue.URLError, ue.HTTPError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
+                except (
+                    ue.URLError,
+                    ue.HTTPError,
+                    TimeoutError,
+                    ValueError,
+                    json.JSONDecodeError,
+                ) as exc:
                     last_err = exc
                     log_event(
                         "research.query.failed",
@@ -73,4 +101,6 @@ class SearxClient:
                     backoff = min(2 ** (attempt - 1), 8) + random.random()
                     time.sleep(backoff)
         assert last_err is not None  # pragma: no cover - defensive
-        raise RuntimeError(f"query failed after {self.attempts} attempts") from last_err
+        raise RuntimeError(
+            f"query failed after {self.attempts} attempts"
+        ) from last_err

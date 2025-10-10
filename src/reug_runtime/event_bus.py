@@ -25,7 +25,9 @@ class BaseEventBus(ABC):
 
     # Optional pub/sub API used by plugin system. Default implementations are no-ops.
     async def subscribe(
-        self, event_type: str, handler: Callable[[dict[str, Any]], Awaitable[None]]
+        self,
+        event_type: str,
+        handler: Callable[[dict[str, Any]], Awaitable[None]],
     ) -> None:  # pragma: no cover - optional
         return None
 
@@ -69,10 +71,14 @@ class InMemoryPubSubEventBus(FileEventBus):
 
     def __init__(self, log_dir: str | None):
         super().__init__(log_dir)
-        self._subs: dict[str, list[Callable[[dict[str, Any]], Awaitable[None]]]] = {}
+        self._subs: dict[
+            str, list[Callable[[dict[str, Any]], Awaitable[None]]]
+        ] = {}
 
     async def subscribe(
-        self, event_type: str, handler: Callable[[dict[str, Any]], Awaitable[None]]
+        self,
+        event_type: str,
+        handler: Callable[[dict[str, Any]], Awaitable[None]],
     ) -> None:
         self._subs.setdefault(event_type, []).append(handler)
 
@@ -86,7 +92,9 @@ class InMemoryPubSubEventBus(FileEventBus):
                 # Schedule without awaiting to avoid blocking
                 asyncio.create_task(h(event))
             except Exception:
-                logger.exception("failed to dispatch event", extra={"event": event})
+                logger.exception(
+                    "failed to dispatch event", extra={"event": event}
+                )
         return event
 
     async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
@@ -97,7 +105,9 @@ class RedisEventBus(BaseEventBus):
     """Publish events to a Redis channel asynchronously."""
 
     def __init__(
-        self, url: str = "redis://localhost:6379/0", channel: str = "reug-events"
+        self,
+        url: str = "redis://localhost:6379/0",
+        channel: str = "reug-events",
     ):
         import redis  # type: ignore
 
@@ -107,7 +117,9 @@ class RedisEventBus(BaseEventBus):
     async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
         event = {**event, "timestamp": time.time()}
         try:
-            await asyncio.to_thread(self._r.publish, self._ch, json.dumps(event))
+            await asyncio.to_thread(
+                self._r.publish, self._ch, json.dumps(event)
+            )
         except Exception:
             logger.exception("failed to publish event", extra={"event": event})
         return event

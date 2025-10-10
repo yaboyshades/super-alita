@@ -144,7 +144,9 @@ class EnhancedProtocolEngine:
         )
         logger.info(f"Legal Authority: {self.config.legal_authority}")
 
-    async def process_request(self, request: CognitiveRequest) -> CognitiveResponse:
+    async def process_request(
+        self, request: CognitiveRequest
+    ) -> CognitiveResponse:
         """
         Process cognitive request through enhanced protocol framework.
 
@@ -182,10 +184,14 @@ class EnhancedProtocolEngine:
             response.active_modes = active_modes
 
             # Step 3: Enhanced LLM processing
-            llm_result = await self._process_with_enhanced_llm(request, active_modes)
+            llm_result = await self._process_with_enhanced_llm(
+                request, active_modes
+            )
 
             # Step 4: Build response according to expansion tier
-            response = await self._build_tiered_response(request, llm_result, response)
+            response = await self._build_tiered_response(
+                request, llm_result, response
+            )
 
             # Step 5: Final confidence assessment
             response.confidence_score = await self._calculate_confidence(
@@ -278,13 +284,19 @@ class EnhancedProtocolEngine:
         # For now, return structured mock response
 
         result = {
-            "intent_classification": await self._classify_intent(request.user_input),
+            "intent_classification": await self._classify_intent(
+                request.user_input
+            ),
             "confidence_score": await self._calculate_llm_confidence(
                 request.user_input
             ),
             "reasoning_by_mode": {},
-            "integrated_planning": await self._generate_script_plan(request.user_input),
-            "self_diagnosis": await self._perform_self_diagnosis(request.user_input),
+            "integrated_planning": await self._generate_script_plan(
+                request.user_input
+            ),
+            "self_diagnosis": await self._perform_self_diagnosis(
+                request.user_input
+            ),
         }
 
         # Process through each reasoning mode
@@ -302,7 +314,12 @@ class EnhancedProtocolEngine:
 
         if any(
             word in user_lower
-            for word in ["assess", "abilities", "capabilities", "what can you do"]
+            for word in [
+                "assess",
+                "abilities",
+                "capabilities",
+                "what can you do",
+            ]
         ):
             return {"intent": "self_reflection", "confidence": 0.95}
         if any(word in user_lower for word in ["search", "find", "look for"]):
@@ -417,14 +434,25 @@ class EnhancedProtocolEngine:
             response.metadata["forecast"] = "Future implications assessed"
             response.metadata["evidence_summary"] = "Evidence base validated"
 
-        if request.expansion_tier in [ExpansionTier.EXTENDED, ExpansionTier.MAXIMAL]:
+        if request.expansion_tier in [
+            ExpansionTier.EXTENDED,
+            ExpansionTier.MAXIMAL,
+        ]:
             response.metadata["argument_map"] = "Logical structure mapped"
-            response.metadata["lens_shifting"] = "Multiple perspectives analyzed"
+            response.metadata["lens_shifting"] = (
+                "Multiple perspectives analyzed"
+            )
 
         if request.expansion_tier == ExpansionTier.MAXIMAL:
-            response.metadata["narrative_repackaging"] = "Response narrative optimized"
-            response.metadata["stakeholder_mapping"] = "Stakeholder impacts identified"
-            response.metadata["timelines"] = "Implementation timeline generated"
+            response.metadata["narrative_repackaging"] = (
+                "Response narrative optimized"
+            )
+            response.metadata["stakeholder_mapping"] = (
+                "Stakeholder impacts identified"
+            )
+            response.metadata["timelines"] = (
+                "Implementation timeline generated"
+            )
 
         return response
 

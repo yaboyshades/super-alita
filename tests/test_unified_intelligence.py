@@ -47,7 +47,9 @@ class TestUnifiedIntelligenceEngine:
         mb = mock_components["mangle_bridge"]
         mb.generate_code_insights.return_value = {"insights": []}
         ce = mock_components["copilot_enhancer"]
-        ce.enhance_response.return_value = {"enhanced_guidance": "Test guidance"}
+        ce.enhance_response.return_value = {
+            "enhanced_guidance": "Test guidance"
+        }
 
         # Test enhancement
         result = await engine.enhance_interaction("Test input")
@@ -59,10 +61,14 @@ class TestUnifiedIntelligenceEngine:
         assert "recommendations" in result
 
     @pytest.mark.asyncio
-    async def test_enhance_interaction_sdd_workflow(self, engine, mock_components):
+    async def test_enhance_interaction_sdd_workflow(
+        self, engine, mock_components
+    ):
         """Test SDD workflow pattern detection and enhancement."""
         # Setup mocks for SDD workflow
-        mock_components["workflow_detector"].detect.return_value = "new_feature"
+        mock_components["workflow_detector"].detect.return_value = (
+            "new_feature"
+        )
         ce = mock_components["constitutional_engine"]
         ce.analyze_compliance.return_value = {"score": 0.9}
         mb = mock_components["mangle_bridge"]
@@ -85,7 +91,9 @@ class TestUnifiedIntelligenceEngine:
         assert any("SDD" in rec.get("message", "") for rec in recommendations)
 
     @pytest.mark.asyncio
-    async def test_constitutional_validation(self, engine, mock_components) -> None:
+    async def test_constitutional_validation(
+        self, engine, mock_components
+    ) -> None:
         """Test constitutional compliance checking."""
         ce = mock_components["constitutional_engine"]
         ce.analyze_compliance.return_value = {
@@ -101,7 +109,9 @@ class TestUnifiedIntelligenceEngine:
         assert "Add unit tests" in result["recommendations"]
 
     @pytest.mark.asyncio
-    async def test_code_question_answering(self, engine, mock_components) -> None:
+    async def test_code_question_answering(
+        self, engine, mock_components
+    ) -> None:
         """Test code question answering via Mangle."""
         mb = mock_components["mangle_bridge"]
         mb.generate_code_insights.return_value = {

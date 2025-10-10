@@ -145,7 +145,9 @@ class ConversationPlugin(PluginInterface):
         ):
             # This is a workspace (unified architecture)
             self.workspace = event_bus_or_workspace
-            await super().setup(None, store, config)  # No event_bus in unified arch
+            await super().setup(
+                None, store, config
+            )  # No event_bus in unified arch
         else:
             # This is an event_bus (legacy architecture)
             await super().setup(event_bus_or_workspace, store, config)
@@ -175,9 +177,13 @@ class ConversationPlugin(PluginInterface):
                 # Use a simplified plugin registry for now
                 plugin_registry = getattr(self, "plugin_registry", {})
                 if hasattr(self, "event_bus") and self.event_bus:
-                    self.reug_flow = REUGExecutionFlow(self.event_bus, plugin_registry)
+                    self.reug_flow = REUGExecutionFlow(
+                        self.event_bus, plugin_registry
+                    )
                     self.reug_ready = True
-                    logger.info("REUGExecutionFlow initialized for SoT integration")
+                    logger.info(
+                        "REUGExecutionFlow initialized for SoT integration"
+                    )
                 else:
                     self.reug_flow = None
                     self.reug_ready = False
@@ -187,7 +193,9 @@ class ConversationPlugin(PluginInterface):
             else:
                 self.reug_flow = None
                 self.reug_ready = False
-                logger.warning("REUGExecutionFlow not available - SoT disabled")
+                logger.warning(
+                    "REUGExecutionFlow not available - SoT disabled"
+                )
         except Exception as e:
             logger.error(f"Failed to initialize REUGExecutionFlow: {e}")
             self.reug_flow = None
@@ -292,7 +300,9 @@ class ConversationPlugin(PluginInterface):
 
         # Router availability flag - don't override if already set properly
         if not hasattr(self, "router_ready"):
-            self.router_ready = hasattr(self, "router") and self.router is not None
+            self.router_ready = (
+                hasattr(self, "router") and self.router is not None
+            )
 
         if self.router_ready:
             logger.info(
@@ -320,14 +330,20 @@ class ConversationPlugin(PluginInterface):
         await super().start()
 
         # Subscribe to conversation events
-        logger.debug("🎯 CONVERSATION: About to subscribe to conversation_message")
+        logger.debug(
+            "🎯 CONVERSATION: About to subscribe to conversation_message"
+        )
         await self.subscribe("conversation_message", self._handle_conversation)
         logger.debug("🎯 CONVERSATION: About to subscribe to user_message")
         await self.subscribe(
             "user_message", self._handle_user_message
         )  # Fix: subscribe to chat client events
-        logger.debug("🎯 CONVERSATION: About to subscribe to system_status_request")
-        await self.subscribe("system_status_request", self._handle_status_request)
+        logger.debug(
+            "🎯 CONVERSATION: About to subscribe to system_status_request"
+        )
+        await self.subscribe(
+            "system_status_request", self._handle_status_request
+        )
         logger.debug("🎯 CONVERSATION: All subscriptions completed")
         # REMOVED: goal_received subscription - let planner handle goals exclusively
 
@@ -343,7 +359,9 @@ class ConversationPlugin(PluginInterface):
 
         # Save any important conversation data
         if self.conversation_memory:
-            logger.info(f"Processed {len(self.conversation_memory)} conversation turns")
+            logger.info(
+                f"Processed {len(self.conversation_memory)} conversation turns"
+            )
 
     async def _publish_agent_reply(
         self, text: str, correlation_id: str | None = None, **kwargs
@@ -458,16 +476,20 @@ class ConversationPlugin(PluginInterface):
                     )
                     if name_match:
                         tool_name = name_match.group(1).strip()
-                        description = (
-                            f"{tool_name.title()} tool created from user request"
-                        )
+                        description = f"{tool_name.title()} tool created from user request"
                     elif "fibonacci" in user_text_lower:
                         tool_name = "fibonacci_tool"
                         description = "Fibonacci sequence calculator tool"
-                    elif "calculator" in user_text_lower or "math" in user_text_lower:
+                    elif (
+                        "calculator" in user_text_lower
+                        or "math" in user_text_lower
+                    ):
                         tool_name = "calculator_tool"
                         description = "Mathematical calculator tool"
-                    elif "text" in user_text_lower or "string" in user_text_lower:
+                    elif (
+                        "text" in user_text_lower
+                        or "string" in user_text_lower
+                    ):
                         tool_name = "text_processor"
                         description = "Text processing tool"
 
@@ -519,7 +541,9 @@ class ConversationPlugin(PluginInterface):
 
                 await self.event_bus._redis.publish(
                     "agent_reply",
-                    json.dumps({"text": "Session wiped. Starting fresh conversation."}),
+                    json.dumps(
+                        {"text": "Session wiped. Starting fresh conversation."}
+                    ),
                 )
                 logger.info("Session memory cleared by user request")
                 return
@@ -549,7 +573,9 @@ class ConversationPlugin(PluginInterface):
             await self.event_bus._redis.publish(
                 "agent_reply",
                 json.dumps(
-                    {"text": "Sorry, I encountered an error processing your message."}
+                    {
+                        "text": "Sorry, I encountered an error processing your message."
+                    }
                 ),
             )
 
@@ -557,14 +583,20 @@ class ConversationPlugin(PluginInterface):
         self, user_message: str, session_id: str, conversation_id: str
     ) -> None:
         """Process user message using deterministic planner → router → dispatcher flow."""
-        logger.info(f"🎯 Processing message deterministically: '{user_message}'")
+        logger.info(
+            f"🎯 Processing message deterministically: '{user_message}'"
+        )
 
         # Always publish a minimal echo fallback if something goes wrong.
         async def _fallback(reason: str, err: Exception | None = None):
             if err:
-                logger.error("Deterministic processing failed (%s): %s", reason, err)
+                logger.error(
+                    "Deterministic processing failed (%s): %s", reason, err
+                )
             else:
-                logger.warning("Deterministic processing fallback (%s)", reason)
+                logger.warning(
+                    "Deterministic processing fallback (%s)", reason
+                )
             text = f"I received your message: '{user_message}'. I'm currently having issues with my processing system, but I'm working on understanding your request."
             await self.event_bus._redis.publish(
                 "agent_reply", json.dumps({"text": text, "reason": reason})
@@ -616,9 +648,15 @@ class ConversationPlugin(PluginInterface):
         # 2) Full path: planner → parse → dispatcher
         try:
             tool_desc = _minimal_tool_descriptions(self.registry)
-            planner_output = await self._get_planner_output(user_message, tool_desc)
-            route = self.router.route_user_message(user_message, planner_output)
-            logger.info(f"🧭 Planner output: {planner_output}, Routed to: {route}")
+            planner_output = await self._get_planner_output(
+                user_message, tool_desc
+            )
+            route = self.router.route_user_message(
+                user_message, planner_output
+            )
+            logger.info(
+                f"🧭 Planner output: {planner_output}, Routed to: {route}"
+            )
         except Exception as e:
             await _fallback("planner_error", e)
             return
@@ -626,7 +664,9 @@ class ConversationPlugin(PluginInterface):
         try:
             if self.event_bus:
                 # Ensure session_id and conversation_id are strings
-                session_id_str = str(session_id) if session_id else "default_session"
+                session_id_str = (
+                    str(session_id) if session_id else "default_session"
+                )
                 conversation_id_str = (
                     str(conversation_id) if conversation_id else session_id_str
                 )
@@ -660,14 +700,18 @@ class ConversationPlugin(PluginInterface):
                         await self.reug_flow.start_session()
 
                     # Process via REUG with SoT support
-                    result = await self.reug_flow.process_user_input(user_message)
+                    result = await self.reug_flow.process_user_input(
+                        user_message
+                    )
 
                     if result.get("success", False):
                         # Return the REUG response directly - it handles SoT internally
                         response = result.get(
                             "response", "Task completed via SoT execution."
                         )
-                        logger.info(f"SoT execution successful: {response[:50]}...")
+                        logger.info(
+                            f"SoT execution successful: {response[:50]}..."
+                        )
                         return f"SOT_EXECUTED {response}"
                     else:
                         logger.warning(
@@ -717,22 +761,31 @@ Response:"""
             # Simple patterns for common cases
             if any(
                 word in user_lower
-                for word in ["hello", "hi", "hey", "good morning", "good afternoon"]
+                for word in [
+                    "hello",
+                    "hi",
+                    "hey",
+                    "good morning",
+                    "good afternoon",
+                ]
             ):
                 return "NONE Hello! How can I help you today?"
 
             if any(
-                word in user_lower for word in ["create", "build", "make", "generate"]
+                word in user_lower
+                for word in ["create", "build", "make", "generate"]
             ):
                 return f"GAP Create a tool for: {user_message}"
 
             if any(
-                word in user_lower for word in ["search", "find", "look up", "research"]
+                word in user_lower
+                for word in ["search", "find", "look up", "research"]
             ):
                 return f"TOOL web_agent {user_message}"
 
             if any(
-                word in user_lower for word in ["remember", "store", "save", "recall"]
+                word in user_lower
+                for word in ["remember", "store", "save", "recall"]
             ):
                 return f"TOOL memory_manager {user_message}"
 
@@ -844,7 +897,9 @@ Response:"""
             await self.event_bus._redis.publish(
                 "agent_reply",
                 json.dumps(
-                    {"text": f"🧬 Atom '{tool_name}' created and stored in memory"}
+                    {
+                        "text": f"🧬 Atom '{tool_name}' created and stored in memory"
+                    }
                 ),
             )
 
@@ -853,7 +908,8 @@ Response:"""
         except Exception as e:
             logger.error(f"Error handling create-atom command: {e}")
             await self.event_bus._redis.publish(
-                "agent_reply", json.dumps({"text": f"❌ Atom creation error: {e}"})
+                "agent_reply",
+                json.dumps({"text": f"❌ Atom creation error: {e}"}),
             )
 
     async def _handle_atom_run_command(self, command: str) -> None:
@@ -883,7 +939,10 @@ Response:"""
 
             # Emit atom_run event for execution
             await self.emit_event(
-                "atom_run", tool_name=tool_name, args=args, requested_by="user_command"
+                "atom_run",
+                tool_name=tool_name,
+                args=args,
+                requested_by="user_command",
             )
 
             # Don't send immediate reply - let the executor respond
@@ -892,16 +951,21 @@ Response:"""
         except Exception as e:
             logger.error(f"Error handling atom-run command: {e}")
             await self.event_bus._redis.publish(
-                "agent_reply", json.dumps({"text": f"❌ Atom execution error: {e}"})
+                "agent_reply",
+                json.dumps({"text": f"❌ Atom execution error: {e}"}),
             )
 
-    async def _handle_atomize_request(self, data, session_id, message_id) -> None:
+    async def _handle_atomize_request(
+        self, data, session_id, message_id
+    ) -> None:
         """Handle atomize: commands deterministically via fast-path."""
         try:
             user_message = data.get("user_message", "")
 
             # Extract text after "atomize:"
-            text_to_atomize = user_message[8:].strip()  # Remove "atomize:" prefix
+            text_to_atomize = user_message[
+                8:
+            ].strip()  # Remove "atomize:" prefix
 
             if not text_to_atomize:
                 await self.emit_event(
@@ -913,7 +977,9 @@ Response:"""
                 )
                 return
 
-            logger.info(f"🔬 Processing atomize request for text: '{text_to_atomize}'")
+            logger.info(
+                f"🔬 Processing atomize request for text: '{text_to_atomize}'"
+            )
 
             # Emit atomize request event
             await self.emit_event(
@@ -984,7 +1050,11 @@ Response:"""
             if hasattr(event, "data"):
                 data = event.data
             else:
-                data = event.model_dump() if hasattr(event, "model_dump") else event
+                data = (
+                    event.model_dump()
+                    if hasattr(event, "model_dump")
+                    else event
+                )
             user_message = (
                 data.get("user_message", "unknown")
                 if isinstance(data, dict)
@@ -1005,12 +1075,20 @@ Response:"""
                     event_type = "conversation_message"
                 else:
                     # Legacy format
-                    data = event.model_dump() if hasattr(event, "model_dump") else event
-                    event_type = getattr(event, "event_type", "conversation_message")
+                    data = (
+                        event.model_dump()
+                        if hasattr(event, "model_dump")
+                        else event
+                    )
+                    event_type = getattr(
+                        event, "event_type", "conversation_message"
+                    )
 
                 # Ensure data is a dictionary
                 if not isinstance(data, dict):
-                    logger.warning(f"Event data is not a dictionary: {type(data)}")
+                    logger.warning(
+                        f"Event data is not a dictionary: {type(data)}"
+                    )
                     return
 
                 # Duplicate message detection
@@ -1045,7 +1123,9 @@ Response:"""
                     message_id = data.get(
                         "message_id", f"msg_{session_id}_{int(time.time())}"
                     )
-                    await self._handle_atomize_request(data, session_id, message_id)
+                    await self._handle_atomize_request(
+                        data, session_id, message_id
+                    )
                     return
 
                 logger.info(
@@ -1081,13 +1161,13 @@ Response:"""
 
                 session = self.active_sessions[session_id]
                 session["message_count"] += 1
-                session["last_message"] = raw_user_text  # Store raw text, not formatted
+                session["last_message"] = (
+                    raw_user_text  # Store raw text, not formatted
+                )
                 session["last_activity"] = datetime.now().isoformat()
 
                 # Emit thinking indicator with formatted version (UI only - don't use downstream)
-                thinking_text = (
-                    f"I heard you say: {raw_user_text}. I'm thinking about that..."
-                )
+                thinking_text = f"I heard you say: {raw_user_text}. I'm thinking about that..."
                 logger.info("Emitting thinking indicator...")
                 await self.emit_event(
                     "agent_thinking",
@@ -1106,7 +1186,8 @@ Response:"""
                 if self.llm_client:
                     try:
                         intent_response_text = await asyncio.wait_for(
-                            self._call_gemini_async(intent_prompt), timeout=15.0
+                            self._call_gemini_async(intent_prompt),
+                            timeout=15.0,
                         )
                         intent = intent_response_text.strip().lower()
                         logger.info(f"Intent classified as: {intent}")
@@ -1144,7 +1225,9 @@ Response:"""
                             cognitive_context={
                                 "message_id": message_id,
                                 "classification_method": (
-                                    "llm" if self.llm_client else "pattern_matching"
+                                    "llm"
+                                    if self.llm_client
+                                    else "pattern_matching"
                                 ),
                                 "detected_keywords": [
                                     kw
@@ -1178,13 +1261,20 @@ Response:"""
                         session_id=session_id,
                         user_message=immediate_response,
                         message_id=f"response_{message_id}",
-                        context={"type": "immediate_response", "processing": True},
+                        context={
+                            "type": "immediate_response",
+                            "processing": True,
+                        },
                     )
-                    logger.info("📤 Emitted immediate response while processing")
+                    logger.info(
+                        "📤 Emitted immediate response while processing"
+                    )
                     return
 
                 # Streamlined memory-grounded response generation with stateful context
-                logger.info("🧠 Generating stateful, memory-grounded response...")
+                logger.info(
+                    "🧠 Generating stateful, memory-grounded response..."
+                )
 
                 # 1. Build running context from last 3 turns
                 context_lines = []
@@ -1218,7 +1308,9 @@ Response:"""
                     )
 
                 except Exception as e:
-                    logger.warning(f"Failed to build conversation context: {e}")
+                    logger.warning(
+                        f"Failed to build conversation context: {e}"
+                    )
                     context = "(Context unavailable)"
 
                 # 2. Get memory context via embedding similarity
@@ -1230,7 +1322,9 @@ Response:"""
                         logger.info("📚 Retrieving memory context...")
                         query_vec = await self.store.embed_text([user_message])
                         if query_vec and len(query_vec) > 0:
-                            memories = await self.store.attention(query_vec[0], top_k=3)
+                            memories = await self.store.attention(
+                                query_vec[0], top_k=3
+                            )
                             memory_lines = []
                             for key, score in memories:
                                 atom = self.store.get(key)
@@ -1302,7 +1396,9 @@ Response:"""
                             content=interaction_memory,
                             hierarchy_path=["turns", session_id],
                         )
-                        logger.info(f"📝 Turn stored in semantic memory: {memory_id}")
+                        logger.info(
+                            f"📝 Turn stored in semantic memory: {memory_id}"
+                        )
                     else:
                         logger.info("📝 Turn stored in session memory only")
 
@@ -1316,7 +1412,9 @@ Response:"""
                     response_text=response_text,
                     reasoning="Memory-grounded response with context",
                     context={
-                        "intent": intent if "intent" in locals() else "unknown",
+                        "intent": (
+                            intent if "intent" in locals() else "unknown"
+                        ),
                         "memory_used": bool(memory_context),
                     },
                     timestamp=datetime.now().isoformat(),
@@ -1345,7 +1443,9 @@ Response:"""
                         try:
                             # THIS IS THE KEY FIX - actually call the memory system
                             logger.info("Attempting memory system access...")
-                            query_vec = await self.store.embed_query(user_message)
+                            query_vec = await self.store.embed_query(
+                                user_message
+                            )
 
                             if query_vec is not None:
                                 memories = await self.store.attention(
@@ -1361,7 +1461,9 @@ Response:"""
                                             if len(str(atom.value)) > 120
                                             else str(atom.value)
                                         )
-                                        memory_lines.append(f"- {score:.2f} {content}")
+                                        memory_lines.append(
+                                            f"- {score:.2f} {content}"
+                                        )
 
                                 memory_snippet = (
                                     "\n".join(memory_lines)
@@ -1380,9 +1482,7 @@ Response:"""
                             logger.warning(
                                 f"❌ MEMORY FAILED: Memory retrieval failed: {e}"
                             )
-                            memory_snippet = (
-                                "Memory system methods exist but failed to execute."
-                            )
+                            memory_snippet = "Memory system methods exist but failed to execute."
                     else:
                         # More detailed diagnostic of what's missing
                         store_methods = [
@@ -1390,7 +1490,9 @@ Response:"""
                             for method in dir(self.store)
                             if not method.startswith("_")
                         ]
-                        logger.info(f"Available store methods: {store_methods}")
+                        logger.info(
+                            f"Available store methods: {store_methods}"
+                        )
 
                         missing_methods = []
                         if not hasattr(self.store, "embed_query"):
@@ -1420,8 +1522,10 @@ Relevant past experiences:
 
 Generate a concise, memory-grounded reply that references relevant past experiences when appropriate.""".strip()
 
-                response_text, reasoning = await self._generate_response_with_prompt(
-                    full_prompt, user_message, context, session
+                response_text, reasoning = (
+                    await self._generate_response_with_prompt(
+                        full_prompt, user_message, context, session
+                    )
                 )
 
                 logger.info(f"Response generated: '{response_text[:50]}...'")
@@ -1446,7 +1550,10 @@ Generate a concise, memory-grounded reply that references relevant past experien
                     session_id=session_id,
                     response_text=response_text,
                     reasoning=reasoning if self.enable_reasoning else "",
-                    context={"session_info": session, "message_processed": True},
+                    context={
+                        "session_info": session,
+                        "message_processed": True,
+                    },
                     timestamp=datetime.now().isoformat(),
                     response_id=f"resp_{message_id}",
                 )
@@ -1458,7 +1565,9 @@ Generate a concise, memory-grounded reply that references relevant past experien
                 await self.event_bus._redis.publish(
                     "agent_reply", json.dumps({"text": response_text})
                 )
-                logger.info("Response sent to chat client on agent_reply channel")
+                logger.info(
+                    "Response sent to chat client on agent_reply channel"
+                )
 
             except Exception as e:
                 logger.error(f"Error handling conversation: {e}")
@@ -1485,7 +1594,9 @@ Generate a concise, memory-grounded reply that references relevant past experien
                 await self.emit_event(
                     "agent_response",
                     session_id=(
-                        data.get("session_id") if isinstance(data, dict) else "unknown"
+                        data.get("session_id")
+                        if isinstance(data, dict)
+                        else "unknown"
                     ),
                     response_text=error_message,
                     reasoning=f"Error occurred: {e!s}",
@@ -1543,7 +1654,8 @@ Generate a concise, memory-grounded reply that references relevant past experien
                 "plan",
             ]
             return any(
-                indicator in user_message.lower() for indicator in task_indicators
+                indicator in user_message.lower()
+                for indicator in task_indicators
             )
 
         try:
@@ -1574,7 +1686,9 @@ Examples:
             import json
 
             try:
-                decision = json.loads(raw or '{"intent":"task","tools_needed":[]}')
+                decision = json.loads(
+                    raw or '{"intent":"task","tools_needed":[]}'
+                )
             except json.JSONDecodeError:
                 logger.warning(f"Failed to parse JSON response: {raw}")
                 # Safe fallback for general tasks
@@ -1614,7 +1728,8 @@ Examples:
             ]
             self._selected_tools = []
             return any(
-                indicator in user_message.lower() for indicator in task_indicators
+                indicator in user_message.lower()
+                for indicator in task_indicators
             )
 
     async def _generate_response(
@@ -1657,7 +1772,9 @@ Examples:
 
         # For everything else, including greetings, use the intelligent LLM response
         # This allows for much more nuanced and context-aware conversations
-        return await self._generate_llm_response(user_message, context, session)
+        return await self._generate_llm_response(
+            user_message, context, session
+        )
 
     async def _generate_llm_response(
         self, user_message: str, context: dict, session: dict
@@ -1666,7 +1783,9 @@ Examples:
 
         if not self.llm_client:
             logger.warning("LLM client not available, using fallback response")
-            return self._generate_fallback_response(user_message, context, session)
+            return self._generate_fallback_response(
+                user_message, context, session
+            )
 
         try:
             # Build rich conversation context
@@ -1735,7 +1854,9 @@ Your response:"""
 
         except Exception as e:
             logger.error(f"Error generating LLM response: {e}")
-            return self._generate_fallback_response(user_message, context, session)
+            return self._generate_fallback_response(
+                user_message, context, session
+            )
 
     async def _call_gemini_async(self, prompt: str) -> str:
         """Async wrapper for Gemini API call using the resilient LLM client."""
@@ -1761,7 +1882,9 @@ Your response:"""
 
         if not self.llm_client:
             logger.warning("LLM client not available, using fallback response")
-            return self._generate_fallback_response(user_message, context, session)
+            return self._generate_fallback_response(
+                user_message, context, session
+            )
 
         try:
             # Use the provided prompt directly
@@ -1769,19 +1892,23 @@ Your response:"""
                 self._call_gemini_async(full_prompt), timeout=30.0
             )
 
-            reasoning = (
-                f"Memory-grounded response generated for: {user_message[:50]}..."
-            )
+            reasoning = f"Memory-grounded response generated for: {user_message[:50]}..."
 
-            logger.info(f"Generated memory-grounded response: {response_text[:100]}...")
+            logger.info(
+                f"Generated memory-grounded response: {response_text[:100]}..."
+            )
             return response_text.strip(), reasoning
 
         except TimeoutError:
             logger.error("LLM response timed out")
-            return self._generate_fallback_response(user_message, context, session)
+            return self._generate_fallback_response(
+                user_message, context, session
+            )
         except Exception as e:
             logger.error(f"Error generating LLM response: {e}")
-            return self._generate_fallback_response(user_message, context, session)
+            return self._generate_fallback_response(
+                user_message, context, session
+            )
 
     def _generate_fallback_response(
         self, user_message: str, context: dict, session: dict
@@ -1792,7 +1919,9 @@ Your response:"""
             memory_context = ""
             if hasattr(self.store, "semantic_search"):
                 try:
-                    memories = self.store.semantic_search(user_message, limit=3)
+                    memories = self.store.semantic_search(
+                        user_message, limit=3
+                    )
                     if memories:
                         memory_lines = [
                             f"• {mem.get('content', 'No content')}"  # Fixed: Added missing closing quote
@@ -1875,7 +2004,9 @@ Could you rephrase your question or ask something more specific? I'll be able to
         reasoning = "LLM call timed out, providing timeout explanation"
         return response, reasoning
 
-    def _get_greeting_response(self, context: dict, session: dict) -> tuple[str, str]:
+    def _get_greeting_response(
+        self, context: dict, session: dict
+    ) -> tuple[str, str]:
         """Generate a greeting response."""
         import random
 
@@ -1887,7 +2018,9 @@ Could you rephrase your question or ask something more specific? I'll be able to
         reasoning = "Detected greeting pattern, responding with warm welcome"
         return response, reasoning
 
-    def _get_farewell_response(self, context: dict, session: dict) -> tuple[str, str]:
+    def _get_farewell_response(
+        self, context: dict, session: dict
+    ) -> tuple[str, str]:
         """Generate a farewell response."""
         import random
 
@@ -1915,9 +2048,9 @@ I'm designed to be a helpful, intelligent conversation partner who can analyze, 
         """Describe agent capabilities with current system status."""
         # Check actual system status
         llm_available = bool(self.llm_client)
-        memory_methods_available = hasattr(self.store, "attention") and hasattr(
-            self.store, "embed_query"
-        )
+        memory_methods_available = hasattr(
+            self.store, "attention"
+        ) and hasattr(self.store, "embed_query")
         eventbus_available = bool(
             self.event_bus and hasattr(self.event_bus, "is_running")
         )
@@ -1969,9 +2102,9 @@ I'm designed to be a helpful, intelligent conversation partner who can analyze, 
         """Generate detailed self-assessment and limitation analysis."""
         # Perform quick system diagnosis
         llm_available = bool(self.llm_client)
-        memory_methods_available = hasattr(self.store, "attention") and hasattr(
-            self.store, "embed_query"
-        )
+        memory_methods_available = hasattr(
+            self.store, "attention"
+        ) and hasattr(self.store, "embed_query")
         eventbus_available = bool(
             self.event_bus and hasattr(self.event_bus, "is_running")
         )
@@ -1990,7 +2123,9 @@ I'm designed to be a helpful, intelligent conversation partner who can analyze, 
         memory_diagnostic = "Unknown"
         if self.store:
             store_methods = [
-                method for method in dir(self.store) if not method.startswith("_")
+                method
+                for method in dir(self.store)
+                if not method.startswith("_")
             ]
             if memory_methods_available:
                 try:
@@ -2001,15 +2136,11 @@ I'm designed to be a helpful, intelligent conversation partner who can analyze, 
                         else None
                     )
                     if test_vec is not None:
-                        memory_diagnostic = (
-                            "✅ Fully functional - embeddings and attention working"
-                        )
+                        memory_diagnostic = "✅ Fully functional - embeddings and attention working"
                     else:
                         memory_diagnostic = "⚠️ Methods exist but embedding returns None - semantic_memory plugin may not be started"
                 except Exception as e:
-                    memory_diagnostic = (
-                        f"❌ Methods exist but fail on execution: {str(e)[:100]}..."
-                    )
+                    memory_diagnostic = f"❌ Methods exist but fail on execution: {str(e)[:100]}..."
             else:
                 missing = []
                 if not hasattr(self.store, "embed_query"):
@@ -2178,7 +2309,9 @@ What specific aspect would you like me to focus on more deeply?"""
 
 What would you like to learn about? I can explain concepts, walk through processes, or help you understand complex ideas."""
 
-        reasoning = "Offering comprehensive learning support with interactive approach"
+        reasoning = (
+            "Offering comprehensive learning support with interactive approach"
+        )
         return response, reasoning
 
     async def _generate_problem_solving_response(
@@ -2249,7 +2382,11 @@ I'm genuinely interested in understanding your thoughts better. What aspects of 
             if hasattr(event, "data") and isinstance(event.data, dict):
                 data = event.data
             else:
-                data = event.model_dump() if hasattr(event, "model_dump") else event
+                data = (
+                    event.model_dump()
+                    if hasattr(event, "model_dump")
+                    else event
+                )
 
             # Skip non-status events
             event_type = data.get("type", "")

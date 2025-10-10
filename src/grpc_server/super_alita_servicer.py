@@ -66,11 +66,15 @@ class ConstitutionalSuperAlitaServicer(
         """Get constitutional health status with compliance scoring."""
         try:
             # Constitutional health check includes compliance validation
-            constitutional_healthy = self.constitutional_middleware.validation_enabled
+            constitutional_healthy = (
+                self.constitutional_middleware.validation_enabled
+            )
             unified_healthy = self.unified_agent is not None
             mangle_healthy = self.mangle_reasoner is not None
 
-            all_healthy = all([constitutional_healthy, unified_healthy, mangle_healthy])
+            all_healthy = all(
+                [constitutional_healthy, unified_healthy, mangle_healthy]
+            )
 
             status = (
                 pb2.HealthResponse.HEALTHY
@@ -86,7 +90,9 @@ class ConstitutionalSuperAlitaServicer(
                 "unified_intelligence": (
                     "available" if unified_healthy else "unavailable"
                 ),
-                "mangle_reasoning": "available" if mangle_healthy else "unavailable",
+                "mangle_reasoning": (
+                    "available" if mangle_healthy else "unavailable"
+                ),
                 "constitutional_framework": "6_articles_active",
             }
 
@@ -102,7 +108,9 @@ class ConstitutionalSuperAlitaServicer(
 
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"Constitutional health check failed: {str(e)}")
+            context.set_details(
+                f"Constitutional health check failed: {str(e)}"
+            )
             return pb2.HealthResponse(status=pb2.HealthResponse.UNHEALTHY)
 
     @constitutional_rpc_interceptor
@@ -180,7 +188,9 @@ class ConstitutionalSuperAlitaServicer(
         except Exception as e:
             logger.error(f"Constitutional task processing failed: {e}")
             context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"Constitutional task processing failed: {str(e)}")
+            context.set_details(
+                f"Constitutional task processing failed: {str(e)}"
+            )
             return pb2.TaskResponse(
                 task_id=request.task_id, success=False, error_message=str(e)
             )
@@ -196,7 +206,8 @@ class ConstitutionalSuperAlitaServicer(
                 context.set_code(grpc.StatusCode.UNAVAILABLE)
                 context.set_details("Constitutional validation not available")
                 return pb2.ValidationResponse(
-                    success=False, error_message="Constitutional validation unavailable"
+                    success=False,
+                    error_message="Constitutional validation unavailable",
                 )
 
             # Use Mangle reasoner for constitutional compliance validation
@@ -215,7 +226,10 @@ class ConstitutionalSuperAlitaServicer(
             for article, result in validation_results.items():
                 if result.results:
                     violations.extend(
-                        [f"{article}: {violation}" for violation in result.results]
+                        [
+                            f"{article}: {violation}"
+                            for violation in result.results
+                        ]
                     )
 
             return pb2.ValidationResponse(
@@ -274,9 +288,13 @@ class ConstitutionalSuperAlitaServicer(
         except Exception as e:
             logger.error(f"Constitutional SDD workflow failed: {e}")
             context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"Constitutional SDD workflow failed: {str(e)}")
+            context.set_details(
+                f"Constitutional SDD workflow failed: {str(e)}"
+            )
             return pb2.SDDWorkflowResponse(
-                workflow_id=request.workflow_id, success=False, error_message=str(e)
+                workflow_id=request.workflow_id,
+                success=False,
+                error_message=str(e),
             )
 
     # Private Methods (Article III: Simplicity Gate)
@@ -288,14 +306,6 @@ class ConstitutionalSuperAlitaServicer(
         # Integration with existing unified intelligence orchestrator
         # This is a simplified interface - full implementation would
         # integrate with the actual UnifiedSuperAlita.run() method
-
-        processing_context = {
-            "task_id": request.task_id,
-            "content": request.content,
-            "session_id": request.session_id,
-            "user_id": request.user_id,
-            "constitutional_compliance": "required",
-        }
 
         # Simulate unified intelligence processing
         # In full implementation, this would call:
@@ -315,15 +325,11 @@ class ConstitutionalSuperAlitaServicer(
         phase_start = time.time()
 
         # Constitutional phase execution with validation
-        phase_context = {
-            "phase": phase,
-            "workflow_id": request.workflow_id,
-            "requirements": request.requirements,
-            "constitutional_framework": "6_articles",
-        }
 
         # Simulate phase execution with constitutional gates
-        compliance_score = 0.85  # Would be calculated by actual constitutional scorer
+        compliance_score = (
+            0.85  # Would be calculated by actual constitutional scorer
+        )
 
         return {
             "phase": phase,

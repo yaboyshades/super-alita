@@ -18,4 +18,7 @@ class MangleReasoningAbility:
 
     def enhance_user_input(self, user_input: str) -> dict[str, Any]:
         """Return basic enhancement for testing."""
-        return {"original_input": user_input, "mangle_context": {"test": "working"}}
+        return {
+            "original_input": user_input,
+            "mangle_context": {"test": "working"},
+        }

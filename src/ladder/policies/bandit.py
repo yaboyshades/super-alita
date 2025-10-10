@@ -155,7 +155,9 @@ class UCB1Policy(BanditPolicy):
                 ucb_scores[tool] = float("inf")
             else:
                 confidence = math.sqrt(
-                    self.exploration_factor * math.log(total_time) / metrics.total_uses
+                    self.exploration_factor
+                    * math.log(total_time)
+                    / metrics.total_uses
                 )
                 ucb_scores[tool] = metrics.average_reward + confidence
 
@@ -231,7 +233,9 @@ class ThompsonSamplingPolicy(BanditPolicy):
         # Sample from Beta distribution for each tool
         samples = {}
         for tool in self.tools:
-            samples[tool] = random.betavariate(self.alpha[tool], self.beta[tool])
+            samples[tool] = random.betavariate(
+                self.alpha[tool], self.beta[tool]
+            )
 
         # Select tool with highest sample
         return max(samples.items(), key=lambda x: x[1])[0]
@@ -263,7 +267,10 @@ class ContextualBanditPolicy(BanditPolicy):
     """
 
     def __init__(
-        self, tools: list[str], base_policy: BanditPolicy, context_weight: float = 0.3
+        self,
+        tools: list[str],
+        base_policy: BanditPolicy,
+        context_weight: float = 0.3,
     ):
         """
         Initialize contextual bandit policy.
@@ -344,7 +351,9 @@ class ContextualBanditPolicy(BanditPolicy):
     ) -> None:
         """Update both local and base policy metrics."""
         super().update_reward(tool, reward, success, execution_time, context)
-        self.base_policy.update_reward(tool, reward, success, execution_time, context)
+        self.base_policy.update_reward(
+            tool, reward, success, execution_time, context
+        )
 
 
 def create_bandit_policy(

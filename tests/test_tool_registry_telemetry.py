@@ -12,7 +12,9 @@ class TelemetryRecorder:
 
 
 @pytest.mark.asyncio
-async def test_ainvoke_emits_telemetry(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_ainvoke_emits_telemetry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     registry = registry_module.ToolRegistry()
 
     async def plus_one(x: int) -> int:
@@ -34,7 +36,9 @@ async def test_ainvoke_emits_telemetry(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_ainvoke_failure_emits_telemetry(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_ainvoke_failure_emits_telemetry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     registry = registry_module.ToolRegistry()
     recorder = TelemetryRecorder()
     monkeypatch.setattr(registry_module.telemetry, "emit", recorder.emit)

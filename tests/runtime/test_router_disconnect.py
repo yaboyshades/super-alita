@@ -8,7 +8,12 @@ from fastapi import FastAPI
 
 from reug_runtime.router import router
 from tests.runtime import prefix_path
-from tests.runtime.fakes import FakeAbilityRegistry, FakeEventBus, FakeKG, FakeLLM
+from tests.runtime.fakes import (
+    FakeAbilityRegistry,
+    FakeEventBus,
+    FakeKG,
+    FakeLLM,
+)
 
 
 def _mk_app():
@@ -35,7 +40,9 @@ async def test_client_disconnect():
     try:
         while not server.started:
             await asyncio.sleep(0.01)
-        async with httpx.AsyncClient(base_url=f"http://{host}:{port}") as client:
+        async with httpx.AsyncClient(
+            base_url=f"http://{host}:{port}"
+        ) as client:
             async with client.stream(
                 "POST",
                 prefix_path("/v1/chat/stream"),
@@ -67,6 +74,8 @@ def _mk_app():
     return app
 
 
-@pytest.mark.skip("client disconnect simulation not supported in test environment")
+@pytest.mark.skip(
+    "client disconnect simulation not supported in test environment"
+)
 def test_client_disconnect(monkeypatch):
     pass

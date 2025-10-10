@@ -10,7 +10,9 @@ class CircuitBreaker:
     - recovery_timeout: seconds to half-open
     """
 
-    def __init__(self, failure_threshold: int = 5, recovery_timeout: float = 30.0):
+    def __init__(
+        self, failure_threshold: int = 5, recovery_timeout: float = 30.0
+    ):
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.failures = 0

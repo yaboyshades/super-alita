@@ -3,7 +3,9 @@ import subprocess
 from collections.abc import Sequence
 
 
-def _run_json_object_command(pairs: Sequence[str]) -> subprocess.CompletedProcess[str]:
+def _run_json_object_command(
+    pairs: Sequence[str],
+) -> subprocess.CompletedProcess[str]:
     command = [
         "bash",
         "-c",
@@ -15,7 +17,9 @@ def _run_json_object_command(pairs: Sequence[str]) -> subprocess.CompletedProces
 
 
 def test_sdd_json_object_from_kv_preserves_spaces_and_quotes() -> None:
-    result = _run_json_object_command(["owner=Platform Team", 'quote=He said "Hello"'])
+    result = _run_json_object_command(
+        ["owner=Platform Team", 'quote=He said "Hello"']
+    )
 
     assert result.returncode == 0, result.stderr
     data = json.loads(result.stdout.strip())

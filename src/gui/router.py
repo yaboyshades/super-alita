@@ -84,7 +84,10 @@ async def gui_index() -> HTMLResponse:
     </ul>
   """.replace(
         "{items}",
-        "\n".join(f"<li><code>{c}</code></li>" for c in gui_registry.list_components()),
+        "\n".join(
+            f"<li><code>{c}</code></li>"
+            for c in gui_registry.list_components()
+        ),
     )
     return HTMLResponse(_layout("Super Alita GUI", body))
 
@@ -95,7 +98,9 @@ async def list_components() -> JSONResponse:
 
 
 @router.get("/components/{name}", response_class=HTMLResponse)
-async def get_component(name: str, props: str | None = Query(None)) -> HTMLResponse:
+async def get_component(
+    name: str, props: str | None = Query(None)
+) -> HTMLResponse:
     # Parse optional JSON props (ignore errors silently returning empty props)
     try:
         parsed_props: dict[str, Any] = json.loads(props) if props else {}

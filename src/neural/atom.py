@@ -13,7 +13,9 @@ try:
     from prometheus_client import Counter
 
     # Prometheus metrics
-    atom_events = Counter("neural_atom_events_total", "Neural Atom events", ["type"])
+    atom_events = Counter(
+        "neural_atom_events_total", "Neural Atom events", ["type"]
+    )
     prometheus_available = True
 except ImportError:
     prometheus_available = False
@@ -53,7 +55,9 @@ class Atom:
     def __post_init__(self):
         if not self.atom_id:
             # Use content hashing for large content to keep seed manageable
-            content_hash = hashlib.sha256(self.content.encode()).hexdigest()[:16]
+            content_hash = hashlib.sha256(self.content.encode()).hexdigest()[
+                :16
+            ]
             seed = f"{self.atom_type}|{self.title}|{content_hash}"
             self.atom_id = str(uuid.uuid5(ATOM_NS, seed))
 

@@ -21,7 +21,9 @@ class TestLLMClientBenchmarks:
 
         def create_client():
             return OllamaClient(
-                base_url="http://localhost:11434", model="test-model", api_key=None
+                base_url="http://localhost:11434",
+                model="test-model",
+                api_key=None,
             )
 
         result = benchmark(create_client)
@@ -240,7 +242,9 @@ class TestIntegrationBenchmarks:
 # Custom benchmark configuration
 def pytest_configure(config):
     """Configure pytest benchmarks."""
-    config.addinivalue_line("markers", "benchmark: Performance benchmark tests")
+    config.addinivalue_line(
+        "markers", "benchmark: Performance benchmark tests"
+    )
 
 
 def pytest_collection_modifyitems(config, items):

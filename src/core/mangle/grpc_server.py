@@ -92,14 +92,19 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
                 "cortex": "healthy" if cortex_healthy else "unavailable",
                 "telemetry": "healthy" if telemetry_healthy else "unavailable",
                 "knowledge": "healthy" if knowledge_healthy else "unavailable",
-                "optimization": "healthy" if optimization_healthy else "unavailable",
+                "optimization": (
+                    "healthy" if optimization_healthy else "unavailable"
+                ),
             }
 
             timestamp = timestamp_pb2.Timestamp()
             timestamp.GetCurrentTime()
 
             return pb2.HealthResponse(
-                status=status, message=message, timestamp=timestamp, details=details
+                status=status,
+                message=message,
+                timestamp=timestamp,
+                details=details,
             )
 
         except Exception as e:
@@ -302,13 +307,19 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
                 name=request.name, metadata=dict(request.metadata)
             )
 
-            return pb2.CreateConceptResponse(concept_id=concept_id, success=True)
+            return pb2.CreateConceptResponse(
+                concept_id=concept_id, success=True
+            )
 
         except Exception as e:
-            return pb2.CreateConceptResponse(success=False, error_message=str(e))
+            return pb2.CreateConceptResponse(
+                success=False, error_message=str(e)
+            )
 
     async def CreateRelationship(
-        self, request: pb2.CreateRelationshipRequest, context: grpc.ServicerContext
+        self,
+        request: pb2.CreateRelationshipRequest,
+        context: grpc.ServicerContext,
     ) -> pb2.CreateRelationshipResponse:
         """Create a relationship in the knowledge graph."""
         try:
@@ -331,7 +342,9 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
             )
 
         except Exception as e:
-            return pb2.CreateRelationshipResponse(success=False, error_message=str(e))
+            return pb2.CreateRelationshipResponse(
+                success=False, error_message=str(e)
+            )
 
     def GetKnowledgeGraphStats(
         self, _request: empty_pb2.Empty, context: grpc.ServicerContext
@@ -374,7 +387,11 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
             arms = []
             for arm in request.arms:
                 arms.append(
-                    {"id": arm.arm_id, "name": arm.name, "metadata": dict(arm.metadata)}
+                    {
+                        "id": arm.arm_id,
+                        "name": arm.name,
+                        "metadata": dict(arm.metadata),
+                    }
                 )
 
             policy_id = await self.optimization_plugin.create_policy(
@@ -388,7 +405,9 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
             return pb2.CreatePolicyResponse(policy_id=policy_id, success=True)
 
         except Exception as e:
-            return pb2.CreatePolicyResponse(success=False, error_message=str(e))
+            return pb2.CreatePolicyResponse(
+                success=False, error_message=str(e)
+            )
 
     async def MakeDecision(
         self, request: pb2.DecisionRequest, context: grpc.ServicerContext
@@ -441,7 +460,9 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
                 **dict(request.metadata),
             )
 
-            return pb2.FeedbackResponse(success=success, policy_updated=success)
+            return pb2.FeedbackResponse(
+                success=success, policy_updated=success
+            )
 
         except Exception as e:
             return pb2.FeedbackResponse(success=False, error_message=str(e))
@@ -480,7 +501,9 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
                         algorithm_type=policy_data.get("policy", {}).get(
                             "algorithm_type", ""
                         ),
-                        decisions_made=policy_data.get("decisions", {}).get("total", 0),
+                        decisions_made=policy_data.get("decisions", {}).get(
+                            "total", 0
+                        ),
                         rewards_received=policy_data.get("decisions", {}).get(
                             "with_feedback", 0
                         ),
@@ -490,8 +513,12 @@ class SuperAlitaAgentServicer(pb2_grpc.SuperAlitaAgentServicer):
                     policy_stats.append(policy_stat)
 
             return pb2.OptimizationStatsResponse(
-                total_policies=stats.get("engine", {}).get("total_policies", 0),
-                total_decisions=stats.get("engine", {}).get("total_decisions", 0),
+                total_policies=stats.get("engine", {}).get(
+                    "total_policies", 0
+                ),
+                total_decisions=stats.get("engine", {}).get(
+                    "total_decisions", 0
+                ),
                 total_rewards=stats.get("rewards", {}).get("total_rewards", 0),
                 average_reward=stats.get("rewards", {}).get(
                     "average_reward_value", 0.0
@@ -619,7 +646,9 @@ class SuperAlitaGrpcServer:
         )
 
         # Add servicer to server
-        pb2_grpc.add_SuperAlitaAgentServicer_to_server(self.servicer, self.server)
+        pb2_grpc.add_SuperAlitaAgentServicer_to_server(
+            self.servicer, self.server
+        )
 
         # Add listening port
         listen_addr = f"{self.host}:{self.port}"

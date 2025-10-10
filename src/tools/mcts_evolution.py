@@ -48,7 +48,8 @@ class EvolutionNode:
 
         exploitation = self.average_reward
         exploration = (
-            exploration_weight * math.sqrt(math.log(self.parent.visits) / self.visits)
+            exploration_weight
+            * math.sqrt(math.log(self.parent.visits) / self.visits)
             if self.parent
             else 0
         )
@@ -70,7 +71,9 @@ class EvolutionEnvironment(ABC):
         pass
 
     @abstractmethod
-    async def apply_action(self, state: dict[str, Any], action: str) -> dict[str, Any]:
+    async def apply_action(
+        self, state: dict[str, Any], action: str
+    ) -> dict[str, Any]:
         """Apply action to state and return new state."""
         pass
 
@@ -135,14 +138,17 @@ class SkillEvolutionEnvironment(EvolutionEnvironment):
 
         return actions
 
-    async def apply_action(self, state: dict[str, Any], action: str) -> dict[str, Any]:
+    async def apply_action(
+        self, state: dict[str, Any], action: str
+    ) -> dict[str, Any]:
         """Apply evolution action."""
         new_state = {
             "skills": state["skills"].copy(),
             "depth": state["depth"] + 1,
             "fitness": 0.0,
             "metadata": {
-                "evolution_history": state["metadata"]["evolution_history"] + [action]
+                "evolution_history": state["metadata"]["evolution_history"]
+                + [action]
             },
         }
 
@@ -151,10 +157,15 @@ class SkillEvolutionEnvironment(EvolutionEnvironment):
 
         if action_type == "combine" and len(parts) == 3:
             idx1, idx2 = int(parts[1]), int(parts[2])
-            skill1, skill2 = new_state["skills"][idx1], new_state["skills"][idx2]
+            skill1, skill2 = (
+                new_state["skills"][idx1],
+                new_state["skills"][idx2],
+            )
             combined_skill = f"combined_{skill1}_{skill2}"
             new_state["skills"] = [
-                s for i, s in enumerate(new_state["skills"]) if i not in [idx1, idx2]
+                s
+                for i, s in enumerate(new_state["skills"])
+                if i not in [idx1, idx2]
             ] + [combined_skill]
 
         elif action_type in ["modify", "specialize", "generalize", "optimize"]:
@@ -189,7 +200,12 @@ class SkillEvolutionEnvironment(EvolutionEnvironment):
         # Penalty for excessive depth without progress
         depth_penalty = max(0, (depth - 3) * 0.1) if depth > 3 else 0
 
-        fitness = diversity_score + complexity_score + combination_bonus - depth_penalty
+        fitness = (
+            diversity_score
+            + complexity_score
+            + combination_bonus
+            - depth_penalty
+        )
 
         # Add some randomness to simulate real-world uncertainty
         fitness += random.gauss(0, 0.05)
@@ -306,7 +322,8 @@ class MCTSEvolutionArena:
         ):
             # Select child with highest UCB1 score
             current = max(
-                current.children, key=lambda c: c.ucb1_score(self.exploration_weight)
+                current.children,
+                key=lambda c: c.ucb1_score(self.exploration_weight),
             )
             depth += 1
 
@@ -330,7 +347,9 @@ class MCTSEvolutionArena:
             id=f"{node.id}_child_{len(node.children)}",
             state=new_state,
             parent=node,
-            untried_actions=await self.environment.get_available_actions(new_state),
+            untried_actions=await self.environment.get_available_actions(
+                new_state
+            ),
             metadata={"action_taken": action},
         )
 
@@ -348,13 +367,17 @@ class MCTSEvolutionArena:
             not await self.environment.is_terminal(current_state)
             and depth < self.max_depth
         ):
-            actions = await self.environment.get_available_actions(current_state)
+            actions = await self.environment.get_available_actions(
+                current_state
+            )
             if not actions:
                 break
 
             # Choose random action
             action = random.choice(actions)
-            current_state = await self.environment.apply_action(current_state, action)
+            current_state = await self.environment.apply_action(
+                current_state, action
+            )
 
             # Accumulate rewards
             reward = await self.environment.evaluate_state(current_state)
@@ -485,7 +508,9 @@ class CodeEvolutionEnvironment(EvolutionEnvironment):
             actions.append(op)
         return actions
 
-    async def apply_action(self, state: dict[str, Any], action: str) -> dict[str, Any]:
+    async def apply_action(
+        self, state: dict[str, Any], action: str
+    ) -> dict[str, Any]:
         new_state = state.copy()
 
         if action == "compose":
@@ -525,7 +550,9 @@ async def create_skill_evolution_arena(
     """Create an arena for evolving agent skills."""
 
     environment = SkillEvolutionEnvironment(base_skills)
-    return MCTSEvolutionArena(environment=environment, max_iterations=max_iterations)
+    return MCTSEvolutionArena(
+        environment=environment, max_iterations=max_iterations
+    )
 
 
 async def create_code_evolution_arena(
@@ -534,4 +561,6 @@ async def create_code_evolution_arena(
     """Create an arena for evolving code structures."""
 
     environment = CodeEvolutionEnvironment(base_functions)
-    return MCTSEvolutionArena(environment=environment, max_iterations=max_iterations)
+    return MCTSEvolutionArena(
+        environment=environment, max_iterations=max_iterations
+    )

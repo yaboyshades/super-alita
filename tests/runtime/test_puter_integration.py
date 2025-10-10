@@ -22,7 +22,9 @@ class MockEventBus:
     async def publish(self, event) -> None:  # pragma: no cover - compatibility
         self.events.append(event)
 
-    async def subscribe(self, event_type: str, handler) -> None:  # pragma: no cover
+    async def subscribe(
+        self, event_type: str, handler
+    ) -> None:  # pragma: no cover
         pass
 
 
@@ -88,7 +90,9 @@ class TestPuterOperationAtom:
 
 @pytest.mark.integration_puter
 @pytest.mark.asyncio
-async def test_file_operations_emit_ability_events(puter_plugin, mock_event_bus):
+async def test_file_operations_emit_ability_events(
+    puter_plugin, mock_event_bus
+):
     write_event = create_event(
         "puter_file_operation", source_plugin="test", conversation_id="conv1"
     )
@@ -105,8 +109,12 @@ async def test_file_operations_emit_ability_events(puter_plugin, mock_event_bus)
     read_event.metadata = {"operation": "read", "file_path": "/new.txt"}
     await puter_plugin._handle_file_operation(read_event)
 
-    called = [e for e in mock_event_bus.events if e.event_type == "AbilityCalled"]
-    succeeded = [e for e in mock_event_bus.events if e.event_type == "AbilitySucceeded"]
+    called = [
+        e for e in mock_event_bus.events if e.event_type == "AbilityCalled"
+    ]
+    succeeded = [
+        e for e in mock_event_bus.events if e.event_type == "AbilitySucceeded"
+    ]
 
     assert len(called) == 2
     assert len(succeeded) == 2
@@ -115,13 +123,17 @@ async def test_file_operations_emit_ability_events(puter_plugin, mock_event_bus)
 
 @pytest.mark.integration_puter
 @pytest.mark.asyncio
-async def test_failed_file_operation_emits_ability_failed(puter_plugin, mock_event_bus):
+async def test_failed_file_operation_emits_ability_failed(
+    puter_plugin, mock_event_bus
+):
     event = create_event(
         "puter_file_operation", source_plugin="test", conversation_id="conv2"
     )
     event.metadata = {"operation": "read", "file_path": "/missing.txt"}
     await puter_plugin._handle_file_operation(event)
 
-    failed = [e for e in mock_event_bus.events if e.event_type == "AbilityFailed"]
+    failed = [
+        e for e in mock_event_bus.events if e.event_type == "AbilityFailed"
+    ]
     assert len(failed) == 1
     assert failed[0].tool == "puter_file_operation"

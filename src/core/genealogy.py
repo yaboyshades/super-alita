@@ -75,7 +75,9 @@ class LineageEdge:
 
     parent_key: str
     child_key: str
-    edge_type: str = "parent_child"  # "parent_child", "influence", "mutation", "merge"
+    edge_type: str = (
+        "parent_child"  # "parent_child", "influence", "mutation", "merge"
+    )
     strength: float = 1.0
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -174,7 +176,9 @@ class GenealogyTracer(PluginInterface):
 
         self._last_event_id = "genesis"
 
-        logger.info("GenealogyTracer setup complete with genesis node established")
+        logger.info(
+            "GenealogyTracer setup complete with genesis node established"
+        )
 
     async def start(self):
         """Subscribe to genealogy-relevant events and start analysis tasks."""
@@ -217,7 +221,9 @@ class GenealogyTracer(PluginInterface):
         """Track the birth of new neural atoms."""
         try:
             data = (
-                event.model_dump() if hasattr(event, "model_dump") else event.__dict__
+                event.model_dump()
+                if hasattr(event, "model_dump")
+                else event.__dict__
             )
 
             atom_key = data.get("atom_key")
@@ -266,11 +272,15 @@ class GenealogyTracer(PluginInterface):
                     "average_fitness": 0.0,
                 }
             self._generation_stats[generation]["count"] += 1
-            self._generation_stats[generation]["birth_contexts"][birth_context] += 1
+            self._generation_stats[generation]["birth_contexts"][
+                birth_context
+            ] += 1
 
             # Pattern detection
             if self._config["enable_pattern_detection"]:
-                self._detect_cognitive_patterns(atom_key, parent_keys, birth_context)
+                self._detect_cognitive_patterns(
+                    atom_key, parent_keys, birth_context
+                )
 
             logger.debug(
                 f"Tracked atom birth: {atom_key} (gen: {generation}, depth: {genealogy_depth})"
@@ -283,7 +293,9 @@ class GenealogyTracer(PluginInterface):
         """Track the death/dissolution of neural atoms."""
         try:
             data = (
-                event.model_dump() if hasattr(event, "model_dump") else event.__dict__
+                event.model_dump()
+                if hasattr(event, "model_dump")
+                else event.__dict__
             )
 
             atom_key = data.get("atom_key")
@@ -315,7 +327,9 @@ class GenealogyTracer(PluginInterface):
                         }
                     )
 
-                logger.debug(f"Tracked atom death: {atom_key} (reason: {death_reason})")
+                logger.debug(
+                    f"Tracked atom death: {atom_key} (reason: {death_reason})"
+                )
 
         except Exception as e:
             logger.error(f"Error tracking atom death: {e}", exc_info=True)
@@ -324,7 +338,9 @@ class GenealogyTracer(PluginInterface):
         """Track skill creation and evolution."""
         try:
             data = (
-                event.model_dump() if hasattr(event, "model_dump") else event.__dict__
+                event.model_dump()
+                if hasattr(event, "model_dump")
+                else event.__dict__
             )
 
             skill_id = data.get("proposal_id") or data.get("skill_id")
@@ -362,7 +378,9 @@ class GenealogyTracer(PluginInterface):
         """Track skill fitness and evaluation results."""
         try:
             data = (
-                event.model_dump() if hasattr(event, "model_dump") else event.__dict__
+                event.model_dump()
+                if hasattr(event, "model_dump")
+                else event.__dict__
             )
 
             skill_id = data.get("skill_id")
@@ -385,7 +403,9 @@ class GenealogyTracer(PluginInterface):
                         {
                             "latest_fitness": performance_score,
                             "success_status": success,
-                            "evaluation_count": len(self._fitness_history[skill_id]),
+                            "evaluation_count": len(
+                                self._fitness_history[skill_id]
+                            ),
                         }
                     )
 
@@ -394,13 +414,17 @@ class GenealogyTracer(PluginInterface):
                 )
 
         except Exception as e:
-            logger.error(f"Error tracking skill evaluation: {e}", exc_info=True)
+            logger.error(
+                f"Error tracking skill evaluation: {e}", exc_info=True
+            )
 
     async def _on_mcts_operation(self, event: BaseEvent):
         """Track MCTS tree operations for skill evolution."""
         try:
             data = (
-                event.model_dump() if hasattr(event, "model_dump") else event.__dict__
+                event.model_dump()
+                if hasattr(event, "model_dump")
+                else event.__dict__
             )
 
             node_id = data.get("node_id")
@@ -431,7 +455,9 @@ class GenealogyTracer(PluginInterface):
         """Track Perceive-Act-Evolve cycles."""
         try:
             data = (
-                event.model_dump() if hasattr(event, "model_dump") else event.__dict__
+                event.model_dump()
+                if hasattr(event, "model_dump")
+                else event.__dict__
             )
 
             cycle_id = data.get("cycle_id")
@@ -453,7 +479,9 @@ class GenealogyTracer(PluginInterface):
                     node_type="PAE_Cycle",
                     birth_event="pae_cycle",
                     parent_keys=(
-                        [parent_key] if parent_key and parent_key in self.nodes else []
+                        [parent_key]
+                        if parent_key and parent_key in self.nodes
+                        else []
                     ),
                     metadata={
                         "cycle_id": cycle_id,
@@ -470,7 +498,9 @@ class GenealogyTracer(PluginInterface):
         """Track neural activity patterns."""
         try:
             data = (
-                event.model_dump() if hasattr(event, "model_dump") else event.__dict__
+                event.model_dump()
+                if hasattr(event, "model_dump")
+                else event.__dict__
             )
 
             activity_pattern = data.get("activity_pattern", [])
@@ -553,7 +583,9 @@ class GenealogyTracer(PluginInterface):
 
                 # Save periodic analysis
                 timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
-                self._save_analysis_report(analysis_data, f"periodic_{timestamp}")
+                self._save_analysis_report(
+                    analysis_data, f"periodic_{timestamp}"
+                )
 
                 # Clear old cache
                 self._analysis_cache.clear()
@@ -607,7 +639,9 @@ class GenealogyTracer(PluginInterface):
             return analysis
 
         except Exception as e:
-            logger.error(f"Error generating analysis report: {e}", exc_info=True)
+            logger.error(
+                f"Error generating analysis report: {e}", exc_info=True
+            )
             return {"error": str(e)}
 
     def _get_node_type_distribution(self) -> dict[str, int]:
@@ -659,7 +693,8 @@ class GenealogyTracer(PluginInterface):
             # Fallback without statistics module
             return {
                 "total_entities": len(self._fitness_history),
-                "average_fitness": sum(all_fitness_scores) / len(all_fitness_scores),
+                "average_fitness": sum(all_fitness_scores)
+                / len(all_fitness_scores),
                 "max_fitness": max(all_fitness_scores),
                 "min_fitness": min(all_fitness_scores),
             }
@@ -699,7 +734,9 @@ class GenealogyTracer(PluginInterface):
             "complex_chains": [c for c in chains if c["chain_length"] > 3],
         }
 
-    def _calculate_skill_chain_length(self, skill_id: str, visited: set[str]) -> int:
+    def _calculate_skill_chain_length(
+        self, skill_id: str, visited: set[str]
+    ) -> int:
         """Calculate the length of a skill evolution chain."""
         if skill_id in visited or skill_id not in self._skill_lineages:
             return 0
@@ -724,7 +761,9 @@ class GenealogyTracer(PluginInterface):
 
         recent_cutoff = datetime.now(UTC) - timedelta(minutes=10)
         recent_events = [
-            event for event in self._event_buffer if event["timestamp"] > recent_cutoff
+            event
+            for event in self._event_buffer
+            if event["timestamp"] > recent_cutoff
         ]
 
         event_types = defaultdict(int)
@@ -764,23 +803,30 @@ class GenealogyTracer(PluginInterface):
             # Export GraphML for visualization
             self.export_to_graphml(
                 os.path.join(
-                    self._config["export_path"], f"genealogy_{timestamp}.graphml"
+                    self._config["export_path"],
+                    f"genealogy_{timestamp}.graphml",
                 )
             )
 
             # Export JSON for programmatic analysis
             self.export_to_json(
-                os.path.join(self._config["export_path"], f"genealogy_{timestamp}.json")
+                os.path.join(
+                    self._config["export_path"], f"genealogy_{timestamp}.json"
+                )
             )
 
             # Export analysis summary
             analysis_data = await self._generate_analysis_report()
             self._save_analysis_report(analysis_data, f"final_{timestamp}")
 
-            logger.info(f"Complete genealogy exported with timestamp {timestamp}")
+            logger.info(
+                f"Complete genealogy exported with timestamp {timestamp}"
+            )
 
         except Exception as e:
-            logger.error(f"Error exporting complete genealogy: {e}", exc_info=True)
+            logger.error(
+                f"Error exporting complete genealogy: {e}", exc_info=True
+            )
 
     def get_genealogy_summary(self) -> dict[str, Any]:
         """Get a quick summary of the current genealogy state."""
@@ -792,7 +838,9 @@ class GenealogyTracer(PluginInterface):
             "generations": len(self._generation_stats),
             "cognitive_patterns": len(self._cognitive_patterns),
             "recent_events": len(self._event_buffer),
-            "active_nodes": sum(1 for node in self.nodes.values() if node.is_active),
+            "active_nodes": sum(
+                1 for node in self.nodes.values() if node.is_active
+            ),
         }
 
     def add_node(
@@ -859,7 +907,9 @@ class GenealogyTracer(PluginInterface):
         if key in self.nodes:
             self.nodes[key].add_fitness_score(fitness_score)
             # Update graph node attributes
-            self.graph.nodes[key]["fitness_scores"] = self.nodes[key].fitness_scores
+            self.graph.nodes[key]["fitness_scores"] = self.nodes[
+                key
+            ].fitness_scores
             self.graph.nodes[key]["average_fitness"] = self.nodes[
                 key
             ].get_average_fitness()
@@ -870,7 +920,9 @@ class GenealogyTracer(PluginInterface):
             self.nodes[key].is_active = False
             self.graph.nodes[key]["is_active"] = False
 
-    def get_ancestors(self, key: str, max_depth: int | None = None) -> set[str]:
+    def get_ancestors(
+        self, key: str, max_depth: int | None = None
+    ) -> set[str]:
         """Get all ancestors of a node."""
         ancestors = set()
         to_visit = [(key, 0)]
@@ -889,7 +941,9 @@ class GenealogyTracer(PluginInterface):
 
         return ancestors
 
-    def get_descendants(self, key: str, max_depth: int | None = None) -> set[str]:
+    def get_descendants(
+        self, key: str, max_depth: int | None = None
+    ) -> set[str]:
         """Get all descendants of a node."""
         descendants = set()
         to_visit = [(key, 0)]
@@ -902,7 +956,9 @@ class GenealogyTracer(PluginInterface):
 
             # Find children
             children = [
-                edge.child_key for edge in self.edges if edge.parent_key == current_key
+                edge.child_key
+                for edge in self.edges
+                if edge.parent_key == current_key
             ]
 
             for child_key in children:
@@ -931,7 +987,9 @@ class GenealogyTracer(PluginInterface):
                 best_parent = max(
                     parents,
                     key=lambda p: (
-                        self.nodes[p].get_average_fitness() if p in self.nodes else 0
+                        self.nodes[p].get_average_fitness()
+                        if p in self.nodes
+                        else 0
                     ),
                 )
                 current = best_parent
@@ -940,7 +998,9 @@ class GenealogyTracer(PluginInterface):
 
         return path
 
-    def analyze_fitness_evolution(self, node_type: str | None = None) -> dict[str, Any]:
+    def analyze_fitness_evolution(
+        self, node_type: str | None = None
+    ) -> dict[str, Any]:
         """Analyze fitness evolution over generations."""
 
         nodes_to_analyze = [
@@ -987,7 +1047,9 @@ class GenealogyTracer(PluginInterface):
         # Find nodes with multiple children (branch points)
         for node_key, _node in self.nodes.items():
             children = [
-                edge.child_key for edge in self.edges if edge.parent_key == node_key
+                edge.child_key
+                for edge in self.edges
+                if edge.parent_key == node_key
             ]
 
             if len(children) > 1:
@@ -1035,7 +1097,9 @@ class GenealogyTracer(PluginInterface):
                 elif not isinstance(attr_value, str | int | float | bool):
                     edge_attrs[attr_key] = str(attr_value)
 
-            export_graph.add_edge(edge.parent_key, edge.child_key, **edge_attrs)
+            export_graph.add_edge(
+                edge.parent_key, edge.child_key, **edge_attrs
+            )
 
         # Write to GraphML
         nx.write_graphml(export_graph, filepath)
@@ -1068,17 +1132,23 @@ class GenealogyTracer(PluginInterface):
 
         # Import nodes
         for key, node_data in data["nodes"].items():
-            node_data["birth_time"] = datetime.fromisoformat(node_data["birth_time"])
+            node_data["birth_time"] = datetime.fromisoformat(
+                node_data["birth_time"]
+            )
             node = LineageNode(**node_data)
             self.nodes[key] = node
             self.graph.add_node(key, **node.to_dict())
 
         # Import edges
         for edge_data in data["edges"]:
-            edge_data["created_at"] = datetime.fromisoformat(edge_data["created_at"])
+            edge_data["created_at"] = datetime.fromisoformat(
+                edge_data["created_at"]
+            )
             edge = LineageEdge(**edge_data)
             self.edges.append(edge)
-            self.graph.add_edge(edge.parent_key, edge.child_key, **edge.to_dict())
+            self.graph.add_edge(
+                edge.parent_key, edge.child_key, **edge.to_dict()
+            )
 
         # Import generation counter
         self._generation_counter = data.get("generation_counter", {})
@@ -1112,7 +1182,9 @@ class GenealogyTracer(PluginInterface):
             "fitness_stats": {
                 "total_scores": len(fitness_stats),
                 "mean_fitness": (
-                    sum(fitness_stats) / len(fitness_stats) if fitness_stats else 0
+                    sum(fitness_stats) / len(fitness_stats)
+                    if fitness_stats
+                    else 0
                 ),
                 "max_fitness": max(fitness_stats) if fitness_stats else 0,
                 "min_fitness": min(fitness_stats) if fitness_stats else 0,
@@ -1143,7 +1215,9 @@ class GenealogyTracer(PluginInterface):
             avg_fitness = node.get_average_fitness()
             if avg_fitness < fitness_threshold:
                 # Check age
-                age_hours = (current_time - node.birth_time).total_seconds() / 3600
+                age_hours = (
+                    current_time - node.birth_time
+                ).total_seconds() / 3600
                 if age_hours > age_threshold_hours:
                     should_prune = True
 

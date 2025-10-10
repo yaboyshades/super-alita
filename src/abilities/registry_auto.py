@@ -20,16 +20,16 @@ async def auto_register_abilities(registry: Any) -> None:
       ALITA_ABILITIES_EXCLUDE: comma separated module names
     """
     abilities_dir = Path(__file__).parent
-    include = set(
+    include = {
         x.strip()
         for x in (os.getenv("ALITA_ABILITIES_INCLUDE", "") or "").split(",")
         if x.strip()
-    )
-    exclude = set(
+    }
+    exclude = {
         x.strip()
         for x in (os.getenv("ALITA_ABILITIES_EXCLUDE", "") or "").split(",")
         if x.strip()
-    )
+    }
 
     for file in abilities_dir.glob("*.py"):
         name = file.stem
@@ -88,7 +88,8 @@ async def auto_register_abilities(registry: Any) -> None:
                         contract = {
                             "tool_id": tname,
                             "description": t.get("description", ""),
-                            "input_schema": t.get("parameters") or {"type": "object"},
+                            "input_schema": t.get("parameters")
+                            or {"type": "object"},
                             "output_schema": {"type": "object"},
                         }
                         exec_fn = get_exec(tname)

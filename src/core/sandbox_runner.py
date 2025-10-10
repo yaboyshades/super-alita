@@ -20,10 +20,14 @@ class SandboxRunner:
         Returns:
             Tuple of (success: bool, output: str)
         """
-        logger.info(f"🏃 Running code in sandbox (length: {len(script)} chars)")
+        logger.info(
+            f"🏃 Running code in sandbox (length: {len(script)} chars)"
+        )
 
         try:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".py", delete=False
+            ) as f:
                 f.write(script)
                 f.flush()
 

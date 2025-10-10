@@ -53,7 +53,9 @@ class TestPuterPlugin(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_write_file_success(self) -> None:
-        result = await self.plugin.write_file("/test/new_file.txt", "new content")
+        result = await self.plugin.write_file(
+            "/test/new_file.txt", "new content"
+        )
         assert result is True
 
     @unittest_run_loop
@@ -208,8 +210,12 @@ async def test_worker_hmac_signing() -> None:
     plugin = PuterPlugin(config)
     await plugin.initialize()
 
-    def fake_request(method: str, url: str, data=None, params=None, headers=None):
-        expected_sig = plugin._hmac_sha256_hex("secret", json.dumps({"foo": "bar"}))
+    def fake_request(
+        method: str, url: str, data=None, params=None, headers=None
+    ):
+        expected_sig = plugin._hmac_sha256_hex(
+            "secret", json.dumps({"foo": "bar"})
+        )
         assert url == "https://worker.example/api/test"
         assert headers["x-reug-sig"] == expected_sig
 
@@ -231,6 +237,8 @@ async def test_worker_hmac_signing() -> None:
         return Resp()
 
     plugin.session.request = fake_request  # type: ignore[assignment]
-    result = await plugin._make_request("POST", "/api/test", data={"foo": "bar"})
+    result = await plugin._make_request(
+        "POST", "/api/test", data={"foo": "bar"}
+    )
     assert result == {"ok": True}
     await plugin.cleanup()

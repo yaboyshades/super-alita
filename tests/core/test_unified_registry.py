@@ -4,7 +4,9 @@ from src.core.unified_registry import Capability, UnifiedCapabilityRegistry
 def test_unified_registry_collects_tools():
     reg = UnifiedCapabilityRegistry()
     reg.register_capability(
-        Capability("fmt", "Format selection", "normal", {"description": "fmt"}),
+        Capability(
+            "fmt", "Format selection", "normal", {"description": "fmt"}
+        ),
         "normal",
     )
     reg.register_capability(

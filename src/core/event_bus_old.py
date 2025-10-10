@@ -98,7 +98,9 @@ class EventBus:
     """
 
     def __init__(self, max_workers: int = 4):
-        self._subscriptions: dict[str, list[EventSubscription]] = defaultdict(list)
+        self._subscriptions: dict[str, list[EventSubscription]] = defaultdict(
+            list
+        )
         self._global_subscriptions: list[EventSubscription] = []
         self._event_history: list[BaseEvent] = []
         self._max_history = 1000
@@ -140,7 +142,9 @@ class EventBus:
         while self._running:
             try:
                 # Wait for event with timeout to allow checking _running
-                event = await asyncio.wait_for(self._event_queue.get(), timeout=1.0)
+                event = await asyncio.wait_for(
+                    self._event_queue.get(), timeout=1.0
+                )
                 await self._handle_event_internal(event)
                 self._event_queue.task_done()
             except TimeoutError:
@@ -344,7 +348,10 @@ class EventBus:
         return filtered_events
 
     async def search_events_semantic(
-        self, query_embedding: list[float], threshold: float = 0.7, limit: int = 50
+        self,
+        query_embedding: list[float],
+        threshold: float = 0.7,
+        limit: int = 50,
     ) -> list[BaseEvent]:
         """
         Search events by semantic similarity.
@@ -445,7 +452,9 @@ async def emit_global(event_type: str, **kwargs) -> None:
     await bus.emit(event_type, **kwargs)
 
 
-async def subscribe_global(event_type: str, handler: Callable, **kwargs) -> str:
+async def subscribe_global(
+    event_type: str, handler: Callable, **kwargs
+) -> str:
     """Convenience function to subscribe to global bus."""
     bus = await get_global_bus()
     return await bus.subscribe(event_type, handler, **kwargs)

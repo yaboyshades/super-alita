@@ -29,11 +29,15 @@ def test_pattern_matching():
             print(f"  {path}: {status}")
 
     print("\n--- ISSUE IDENTIFIED ---")
-    print("The templates expect paths under src/abilities/ and tests/abilities/")
+    print(
+        "The templates expect paths under src/abilities/ and tests/abilities/"
+    )
     print(
         "But our plugin generates paths under src/capabilities/ and tests/capabilities/"
     )
-    print("\nSolution: Update plugin to generate correct paths or update templates")
+    print(
+        "\nSolution: Update plugin to generate correct paths or update templates"
+    )
 
 
 if __name__ == "__main__":

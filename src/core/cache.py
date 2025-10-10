@@ -121,7 +121,11 @@ class LocalCache:
                 self._misses += 1
                 self.metrics.counter(
                     "cache_operations_total",
-                    {"cache_name": self.name, "operation": "get", "result": "miss"},
+                    {
+                        "cache_name": self.name,
+                        "operation": "get",
+                        "result": "miss",
+                    },
                 ).inc()
                 return None
 
@@ -134,7 +138,11 @@ class LocalCache:
                 self._evictions += 1
                 self.metrics.counter(
                     "cache_operations_total",
-                    {"cache_name": self.name, "operation": "get", "result": "expired"},
+                    {
+                        "cache_name": self.name,
+                        "operation": "get",
+                        "result": "expired",
+                    },
                 ).inc()
                 return None
 
@@ -151,7 +159,9 @@ class LocalCache:
             self._update_metrics()
             return entry.value
 
-    async def set(self, key: str, value: Any, ttl: float | None = None) -> None:
+    async def set(
+        self, key: str, value: Any, ttl: float | None = None
+    ) -> None:
         """Set value in cache"""
         if ttl is None:
             ttl = self.default_ttl
@@ -171,7 +181,11 @@ class LocalCache:
 
             self.metrics.counter(
                 "cache_operations_total",
-                {"cache_name": self.name, "operation": "set", "result": "success"},
+                {
+                    "cache_name": self.name,
+                    "operation": "set",
+                    "result": "success",
+                },
             ).inc()
 
             self._update_metrics()
@@ -194,7 +208,11 @@ class LocalCache:
 
             self.metrics.counter(
                 "cache_operations_total",
-                {"cache_name": self.name, "operation": "delete", "result": "miss"},
+                {
+                    "cache_name": self.name,
+                    "operation": "delete",
+                    "result": "miss",
+                },
             ).inc()
             return False
 
@@ -276,7 +294,9 @@ class CacheManager:
 
     def get_global_stats(self) -> dict[str, Any]:
         """Get statistics for all caches"""
-        return {name: cache.get_stats() for name, cache in self._caches.items()}
+        return {
+            name: cache.get_stats() for name, cache in self._caches.items()
+        }
 
 
 # Global cache manager instance
@@ -305,9 +325,7 @@ def cached(
             if key_func:
                 cache_key = key_func(*args, **kwargs)
             else:
-                cache_key = (
-                    f"{func.__name__}:{hash((args, tuple(sorted(kwargs.items()))))}"
-                )
+                cache_key = f"{func.__name__}:{hash((args, tuple(sorted(kwargs.items()))))}"
 
             # Try cache first
             result = await cache.get(cache_key)

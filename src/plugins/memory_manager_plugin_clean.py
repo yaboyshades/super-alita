@@ -29,7 +29,11 @@ from typing import Any
 
 from src.core.event_bus import EventBus
 from src.core.events import ToolCallEvent, ToolResultEvent
-from src.core.neural_atom import NeuralAtomMetadata, NeuralStore, TextualMemoryAtom
+from src.core.neural_atom import (
+    NeuralAtomMetadata,
+    NeuralStore,
+    TextualMemoryAtom,
+)
 from src.core.plugin_interface import PluginInterface
 
 logger = logging.getLogger(__name__)
@@ -79,7 +83,9 @@ class MemoryManagerPlugin(PluginInterface):
         await super().shutdown()
         logger.info("MemoryManagerPlugin shutdown complete")
 
-    async def _save_memory(self, content: str, session_id: str) -> dict[str, Any]:
+    async def _save_memory(
+        self, content: str, session_id: str
+    ) -> dict[str, Any]:
         """Save memory content and return result."""
         try:
             # Create metadata for the new TextualMemoryAtom
@@ -112,7 +118,10 @@ class MemoryManagerPlugin(PluginInterface):
 
         except Exception as e:
             logger.error(f"Error saving memory: {e}", exc_info=True)
-            return {"success": False, "error": f"Failed to save memory: {str(e)[:200]}"}
+            return {
+                "success": False,
+                "error": f"Failed to save memory: {str(e)[:200]}",
+            }
 
     async def _handle_tool_call(self, event: ToolCallEvent) -> None:
         """Processes tool calls for 'memory_manager' and ALWAYS emits a result."""
@@ -126,7 +135,9 @@ class MemoryManagerPlugin(PluginInterface):
             return
         self._handled_calls.add(call_id)
 
-        logger.info(f"Processing memory manager tool call: {event.tool_call_id}")
+        logger.info(
+            f"Processing memory manager tool call: {event.tool_call_id}"
+        )
         success = False
         result = {}
         error = None
@@ -147,7 +158,9 @@ class MemoryManagerPlugin(PluginInterface):
                     }
                     success = False
                 else:
-                    save_result = await self._save_memory(content, event.session_id)
+                    save_result = await self._save_memory(
+                        content, event.session_id
+                    )
                     result = save_result
                     success = save_result.get("success", False)
                     if success:

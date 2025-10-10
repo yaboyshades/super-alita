@@ -1,28 +1,19 @@
 """Trimmed NeuralAtom tests (post-merge cleanup)."""
 
-
-import numpy as np
-import pytest
-
 import asyncio
 
 import numpy as np
 import pytest
 
-
 from src.core.neural_atom import (
     NeuralAtom,
     NeuralAtomMetadata,
-
+    NeuralStore,
     TextualMemoryAtom,
     create_goal_atom,
     create_memory_atom,
     create_memory_chunk_atom,
     create_skill_atom,
-
-    NeuralStore,
-    TextualMemoryAtom,
-
 )
 
 
@@ -42,7 +33,9 @@ class MockNeuralAtom(NeuralAtom):
     def get_embedding(self):  # pragma: no cover - deterministic
         return [0.1] * 128
 
-    def can_handle(self, task_description: str):  # pragma: no cover - simple logic
+    def can_handle(
+        self, task_description: str
+    ):  # pragma: no cover - simple logic
         return 0.8 if "test" in task_description.lower() else 0.2
 
 
@@ -54,12 +47,15 @@ class SkillAtom(NeuralAtom):
         activation_scale: float = 0.5,
     ):
         vector = (
-            np.ones(NeuralAtom.DEFAULT_VECTOR_DIM, dtype=np.float32) * activation_scale
+            np.ones(NeuralAtom.DEFAULT_VECTOR_DIM, dtype=np.float32)
+            * activation_scale
         )
         super().__init__(metadata, vector=vector, bias=0.1)
         self.instructions = instructions
 
-    async def execute(self, input_data=None):  # pragma: no cover - simple mapping
+    async def execute(
+        self, input_data=None
+    ):  # pragma: no cover - simple mapping
         return {
             "instructions": self.instructions,
             "input": input_data,
@@ -70,7 +66,9 @@ class SkillAtom(NeuralAtom):
         self.vector = np.asarray(self.vector, dtype=np.float32)
         return self.vector.tolist()
 
-    def can_handle(self, task_description: str):  # pragma: no cover - simple logic
+    def can_handle(
+        self, task_description: str
+    ):  # pragma: no cover - simple logic
         return 1.0 if "skill" in task_description.lower() else 0.3
 
 
@@ -99,7 +97,6 @@ def test_performance_tracking_updates():
     assert atom.metadata.usage_count == 2
     assert 0 < atom.metadata.success_rate < 1.0
     assert atom.metadata.avg_execution_time > 0
-
 
 
 def test_factory_skill_atom_instantiation():
@@ -155,8 +152,6 @@ def test_factory_memory_chunk_atom_instantiation():
     assert atom.value["hierarchy_path"] == ["root", "child"]
 
 
-import pytest
-
 def test_factory_memory_chunk_atom_invalid_vector_shape():
     # Vector with wrong shape
     vector = np.zeros(7, dtype=np.float32)
@@ -167,6 +162,7 @@ def test_factory_memory_chunk_atom_invalid_vector_shape():
             hierarchy_path=["root"],
             vector=vector,
         )
+
 
 def test_factory_memory_chunk_atom_invalid_vector_dtype():
     # Vector with wrong dtype
@@ -179,6 +175,7 @@ def test_factory_memory_chunk_atom_invalid_vector_dtype():
             vector=vector,
         )
 
+
 def test_factory_memory_chunk_atom_vector_none():
     # Vector is None
     with pytest.raises(ValueError):
@@ -188,10 +185,13 @@ def test_factory_memory_chunk_atom_vector_none():
             hierarchy_path=["root"],
             vector=None,
         )
-=======
+
+
 def test_neural_store_forward_pass_and_genealogy():
     store = NeuralStore()
-    text_atom = TextualMemoryAtom(_md("memory_atom", ["memory"]), "stored content")
+    text_atom = TextualMemoryAtom(
+        _md("memory_atom", ["memory"]), "stored content"
+    )
     skill_atom = SkillAtom(
         _md("skill_atom", ["skill", "plan"]),
         instructions="Do something clever",
@@ -231,7 +231,6 @@ def test_neural_store_forward_pass_and_genealogy():
     )
     related_keys = {entry[0] for entry in lineage_related}
     assert text_atom.key in related_keys
-
 
 
 if __name__ == "__main__":  # pragma: no cover

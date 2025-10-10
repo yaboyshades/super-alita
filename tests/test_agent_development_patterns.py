@@ -62,7 +62,9 @@ class TestDeterministicAtomIds:
         )
 
         assert id1 != id2
-        logger.info(f"Different content produces different IDs: {id1} != {id2}")
+        logger.info(
+            f"Different content produces different IDs: {id1} != {id2}"
+        )
 
 
 class TestEventPatterns:
@@ -218,7 +220,9 @@ class TestEventHandlerPatterns:
                 self.name = "test_plugin"
 
             async def setup(self):
-                await self.event_bus.subscribe("tool_call", self._handle_tool_call)
+                await self.event_bus.subscribe(
+                    "tool_call", self._handle_tool_call
+                )
 
             async def _handle_tool_call(self, event):
                 try:
@@ -287,7 +291,9 @@ class TestCREATORFrameworkPatterns:
     def test_tool_specification_generation(self):
         """Test tool specification generation from gap analysis"""
 
-        def generate_tool_specification(gap_analysis: dict[str, Any]) -> dict[str, Any]:
+        def generate_tool_specification(
+            gap_analysis: dict[str, Any],
+        ) -> dict[str, Any]:
             """Mock tool specification generation"""
             return {
                 "tool_name": "fibonacci_calculator",
@@ -305,7 +311,10 @@ class TestCREATORFrameworkPatterns:
                 },
             }
 
-        gap_analysis = {"description": "fibonacci calculator", "complexity": "medium"}
+        gap_analysis = {
+            "description": "fibonacci calculator",
+            "complexity": "medium",
+        }
         spec = generate_tool_specification(gap_analysis)
 
         assert spec["tool_name"] == "fibonacci_calculator"

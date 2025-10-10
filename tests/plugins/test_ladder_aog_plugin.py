@@ -240,7 +240,9 @@ async def test_planning_decision_event(mock_event_bus, ladder_plugin):
         event_obj = last_call[0][0]  # First positional argument
 
         # Should be an event object, not a dict
-        assert hasattr(event_obj, "event_type") or hasattr(event_obj, "__dict__")
+        assert hasattr(event_obj, "event_type") or hasattr(
+            event_obj, "__dict__"
+        )
 
         # If it's a planning decision event, check the payload structure
         if (

@@ -39,7 +39,9 @@ class _ReturnResultTransformer(cst.CSTTransformer):
             return updated_node
 
         self.result_var = last_assign
-        return_stmt = cst.SimpleStatementLine([cst.Return(cst.Name(last_assign))])
+        return_stmt = cst.SimpleStatementLine(
+            [cst.Return(cst.Name(last_assign))]
+        )
         new_body = body_stmts + [return_stmt]
         return updated_node.with_changes(
             body=updated_node.body.with_changes(body=new_body)

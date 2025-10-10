@@ -35,16 +35,24 @@ class TaskRequest(BaseModel):
 
     task_id: str = Field(..., description="Unique task identifier")
     task_type: TaskType = Field(..., description="Type of cognitive task")
-    description: str = Field(..., description="Natural language task description")
+    description: str = Field(
+        ..., description="Natural language task description"
+    )
     context: dict[str, Any] = Field(
         default_factory=dict, description="Additional context"
     )
-    priority: int = Field(default=5, ge=1, le=10, description="Task priority (1-10)")
+    priority: int = Field(
+        default=5, ge=1, le=10, description="Task priority (1-10)"
+    )
     timeout_seconds: float | None = Field(
         default=30.0, description="Maximum execution time"
     )
-    requester: str = Field(default="unknown", description="Entity requesting the task")
-    metadata: dict[str, Any] = Field(default_factory=dict, description="Task metadata")
+    requester: str = Field(
+        default="unknown", description="Entity requesting the task"
+    )
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Task metadata"
+    )
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -53,17 +61,25 @@ class TaskResult(BaseModel):
     """Schema for task completion results."""
 
     task_id: str = Field(..., description="Original task identifier")
-    success: bool = Field(..., description="Whether the task completed successfully")
+    success: bool = Field(
+        ..., description="Whether the task completed successfully"
+    )
     result: Any = Field(default=None, description="Task execution result")
-    error: str | None = Field(default=None, description="Error message if failed")
-    execution_time: float = Field(..., description="Time taken to execute (seconds)")
+    error: str | None = Field(
+        default=None, description="Error message if failed"
+    )
+    execution_time: float = Field(
+        ..., description="Time taken to execute (seconds)"
+    )
     neural_atoms_used: list[str] = Field(
         default_factory=list, description="Neural Atoms involved"
     )
     performance_metrics: dict[str, float] = Field(
         default_factory=dict, description="Performance data"
     )
-    stage_completed: TaskType = Field(..., description="Cognitive stage that completed")
+    stage_completed: TaskType = Field(
+        ..., description="Cognitive stage that completed"
+    )
     confidence_score: float = Field(
         default=1.0, ge=0.0, le=1.0, description="Result confidence"
     )
@@ -75,15 +91,22 @@ class CapabilityGapEvent(BaseModel):
     """Schema for capability gap detection events."""
 
     gap_id: str = Field(..., description="Unique gap identifier")
-    description: str = Field(..., description="Description of the missing capability")
+    description: str = Field(
+        ..., description="Description of the missing capability"
+    )
     priority: int = Field(default=5, ge=1, le=10, description="Gap priority")
-    detected_by: str = Field(..., description="Component that detected the gap")
-    context: dict[str, Any] = Field(default_factory=dict, description="Gap context")
+    detected_by: str = Field(
+        ..., description="Component that detected the gap"
+    )
+    context: dict[str, Any] = Field(
+        default_factory=dict, description="Gap context"
+    )
     suggested_solution: str | None = Field(
         default=None, description="Suggested solution approach"
     )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), description="When gap was detected"
+        default_factory=lambda: datetime.now(UTC),
+        description="When gap was detected",
     )
 
 
@@ -94,7 +117,9 @@ class NeuralAtomSpec(BaseModel):
     description: str = Field(..., description="What this atom does")
     capabilities: list[str] = Field(..., description="List of capabilities")
     version: str = Field(default="1.0.0", description="Version string")
-    tags: list[str] = Field(default_factory=list, description="Classification tags")
+    tags: list[str] = Field(
+        default_factory=list, description="Classification tags"
+    )
     parameters: dict[str, Any] = Field(
         default_factory=dict, description="Configuration parameters"
     )
@@ -112,7 +137,9 @@ class WorkspaceEvent(BaseModel):
     attention_level: AttentionLevel = Field(
         default=AttentionLevel.MEDIUM, description="Attention priority"
     )
-    broadcast: bool = Field(default=True, description="Whether to broadcast this event")
+    broadcast: bool = Field(
+        default=True, description="Whether to broadcast this event"
+    )
     subscribers_notified: list[str] = Field(
         default_factory=list, description="Notified subscribers"
     )
@@ -136,15 +163,22 @@ class CREATORRequest(BaseModel):
     capability_description: str = Field(
         ..., description="Description of needed capability"
     )
-    context: dict[str, Any] = Field(default_factory=dict, description="Request context")
-    priority: int = Field(default=5, ge=1, le=10, description="Request priority")
+    context: dict[str, Any] = Field(
+        default_factory=dict, description="Request context"
+    )
+    priority: int = Field(
+        default=5, ge=1, le=10, description="Request priority"
+    )
     requester: str = Field(..., description="Entity requesting the capability")
     constraints: list[str] = Field(
         default_factory=list, description="Implementation constraints"
     )
-    examples: list[str] = Field(default_factory=list, description="Usage examples")
+    examples: list[str] = Field(
+        default_factory=list, description="Usage examples"
+    )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), description="Request timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Request timestamp",
     )
 
 
@@ -159,7 +193,9 @@ class CREATORResult(BaseModel):
     stages_completed: list[CREATORStage] = Field(
         default_factory=list, description="Completed stages"
     )
-    error: str | None = Field(default=None, description="Error message if failed")
+    error: str | None = Field(
+        default=None, description="Error message if failed"
+    )
     validation_results: dict[str, Any] = Field(
         default_factory=dict, description="Validation outcomes"
     )
@@ -167,7 +203,8 @@ class CREATORResult(BaseModel):
         default_factory=dict, description="Creation metrics"
     )
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), description="Creation timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Creation timestamp",
     )
 
     model_config = ConfigDict(use_enum_values=True)
@@ -177,7 +214,9 @@ class MemoryQuery(BaseModel):
     """Schema for memory retrieval queries."""
 
     query_text: str = Field(..., description="Natural language query")
-    query_type: str = Field(default="semantic", description="Type of memory query")
+    query_type: str = Field(
+        default="semantic", description="Type of memory query"
+    )
     limit: int = Field(default=10, ge=1, le=100, description="Maximum results")
     threshold: float = Field(
         default=0.7, ge=0.0, le=1.0, description="Similarity threshold"
@@ -210,7 +249,9 @@ class PredictionRequest(BaseModel):
 
     context: dict[str, Any] = Field(..., description="Current context state")
     action: str = Field(..., description="Proposed action")
-    horizon: int = Field(default=3, ge=1, le=10, description="Prediction horizon steps")
+    horizon: int = Field(
+        default=3, ge=1, le=10, description="Prediction horizon steps"
+    )
     confidence_threshold: float = Field(
         default=0.6, description="Minimum confidence required"
     )
@@ -222,7 +263,9 @@ class PredictionResult(BaseModel):
     predicted_outcome: dict[str, Any] = Field(
         ..., description="Predicted state outcome"
     )
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Prediction confidence")
+    confidence: float = Field(
+        ..., ge=0.0, le=1.0, description="Prediction confidence"
+    )
     reasoning: str = Field(..., description="Explanation of prediction")
     alternative_actions: list[dict[str, Any]] = Field(
         default_factory=list, description="Alternative suggestions"
@@ -237,7 +280,9 @@ class SafetyValidation(BaseModel):
 
     validation_id: str = Field(..., description="Validation identifier")
     item_type: str = Field(..., description="Type of item being validated")
-    safety_score: float = Field(..., ge=0.0, le=1.0, description="Overall safety score")
+    safety_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Overall safety score"
+    )
     checks_passed: list[str] = Field(
         default_factory=list, description="Passed safety checks"
     )
@@ -260,12 +305,15 @@ class LearningEvent(BaseModel):
     event_type: str = Field(..., description="Type of learning event")
     subject: str = Field(..., description="What was learned about")
     outcome: dict[str, Any] = Field(..., description="Learning outcome")
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Learning confidence")
+    confidence: float = Field(
+        ..., ge=0.0, le=1.0, description="Learning confidence"
+    )
     performance_impact: float = Field(
         default=0.0, description="Expected performance impact"
     )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), description="When learning occurred"
+        default_factory=lambda: datetime.now(UTC),
+        description="When learning occurred",
     )
 
 
@@ -282,7 +330,9 @@ class SystemState(BaseModel):
     memory_usage: dict[str, float] = Field(
         default_factory=dict, description="Memory usage statistics"
     )
-    neural_atoms_active: int = Field(..., description="Number of active Neural Atoms")
+    neural_atoms_active: int = Field(
+        ..., description="Number of active Neural Atoms"
+    )
     attention_focus: list[str] = Field(
         default_factory=list, description="Current attention focus"
     )
@@ -290,7 +340,8 @@ class SystemState(BaseModel):
         default_factory=dict, description="System performance"
     )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), description="State timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="State timestamp",
     )
 
 
@@ -304,7 +355,8 @@ class ConversationEvent(BaseModel):
         default_factory=dict, description="Conversation context"
     )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), description="Message timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Message timestamp",
     )
 
 
@@ -325,7 +377,9 @@ class ToolResultEvent(BaseModel):
     tool_name: str = Field(..., description="Name of executed tool")
     success: bool = Field(..., description="Whether execution succeeded")
     result: Any = Field(default=None, description="Tool execution result")
-    error: str | None = Field(default=None, description="Error message if failed")
+    error: str | None = Field(
+        default=None, description="Error message if failed"
+    )
     session_id: str = Field(..., description="Session identifier")
     request_id: str = Field(..., description="Request identifier")
     execution_time: float = Field(..., description="Execution time in seconds")
@@ -338,7 +392,9 @@ class MemoryRequest(BaseModel):
         ..., description="Memory operation type (save, recall, list)"
     )
     content: Any | None = Field(default=None, description="Content to save")
-    query: str | None = Field(default=None, description="Search query for recall")
+    query: str | None = Field(
+        default=None, description="Search query for recall"
+    )
     session_id: str = Field(..., description="Session identifier")
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
@@ -354,7 +410,9 @@ class ToolExecutionRequest(BaseModel):
     )
     session_id: str = Field(..., description="Session identifier")
     request_id: str = Field(..., description="Request identifier")
-    timeout: float | None = Field(default=30.0, description="Execution timeout")
+    timeout: float | None = Field(
+        default=30.0, description="Execution timeout"
+    )
 
 
 class ToolExecutionResult(BaseModel):
@@ -364,7 +422,9 @@ class ToolExecutionResult(BaseModel):
     tool_name: str = Field(..., description="Name of executed tool")
     success: bool = Field(..., description="Whether execution succeeded")
     result: Any = Field(default=None, description="Tool execution result")
-    error: str | None = Field(default=None, description="Error message if failed")
+    error: str | None = Field(
+        default=None, description="Error message if failed"
+    )
     execution_time: float = Field(..., description="Execution time in seconds")
     session_id: str = Field(..., description="Session identifier")
 
@@ -399,9 +459,12 @@ class WorkingMemoryUpdate(BaseModel):
         default="update", description="Operation type (update, delete, add)"
     )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), description="Update timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Update timestamp",
     )
-    priority: int = Field(default=5, ge=1, le=10, description="Update priority")
+    priority: int = Field(
+        default=5, ge=1, le=10, description="Update priority"
+    )
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
@@ -438,19 +501,25 @@ class GitHubEventType(str, Enum):
 class GitHubEventSchema(BaseModel):
     """Schema for GitHub events captured by the cognitive agent."""
 
-    event_type: GitHubEventType = Field(..., description="Type of GitHub event")
+    event_type: GitHubEventType = Field(
+        ..., description="Type of GitHub event"
+    )
     repository: str = Field(..., description="Repository name (owner/repo)")
     actor: str = Field(..., description="GitHub username of the actor")
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), description="Event timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Event timestamp",
     )
     payload: dict[str, Any] = Field(..., description="GitHub event payload")
     event_id: str = Field(..., description="Unique event identifier")
-    session_id: str | None = Field(default=None, description="Associated session ID")
+    session_id: str | None = Field(
+        default=None, description="Associated session ID"
+    )
 
     # Cognitive processing metadata
     attention_level: AttentionLevel = Field(
-        default=AttentionLevel.MEDIUM, description="Cognitive attention priority"
+        default=AttentionLevel.MEDIUM,
+        description="Cognitive attention priority",
     )
     processing_status: str = Field(
         default="pending", description="Cognitive processing status"
@@ -463,20 +532,40 @@ class GitHubEventSchema(BaseModel):
 class GitHubPriorityMetrics(BaseModel):
     """Schema for GitHub-specific priority calculation metrics."""
 
-    has_security_alert: bool = Field(default=False, description="Has security implications")
-    blocks_other_prs: bool = Field(default=False, description="Blocks other pull requests")
-    has_stakeholder_mention: bool = Field(default=False, description="Mentions key stakeholders")
+    has_security_alert: bool = Field(
+        default=False, description="Has security implications"
+    )
+    blocks_other_prs: bool = Field(
+        default=False, description="Blocks other pull requests"
+    )
+    has_stakeholder_mention: bool = Field(
+        default=False, description="Mentions key stakeholders"
+    )
     ci_status: str = Field(default="unknown", description="CI/CD status")
     review_count: int = Field(default=0, ge=0, description="Number of reviews")
-    comment_count: int = Field(default=0, ge=0, description="Number of comments")
-    file_changes_count: int = Field(default=0, ge=0, description="Number of changed files")
-    lines_changed: int = Field(default=0, ge=0, description="Lines of code changed")
-    issue_labels: list[str] = Field(default_factory=list, description="GitHub issue labels")
+    comment_count: int = Field(
+        default=0, ge=0, description="Number of comments"
+    )
+    file_changes_count: int = Field(
+        default=0, ge=0, description="Number of changed files"
+    )
+    lines_changed: int = Field(
+        default=0, ge=0, description="Lines of code changed"
+    )
+    issue_labels: list[str] = Field(
+        default_factory=list, description="GitHub issue labels"
+    )
 
     # Relationship metrics
-    related_issues: list[str] = Field(default_factory=list, description="Related issue numbers")
-    dependent_prs: list[str] = Field(default_factory=list, description="Dependent PR numbers")
-    merge_conflicts: bool = Field(default=False, description="Has merge conflicts")
+    related_issues: list[str] = Field(
+        default_factory=list, description="Related issue numbers"
+    )
+    dependent_prs: list[str] = Field(
+        default_factory=list, description="Dependent PR numbers"
+    )
+    merge_conflicts: bool = Field(
+        default=False, description="Has merge conflicts"
+    )
 
 
 class GitHubApiRequest(BaseModel):
@@ -490,7 +579,9 @@ class GitHubApiRequest(BaseModel):
     headers: dict[str, str] = Field(
         default_factory=dict, description="Additional headers"
     )
-    repository: str | None = Field(default=None, description="Target repository")
+    repository: str | None = Field(
+        default=None, description="Target repository"
+    )
     rate_limit_aware: bool = Field(
         default=True, description="Whether to respect rate limits"
     )
@@ -502,7 +593,9 @@ class GitHubApiResponse(BaseModel):
     success: bool = Field(..., description="Whether request succeeded")
     status_code: int = Field(..., description="HTTP status code")
     data: Any = Field(default=None, description="Response data")
-    error: str | None = Field(default=None, description="Error message if failed")
+    error: str | None = Field(
+        default=None, description="Error message if failed"
+    )
     rate_limit_remaining: int | None = Field(
         default=None, description="Remaining API rate limit"
     )
@@ -516,7 +609,9 @@ class GitHubWorkflowConfig(BaseModel):
     """Schema for GitHub Actions workflow configuration."""
 
     workflow_name: str = Field(..., description="Workflow name")
-    trigger_events: list[str] = Field(..., description="Events that trigger workflow")
+    trigger_events: list[str] = Field(
+        ..., description="Events that trigger workflow"
+    )
     cognitive_mode: str = Field(
         default="shadow", description="Cognitive agent mode (shadow/act/batch)"
     )
@@ -524,7 +619,8 @@ class GitHubWorkflowConfig(BaseModel):
         default_factory=list, description="Scope of analysis to perform"
     )
     output_format: str = Field(
-        default="comment", description="How to output results (comment/check/artifact)"
+        default="comment",
+        description="How to output results (comment/check/artifact)",
     )
     security_scanning: bool = Field(
         default=True, description="Enable security scanning"

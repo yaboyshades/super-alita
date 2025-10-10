@@ -14,7 +14,12 @@ logger = logging.getLogger(__name__)
 
 # Import events at module level to avoid circular imports
 try:
-    from .events import EVENT_ALIASES, EVENT_TYPE_TO_MODEL, EVENT_TYPES, BaseEvent
+    from .events import (
+        EVENT_ALIASES,
+        EVENT_TYPE_TO_MODEL,
+        EVENT_TYPES,
+        BaseEvent,
+    )
 except ImportError:
     # Fallback if events module isn't available yet
     EVENT_ALIASES = {}
@@ -53,13 +58,17 @@ class EventSerializer:
             logger.warning("Payload missing event_type, using default class")
             if hasattr(default_cls, "model_validate"):
                 return default_cls.model_validate(payload)
-            return default_cls(**payload) if default_cls is not dict else payload
+            return (
+                default_cls(**payload) if default_cls is not dict else payload
+            )
 
         # Route to specific model if known
         model_cls = self.EVENT_TYPE_TO_MODEL.get(event_type, default_cls)
 
         if model_cls != default_cls:
-            logger.debug(f"Routing event_type '{event_type}' to {model_cls.__name__}")
+            logger.debug(
+                f"Routing event_type '{event_type}' to {model_cls.__name__}"
+            )
         else:
             logger.debug(
                 f"Unknown event_type '{event_type}', using {default_cls.__name__ if hasattr(default_cls, '__name__') else str(default_cls)}"
@@ -101,7 +110,11 @@ class JsonSerializer(Serializer):
         Back-compat, plus light normalization for conversation payloads so
         legacy producers ('conversation_message', 'user_message') don't explode.
         """
-        raw = data.decode("utf-8") if isinstance(data, bytes | bytearray) else data
+        raw = (
+            data.decode("utf-8")
+            if isinstance(data, bytes | bytearray)
+            else data
+        )
         try:
             payload = json.loads(raw)
         except Exception:
@@ -166,7 +179,9 @@ class JsonSerializer(Serializer):
                     # Heuristic: if looks like ms, convert to seconds
                     if ts_value > EPOCH_MS_THRESHOLD:
                         ts_value = ts_value / 1000.0
-                    payload["timestamp"] = datetime.fromtimestamp(ts_value, tz=UTC)
+                    payload["timestamp"] = datetime.fromtimestamp(
+                        ts_value, tz=UTC
+                    )
                 elif isinstance(ts_value, str):
                     # Accept 'Z' and naive ISO; coerce to UTC
                     ts_str = ts_value.replace("Z", "+00:00")

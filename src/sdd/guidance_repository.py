@@ -50,9 +50,13 @@ class GuidanceRepository:
         except Exception:  # pragma: no cover - guard against legacy content
             return None
 
-    def save_guidance(self, feature_dir: Path, guidance: NextStepGuidance) -> Path:
+    def save_guidance(
+        self, feature_dir: Path, guidance: NextStepGuidance
+    ) -> Path:
         guidance_path = feature_dir / "next_steps.yaml"
-        guidance_path.write_text(safe_dump(guidance.model_dump()), encoding="utf-8")
+        guidance_path.write_text(
+            safe_dump(guidance.model_dump()), encoding="utf-8"
+        )
         return guidance_path
 
     def ensure_feature_dir(self, feature_id: str, slug: str) -> Path:
@@ -62,4 +66,3 @@ class GuidanceRepository:
 
     def artifact_path(self, feature_dir: Path, name: str) -> Path:
         return feature_dir / name
-

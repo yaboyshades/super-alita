@@ -46,7 +46,9 @@ class EchoTool(PluginInterface):
     def name(self) -> str:
         return "echo_tool"
 
-    async def setup(self, event_bus: Any, store: Any, config: dict[str, Any]) -> None:
+    async def setup(
+        self, event_bus: Any, store: Any, config: dict[str, Any]
+    ) -> None:
         await super().setup(event_bus, store, config)
 
     async def start(self) -> None:

@@ -65,7 +65,9 @@ class InMemoryEventBus:
         # Call handlers
         handlers = self._handlers.get(event_type, [])
         if handlers:
-            logger.debug(f"📤 Emitting {event_type} to {len(handlers)} handlers")
+            logger.debug(
+                f"📤 Emitting {event_type} to {len(handlers)} handlers"
+            )
             # Run handlers concurrently
             await asyncio.gather(
                 *[handler(event) for handler in handlers],

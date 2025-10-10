@@ -7,7 +7,11 @@ logger = logging.getLogger(__name__)
 
 
 async def validation_fibonacci_test(
-    event_bus=None, tool_call_id="", session_id="", conversation_id="", **kwargs
+    event_bus=None,
+    tool_call_id="",
+    session_id="",
+    conversation_id="",
+    **kwargs,
 ):
     """
     Test fibonacci implementation for validation
@@ -21,7 +25,9 @@ async def validation_fibonacci_test(
     try:
         # Test fibonacci implementation for validation
         # Fibonacci calculation logic
-        n = kwargs.get("n", kwargs.get("number", 10))  # Default to 10 if not specified
+        n = kwargs.get(
+            "n", kwargs.get("number", 10)
+        )  # Default to 10 if not specified
         if n <= 0:
             value = 0
         elif n == 1:
@@ -31,7 +37,11 @@ async def validation_fibonacci_test(
             for _ in range(n):
                 a, b = b, a + b
             value = a
-        result = {"value": value, "n": n, "description": f"fibonacci({n}) = {value}"}
+        result = {
+            "value": value,
+            "n": n,
+            "description": f"fibonacci({n}) = {value}",
+        }
         success = True
         logger.info("validation_fibonacci_test executed successfully")
 

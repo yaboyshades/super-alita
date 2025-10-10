@@ -109,7 +109,9 @@ class MockMCPClient:
         self, base_url: str, tool: str, args: dict[str, Any]
     ) -> dict[str, Any]:
         self.call_count += 1
-        self.calls_made.append({"base_url": base_url, "tool": tool, "args": args})
+        self.calls_made.append(
+            {"base_url": base_url, "tool": tool, "args": args}
+        )
 
         if tool in self.call_responses:
             return self.call_responses[tool]
@@ -239,11 +241,15 @@ class TestMCPRouterBasicInvocation:
     ):
         """Test successful tool invocation emits correct events"""
         # Setup
-        mock_mcp_client.set_response("calculator", {"result": 42, "success": True})
+        mock_mcp_client.set_response(
+            "calculator", {"result": 42, "success": True}
+        )
 
         # Execute
         result = await mcp_router.invoke(
-            "calculator", {"operation": "add", "a": 1, "b": 2}, "test-correlation-123"
+            "calculator",
+            {"operation": "add", "a": 1, "b": 2},
+            "test-correlation-123",
         )
 
         # Verify result
@@ -251,7 +257,9 @@ class TestMCPRouterBasicInvocation:
         assert result["success"] is True
 
         # Verify events
-        started_events = mock_event_bus.get_events_by_type("tool_invocation_started")
+        started_events = mock_event_bus.get_events_by_type(
+            "tool_invocation_started"
+        )
         completed_events = mock_event_bus.get_events_by_type(
             "tool_invocation_completed"
         )
@@ -280,7 +288,9 @@ class TestMCPRouterBasicInvocation:
             await mcp_router.invoke("invalid_tool", {}, "test-correlation-456")
 
         # Verify failure event
-        failed_events = mock_event_bus.get_events_by_type("tool_invocation_failed")
+        failed_events = mock_event_bus.get_events_by_type(
+            "tool_invocation_failed"
+        )
         assert len(failed_events) == 1
 
         failed = failed_events[0]
@@ -298,8 +308,12 @@ class TestMCPRouterCaching:
     ):
         """Test that cache hits skip tool execution"""
         # Pre-populate cache
-        cache_key = mcp_router._generate_cache_key("calculator", {"a": 1, "b": 2})
-        await mock_cache.set(cache_key, {"result": "cached_value", "success": True})
+        cache_key = mcp_router._generate_cache_key(
+            "calculator", {"a": 1, "b": 2}
+        )
+        await mock_cache.set(
+            cache_key, {"result": "cached_value", "success": True}
+        )
 
         # Execute
         result = await mcp_router.invoke(
@@ -313,7 +327,9 @@ class TestMCPRouterCaching:
         assert mock_mcp_client.call_count == 0
 
         # Verify cache hit event
-        cached_events = mock_event_bus.get_events_by_type("tool_invocation_cached")
+        cached_events = mock_event_bus.get_events_by_type(
+            "tool_invocation_cached"
+        )
         assert len(cached_events) == 1
 
         cached = cached_events[0]
@@ -344,7 +360,9 @@ class TestMCPRouterCaching:
         assert key1 != key4
 
         # Different tools should produce different keys
-        key5 = mcp_router._generate_cache_key("weather", {"a": 1, "b": 2, "op": "add"})
+        key5 = mcp_router._generate_cache_key(
+            "weather", {"a": 1, "b": 2, "op": "add"}
+        )
         assert key1 != key5
 
     @pytest.mark.asyncio
@@ -353,7 +371,9 @@ class TestMCPRouterCaching:
     ):
         """Test that successful executions populate the cache"""
         # Setup
-        mock_mcp_client.set_response("calculator", {"result": 100, "success": True})
+        mock_mcp_client.set_response(
+            "calculator", {"result": 100, "success": True}
+        )
 
         # Execute
         await mcp_router.invoke(
@@ -391,7 +411,9 @@ class TestMCPRouterSingleFlight:
 
         # Execute multiple concurrent identical requests
         tasks = [
-            mcp_router.invoke("calculator", {"a": 5, "b": 5}, f"concurrent-{i}")
+            mcp_router.invoke(
+                "calculator", {"a": 5, "b": 5}, f"concurrent-{i}"
+            )
             for i in range(5)
         ]
 
@@ -405,7 +427,9 @@ class TestMCPRouterSingleFlight:
         assert mock_mcp_client.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_different_requests_not_coalesced(self, mcp_router, mock_mcp_client):
+    async def test_different_requests_not_coalesced(
+        self, mcp_router, mock_mcp_client
+    ):
         """Test that different requests are not coalesced"""
         mock_mcp_client.set_response(
             "calculator", {"result": "unique", "success": True}
@@ -460,7 +484,9 @@ class TestMCPRouterCircuitBreaker:
         )
 
         # Execute should fail due to open circuit
-        with pytest.raises(Exception):  # The specific error depends on implementation
+        with pytest.raises(
+            Exception
+        ):  # The specific error depends on implementation
             await router.invoke("calculator", {"a": 1, "b": 2}, "breaker-test")
 
 
@@ -472,7 +498,9 @@ class TestMCPRouterMonotonicTiming:
         self, mcp_router, mock_event_bus, mock_clock, mock_mcp_client
     ):
         """Test that duration calculation uses injected monotonic clock"""
-        mock_mcp_client.set_response("calculator", {"result": 123, "success": True})
+        mock_mcp_client.set_response(
+            "calculator", {"result": 123, "success": True}
+        )
 
         # Set initial time
         mock_clock._time = 1000.0
@@ -507,10 +535,14 @@ class TestMCPRouterEventObservability:
         self, mcp_router, mock_event_bus, mock_mcp_client
     ):
         """Test that all events include correlation IDs for tracing"""
-        mock_mcp_client.set_response("weather", {"temperature": 72, "success": True})
+        mock_mcp_client.set_response(
+            "weather", {"temperature": 72, "success": True}
+        )
 
         correlation_id = "trace-abc-123-def"
-        await mcp_router.invoke("weather", {"city": "San Francisco"}, correlation_id)
+        await mcp_router.invoke(
+            "weather", {"city": "San Francisco"}, correlation_id
+        )
 
         # Check all events have correlation ID
         all_events = mock_event_bus.events
@@ -524,17 +556,27 @@ class TestMCPRouterEventObservability:
         self, mcp_router, mock_event_bus, mock_mcp_client
     ):
         """Test that events contain all required metadata"""
-        mock_mcp_client.set_response("calculator", {"answer": 42, "success": True})
+        mock_mcp_client.set_response(
+            "calculator", {"answer": 42, "success": True}
+        )
 
         await mcp_router.invoke(
             "calculator", {"question": "meaning of life"}, "metadata-test"
         )
 
         # Verify started event metadata
-        started_events = mock_event_bus.get_events_by_type("tool_invocation_started")
+        started_events = mock_event_bus.get_events_by_type(
+            "tool_invocation_started"
+        )
         started = started_events[0]
 
-        required_fields = ["tool", "instance_id", "correlation_id", "args", "timestamp"]
+        required_fields = [
+            "tool",
+            "instance_id",
+            "correlation_id",
+            "args",
+            "timestamp",
+        ]
         for field in required_fields:
             assert field in started, f"Missing required field: {field}"
 

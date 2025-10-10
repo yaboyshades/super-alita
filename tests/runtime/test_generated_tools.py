@@ -35,9 +35,16 @@ def test_generated_tool(tmp_path, monkeypatch) -> None:
         module = importlib.import_module("mcp_server.tools.generated_tool")
         asyncio.run(module.generated_tool())
 
-        events = [json.loads(line) for line in telemetry_file.read_text().splitlines()]
+        events = [
+            json.loads(line)
+            for line in telemetry_file.read_text().splitlines()
+        ]
         kinds = {e["type"] for e in events}
-        assert {"AbilityCalled", "AbilitySucceeded", "ArtifactCreated"} <= kinds
+        assert {
+            "AbilityCalled",
+            "AbilitySucceeded",
+            "ArtifactCreated",
+        } <= kinds
     finally:
         if module_path.exists():
             module_path.unlink()

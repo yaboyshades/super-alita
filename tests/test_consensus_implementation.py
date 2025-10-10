@@ -12,7 +12,9 @@ async def test_consensus_implementation():
 
     # Recreate the SimpleConsensusProvider class
     class SimpleConsensusProvider:
-        def __init__(self, base_url: str, model_name: str, timeout: float = 60.0):
+        def __init__(
+            self, base_url: str, model_name: str, timeout: float = 60.0
+        ):
             self.base_url = base_url
             self.model_name = model_name
             self.timeout = timeout
@@ -24,7 +26,9 @@ async def test_consensus_implementation():
             temperature: float = 0.7,
             max_tokens: int = 512,
         ):
-            print(f"🔍 Starting consensus sampling with {num_samples} samples...")
+            print(
+                f"🔍 Starting consensus sampling with {num_samples} samples..."
+            )
 
             # Generate multiple responses with slight temperature variation
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -52,7 +56,9 @@ async def test_consensus_implementation():
                     )
 
                 print("📡 Making parallel requests to Ollama...")
-                responses = await asyncio.gather(*tasks, return_exceptions=True)
+                responses = await asyncio.gather(
+                    *tasks, return_exceptions=True
+                )
 
                 valid_responses = []
                 for i, resp in enumerate(responses):
@@ -111,7 +117,9 @@ async def test_consensus_implementation():
     # Test the implementation
     try:
         provider = SimpleConsensusProvider(
-            base_url="http://localhost:11434/v1", model_name="gpt-oss:20b", timeout=30.0
+            base_url="http://localhost:11434/v1",
+            model_name="gpt-oss:20b",
+            timeout=30.0,
         )
 
         result = await provider.consensus_sampling(

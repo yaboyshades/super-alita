@@ -47,7 +47,9 @@ class GitHubApiClient:
         if self.token:
             self.headers["Authorization"] = f"token {self.token}"
 
-    async def make_request(self, request: GitHubApiRequest) -> GitHubApiResponse:
+    async def make_request(
+        self, request: GitHubApiRequest
+    ) -> GitHubApiResponse:
         """Make GitHub API request with rate limiting and error handling."""
         start_time = datetime.now(UTC).timestamp()
 
@@ -79,7 +81,9 @@ class GitHubApiClient:
                         url, headers=headers, params=request.parameters
                     )
                 else:
-                    raise ValueError(f"Unsupported HTTP method: {request.method}")
+                    raise ValueError(
+                        f"Unsupported HTTP method: {request.method}"
+                    )
 
                 # Update rate limit info
                 self._update_rate_limit_info(response)
@@ -164,7 +168,9 @@ class GitHubApiClient:
 
     async def get_repository_info(self, repository: str) -> GitHubApiResponse:
         """Get repository information."""
-        request = GitHubApiRequest(endpoint=f"repos/{repository}", method="GET")
+        request = GitHubApiRequest(
+            endpoint=f"repos/{repository}", method="GET"
+        )
         return await self.make_request(request)
 
     async def list_issues(
@@ -180,7 +186,9 @@ class GitHubApiClient:
             params["labels"] = ",".join(labels)
 
         request = GitHubApiRequest(
-            endpoint=f"repos/{repository}/issues", method="GET", parameters=params
+            endpoint=f"repos/{repository}/issues",
+            method="GET",
+            parameters=params,
         )
         return await self.make_request(request)
 
@@ -191,7 +199,9 @@ class GitHubApiClient:
         params = {"state": state, "per_page": min(limit, 100)}
 
         request = GitHubApiRequest(
-            endpoint=f"repos/{repository}/pulls", method="GET", parameters=params
+            endpoint=f"repos/{repository}/pulls",
+            method="GET",
+            parameters=params,
         )
         return await self.make_request(request)
 
@@ -200,7 +210,8 @@ class GitHubApiClient:
     ) -> GitHubApiResponse:
         """Get files changed in a pull request."""
         request = GitHubApiRequest(
-            endpoint=f"repos/{repository}/pulls/{pr_number}/files", method="GET"
+            endpoint=f"repos/{repository}/pulls/{pr_number}/files",
+            method="GET",
         )
         return await self.make_request(request)
 
@@ -213,7 +224,9 @@ class GitHubApiClient:
             params["since"] = since.isoformat()
 
         request = GitHubApiRequest(
-            endpoint=f"repos/{repository}/commits", method="GET", parameters=params
+            endpoint=f"repos/{repository}/commits",
+            method="GET",
+            parameters=params,
         )
         return await self.make_request(request)
 
@@ -226,7 +239,9 @@ class GitHubApiClient:
             params["status"] = status
 
         request = GitHubApiRequest(
-            endpoint=f"repos/{repository}/actions/runs", method="GET", parameters=params
+            endpoint=f"repos/{repository}/actions/runs",
+            method="GET",
+            parameters=params,
         )
         return await self.make_request(request)
 
@@ -242,7 +257,8 @@ class GitHubApiClient:
                 # Get PR details
                 pr_response = await self.make_request(
                     GitHubApiRequest(
-                        endpoint=f"repos/{repository}/pulls/{item_number}", method="GET"
+                        endpoint=f"repos/{repository}/pulls/{item_number}",
+                        method="GET",
                     )
                 )
 
@@ -252,20 +268,31 @@ class GitHubApiClient:
                     # Extract basic metrics
                     metrics.comment_count = pr_data.get("comments", 0)
                     metrics.review_count = pr_data.get("review_comments", 0)
-                    metrics.lines_changed = pr_data.get("additions", 0) + pr_data.get(
-                        "deletions", 0
+                    metrics.lines_changed = pr_data.get(
+                        "additions", 0
+                    ) + pr_data.get("deletions", 0)
+                    metrics.file_changes_count = pr_data.get(
+                        "changed_files", 0
                     )
-                    metrics.file_changes_count = pr_data.get("changed_files", 0)
 
                     # Check for merge conflicts
-                    metrics.merge_conflicts = pr_data.get("mergeable", True) is False
+                    metrics.merge_conflicts = (
+                        pr_data.get("mergeable", True) is False
+                    )
 
                     # Extract labels
-                    labels = [label["name"] for label in pr_data.get("labels", [])]
+                    labels = [
+                        label["name"] for label in pr_data.get("labels", [])
+                    ]
                     metrics.issue_labels = labels
 
                     # Check for security/critical labels
-                    security_labels = ["security", "critical", "urgent", "hotfix"]
+                    security_labels = [
+                        "security",
+                        "critical",
+                        "urgent",
+                        "hotfix",
+                    ]
                     metrics.has_security_alert = any(
                         label.lower() in security_labels for label in labels
                     )
@@ -280,7 +307,8 @@ class GitHubApiClient:
                         "critical",
                     ]
                     metrics.has_stakeholder_mention = any(
-                        keyword in body.lower() for keyword in stakeholder_keywords
+                        keyword in body.lower()
+                        for keyword in stakeholder_keywords
                     )
 
                     # Get CI status
@@ -292,7 +320,9 @@ class GitHubApiClient:
                     )
 
                     if status_response.success and status_response.data:
-                        metrics.ci_status = status_response.data.get("state", "unknown")
+                        metrics.ci_status = status_response.data.get(
+                            "state", "unknown"
+                        )
 
                 # Get files to check dependencies
                 files_response = await self.get_pull_request_files(
@@ -306,7 +336,9 @@ class GitHubApiClient:
                         "Dockerfile",
                         "Makefile",
                     ]
-                    modified_files = [f["filename"] for f in files_response.data]
+                    modified_files = [
+                        f["filename"] for f in files_response.data
+                    ]
 
                     metrics.blocks_other_prs = any(
                         any(critical in file for critical in critical_files)
@@ -328,7 +360,9 @@ class GitHubApiClient:
                     metrics.comment_count = issue_data.get("comments", 0)
 
                     # Extract labels
-                    labels = [label["name"] for label in issue_data.get("labels", [])]
+                    labels = [
+                        label["name"] for label in issue_data.get("labels", [])
+                    ]
                     metrics.issue_labels = labels
 
                     # Check for security/critical labels
@@ -347,7 +381,8 @@ class GitHubApiClient:
                         "critical",
                     ]
                     metrics.has_stakeholder_mention = any(
-                        keyword in body.lower() for keyword in stakeholder_keywords
+                        keyword in body.lower()
+                        for keyword in stakeholder_keywords
                     )
 
         except Exception:
@@ -357,7 +392,10 @@ class GitHubApiClient:
         return metrics
 
     async def create_github_event_from_api_data(
-        self, repository: str, api_data: dict[str, Any], event_type: GitHubEventType
+        self,
+        repository: str,
+        api_data: dict[str, Any],
+        event_type: GitHubEventType,
     ) -> GitHubEventSchema:
         """Create GitHub event schema from API data."""
 
@@ -371,11 +409,15 @@ class GitHubApiClient:
             processing_status="api_captured",
         )
 
-    def _calculate_attention_level(self, api_data: dict[str, Any]) -> AttentionLevel:
+    def _calculate_attention_level(
+        self, api_data: dict[str, Any]
+    ) -> AttentionLevel:
         """Calculate attention level based on API data."""
 
         # Check for critical indicators
-        labels = [label["name"].lower() for label in api_data.get("labels", [])]
+        labels = [
+            label["name"].lower() for label in api_data.get("labels", [])
+        ]
         critical_labels = ["critical", "urgent", "security", "hotfix"]
 
         if any(label in critical_labels for label in labels):

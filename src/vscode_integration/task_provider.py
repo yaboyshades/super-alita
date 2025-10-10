@@ -195,7 +195,9 @@ class VSCodeTaskProvider(PluginInterface):
         await self._save_vscode_todos()
 
         # Emit event
-        event = create_event("vscode_task_updated", task_id=task.id, updates=updates)
+        event = create_event(
+            "vscode_task_updated", task_id=task.id, updates=updates
+        )
         if hasattr(self.event_bus, "publish"):
             await self.event_bus.publish(event)
 
@@ -231,7 +233,9 @@ class VSCodeTaskProvider(PluginInterface):
         await self._save_vscode_todos()
 
         # Emit event
-        event = create_event("vscode_task_deleted", task_id=task.id, title=task.title)
+        event = create_event(
+            "vscode_task_deleted", task_id=task.id, title=task.title
+        )
         if hasattr(self.event_bus, "publish"):
             await self.event_bus.publish(event)
 
@@ -255,7 +259,10 @@ class VSCodeTaskProvider(PluginInterface):
                 ladder_task_id=ladder_task_id,
                 ladder_stage=task_data.get("stage", "not_started"),
                 energy_required=task_data.get("energy_required"),
-                context={"source": "ladder_planner", "stage": task_data.get("stage")},
+                context={
+                    "source": "ladder_planner",
+                    "stage": task_data.get("stage"),
+                },
             )
 
             self.tasks[vscode_task.id] = vscode_task
@@ -289,7 +296,9 @@ class VSCodeTaskProvider(PluginInterface):
                     vscode_task.description = task_data["description"]
 
                 await self._save_vscode_todos()
-                logger.info(f"Updated VS Code task from LADDER: {vscode_task.title}")
+                logger.info(
+                    f"Updated VS Code task from LADDER: {vscode_task.title}"
+                )
 
         except Exception as e:
             logger.error(f"Error handling LADDER task update: {e}")
@@ -306,7 +315,9 @@ class VSCodeTaskProvider(PluginInterface):
                     task.completed = True
                     task.updated_at = datetime.now(UTC)
                     await self._save_vscode_todos()
-                    logger.info(f"Completed VS Code task from LADDER: {task.title}")
+                    logger.info(
+                        f"Completed VS Code task from LADDER: {task.title}"
+                    )
                     break
 
         except Exception as e:
@@ -335,7 +346,9 @@ class VSCodeTaskProvider(PluginInterface):
                     )
                     self.tasks[task.id] = task
 
-                logger.info(f"Loaded {len(todo_list)} tasks from VS Code todos")
+                logger.info(
+                    f"Loaded {len(todo_list)} tasks from VS Code todos"
+                )
 
         except Exception as e:
             logger.error(f"Error loading VS Code todos: {e}")
@@ -350,7 +363,11 @@ class VSCodeTaskProvider(PluginInterface):
             todo_list = []
             for task in self.tasks.values():
                 todo_item = {
-                    "id": int(task.id) if task.id.isdigit() else hash(task.id) % 10000,
+                    "id": (
+                        int(task.id)
+                        if task.id.isdigit()
+                        else hash(task.id) % 10000
+                    ),
                     "title": task.title,
                     "description": task.description,
                     "status": "completed" if task.completed else "not-started",
@@ -395,7 +412,9 @@ class VSCodeTaskProvider(PluginInterface):
             vscode_task.ladder_task_id = ladder_task["task_id"]
             vscode_task.ladder_stage = ladder_task.get("stage", "not_started")
 
-            logger.info(f"Created LADDER task from VS Code: {vscode_task.title}")
+            logger.info(
+                f"Created LADDER task from VS Code: {vscode_task.title}"
+            )
 
         except Exception as e:
             logger.error(f"Error creating LADDER task from VS Code: {e}")
@@ -444,7 +463,9 @@ class VSCodeTaskProvider(PluginInterface):
                                 )
 
                     except Exception as e:
-                        logger.debug(f"Error getting LADDER tasks during sync: {e}")
+                        logger.debug(
+                            f"Error getting LADDER tasks during sync: {e}"
+                        )
 
                 logger.debug("Periodic sync completed")
 

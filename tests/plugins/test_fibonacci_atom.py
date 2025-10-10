@@ -7,7 +7,11 @@ logger = logging.getLogger(__name__)
 
 
 async def test_fibonacci(
-    event_bus=None, tool_call_id="", session_id="", conversation_id="", **kwargs
+    event_bus=None,
+    tool_call_id="",
+    session_id="",
+    conversation_id="",
+    **kwargs,
 ):
     """
     Calculate fibonacci numbers
@@ -53,6 +57,8 @@ async def test_fibonacci(
             logger.debug("test_fibonacci result event published")
 
         except Exception as e:
-            logger.error(f"test_fibonacci failed to publish result event: {e!s}")
+            logger.error(
+                f"test_fibonacci failed to publish result event: {e!s}"
+            )
 
     return result

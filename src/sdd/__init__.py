@@ -11,7 +11,11 @@ from .mangle_integration import MangleFactGenerator
 
 # Mangle integration modules
 from .mangle_reasoner import MangleReasoner
-from .mangle_rules import MANGLE_RULES, get_available_queries, get_query_for_question
+from .mangle_rules import (
+    MANGLE_RULES,
+    get_available_queries,
+    get_query_for_question,
+)
 from .models import (
     PlanRequest,
     PlanResponse,
