@@ -1,4 +1,5 @@
 """Ensure runtime compatibility shims load in environments that skip sitecustomize."""
+
 from __future__ import annotations
 
 from contextlib import suppress

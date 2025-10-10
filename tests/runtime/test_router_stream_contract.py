@@ -45,6 +45,8 @@ def test_chat_stream_emits_tool_frames_in_order_and_alignment(path: str) -> None
     final_answer_index = None
     alignment_frame_index = None
 
+    done_events: list[dict[str, object]] = []
+
     for idx, frame in enumerate(frames):
         lines = frame.splitlines()
         event_name = next((line.split(": ", 1)[1] for line in lines if line.startswith("event: ")), "")
@@ -74,6 +76,9 @@ def test_chat_stream_emits_tool_frames_in_order_and_alignment(path: str) -> None
         if isinstance(payload_obj, dict) and payload_obj.get("type") == "LoopAlignmentTelemetry":
             alignment_frame_index = idx
 
+        if event_name == "done" and isinstance(payload_obj, dict):
+            done_events.append(payload_obj)
+
     assert tool_call_index is not None, "expected <tool_call> frame in SSE stream"
     assert tool_result_index is not None, "expected tool_result frame in SSE stream"
     assert final_answer_index is not None, "expected <final_answer> frame in SSE stream"
@@ -89,3 +94,8 @@ def test_chat_stream_emits_tool_frames_in_order_and_alignment(path: str) -> None
     assert telemetry["atoms"], "telemetry should include atoms"
     assert telemetry["energy"] > 0
     assert telemetry["bandit"] >= 1
+
+    assert done_events, "expected TaskSucceeded payload in SSE stream"
+    final_event = done_events[-1]
+    assert final_event.get("goal") == "integration hello"
+    assert final_event.get("user_input") == "integration hello"

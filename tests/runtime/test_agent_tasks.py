@@ -60,5 +60,30 @@ def test_agent_can_complete_simple_tasks() -> None:
             json={"message": task["prompt"], "session_id": "s1"},
         )
         assert resp.status_code == 200
-        answer = _extract_final_answer(resp.text)
+        final_event = app.state.event_bus.events[-1]
+        answer = _extract_final_answer(final_event["data"]["content"])
         assert task["grader"](answer)
+
+
+def test_task_succeeded_event_includes_prompt_for_grading() -> None:
+    app = _make_app()
+    client = TestClient(app)
+
+    prompt = "reverse telemetry"
+    resp = client.post(
+        prefix_path("/v1/chat/stream"),
+        json={"message": prompt, "session_id": "s2"},
+    )
+    assert resp.status_code == 200
+
+    events = app.state.event_bus.events
+    start_event = next(evt for evt in events if evt.get("type") == "TaskStarted")
+    success_event = next(evt for evt in events if evt.get("type") == "TaskSucceeded")
+
+    assert start_event["user_input"] == prompt
+    assert success_event["user_input"] == prompt
+    assert success_event["goal"] == start_event["goal"]
+
+    final_from_event = success_event["data"]["content"]
+    expected = prompt.split("reverse", 1)[1].strip()[::-1]
+    assert _extract_final_answer(final_from_event) == expected

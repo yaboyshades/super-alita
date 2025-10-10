@@ -294,6 +294,9 @@ async def execute_turn(
         observability pipelines.
     """
     correlation_id = f"{session_id}-{int(time.time()*1000)}"
+    if not isinstance(user_msg, str):
+        user_msg = "" if user_msg is None else str(user_msg)
+    original_user_msg = user_msg
     llm_token_chars = 0
     ability_called = 0
     ability_succeeded = 0
@@ -328,6 +331,7 @@ async def execute_turn(
         "correlation_id": correlation_id,
         "goal": user_msg,
         "session_id": session_id,
+        "user_input": original_user_msg,
     }
     await event_bus.emit(start_event)
     yield start_event
@@ -554,6 +558,8 @@ async def execute_turn(
         "correlation_id": correlation_id,
         "data": final_answer,
         "session_id": session_id,
+        "goal": user_msg,
+        "user_input": original_user_msg,
     }
     await event_bus.emit(task_succeeded_event)
     yield task_succeeded_event
