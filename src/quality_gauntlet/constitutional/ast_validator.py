@@ -209,17 +209,17 @@ class ASTConstitutionalValidator:
                             severity="warning",
                         )
                     )
-            if isinstance(node, ast.ClassDef):
-                if ast.get_docstring(node) is None:
-                    self._violations.append(
-                        ConstitutionalViolation(
-                            article="Article VI",
-                            rule="documentation",
-                            line_number=node.lineno,
-                            message=f"Class '{node.name}' missing docstring",
-                            severity="warning",
-                        )
+            if isinstance(node, ast.ClassDef) and ast.get_docstring(node) is None:
+                self._violations.append(
+                    ConstitutionalViolation(
+                        article="Article VI",
+                        rule="documentation",
+                        line_number=node.lineno,
+                        message=f"Class '{node.name}' missing docstring",
+                        severity="warning",
                     )
+                )
+
 
     @property
     def constitution_text(self) -> str:
