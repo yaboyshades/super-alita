@@ -50,5 +50,6 @@ class QualityEvaluatorProtocol(Protocol):
         peer_gaps: list[str],
         security_score: float,
         quality_score: float,
+        constitutional_score: float,
     ) -> QualityVerdict:  # pragma: no cover
         """Return a verdict object describing pass/fail and remediation plan."""
