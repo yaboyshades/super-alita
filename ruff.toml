@@ -1,4 +1,4 @@
-line-length = 88
+line-length = 79
 target-version = "py311"
 fix = true
 
