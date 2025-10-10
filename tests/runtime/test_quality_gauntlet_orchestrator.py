@@ -69,6 +69,7 @@ class StrictEvaluator:
         peer_gaps: list[str],
         security_score: float,
         quality_score: float,
+        constitutional_score: float,
     ) -> QualityVerdict:
         _ = code
         compliance = 1.0 if not peer_gaps else 0.0
@@ -76,13 +77,14 @@ class StrictEvaluator:
             compliance >= self._config.thresholds.compliance
             and security_score >= self._config.thresholds.security
             and quality_score >= self._config.thresholds.quality
+            and constitutional_score >= self._config.thresholds.constitutional
         )
         return QualityVerdict(
             passed=passed,
             security_score=security_score,
             quality_score=quality_score,
             compliance_score=compliance,
-            constitutional_score=min(security_score, quality_score, compliance),
+            constitutional_score=constitutional_score,
             remediation_plan=["Satisfy acceptance criteria."] if peer_gaps else [],
             reasoning="strict evaluation",
         )
@@ -105,7 +107,14 @@ async def test_orchestrator_passes_with_clean_code() -> None:
             )
         ]
     )
-    config = GauntletConfig(max_iterations=1, thresholds=QualityThresholds())
+    config = GauntletConfig(
+        max_iterations=1,
+        thresholds=QualityThresholds(),
+        enable_bandit=False,
+        enable_ruff=False,
+        enable_mypy=False,
+        enable_codeql=True,
+    )
 
     orchestrator = QualityGauntletOrchestrator(
         task,
@@ -120,8 +129,11 @@ async def test_orchestrator_passes_with_clean_code() -> None:
 
     assert result.passed is True
     assert result.scores["security"] == 1.0
+    assert result.scores["constitutional"] >= config.thresholds.constitutional
     iteration_entries: list[IterationTelemetry] = list(result.iterations)
     assert any(isinstance(entry, IterationTelemetry) for entry in iteration_entries)
+    for entry in iteration_entries:
+        assert entry.constitutional_report.score >= config.thresholds.constitutional
 
 
 @pytest.mark.asyncio
@@ -143,7 +155,14 @@ async def test_orchestrator_requires_refinement_cycle() -> None:
         ]
     )
 
-    config = GauntletConfig(max_iterations=2, thresholds=QualityThresholds())
+    config = GauntletConfig(
+        max_iterations=2,
+        thresholds=QualityThresholds(),
+        enable_bandit=False,
+        enable_ruff=False,
+        enable_mypy=False,
+        enable_codeql=True,
+    )
 
     orchestrator = QualityGauntletOrchestrator(
         task,
@@ -161,6 +180,10 @@ async def test_orchestrator_requires_refinement_cycle() -> None:
     assert len(result.iterations.iterations) == 2
     # First iteration should have remediation plan
     assert result.iterations.iterations[0].remediation_plan
+    assert (
+        result.iterations.iterations[-1].constitutional_report.score
+        >= config.thresholds.constitutional
+    )
 
 
 @dataclass
