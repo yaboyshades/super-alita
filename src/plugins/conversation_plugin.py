@@ -234,7 +234,8 @@ class ConversationPlugin(PluginInterface):
             if not GEMINI_AVAILABLE:
                 if not self._genai_setup_attempted:
                     logger.info(
-                        "Gemini not available - LLM features disabled. Install with: pip install google-generativeai"
+                        "Gemini not available - LLM features disabled. "
+                        "Install with: pip install google-generativeai"
                     )
                     if _genai_import_error:
                         logger.debug(
@@ -262,7 +263,8 @@ class ConversationPlugin(PluginInterface):
             if not gemini_api_key:
                 if not self._genai_setup_attempted:
                     logger.info(
-                        "GEMINI_API_KEY not found - LLM features disabled. Set API key to enable full capabilities."
+                        "GEMINI_API_KEY not found - LLM features disabled. "
+                        "Set API key to enable full capabilities."
                     )
                     self._genai_setup_attempted = True
                 self.llm_client = None
@@ -430,7 +432,8 @@ class ConversationPlugin(PluginInterface):
             session_id = data.get("session_id") or "default_session"
 
             logger.debug(
-                f"🎯 CONVERSATION: Extracted user_text: '{user_text}', session_id: '{session_id}'"
+                f"🎯 CONVERSATION: Extracted user_text: '{user_text}', "
+                f"session_id: '{session_id}'"
             )
 
             # Skip non-conversation events that don't have text
@@ -484,7 +487,9 @@ class ConversationPlugin(PluginInterface):
                     )
                     if name_match:
                         tool_name = name_match.group(1).strip()
-                        description = f"{tool_name.title()} tool created from user request"
+                        description = (
+                            f"{tool_name.title()} tool created from user request"
+                        )
                     elif "fibonacci" in user_text_lower:
                         tool_name = "fibonacci_tool"
                         description = "Fibonacci sequence calculator tool"
