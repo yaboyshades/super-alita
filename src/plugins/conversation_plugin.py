@@ -170,7 +170,8 @@ class ConversationPlugin(PluginInterface):
             self.router = Router()
             self.router_ready = True
             logger.info(
-                "Router initialized for deterministic planner → router → dispatcher flow"
+                "Router initialized for deterministic "
+                "planner → router → dispatcher flow"
             )
         except Exception as e:
             logger.error(f"Failed to initialize router: {e}")
