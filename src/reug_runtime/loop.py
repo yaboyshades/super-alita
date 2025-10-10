@@ -20,7 +20,6 @@ import time
 import uuid
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, cast
 
 from .config import SETTINGS
@@ -226,7 +225,9 @@ class Orchestrator:
             yield ability_called_event
 
             # Self-evolution: auto-register unknown tools on demand via tool service
-            self._tool_service.ensure_tool_registered(tool_name or "", tool_args, self.registry)
+            self._tool_service.ensure_tool_registered(
+                tool_name or "", tool_args, self.registry
+            )
 
             try:
                 result = cast(
@@ -303,6 +304,38 @@ async def execute_turn(
     ability_failed = 0
     tools_seen: list[str] = []
 
+    current_state = "AWAITING_INPUT"
+
+    async def emit_state_transition(
+        next_state: str, **extra: Any
+    ) -> dict[str, Any] | None:
+        """Emit a ``STATE_TRANSITION`` event when the state changes.
+
+        The REUG runtime relies on explicit state telemetry to satisfy the
+        single-turn orchestration invariants (see ``PATCHMAP.md``). Emitting the
+        transition events here keeps the loop authoritative for phase
+        transitions while allowing downstream consumers (SSE, telemetry sinks)
+        to remain dumb relays.
+        """
+
+        nonlocal current_state
+        if next_state == current_state:
+            return None
+
+        event: dict[str, Any] = {
+            "type": "STATE_TRANSITION",
+            "correlation_id": correlation_id,
+            "session_id": session_id,
+            "from": current_state,
+            "to": next_state,
+        }
+        if extra:
+            event.update(extra)
+
+        await event_bus.emit(event)
+        current_state = next_state
+        return event
+
     # Optional message optimization/amplification
     if SETTINGS.message_optimizer_enabled:
         # Lazy import to avoid side effects when disabled
@@ -335,6 +368,10 @@ async def execute_turn(
     }
     await event_bus.emit(start_event)
     yield start_event
+
+    transition_event = await emit_state_transition("DECOMPOSE_TASK")
+    if transition_event:
+        yield transition_event
 
     # Build system prompt with optional output contract
     base_system = "You are a helpful assistant. Use tools when necessary."
@@ -404,6 +441,10 @@ async def execute_turn(
     llm_response_content = ""
 
     for _ in range(SETTINGS.max_tool_calls):
+        transition_event = await emit_state_transition("SELECT_TOOL")
+        if transition_event:
+            yield transition_event
+
         tool_schemas: list[dict[str, Any]] = registry.get_available_tools_schema()
 
         # Run reasoning step and get results
@@ -433,6 +474,22 @@ async def execute_turn(
 
         # Run acting step and get results
         async for event in orchestrator._acting_step(tool_calls):
+            if event.get("type") == "AbilityCalled":
+                transition_event = await emit_state_transition(
+                    "EXECUTE_TOOL",
+                    tool=event.get("tool"),
+                    span_id=event.get("span_id"),
+                )
+                if transition_event:
+                    yield transition_event
+            elif event.get("type") in {"AbilitySucceeded", "AbilityFailed"}:
+                transition_event = await emit_state_transition(
+                    "PROCESS_TOOL_RESULT",
+                    tool=event.get("tool"),
+                    span_id=event.get("span_id"),
+                )
+                if transition_event:
+                    yield transition_event
             etype = event.get("type")
             if etype == "AbilityCalled":
                 ability_called += 1
@@ -522,6 +579,15 @@ async def execute_turn(
         "success": 1.0 if final_atom_id else 0.0,
         "tools": sorted({t for t in tools_seen if isinstance(t, str)}),
     }
+    if final_atom_id:
+        transition_event = await emit_state_transition("RESPONDING_SUCCESS")
+        if transition_event:
+            yield transition_event
+    else:
+        transition_event = await emit_state_transition("RESPONDING_FAILURE")
+        if transition_event:
+            yield transition_event
+
     loop_alignment_event = {
         "type": "LoopAlignmentTelemetry",
         "correlation_id": correlation_id,
