@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Command-line launcher for the constitutional GitHub MCP integration."""
+
+from __future__ import annotations
 
 import argparse
 import asyncio

@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Track agent autonomy and emit progress events."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any

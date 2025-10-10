@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """High-level coordinator for GitHub MCP workflows inside Super-Alita."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any

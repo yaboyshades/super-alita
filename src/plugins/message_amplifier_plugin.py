@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Heuristic message amplifier middleware.
 
 Default-safe optimizer that normalizes whitespace, supports a `noopt:`
@@ -7,6 +5,8 @@ escape hatch, and emits simple metadata about the transformation. More
 advanced enrichment (e.g., context lookup or model rewriting) can be added
 behind config flags later without changing the public interface.
 """
+
+from __future__ import annotations
 
 import re
 

@@ -1,14 +1,4 @@
-# src/plugins/semantic_memory_plugin.py
-
-# Load environment variables
-try:
-    from dotenv import load_dotenv
-
-    load_dotenv()
-except ImportError:
-    pass  # dotenv not available, environment variables should be set manually
-"""
-Plugin for the agent's long-term, hierarchical semantic memory.
+"""Plugin for the agent's long-term, hierarchical semantic memory.
 
 This component is responsible for the full lifecycle of a memory:
 - Encoding information into semantic vectors using a state-of-the-art model.
@@ -20,6 +10,10 @@ The dual-storage architecture ensures both durability and reactivity:
 - ChromaDB provides persistent, searchable vector storage
 - NeuralStore provides fast, in-memory access for real-time cognitive operations
 """
+
+# src/plugins/semantic_memory_plugin.py
+
+from __future__ import annotations
 
 import asyncio
 import logging
@@ -33,15 +27,6 @@ import chromadb
 import numpy as np
 from chromadb.config import Settings
 
-try:
-    import google.generativeai as genai
-
-    GENAI_AVAILABLE = True
-except ImportError:
-    GENAI_AVAILABLE = False
-    logger.warning(
-        "Google Generative AI not available, using fallback embedding"
-    )
 from src.core.config import EMBEDDING_DIM, EMBEDDING_MODEL_NAME
 from src.core.event_bus import EventBus
 from src.core.events import MemoryUpsertEvent
@@ -53,7 +38,29 @@ from src.core.neural_atom import (
 )
 from src.core.plugin_interface import PluginInterface
 
+# Try to import Google Generative AI for embeddings
+try:
+    import google.generativeai as genai
+
+    GENAI_AVAILABLE = True
+except ImportError:
+    genai = None  # type: ignore[assignment]
+    GENAI_AVAILABLE = False
+
+# Load environment variables
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not available, environment variables should be set manually
+
 logger = logging.getLogger(__name__)
+
+if not GENAI_AVAILABLE:
+    logger.warning(
+        "Google Generative AI not available, using fallback embedding"
+    )
 
 
 class SemanticMemoryPlugin(PluginInterface):

@@ -5,14 +5,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 import grpc
 from google.protobuf import descriptor_pb2, descriptor_pool
 from google.protobuf.internal import builder as _builder
 
 from . import super_alita_pb2 as pb2
 from . import super_alita_pb2_grpc as pb2_grpc
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_mangle_messages() -> None:

@@ -10,19 +10,19 @@ src_path = Path(__file__).parent.parent
 sys.path.insert(0, str(src_path))
 
 # Use environment variable override to avoid import conflicts
-import os
+import os  # noqa: E402
 
 original_pythonpath = os.environ.get("PYTHONPATH", "")
 os.environ["PYTHONPATH"] = ""
 # Remove any ATLAI paths that might cause conflicts
 sys.path = [p for p in sys.path if "ATLAI" not in p]
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP  # noqa: E402
 
 # Restore environment after import
 os.environ["PYTHONPATH"] = original_pythonpath
 
-from mcp_server.tools import (
+from mcp_server.tools import (  # noqa: E402
     find_missing_docstrings,
     format_and_lint,
     refactor_to_result,
