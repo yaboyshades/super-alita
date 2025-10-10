@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Simple navigation utilities for traversing the temporal graph."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum

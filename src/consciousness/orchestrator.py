@@ -9,11 +9,11 @@ from typing import Any
 
 from src.contracts import UnifiedEvent
 
-BackgroundFactory = Callable[[], Awaitable[None]]
-
 from .components import ComponentProcess
 from .config import NeuralPathwayConfig
 from .infrastructure import SystemInfrastructure
+
+BackgroundFactory = Callable[[], Awaitable[None]]
 
 
 class ConsciousnessOrchestrator:

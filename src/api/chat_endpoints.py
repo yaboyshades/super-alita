@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Chat API endpoints (unified chat layer).
 
 Routes under /api/chat:
@@ -13,6 +11,8 @@ Implementation notes:
  - Optional consensus refinement executed after base answer (non-stream path
      aggregates internally; stream path emits a ConsensusResult event).
 """
+
+from __future__ import annotations
 
 import json
 from collections.abc import AsyncGenerator

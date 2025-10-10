@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Constitutionally-aware GitHub MCP integration helpers."""
+
+from __future__ import annotations
 
 import asyncio
 import inspect

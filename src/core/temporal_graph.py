@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Minimal temporal graph and neural atom structures used by cortex plugins."""
+
+from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
