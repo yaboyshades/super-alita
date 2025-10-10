@@ -3,8 +3,27 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Any
 
 from pydantic import BaseModel, Field  # type: ignore[import-not-found]
+
+from .constitutional.ast_validator import ConstitutionalViolation
+
+
+class ToolResult(BaseModel):
+    """Standardized tool execution response."""
+
+    success: bool
+    output: dict[str, Any] = Field(default_factory=dict)
+    error: str | None = None
+    execution_time_ms: float = Field(0.0, ge=0.0)
+
+
+class ConstitutionalReport(BaseModel):
+    """Report summarizing constitutional violations for a run."""
+
+    violations: list[ConstitutionalViolation] = Field(default_factory=list)
+    score: float = Field(1.0, ge=0.0, le=1.0)
 
 
 class PeerReviewReport(BaseModel):
@@ -30,6 +49,8 @@ class IterationTelemetry(BaseModel):
     peer_review: PeerReviewReport
     security_summary: dict[str, int]
     quality_summary: dict[str, int]
+    constitutional_report: ConstitutionalReport
+    tool_reports: dict[str, ToolResult] = Field(default_factory=dict)
     remediation_plan: list[str]
     verdict_passed: bool
 
