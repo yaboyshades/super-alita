@@ -487,9 +487,7 @@ class ConversationPlugin(PluginInterface):
                     )
                     if name_match:
                         tool_name = name_match.group(1).strip()
-                        description = (
-                            f"{tool_name.title()} tool created from user request"
-                        )
+                        description = f"{tool_name.title()} tool created from user request"
                     elif "fibonacci" in user_text_lower:
                         tool_name = "fibonacci_tool"
                         description = "Fibonacci sequence calculator tool"
@@ -520,20 +518,27 @@ class ConversationPlugin(PluginInterface):
 
                         await self.event_bus.publish(compose_event)
                         logger.info(
-                            f"💡 CONVERSATION: Emitted compose_request for deterministic tool creation: {tool_name}"
+                            f"💡 CONVERSATION: Emitted compose_request for "
+                            f"deterministic tool creation: {tool_name}"
                         )
 
                         # Send immediate feedback to user
                         response_event = AgentResponseEvent(
                             source_plugin=self.name,
                             session_id=session_id,
-                            response_text=f"🔧 Creating {tool_name}... I'll generate this tool for you.",
+                            response_text=(
+                                f"🔧 Creating {tool_name}... "
+                                "I'll generate this tool for you."
+                            ),
                             response_id=str(uuid.uuid4()),
-                            reasoning=f"Detected request to create a tool: {tool_name}",
+                            reasoning=(
+                                f"Detected request to create a tool: {tool_name}"
+                            ),
                         )
                         await self.event_bus.publish(response_event)
 
-                        return  # Skip normal LLM processing for deterministic tool creation
+                        # Skip normal LLM processing for deterministic tool creation
+                        return
 
                     except Exception as e:
                         logger.error(
@@ -595,7 +600,10 @@ class ConversationPlugin(PluginInterface):
     async def _process_message_deterministically(
         self, user_message: str, session_id: str, conversation_id: str
     ) -> None:
-        """Process user message using deterministic planner → router → dispatcher flow."""
+        """
+        Process user message using deterministic
+        planner → router → dispatcher flow.
+        """
         logger.info(
             f"🎯 Processing message deterministically: '{user_message}'"
         )
@@ -610,7 +618,11 @@ class ConversationPlugin(PluginInterface):
                 logger.warning(
                     "Deterministic processing fallback (%s)", reason
                 )
-            text = f"I received your message: '{user_message}'. I'm currently having issues with my processing system, but I'm working on understanding your request."
+            text = (
+                f"I received your message: '{user_message}'. I'm currently "
+                "having issues with my processing system, but I'm working "
+                "on understanding your request."
+            )
             await self.event_bus._redis.publish(
                 "agent_reply", json.dumps({"text": text, "reason": reason})
             )
@@ -618,7 +630,10 @@ class ConversationPlugin(PluginInterface):
         # 0) Zero‑LLM emergency rule (works even if LLM is disabled)
         try:
             if _contains_creation_intent(user_message):
-                gap_msg = "Need a tool creation pipeline (Ability Contract → code → tests → register)."
+                gap_msg = (
+                    "Need a tool creation pipeline "
+                    "(Ability Contract → code → tests → register)."
+                )
                 await self._emit_gap_response(
                     gap_text=f"(GAP) {gap_msg}",
                     session_id=session_id,
