@@ -67,17 +67,17 @@ class ASTConstitutionalValidator:
         """Article I: guard against mocks and placeholders."""
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module:
-                if "mock" in node.module.lower():
-                    self._violations.append(
-                        ConstitutionalViolation(
-                            article="Article I",
-                            rule="no_mocks",
-                            line_number=node.lineno,
-                            message=f"Mock import '{node.module}' violates Article I",
-                            severity="error",
-                        )
+            if isinstance(node, ast.ImportFrom) and node.module and "mock" in node.module.lower():
+                self._violations.append(
+                    ConstitutionalViolation(
+                        article="Article I",
+                        rule="no_mocks",
+                        line_number=node.lineno,
+                        message=f"Mock import '{node.module}' violates Article I",
+                        severity="error",
                     )
+                )
+
             if isinstance(node, ast.Call):
                 func = node.func
                 if isinstance(func, ast.Name) and "mock" in func.id.lower():
@@ -209,17 +209,17 @@ class ASTConstitutionalValidator:
                             severity="warning",
                         )
                     )
-            if isinstance(node, ast.ClassDef):
-                if ast.get_docstring(node) is None:
-                    self._violations.append(
-                        ConstitutionalViolation(
-                            article="Article VI",
-                            rule="documentation",
-                            line_number=node.lineno,
-                            message=f"Class '{node.name}' missing docstring",
-                            severity="warning",
-                        )
+            if isinstance(node, ast.ClassDef) and ast.get_docstring(node) is None:
+                self._violations.append(
+                    ConstitutionalViolation(
+                        article="Article VI",
+                        rule="documentation",
+                        line_number=node.lineno,
+                        message=f"Class '{node.name}' missing docstring",
+                        severity="warning",
                     )
+                )
+
 
     @property
     def constitution_text(self) -> str:
