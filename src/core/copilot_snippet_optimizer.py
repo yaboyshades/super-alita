@@ -132,7 +132,12 @@ class SnippetIntelligenceAtom(NeuralAtom):
     """Neural Atom for intelligent snippet selection and token optimization."""
 
     def __init__(self, metadata: NeuralAtomMetadata):
-        super().__init__(metadata)
+        super().__init__(
+            key=metadata.name,
+            value={},
+            metadata=metadata,
+            birth_event="snippet_intelligence:init",
+        )
         self.snippet_patterns = PYTHON_SNIPPET_PATTERNS
         self.usage_statistics = {}
         self.optimization_cache = {}

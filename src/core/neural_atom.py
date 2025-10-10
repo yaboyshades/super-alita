@@ -7,8 +7,12 @@ import hashlib
 import logging
 import os
 import time
-from abc import ABC, abstractmethod
+
 from collections.abc import Callable
+
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Sequence
+
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Generic, TypeVar
@@ -52,42 +56,182 @@ class NeuralAtomMetadata:
             self.created_at = time.time()
 
 
-class NeuralAtom(ABC):
-    """
-    Base class for all Neural Atoms with full cognitive capabilities.
+class NeuralAtom(Generic[T]):
+    """Concrete cognitive atom with genealogy and execution tracking."""
 
-    The unifying element of the architecture - semantically-rich, modular units
-    of intelligence containing executable logic, metadata, and semantic embeddings.
-    """
+    DEFAULT_VECTOR_DIM = 1024
 
-    def __init__(self, metadata: NeuralAtomMetadata):
+    def __init__(
+        self,
+        key: str,
+        value: T,
+        *,
+        vector: np.ndarray | None = None,
+        bias: float = 0.0,
+        parent_keys: list[str] | None = None,
+        birth_event: str | None = None,
+        lineage_metadata: dict[str, Any] | None = None,
+        metadata: NeuralAtomMetadata | None = None,
+    ) -> None:
+        if not key or not isinstance(key, str):
+            raise ValueError("NeuralAtom key must be a non-empty string.")
+
+        self.key = key
+        self.value = value
+
+        if vector is not None:
+            arr = np.asarray(vector, dtype=np.float32)
+            if arr.ndim != 1:
+                raise ValueError(
+                    "NeuralAtom vector must be one-dimensional for cognitive embedding."
+                )
+            self.vector = arr
+        else:
+            self.vector = np.zeros(self.DEFAULT_VECTOR_DIM, dtype=np.float32)
+
+        self.bias = bias
+        self.active = True
+
+        self.parent_keys: list[str] = list(parent_keys) if parent_keys else []
+        self.children_keys: list[str] = []
+        self.birth_event = birth_event
+        self.lineage_metadata: dict[str, Any] = dict(lineage_metadata or {})
+
+        self.depth = len(self.parent_keys)
+        self.signature = self._generate_darwin_godel_signature()
+        self.creation_time = datetime.now(UTC)
+        self.last_activation_time = datetime.now(UTC)
+        self.activation_count = 0
+        self.fitness_score = 0.0
+
+
+        self.activation_threshold = 0.5
+        self.decay_rate = 0.95
+        self.refractory_period = 0.1
+        self.last_spike_time = 0.0
+
+        self.metadata = metadata or NeuralAtomMetadata(
+            name=key,
+            description="",
+            capabilities=[],
+        )
+        self._execution_history: list[dict[str, Any]] = []
+        self._semantic_embedding: list[float] | None = None
+
+    async def execute(self, input_data: Any = None) -> Any:
+        """Default execution returns stored value with optional input echo."""
+
+        return {
+            "key": self.key,
+            "value": self.value,
+            "input": input_data,
+        }
+
+    DEFAULT_VECTOR_DIM = 128
+
+    def __init__(
+        self,
+        metadata: NeuralAtomMetadata,
+        *,
+        key: str | None = None,
+        vector: np.ndarray | Sequence[float] | None = None,
+        bias: float = 0.0,
+        parent_keys: Sequence[str] | None = None,
+        children_keys: Sequence[str] | None = None,
+        birth_event: str | None = None,
+        lineage_metadata: dict[str, Any] | None = None,
+        vector_dim: int | None = None,
+    ):
         self.metadata = metadata
         self._execution_history: list[dict[str, Any]] = []
         self._semantic_embedding: list[float] | None = None
+
+        # Graph-facing attributes for NeuralStore compatibility
+        self.key = key or metadata.name
+        self.vector = self._initialize_vector(vector, vector_dim)
+        if self.vector is not None and vector_dim is not None:
+            if len(self.vector) != vector_dim:
+                raise ValueError(
+                    f"Vector length {len(self.vector)} does not match expected dimension {vector_dim}."
+                )
+        self.bias = float(bias)
+        self.parent_keys = list(parent_keys or [])
+        self.children_keys = list(children_keys or [])
+        self.birth_event = birth_event
+        self.lineage_metadata = dict(lineage_metadata or {})
+
+        # Genealogy helpers
+        self.depth = len(self.parent_keys)
+        self.signature = self._generate_darwin_godel_signature()
+        self.creation_time = datetime.now(UTC)
+        self.last_activation_time = self.creation_time
+        self.activation_count = 0
+        self.fitness_score = 0.0
+
+        # Neural dynamics defaults
+        self.activation_threshold = 0.5
+        self.decay_rate = 0.95
+        self.refractory_period = 0.1
+        self.last_spike_time = 0.0
 
     @abstractmethod
     async def execute(self, input_data: Any) -> Any:
         """Execute the Neural Atom's core functionality."""
 
-    @abstractmethod
-    def get_embedding(self) -> list[float]:
-        """Return semantic embedding for similarity search."""
 
-    @abstractmethod
+    def get_embedding(self) -> list[float]:
+        """Return (and cache) the semantic embedding for this atom."""
+
+        if self._semantic_embedding is None:
+            if isinstance(self.vector, np.ndarray):
+                self._semantic_embedding = self.vector.astype(np.float32).tolist()
+            else:
+                self._semantic_embedding = list(self.vector)
+        return self._semantic_embedding
+
     def can_handle(self, task_description: str) -> float:
-        """Return confidence score (0-1) for handling this task."""
+        """Heuristic confidence based on key and value overlap."""
+
+        if not task_description:
+            return 0.0
+
+        description = task_description.lower()
+        score = 0.0
+
+        if self.key.lower() in description:
+            score += 0.5
+
+        value_tokens: set[str] = set()
+        if isinstance(self.value, str):
+            value_tokens = set(self.value.lower().split())
+        elif isinstance(self.value, dict):
+            combined = " ".join(str(v).lower() for v in self.value.values())
+            value_tokens = set(combined.split())
+
+        if value_tokens:
+            if overlap := value_tokens & set(description.split()):
+                score += min(0.5, len(overlap) * 0.1)
+
+        return min(score, 1.0)
 
     async def safe_execute(self, input_data: Any) -> dict[str, Any]:
-        """Execute with comprehensive monitoring and performance tracking."""
+        """Execute with monitoring and update performance metrics."""
+
         start_time = time.time()
 
         try:
             result = await self.execute(input_data)
             execution_time = time.time() - start_time
-            success = True
+            self._update_performance_metrics(execution_time, True)
 
-            # Update performance metrics
-            self._update_performance_metrics(execution_time, success)
+            self._execution_history.append(
+                {
+                    "input": input_data,
+                    "result": result,
+                    "success": True,
+                    "execution_time": execution_time,
+                }
+            )
 
             return {
                 "result": result,
@@ -96,47 +240,105 @@ class NeuralAtom(ABC):
                 "metadata": self.metadata,
             }
 
-        except Exception as e:
+        except Exception as exc:  # pragma: no cover - defensive branch
             execution_time = time.time() - start_time
             self._update_performance_metrics(execution_time, False)
+
+            self._execution_history.append(
+                {
+                    "input": input_data,
+                    "result": None,
+                    "success": False,
+                    "error": str(exc),
+                    "execution_time": execution_time,
+                }
+            )
 
             return {
                 "result": None,
                 "success": False,
-                "error": str(e),
+                "error": str(exc),
                 "execution_time": execution_time,
                 "metadata": self.metadata,
             }
 
-    def _update_performance_metrics(self, execution_time: float, success: bool):
-        """Update metadata with performance information."""
-        # Update usage count
+    def _update_performance_metrics(self, execution_time: float, success: bool) -> None:
+        """Update metadata statistics based on execution outcome."""
+
         self.metadata.usage_count += 1
 
-        # Update average execution time using exponential moving average
         if self.metadata.avg_execution_time == 0.0:
             self.metadata.avg_execution_time = execution_time
         else:
-            alpha = 0.1  # Learning rate for exponential moving average
+            alpha = 0.1
             self.metadata.avg_execution_time = (
                 alpha * execution_time + (1 - alpha) * self.metadata.avg_execution_time
             )
 
-        # Update success rate using exponential moving average
         success_value = 1.0 if success else 0.0
-
         if self.metadata.usage_count == 1:
             self.metadata.success_rate = success_value
         else:
-            alpha = 0.1  # Learning rate for exponential moving average
+            alpha = 0.1
             self.metadata.success_rate = (
                 alpha * success_value + (1 - alpha) * self.metadata.success_rate
             )
 
     @property
     def average_latency_ms(self) -> float:
+
+        """Average execution latency in milliseconds."""
+
         """Return average execution latency in milliseconds."""
         return self.metadata.avg_execution_time * 1000.0
+
+    # --- Graph helper methods ---
+
+    def _initialize_vector(
+        self,
+        vector: np.ndarray | Sequence[float] | None,
+        vector_dim: int | None,
+    ) -> np.ndarray:
+        if vector is not None:
+            vector_array = np.asarray(vector, dtype=np.float32)
+            if vector_array.ndim != 1:
+                raise ValueError("NeuralAtom vector must be one-dimensional")
+            return vector_array
+
+        dim = vector_dim or self.DEFAULT_VECTOR_DIM
+        return np.zeros(dim, dtype=np.float32)
+
+    def _generate_darwin_godel_signature(self) -> str:
+        signature_data = f"{self.key}:{':'.join(sorted(self.parent_keys))}"
+        return hashlib.md5(signature_data.encode()).hexdigest()[:16]
+
+    def add_child(self, child_key: str) -> None:
+        if child_key not in self.children_keys:
+            self.children_keys.append(child_key)
+
+    def add_parent(self, parent_key: str) -> None:
+        if parent_key not in self.parent_keys:
+            self.parent_keys.append(parent_key)
+            self.depth = len(self.parent_keys)
+            self.signature = self._generate_darwin_godel_signature()
+
+    def update_fitness(self, performance_score: float, weight: float = 0.1) -> None:
+        self.fitness_score = (
+            1 - weight
+        ) * self.fitness_score + weight * performance_score
+
+    def get_genealogy_summary(self) -> dict[str, Any]:
+        return {
+            "key": self.key,
+            "signature": self.signature,
+            "depth": self.depth,
+            "parent_count": len(self.parent_keys),
+            "child_count": len(self.children_keys),
+            "creation_time": self.creation_time.isoformat(),
+            "activation_count": self.activation_count,
+            "fitness_score": self.fitness_score,
+            "lineage_metadata": self.lineage_metadata,
+        }
 
 
 # Legacy Neural Atom for backwards compatibility
@@ -202,25 +404,8 @@ class LegacyNeuralAtom(Generic[T]):
         self.bias = float(bias)
         self.active = True  # Whether this atom is currently active
 
-        # Genealogy bookkeeping for the Darwin-Gödel model
-        self.parent_keys: list[str] = parent_keys or []
-        self.children_keys: list[str] = []
-        self.birth_event = birth_event
-        self.lineage_metadata: dict[str, Any] = lineage_metadata or {}
 
-        # Enhanced genealogy features
-        self.depth = len(self.parent_keys)  # Genealogical depth
-        self.signature = self._generate_darwin_godel_signature()
-        self.creation_time = datetime.now(UTC)
-        self.last_activation_time = datetime.now(UTC)
-        self.activation_count = 0
-        self.fitness_score = 0.0  # For evolutionary selection
-
-        # Neural dynamics
-        self.activation_threshold = 0.5
-        self.decay_rate = 0.95
-        self.refractory_period = 0.1  # seconds
-        self.last_spike_time = 0.0
+        return self.metadata.avg_execution_time * 1000.0
 
     def _generate_darwin_godel_signature(self) -> str:
         """Generate unique Darwin-Gödel signature for genealogy tracking."""
@@ -281,7 +466,7 @@ class LegacyNeuralAtom(Generic[T]):
         }
 
     def __repr__(self) -> str:
-        return f"NeuralAtom(key='{self.key}', value={self.value})"
+        return f"NeuralAtom(key='{self.key}', value={self.value!r})"
 
 
 class NeuralStore:
@@ -431,7 +616,7 @@ class NeuralStore:
         incoming_signals = self._adjacency.T.dot(vectors)
 
         # 3. Apply biases and the non-linear activation function
-        activated_signals = activation_fn(incoming_signals + biases.squeeze())
+        activated_signals = activation_fn(incoming_signals + biases)
 
         # 4. Update the state of all atoms with their new activation vectors
         for i, key in enumerate(self._keys):
@@ -500,7 +685,7 @@ class NeuralStore:
 
         # Collect ancestors and descendants
         def collect_relatives(key: str, depth: int, direction: str):
-            if depth <= 0 or key not in self._atoms:
+            if depth < 0 or key not in self._atoms:
                 return
             atom = self._atoms[key]
             related_keys.add(key)
@@ -887,9 +1072,16 @@ def create_skill_atom(
         "metadata": metadata,
     }
 
+    atom_metadata = NeuralAtomMetadata(
+        name=f"skill:{skill_name}",
+        description=skill_description,
+        capabilities=list(metadata.get("capabilities", [])),
+        tags=set(metadata.get("tags", [])),
+    )
+
     return NeuralAtom(
-        key=f"skill:{skill_name}",
-        default_value=skill_data,
+        key=atom_metadata.name,
+        value=skill_data,
         vector=embedding_vector,
         parent_keys=[atom.key for atom in parent_atoms] if parent_atoms else [],
         birth_event=f"skill_creation:{skill_name}",
@@ -900,6 +1092,7 @@ def create_skill_atom(
             "complexity_score": metadata.get("complexity", 0.0),
             "generation": metadata.get("generation", 0),
         },
+        metadata=atom_metadata,
     )
 
 
@@ -925,9 +1118,16 @@ def create_memory_atom(
         "last_accessed": datetime.now(UTC).isoformat(),
     }
 
+    atom_metadata = NeuralAtomMetadata(
+        name=f"memory:{memory_type}:{memory_key}",
+        description=f"{memory_type} memory",
+        capabilities=[memory_type],
+        tags={memory_type, "memory"},
+    )
+
     return NeuralAtom(
-        key=f"memory:{memory_type}:{memory_key}",
-        default_value=memory_data,
+        key=atom_metadata.name,
+        value=memory_data,
         vector=embedding_vector,
         parent_keys=[atom.key for atom in parent_atoms] if parent_atoms else [],
         birth_event=f"memory_creation:{memory_type}",
@@ -937,6 +1137,7 @@ def create_memory_atom(
             "creation_method": "direct_storage",
             "content_hash": str(hash(str(content)))[:16] if content else "",
         },
+        metadata=atom_metadata,
     )
 
 
@@ -963,9 +1164,16 @@ def create_goal_atom(
         "completion_criteria": [],
     }
 
+    atom_metadata = NeuralAtomMetadata(
+        name=f"goal:{goal_id}",
+        description=goal_description,
+        capabilities=["goal_management"],
+        tags={"goal", "objective"},
+    )
+
     return NeuralAtom(
-        key=f"goal:{goal_id}",
-        default_value=goal_data,
+        key=atom_metadata.name,
+        value=goal_data,
         vector=embedding_vector,
         parent_keys=[atom.key for atom in parent_atoms] if parent_atoms else [],
         birth_event=f"goal_creation:{goal_id}",
@@ -975,46 +1183,51 @@ def create_goal_atom(
             "creation_method": "direct_assignment",
             "expected_difficulty": "unknown",
         },
+        metadata=atom_metadata,
     )
 
 
 # --- Helper Functions ---
 
 
-def create_memory_atom(
+def create_memory_chunk_atom(
     key: str, content: dict[str, Any], hierarchy_path: list[str], vector: np.ndarray
 ) -> NeuralAtom:
-    """
-    Creates a NeuralAtom specifically for storing a memory chunk.
-    This standardizes the structure of memory atoms for easier testing and retrieval.
-    """
+    """Create a structured memory atom for hierarchical storage."""
+
+    metadata = NeuralAtomMetadata(
+        name=key,
+        description="structured memory chunk",
+        capabilities=["memory"],
+        tags={"memory", "chunk"},
+    )
+
     return NeuralAtom(
         key=key,
-        default_value={"content": content, "hierarchy_path": hierarchy_path},
+        value={"content": content, "hierarchy_path": hierarchy_path},
         vector=vector,
         birth_event="memory_creation",
+        metadata=metadata,
     )
 
 
-class TextualMemoryAtom(NeuralAtom):
-    """
-    A concrete NeuralAtom for storing and retrieving a piece of text.
-
-    This class solves the TypeError that occurs when trying to instantiate
-    the abstract NeuralAtom class directly for memory storage.
-    """
+class TextualMemoryAtom(NeuralAtom[str]):
+    """Concrete neural atom for textual memory content."""
 
     def __init__(
         self, metadata: NeuralAtomMetadata, content: str, embedding_client: Any = None
-    ):
-        # Call parent constructor with just metadata (the abstract NeuralAtom(ABC) expects only this)
-        super().__init__(metadata)
-        # Store additional properties specific to textual memories
+    ) -> None:
+        super().__init__(
+            key=metadata.name,
+            value=content,
+            birth_event="memory_creation:textual",
+            lineage_metadata={"memory_type": "textual"},
+            metadata=metadata,
+        )
         self.content = content
-        self.key = metadata.name  # Add key attribute for NeuralStore compatibility
         self._embedding_client = embedding_client
         self._semantic_embedding = None
-        # Generate embedding on creation if client available
+
         if self._embedding_client:
             self._semantic_embedding = self.get_embedding()
 
@@ -1100,7 +1313,11 @@ class TextualMemoryAtom(NeuralAtom):
                 # Fallback to simple hash-based embedding
                 self._semantic_embedding = self._generate_simple_embedding(self.content)
 
-        return self._semantic_embedding
+        vector_array = np.asarray(self._semantic_embedding, dtype=np.float32)
+        if vector_array.ndim != 1:
+            raise ValueError("TextualMemoryAtom embeddings must be one-dimensional")
+        self.vector = vector_array
+        return list(vector_array)
 
     def can_handle(self, task_description: str) -> float:
         """

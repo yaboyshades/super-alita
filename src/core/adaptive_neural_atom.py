@@ -65,8 +65,12 @@ class AdaptiveNeuralAtom(NeuralAtom):
     """
 
     def __init__(self, metadata: NeuralAtomMetadata):
-        super().__init__(metadata)
-        self.key = metadata.name  # Required for NeuralStore compatibility
+        super().__init__(
+            key=metadata.name,
+            value={},
+            metadata=metadata,
+            birth_event="adaptive_atom:init",
+        )
 
         # Adaptive learning components
         self.learning_metrics = LearningMetrics()

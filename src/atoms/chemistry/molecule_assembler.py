@@ -37,8 +37,12 @@ def make_composite_skill(
 
     class _CompositeSkill(NeuralAtom):  # type: ignore[misc]
         def __init__(self, meta: NeuralAtomMetadata, steps: list[CompositePlanStep]):  # type: ignore[override]
-            super().__init__(meta)
-            self.key = meta.name
+            super().__init__(
+                key=meta.name,
+                value={"steps": [s.atom_id for s in steps]},
+                metadata=meta,
+                birth_event=f"composite_skill:{meta.name}",
+            )
             self.steps = steps
 
         async def execute(self, input_data: Any | None = None) -> Any:
