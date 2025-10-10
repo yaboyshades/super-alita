@@ -115,8 +115,14 @@ class ConversationPlugin(PluginInterface):
         self._genai_setup_attempted = False  # Track setup attempts
         self.response_templates = {
             "greeting": [
-                "Hello! I'm Super Alita, your neuro-symbolic cognitive agent. How can I help you today?",
-                "Hi there! I'm ready to chat, analyze, learn, and help with any questions you have.",
+                (
+                    "Hello! I'm Super Alita, your neuro-symbolic cognitive "
+                    "agent. How can I help you today?"
+                ),
+                (
+                    "Hi there! I'm ready to chat, analyze, learn, and help "
+                    "with any questions you have."
+                ),
                 "Greetings! I'm Super Alita - let's have an engaging conversation!",
             ],
             "farewell": [
@@ -157,7 +163,8 @@ class ConversationPlugin(PluginInterface):
         self.response_delay = config.get("response_delay_seconds", 1.0)
         self.enable_reasoning = config.get("enable_reasoning", True)
 
-        # Initialize orchestration components FIRST (before Gemini setup that might return early)
+        # Initialize orchestration components FIRST
+        # (before Gemini setup that might return early)
         # Router should ALWAYS be available since it's a simple class
         try:
             self.router = Router()
@@ -1371,9 +1378,27 @@ Response:"""
                         logger.info("✅ Memory-grounded response generated")
                     except Exception as e:
                         logger.error(f"LLM response generation failed: {e}")
-                        response_text = f"I understand you're asking about: {user_message}\n\nBased on my memory: {memory_context[:200] if memory_context else 'No relevant context found'}\n\nHowever, I encountered an LLM error: {str(e)[:100]}"
+                        mem_excerpt = (
+                            memory_context[:200]
+                            if memory_context
+                            else "No relevant context found"
+                        )
+                        response_text = (
+                            f"I understand you're asking about: {user_message}\n\n"
+                            f"Based on my memory: {mem_excerpt}\n\n"
+                            f"However, I encountered an LLM error: {str(e)[:100]}"
+                        )
                 else:
-                    response_text = f"I received your message: {user_message}\n\nMemory context: {memory_context if memory_context else 'Memory system not available'}\n\nLLM client not available for full response generation."
+                    mem_status = (
+                        memory_context
+                        if memory_context
+                        else "Memory system not available"
+                    )
+                    response_text = (
+                        f"I received your message: {user_message}\n\n"
+                        f"Memory context: {mem_status}\n\n"
+                        "LLM client not available for full response generation."
+                    )
 
                 # Store this interaction in memory for future reference and turn history
                 try:
