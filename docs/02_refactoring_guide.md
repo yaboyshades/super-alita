@@ -26,3 +26,4 @@ When refactoring these components:
 - [Architectural Overview](./01_architectural_overview.md)
 - [Agentic Workflows](./03_agentic_workflows.md)
 - [Advanced Development Patterns](./04_advanced_patterns.md)
+- [Unified Codebase Refactor Master Plan](./unified_codebase_refactor_plan.md)
