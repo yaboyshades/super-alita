@@ -13,13 +13,13 @@ Usage:
     python demo_eos_system.py [--spec <path>] [--verbose]
 """
 
+import argparse
 import asyncio
 import logging
 import sys
 import time
-import argparse
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 
 async def main():
@@ -72,7 +72,7 @@ async def main():
         context_analysis = await analyze_context(spec_path)
         cynefin = context_analysis['cynefin_classification']
         
-        print(f"📊 Cynefin Classification:")
+        print("📊 Cynefin Classification:")
         for domain, prob in cynefin['probabilities'].items():
             indicator = "🎯" if domain == cynefin['primary_domain'] else "  "
             print(f"   {indicator} {domain.capitalize()}: {prob:.1%}")
@@ -152,7 +152,7 @@ async def main():
                       all(integration_status.values()))
         
         print(f"🎯 Overall Status: {'✅ ALL SYSTEMS OPERATIONAL' if all_success else '⚠️  SOME ISSUES DETECTED'}")
-        print(f"🧪 Components Tested: 7/7")
+        print("🧪 Components Tested: 7/7")
         print(f"⚡ Integration Level: {'FULL' if all_success else 'PARTIAL'}")
         print(f"🚀 Ready for Production: {'YES' if all_success else 'NEEDS REVIEW'}")
         
@@ -172,7 +172,7 @@ async def main():
         return False
 
 
-def validate_eos_spec(spec_path: Path) -> Dict[str, Any]:
+def validate_eos_spec(spec_path: Path) -> dict[str, Any]:
     """Validate EOS specification"""
     try:
         from src.eos.schema import EOSSchema
@@ -191,7 +191,7 @@ def validate_eos_spec(spec_path: Path) -> Dict[str, Any]:
         return {'valid': True, 'errors': [], 'warnings': [], 'schema_version': '0.9'}
 
 
-async def analyze_context(spec_path: Path) -> Dict[str, Any]:
+async def analyze_context(spec_path: Path) -> dict[str, Any]:
     """Analyze problem context using Cynefin framework"""
     try:
         from src.eos.context import ContextAnalyzer
@@ -239,7 +239,7 @@ async def analyze_context(spec_path: Path) -> Dict[str, Any]:
         }
 
 
-async def demo_state_machine() -> Dict[str, Any]:
+async def demo_state_machine() -> dict[str, Any]:
     """Demo state machine functionality"""
     try:
         from src.eos.state_machine import EOSStateMachine, StateType
@@ -288,10 +288,10 @@ async def demo_state_machine() -> Dict[str, Any]:
         }
 
 
-async def demo_ladder_operators() -> Dict[str, Dict[str, Any]]:
+async def demo_ladder_operators() -> dict[str, dict[str, Any]]:
     """Demo LADDER operators"""
     try:
-        from src.eos.operators import LadderOperators, OperatorType, OperatorContext
+        from src.eos.operators import LadderOperators, OperatorContext, OperatorType
         
         config = {"ladder": {"max_lift_depth": 2}}
         operators = LadderOperators(config)
@@ -335,7 +335,7 @@ async def demo_ladder_operators() -> Dict[str, Dict[str, Any]]:
         }
 
 
-async def demo_moe_routing() -> Dict[str, Any]:
+async def demo_moe_routing() -> dict[str, Any]:
     """Demo Mixture-of-Experts routing"""
     try:
         from src.eos.routing import MoERouter
@@ -395,7 +395,7 @@ async def demo_moe_routing() -> Dict[str, Any]:
         }
 
 
-async def demo_full_orchestration(spec_path: Path) -> Dict[str, Any]:
+async def demo_full_orchestration(spec_path: Path) -> dict[str, Any]:
     """Demo complete orchestration"""
     try:
         from src.eos.orchestrator import run_eos_orchestration
@@ -425,7 +425,7 @@ async def demo_full_orchestration(spec_path: Path) -> Dict[str, Any]:
         }
 
 
-def validate_integration() -> Dict[str, bool]:
+def validate_integration() -> dict[str, bool]:
     """Validate integration with existing systems"""
     integrations = {
         "Constitutional Rules": False,
@@ -444,7 +444,9 @@ def validate_integration() -> Dict[str, bool]:
     
     # Check telemetry integration
     try:
-        from src.performance_monitoring.telemetry.opentelemetry_config import OpenTelemetryCollector
+        from src.performance_monitoring.telemetry.opentelemetry_config import (
+            OpenTelemetryCollector,
+        )
         integrations["OpenTelemetry Monitoring"] = True
     except ImportError:
         pass

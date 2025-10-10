@@ -562,3 +562,20 @@ Sample output:
   "timestamp": "2024-05-10T14:23:52.002771"
 }
 ```
+
+## Unified Consciousness Bootstrap
+
+To launch the unified consciousness runtime from a single command, ensure dependencies are installed and run:
+
+```bash
+python unified_consciousness.py --config configs/unified_consciousness.yaml
+```
+
+Use `--run-forever` to keep monitoring loops active or execute `./start_unified_consciousness.sh` for Redis auto-start and environment setup.
+To launch the advanced consciousness stack with all exploratory capabilities enabled, use:
+
+```bash
+./start_advanced_consciousness.sh
+```
+
+This script boots using `configs/unified_consciousness_advanced.yaml`, enabling tribal knowledge extraction, living architecture, temporal forecasting, philosophical diagnostics, and the architectural immune system.

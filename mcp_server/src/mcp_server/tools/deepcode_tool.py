@@ -40,7 +40,7 @@ async def execute(params: dict[str, Any]) -> dict[str, Any]:
     repo_path = Path(params.get("repo_path", "."))
     dry_run = bool(params.get("dry_run", True))
     context_window = int(params.get("context_window", 16000))
-    
+
     # Enhanced parameters for new capabilities
     description = params.get("description", "")
     paper_content = params.get("paper_content", "")
@@ -63,7 +63,7 @@ async def execute(params: dict[str, Any]) -> dict[str, Any]:
         return await _handle_legacy_generation(action, prompt, repo_path, dry_run)
     else:
         return {
-            "success": False, 
+            "success": False,
             "error": f"Unknown action: {action}. Supported: generate, analyze, text2web, text2backend, paper2code"
         }
 
@@ -82,7 +82,7 @@ async def _handle_text2web(description: str, framework: str, repo_path: Path, dr
             "framework": framework,
             "message": f"Would generate {framework} frontend from: {description[:100]}..."
         }
-    
+
     # In production, this would call actual DeepCode Text2Web service
     return {
         "success": True,
@@ -99,12 +99,12 @@ async def _handle_text2backend(description: str, architecture: str, repo_path: P
         return {
             "success": True,
             "dry_run": True,
-            "action": "text2backend", 
+            "action": "text2backend",
             "description": description,
             "architecture": architecture,
             "message": f"Would generate {architecture} backend from: {description[:100]}..."
         }
-    
+
     # In production, this would call actual DeepCode Text2Backend service
     return {
         "success": True,
@@ -125,7 +125,7 @@ async def _handle_paper2code(paper_content: str, repo_path: Path, dry_run: bool)
             "paper_content_length": len(paper_content),
             "message": f"Would implement research paper ({len(paper_content)} chars)..."
         }
-    
+
     # In production, this would call actual DeepCode Paper2Code service
     return {
         "success": True,
@@ -145,7 +145,7 @@ async def _handle_legacy_generation(action: str, prompt: str, repo_path: Path, d
             "prompt": prompt[:100] + "..." if len(prompt) > 100 else prompt,
             "message": f"Would {action} with prompt: {prompt[:50]}..."
         }
-    
+
     # Legacy implementation - would call original DeepCode service
     return {
         "success": True,

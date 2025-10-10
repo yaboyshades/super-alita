@@ -5,13 +5,11 @@ Validates compliance against the six-article constitutional framework
 and provides real-time scoring and violation detection.
 """
 
-import asyncio
-import json
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional, Tuple
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,25 +30,25 @@ class ComplianceViolation:
     article: ConstitutionalArticle
     severity: str  # critical, high, medium, low
     description: str
-    location: Optional[str] = None
-    suggestion: Optional[str] = None
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    location: str | None = None
+    suggestion: str | None = None
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
 class ComplianceScore:
     """Constitutional compliance score result."""
     overall_score: float
-    article_scores: Dict[ConstitutionalArticle, float]
-    violations: List[ComplianceViolation]
+    article_scores: dict[ConstitutionalArticle, float]
+    violations: list[ComplianceViolation]
     threshold: float = 0.75
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def is_compliant(self) -> bool:
         return self.overall_score >= self.threshold
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "overall_score": self.overall_score,
             "article_scores": {k.value: v for k, v in self.article_scores.items()},
@@ -80,14 +78,14 @@ class ConstitutionalEngine:
     def __init__(self, compliance_threshold: float = 0.75):
         self.threshold = compliance_threshold
         self.validation_rules = self._initialize_validation_rules()
-        self.compliance_history: List[ComplianceScore] = []
+        self.compliance_history: list[ComplianceScore] = []
         
         logger.info(f"Constitutional Engine initialized with threshold {compliance_threshold}")
 
     async def validate_compliance(
         self,
-        target_data: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
+        target_data: dict[str, Any],
+        context: dict[str, Any] | None = None
     ) -> ComplianceScore:
         """Validate constitutional compliance for given data."""
         violations = []
@@ -123,8 +121,8 @@ class ConstitutionalEngine:
     async def validate_code_change(
         self,
         file_path: str,
-        changes: List[str],
-        metadata: Optional[Dict[str, Any]] = None
+        changes: list[str],
+        metadata: dict[str, Any] | None = None
     ) -> ComplianceScore:
         """Validate constitutional compliance for code changes."""
         target_data = {
@@ -139,7 +137,7 @@ class ConstitutionalEngine:
     async def validate_commit(
         self,
         commit_message: str,
-        changed_files: List[str],
+        changed_files: list[str],
         diff_data: str
     ) -> ComplianceScore:
         """Validate constitutional compliance for git commits."""
@@ -152,9 +150,9 @@ class ConstitutionalEngine:
         
         return await self.validate_compliance(target_data)
 
-    def get_compliance_trend(self, hours: int = 24) -> Dict[str, Any]:
+    def get_compliance_trend(self, hours: int = 24) -> dict[str, Any]:
         """Get compliance trend analysis."""
-        cutoff_time = datetime.now(timezone.utc).timestamp() - (hours * 3600)
+        cutoff_time = datetime.now(UTC).timestamp() - (hours * 3600)
         recent_scores = [
             score for score in self.compliance_history
             if score.timestamp.timestamp() > cutoff_time
@@ -176,9 +174,9 @@ class ConstitutionalEngine:
     async def _validate_article(
         self,
         article: ConstitutionalArticle,
-        target_data: Dict[str, Any],
-        context: Dict[str, Any]
-    ) -> Tuple[float, List[ComplianceViolation]]:
+        target_data: dict[str, Any],
+        context: dict[str, Any]
+    ) -> tuple[float, list[ComplianceViolation]]:
         """Validate a specific constitutional article."""
         violations = []
         
@@ -198,10 +196,10 @@ class ConstitutionalEngine:
         
         return score, violations
 
-    def _calculate_overall_score(self, article_scores: Dict[ConstitutionalArticle, float]) -> float:
+    def _calculate_overall_score(self, article_scores: dict[ConstitutionalArticle, float]) -> float:
         """Calculate weighted overall compliance score."""
         # Equal weighting for all articles
-        weights = {article: 1.0 for article in ConstitutionalArticle}
+        weights = dict.fromkeys(ConstitutionalArticle, 1.0)
         
         weighted_sum = sum(
             article_scores[article] * weights[article]
@@ -221,7 +219,7 @@ class ConstitutionalEngine:
         }
         return deductions.get(severity, 0.1)
 
-    def _calculate_trend(self, scores: List[float]) -> str:
+    def _calculate_trend(self, scores: list[float]) -> str:
         """Calculate compliance trend from recent scores."""
         if len(scores) < 2:
             return "insufficient_data"
@@ -236,7 +234,7 @@ class ConstitutionalEngine:
         else:
             return "stable"
 
-    def _initialize_validation_rules(self) -> Dict[ConstitutionalArticle, List]:
+    def _initialize_validation_rules(self) -> dict[ConstitutionalArticle, list]:
         """Initialize constitutional validation rules."""
         return {
             ConstitutionalArticle.ARTICLE_I_LIBRARY_FIRST: [
@@ -265,7 +263,7 @@ class ConstitutionalEngine:
             ]
         }
 
-    async def _validate_library_usage(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_library_usage(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate Article I: Library-First compliance."""
         # Check for custom implementations where libraries exist
         if data.get("type") == "code_change":
@@ -280,14 +278,14 @@ class ConstitutionalEngine:
                     )
         return None
 
-    async def _validate_dependency_management(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_dependency_management(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate dependency management practices."""
         # Check for proper dependency declaration
         if data.get("file_path", "").endswith(("requirements.txt", "package.json", "pyproject.toml")):
             return None  # Dependency files are compliant
         return None
 
-    async def _validate_test_coverage(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_test_coverage(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate Article II: Test-First compliance."""
         if data.get("type") == "code_change":
             file_path = data.get("file_path", "")
@@ -301,12 +299,12 @@ class ConstitutionalEngine:
                 )
         return None
 
-    async def _validate_test_quality(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_test_quality(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate test quality and coverage."""
         # Additional test quality checks would go here
         return None
 
-    async def _validate_code_complexity(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_code_complexity(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate Article III: Simplicity compliance."""
         if data.get("type") == "code_change":
             changes = data.get("changes", [])
@@ -321,19 +319,19 @@ class ConstitutionalEngine:
                     )
         return None
 
-    async def _validate_interface_simplicity(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_interface_simplicity(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate interface simplicity."""
         return None
 
-    async def _validate_integration_tests(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_integration_tests(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate Article IV: Integration-First compliance."""
         return None
 
-    async def _validate_api_contracts(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_api_contracts(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate API contract adherence."""
         return None
 
-    async def _validate_documentation(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_documentation(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate Article V: Clarity compliance."""
         if data.get("type") == "code_change":
             changes = data.get("changes", [])
@@ -347,15 +345,15 @@ class ConstitutionalEngine:
                     )
         return None
 
-    async def _validate_naming_conventions(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_naming_conventions(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate naming conventions for clarity."""
         return None
 
-    async def _validate_version_compatibility(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_version_compatibility(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate Article VI: Versioning compliance."""
         return None
 
-    async def _validate_breaking_changes(self, data: Dict[str, Any], context: Dict[str, Any]) -> Optional[ComplianceViolation]:
+    async def _validate_breaking_changes(self, data: dict[str, Any], context: dict[str, Any]) -> ComplianceViolation | None:
         """Validate breaking change management."""
         if data.get("type") == "commit":
             message = data.get("message", "").lower()

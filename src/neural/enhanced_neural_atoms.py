@@ -61,7 +61,7 @@ except ImportError:
 
 # Import base Atom class
 try:
-    from .atom import Atom, ATOM_NS
+    from .atom import ATOM_NS, Atom
 except ImportError:
     # Fallback if import fails
     ATOM_NS = uuid.UUID("d6e2a8b1-4c7f-4e0a-8b9c-1d2e3f4a5b6c")

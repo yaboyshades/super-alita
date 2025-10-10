@@ -6,13 +6,12 @@ for continuous integration pipelines.
 """
 
 import asyncio
-import subprocess
 import json
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
 import logging
+import subprocess
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +23,9 @@ class QualityGateResult:
     passed: bool
     score: float
     threshold: float
-    violations: List[str]
+    violations: list[str]
     execution_time_ms: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     timestamp: datetime
 
 
@@ -38,9 +37,9 @@ class ConstitutionalGate:
         self.threshold = threshold
         self.name = "constitutional_compliance"
         
-    async def validate(self, context: Dict[str, Any]) -> QualityGateResult:
+    async def validate(self, context: dict[str, Any]) -> QualityGateResult:
         """Validate constitutional compliance."""
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         
         try:
             # Extract validation data from context
@@ -53,7 +52,7 @@ class ConstitutionalGate:
             else:
                 compliance_score = await self.constitutional_engine.validate_compliance(context)
             
-            execution_time = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
             
             violations = [v.description for v in compliance_score.violations]
             
@@ -69,7 +68,7 @@ class ConstitutionalGate:
             )
             
         except Exception as e:
-            execution_time = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
             logger.error(f"Constitutional gate validation failed: {e}")
             
             return QualityGateResult(
@@ -87,14 +86,14 @@ class ConstitutionalGate:
 class PerformanceGate:
     """Performance quality gate."""
     
-    def __init__(self, performance_monitor, thresholds: Dict[str, float]):
+    def __init__(self, performance_monitor, thresholds: dict[str, float]):
         self.performance_monitor = performance_monitor
         self.thresholds = thresholds
         self.name = "performance_benchmarks"
         
-    async def validate(self, context: Dict[str, Any]) -> QualityGateResult:
+    async def validate(self, context: dict[str, Any]) -> QualityGateResult:
         """Validate performance benchmarks."""
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         
         try:
             summary = self.performance_monitor.get_performance_summary()
@@ -117,7 +116,7 @@ class PerformanceGate:
             success_score = success_rate
             overall_score = (response_score + success_score) / 2
             
-            execution_time = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
             
             return QualityGateResult(
                 gate_name=self.name,
@@ -131,7 +130,7 @@ class PerformanceGate:
             )
             
         except Exception as e:
-            execution_time = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
             logger.error(f"Performance gate validation failed: {e}")
             
             return QualityGateResult(
@@ -149,13 +148,13 @@ class PerformanceGate:
 class SecurityGate:
     """Security quality gate."""
     
-    def __init__(self, scan_config: Dict[str, Any]):
+    def __init__(self, scan_config: dict[str, Any]):
         self.scan_config = scan_config
         self.name = "security_scan"
         
-    async def validate(self, context: Dict[str, Any]) -> QualityGateResult:
+    async def validate(self, context: dict[str, Any]) -> QualityGateResult:
         """Validate security requirements."""
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         
         try:
             violations = []
@@ -174,7 +173,7 @@ class SecurityGate:
             critical_violations = sum(1 for v in violations if "critical" in v.lower())
             score = max(0.0, 1.0 - (critical_violations * 0.5) - (len(violations) * 0.1))
             
-            execution_time = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
             
             return QualityGateResult(
                 gate_name=self.name,
@@ -188,7 +187,7 @@ class SecurityGate:
             )
             
         except Exception as e:
-            execution_time = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
             logger.error(f"Security gate validation failed: {e}")
             
             return QualityGateResult(
@@ -202,7 +201,7 @@ class SecurityGate:
                 timestamp=start_time
             )
     
-    async def _scan_dependencies(self, context: Dict[str, Any]) -> List[str]:
+    async def _scan_dependencies(self, context: dict[str, Any]) -> list[str]:
         """Scan dependencies for security vulnerabilities."""
         violations = []
         
@@ -226,7 +225,7 @@ class SecurityGate:
             
         return violations
     
-    async def _scan_code(self, context: Dict[str, Any]) -> List[str]:
+    async def _scan_code(self, context: dict[str, Any]) -> list[str]:
         """Scan code for security issues."""
         violations = []
         
@@ -238,12 +237,12 @@ class SecurityGate:
                 
         return violations
     
-    async def _check_python_security(self, file_path: str) -> List[str]:
+    async def _check_python_security(self, file_path: str) -> list[str]:
         """Check Python file for basic security issues."""
         violations = []
         
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 content = f.read()
                 
             # Basic security checks
@@ -269,17 +268,17 @@ class QualityGatePipeline:
     """
     
     def __init__(self):
-        self.gates: List = []
-        self.execution_history: List[Dict[str, Any]] = []
+        self.gates: list = []
+        self.execution_history: list[dict[str, Any]] = []
         
     def add_gate(self, gate) -> None:
         """Add a quality gate to the pipeline."""
         self.gates.append(gate)
         logger.info(f"Added quality gate: {gate.name}")
         
-    async def execute_pipeline(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_pipeline(self, context: dict[str, Any]) -> dict[str, Any]:
         """Execute all quality gates in the pipeline."""
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         results = []
         overall_passed = True
         
@@ -309,7 +308,7 @@ class QualityGatePipeline:
             if not gate_result.passed:
                 overall_passed = False
                 
-        execution_time = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+        execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
         
         # Create pipeline execution summary
         pipeline_result = {
@@ -349,11 +348,11 @@ class QualityGatePipeline:
         
         return pipeline_result
     
-    def get_execution_history(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_execution_history(self, limit: int = 10) -> list[dict[str, Any]]:
         """Get recent pipeline execution history."""
         return self.execution_history[-limit:]
     
-    def get_gate_statistics(self) -> Dict[str, Any]:
+    def get_gate_statistics(self) -> dict[str, Any]:
         """Get statistics about gate performance."""
         if not self.execution_history:
             return {"status": "no_data"}

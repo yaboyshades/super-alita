@@ -11,7 +11,6 @@ This module extends the existing LADDER planner with:
 - Predictive task scheduling and resource optimization
 """
 
-import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
@@ -62,14 +61,9 @@ except ImportError:
 
 # Import base LADDER classes
 try:
-    from .planner import (
-        LadderPlanner,
-        PlannerConfig,
-        ExecutionContext,
-        ExecutionResult
-    )
-    from .models.task import Task, TaskStatus
     from .graph.task_graph import TaskGraph
+    from .models.task import Task, TaskStatus
+    from .planner import ExecutionContext, ExecutionResult, LadderPlanner, PlannerConfig
     LADDER_AVAILABLE = True
 except ImportError:
     LADDER_AVAILABLE = False

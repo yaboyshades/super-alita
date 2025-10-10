@@ -5,14 +5,13 @@ Enhanced constitutional compliance system with advanced pattern recognition,
 machine learning-based trend analysis, and intelligent violation prediction.
 """
 
-import asyncio
-import re
-import json
-from datetime import datetime, timezone, timedelta
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple, Pattern
-from pathlib import Path
 import logging
+import re
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from re import Pattern
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ class ViolationPattern:
     description: str
     article: str
     pattern_type: str  # regex, ast, semantic, behavioral
-    pattern_data: Dict[str, Any]
+    pattern_data: dict[str, Any]
     severity: str  # low, medium, high, critical
     confidence_threshold: float = 0.7
     frequency_weight: float = 1.0
@@ -41,9 +40,9 @@ class TrendAnalysis:
     trend_direction: str  # improving, stable, degrading
     trend_strength: float  # 0.0 to 1.0
     confidence: float
-    key_factors: List[str]
-    predictions: Dict[str, float]
-    recommendations: List[str]
+    key_factors: list[str]
+    predictions: dict[str, float]
+    recommendations: list[str]
 
 
 @dataclass
@@ -51,10 +50,10 @@ class ComplianceRiskAssessment:
     """Risk assessment for constitutional compliance."""
     
     overall_risk_score: float  # 0.0 to 1.0
-    risk_categories: Dict[str, float]
-    high_risk_areas: List[str]
-    mitigation_strategies: List[str]
-    predicted_violations: List[Dict[str, Any]]
+    risk_categories: dict[str, float]
+    high_risk_areas: list[str]
+    mitigation_strategies: list[str]
+    predicted_violations: list[dict[str, Any]]
     confidence: float
 
 
@@ -71,19 +70,19 @@ class AdvancedConstitutionalValidator:
         self.performance_monitor = performance_monitor
         
         # Pattern matching system
-        self.violation_patterns: Dict[str, ViolationPattern] = {}
-        self.compiled_regex_patterns: Dict[str, Pattern] = {}
+        self.violation_patterns: dict[str, ViolationPattern] = {}
+        self.compiled_regex_patterns: dict[str, Pattern] = {}
         
         # Trend analysis
-        self.compliance_history: List[Dict[str, Any]] = []
-        self.trend_analyses: Dict[str, TrendAnalysis] = {}
+        self.compliance_history: list[dict[str, Any]] = []
+        self.trend_analyses: dict[str, TrendAnalysis] = {}
         
         # Risk assessment
-        self.risk_assessments: List[ComplianceRiskAssessment] = []
+        self.risk_assessments: list[ComplianceRiskAssessment] = []
         
         # ML models (simplified)
-        self.pattern_frequency: Dict[str, int] = {}
-        self.violation_correlations: Dict[str, List[str]] = {}
+        self.pattern_frequency: dict[str, int] = {}
+        self.violation_correlations: dict[str, list[str]] = {}
         
         # Initialize patterns
         self._initialize_violation_patterns()
@@ -109,8 +108,8 @@ class AdvancedConstitutionalValidator:
         self,
         code_content: str,
         file_path: str,
-        context: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Analyze code for constitutional violation patterns."""
         violations = []
         
@@ -141,9 +140,9 @@ class AdvancedConstitutionalValidator:
     async def perform_trend_analysis(
         self,
         time_period_days: int = 30
-    ) -> Dict[str, TrendAnalysis]:
+    ) -> dict[str, TrendAnalysis]:
         """Perform comprehensive trend analysis of constitutional compliance."""
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_period_days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=time_period_days)
         
         # Filter compliance history
         recent_history = [
@@ -215,10 +214,10 @@ class AdvancedConstitutionalValidator:
 
     async def generate_intelligent_recommendations(
         self,
-        violations: List[Dict[str, Any]],
-        trends: Dict[str, TrendAnalysis],
+        violations: list[dict[str, Any]],
+        trends: dict[str, TrendAnalysis],
         risk_assessment: ComplianceRiskAssessment
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate intelligent recommendations based on analysis."""
         recommendations = []
         
@@ -242,10 +241,10 @@ class AdvancedConstitutionalValidator:
         
         return recommendations[:10]  # Top 10 recommendations
 
-    def update_compliance_history(self, compliance_data: Dict[str, Any]) -> None:
+    def update_compliance_history(self, compliance_data: dict[str, Any]) -> None:
         """Update compliance history for trend analysis."""
         compliance_record = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "overall_score": compliance_data.get("overall_score", 0.0),
             "article_scores": compliance_data.get("article_scores", {}),
             "violations": compliance_data.get("violations", []),
@@ -258,7 +257,7 @@ class AdvancedConstitutionalValidator:
         if len(self.compliance_history) > 1000:
             self.compliance_history = self.compliance_history[-1000:]
 
-    def get_pattern_statistics(self) -> Dict[str, Any]:
+    def get_pattern_statistics(self) -> dict[str, Any]:
         """Get violation pattern statistics."""
         total_matches = sum(self.pattern_frequency.values())
         
@@ -384,8 +383,8 @@ class AdvancedConstitutionalValidator:
         pattern: ViolationPattern,
         code_content: str,
         file_path: str,
-        context: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Apply a violation pattern to code content."""
         matches = []
         
@@ -403,7 +402,7 @@ class AdvancedConstitutionalValidator:
         pattern: ViolationPattern,
         code_content: str,
         file_path: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Apply regex pattern matching."""
         matches = []
         
@@ -429,8 +428,8 @@ class AdvancedConstitutionalValidator:
         pattern: ViolationPattern,
         code_content: str,
         file_path: str,
-        context: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Apply semantic pattern matching."""
         matches = []
         check_type = pattern.pattern_data.get("check_type")
@@ -461,7 +460,7 @@ class AdvancedConstitutionalValidator:
         pattern: ViolationPattern,
         code_content: str,
         file_path: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Apply AST-based pattern matching."""
         matches = []
         
@@ -493,9 +492,9 @@ class AdvancedConstitutionalValidator:
 
     async def _analyze_compliance_trend(
         self,
-        history: List[Dict[str, Any]],
+        history: list[dict[str, Any]],
         metric_name: str
-    ) -> Optional[TrendAnalysis]:
+    ) -> TrendAnalysis | None:
         """Analyze compliance trend for a metric."""
         if len(history) < 5:
             return None
@@ -544,17 +543,17 @@ class AdvancedConstitutionalValidator:
 
     async def _analyze_article_trend(
         self,
-        history: List[Dict[str, Any]],
+        history: list[dict[str, Any]],
         article: str
-    ) -> Optional[TrendAnalysis]:
+    ) -> TrendAnalysis | None:
         """Analyze trend for specific constitutional article."""
         # Simplified article trend analysis
         return None  # Would implement article-specific trend analysis
 
     async def _analyze_pattern_trends(
         self,
-        history: List[Dict[str, Any]]
-    ) -> Optional[TrendAnalysis]:
+        history: list[dict[str, Any]]
+    ) -> TrendAnalysis | None:
         """Analyze violation pattern trends."""
         # Simplified pattern trend analysis
         return None  # Would implement pattern frequency trend analysis
@@ -574,7 +573,7 @@ class AdvancedConstitutionalValidator:
         
         return base_risk + violation_risk
 
-    async def _assess_pattern_risks(self) -> Dict[str, float]:
+    async def _assess_pattern_risks(self) -> dict[str, float]:
         """Assess risks based on violation patterns."""
         pattern_risks = {}
         
@@ -588,7 +587,7 @@ class AdvancedConstitutionalValidator:
         
         return pattern_risks
 
-    async def _predict_future_violations(self) -> List[Dict[str, Any]]:
+    async def _predict_future_violations(self) -> list[dict[str, Any]]:
         """Predict likely future violations."""
         predictions = []
         
@@ -607,7 +606,7 @@ class AdvancedConstitutionalValidator:
         
         return predictions
 
-    def _calculate_risk_confidence(self, risk_scores: Dict[str, float]) -> float:
+    def _calculate_risk_confidence(self, risk_scores: dict[str, float]) -> float:
         """Calculate confidence in risk assessment."""
         # Simplified confidence based on data availability
         data_points = len(self.compliance_history)
@@ -618,8 +617,8 @@ class AdvancedConstitutionalValidator:
 
     async def _generate_violation_recommendations(
         self,
-        violations: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        violations: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Generate recommendations based on violations."""
         recommendations = []
         
@@ -653,8 +652,8 @@ class AdvancedConstitutionalValidator:
 
     async def _generate_trend_recommendations(
         self,
-        trends: Dict[str, TrendAnalysis]
-    ) -> List[Dict[str, Any]]:
+        trends: dict[str, TrendAnalysis]
+    ) -> list[dict[str, Any]]:
         """Generate recommendations based on trends."""
         recommendations = []
         
@@ -674,7 +673,7 @@ class AdvancedConstitutionalValidator:
     async def _generate_risk_recommendations(
         self,
         risk_assessment: ComplianceRiskAssessment
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate recommendations based on risk assessment."""
         recommendations = []
         
@@ -690,7 +689,7 @@ class AdvancedConstitutionalValidator:
         
         return recommendations
 
-    async def _get_mitigation_strategies(self, article: str) -> List[str]:
+    async def _get_mitigation_strategies(self, article: str) -> list[str]:
         """Get mitigation strategies for constitutional article."""
         strategies = {
             "article_i": ["Review library usage", "Update dependency guidelines"],

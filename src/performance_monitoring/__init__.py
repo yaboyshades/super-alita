@@ -20,9 +20,9 @@ Constitutional Compliance:
 - Article VI: Versioning - Proper change management and versioning
 """
 
+from .core.constitutional_engine import ConstitutionalEngine
 from .core.performance_monitor import PerformanceMonitor
 from .core.telemetry_bridge import TelemetryBridge
-from .core.constitutional_engine import ConstitutionalEngine
 from .dashboard.dashboard_interface import DashboardInterface
 from .optimization import create_optimization_suite
 

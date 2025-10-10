@@ -21,7 +21,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import click
 from rich.console import Console
@@ -38,7 +38,7 @@ from rich.table import Table
 sys.path.append(str(Path(__file__).parent / "src"))
 
 try:
-    from src.eos.mangle_integration import EOSMangleOrchestrator, EOS_AVAILABLE
+    from src.eos.mangle_integration import EOS_AVAILABLE, EOSMangleOrchestrator
     from src.unified_intelligence import UnifiedIntelligenceEngine
 except ImportError as e:
     print(f"⚠️  Import warning: {e}")
@@ -139,7 +139,7 @@ class SystemShowcase:
         
         return table
     
-    async def demonstrate_eos_orchestration(self) -> Dict[str, Any]:
+    async def demonstrate_eos_orchestration(self) -> dict[str, Any]:
         """Demonstrate EOS orchestration capabilities."""
         console.print("\n🧠 [bold]EOS Orchestration Demonstration[/bold]")
         
@@ -187,7 +187,7 @@ class SystemShowcase:
         console.print("✅ EOS orchestration demonstration completed successfully!")
         return results
     
-    async def demonstrate_mangle_reasoning(self) -> Dict[str, Any]:
+    async def demonstrate_mangle_reasoning(self) -> dict[str, Any]:
         """Demonstrate Mangle reasoning integration."""
         console.print("\n🔗 [bold]Mangle Reasoning Integration[/bold]")
         
@@ -236,7 +236,7 @@ class SystemShowcase:
         console.print("✅ Mangle reasoning integration demonstrated successfully!")
         return results
     
-    async def demonstrate_unified_intelligence(self) -> Dict[str, Any]:
+    async def demonstrate_unified_intelligence(self) -> dict[str, Any]:
         """Demonstrate unified intelligence coordination."""
         console.print("\n🚀 [bold]Unified Intelligence Coordination[/bold]")
         
@@ -285,7 +285,7 @@ class SystemShowcase:
         console.print("✅ Unified intelligence coordination demonstrated!")
         return results
     
-    def _mock_eos_demo(self) -> Dict[str, Any]:
+    def _mock_eos_demo(self) -> dict[str, Any]:
         """Mock demonstration when EOS components unavailable."""
         return {
             'schema_validation': {'status': 'mocked', 'note': 'Would validate schemas'},
@@ -293,7 +293,7 @@ class SystemShowcase:
             'ladder_ops': {'status': 'mocked', 'note': 'Would execute LADDER ops'}
         }
     
-    def display_results_summary(self, all_results: Dict[str, Any]):
+    def display_results_summary(self, all_results: dict[str, Any]):
         """Display comprehensive results summary."""
         console.print("\n📊 [bold]Demonstration Results Summary[/bold]")
         
@@ -319,7 +319,7 @@ class SystemShowcase:
         console.print(table)
         
         # Summary statistics
-        console.print(f"\n📈 [bold]Overall System Score: 98.7/100[/bold]")
+        console.print("\n📈 [bold]Overall System Score: 98.7/100[/bold]")
         console.print("🏆 All integration points operational")
         console.print("🛡️ Zero constitutional violations detected")
         console.print("⚡ Performance exceeding all SLA targets")

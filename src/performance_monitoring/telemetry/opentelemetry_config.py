@@ -9,17 +9,16 @@ Implements the comprehensive telemetry infrastructure with:
 - Context propagation across async boundaries
 """
 
+import asyncio
 import json
 import logging
 import time
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import wraps
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import uuid4
-
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -30,16 +29,16 @@ class TelemetrySpan:
     
     trace_id: str
     span_id: str
-    parent_span_id: Optional[str]
+    parent_span_id: str | None
     component: str
     operation: str
     start_time: float
-    end_time: Optional[float] = None
-    duration_ms: Optional[float] = None
+    end_time: float | None = None
+    duration_ms: float | None = None
     status_code: str = "OK"  # OK, ERROR, TIMEOUT, CANCELLED
-    error_type: Optional[str] = None
-    error_message: Optional[str] = None
-    tags: Optional[Dict[str, Any]] = None
+    error_type: str | None = None
+    error_message: str | None = None
+    tags: dict[str, Any] | None = None
     
     def __post_init__(self):
         if self.tags is None:
@@ -49,7 +48,7 @@ class TelemetrySpan:
         """Convert span to JSON log format with mandatory fields."""
         log_data = {
             "timestamp": datetime.fromtimestamp(
-                self.start_time, timezone.utc
+                self.start_time, UTC
             ).isoformat(),
             "trace_id": self.trace_id,
             "span_id": self.span_id,
@@ -83,23 +82,23 @@ class TelemetryContext:
         self._context = {}
         self._span_stack = []
     
-    def get_current_trace_id(self) -> Optional[str]:
+    def get_current_trace_id(self) -> str | None:
         """Get current trace ID from context."""
         return self._context.get("trace_id")
     
-    def get_current_span_id(self) -> Optional[str]:
+    def get_current_span_id(self) -> str | None:
         """Get current span ID from context."""
         if self._span_stack:
             return self._span_stack[-1]
         return None
     
-    def push_span(self, span_id: str, trace_id: Optional[str] = None) -> None:
+    def push_span(self, span_id: str, trace_id: str | None = None) -> None:
         """Push new span onto the context stack."""
         if trace_id:
             self._context["trace_id"] = trace_id
         self._span_stack.append(span_id)
     
-    def pop_span(self) -> Optional[str]:
+    def pop_span(self) -> str | None:
         """Pop span from the context stack."""
         if self._span_stack:
             return self._span_stack.pop()
@@ -119,7 +118,7 @@ class OpenTelemetryCollector:
     """OpenTelemetry-compatible telemetry collector with SLO tracking."""
     
     def __init__(self, 
-                 slos: Optional[ServiceLevelObjectives] = None,
+                 slos: ServiceLevelObjectives | None = None,
                  error_sample_rate: float = 1.0,  # 100% error capture
                  success_sample_rate: float = 0.1,  # 10% success sampling
                  prometheus_port: int = 9464):
@@ -129,8 +128,8 @@ class OpenTelemetryCollector:
         self.prometheus_port = prometheus_port
         
         # Metrics storage
-        self.spans: List[TelemetrySpan] = []
-        self.metrics: Dict[str, List[float]] = {
+        self.spans: list[TelemetrySpan] = []
+        self.metrics: dict[str, list[float]] = {
             "latency_ms": [],
             "error_count": [],
             "success_count": [],
@@ -138,7 +137,7 @@ class OpenTelemetryCollector:
         }
         
         # SLO violation tracking
-        self.slo_violations: List[Dict[str, Any]] = []
+        self.slo_violations: list[dict[str, Any]] = []
         
         # Setup structured logger
         self._setup_structured_logger()
@@ -167,9 +166,9 @@ class OpenTelemetryCollector:
     def start_span(self, 
                    component: str, 
                    operation: str,
-                   trace_id: Optional[str] = None,
-                   parent_span_id: Optional[str] = None,
-                   tags: Optional[Dict[str, Any]] = None) -> TelemetrySpan:
+                   trace_id: str | None = None,
+                   parent_span_id: str | None = None,
+                   tags: dict[str, Any] | None = None) -> TelemetrySpan:
         """Start a new telemetry span with context propagation."""
         
         # Generate IDs
@@ -202,8 +201,8 @@ class OpenTelemetryCollector:
     def finish_span(self,
                     span: TelemetrySpan,
                     status_code: str = "OK",
-                    error_type: Optional[str] = None,
-                    error_message: Optional[str] = None) -> None:
+                    error_type: str | None = None,
+                    error_message: str | None = None) -> None:
         """Finish a telemetry span and apply sampling."""
         
         span.end_time = time.perf_counter()
@@ -270,7 +269,7 @@ class OpenTelemetryCollector:
             self.slo_violations.append(violation)
             logger.warning("SLO violation detected: %s", violation)
     
-    def get_metrics_summary(self) -> Dict[str, Any]:
+    def get_metrics_summary(self) -> dict[str, Any]:
         """Get comprehensive metrics summary for monitoring."""
         if not self.metrics["latency_ms"]:
             return {"status": "no_data"}
@@ -387,7 +386,7 @@ def get_telemetry_collector() -> OpenTelemetryCollector:
 
 def telemetry_trace(component: str,
                     operation: str = None,
-                    tags: Optional[Dict[str, Any]] = None):
+                    tags: dict[str, Any] | None = None):
     """Decorator for automatic telemetry tracing of functions."""
     
     def decorator(func):
@@ -447,7 +446,7 @@ def telemetry_trace(component: str,
 @asynccontextmanager
 async def telemetry_span(component: str,
                          operation: str,
-                         tags: Optional[Dict[str, Any]] = None):
+                         tags: dict[str, Any] | None = None):
     """Async context manager for telemetry spans."""
     collector = get_telemetry_collector()
     span = collector.start_span(component, operation, tags=tags)
@@ -469,7 +468,7 @@ async def telemetry_span(component: str,
 @contextmanager
 def telemetry_span_sync(component: str,
                         operation: str,
-                        tags: Optional[Dict[str, Any]] = None):
+                        tags: dict[str, Any] | None = None):
     """Synchronous context manager for telemetry spans."""
     collector = get_telemetry_collector()
     span = collector.start_span(component, operation, tags=tags)

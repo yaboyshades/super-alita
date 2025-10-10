@@ -272,7 +272,10 @@ if FASTAPI_AVAILABLE:
         )
         # Surface rate window to request for downstream emitters (SSE/JSON)
         try:
-            request.state.rate_limit_info = {**info, "limit": _rl_default_limit}
+            request.state.rate_limit_info = {
+                **info,
+                "limit": _rl_default_limit,
+            }
         except Exception:
             pass
         # Add rate limit headers if response is available (non-SSE endpoints)
@@ -365,7 +368,10 @@ try:
     from reug_runtime.router_tools import tools as tools_router
 except Exception as e:  # pragma: no cover
     # Fallback: minimal routers to allow boot/health during development
-    print("[WARN] reug_runtime import failed; falling back to minimal routers:", e)
+    print(
+        "[WARN] reug_runtime import failed; falling back to minimal routers:",
+        e,
+    )
 
     if not FASTAPI_AVAILABLE:
         # Create minimal stubs when FastAPI is not available
@@ -387,7 +393,10 @@ except Exception as e:  # pragma: no cover
                     llm = getattr(globals().get("app"), "state", object()).__dict__.get(
                         "llm_model"
                     )
-                    model_identity = {"model": "unknown", "provider": "unknown"}
+                    model_identity = {
+                        "model": "unknown",
+                        "provider": "unknown",
+                    }
                     if llm and hasattr(llm, "identify"):
                         try:
                             identity = await llm.identify()
@@ -397,7 +406,11 @@ except Exception as e:  # pragma: no cover
 
                     # Send initial response with model identity
                     start_data = json.dumps(
-                        {"type": "start", "content": "", "model": model_identity}
+                        {
+                            "type": "start",
+                            "content": "",
+                            "model": model_identity,
+                        }
                     )
                     yield f"data: {start_data}\n\n"
 
@@ -526,7 +539,10 @@ class SimpleAbilityRegistry:
                     "type": "object",
                     "properties": {
                         "task": {"type": "string"},
-                        "ideas": {"type": "array", "items": {"type": "string"}},
+                        "ideas": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
                     },
                 },
             },
@@ -571,7 +587,10 @@ class SimpleAbilityRegistry:
                 "output_schema": {
                     "type": "object",
                     "properties": {
-                        "issues": {"type": "array", "items": {"type": "object"}},
+                        "issues": {
+                            "type": "array",
+                            "items": {"type": "object"},
+                        },
                         "issue_count": {"type": "integer"},
                     },
                 },
@@ -598,7 +617,10 @@ class SimpleAbilityRegistry:
         self._executors: dict[str, Callable[[dict[str, Any]], Any]] = {}
 
     def register_tool(
-        self, *, contract: dict[str, Any], executor: Callable[[dict[str, Any]], Any]
+        self,
+        *,
+        contract: dict[str, Any],
+        executor: Callable[[dict[str, Any]], Any],
     ) -> None:
         """Register a dynamic tool with schema contract and async executor.
 
@@ -1100,7 +1122,10 @@ if FASTAPI_AVAILABLE:
                             if chunk2.get("type") == "content":
                                 token2 = chunk2.get("content", "")
                                 if token2:
-                                    yield {"type": "content", "content": token2}
+                                    yield {
+                                        "type": "content",
+                                        "content": token2,
+                                    }
                         return
                 return
             except Exception:
@@ -1109,7 +1134,12 @@ if FASTAPI_AVAILABLE:
 
         # Fallback: conversational responses when LLM is unavailable
         greeting_patterns = ["hi", "hello", "hey", "greetings"]
-        help_patterns = ["help", "what can you do", "capabilities", "abilities"]
+        help_patterns = [
+            "help",
+            "what can you do",
+            "capabilities",
+            "abilities",
+        ]
 
         prompt_lower = prompt.lower().strip()
 
@@ -1198,7 +1228,11 @@ if FASTAPI_AVAILABLE:
                     except Exception:
                         pass
 
-                start_payload = {"id": ev_id, "session": sid, "model": model_identity}
+                start_payload = {
+                    "id": ev_id,
+                    "session": sid,
+                    "model": model_identity,
+                }
                 rl_info = getattr(req.state, "rate_limit_info", None)
                 if isinstance(rl_info, dict):
                     start_payload["rate_limit"] = rl_info
@@ -1237,7 +1271,10 @@ if FASTAPI_AVAILABLE:
                 try:
                     full = "".join(accumulated)
                     history.append(
-                        {"role": "assistant", "content": full or "(response streamed)"}
+                        {
+                            "role": "assistant",
+                            "content": full or "(response streamed)",
+                        }
                     )
                 except Exception:
                     history.append(
@@ -1332,7 +1369,11 @@ if FASTAPI_AVAILABLE:
 
             async def event_source() -> AsyncGenerator[str, None]:  # type: ignore
                 ev_id = str(uuid4())
-                start_payload = {"id": ev_id, "session": sid, "model": model_identity}
+                start_payload = {
+                    "id": ev_id,
+                    "session": sid,
+                    "model": model_identity,
+                }
                 rl_info = getattr(request.state, "rate_limit_info", None)
                 if isinstance(rl_info, dict):
                     start_payload["rate_limit"] = rl_info
@@ -1390,7 +1431,9 @@ if FASTAPI_AVAILABLE:
             orchestrator = getattr(app.state, "ecosystem_orchestrator", None)
             if not orchestrator:
                 # Create a basic orchestrator for demonstration
-                from src.ecosystem.master_orchestrator import EcosystemOrchestrator
+                from src.ecosystem.master_orchestrator import (
+                    EcosystemOrchestrator,
+                )
 
                 orchestrator = EcosystemOrchestrator()
 
@@ -1403,7 +1446,8 @@ if FASTAPI_AVAILABLE:
             global team_orchestrator
             if team_orchestrator and req.action == "todo_detected":
                 team_orchestrator.consume_event(
-                    "workflow.todo_resolution.completed", {"context": req.context}
+                    "workflow.todo_resolution.completed",
+                    {"context": req.context},
                 )
 
             return result
@@ -1415,7 +1459,9 @@ if FASTAPI_AVAILABLE:
         """Returns a health summary and optimization suggestions for the team."""
         global team_orchestrator
         if not team_orchestrator:
-            from src.ecosystem.team_orchestrator import TeamProductivityOrchestrator
+            from src.ecosystem.team_orchestrator import (
+                TeamProductivityOrchestrator,
+            )
 
             team_orchestrator = TeamProductivityOrchestrator()
 
@@ -1693,7 +1739,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 orig_emit = app.state.event_bus.emit  # type: ignore[attr-defined]
                 app.state._orig_emit = orig_emit  # type: ignore
 
-                async def _emit_and_broadcast(event: dict[str, Any]) -> dict[str, Any]:
+                async def _emit_and_broadcast(
+                    event: dict[str, Any],
+                ) -> dict[str, Any]:
                     result = await orig_emit(event)
                     try:
                         # Normalize event shape
@@ -1827,8 +1875,14 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                                 "ensemble_ranking",
                             ],
                         },
-                        "confidence_threshold": {"type": "number", "default": 0.7},
-                        "temperature_range": {"type": "number", "default": 0.2},
+                        "confidence_threshold": {
+                            "type": "number",
+                            "default": 0.7,
+                        },
+                        "temperature_range": {
+                            "type": "number",
+                            "default": 0.2,
+                        },
                     },
                 },
                 "output_schema": {
@@ -1844,7 +1898,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 },
             }
 
-            async def consensus_executor(args: dict[str, Any]) -> dict[str, Any]:
+            async def consensus_executor(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 return await consensus_provider.consensus_sampling(
                     prompt=args["prompt"],
                     num_samples=args.get("num_samples", 3),
@@ -1925,6 +1981,209 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
             traceback.print_exc()
 
+        # Register MCP Brainstorming ability (Alita integration)
+        try:
+            print("🔧 DEBUG: Starting MCP Brainstorming ability registration...")
+            from src.abilities.alita_mcp_brainstorming import (
+                AlitaMCPBrainstormingAbility,
+            )
+
+            # Initialize MCP Brainstorming ability
+            mcp_brainstorming_config = {
+                "model": os.getenv("ALITA_MCP_MODEL", "claude-3-7-sonnet"),
+                "temperature": float(os.getenv("ALITA_MCP_TEMPERATURE", "0.7")),
+                "max_tokens": int(os.getenv("ALITA_MCP_MAX_TOKENS", "2000")),
+                "constitutional_threshold": float(
+                    os.getenv("ALITA_CONSTITUTIONAL_THRESHOLD", "0.75")
+                ),
+            }
+
+            mcp_brainstorming = AlitaMCPBrainstormingAbility(
+                config=mcp_brainstorming_config
+            )
+
+            # Initialize with LLM client and ability registry
+            await mcp_brainstorming.initialize(
+                app.state.event_bus,  # type: ignore[attr-defined]
+                llm_client=app.state.llm_model,  # type: ignore[attr-defined]
+                ability_registry=ability_reg,
+            )
+
+            # Define MCP brainstorming tool contract
+            mcp_brainstorming_contract = {
+                "tool_id": "mcp_brainstorming",
+                "description": "Assess capability gaps and generate MCP tool specifications with constitutional validation",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["task_description"],
+                    "properties": {
+                        "task_description": {
+                            "type": "string",
+                            "description": "Natural language description of the task requiring capabilities",
+                        },
+                        "current_capabilities": {
+                            "type": "object",
+                            "description": "Dictionary of currently available abilities (optional)",
+                        },
+                    },
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {
+                        "needs_new_mcp": {"type": "boolean"},
+                        "tool_specifications": {"type": "array"},
+                        "capability_gaps": {"type": "array"},
+                        "existing_abilities_sufficient": {"type": "boolean"},
+                        "assessment_confidence": {"type": "number"},
+                        "constitutional_score": {"type": "number"},
+                        "recommendations": {"type": "array"},
+                        "metadata": {"type": "object"},
+                    },
+                },
+            }
+
+            async def mcp_brainstorming_executor(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
+                return await mcp_brainstorming.assess_capability_gap(
+                    task_description=args["task_description"],
+                    current_capabilities=args.get("current_capabilities"),
+                )
+
+            ability_reg.register_tool(
+                contract=mcp_brainstorming_contract,
+                executor=mcp_brainstorming_executor,
+            )
+            print(
+                "✅ DEBUG: MCP Brainstorming ability registered "
+                f"(model={mcp_brainstorming_config['model']}, "
+                f"threshold={mcp_brainstorming_config['constitutional_threshold']})"
+            )
+        except Exception as e:  # noqa: BLE001
+            print(f"❌ DEBUG: Failed to register MCP Brainstorming ability: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # Register Script Generator ability (Alita integration)
+        try:
+            print("🔧 DEBUG: Starting Script Generator ability registration...")
+            from src.abilities.alita_script_generator import (
+                AlitaScriptGeneratorAbility,
+            )
+
+            # Initialize Script Generator ability
+            script_generator_config = {
+                "model": os.getenv(
+                    "ALITA_SCRIPT_MODEL",
+                    os.getenv("ALITA_MCP_MODEL", "claude-3-7-sonnet"),
+                ),
+                "temperature": float(os.getenv("ALITA_SCRIPT_TEMPERATURE", "0.7")),
+                "max_tokens": int(os.getenv("ALITA_SCRIPT_MAX_TOKENS", "4000")),
+                "max_github_results": int(os.getenv("ALITA_MAX_GITHUB_RESULTS", "5")),
+                "constitutional_threshold": float(
+                    os.getenv("ALITA_CONSTITUTIONAL_THRESHOLD", "0.75")
+                ),
+            }
+
+            script_generator = AlitaScriptGeneratorAbility(
+                config=script_generator_config
+            )
+
+            # Initialize with event bus and LLM client
+            await script_generator.initialize(
+                app.state.event_bus,  # type: ignore[attr-defined]
+                llm_client=app.state.llm_model,  # type: ignore[attr-defined]
+                ability_registry=ability_reg,
+            )
+
+            # Define Script Generator tool contract
+            script_generator_contract = {
+                "tool_id": "script_generator",
+                "description": "Generate executable Python scripts from MCP tool specifications with environment management",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["tool_specification"],
+                    "properties": {
+                        "tool_specification": {
+                            "type": "object",
+                            "description": "MCP tool specification from brainstorming phase",
+                        },
+                        "search_github": {
+                            "type": "boolean",
+                            "description": "Whether to search GitHub for examples (default: true)",
+                            "default": True,
+                        },
+                    },
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {
+                        "success": {"type": "boolean"},
+                        "main_script": {"type": "string"},
+                        "environment_yml": {"type": "string"},
+                        "requirements_txt": {"type": "string"},
+                        "cleanup_script": {"type": "string"},
+                        "syntax_valid": {"type": "boolean"},
+                        "syntax_errors": {"type": "array"},
+                        "constitutional_score": {"type": "number"},
+                        "quality_metrics": {"type": "object"},
+                        "github_references": {"type": "array"},
+                        "metadata": {"type": "object"},
+                        "error_message": {"type": "string"},
+                    },
+                },
+            }
+
+            async def script_generator_executor(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
+                result = await script_generator.generate_script(
+                    tool_specification=args["tool_specification"],
+                    search_github=args.get("search_github", True),
+                )
+                # Convert dataclass to dict for JSON serialization
+                return {
+                    "success": result.success,
+                    "main_script": result.main_script,
+                    "environment_yml": result.environment_yml,
+                    "requirements_txt": result.requirements_txt,
+                    "cleanup_script": result.cleanup_script,
+                    "syntax_valid": result.syntax_valid,
+                    "syntax_errors": result.syntax_errors,
+                    "constitutional_score": result.constitutional_score,
+                    "quality_metrics": result.quality_metrics,
+                    "github_references": [
+                        {
+                            "repository_url": ref.repository_url,
+                            "repository_name": ref.repository_name,
+                            "description": ref.description,
+                            "stars": ref.stars,
+                            "readme_snippet": ref.readme_snippet,
+                            "code_examples": ref.code_examples,
+                            "dependencies": ref.dependencies,
+                        }
+                        for ref in result.github_references
+                    ],
+                    "metadata": result.metadata,
+                    "error_message": result.error_message,
+                }
+
+            ability_reg.register_tool(
+                contract=script_generator_contract,
+                executor=script_generator_executor,
+            )
+            print(
+                "✅ DEBUG: Script Generator ability registered "
+                f"(model={script_generator_config['model']}, "
+                f"max_tokens={script_generator_config['max_tokens']})"
+            )
+        except Exception as e:  # noqa: BLE001
+            print(f"❌ DEBUG: Failed to register Script Generator ability: {e}")
+            import traceback
+
+            traceback.print_exc()
+
         # Register Mangle integration
         try:
             from src.abilities.mangle.register import (
@@ -1960,9 +2219,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             from src.vscode_integration.paper_ingestion_tool import (
                 PaperIngestionTool,
             )
-            from src.vscode_integration.repo_mcp_tool import (
-                RepositoryMCPTool,
-            )
+            from src.vscode_integration.repo_mcp_tool import RepositoryMCPTool
 
             ability_reg = app.state.ability_registry  # type: ignore[attr- defined]
 
@@ -2042,7 +2299,10 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                         "properties": {
                             "file_path": {"type": "string"},
                             "content": {"type": "string"},
-                            "create_dirs": {"type": "boolean", "default": True},
+                            "create_dirs": {
+                                "type": "boolean",
+                                "default": True,
+                            },
                         },
                         "required": ["file_path", "content"],
                     },
@@ -2052,7 +2312,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             )
 
             # Repository: search code
-            async def _repo_search_code(args: dict[str, Any]) -> dict[str, Any]:
+            async def _repo_search_code(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 return await repo_tool.search_code(
                     query=args.get("query", ""),
                     file_pattern=args.get("file_pattern", "**/*.py"),
@@ -2067,7 +2329,10 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                         "type": "object",
                         "properties": {
                             "query": {"type": "string"},
-                            "file_pattern": {"type": "string", "default": "**/*.py"},
+                            "file_pattern": {
+                                "type": "string",
+                                "default": "**/*.py",
+                            },
                             "context_lines": {"type": "integer", "default": 3},
                         },
                         "required": ["query"],
@@ -2078,7 +2343,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             )
 
             # Repository: git history
-            async def _repo_git_history(args: dict[str, Any]) -> dict[str, Any]:
+            async def _repo_git_history(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 return await repo_tool.get_git_history(
                     file_path=args.get("file_path"),
                     limit=int(args.get("limit", 10)),
@@ -2101,7 +2368,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             )
 
             # Paper: extract text
-            async def _paper_extract_text(args: dict[str, Any]) -> dict[str, Any]:
+            async def _paper_extract_text(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 return await paper_tool.extract_text_from_pdf(args.get("pdf_path", ""))
 
             ability_reg.register_tool(
@@ -2119,7 +2388,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             )
 
             # Paper: summary
-            async def _paper_generate_summary(args: dict[str, Any]) -> dict[str, Any]:
+            async def _paper_generate_summary(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 return await paper_tool.generate_paper_summary(
                     pdf_path=args.get("pdf_path", ""),
                     focus_areas=args.get("focus_areas"),
@@ -2235,7 +2506,11 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 prompt = _code_prompt(language, spec, style_guides, constraints)
                 result = await ability_reg.execute(  # type: ignore
                     "deepconf_consensus",
-                    {"prompt": prompt, "method": "weighted_vote", "num_samples": 3},
+                    {
+                        "prompt": prompt,
+                        "method": "weighted_vote",
+                        "num_samples": 3,
+                    },
                 )
                 code = (
                     result.get("best_response")
@@ -2303,7 +2578,11 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
                             fp = _P(file_path)
                             rel_dirs = list(fp.parent.parts)
-                            if rel_dirs and rel_dirs[0] in {"src", "app", "services"}:
+                            if rel_dirs and rel_dirs[0] in {
+                                "src",
+                                "app",
+                                "services",
+                            }:
                                 rel_dirs = rel_dirs[1:]
                             test_file_path = (
                                 _P("tests")
@@ -2367,7 +2646,11 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 if force_write or issue_count == 0:
                     write_res = await ability_reg.execute(  # type: ignore
                         "repo_write_file",
-                        {"file_path": file_path, "content": code, "create_dirs": True},
+                        {
+                            "file_path": file_path,
+                            "content": code,
+                            "create_dirs": True,
+                        },
                     )
                     wrote = bool(write_res and write_res.get("success"))
                 return {
@@ -2396,9 +2679,15 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                             "file_path": {"type": "string"},
                             "style_guides": {"type": "string"},
                             "constraints": {"type": "string"},
-                            "force_write": {"type": "boolean", "default": False},
+                            "force_write": {
+                                "type": "boolean",
+                                "default": False,
+                            },
                             "test_first": {"type": "boolean", "default": True},
-                            "consolidate_tests": {"type": "boolean", "default": True},
+                            "consolidate_tests": {
+                                "type": "boolean",
+                                "default": True,
+                            },
                             "test_file_path": {"type": "string"},
                             "test_language": {"type": "string"},
                             "test_spec": {"type": "string"},
@@ -2449,7 +2738,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     except Exception:
                         return None
 
-                def _fallback_parse(s: str) -> tuple[list[str], list[dict[str, str]]]:
+                def _fallback_parse(
+                    s: str,
+                ) -> tuple[list[str], list[dict[str, str]]]:
                     facts: list[str] = []
                     rules: list[dict[str, str]] = []
                     for line in s.splitlines():
@@ -2602,8 +2893,14 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                             "file_path": {"type": "string"},
                             "mangle_query": {"type": "string"},
                             "explain": {"type": "boolean", "default": False},
-                            "generate_code": {"type": "boolean", "default": False},
-                            "language": {"type": "string", "default": "python"},
+                            "generate_code": {
+                                "type": "boolean",
+                                "default": False,
+                            },
+                            "language": {
+                                "type": "string",
+                                "default": "python",
+                            },
                             "code_spec": {"type": "string"},
                             "file_output": {"type": "string"},
                             "style_guides": {"type": "string"},
@@ -2641,7 +2938,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     headers["Authorization"] = f"Bearer {token}"
                 return headers
 
-            async def _github_search_code(args: dict[str, Any]) -> dict[str, Any]:
+            async def _github_search_code(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 import json
                 from urllib.parse import quote_plus
 
@@ -2704,7 +3003,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 executor=_github_search_code,
             )
 
-            async def _github_search_repos(args: dict[str, Any]) -> dict[str, Any]:
+            async def _github_search_repos(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 import json
                 from urllib.parse import quote_plus
 
@@ -2762,7 +3063,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 executor=_github_search_repos,
             )
 
-            async def _github_integration_spec(args: dict[str, Any]) -> dict[str, Any]:
+            async def _github_integration_spec(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 """Produce a lightweight integration spec from GitHub code search.
 
                 Inputs:
@@ -2875,7 +3178,10 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                             "repo": {"type": "string"},
                             "per_page": {"type": "integer", "default": 10},
                             "page": {"type": "integer", "default": 1},
-                            "max_candidates": {"type": "integer", "default": 5},
+                            "max_candidates": {
+                                "type": "integer",
+                                "default": 5,
+                            },
                         },
                     },
                     "output_schema": {"type": "object"},
@@ -2918,7 +3224,12 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 cmd.append(target)
                 try:
                     out = await arun(cmd, timeout=300)
-                    return {"ok": True, "exit_code": 0, "stdout": out, "stderr": ""}
+                    return {
+                        "ok": True,
+                        "exit_code": 0,
+                        "stdout": out,
+                        "stderr": "",
+                    }
                 except (
                     Exception
                 ) as e:  # pragma: no cover - returns stderr via exception
@@ -2949,7 +3260,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 executor=_pytest_run,
             )
 
-            async def _python_import_smoke(args: dict[str, Any]) -> dict[str, Any]:
+            async def _python_import_smoke(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 """Import all modules under a path (default 'src') and report failures."""
                 import importlib
                 import pkgutil
@@ -3105,7 +3418,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 torch_like = AltReward()
                 app.state.shadow_reward = ShadowRewardDeployment(stub, torch_like, {})  # type: ignore[attr-defined]
 
-            async def _shadow_reward_score(args: dict[str, Any]) -> dict[str, Any]:
+            async def _shadow_reward_score(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 code = str(args.get("code") or "")
                 if not code:
                     return {"error": "missing code"}
@@ -3131,7 +3446,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                 executor=_shadow_reward_score,
             )
 
-            async def _shadow_reward_metrics(_: dict[str, Any]) -> dict[str, Any]:
+            async def _shadow_reward_metrics(
+                _: dict[str, Any],
+            ) -> dict[str, Any]:
                 deploy = app.state.shadow_reward  # type: ignore[attr-defined]
                 return deploy.get_metrics()
 
@@ -3164,7 +3481,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
 
                 z3v = ScalableZ3Verifier(base_timeout=10, max_timeout=60)
 
-                async def _z3_analyze_minimize(args: dict[str, Any]) -> dict[str, Any]:
+                async def _z3_analyze_minimize(
+                    args: dict[str, Any],
+                ) -> dict[str, Any]:
                     cons = args.get("constraints") or []
                     if not isinstance(cons, list):
                         return {"error": "constraints must be a list"}
@@ -3228,7 +3547,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
         try:
             ability_reg = app.state.ability_registry  # type: ignore[attr-defined]
 
-            async def _ladder_reug_generate(args: dict[str, Any]) -> dict[str, Any]:
+            async def _ladder_reug_generate(
+                args: dict[str, Any],
+            ) -> dict[str, Any]:
                 """Integrate planning + discovery + TDD codegen in one call.
 
                 Args:
@@ -3329,7 +3650,10 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                         "properties": {
                             "goal": {"type": "string"},
                             "file_path": {"type": "string"},
-                            "language": {"type": "string", "default": "python"},
+                            "language": {
+                                "type": "string",
+                                "default": "python",
+                            },
                             "use_github_discovery": {
                                 "type": "boolean",
                                 "default": True,
@@ -3622,9 +3946,7 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                     and "/chat/stream" in request.url.path
                 ):
                     with contextlib.suppress(Exception):
-                        from reug_runtime.config import (
-                            SETTINGS as RT_SETTINGS,
-                        )
+                        from reug_runtime.config import SETTINGS as RT_SETTINGS
                         from reug_runtime.message_mw import (
                             MessageContext,
                             apply_all,
@@ -3652,7 +3974,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                                 MessageContext(session_id=session_id),  # type: ignore
                             )
                             if getattr(
-                                RT_SETTINGS, "message_optimizer_emit_telemetry", True
+                                RT_SETTINGS,
+                                "message_optimizer_emit_telemetry",
+                                True,
                             ):
                                 with contextlib.suppress(Exception):
                                     await app.state.event_bus.emit(  # type: ignore
@@ -3918,7 +4242,10 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
             coupling_score = min(1.0, coupling / 10)
             overall = max(
                 0.0,
-                min(1.0, base_conf * (1 - (complexity * 0.5 + coupling_score * 0.3))),
+                min(
+                    1.0,
+                    base_conf * (1 - (complexity * 0.5 + coupling_score * 0.3)),
+                ),
             )
             return {
                 "overall": overall,
@@ -4136,7 +4463,12 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
                             evt = json.loads(line)
                             last_event = {
                                 k: evt.get(k)
-                                for k in ("type", "tool", "duration_ms", "error")
+                                for k in (
+                                    "type",
+                                    "tool",
+                                    "duration_ms",
+                                    "error",
+                                )
                             }
                             break
                         except Exception:
@@ -4164,7 +4496,9 @@ def create_app(*, event_bus: BaseEventBus | None = None) -> Any:
     async def plugin_health() -> dict[str, object]:  # type: ignore
         """Get health status of all loaded plugins."""
         try:
-            from src.core.enhanced_plugin_system import get_plugin_health_status
+            from src.core.enhanced_plugin_system import (
+                get_plugin_health_status,
+            )
 
             return get_plugin_health_status(app)
         except Exception as e:

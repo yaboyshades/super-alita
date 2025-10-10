@@ -5,11 +5,11 @@ Implements context analysis and classification using the Cynefin framework
 for E-UPUSF orchestration decision making.
 """
 
+import logging
 import math
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional
 from enum import Enum
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +39,12 @@ class ContextFeatures:
 @dataclass
 class CynefinClassification:
     """Result of Cynefin classification"""
-    probabilities: Dict[CynefinDomain, float]
+    probabilities: dict[CynefinDomain, float]
     primary_domain: CynefinDomain
     entropy: float
     confidence: float
     features: ContextFeatures
-    reasoning: List[str]
+    reasoning: list[str]
 
 
 class CynefinClassifier:
@@ -103,7 +103,7 @@ class CynefinClassifier:
         }
     
     def extract_features(self,
-                         problem_context: Dict[str, Any]) -> ContextFeatures:
+                         problem_context: dict[str, Any]) -> ContextFeatures:
         """Extract context features from problem description"""
         
         # Default feature values
@@ -206,8 +206,8 @@ class CynefinClassifier:
         
         return features
     
-    def classify(self, problem_context: Dict[str, Any],
-                 prior_distribution: Optional[Dict[str, float]] = None) -> CynefinClassification:
+    def classify(self, problem_context: dict[str, Any],
+                 prior_distribution: dict[str, float] | None = None) -> CynefinClassification:
         """Classify problem context into Cynefin domains"""
         
         # Extract features
@@ -282,7 +282,7 @@ class ContextAnalyzer:
     def __init__(self):
         self.cynefin_classifier = CynefinClassifier()
     
-    def analyze_context(self, eos_spec: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_context(self, eos_spec: dict[str, Any]) -> dict[str, Any]:
         """Analyze context from EOS specification"""
         
         problem = eos_spec.get("problem", {})
@@ -337,7 +337,7 @@ class ContextAnalyzer:
             }
         }
     
-    def _recommend_methods(self, classification: CynefinClassification) -> List[str]:
+    def _recommend_methods(self, classification: CynefinClassification) -> list[str]:
         """Recommend methods based on Cynefin classification"""
         
         primary = classification.primary_domain
@@ -365,8 +365,8 @@ class ContextAnalyzer:
         
         return methods
     
-    def update_context(self, current_context: Dict[str, Any], 
-                      new_evidence: Dict[str, Any]) -> Dict[str, Any]:
+    def update_context(self, current_context: dict[str, Any], 
+                      new_evidence: dict[str, Any]) -> dict[str, Any]:
         """Update context analysis with new evidence"""
         
         # Update probabilities using Bayesian updating

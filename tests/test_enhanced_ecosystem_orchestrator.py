@@ -11,8 +11,9 @@ Version: 2.0.0
 
 import asyncio
 import logging
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 # Configure logging for tests
 logging.basicConfig(level=logging.INFO)
@@ -28,7 +29,7 @@ class TestEnhancedEcosystemOrchestrator:
         try:
             from src.ecosystem.enhanced_ecosystem_orchestrator import (
                 EnhancedEcosystemOrchestrator,
-                MangleReasoningEngine
+                MangleReasoningEngine,
             )
             
             # Create with real components
@@ -71,7 +72,7 @@ class TestEnhancedEcosystemOrchestrator:
             from src.ecosystem.enhanced_ecosystem_orchestrator import (
                 MangleReasoningEngine,
                 ReasoningContext,
-                ReasoningType
+                ReasoningType,
             )
             
             return MangleReasoningEngine()
@@ -112,7 +113,7 @@ class TestEnhancedEcosystemOrchestrator:
         try:
             from src.ecosystem.enhanced_ecosystem_orchestrator import (
                 ReasoningContext,
-                ReasoningType
+                ReasoningType,
             )
             
             # Create reasoning context
@@ -306,7 +307,7 @@ class TestEnhancedEcosystemOrchestrator:
         try:
             from src.ecosystem.enhanced_ecosystem_orchestrator import (
                 ReasoningContext,
-                ReasoningType
+                ReasoningType,
             )
             
             # Create complex reasoning scenario
@@ -395,7 +396,7 @@ class TestIntegrationScenarios:
         
         try:
             from src.ecosystem.enhanced_ecosystem_orchestrator import (
-                EnhancedEcosystemOrchestrator
+                EnhancedEcosystemOrchestrator,
             )
             
             # Create orchestrator

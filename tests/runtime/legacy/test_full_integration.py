@@ -114,9 +114,10 @@ async def test_leanrag_integration():
 
     try:
         # Import LeanRAG components
+        from demo_leanrag import DemoEmbedder, create_demo_knowledge_graph
+
         from cortex.adapters.leanrag_adapter import build_situation_brief
         from cortex.kg.leanrag import LeanRAG
-        from demo_leanrag import DemoEmbedder, create_demo_knowledge_graph
 
         print("✅ LeanRAG components imported successfully")
 

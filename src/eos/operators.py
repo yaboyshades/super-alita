@@ -9,11 +9,11 @@ Implements the core LADDER operators for E-UPUSF orchestration:
 """
 
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, Any, List
 from enum import Enum
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +29,13 @@ class OperatorType(Enum):
 @dataclass
 class OperatorContext:
     """Context for operator execution"""
-    input_artifacts: Dict[str, Any] = field(default_factory=dict)
-    output_artifacts: Dict[str, Any] = field(default_factory=dict)
-    dimensions: List[str] = field(default_factory=list)
+    input_artifacts: dict[str, Any] = field(default_factory=dict)
+    output_artifacts: dict[str, Any] = field(default_factory=dict)
+    dimensions: list[str] = field(default_factory=list)
     abstraction_level: int = 0
-    knowledge_graph: Dict[str, Any] = field(default_factory=dict)
-    constraints: List[str] = field(default_factory=list)
-    stakeholders: List[str] = field(default_factory=list)
+    knowledge_graph: dict[str, Any] = field(default_factory=dict)
+    constraints: list[str] = field(default_factory=list)
+    stakeholders: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -43,17 +43,17 @@ class OperatorResult:
     """Result of operator execution"""
     success: bool
     updated_context: OperatorContext
-    artifacts_produced: List[str] = field(default_factory=list)
-    dimensions_added: List[str] = field(default_factory=list)
-    reasoning: List[str] = field(default_factory=list)
+    artifacts_produced: list[str] = field(default_factory=list)
+    dimensions_added: list[str] = field(default_factory=list)
+    reasoning: list[str] = field(default_factory=list)
     confidence: float = 1.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class LadderOperator(ABC):
     """Abstract base class for LADDER operators"""
     
-    def __init__(self, operator_type: OperatorType, config: Dict[str, Any]):
+    def __init__(self, operator_type: OperatorType, config: dict[str, Any]):
         self.operator_type = operator_type
         self.config = config
     
@@ -62,11 +62,11 @@ class LadderOperator(ABC):
         """Execute the operator"""
         pass
     
-    def get_preconditions(self) -> List[str]:
+    def get_preconditions(self) -> list[str]:
         """Get preconditions for operator execution"""
         return []
     
-    def get_effects(self) -> List[str]:
+    def get_effects(self) -> list[str]:
         """Get expected effects of operator execution"""
         return []
 
@@ -74,7 +74,7 @@ class LadderOperator(ABC):
 class Lift(LadderOperator):
     """Semantic lifting operator - adds dimensions and context"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(OperatorType.LIFT, config)
         self.dimensional_axes = config.get("dimensional_axes", [
             "stakeholders", "time_horizons", "feedback_loops", 
@@ -168,7 +168,7 @@ class Lift(LadderOperator):
             }
         )
     
-    async def _analyze_stakeholders(self, context: OperatorContext) -> Dict[str, Any]:
+    async def _analyze_stakeholders(self, context: OperatorContext) -> dict[str, Any]:
         """Analyze stakeholder landscape"""
         await asyncio.sleep(0.1)  # Simulate analysis
         
@@ -200,7 +200,7 @@ class Lift(LadderOperator):
             }
         }
     
-    async def _analyze_time_horizons(self, context: OperatorContext) -> Dict[str, Any]:
+    async def _analyze_time_horizons(self, context: OperatorContext) -> dict[str, Any]:
         """Analyze temporal dimensions"""
         await asyncio.sleep(0.1)
         
@@ -215,7 +215,7 @@ class Lift(LadderOperator):
             "temporal_constraints": context.constraints
         }
     
-    async def _analyze_feedback_loops(self, context: OperatorContext) -> Dict[str, Any]:
+    async def _analyze_feedback_loops(self, context: OperatorContext) -> dict[str, Any]:
         """Analyze feedback structures"""
         await asyncio.sleep(0.1)
         
@@ -229,7 +229,7 @@ class Lift(LadderOperator):
             "loop_strength": "medium"
         }
     
-    async def _analyze_spatial_scales(self, context: OperatorContext) -> Dict[str, Any]:
+    async def _analyze_spatial_scales(self, context: OperatorContext) -> dict[str, Any]:
         """Analyze spatial dimensions"""
         await asyncio.sleep(0.1)
         
@@ -240,7 +240,7 @@ class Lift(LadderOperator):
             "locality_constraints": []
         }
     
-    async def _analyze_assumptions(self, context: OperatorContext) -> Dict[str, Any]:
+    async def _analyze_assumptions(self, context: OperatorContext) -> dict[str, Any]:
         """Analyze underlying assumptions"""
         await asyncio.sleep(0.1)
         
@@ -261,9 +261,7 @@ class Lift(LadderOperator):
         return {
             "explicit_assumptions": [a for a in assumptions if "assume" in a.lower()],
             "implicit_assumptions": [a for a in assumptions if "assume" not in a.lower()],
-            "assumption_risks": {
-                assumption: "medium" for assumption in assumptions
-            }
+            "assumption_risks": dict.fromkeys(assumptions, "medium")
         }
     
     def _has_spatial_relevance(self, context: OperatorContext) -> bool:
@@ -276,7 +274,7 @@ class Lift(LadderOperator):
         spatial_keywords = ["global", "local", "region", "distribute", "location", "geographic"]
         return any(keyword in all_text for keyword in spatial_keywords)
     
-    async def _update_knowledge_graph(self, context: OperatorContext, new_dimensions: List[str]):
+    async def _update_knowledge_graph(self, context: OperatorContext, new_dimensions: list[str]):
         """Update knowledge graph with new dimensional connections"""
         # Simulate knowledge graph update
         await asyncio.sleep(0.05)
@@ -307,7 +305,7 @@ class Lift(LadderOperator):
 class Decompose(LadderOperator):
     """Decomposition operator - factors problems to primitives"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(OperatorType.DECOMPOSE, config)
     
     async def execute(self, context: OperatorContext) -> OperatorResult:
@@ -361,7 +359,7 @@ class Decompose(LadderOperator):
             }
         )
     
-    async def _identify_contradictions(self, context: OperatorContext) -> List[Dict[str, Any]]:
+    async def _identify_contradictions(self, context: OperatorContext) -> list[dict[str, Any]]:
         """Identify TRIZ-style contradictions"""
         await asyncio.sleep(0.1)
         
@@ -381,7 +379,7 @@ class Decompose(LadderOperator):
         
         return contradictions
     
-    async def _identify_causal_chains(self, context: OperatorContext) -> List[Dict[str, Any]]:
+    async def _identify_causal_chains(self, context: OperatorContext) -> list[dict[str, Any]]:
         """Identify causal relationships"""
         await asyncio.sleep(0.1)
         
@@ -395,7 +393,7 @@ class Decompose(LadderOperator):
         
         return causal_chains
     
-    async def _identify_first_principles(self, context: OperatorContext) -> List[Dict[str, Any]]:
+    async def _identify_first_principles(self, context: OperatorContext) -> list[dict[str, Any]]:
         """Identify fundamental principles"""
         await asyncio.sleep(0.1)
         
@@ -414,7 +412,7 @@ class Decompose(LadderOperator):
         
         return principles
     
-    async def _decompose_functions(self, context: OperatorContext) -> List[Dict[str, Any]]:
+    async def _decompose_functions(self, context: OperatorContext) -> list[dict[str, Any]]:
         """Decompose into functional components"""
         await asyncio.sleep(0.1)
         
@@ -439,7 +437,7 @@ class Decompose(LadderOperator):
 class Synthesize(LadderOperator):
     """Synthesis operator - generates and combines solutions"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(OperatorType.SYNTHESIZE, config)
     
     async def execute(self, context: OperatorContext) -> OperatorResult:
@@ -476,7 +474,7 @@ class Synthesize(LadderOperator):
         # Ranking
         ranked_solutions = await self._rank_solutions(alternatives + combinations, evaluations, context)
         updated_context.output_artifacts["ranked_solutions"] = ranked_solutions
-        reasoning.append(f"Ranked all solutions by fitness")
+        reasoning.append("Ranked all solutions by fitness")
         
         artifacts_produced = ["alternatives", "evaluations", "combinations", "ranked_solutions"]
         confidence = 0.9 if len(alternatives) >= 5 else 0.7
@@ -494,7 +492,7 @@ class Synthesize(LadderOperator):
             }
         )
     
-    async def _generate_alternatives(self, context: OperatorContext) -> List[Dict[str, Any]]:
+    async def _generate_alternatives(self, context: OperatorContext) -> list[dict[str, Any]]:
         """Generate alternative solutions"""
         await asyncio.sleep(0.2)
         
@@ -533,8 +531,8 @@ class Synthesize(LadderOperator):
         
         return alternatives
     
-    async def _evaluate_alternatives(self, alternatives: List[Dict[str, Any]], 
-                                   context: OperatorContext) -> Dict[str, Dict[str, float]]:
+    async def _evaluate_alternatives(self, alternatives: list[dict[str, Any]], 
+                                   context: OperatorContext) -> dict[str, dict[str, float]]:
         """Evaluate alternatives against criteria"""
         await asyncio.sleep(0.1)
         
@@ -560,8 +558,8 @@ class Synthesize(LadderOperator):
         
         return evaluations
     
-    async def _synthesize_combinations(self, alternatives: List[Dict[str, Any]],
-                                     context: OperatorContext) -> List[Dict[str, Any]]:
+    async def _synthesize_combinations(self, alternatives: list[dict[str, Any]],
+                                     context: OperatorContext) -> list[dict[str, Any]]:
         """Create hybrid combinations of alternatives"""
         await asyncio.sleep(0.1)
         
@@ -584,9 +582,9 @@ class Synthesize(LadderOperator):
         
         return combinations
     
-    async def _rank_solutions(self, all_solutions: List[Dict[str, Any]],
-                             evaluations: Dict[str, Dict[str, float]],
-                             context: OperatorContext) -> List[Dict[str, Any]]:
+    async def _rank_solutions(self, all_solutions: list[dict[str, Any]],
+                             evaluations: dict[str, dict[str, float]],
+                             context: OperatorContext) -> list[dict[str, Any]]:
         """Rank all solutions by overall fitness"""
         await asyncio.sleep(0.05)
         
@@ -626,7 +624,7 @@ class Synthesize(LadderOperator):
 class Descend(LadderOperator):
     """Descent operator - maps abstractions to concrete actions"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(OperatorType.DESCEND, config)
     
     async def execute(self, context: OperatorContext) -> OperatorResult:
@@ -681,7 +679,7 @@ class Descend(LadderOperator):
             }
         )
     
-    async def _generate_concrete_tasks(self, context: OperatorContext) -> List[Dict[str, Any]]:
+    async def _generate_concrete_tasks(self, context: OperatorContext) -> list[dict[str, Any]]:
         """Generate concrete, actionable tasks"""
         await asyncio.sleep(0.1)
         
@@ -726,7 +724,7 @@ class Descend(LadderOperator):
         
         return tasks
     
-    async def _create_acceptance_tests(self, context: OperatorContext) -> List[Dict[str, Any]]:
+    async def _create_acceptance_tests(self, context: OperatorContext) -> list[dict[str, Any]]:
         """Create acceptance criteria and tests"""
         await asyncio.sleep(0.05)
         
@@ -759,7 +757,7 @@ class Descend(LadderOperator):
         
         return tests
     
-    async def _create_rollout_plan(self, context: OperatorContext) -> Dict[str, Any]:
+    async def _create_rollout_plan(self, context: OperatorContext) -> dict[str, Any]:
         """Create phased rollout plan"""
         await asyncio.sleep(0.05)
         
@@ -806,7 +804,7 @@ class Descend(LadderOperator):
         
         return plan
     
-    async def _create_implementation_guide(self, context: OperatorContext) -> Dict[str, Any]:
+    async def _create_implementation_guide(self, context: OperatorContext) -> dict[str, Any]:
         """Create implementation guide"""
         await asyncio.sleep(0.05)
         
@@ -866,7 +864,7 @@ class Descend(LadderOperator):
 class LadderOperators:
     """Orchestrator for LADDER operators"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.operators = {
             OperatorType.LIFT: Lift(config.get("ladder", {})),
@@ -907,8 +905,8 @@ class LadderOperators:
                 confidence=0.0
             )
     
-    async def execute_sequence(self, operator_sequence: List[OperatorType],
-                              initial_context: OperatorContext) -> List[OperatorResult]:
+    async def execute_sequence(self, operator_sequence: list[OperatorType],
+                              initial_context: OperatorContext) -> list[OperatorResult]:
         """Execute sequence of operators"""
         
         results = []
@@ -929,7 +927,7 @@ class LadderOperators:
         
         return results
     
-    def get_operator_capabilities(self) -> Dict[str, List[str]]:
+    def get_operator_capabilities(self) -> dict[str, list[str]]:
         """Get capabilities of each operator"""
         
         capabilities = {}

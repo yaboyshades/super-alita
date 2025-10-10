@@ -1,11 +1,11 @@
 """CI/CD quality gates and pipeline components."""
 
 from .quality_gates import (
-    QualityGatePipeline,
     ConstitutionalGate,
     PerformanceGate,
+    QualityGatePipeline,
+    QualityGateResult,
     SecurityGate,
-    QualityGateResult
 )
 
 __all__ = [

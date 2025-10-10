@@ -12,19 +12,18 @@ Provides comprehensive resource management and optimization:
 
 import asyncio
 import gc
-import psutil
-import time
 import logging
-import threading
-import weakref
-from typing import Dict, Any, List, Optional, Callable, Set, Tuple
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from collections import defaultdict, deque
-from concurrent.futures import ThreadPoolExecutor
-import tracemalloc
 import sys
-import os
+import time
+import tracemalloc
+import weakref
+from collections import defaultdict, deque
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
+
+import psutil
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ class ResourceMetrics:
     network_io_recv_mb: float
     open_file_descriptors: int
     thread_count: int
-    gc_collections: Dict[int, int] = field(default_factory=dict)
+    gc_collections: dict[int, int] = field(default_factory=dict)
 
 @dataclass
 class MemorySnapshot:
@@ -51,7 +50,7 @@ class MemorySnapshot:
     heap_size_mb: float
     stack_size_mb: float
     gc_objects: int
-    top_memory_consumers: List[Tuple[str, int]] = field(default_factory=list)
+    top_memory_consumers: list[tuple[str, int]] = field(default_factory=list)
 
 @dataclass
 class ResourcePool:
@@ -71,7 +70,7 @@ class MemoryTracker:
     
     def __init__(self):
         self.snapshots: deque = deque(maxlen=1000)
-        self.memory_alerts: List[Dict[str, Any]] = []
+        self.memory_alerts: list[dict[str, Any]] = []
         self.tracemalloc_enabled = False
         
         # Memory thresholds
@@ -80,7 +79,7 @@ class MemoryTracker:
         
         # Track objects for leak detection
         self.object_refs: weakref.WeakSet = weakref.WeakSet()
-        self.object_counts: Dict[str, int] = defaultdict(int)
+        self.object_counts: dict[str, int] = defaultdict(int)
     
     def start_tracking(self):
         """Start memory tracking"""
@@ -158,7 +157,7 @@ class MemoryTracker:
             self.memory_alerts.append(alert)
             logger.warning(alert['message'])
     
-    def detect_memory_leaks(self) -> List[Dict[str, Any]]:
+    def detect_memory_leaks(self) -> list[dict[str, Any]]:
         """Detect potential memory leaks"""
         leaks = []
         
@@ -206,7 +205,7 @@ class MemoryTracker:
         
         return leaks
     
-    def get_memory_stats(self) -> Dict[str, Any]:
+    def get_memory_stats(self) -> dict[str, Any]:
         """Get comprehensive memory statistics"""
         if not self.snapshots:
             return {}
@@ -235,7 +234,7 @@ class ResourceMonitor:
     def __init__(self, collection_interval: int = 30):
         self.collection_interval = collection_interval
         self.metrics_history: deque = deque(maxlen=2000)
-        self.resource_pools: Dict[str, ResourcePool] = {}
+        self.resource_pools: dict[str, ResourcePool] = {}
         
         # Resource thresholds
         self.cpu_threshold = 80.0  # 80%
@@ -243,7 +242,7 @@ class ResourceMonitor:
         self.disk_threshold = 90.0  # 90%
         
         # Background monitoring
-        self._monitoring_task: Optional[asyncio.Task] = None
+        self._monitoring_task: asyncio.Task | None = None
         self._running = False
     
     async def start_monitoring(self):
@@ -378,7 +377,7 @@ class ResourceMonitor:
         # Update peak usage
         pool.peak_usage = max(pool.peak_usage, in_use)
     
-    def get_resource_summary(self) -> Dict[str, Any]:
+    def get_resource_summary(self) -> dict[str, Any]:
         """Get comprehensive resource summary"""
         if not self.metrics_history:
             return {}
@@ -449,7 +448,7 @@ class GarbageCollectionOptimizer:
             self.optimization_enabled = False
             logger.info("GC optimization disabled")
     
-    def force_collection(self) -> Dict[str, int]:
+    def force_collection(self) -> dict[str, int]:
         """Force garbage collection and return stats"""
         start_time = time.time()
         
@@ -482,7 +481,7 @@ class GarbageCollectionOptimizer:
         
         return stats
     
-    def get_gc_stats(self) -> Dict[str, Any]:
+    def get_gc_stats(self) -> dict[str, Any]:
         """Get garbage collection statistics"""
         if not self.gc_stats:
             return {}
@@ -511,11 +510,11 @@ class ResourceManager:
         self.gc_optimizer = GarbageCollectionOptimizer()
         
         # Cleanup tasks
-        self._cleanup_tasks: List[asyncio.Task] = []
+        self._cleanup_tasks: list[asyncio.Task] = []
         self._running = False
         
         # Resource cleanup callbacks
-        self.cleanup_callbacks: List[Callable] = []
+        self.cleanup_callbacks: list[Callable] = []
     
     async def start(self):
         """Start resource management"""
@@ -635,7 +634,7 @@ class ResourceManager:
             except Exception as e:
                 logger.error(f"Error in memory snapshot loop: {e}")
     
-    def get_optimization_report(self) -> Dict[str, Any]:
+    def get_optimization_report(self) -> dict[str, Any]:
         """Get comprehensive optimization report"""
         return {
             'memory': self.memory_tracker.get_memory_stats(),
@@ -644,7 +643,7 @@ class ResourceManager:
             'system_health': self._assess_system_health()
         }
     
-    def _assess_system_health(self) -> Dict[str, Any]:
+    def _assess_system_health(self) -> dict[str, Any]:
         """Assess overall system health"""
         memory_stats = self.memory_tracker.get_memory_stats()
         resource_summary = self.resource_monitor.get_resource_summary()
@@ -689,7 +688,7 @@ class ResourceManager:
             'recommendations': self._get_optimization_recommendations(issues)
         }
     
-    def _get_optimization_recommendations(self, issues: List[str]) -> List[str]:
+    def _get_optimization_recommendations(self, issues: list[str]) -> list[str]:
         """Get optimization recommendations based on issues"""
         recommendations = []
         

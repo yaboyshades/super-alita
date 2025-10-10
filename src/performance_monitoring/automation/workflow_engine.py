@@ -6,16 +6,19 @@ violation remediation, and continuous improvement guidance.
 """
 
 import asyncio
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Callable
 import logging
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 # Import telemetry infrastructure
 try:
     from ..telemetry.opentelemetry_config import (
-        telemetry_trace, telemetry_span, get_telemetry_collector
+        get_telemetry_collector,
+        telemetry_span,
+        telemetry_trace,
     )
     TELEMETRY_AVAILABLE = True
 except ImportError:
@@ -47,8 +50,8 @@ class RemediationAction:
     
     action_type: str  # auto_fix, suggest_change, require_manual
     description: str
-    automated_fix: Optional[str] = None
-    manual_instructions: Optional[str] = None
+    automated_fix: str | None = None
+    manual_instructions: str | None = None
     confidence: float = 1.0  # 0.0 to 1.0
     estimated_effort: str = "low"  # low, medium, high
     priority: str = "medium"  # low, medium, high, critical
@@ -60,10 +63,10 @@ class ValidationWorkflow:
     
     name: str
     description: str
-    trigger_conditions: List[str]
-    validation_steps: List[str]
-    remediation_actions: List[RemediationAction]
-    success_criteria: Dict[str, float]
+    trigger_conditions: list[str]
+    validation_steps: list[str]
+    remediation_actions: list[RemediationAction]
+    success_criteria: dict[str, float]
 
 
 @dataclass
@@ -73,11 +76,11 @@ class WorkflowExecution:
     workflow_name: str
     execution_id: str
     start_time: datetime
-    end_time: Optional[datetime] = None
+    end_time: datetime | None = None
     status: str = "running"  # running, completed, failed, cancelled
-    violations_found: List[Dict[str, Any]] = field(default_factory=list)
-    remediations_applied: List[RemediationAction] = field(default_factory=list)
-    execution_log: List[str] = field(default_factory=list)
+    violations_found: list[dict[str, Any]] = field(default_factory=list)
+    remediations_applied: list[RemediationAction] = field(default_factory=list)
+    execution_log: list[str] = field(default_factory=list)
 
 
 class ConstitutionalWorkflowEngine:
@@ -94,11 +97,11 @@ class ConstitutionalWorkflowEngine:
         self.performance_monitor = performance_monitor
         
         # Workflow registry
-        self.workflows: Dict[str, ValidationWorkflow] = {}
-        self.execution_history: List[WorkflowExecution] = []
+        self.workflows: dict[str, ValidationWorkflow] = {}
+        self.execution_history: list[WorkflowExecution] = []
         
         # Remediation engine
-        self.remediation_handlers: Dict[str, Callable] = {}
+        self.remediation_handlers: dict[str, Callable] = {}
         
         # Telemetry integration
         self.telemetry_collector = (
@@ -121,7 +124,7 @@ class ConstitutionalWorkflowEngine:
     def register_remediation_handler(
         self,
         action_type: str,
-        handler: Callable[[RemediationAction, Dict[str, Any]], bool]
+        handler: Callable[[RemediationAction, dict[str, Any]], bool]
     ) -> None:
         """Register a remediation action handler."""
         self.remediation_handlers[action_type] = handler
@@ -131,7 +134,7 @@ class ConstitutionalWorkflowEngine:
     async def execute_workflow(
         self,
         workflow_name: str,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         auto_remediate: bool = True
     ) -> WorkflowExecution:
         """Execute a constitutional validation workflow."""
@@ -146,7 +149,7 @@ class ConstitutionalWorkflowEngine:
         execution = WorkflowExecution(
             workflow_name=workflow_name,
             execution_id=execution_id,
-            start_time=datetime.now(timezone.utc)
+            start_time=datetime.now(UTC)
         )
         
         logger.info(f"Starting workflow execution: {execution_id}")
@@ -169,7 +172,7 @@ class ConstitutionalWorkflowEngine:
                 workflow, execution, context, auto_remediate
             )
         
-        execution.end_time = datetime.now(timezone.utc)
+        execution.end_time = datetime.now(UTC)
         self.execution_history.append(execution)
         
         # Log telemetry metrics
@@ -194,7 +197,7 @@ class ConstitutionalWorkflowEngine:
         self,
         workflow: ValidationWorkflow,
         execution: WorkflowExecution,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         auto_remediate: bool
     ) -> None:
         """Execute workflow with proper telemetry tracking."""
@@ -263,9 +266,9 @@ class ConstitutionalWorkflowEngine:
 
     async def generate_remediation_plan(
         self,
-        violations: List[Dict[str, Any]],
-        context: Dict[str, Any]
-    ) -> List[RemediationAction]:
+        violations: list[dict[str, Any]],
+        context: dict[str, Any]
+    ) -> list[RemediationAction]:
         """Generate comprehensive remediation plan for violations."""
         remediation_plan = []
         
@@ -281,7 +284,7 @@ class ConstitutionalWorkflowEngine:
         
         return remediation_plan
 
-    def get_workflow_statistics(self) -> Dict[str, Any]:
+    def get_workflow_statistics(self) -> dict[str, Any]:
         """Get workflow execution statistics."""
         if not self.execution_history:
             return {"status": "no_data"}
@@ -399,7 +402,7 @@ class ConstitutionalWorkflowEngine:
     async def _check_trigger_conditions(
         self,
         workflow: ValidationWorkflow,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> bool:
         """Check if workflow trigger conditions are met."""
@@ -414,7 +417,7 @@ class ConstitutionalWorkflowEngine:
     async def _execute_validation_step(
         self,
         step: str,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Execute a single validation step."""
@@ -447,7 +450,7 @@ class ConstitutionalWorkflowEngine:
         self,
         workflow: ValidationWorkflow,
         execution: WorkflowExecution,
-        context: Dict[str, Any]
+        context: dict[str, Any]
     ) -> None:
         """Apply automated remediations for violations."""
         for violation in execution.violations_found:
@@ -475,7 +478,7 @@ class ConstitutionalWorkflowEngine:
 
     async def _validate_constitutional_compliance(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Validate constitutional compliance."""
@@ -501,7 +504,7 @@ class ConstitutionalWorkflowEngine:
 
     async def _check_test_coverage(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Check test coverage."""
@@ -533,7 +536,7 @@ class ConstitutionalWorkflowEngine:
 
     async def _analyze_code_complexity(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Analyze code complexity."""
@@ -557,7 +560,7 @@ class ConstitutionalWorkflowEngine:
 
     async def _validate_documentation(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Validate documentation."""
@@ -579,7 +582,7 @@ class ConstitutionalWorkflowEngine:
 
     async def _check_dependency_security(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Check dependency security."""
@@ -587,7 +590,7 @@ class ConstitutionalWorkflowEngine:
 
     async def _validate_library_usage(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Validate library usage."""
@@ -595,7 +598,7 @@ class ConstitutionalWorkflowEngine:
 
     async def _check_version_compatibility(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Check version compatibility."""
@@ -603,7 +606,7 @@ class ConstitutionalWorkflowEngine:
 
     async def _validate_api_contracts(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Validate API contracts."""
@@ -611,7 +614,7 @@ class ConstitutionalWorkflowEngine:
 
     async def _check_breaking_changes(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Check for breaking changes."""
@@ -619,7 +622,7 @@ class ConstitutionalWorkflowEngine:
 
     async def _verify_integration_tests(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         execution: WorkflowExecution
     ) -> None:
         """Verify integration tests."""
@@ -629,7 +632,7 @@ class ConstitutionalWorkflowEngine:
         self,
         workflow: ValidationWorkflow,
         execution: WorkflowExecution,
-        context: Dict[str, Any]
+        context: dict[str, Any]
     ) -> bool:
         """Check if workflow success criteria are met."""
         # Simplified success criteria check
@@ -640,7 +643,7 @@ class ConstitutionalWorkflowEngine:
         
         return len(critical_violations) == 0
 
-    async def _evaluate_trigger_condition(self, condition: str, context: Dict[str, Any]) -> bool:
+    async def _evaluate_trigger_condition(self, condition: str, context: dict[str, Any]) -> bool:
         """Evaluate a trigger condition."""
         if condition == "file_changed":
             return "file_path" in context
@@ -657,19 +660,19 @@ class ConstitutionalWorkflowEngine:
         
         return False
 
-    async def _scan_target_path(self, target_path: str) -> Dict[str, Any]:
+    async def _scan_target_path(self, target_path: str) -> dict[str, Any]:
         """Scan target path for changes."""
         return {
             "target_path": target_path,
-            "scan_timestamp": datetime.now(timezone.utc).isoformat(),
+            "scan_timestamp": datetime.now(UTC).isoformat(),
             "file_changes": []  # Would be populated with actual file scanning
         }
 
     async def _generate_violation_remediations(
         self,
-        violation: Dict[str, Any],
-        context: Dict[str, Any]
-    ) -> List[RemediationAction]:
+        violation: dict[str, Any],
+        context: dict[str, Any]
+    ) -> list[RemediationAction]:
         """Generate remediation actions for a violation."""
         remediations = []
         
@@ -705,17 +708,17 @@ class ConstitutionalWorkflowEngine:
         
         return remediations
 
-    def _generate_docstring_fix(self, violation: Dict[str, Any], context: Dict[str, Any]) -> str:
+    def _generate_docstring_fix(self, violation: dict[str, Any], context: dict[str, Any]) -> str:
         """Generate automated docstring fix."""
         return '    """TODO: Add proper docstring describing function purpose and parameters."""'
 
-    async def _handle_auto_fix(self, remediation: RemediationAction, context: Dict[str, Any]) -> bool:
+    async def _handle_auto_fix(self, remediation: RemediationAction, context: dict[str, Any]) -> bool:
         """Handle automated fix remediation."""
         # Simulate automated fix application
         logger.info(f"Applied auto-fix: {remediation.description}")
         return True
 
-    async def _handle_suggest_change(self, remediation: RemediationAction, context: Dict[str, Any]) -> bool:
+    async def _handle_suggest_change(self, remediation: RemediationAction, context: dict[str, Any]) -> bool:
         """Handle suggested change remediation."""
         # Log suggestion for manual review
         logger.info(f"Suggested change: {remediation.description}")
@@ -723,7 +726,7 @@ class ConstitutionalWorkflowEngine:
             logger.info(f"Instructions: {remediation.manual_instructions}")
         return True
 
-    async def _handle_require_manual(self, remediation: RemediationAction, context: Dict[str, Any]) -> bool:
+    async def _handle_require_manual(self, remediation: RemediationAction, context: dict[str, Any]) -> bool:
         """Handle manual remediation requirement."""
         # Create manual review task
         logger.warning(f"Manual action required: {remediation.description}")

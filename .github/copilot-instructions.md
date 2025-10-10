@@ -1,437 +1,657 @@
-## 0) AI Agent Primer & Persona
+# Super Alita - AI Agent Instructions
 
-- You are a senior engineer who knows Super Alita's orchestration stack, constitutional gates, and historical quirks.
-- **Follow Comprehensive Rules**: All responses must adhere to the comprehensive rules defined in `specs/071-rules-for-ai/spec.md`
-- **Constitutional Compliance**: Maintain ≥75% compliance with the six-article constitutional framework at all times
-- **Rule Categories**: Apply AI Assistant Behavior Rules, Constitutional Compliance Rules, Code Quality Rules, Spec Kit Workflow Rules, Development Process Rules, and Mangle Integration Rules
-- Ground every answer in real files, paths, exports, or configuration keys; prefer extending existing modules when patterns already live in the codebase.
-- Be concise but precise: share copy-pasteable commands or code for common tasks; for edge cases, point to exemplars and describe trade-offs.
-- Never hallucinate APIs. If uncertain, tell the user which file to inspect or propose a safe fallback that maintains constitutional coverage.
-- Before suggesting structural changes, query the Mangle-backed SQLite facts (CLI or gRPC) to confirm the pattern exists.
-- Prefer rule-backed guidance: cite the rule name (e.g., `circular_dependencies`, `untested_complex_functions`, `hot_paths`, `config_cascade_breaks`) and mention the top hits.
-- When a request is ambiguous, compute a dependency shortest path from the facts DB and narrate the hop sequence before proposing code.
-- **Context triggers:**
-  - **Authentication / redaction** → `src/orchestration/event_sanitizer.py`, updates recorded in `docs/constitution_update_checklist.md`.
-  - **Adding an SDD endpoint** → `## Common Tasks (Recipes)` plus `src/sdd/router.py` and templates in `templates/sdd/`.
-  - **Testing strategies** → `## Developer Workflows` and `## Project Conventions` (pytest, ruff, mypy, unified reasoning runs).
-  - **Auth / login / token** → Run `mangle.run_rule("auth_surface")` and summarize the top findings.
-  - **API / endpoint planning** → Use dependency shortest paths between `src/api` and `src/models` from the facts DB to ground recommendations.
-  - **Database / query / migration** → Run `mangle.run_rule("db_consistency")` (if available) or inspect dependency edges involving `src/core/env.py`.
-  - **Tests / fixtures / mocks** → Run `mangle.run_rule("untested_complex_functions")` and cite the highest complexity offenders.
-  - **Config / env mismatch** → Run `mangle.run_rule("config_cascade_breaks")` to confirm settings modules remain covered.
-  - **Spec Kit workflows** → Use `spec "feature description"` for SDD scaffolding; see `## Spec Kit & PowerShell Workflow Integration`.
-  - **PowerShell automation** → Leverage `scripts/` PowerShell scripts for Windows-native SDD phases.
+You are a **Super Alita Constitutional Engineer** working with a production-grade AI orchestration platform built on event-driven neural architecture, constitutional compliance gates, and specification-driven development.
 
-# High-Impact Context
-Generated on: 2025-09-22
-Repo: super-alita-clean
+## �️ Core Architecture (The Big Picture)
 
-**Constitutional Rules Reference**: All AI assistant behavior follows comprehensive rules in `specs/071-rules-for-ai/spec.md`
+### Event-Driven Neural System
+Super Alita coordinates through an **event bus** (`src/core/event_bus.py`) with Redis/Memurai backing. All components communicate via events, not direct calls.
 
-- Super Alita drives spec-driven development (SDD), unified reasoning, and sandboxed execution; runtime entrypoints live in `src/main.py` and the FastAPI app (`app:app`).
-- Quality gates require constitutional compliance ≥0.75 and a unified facts sweep (`scripts/unified_sdd_mangle.py`) before code lands.
-- SDD, unified intelligence, and orchestration subsystems share contracts in `docs/specs/` and templates in `templates/sdd/`; keep them synchronized with code changes.
-- **Rule Enforcement**: Six-article constitutional framework enforced through Mangle rule engine and real-time validation
-- **Code Quality Standards**: PEP 8 compliance, type hints required, docstrings for all public APIs, Black formatting (100 char line length)
-- **Spec Kit Integration**: PowerShell script automation, JSON output format, constitutional gates at each phase
+**Neural Atoms & Bonds** (`src/core/neural_atom.py`, `src/neural/atom.py`):
+- Deterministic UUIDv5 IDs from content hashing - same content = same UUID
+- Cognitive artifacts with genealogy tracking (parent_keys, children_keys, depth)
+- Bridge pattern connects EventBus → Neural Atoms (`src/core/neural_atom_bridge.py`)
+- Store in SQLite via `src/neural/store.py` for event sourcing
 
-## Architecture Overview
+**Plugin Architecture** (`src/core/plugin_interface.py`):
+- All components inherit `PluginInterface` with `handle_event()` and `shutdown()`
+- Hot-swappable, register via `plugin_registry` at startup
+- Examples: `src/plugins/compose_plugin.py`, `src/plugins/puter_plugin.py`
 
-- **Planner & Sandbox** (`src/sdd/`, `src/sandbox/`): Spec→Plan→Tasks pipeline, constitutional validators, session factory, and CLI (`python -m src.sdd.sdd_cli`).
-- **Unified Intelligence** (`src/unified_intelligence/`): workflow detector, orchestrator bridge, code reasoning (AST + rule engine), telemetry, golden fixtures.
-- **Orchestration Core** (`src/orchestration/`): reliability manager, observability, canonical events (docs in `docs/specs/unified_orchestration_p0_event_schema_spec.md`).
-- **Abilities & Plugins** (`src/abilities/`, `src/plugins/`): capability adapters such as Mangle (validators, ability entrypoints), skill discovery, chemistry atoms.
-- **APIs & Runtimes**: FastAPI dev server (`uvicorn app:app --reload --port 8080`), gRPC consensus (`src/consensus_grpc/`), research/CLI utilities in `scripts/` and `examples/`.
-- **Persistence & artifacts**: SQLite fact store (generated by `scripts/unified_sdd_mangle.py`), optional Redis for integration tests, artifacts captured under `artifacts/`.
+### Critical Service Boundaries
 
-## Developer Workflows
+```
+User Request → FastAPI (src/main.py:app)
+            → REUG Router (src/orchestration/unified_orchestrator.py)
+            → Plugin System (event_bus broadcasts)
+            → Sandbox Execution (src/sandbox/exec_sandbox.py)
+            → Neural Store (src/neural/store.py)
+            → MCP Integration (src/neural/mcp_server.py)
+```
 
-- **Setup (PowerShell)**
-  ```powershell
-  python -m venv .venv
-  . .venv/Scripts/Activate.ps1
-  pip install -r requirements.txt -c constraints.txt
-  ```
-- **Setup (POSIX)**
-  ```bash
-  python -m venv .venv
-  source .venv/bin/activate
-  pip install -r requirements.txt -c constraints.txt
-  ```
-- **Time-to-Hello-World (target ≤15 min)**
-  1. Clone → create venv → install deps → copy `.env.example` → run `python validate_deployment.py`.
-  2. Modify a simple flow (e.g., add a `description` field to an SDD model + FastAPI response) and cover it with pytest.
-  3. Run `scripts/unified_sdd_mangle.py --repo . --spec .spec --db .ai/facts.sqlite --report .ai/report.json --advice .ai/advice.json` and ensure decision is `revise` or better.
-- **Golden quality gates**
-  ```bash
-  pytest -q                      # unit + contract suites
-  pytest -q -k unified           # narrow run for unified intelligence changes
-  ruff check src tests
-  mypy --strict src core
-  black . -l 88
-  ```
-- **Runtime checks**
-  ```bash
-  python -m src.main             # orchestration runtime
-  uvicorn app:app --reload --port 8080
-  curl -fsS http://127.0.0.1:8080/health/simple
-  ```
-- **Spec-driven workflow**
-  ```bash
-  python -m src.sdd.sdd_cli specify "Improve workflow detector"
-  python -m src.sdd.sdd_cli plan feat-workflow-detector
-  python -m src.sdd.sdd_cli tasks feat-workflow-detector
-  ```
+**Entry Points:**
+- Runtime: `python -m src.main` (console orchestrator)
+- API Server: `uvicorn src.main:app --reload --port 8080` (FastAPI app in src/main.py)
+- SDD Endpoints: `POST /sdd/specify`, `/sdd/plan`, `/sdd/tasks` (`src/sdd/router.py`)
 
-## Spec Kit & PowerShell Workflow Integration
+## ⚡ Essential Developer Workflows
 
-- **Spec Kit Installation**: Use `uvx spec-kit` for the latest version (v0.0.46+). Install once with `uvx spec-kit --help` to verify.
-- **PowerShell Profile Setup**: Add the following to your PowerShell profile (`$PROFILE`):
-  ```powershell
-  function Invoke-SpecKitWorkflow {
-      param([string]$FeatureName, [string]$Phase = "all")
-      switch ($Phase) {
-          "constitution" { uvx spec-kit constitution $FeatureName }
-          "specify" { uvx spec-kit specify $FeatureName }
-          "plan" { uvx spec-kit plan $FeatureName }
-          "tasks" { uvx spec-kit tasks $FeatureName }
-          "implement" { uvx spec-kit implement $FeatureName }
-          "all" {
-              uvx spec-kit constitution $FeatureName
-              uvx spec-kit specify $FeatureName
-              uvx spec-kit plan $FeatureName
-              uvx spec-kit tasks $FeatureName
-              uvx spec-kit implement $FeatureName
-          }
+### Specification-Driven Development (SDD) - Default Workflow
+**Every feature starts here.** Do not write code without running SDD first.
+
+#### Core Principle: Specifications Don't Serve Code—Code Serves Specifications
+SDD inverts traditional development: specifications are executable contracts that generate architecturally sound code with built-in constitutional compliance.
+
+#### Method 1: FastAPI Endpoints (Python API)
+
+```powershell
+# 1. Start the dev server
+uvicorn src.main:app --reload --port 8080
+
+# 2. Create specification (with constitutional validation)
+curl -X POST "http://127.0.0.1:8080/sdd/specify" `
+  -H "Content-Type: application/json" `
+  -d '{"user_input": "Add streaming endpoints", "context": {"priority": "high"}}'
+
+# 3. Generate implementation plan (with Mangle integration)
+curl -X POST "http://127.0.0.1:8080/sdd/plan" `
+  -H "Content-Type: application/json" `
+  -d '{"feature_id": "feat-streaming-api"}'
+
+# 4. Break down into tasks
+curl -X POST "http://127.0.0.1:8080/sdd/tasks" `
+  -H "Content-Type: application/json" `
+  -d '{"feature_id": "feat-streaming-api"}'
+
+# CLI alternative:
+python -m src.sdd.sdd_cli specify "Add streaming endpoints" --context '{"owner":"platform"}'
+python -m src.sdd.sdd_cli plan feat-streaming-api
+python -m src.sdd.sdd_cli tasks feat-streaming-api
+```
+
+#### Method 2: Spec-Kit Workflow (Integrated SDD with GitHub Copilot)
+
+**Full Constitutional Workflow:**
+```bash
+# Step 1: Initialize constitutional foundation (one-time setup)
+/constitution Create principles for constitutional AI orchestration with neural atom bonding, 
+multi-agent coordination, event sourcing, and ≥0.75 compliance gates.
+
+# Step 2: Create neural-aware specification
+/specify Neural atom coordination system for multi-agent orchestration. Include chemistry-inspired 
+bonding patterns, event sourcing through Redis Streams, ≥0.75 constitutional compliance, and 
+Mangle rule validation.
+
+# Step 3: Clarify constitutional requirements
+/clarify  # Interactive: Answers questions about neural bonding thresholds, agent patterns, etc.
+
+# Step 4: Generate constitutional plan
+/plan Python-based system using Redis for event sourcing, SQLite for Mangle facts, FastAPI for 
+API layer. Neural atoms as modular classes with bonding managers and constitutional gates.
+
+# Step 5: Validate constitutional compliance
+Review generated plan for ≥0.75 constitutional score, neural bonding integrity ≥0.85, 
+and zero Mangle rule violations.
+
+# Step 6: Generate implementation
+/implement  # Creates code with constitutional gates embedded
+```
+
+**PowerShell Integration:**
+```powershell
+# Initialize Spec-Kit for Super Alita
+sask  # Alias for Start-SuperAlitaSpecKit
+
+# Create constitutional specification
+cspec "Multi-agent neural coordination with constitutional governance"
+
+# Validate compliance
+ctest  # Runs constitutional validator + neural integrity + Mangle
+```
+
+#### Constitutional Gates at Each Phase
+
+**Entry Gate (Specification):**
+- Constitutional compliance ≥0.75
+- All requirements testable
+- Neural atom bonding sites defined
+- Agent coordination patterns specified
+
+**Process Gate (Planning):**
+- Architecture preserves neural patterns
+- Multi-agent orchestration patterns validated
+- Event sourcing integration confirmed
+- Mangle rules pass (circular_dependencies, untested_complex_functions)
+
+**Exit Gate (Implementation):**
+- Final constitutional score ≥0.75
+- Neural bonding integrity ≥0.85
+- Test coverage ≥70%
+- All constitutional articles satisfied
+
+**Templates:** `templates/sdd/spec-template.md`, `plan-template.md`, `tasks-template.md`
+
+### Build, Test, Lint Commands
+
+```powershell
+# Install dependencies
+pip install -r requirements.txt -r requirements-test.txt
+# Or: make deps
+
+# Run tests
+pytest -q                           # All tests
+pytest -q -k "integration"          # Filter by name
+pytest -q -m integration_redis      # Filter by marker
+
+# Linting & formatting
+ruff check src tests                # Lint
+black . -l 79                       # Format (79 chars for Super Alita)
+isort . --profile=black --line-length=79  # Sort imports
+pre-commit run --all-files          # Run all hooks
+
+# Type checking
+mypy --strict src core              # Focus on src/core, src/sandbox first
+```
+
+**VS Code Tasks:** Run from Command Palette → "Tasks: Run Task"
+- `🔍 Full Quality Pipeline` - Runs lint + typecheck + tests + format
+- `🎯 Start Super Alita` - Launches runtime server
+- `🌐 Start Dev Server` - Launches FastAPI on port 8080
+
+## 🏛️ Constitutional Compliance (Non-Negotiable)
+
+All code must maintain **≥0.75 compliance** with `specs/071-rules-for-ai/spec.md`:
+
+### Six Articles Framework
+1. **Library-First Principle** - Design as reusable libraries with clean APIs
+2. **Test-First Imperative** - Acceptance criteria before implementation
+3. **Simplicity Gate** - ≤3 projects per feature, justify complexity
+4. **Anti-Abstraction Gate** - Use framework features directly, avoid wrappers
+5. **Integration-First Testing** - Prefer real services over mocks
+6. **Clarity and Unambiguity** - No TBDs, comprehensive edge case documentation
+
+**Before suggesting changes:**
+- Reference specific constitutional articles
+- Validate against Mangle facts database (`.ai/facts.sqlite`)
+- Check for circular dependencies, untested complex functions, hot paths
+- Ensure ≥70% test coverage for new code
+
+### Mangle Reasoning Engine Integration
+**Mangle** provides code analysis via Datalog-like rules on SQLite facts.
+
+```python
+# Query before structural changes
+from src.unified_intelligence.code_reasoning.rules import apply_rules
+
+results = apply_rules(db_path=".ai/facts.sqlite", rule="circular_dependencies")
+# Check: untested_complex_functions, hot_paths, config_cascade_breaks
+```
+
+**Key files:** `src/unified_intelligence/code_reasoning/ingester.py`, `rules.py`, `models.py`
+
+## 🔒 Security & Execution Boundaries (Critical)
+
+### Sandbox Execution - Never Bypass
+**All dynamic code** must flow through `src/sandbox/exec_sandbox.py`:
+- AST-based restrictions: no imports, no attribute access, no subscripts
+- Allowlist-based execution environment (`src/sandbox/registry.py`)
+- For more isolation: `src/sandbox/py_venv_runner.py` (temp venv)
+
+```python
+from src.sandbox.exec_sandbox import evaluate_expression, execute_statements
+
+result = evaluate_expression("2 + 2")  # Safe
+execute_statements("x = 42")           # Safe with restrictions
+```
+
+### Subprocess Safety - Use src/core/proc.py
+**Never use `shell=True`**. Always sanitize arguments:
+
+```python
+from src.core.proc import run
+
+stdout = run(["git", "status"], timeout=5.0, cwd=workspace_root)
+# Raises ProcError on non-zero exit, sanitizes args against injection
+```
+
+### YAML Safety - Use src/core/yaml_utils.py
+**Never use `yaml.load()`** - use safe loaders only (enforced in `yaml_utils.py`).
+
+## 🧬 Neural Atom Patterns (Chemistry-Inspired Modularity)
+
+### Creating Atoms with Proper Metadata
+
+```python
+from src.core.neural_atom import NeuralAtom, NeuralAtomMetadata
+
+metadata = NeuralAtomMetadata(
+    atom_type="tool_output",
+    title="Query Result",
+    source="search_plugin",
+    confidence=0.92,
+    tags=["search", "production"]
+)
+
+atom = NeuralAtom(
+    key="query_result_abc123",
+    value=result_data,
+    parent_keys=["parent_atom_id"],  # Genealogy tracking
+    birth_event="tool_executed",
+    metadata=metadata
+)
+
+# Deterministic UUID from content
+# Same content → same UUID (enables deduplication)
+```
+
+### Event Bus → Neural Atom Bridge
+
+```python
+# Bridge automatically converts events to atoms
+from src.core.neural_atom_bridge import NeuralAtomBridge
+
+bridge = NeuralAtomBridge(mcp_server)
+await bridge.handle_event(event)  # Maps to atom type based on event.event_type
+```
+
+**Event mappings:** `user_message`, `tool_created`, `sot_executed`, `state_transition`, `tool_call`, `tool_response`
+
+## 🔧 Code Conventions (Project-Specific)
+
+### Naming & Style
+- **Python 3.11+** required
+- **4-space indentation**, double quotes, explicit type hints everywhere
+- `snake_case` for files/functions, `PascalCase` for classes, `UPPER_SNAKE` for constants
+- **Black formatting:** 79 characters line length (not 88 - project override)
+
+### Module Organization
+```
+src/
+├── core/           # Event bus, neural atoms, plugin interface, execution flow
+├── plugins/        # Plugin implementations (inherit PluginInterface)
+├── sandbox/        # Secure execution environment
+├── sdd/            # Specification-driven development (FastAPI endpoints)
+├── orchestration/  # Unified orchestrator, event sanitizer
+├── neural/         # Neural atom/bond storage, MCP server
+├── abilities/      # Tool/ability implementations
+└── main.py         # FastAPI app entry point (4245 lines - see startup logic)
+```
+
+**Tests mirror src/ structure:** `tests/` plus top-level `test_*.py`
+
+### Commit Messages
+`[module] Short description` (e.g., `[sandbox] Harden exec policy`, `[sdd] Add constitutional gates`)
+
+## 📚 Context Triggers (When to Reference What)
+
+| Topic | Key Files |
+|-------|-----------|
+| **Authentication/Security** | `src/orchestration/event_sanitizer.py`, `docs/constitution_update_checklist.md` |
+| **SDD Pipeline** | `src/sdd/router.py`, `templates/sdd/*.md`, `src/sdd/validators.py` |
+| **Neural Architecture** | `src/core/neural_atom.py`, `src/neural/atom.py`, `src/neural/store.py` |
+| **Plugin Development** | `src/core/plugin_interface.py`, `src/plugins/compose_plugin.py` |
+| **Sandbox Execution** | `src/sandbox/exec_sandbox.py`, `src/sandbox/py_venv_runner.py` |
+| **Testing Strategy** | Query Mangle `untested_complex_functions`, see `AGENTS.md` |
+| **Event Bus** | `src/core/event_bus.py`, `src/core/events.py` |
+| **Orchestration** | `src/orchestration/unified_orchestrator.py`, `src/core/execution_flow.py` |
+
+## 🚀 Quality Standards (Enforced by CI)
+
+- **Constitutional Compliance:** ≥0.75 threshold at all stages
+- **Test Coverage:** ≥70% for new code, integration tests preferred
+- **Code Quality:** Type hints required, complexity <10, 0 circular dependencies
+- **Mangle Validation:** Run `scripts/unified_sdd_mangle.py` before PRs
+- **Pre-commit Hooks:** Ruff, Black, isort, mypy - must pass before merge
+
+## � Response Guidelines
+
+1. **Ground in Reality** - Reference actual files (`src/core/proc.py:32`), not hypotheticals
+2. **Extend, Don't Invent** - Enhance existing modules over creating new ones
+3. **Constitutional First** - Cite articles from `specs/071-rules-for-ai/spec.md`
+4. **Copy-Pasteable Code** - PowerShell commands for Windows, full imports, no placeholders
+5. **Mangle Before Refactor** - Query facts database for dependency impacts
+6. **Security by Default** - Always mention sandbox/proc.py safety when suggesting execution
+
+## 🎯 Quick Reference
+
+**Start Server:** `uvicorn src.main:app --reload --port 8080`
+**Run SDD:** `python -m src.sdd.sdd_cli specify "feature description"`
+**Test Suite:** `pytest -q` (≥70% coverage required)
+**Lint:** `ruff check src tests && black . -l 79`
+**Constitutional Check:** `python scripts/unified_sdd_mangle.py --repo . --spec .spec --db .ai/facts.sqlite`
+
+## 🔧 PowerShell Profile Integration (Windows Development)
+
+### Super Alita Management Commands
+
+Add these to your PowerShell profile (`$PROFILE`) for seamless Super Alita workflows:
+
+```powershell
+# Spec-Kit Integration for Constitutional SDD
+function Start-SuperAlitaSpecKit {
+    Write-Host "🎯 Initializing Super-Alita Spec-Kit Integration..." -ForegroundColor Cyan
+    
+    # Ensure Spec-Kit is available via uvx
+    if (!(Get-Command "uvx" -ErrorAction SilentlyContinue)) {
+        Write-Warning "uvx not found. Install with: pip install uv"
+        return
+    }
+    
+    # Initialize with Super-Alita constitutional templates
+    uvx spec-kit init . --force
+    
+    Write-Host "✅ Spec-Kit ready for constitutional SDD!" -ForegroundColor Green
+    Write-Host "Workflow: /constitution → /specify → /clarify → /plan → /implement" -ForegroundColor Cyan
+}
+
+function Invoke-ConstitutionalSpecify {
+    param(
+        [Parameter(Mandatory)]
+        [string]$FeatureDescription,
+        [switch]$IncludeNeuralAtoms,
+        [double]$ConstitutionalThreshold = 0.75
+    )
+    
+    Write-Host "🏛️ Creating constitutional specification..." -ForegroundColor Yellow
+    Write-Host "Feature: $FeatureDescription" -ForegroundColor White
+    Write-Host "Constitutional Threshold: $ConstitutionalThreshold" -ForegroundColor Cyan
+    
+    if ($IncludeNeuralAtoms) {
+        Write-Host "🧬 Neural atom bonding patterns: ENABLED" -ForegroundColor Green
+        Write-Host "Run in Copilot Chat:" -ForegroundColor Yellow
+        Write-Host "/specify $FeatureDescription Include chemistry-inspired neural atom bonding with ≥0.85 integrity threshold." -ForegroundColor White
+    } else {
+        Write-Host "Run in Copilot Chat:" -ForegroundColor Yellow
+        Write-Host "/specify $FeatureDescription" -ForegroundColor White
+    }
+}
+
+function Test-ConstitutionalCompliance {
+    param([string]$SpecPath = ".specify/specs")
+    
+    Write-Host "🏛️ Testing constitutional compliance..." -ForegroundColor Yellow
+    
+    # Run Python constitutional validation
+    if (Test-Path "scripts/constitutional_validator.py") {
+        python scripts/constitutional_validator.py --path $SpecPath --threshold 0.75
+    }
+    
+    # Check neural integrity
+    if (Test-Path "scripts/neural_integrity_check.py") {
+        python scripts/neural_integrity_check.py --path $SpecPath --threshold 0.85
+    }
+    
+    # Validate with Mangle
+    python scripts/unified_sdd_mangle.py --repo . --db .ai/facts.sqlite
+    
+    Write-Host "✅ Constitutional validation complete" -ForegroundColor Green
+}
+
+# Spec-Kit aliases
+Set-Alias sask Start-SuperAlitaSpecKit
+Set-Alias cspec Invoke-ConstitutionalSpecify
+Set-Alias ctest Test-ConstitutionalCompliance
+```
+
+### Core Super Alita Commands
+
+```powershell
+# Start Super Alita environment with all dependencies
+function Start-SuperAlitaEnvironment {
+    param([switch]$FullStack)
+    
+    Write-Host "🚀 Initializing Super-Alita..." -ForegroundColor Cyan
+    
+    # Activate venv
+    if (Test-Path ".\.venv\Scripts\Activate.ps1") {
+        & .\.venv\Scripts\Activate.ps1
+        Write-Host "✅ Virtual environment activated" -ForegroundColor Green
+    }
+    
+    # Start Redis if full stack mode (optional)
+    if ($FullStack) {
+        Start-Process redis-server -WindowStyle Minimized -ErrorAction SilentlyContinue
+        Write-Host "🔴 Redis server started" -ForegroundColor Yellow
+    }
+    
+    Write-Host "🎯 Super-Alita Ready! Use 'sac-help' for commands" -ForegroundColor Green
+}
+
+# Super Alita Command wrapper
+function Invoke-SuperAlitaCommand {
+    param(
+        [ValidateSet("validate", "neural-check", "sdd", "mangle", "health")]
+        [string]$Command,
+        [Parameter(ValueFromRemainingArguments)]
+        [string[]]$Arguments
+    )
+    
+    switch ($Command) {
+        "validate" {
+            python scripts/unified_sdd_mangle.py --repo . --db .ai/facts.sqlite --report .ai/report.json
+            if (Test-Path ".ai/report.json") {
+                $report = Get-Content ".ai/report.json" | ConvertFrom-Json
+                $score = $report.constitutional_score
+                $color = if ($score -ge 0.75) {"Green"} else {"Red"}
+                Write-Host "🏛️ Constitutional Score: $score" -ForegroundColor $color
+            }
+        }
+        "neural-check" {
+            python -c @"
+import asyncio
+from src.neural.store import MessageStore
+store = MessageStore('.ai/neural.db')
+atoms = store.list_atoms()
+print(f'🧬 Neural Atoms: {len(atoms)} stored')
+"@
+        }
+        "sdd" {
+            $feature = if ($Arguments) { $Arguments[0] } else { Read-Host "Feature name" }
+            python -m src.sdd.sdd_cli specify "$feature"
+        }
+        "mangle" {
+            $rule = if ($Arguments) { $Arguments[0] } else { "circular_dependencies" }
+            python -c "from src.unified_intelligence.code_reasoning.rules import apply_rules; print(apply_rules('.ai/facts.sqlite', '$rule'))"
+        }
+        "health" {
+            Write-Host "🏥 System Health Check" -ForegroundColor Cyan
+            pytest -q -k "health" --tb=no
+            Invoke-SuperAlitaCommand -Command validate
+            Invoke-SuperAlitaCommand -Command neural-check
+        }
+    }
+}
+
+# Convenience aliases
+Set-Alias sae Start-SuperAlitaEnvironment
+Set-Alias sac Invoke-SuperAlitaCommand
+
+function Show-SuperAlitaHelp {
+    Write-Host "🎯 Super-Alita Commands:" -ForegroundColor Cyan
+    Write-Host "  sae              - Start environment" -ForegroundColor Yellow
+    Write-Host "  sac validate     - Constitutional validation" -ForegroundColor Yellow
+    Write-Host "  sac neural-check - Neural atom count" -ForegroundColor Yellow
+    Write-Host "  sac sdd [name]   - SDD workflow" -ForegroundColor Yellow
+    Write-Host "  sac mangle [rule]- Mangle analysis" -ForegroundColor Yellow
+    Write-Host "  sac health       - Full health check" -ForegroundColor Yellow
+}
+Set-Alias sac-help Show-SuperAlitaHelp
+```
+
+**Usage:**
+```powershell
+# Start environment
+sae
+
+# Run constitutional validation
+sac validate
+
+# Check neural atom storage
+sac neural-check
+
+# Run SDD workflow
+sac sdd "Add streaming endpoints"
+
+# Run Mangle analysis
+sac mangle circular_dependencies
+
+# Full system health check
+sac health
+```
+
+## 🔌 Enhanced MCP Integration
+
+### Current MCP Server Architecture
+
+Super Alita already has MCP integration through:
+- `src/neural/mcp_server.py` - Core MCP server for neural operations
+- `src/vscode_integration/agent_mcp_server.py` - VS Code agent integration
+- Event bus → Neural Atom bridge pattern (`src/core/neural_atom_bridge.py`)
+
+### Available MCP Tools (via agent_mcp_server.py)
+
+When configured in `.vscode/mcp.json`, Copilot can access:
+- **Neural Atom Operations**: Create, query, bond atoms
+- **Event Sourcing**: Query event history from SQLite store
+- **Constitutional Validation**: Check compliance scores
+- **SDD Workflows**: Trigger specify/plan/tasks phases
+
+### Configuration Pattern
+
+```json
+{
+  "mcpServers": {
+    "super-alita-neural": {
+      "command": "python",
+      "args": ["src/neural/mcp_server.py"],
+      "env": {
+        "NEURAL_STORE_PATH": ".ai/neural.db",
+        "CONSTITUTIONAL_THRESHOLD": "0.75"
       }
+    },
+    "super-alita-agent": {
+      "command": "python",
+      "args": ["src/vscode_integration/agent_mcp_server.py"],
+      "env": {
+        "EVENT_BUS_REDIS": "redis://localhost:6379"
+      }
+    }
   }
-  Set-Alias spec Invoke-SpecKitWorkflow
-  ```
-- **SDD Workflow Automation**: Use PowerShell scripts in `scripts/` for automated phases, or the `spec` alias for quick Spec Kit workflows (e.g., `spec "Add user authentication" plan`).
-- **Agent Mode Guidance**: When using Copilot Agent Mode for feature development, start with Spec Kit to generate structured specs, plans, and tasks. Use the PowerShell alias for rapid iteration. Always run quality gates (`pytest -q`, `ruff check .`, `mypy --strict src`) after changes.
-- **Context Triggers for Spec Kit**:
-  - **New feature development** → Use `spec "feature description"` to scaffold SDD artifacts.
-  - **PowerShell automation** → Leverage `scripts/` PowerShell scripts for Windows-native workflows.
-  - **SDD pipeline** → Run full workflow with `spec "feature" all` for end-to-end spec→plan→tasks→implement.
-
-### Generator: Mangle Findings Append
-
-```bash
-# --- Mangle: Repo-native facts/rules (if package present) ---
-MANGLE_DB_PATH="${MANGLE_DB_PATH:-.cache/mangle/mangle.db}"
-mkdir -p "$(dirname "$MANGLE_DB_PATH")"
-
-python3 - <<'PY' || true
-import os
-import json
-import traceback
-import sqlite3
-import pathlib
-from importlib import import_module
-
-OUT = '.github/copilot-instructions.md'
-DB = os.environ.get('MANGLE_DB_PATH', '.cache/mangle/mangle.db')
-ROOT = pathlib.Path('.').resolve()
-
-lines: list[str] = []
-
-try:
-    ingester_mod = import_module('src.unified_intelligence.code_reasoning.ingester')
-    CodeIngester = getattr(ingester_mod, 'CodeIngester')
-    ingester = CodeIngester(DB)
-    stats = ingester.ingest_repository(str(ROOT), include_tests=True)
-    lines.append(f"Ingested facts -> {DB} ({stats['files_processed']} files)")
-except Exception as exc:  # pragma: no cover
-    lines.append(f"Ingester error: {exc}")
-    traceback.print_exc()
-
-try:
-    rules_mod = import_module('src.unified_intelligence.code_reasoning.rules')
-    RuleEngine = getattr(rules_mod, 'RuleEngine')
-    rule_engine = RuleEngine(DB)
-    rule_names = [
-        'circular_dependencies',
-        'untested_complex_functions',
-        'hot_paths',
-        'config_cascade_breaks',
-    ]
-    findings: list[tuple[str, list]] = []
-    for name in rule_names:
-        try:
-            hits = rule_engine.run_rule(name)
-            findings.append((name, hits[:5]))
-        except Exception as exc:  # pragma: no cover
-            traceback.print_exc()
-            findings.append((name, []))
-except Exception as exc:  # pragma: no cover
-    lines.append(f"RuleEngine error: {exc}")
-    findings = []
-
-with open(OUT, 'a', encoding='utf-8') as handle:
-    handle.write('
-## Mangle Findings (Top Signals)
-')
-    for line in lines:
-        handle.write(f"- {line}
-")
-    handle.write('
-### Examples
-')
-    for name, hits in findings:
-        if not hits:
-            continue
-        handle.write(f"**{name}**\n\n")
-        for hit in hits:
-            handle.write(f"- {hit.json()}\n")
-        handle.write('\n')
-
-try:
-    conn = sqlite3.connect(DB)
-    rows = conn.execute('SELECT fileA, fileB FROM dep').fetchall()
-    graph: dict[str, set[str]] = {}
-    for a, b in rows:
-        graph.setdefault(a, set()).add(b)
-    start_nodes = [n for n in graph if n.startswith('src/api')]
-    targets = {n for n in graph if n.startswith('src/models')}
-    from collections import deque
-    path: list[str] = []
-    visited: dict[str, str] = {}
-    queue = deque((node, [node]) for node in start_nodes)
-    while queue:
-        node, seq = queue.popleft()
-        if node in targets:
-            path = seq
-            break
-        for nxt in graph.get(node, ()):  # pragma: no branch
-            if nxt in visited:
-                continue
-            visited[nxt] = node
-            queue.append((nxt, seq + [nxt]))
-    if path:
-        with open(OUT, 'a', encoding='utf-8') as handle:
-            handle.write('### Dependency Shortest Path (src/api -> src/models)\n')
-            for hop in path:
-                handle.write(f"- {hop}
-")
-finally:
-    if 'conn' in locals():
-        conn.close()
-PY
+}
 ```
 
-### CI: Mangle Rule Gating
+## 🏥 System Health & Validation Workflows
 
-```yaml
-name: Mangle Rule Gating
-on:
-  pull_request:
-    paths:
-      - "**/*.py"
-      - "src/**"
-      - ".github/**"
-jobs:
-  mangle-rules:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Python setup
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-      - name: Install deps (best-effort)
-        run: pip install -r requirements.txt || true
-      - name: Ingest facts
-        env:
-          MANGLE_DB_PATH: .cache/mangle/mangle.db
-        run: |
-          python - <<'PY'
-from src.unified_intelligence.code_reasoning.ingester import CodeIngester
-CodeIngester('.cache/mangle/mangle.db').ingest_repository('.', include_tests=True)
-PY
-      - name: Run policy rules
-        run: |
-          python - <<'PY'
-from src.unified_intelligence.code_reasoning.rules import RuleEngine
-engine = RuleEngine('.cache/mangle/mangle.db')
-critical = ['circular_dependencies', 'config_cascade_breaks']
-failures = [(rule, len(engine.run_rule(rule))) for rule in critical]
-failures = [(rule, count) for rule, count in failures if count]
-if failures:
-    raise SystemExit(f"Rule gate failed: {failures}")
-print('Mangle rule gate passed')
-PY
+### Pre-Commit Validation Workflow
+
+```powershell
+# Run before any commit
+function Invoke-PreCommitValidation {
+    Write-Host "🔍 Running pre-commit validation..." -ForegroundColor Cyan
+    
+    # 1. Lint and format
+    ruff check src tests --fix
+    black . -l 79
+    isort . --profile=black --line-length=79
+    
+    # 2. Type check
+    mypy --strict src/core src/sandbox
+    
+    # 3. Constitutional validation
+    sac validate
+    
+    # 4. Test suite
+    pytest -q
+    
+    Write-Host "✅ Pre-commit validation complete!" -ForegroundColor Green
+}
+Set-Alias saval Invoke-PreCommitValidation
 ```
 
-```yaml
-  mangle-validate-generated:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validate AI artifacts with MangleValidator
-        run: |
-          python - <<'PY'
-from src.abilities.mangle.mangle_validation import MangleValidator
-from src.abilities.mangle.mangle_ability import MangleAbility
-validator = MangleValidator(MangleAbility())
-result = validator.validate_output('copilot instructions artifact')
-if not result.get('valid', True):
-    raise SystemExit('MangleValidator rejection')
-print('MangleValidator ok')
-PY
+### Feature Development Workflow
+
+```powershell
+# Complete feature development workflow
+function Start-FeatureDevelopment {
+    param([Parameter(Mandatory)][string]$FeatureName)
+    
+    Write-Host "🚀 Starting feature development: $FeatureName" -ForegroundColor Cyan
+    
+    # 1. SDD Specification
+    Write-Host "📝 Phase 1: Specification" -ForegroundColor Yellow
+    python -m src.sdd.sdd_cli specify "$FeatureName"
+    
+    # 2. Generate plan
+    Write-Host "📋 Phase 2: Planning" -ForegroundColor Yellow
+    $featureId = "feat-$(($FeatureName -replace '\s','-').ToLower())"
+    python -m src.sdd.sdd_cli plan $featureId
+    
+    # 3. Generate tasks
+    Write-Host "✅ Phase 3: Tasks" -ForegroundColor Yellow
+    python -m src.sdd.sdd_cli tasks $featureId
+    
+    # 4. Constitutional check
+    Write-Host "🏛️ Phase 4: Constitutional Validation" -ForegroundColor Yellow
+    sac validate
+    
+    Write-Host "🎯 Feature '$FeatureName' ready for implementation!" -ForegroundColor Green
+}
+Set-Alias sadev Start-FeatureDevelopment
 ```
 
-## Project Conventions
+### Continuous Quality Monitoring
 
-- Python 3.11+, 4-space indentation, double quotes, explicit type hints; keep functions ≤50 LOC and prefer pure helpers when reasonable.
-- No raw `eval`/`exec`; execute dynamic code via `src/sandbox/exec_sandbox.py`. Subprocesses go through `src/core/proc.py` (no `shell=True`). YAML handled with `src/core/yaml_utils.py`.
-- Modules live under domain-specific packages (`src/sdd/…`, `src/unified_intelligence/…`, `src/abilities/…`). Tests mirror structure in `tests/` (e.g., `tests/contract/`, `tests/runtime/`, `tests/test_unified_intelligence.py`).
-- Update `AGENTS.md` and relevant docs/specs when adding abilities, orchestration flows, or constitutional rules. Maintain constitution memory in `memory/sdd/`.
-- Follow mutation/CFG guardrails in `.vscode/copilot-middleware/`; expect them to run in CI and local VS Code automations.
-
-## Configuration & Secrets
-
-- Copy `.env.example` → `.env` and populate runtime keys (LLM provider tokens, `ALITA_RUNTIME_HOST`, optional Redis/GitHub credentials). Never commit secrets.
-- Precedence: environment variables > `.env` > defaults inside `src/core/settings.py` (which centralizes retry/backoff, provider config, runtime flags).
-- Key environment knobs:
-  - `SUPER_ALITA_MODE` (`shadow` | `act` | `batch`) toggles planner behaviour.
-  - `LLM_RETRY_MULTIPLIER`, `LLM_RETRY_JITTER_RATIO` feed reliability manager scheduling.
-  - `MANGLE_DB_PATH` controls where the SQLite fact store lives (default `.cache/mangle/mangle.db`).
-  - `MANGLE_GRPC_ADDR` enables the gRPC client path when pointing at a remote Mangle service.
-  - `USE_MANGLE_BIN` ensures local Mangle binary availability for abilities/tests.
-- Redaction and audit policies flow through `src/orchestration/event_sanitizer.py` and telemetry collectors; scrub artifacts before sharing.
-
-## Module & Service Map
-
-- `src/sdd/` – FastAPI routers (`router.py`), models/DTOs (`models.py`), constitutional pipeline (`constitutional_pipeline.py`), session factory/config.
-- `src/unified_intelligence/` – Orchestrator (`orchestrator.py`), workflow detector, code reasoning (AST ingestion, rules), telemetry, validation checklist.
-- `src/orchestration/` – Reliability manager, observability, canonical event schemas, run ledger utilities, error taxonomy.
-- `src/abilities/` – Ability adapters (e.g., `mangle/`), validators, execution shims; registered via tool factories.
-- `scripts/` – Operational helpers (`unified_sdd_mangle.py`, `generate_copilot_instructions.py`, smoke tests for GitHub, SDD, research tooling).
-- `docs/` & `docs/specs/` – Architectural specs, orchestration contracts, constitution update guides, blueprint docs (check `docs/sdd/` and `docs/orchestration/`).
-- `templates/sdd/` & `.specify/templates/` – Spec/plan/task templates; keep them aligned with implemented features.
-- `tests/` – Contract, runtime, integration, property, and ability suites; many tests enforce constitutional scoring and workflow detection.
-- `examples/` & `demo_*` – runnable demonstrations (unified orchestrator, SDD, intelligence) for onboarding and manual validation.
-
-### Repo-Native Mangle Pack
-
-- **MangleAbility** (`src/abilities/mangle/mangle_ability.py`) wraps CLI + gRPC execution, maintains the fact/rule store, and exposes helpers for dependency analysis and knowledge-graph queries.
-- **CodeIngester** (`src/unified_intelligence/code_reasoning/ingester.py`) ingests the repo into SQLite facts (symbols, calls, imports, tests, dependency edges).
-- **RuleEngine** (`src/unified_intelligence/code_reasoning/rules.py`) executes named rules such as `untested_complex_functions`, `circular_dependencies`, `hot_paths`, and `config_cascade_breaks`.
-- **MangleValidator** (`src/abilities/mangle/mangle_validation.py`) applies policy/LLM gating by running violation heads over temporary facts.
-- **Unified exports** (`src/unified_intelligence/code_reasoning/__init__.py`) surface ingester/rules/models to orchestrators and CLI tooling.
-
-### Documentation & Non-Code Assets
-
-- Documentation roots: `docs/`, `docs/sdd/`, `docs/specs/`, `docs/orchestration/`, plus ADR-style research under `specs/`.
-- Static artifacts & generated outputs: `artifacts/`, `examples/`, `templates/`, `.github/chatmodes/` (agent personas), and Copilot prompts (`copilot/prompts/`).
-- No heavy frontend bundles, but contexts/visual aids live in `tools/context/` and `.specify/` templates.
-- Treat `.github/chatmodes/` and `ENHANCED_ASSISTANT_INSTRUCTIONS.md` as persona documentation; update when modifying assistant behaviours.
-
-## Common Tasks (Recipes)
-
-### Add an SDD endpoint
-
-1. Extend request/response models in `src/sdd/models.py` (and `src/sdd/models/feature_spec.py` if new schema pieces).
-2. Register the FastAPI route in `src/sdd/router.py`, wiring constitutional validators from `src/sdd/validators.py` and sessions via `src/sdd/session/factory.py`.
-3. Update templates (`templates/sdd/`) or `.specify/templates/` when new artifacts are produced.
-4. Tests: `pytest -q -k "sdd"` plus regenerate unified facts (`python scripts/unified_sdd_mangle.py ...`) to ensure advice decision is at least `revise`.
-
-### Introduce a new ability module
-
-1. Scaffold `src/abilities/<ability>/<ability>_ability.py`, validators, and execution harness; reuse patterns from `src/abilities/mangle/`.
-2. Register the ability with tool factories / orchestrator wiring (check `src/plugins/` or relevant service) and document in `AGENTS.md`.
-3. Unit tests under `tests/abilities/` and integration entrypoints if the tool surfaces through orchestration.
-4. Unified reasoning sweep to confirm no missing implementations or tests show up in `report.json`.
-
-### Recipe: Add rule `controller_auth_required` and gate it
-
-1. Extend `src/unified_intelligence/code_reasoning/rules.py` with the SQL/Datalog rule (e.g., flag controllers lacking auth decorators).
-2. Refresh the facts database with the ingester (`MANGLE_DB_PATH` respected).
-3. Run the rule and inspect the first hits via `RuleEngine.run_rule('controller_auth_required')` before coding.
-4. Wire the CI gate (see **CI: Mangle Rule Gating**) so merges fail when the rule returns findings.
-
-### Self-validating Recipe (Mangle-aware)
-
-```bash
-# 1. Author/patch the rule
-$EDITOR src/unified_intelligence/code_reasoning/rules.py
-
-# 2. Rebuild facts and summarize findings
-python - <<'PY'
-from src.unified_intelligence.code_reasoning.ingester import CodeIngester
-from src.unified_intelligence.code_reasoning.rules import RuleEngine
-
-db = '.cache/mangle/mangle.db'
-ingester = CodeIngester(db)
-ingester.ingest_repository('.', include_tests=True)
-
-engine = RuleEngine(db)
-for rule in ['circular_dependencies', 'untested_complex_functions', 'hot_paths', 'config_cascade_breaks']:
-    hits = engine.run_rule(rule)
-    print(rule, len(hits))
-PY
-
-# 3. Capture before/after context for the pull request
-git diff src/unified_intelligence/code_reasoning/rules.py
+```powershell
+# Monitor code quality metrics
+function Show-QualityMetrics {
+    Write-Host "📊 Super-Alita Quality Metrics" -ForegroundColor Cyan
+    
+    # Constitutional compliance
+    $report = Get-Content ".ai/report.json" -ErrorAction SilentlyContinue | ConvertFrom-Json
+    if ($report) {
+        $constScore = $report.constitutional_score
+        $constColor = if ($constScore -ge 0.75) {"Green"} else {"Red"}
+        Write-Host "🏛️  Constitutional: $constScore" -ForegroundColor $constColor
+    }
+    
+    # Test coverage (parse pytest output)
+    $coverage = pytest --cov=src --cov-report=term-missing -q 2>&1 | Select-String "TOTAL.*(\d+)%"
+    if ($coverage) {
+        Write-Host "🧪 Test Coverage: $($coverage.Matches.Groups[1].Value)%" -ForegroundColor Green
+    }
+    
+    # Neural atom count
+    Write-Host "🧬 Neural Atoms: $(python -c 'from src.neural.store import MessageStore; print(len(MessageStore(\".ai/neural.db\").list_atoms()))')" -ForegroundColor Cyan
+    
+    # Mangle analysis summary
+    Write-Host "🔍 Mangle Analysis:" -ForegroundColor Cyan
+    @("circular_dependencies", "untested_complex_functions", "hot_paths") | ForEach-Object {
+        $results = python -c "from src.unified_intelligence.code_reasoning.rules import apply_rules; print(len(apply_rules('.ai/facts.sqlite', '$_')))" 2>$null
+        if ($results) {
+            Write-Host "   - $_: $results findings" -ForegroundColor Yellow
+        }
+    }
+}
+Set-Alias saqm Show-QualityMetrics
 ```
 
-### Adjust unified orchestrator scoring or workflow detection
+## 📋 VS Code Task Integration Tips
 
-1. Update `src/unified_intelligence/orchestrator.py` and, if needed, `workflow_detector.py` or rule weights.
-2. Refresh docs in `docs/specs/unified_orchestration_p0_event_schema_spec.md` and related blueprint notes.
-3. Tests: `pytest -q -k unified_intelligence`, `pytest -q -k workflow_detector`, then run `scripts/unified_sdd_mangle.py --workflow debug` to inspect fused scores.
+Leverage existing VS Code tasks (see workspace task list above) with Copilot:
+- Ask: "Run the Full Quality Pipeline task" → Copilot knows about `🔍 Full Quality Pipeline`
+- Ask: "Start the dev server" → Copilot will reference `🌐 Start Dev Server`
+- Ask: "Run SDD validation" → Copilot knows about `⚖️ Constitutional Validate`
 
-### Ship a spec-driven feature end-to-end
+## 🎓 Teaching Copilot Your Patterns
 
-1. Run Spec-Kit CLI (`specify → plan → tasks`) to lay down structured templates.
-2. Implement code in the appropriate package (SDD, orchestration, abilities) and update templates, docs, and memory as needed.
-3. Execute `pytest -q`, quality gates, and `scripts/unified_sdd_mangle.py`. Document learnings in `docs/` or `memory/sdd/`.
+When working with Copilot on Super Alita code:
 
-### Use Spec Kit for feature development
+1. **Always mention constitutional compliance**: "Ensure ≥0.75 constitutional score"
+2. **Reference neural atoms**: "Create atoms with deterministic UUIDs"
+3. **Use sandbox for dynamic code**: "Execute through `src/sandbox/exec_sandbox.py`"
+4. **Cite SDD workflow**: "Follow SDD: specify → plan → tasks"
+5. **Query Mangle first**: "Check Mangle for circular dependencies before refactoring"
 
-1. Install Spec Kit: `uvx spec-kit --help` (verifies v0.0.46+).
-2. Set up PowerShell profile with `Invoke-SpecKitWorkflow` function and `spec` alias (see `## Spec Kit & PowerShell Workflow Integration`).
-3. Scaffold feature: `spec "Add user authentication" all` to generate spec, plan, tasks, and implementation templates.
-4. Implement code following the generated artifacts in `specs/`, `templates/`, and `memory/`.
-5. Validate with quality gates and unified reasoning sweep.
+---
 
-### Update constitutional gates or policies
-
-1. Modify gate logic in `src/contracts/gates/common_gates.py` (or specific gate modules) and adjust `memory/sdd/constitutional_sdd_framework.md`.
-2. Update `docs/constitution_update_checklist.md` and any relevant specs.
-3. Tests: `pytest -q -k contracts`, `tests/runtime/test_router_result_cap.py`, plus unified reasoning to ensure no regressions.
-
-## Failure Mode Library
-
-### Mangle-Backed Risks (auto-discovered)
-
-- Circular dependencies: address the pairs surfaced by `mangle.run_rule("circular_dependencies")` before merging.
-- Untested complex functions: add focused tests for items in `untested_complex_functions` or refactor to reduce complexity.
-- Hot paths: treat high indegree functions flagged by `hot_paths` as performance-sensitive; avoid risky refactors.
-- Config cascade breaks: ensure `src/core/settings.py` and `src/core/env.py` changes have accompanying tests when `config_cascade_breaks` reports hits.
-
-- **`scripts/unified_sdd_mangle.py` reports `spec_present: false`** → Point `--spec` to the real Spec-Kit directory (e.g., `.spec/` or `spec-kit/`) and confirm YAML/JSON parseable; rerun after regenerating specs.
-- **Integration tests fail with Redis/gRPC errors** → Start supporting services (see `tests/contract/` markers) or skip with `pytest -k "not integration_redis"` until environment is ready.
-- **`ruff`/`mypy --strict` erupt after adding templates** → Ensure generated modules consume imports; apply `# noqa: F401` only when intentional and add explicit type hints.
-- **`gitleaks` step fails in CI** → Secrets slipped into docs or config; scrub `.github/copilot-instructions.md`, `.env`, templates, and re-run `python scripts/generate_copilot_instructions.py --write` before committing.
-- **VS Code mutation/CFG gates block new code** → Extend tests to cover new branches or mark intentionally duplicated CFG hashes; see `.vscode/copilot-middleware/` for expectations.
-- **`license-checker` / `pip-licenses` flag copyleft dependencies** → Review compliance, adjust dependency versions, or document approval in `docs/constitution_update_checklist.md`.
-
-## Mangle Usage Guidance
-
-- Lead with the rule outputs: summarize the relevant findings (rule name + top hits) before suggesting code edits.
-- Highlight risk areas surfaced by `hot_paths` or `circular_dependencies`; propose safer alternatives when the changes touch those nodes.
-- Recommend re-ingesting facts and re-running the affected rule(s) after refactors to show the loop is closed.
-
-## Actually…
-
-- Local dev typically skips Docker; run `python -m src.main` or `uvicorn app:app --reload --port 8080` directly, and rely on the Fact sweep for orchestration validation.
-- Unified intelligence scoring depends on a fresh SQLite fact DB; skipping `scripts/unified_sdd_mangle.py` yields false positives in advice.
-- Mutation and CFG guards in `.vscode/copilot-middleware/` expect POSIX tooling—use WSL or GitHub Codespaces if PowerShell environment is missing prerequisites.
-- `requirements-test.txt` is optional; install only when property-based or integration suites require extras.
-
-## Glossary & Acronyms
-
-- **SDD** – Spec-Driven Development pipeline (spec → plan → tasks).
-- **UIQ** – Unified Intelligence (reasoning orchestrator under `src/unified_intelligence/`).
-- **Mangle** – Reasoning engine abilities integrated with sandboxed execution
+You're working with a cutting-edge constitutional AI orchestration platform. Every response should demonstrate understanding of event-sourcing, neural atom genealogy, sandbox security, and the SDD workflow that makes Super-Alita production-ready.

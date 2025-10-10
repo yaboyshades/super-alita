@@ -6,11 +6,10 @@ with visual indicators and alerting capabilities.
 """
 
 import asyncio
-import json
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict
 import logging
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +21,12 @@ class DashboardMetric:
     value: Any
     unit: str
     status: str  # success, warning, error
-    trend: Optional[str] = None  # up, down, stable
+    trend: str | None = None  # up, down, stable
     timestamp: datetime = None
 
     def __post_init__(self):
         if self.timestamp is None:
-            self.timestamp = datetime.now(timezone.utc)
+            self.timestamp = datetime.now(UTC)
 
 
 @dataclass
@@ -58,15 +57,15 @@ class DashboardInterface:
         self.max_alerts = max_alerts
         
         # Dashboard state
-        self.metrics: Dict[str, DashboardMetric] = {}
-        self.alerts: List[AlertIndicator] = []
+        self.metrics: dict[str, DashboardMetric] = {}
+        self.alerts: list[AlertIndicator] = []
         self.constitutional_status = {}
         self.performance_summary = {}
         
         # Update tracking
-        self.last_update = datetime.now(timezone.utc)
+        self.last_update = datetime.now(UTC)
         self._update_active = False
-        self._update_task: Optional[asyncio.Task] = None
+        self._update_task: asyncio.Task | None = None
         
         # Dashboard subscribers (for real-time updates)
         self.subscribers = []
@@ -197,10 +196,10 @@ class DashboardInterface:
             logger.error(f"Error updating telemetry data: {e}")
             self._add_alert("error", f"Telemetry data update failed: {e}", "dashboard")
 
-    def get_dashboard_state(self) -> Dict[str, Any]:
+    def get_dashboard_state(self) -> dict[str, Any]:
         """Get current dashboard state for display."""
         return {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "last_update": self.last_update.isoformat(),
             "metrics": {name: asdict(metric) for name, metric in self.metrics.items()},
             "alerts": [asdict(alert) for alert in self.alerts[-20:]],  # Last 20 alerts
@@ -209,7 +208,7 @@ class DashboardInterface:
             "status": self._get_overall_status()
         }
 
-    def get_constitutional_dashboard(self) -> Dict[str, Any]:
+    def get_constitutional_dashboard(self) -> dict[str, Any]:
         """Get constitutional compliance focused dashboard data."""
         constitutional_metrics = {
             name: metric for name, metric in self.metrics.items()
@@ -262,7 +261,7 @@ class DashboardInterface:
 
     async def _refresh_dashboard(self) -> None:
         """Refresh dashboard data."""
-        self.last_update = datetime.now(timezone.utc)
+        self.last_update = datetime.now(UTC)
         
         # Update system metrics
         self._update_system_metrics()
@@ -294,7 +293,7 @@ class DashboardInterface:
         value: Any,
         unit: str,
         status: str,
-        trend: Optional[str] = None
+        trend: str | None = None
     ) -> None:
         """Update a dashboard metric."""
         # Calculate trend if not provided
@@ -322,7 +321,7 @@ class DashboardInterface:
             level=level,
             message=message,
             source=source,
-            timestamp=datetime.now(timezone.utc)
+            timestamp=datetime.now(UTC)
         )
         
         self.alerts.append(alert)
@@ -333,7 +332,7 @@ class DashboardInterface:
         
         logger.info(f"Dashboard alert added: {level} - {message}")
 
-    def _update_constitutional_status(self, constitutional_data: Dict[str, Any]) -> None:
+    def _update_constitutional_status(self, constitutional_data: dict[str, Any]) -> None:
         """Update constitutional compliance status."""
         score = constitutional_data.get("score", 0)
         status = constitutional_data.get("status", "unknown")
@@ -393,7 +392,7 @@ class DashboardInterface:
         else:
             return "success"
 
-    def _get_compliance_indicators(self) -> Dict[str, Any]:
+    def _get_compliance_indicators(self) -> dict[str, Any]:
         """Get constitutional compliance indicators."""
         return {
             "color_coding": {
@@ -408,7 +407,7 @@ class DashboardInterface:
     def _update_system_metrics(self) -> None:
         """Update system-level metrics."""
         # System health check
-        current_time = datetime.now(timezone.utc)
+        current_time = datetime.now(UTC)
         uptime_seconds = (current_time - self.last_update).total_seconds()
         
         self._update_metric(
@@ -420,7 +419,7 @@ class DashboardInterface:
 
     def _cleanup_old_alerts(self) -> None:
         """Clean up old acknowledged alerts."""
-        cutoff_time = datetime.now(timezone.utc).timestamp() - (24 * 3600)  # 24 hours
+        cutoff_time = datetime.now(UTC).timestamp() - (24 * 3600)  # 24 hours
         
         self.alerts = [
             alert for alert in self.alerts

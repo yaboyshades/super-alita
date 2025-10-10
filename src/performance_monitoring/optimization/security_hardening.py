@@ -11,24 +11,24 @@ Provides comprehensive security features:
 """
 
 import asyncio
-import hashlib
+import base64
 import hmac
-import secrets
-import time
 import json
 import logging
-from typing import Dict, Any, List, Optional, Set, Tuple, Callable
+import re
+import secrets
+import time
+from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
+from typing import Any
+
 import jwt
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-import base64
-import re
-from collections import defaultdict, deque
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class SecurityPolicy:
     max_login_attempts: int = 5
     session_timeout_minutes: int = 60
     require_mfa: bool = False
-    allowed_ip_ranges: List[str] = field(default_factory=list)
+    allowed_ip_ranges: list[str] = field(default_factory=list)
     encryption_algorithm: str = "AES-256"
     hash_algorithm: str = "SHA-256"
 
@@ -83,16 +83,16 @@ class User:
     email: str
     password_hash: str
     salt: str
-    roles: Set[str] = field(default_factory=set)
-    permissions: Set[str] = field(default_factory=set)
+    roles: set[str] = field(default_factory=set)
+    permissions: set[str] = field(default_factory=set)
     security_level: SecurityLevel = SecurityLevel.PUBLIC
     created_at: datetime = field(default_factory=datetime.now)
-    last_login: Optional[datetime] = None
+    last_login: datetime | None = None
     failed_login_attempts: int = 0
     account_locked: bool = False
     password_changed_at: datetime = field(default_factory=datetime.now)
     mfa_enabled: bool = False
-    mfa_secret: Optional[str] = None
+    mfa_secret: str | None = None
 
 @dataclass
 class AuditEvent:
@@ -100,19 +100,19 @@ class AuditEvent:
     event_id: str
     timestamp: datetime
     event_type: AuditEventType
-    user_id: Optional[str]
+    user_id: str | None
     source_ip: str
     user_agent: str
     resource: str
     action: str
     result: str
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     risk_score: float = 0.0
 
 class EncryptionManager:
     """Handles encryption operations"""
     
-    def __init__(self, master_key: Optional[bytes] = None):
+    def __init__(self, master_key: bytes | None = None):
         if master_key is None:
             master_key = Fernet.generate_key()
         
@@ -176,7 +176,7 @@ class EncryptionManager:
             logger.error(f"Large data decryption failed: {e}")
             raise
     
-    def hash_password(self, password: str, salt: Optional[bytes] = None) -> Tuple[str, str]:
+    def hash_password(self, password: str, salt: bytes | None = None) -> tuple[str, str]:
         """Hash password with salt"""
         if salt is None:
             salt = secrets.token_bytes(32)
@@ -209,15 +209,15 @@ class AuthenticationManager:
     def __init__(self, encryption_manager: EncryptionManager, policy: SecurityPolicy):
         self.encryption_manager = encryption_manager
         self.policy = policy
-        self.users: Dict[str, User] = {}
-        self.active_sessions: Dict[str, Dict[str, Any]] = {}
+        self.users: dict[str, User] = {}
+        self.active_sessions: dict[str, dict[str, Any]] = {}
         self.jwt_secret = secrets.token_urlsafe(32)
         
         # Rate limiting
-        self.login_attempts: Dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
+        self.login_attempts: dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
     
     async def register_user(self, username: str, email: str, password: str,
-                          roles: Set[str] = None, security_level: SecurityLevel = SecurityLevel.PUBLIC) -> User:
+                          roles: set[str] = None, security_level: SecurityLevel = SecurityLevel.PUBLIC) -> User:
         """Register new user"""
         if not self._validate_password(password):
             raise ValueError("Password does not meet security requirements")
@@ -243,7 +243,7 @@ class AuthenticationManager:
         return user
     
     async def authenticate_user(self, username: str, password: str,
-                              source_ip: str = "unknown") -> Optional[str]:
+                              source_ip: str = "unknown") -> str | None:
         """Authenticate user and return session token"""
         # Rate limiting check
         now = time.time()
@@ -316,7 +316,7 @@ class AuthenticationManager:
         
         return token
     
-    async def validate_token(self, token: str) -> Optional[Dict[str, Any]]:
+    async def validate_token(self, token: str) -> dict[str, Any] | None:
         """Validate session token"""
         try:
             # Decode token
@@ -382,7 +382,7 @@ class AuditLogger:
     def __init__(self, encryption_manager: EncryptionManager):
         self.encryption_manager = encryption_manager
         self.audit_events: deque = deque(maxlen=10000)
-        self.anomaly_patterns: Dict[str, List[str]] = {
+        self.anomaly_patterns: dict[str, list[str]] = {
             'suspicious_ips': [],
             'failed_login_patterns': [],
             'unusual_access_times': [],
@@ -390,7 +390,7 @@ class AuditLogger:
         }
         
         # Background monitoring
-        self._monitoring_task: Optional[asyncio.Task] = None
+        self._monitoring_task: asyncio.Task | None = None
         self._running = False
     
     async def start_monitoring(self):
@@ -406,9 +406,9 @@ class AuditLogger:
             self._monitoring_task.cancel()
         logger.info("Audit monitoring stopped")
     
-    async def log_event(self, event_type: AuditEventType, user_id: Optional[str],
+    async def log_event(self, event_type: AuditEventType, user_id: str | None,
                        source_ip: str, user_agent: str, resource: str,
-                       action: str, result: str, details: Dict[str, Any] = None):
+                       action: str, result: str, details: dict[str, Any] = None):
         """Log audit event"""
         event = AuditEvent(
             event_id=secrets.token_urlsafe(16),
@@ -434,7 +434,7 @@ class AuditLogger:
             await self._handle_high_risk_event(event)
     
     def _calculate_risk_score(self, event_type: AuditEventType, source_ip: str,
-                             details: Dict[str, Any]) -> float:
+                             details: dict[str, Any]) -> float:
         """Calculate risk score for event"""
         base_score = {
             AuditEventType.LOGIN: 2.0,
@@ -529,7 +529,7 @@ class AuditLogger:
             except Exception as e:
                 logger.error(f"Anomaly detection error: {e}")
     
-    async def _detect_anomalies(self, events: List[AuditEvent]):
+    async def _detect_anomalies(self, events: list[AuditEvent]):
         """Detect security anomalies in events"""
         # Group events by IP
         ip_events = defaultdict(list)
@@ -562,7 +562,7 @@ class AuditLogger:
                     {"access_count": len(data_access)}
                 )
     
-    def get_security_summary(self) -> Dict[str, Any]:
+    def get_security_summary(self) -> dict[str, Any]:
         """Get security summary statistics"""
         recent_events = [e for e in self.audit_events 
                         if (datetime.now() - e.timestamp).total_seconds() < 3600]
@@ -589,7 +589,7 @@ class AuditLogger:
 class SecurityHardening:
     """Main security hardening coordinator"""
     
-    def __init__(self, policy: Optional[SecurityPolicy] = None):
+    def __init__(self, policy: SecurityPolicy | None = None):
         self.policy = policy or SecurityPolicy()
         self.encryption_manager = EncryptionManager()
         self.auth_manager = AuthenticationManager(self.encryption_manager, self.policy)
@@ -597,7 +597,7 @@ class SecurityHardening:
         
         # Security monitoring
         self._running = False
-        self._security_tasks: List[asyncio.Task] = []
+        self._security_tasks: list[asyncio.Task] = []
     
     async def start(self):
         """Start security hardening services"""
@@ -627,7 +627,7 @@ class SecurityHardening:
         logger.info("Security hardening stopped")
     
     async def authenticate_request(self, token: str, required_permission: str = None,
-                                 source_ip: str = "unknown", user_agent: str = "unknown") -> Optional[Dict[str, Any]]:
+                                 source_ip: str = "unknown", user_agent: str = "unknown") -> dict[str, Any] | None:
         """Authenticate and authorize request"""
         # Validate token
         payload = await self.auth_manager.validate_token(token)
@@ -665,7 +665,7 @@ class SecurityHardening:
         return self.encryption_manager.decrypt_data(encrypted_data)
     
     async def log_data_access(self, user_id: str, resource: str, action: str,
-                            source_ip: str = "unknown", details: Dict[str, Any] = None):
+                            source_ip: str = "unknown", details: dict[str, Any] = None):
         """Log data access for audit trail"""
         await self.audit_logger.log_event(
             AuditEventType.DATA_ACCESS, user_id, source_ip, "system",
@@ -689,14 +689,14 @@ class SecurityHardening:
                 # Remove expired sessions
                 for token in expired_sessions:
                     del self.auth_manager.active_sessions[token]
-                    logger.debug(f"Cleaned up expired session")
+                    logger.debug("Cleaned up expired session")
                 
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Session cleanup error: {e}")
     
-    def get_security_status(self) -> Dict[str, Any]:
+    def get_security_status(self) -> dict[str, Any]:
         """Get comprehensive security status"""
         return {
             'policy': {

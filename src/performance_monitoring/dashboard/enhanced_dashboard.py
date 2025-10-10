@@ -5,12 +5,12 @@ Advanced dashboard with machine learning predictions and anomaly detection.
 """
 
 import asyncio
-import statistics
-from datetime import datetime, timezone
-from dataclasses import dataclass
-from typing import Dict, List, Any, Optional, Tuple
-from collections import deque
 import logging
+import statistics
+from collections import deque
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class PerformancePrediction:
     confidence: float
     trend_direction: str  # up, down, stable
     risk_level: str  # low, medium, high, critical
-    recommendation: Optional[str] = None
+    recommendation: str | None = None
 
 
 @dataclass
@@ -32,7 +32,7 @@ class AnomalyDetection:
     """Anomaly detection result."""
     metric_name: str
     current_value: float
-    expected_range: Tuple[float, float]
+    expected_range: tuple[float, float]
     severity: str  # low, medium, high, critical
     description: str
     first_detected: datetime
@@ -45,8 +45,8 @@ class PerformanceInsight:
     description: str
     impact: str  # performance, reliability, cost, user_experience
     priority: str  # low, medium, high, critical
-    actionable_steps: List[str]
-    expected_improvement: Optional[str] = None
+    actionable_steps: list[str]
+    expected_improvement: str | None = None
 
 
 class EnhancedPerformanceDashboard:
@@ -63,14 +63,14 @@ class EnhancedPerformanceDashboard:
         self.constitutional_engine = constitutional_engine
         
         # Analytics data
-        self.metric_history: Dict[str, deque] = {}
-        self.predictions: Dict[str, PerformancePrediction] = {}
-        self.anomalies: Dict[str, AnomalyDetection] = {}
-        self.insights: List[PerformanceInsight] = []
+        self.metric_history: dict[str, deque] = {}
+        self.predictions: dict[str, PerformancePrediction] = {}
+        self.anomalies: dict[str, AnomalyDetection] = {}
+        self.insights: list[PerformanceInsight] = []
         
         # Monitoring state
         self._prediction_active = False
-        self._prediction_task: Optional[asyncio.Task] = None
+        self._prediction_task: asyncio.Task | None = None
         
         logger.info("Enhanced Performance Dashboard initialized")
 
@@ -97,7 +97,7 @@ class EnhancedPerformanceDashboard:
                 pass
         logger.info("Predictive monitoring stopped")
 
-    async def generate_predictions(self) -> Dict[str, PerformancePrediction]:
+    async def generate_predictions(self) -> dict[str, PerformancePrediction]:
         """Generate performance predictions."""
         current_data = self._collect_current_metrics()
         predictions = {}
@@ -110,7 +110,7 @@ class EnhancedPerformanceDashboard:
         self.predictions = predictions
         return predictions
 
-    async def detect_anomalies(self) -> Dict[str, AnomalyDetection]:
+    async def detect_anomalies(self) -> dict[str, AnomalyDetection]:
         """Detect performance anomalies."""
         current_data = self._collect_current_metrics()
         anomalies = {}
@@ -123,7 +123,7 @@ class EnhancedPerformanceDashboard:
         self.anomalies = anomalies
         return anomalies
 
-    async def generate_insights(self) -> List[PerformanceInsight]:
+    async def generate_insights(self) -> list[PerformanceInsight]:
         """Generate actionable performance insights."""
         insights = []
         
@@ -168,10 +168,10 @@ class EnhancedPerformanceDashboard:
         self.insights = insights[:10]
         return self.insights
 
-    def get_enhanced_dashboard_state(self) -> Dict[str, Any]:
+    def get_enhanced_dashboard_state(self) -> dict[str, Any]:
         """Get enhanced dashboard state."""
         return {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "predictions": {name: self._prediction_to_dict(pred) 
                           for name, pred in self.predictions.items()},
             "anomalies": {name: self._anomaly_to_dict(anomaly) 
@@ -196,7 +196,7 @@ class EnhancedPerformanceDashboard:
                 logger.error(f"Analysis loop error: {e}")
                 await asyncio.sleep(60)
 
-    def _collect_current_metrics(self) -> Dict[str, float]:
+    def _collect_current_metrics(self) -> dict[str, float]:
         """Collect current metric values."""
         metrics = {}
         
@@ -219,7 +219,7 @@ class EnhancedPerformanceDashboard:
         
         return metrics
 
-    async def _predict_metric(self, metric_name: str, current_value: float) -> Optional[PerformancePrediction]:
+    async def _predict_metric(self, metric_name: str, current_value: float) -> PerformancePrediction | None:
         """Predict future metric value."""
         if metric_name not in self.metric_history or len(self.metric_history[metric_name]) < 5:
             return None
@@ -256,7 +256,7 @@ class EnhancedPerformanceDashboard:
             logger.error(f"Prediction error for {metric_name}: {e}")
             return None
 
-    async def _detect_anomaly(self, metric_name: str, current_value: float) -> Optional[AnomalyDetection]:
+    async def _detect_anomaly(self, metric_name: str, current_value: float) -> AnomalyDetection | None:
         """Detect metric anomaly."""
         if metric_name not in self.metric_history or len(self.metric_history[metric_name]) < 10:
             return None
@@ -290,7 +290,7 @@ class EnhancedPerformanceDashboard:
                     expected_range=(lower_bound, upper_bound),
                     severity=severity,
                     description=description,
-                    first_detected=datetime.now(timezone.utc)
+                    first_detected=datetime.now(UTC)
                 )
         except Exception as e:
             logger.error(f"Anomaly detection error for {metric_name}: {e}")
@@ -306,7 +306,7 @@ class EnhancedPerformanceDashboard:
                 self.metric_history[metric_name] = deque(maxlen=100)
             self.metric_history[metric_name].append(value)
 
-    async def _analyze_constitutional_insights(self) -> List[PerformanceInsight]:
+    async def _analyze_constitutional_insights(self) -> list[PerformanceInsight]:
         """Analyze constitutional compliance for insights."""
         insights = []
         
@@ -333,7 +333,7 @@ class EnhancedPerformanceDashboard:
         
         return insights
 
-    def _linear_regression(self, x: List[float], y: List[float]) -> Tuple[float, float]:
+    def _linear_regression(self, x: list[float], y: list[float]) -> tuple[float, float]:
         """Calculate linear regression."""
         n = len(x)
         if n == 0:
@@ -341,7 +341,7 @@ class EnhancedPerformanceDashboard:
         
         sum_x = sum(x)
         sum_y = sum(y)
-        sum_xy = sum(xi * yi for xi, yi in zip(x, y))
+        sum_xy = sum(xi * yi for xi, yi in zip(x, y, strict=False))
         sum_x2 = sum(xi * xi for xi in x)
         
         denominator = n * sum_x2 - sum_x * sum_x
@@ -375,7 +375,7 @@ class EnhancedPerformanceDashboard:
         
         return "medium" if change_percent > 0.2 else "low"
 
-    def _get_recommendation(self, metric_name: str, risk_level: str) -> Optional[str]:
+    def _get_recommendation(self, metric_name: str, risk_level: str) -> str | None:
         """Get recommendation for metric."""
         if risk_level in ["high", "critical"]:
             recommendations = {
@@ -386,7 +386,7 @@ class EnhancedPerformanceDashboard:
             return recommendations.get(metric_name)
         return None
 
-    def _calculate_performance_scores(self) -> Dict[str, float]:
+    def _calculate_performance_scores(self) -> dict[str, float]:
         """Calculate performance scores."""
         scores = {}
         
@@ -405,7 +405,7 @@ class EnhancedPerformanceDashboard:
         
         return scores
 
-    def _predict_system_health(self) -> Dict[str, Any]:
+    def _predict_system_health(self) -> dict[str, Any]:
         """Predict system health."""
         high_risk = len([p for p in self.predictions.values() if p.risk_level in ["high", "critical"]])
         critical_anomalies = len([a for a in self.anomalies.values() if a.severity in ["high", "critical"]])
@@ -419,7 +419,7 @@ class EnhancedPerformanceDashboard:
         
         return {"status": status, "risk_factors": high_risk + critical_anomalies}
 
-    def _prediction_to_dict(self, prediction: PerformancePrediction) -> Dict[str, Any]:
+    def _prediction_to_dict(self, prediction: PerformancePrediction) -> dict[str, Any]:
         """Convert prediction to dict."""
         return {
             "current_value": prediction.current_value,
@@ -430,7 +430,7 @@ class EnhancedPerformanceDashboard:
             "recommendation": prediction.recommendation
         }
 
-    def _anomaly_to_dict(self, anomaly: AnomalyDetection) -> Dict[str, Any]:
+    def _anomaly_to_dict(self, anomaly: AnomalyDetection) -> dict[str, Any]:
         """Convert anomaly to dict."""
         return {
             "current_value": anomaly.current_value,
@@ -440,7 +440,7 @@ class EnhancedPerformanceDashboard:
             "detected_at": anomaly.first_detected.isoformat()
         }
 
-    def _insight_to_dict(self, insight: PerformanceInsight) -> Dict[str, Any]:
+    def _insight_to_dict(self, insight: PerformanceInsight) -> dict[str, Any]:
         """Convert insight to dict."""
         return {
             "title": insight.title,

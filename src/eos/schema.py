@@ -6,11 +6,12 @@ specifications using JSON Schema validation.
 """
 
 import json
-import yaml
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
 import jsonschema
+import yaml
 from jsonschema import Draft202012Validator
 
 
@@ -18,9 +19,9 @@ from jsonschema import Draft202012Validator
 class ValidationResult:
     """Result of EOS schema validation"""
     valid: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    schema_version: Optional[str] = None
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    schema_version: str | None = None
 
 
 @dataclass
@@ -28,8 +29,8 @@ class EOSMeta:
     """EOS metadata configuration"""
     run_id: str
     owner: str
-    provenance: List[str] = field(default_factory=list)
-    reproducibility: Dict[str, Any] = field(default_factory=dict)
+    provenance: list[str] = field(default_factory=list)
+    reproducibility: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -37,10 +38,10 @@ class EOSProblem:
     """Problem definition for orchestration"""
     title: str
     statement: str
-    objectives: List[str]
-    constraints: List[str] = field(default_factory=list)
-    stakeholders: List[str] = field(default_factory=list)
-    risk_tolerance: Dict[str, str] = field(default_factory=dict)
+    objectives: list[str]
+    constraints: list[str] = field(default_factory=list)
+    stakeholders: list[str] = field(default_factory=list)
+    risk_tolerance: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -64,8 +65,8 @@ class CynefinPrior:
 class EOSContext:
     """Context analysis configuration"""
     cynefin_prior: CynefinPrior
-    domain_hints: List[str] = field(default_factory=list)
-    uncertainty_thresholds: Dict[str, float] = field(default_factory=dict)
+    domain_hints: list[str] = field(default_factory=list)
+    uncertainty_thresholds: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -73,22 +74,22 @@ class EOSExpert:
     """Expert definition for MoE routing"""
     id: str
     kind: str  # tool, agent, human
-    inputs: List[str]
-    outputs: List[str]
-    cost: Dict[str, float]
-    risk: Dict[str, float]
+    inputs: list[str]
+    outputs: list[str]
+    cost: dict[str, float]
+    risk: dict[str, float]
     quality_prior: float
-    fit_hints: List[str] = field(default_factory=list)
+    fit_hints: list[str] = field(default_factory=list)
 
 
 @dataclass
 class EOSMethod:
     """Method definition in registry"""
     id: str
-    states: List[str]
-    entry_criteria: Dict[str, Any]
-    operators: List[str]
-    artifacts_out: List[str]
+    states: list[str]
+    entry_criteria: dict[str, Any]
+    operators: list[str]
+    artifacts_out: list[str]
 
 
 @dataclass
@@ -98,26 +99,26 @@ class EOSSpec:
     meta: EOSMeta
     problem: EOSProblem
     context: EOSContext
-    resources: Dict[str, Any]
-    methods_registry: List[EOSMethod]
-    ladder: Dict[str, Any]
-    experts: List[EOSExpert]
-    routing: Dict[str, Any]
-    pipeline: Dict[str, Any]
-    evaluation: Dict[str, Any]
-    governance: Dict[str, Any]
-    telemetry: Dict[str, Any]
+    resources: dict[str, Any]
+    methods_registry: list[EOSMethod]
+    ladder: dict[str, Any]
+    experts: list[EOSExpert]
+    routing: dict[str, Any]
+    pipeline: dict[str, Any]
+    evaluation: dict[str, Any]
+    governance: dict[str, Any]
+    telemetry: dict[str, Any]
 
 
 class EOSValidator:
     """EOS specification validator using JSON Schema"""
     
-    def __init__(self, schema_path: Optional[Path] = None):
+    def __init__(self, schema_path: Path | None = None):
         """Initialize validator with schema"""
         if schema_path is None:
             schema_path = Path(__file__).parent / "schema.json"
         
-        with open(schema_path, 'r') as f:
+        with open(schema_path) as f:
             self.schema = json.load(f)
         
         self.validator = Draft202012Validator(self.schema)
@@ -125,7 +126,7 @@ class EOSValidator:
     def validate_yaml(self, yaml_path: Path) -> ValidationResult:
         """Validate EOS YAML specification"""
         try:
-            with open(yaml_path, 'r') as f:
+            with open(yaml_path) as f:
                 spec_data = yaml.safe_load(f)
             
             return self.validate_dict(spec_data)
@@ -141,7 +142,7 @@ class EOSValidator:
                 errors=[f"File not found: {yaml_path}"]
             )
     
-    def validate_dict(self, spec_data: Dict[str, Any]) -> ValidationResult:
+    def validate_dict(self, spec_data: dict[str, Any]) -> ValidationResult:
         """Validate EOS specification as dictionary"""
         result = ValidationResult(valid=True)
         
@@ -170,7 +171,7 @@ class EOSValidator:
         
         return result
     
-    def _validate_semantics(self, spec_data: Dict[str, Any],
+    def _validate_semantics(self, spec_data: dict[str, Any],
                             result: ValidationResult) -> None:
         """Perform additional semantic validations"""
         
@@ -217,7 +218,7 @@ class EOSParser:
     """Parser for converting validated EOS specs to typed objects"""
     
     @staticmethod
-    def parse_spec(spec_data: Dict[str, Any]) -> EOSSpec:
+    def parse_spec(spec_data: dict[str, Any]) -> EOSSpec:
         """Parse validated spec data into typed EOSSpec object"""
         
         # Parse meta
@@ -301,12 +302,12 @@ class EOSParser:
 class EOSSchema:
     """Main entry point for EOS schema operations"""
     
-    def __init__(self, schema_path: Optional[Path] = None):
+    def __init__(self, schema_path: Path | None = None):
         self.validator = EOSValidator(schema_path)
         self.parser = EOSParser()
     
     def load_and_validate(self, yaml_path: Path) -> tuple[ValidationResult,
-                                                          Optional[EOSSpec]]:
+                                                          EOSSpec | None]:
         """Load, validate, and parse EOS specification"""
         # Validate first
         validation_result = self.validator.validate_yaml(yaml_path)
@@ -316,7 +317,7 @@ class EOSSchema:
         
         # Parse if validation successful
         try:
-            with open(yaml_path, 'r') as f:
+            with open(yaml_path) as f:
                 spec_data = yaml.safe_load(f)
             
             spec = self.parser.parse_spec(spec_data)

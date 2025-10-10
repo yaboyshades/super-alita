@@ -6,26 +6,28 @@ for E-UPUSF orchestration with telemetry and governance integration.
 """
 
 import asyncio
+import logging
 import time
 import uuid
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
-import logging
+from typing import Any
+
+from .context import ContextAnalyzer
+from .operators import LadderOperators, OperatorContext, OperatorType
+from .routing import MoERouter
 
 # Import EOS components
 from .schema import EOSSchema, EOSSpec
 from .state_machine import EOSStateMachine, StateContext, StateType
-from .context import ContextAnalyzer
-from .routing import MoERouter
-from .operators import LadderOperators, OperatorContext, OperatorType
 
 # Import existing telemetry system
 try:
-    from ..performance_monitoring.telemetry.opentelemetry_config import (
-        OpenTelemetryCollector, TelemetrySpan
-    )
     from ..performance_monitoring.middleware.extension_interceptors import (
-        track_extension_call
+        track_extension_call,
+    )
+    from ..performance_monitoring.telemetry.opentelemetry_config import (
+        OpenTelemetryCollector,
+        TelemetrySpan,
     )
     TELEMETRY_AVAILABLE = True
 except ImportError:
@@ -51,13 +53,13 @@ class OrchestrationResult:
     run_id: str
     success: bool
     final_state: StateType
-    artifacts: Dict[str, Any] = field(default_factory=dict)
-    metrics: Dict[str, float] = field(default_factory=dict)
-    execution_trace: List[Dict[str, Any]] = field(default_factory=list)
-    telemetry_spans: List[TelemetrySpan] = field(default_factory=list)
-    governance_report: Dict[str, Any] = field(default_factory=dict)
+    artifacts: dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, float] = field(default_factory=dict)
+    execution_trace: list[dict[str, Any]] = field(default_factory=list)
+    telemetry_spans: list[TelemetrySpan] = field(default_factory=list)
+    governance_report: dict[str, Any] = field(default_factory=dict)
     duration_ms: float = 0.0
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class EOSOrchestrator:
@@ -84,11 +86,11 @@ class EOSOrchestrator:
             self.telemetry = None
         
         # Execution state
-        self.current_context: Optional[Dict[str, Any]] = None
-        self.execution_trace: List[Dict[str, Any]] = []
-        self.telemetry_spans: List[TelemetrySpan] = []
+        self.current_context: dict[str, Any] | None = None
+        self.execution_trace: list[dict[str, Any]] = []
+        self.telemetry_spans: list[TelemetrySpan] = []
     
-    def _spec_to_dict(self) -> Dict[str, Any]:
+    def _spec_to_dict(self) -> dict[str, Any]:
         """Convert EOSSpec to dictionary for compatibility"""
         return {
             "problem": {
@@ -190,7 +192,7 @@ class EOSOrchestrator:
                 telemetry_spans=self.telemetry_spans
             )
     
-    async def _analyze_initial_context(self) -> Dict[str, Any]:
+    async def _analyze_initial_context(self) -> dict[str, Any]:
         """Analyze initial problem context"""
         
         logger.info("Analyzing initial context")
@@ -279,7 +281,7 @@ class EOSOrchestrator:
         self, 
         state_type: StateType,
         context: StateContext
-    ) -> List[OperatorType]:
+    ) -> list[OperatorType]:
         """Determine which operators are needed for current state"""
         
         operators = []
@@ -399,7 +401,7 @@ class EOSOrchestrator:
     
     async def _convert_expert_to_operator_result(
         self, 
-        expert_result: Dict[str, Any],
+        expert_result: dict[str, Any],
         operator_context: OperatorContext
     ) -> Any:
         """Convert expert execution result to operator result format"""
@@ -476,7 +478,7 @@ class EOSOrchestrator:
     async def _generate_governance_report(
         self, 
         context: StateContext
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate governance compliance report"""
         
         # Simplified governance checking
@@ -496,7 +498,7 @@ class EOSOrchestrator:
         
         return report
     
-    def _trace_event(self, event_type: str, data: Dict[str, Any]) -> None:
+    def _trace_event(self, event_type: str, data: dict[str, Any]) -> None:
         """Add event to execution trace"""
         
         trace_event = {
@@ -511,7 +513,7 @@ class EOSOrchestrator:
         # Also log for debugging
         logger.debug(f"Trace event: {event_type} - {data}")
     
-    def get_orchestration_statistics(self) -> Dict[str, Any]:
+    def get_orchestration_statistics(self) -> dict[str, Any]:
         """Get orchestration execution statistics"""
         
         return {

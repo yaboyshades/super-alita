@@ -30,15 +30,34 @@
       "type": "stdio",
       "command": "\\.venv\\Scripts\\python.exe",
       "args": [
-        "\\src\\mcp_server\\main.py"
+        "\\src\\mcp\\integrations\\github_mcp_launcher.py"
       ],
       "env": {
         "PYTHONPATH": "\\src",
         "GITHUB_TOKEN": "",
-        "MCP_SERVER_NAME": "super-alita-github",
-        "LLM_MODEL": "auto"
+        "CONSTITUTIONAL_THRESHOLD": "0.75",
+        "SUPER_ALITA_MODE": "act",
+        "ORCHESTRATION_MODE": "multi-agent"
       },
       "cwd": ""
+    },
+    "alita-mcp-brainstorming": {
+      "type": "http",
+      "url": "http://127.0.0.1:8080/abilities/execute",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json,text/event-stream",
+        "MCP-Protocol-Version": "2025-06-18"
+      }
+    },
+    "alita-script-generator": {
+      "type": "http",
+      "url": "http://127.0.0.1:8080/abilities/execute",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json,text/event-stream",
+        "MCP-Protocol-Version": "2025-06-18"
+      }
     },
     "github-official": {
       "type": "stdio",

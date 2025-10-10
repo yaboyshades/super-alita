@@ -11,16 +11,15 @@ Provides horizontal scaling and load balancing capabilities:
 """
 
 import asyncio
-import time
-import random
 import logging
-from typing import Dict, Any, List, Optional, Callable, NamedTuple
-from dataclasses import dataclass, field
-from enum import Enum
-from datetime import datetime, timedelta
-import json
-import weakref
+import random
+import time
 from collections import defaultdict, deque
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +51,9 @@ class ServiceInstance:
     current_connections: int = 0
     total_requests: int = 0
     failed_requests: int = 0
-    last_health_check: Optional[datetime] = None
+    last_health_check: datetime | None = None
     response_time_ms: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     
     @property
     def endpoint(self) -> str:
@@ -93,7 +92,7 @@ class CircuitBreaker:
     
     state: CircuitBreakerState = CircuitBreakerState.CLOSED
     failure_count: int = 0
-    last_failure_time: Optional[datetime] = None
+    last_failure_time: datetime | None = None
     half_open_calls: int = 0
     
     def should_allow_request(self) -> bool:
@@ -139,9 +138,9 @@ class ServiceRegistry:
     """Service discovery and registration"""
     
     def __init__(self):
-        self.services: Dict[str, List[ServiceInstance]] = defaultdict(list)
+        self.services: dict[str, list[ServiceInstance]] = defaultdict(list)
         self._lock = asyncio.Lock()
-        self._watchers: Dict[str, List[Callable]] = defaultdict(list)
+        self._watchers: dict[str, list[Callable]] = defaultdict(list)
     
     async def register_service(self, service_name: str, instance: ServiceInstance):
         """Register service instance"""
@@ -175,7 +174,7 @@ class ServiceRegistry:
                     break
     
     async def get_service_instances(self, service_name: str, 
-                                   healthy_only: bool = True) -> List[ServiceInstance]:
+                                   healthy_only: bool = True) -> list[ServiceInstance]:
         """Get service instances"""
         async with self._lock:
             instances = self.services[service_name].copy()
@@ -208,12 +207,12 @@ class LoadBalancer:
     
     def __init__(self, algorithm: LoadBalancingAlgorithm = LoadBalancingAlgorithm.ROUND_ROBIN):
         self.algorithm = algorithm
-        self._round_robin_counters: Dict[str, int] = defaultdict(int)
-        self._consistent_hash_rings: Dict[str, List[tuple]] = defaultdict(list)
+        self._round_robin_counters: dict[str, int] = defaultdict(int)
+        self._consistent_hash_rings: dict[str, list[tuple]] = defaultdict(list)
     
     async def select_instance(self, service_name: str, 
-                            instances: List[ServiceInstance],
-                            context: Optional[Dict[str, Any]] = None) -> Optional[ServiceInstance]:
+                            instances: list[ServiceInstance],
+                            context: dict[str, Any] | None = None) -> ServiceInstance | None:
         """Select instance using configured algorithm"""
         if not instances:
             return None
@@ -236,14 +235,14 @@ class LoadBalancer:
         return instances[0]  # Fallback
     
     def _round_robin_select(self, service_name: str, 
-                           instances: List[ServiceInstance]) -> ServiceInstance:
+                           instances: list[ServiceInstance]) -> ServiceInstance:
         """Round-robin selection"""
         index = self._round_robin_counters[service_name] % len(instances)
         self._round_robin_counters[service_name] += 1
         return instances[index]
     
     def _weighted_round_robin_select(self, service_name: str,
-                                   instances: List[ServiceInstance]) -> ServiceInstance:
+                                   instances: list[ServiceInstance]) -> ServiceInstance:
         """Weighted round-robin selection"""
         # Simple weighted selection based on instance weights
         weights = [max(instance.weight, 0.1) for instance in instances]
@@ -264,11 +263,11 @@ class LoadBalancer:
         
         return instances[0]
     
-    def _least_connections_select(self, instances: List[ServiceInstance]) -> ServiceInstance:
+    def _least_connections_select(self, instances: list[ServiceInstance]) -> ServiceInstance:
         """Select instance with least connections"""
         return min(instances, key=lambda x: x.current_connections)
     
-    def _weighted_least_connections_select(self, instances: List[ServiceInstance]) -> ServiceInstance:
+    def _weighted_least_connections_select(self, instances: list[ServiceInstance]) -> ServiceInstance:
         """Select instance with least weighted connections"""
         def weighted_connections(instance):
             if instance.weight <= 0:
@@ -277,7 +276,7 @@ class LoadBalancer:
         
         return min(instances, key=weighted_connections)
     
-    def _weighted_random_select(self, instances: List[ServiceInstance]) -> ServiceInstance:
+    def _weighted_random_select(self, instances: list[ServiceInstance]) -> ServiceInstance:
         """Weighted random selection"""
         weights = [max(instance.weight, 0.1) for instance in instances]
         total_weight = sum(weights)
@@ -292,8 +291,8 @@ class LoadBalancer:
         
         return instances[-1]
     
-    def _consistent_hash_select(self, service_name: str, instances: List[ServiceInstance],
-                              context: Optional[Dict[str, Any]]) -> ServiceInstance:
+    def _consistent_hash_select(self, service_name: str, instances: list[ServiceInstance],
+                              context: dict[str, Any] | None) -> ServiceInstance:
         """Consistent hash selection"""
         if not context or 'hash_key' not in context:
             return self._round_robin_select(service_name, instances)
@@ -326,11 +325,11 @@ class AutoScaler:
     """Automatic scaling based on metrics"""
     
     def __init__(self):
-        self.scaling_rules: Dict[str, List[ScalingRule]] = defaultdict(list)
-        self.metrics_history: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
-        self.last_scale_action: Dict[str, datetime] = {}
+        self.scaling_rules: dict[str, list[ScalingRule]] = defaultdict(list)
+        self.metrics_history: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self.last_scale_action: dict[str, datetime] = {}
         self._running = False
-        self._monitoring_task: Optional[asyncio.Task] = None
+        self._monitoring_task: asyncio.Task | None = None
     
     def add_scaling_rule(self, service_name: str, rule: ScalingRule):
         """Add auto-scaling rule"""
@@ -438,10 +437,10 @@ class ScalabilityManager:
         self.service_registry = ServiceRegistry()
         self.load_balancer = LoadBalancer()
         self.auto_scaler = AutoScaler()
-        self.circuit_breakers: Dict[str, CircuitBreaker] = {}
+        self.circuit_breakers: dict[str, CircuitBreaker] = {}
         
         # Background tasks
-        self._health_check_task: Optional[asyncio.Task] = None
+        self._health_check_task: asyncio.Task | None = None
         self._running = False
     
     async def start(self):
@@ -468,7 +467,7 @@ class ScalabilityManager:
         logger.info("Scalability manager stopped")
     
     async def register_service(self, service_name: str, host: str, port: int,
-                             weight: float = 1.0, metadata: Dict[str, Any] = None):
+                             weight: float = 1.0, metadata: dict[str, Any] = None):
         """Register service instance"""
         instance = ServiceInstance(
             id=f"{host}:{port}",
@@ -485,7 +484,7 @@ class ScalabilityManager:
             self.circuit_breakers[service_name] = CircuitBreaker()
     
     async def get_service_instance(self, service_name: str, 
-                                 context: Optional[Dict[str, Any]] = None) -> Optional[ServiceInstance]:
+                                 context: dict[str, Any] | None = None) -> ServiceInstance | None:
         """Get service instance using load balancing"""
         # Check circuit breaker
         circuit_breaker = self.circuit_breakers.get(service_name)
@@ -593,7 +592,7 @@ class ScalabilityManager:
             logger.error(f"Health check failed for {service_name}/{instance.id}: {e}")
             await self.service_registry.update_instance_status(service_name, instance.id, ServiceStatus.UNHEALTHY)
     
-    def get_service_stats(self) -> Dict[str, Any]:
+    def get_service_stats(self) -> dict[str, Any]:
         """Get comprehensive service statistics"""
         stats = {
             'services': {},

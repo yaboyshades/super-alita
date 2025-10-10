@@ -12,27 +12,27 @@ Tests the enhanced neural atom system including:
 """
 
 import asyncio
-import pytest
-import sys
 import os
-from unittest.mock import Mock, patch
+import sys
+
+import pytest
 
 # Add src to path for testing
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 try:
     from src.neural.enhanced_neural_atoms import (
-        EnhancedAtom,
-        EOSAtomOrchestrator,
-        EnhancedNeuralStore,
-        MangleReasoningEngine,
-        AtomRelationship,
-        AtomValidationResult,
         AtomProcessingStage,
+        AtomRelationship,
         AtomRelationType,
-        ValidationLevel,
+        AtomValidationResult,
+        EnhancedAtom,
+        EnhancedNeuralStore,
+        EOSAtomOrchestrator,
         EOSProcessingContext,
-        create_enhanced_atom
+        MangleReasoningEngine,
+        ValidationLevel,
+        create_enhanced_atom,
     )
     ENHANCED_ATOMS_AVAILABLE = True
 except ImportError as e:
@@ -144,7 +144,7 @@ class TestEnhancedNeuralAtoms:
         assert processed_atom.eos_context is not None
         assert len(processed_atom.eos_context.processing_history) > 0
         
-        print(f"✓ LADDER processing completed successfully")
+        print("✓ LADDER processing completed successfully")
         print(f"  - Quality Score: {processed_atom.quality_score:.2f}")
         print(f"  - Validations: {len(processed_atom.validation_results)}")
         print(f"  - Concepts: {len(processed_atom.inferred_properties.get('concepts', []))}")
@@ -168,7 +168,7 @@ class TestEnhancedNeuralAtoms:
         assert isinstance(validation_result.issues, list)
         assert isinstance(validation_result.recommendations, list)
         
-        print(f"✓ Mangle validation completed")
+        print("✓ Mangle validation completed")
         print(f"  - Valid: {validation_result.is_valid}")
         print(f"  - Confidence: {validation_result.confidence:.2f}")
         print(f"  - Issues: {len(validation_result.issues)}")
@@ -192,7 +192,7 @@ class TestEnhancedNeuralAtoms:
         decomposition_points = processed_atom.inferred_properties["decomposition_points"]
         assert len(decomposition_points) > 0
         
-        print(f"✓ Decomposition analysis completed")
+        print("✓ Decomposition analysis completed")
         print(f"  - Decomposition suggested: {processed_atom.meta.get('decomposition_suggested')}")
         print(f"  - Decomposition points: {len(decomposition_points)}")
         for i, point in enumerate(decomposition_points[:2]):  # Show first 2
@@ -229,7 +229,7 @@ class TestEnhancedNeuralAtoms:
             assert rel.confidence > 0
             assert len(rel.evidence) > 0
             
-            print(f"✓ Relationship inference completed")
+            print("✓ Relationship inference completed")
             print(f"  - Relationships found: {len(relationships)}")
             print(f"  - Relation type: {rel.relation_type.value}")
             print(f"  - Confidence: {rel.confidence:.2f}")
@@ -268,7 +268,7 @@ class TestEnhancedNeuralAtoms:
         assert stats["total_atoms"] == 1
         assert stats["average_quality_score"] > 0
         
-        print(f"✓ Enhanced neural store operations completed")
+        print("✓ Enhanced neural store operations completed")
         print(f"  - Atoms stored: {stats['total_atoms']}")
         print(f"  - Average quality: {stats['average_quality_score']:.2f}")
         print(f"  - Index size: {stats['index_size']}")
@@ -302,7 +302,7 @@ class TestEnhancedNeuralAtoms:
         if constitutional_validations:
             validation = constitutional_validations[0]
             assert validation.confidence >= 0
-            print(f"✓ Constitutional validation performed")
+            print("✓ Constitutional validation performed")
             print(f"  - Valid: {validation.is_valid}")
             print(f"  - Confidence: {validation.confidence:.2f}")
             print(f"  - Issues: {len(validation.issues)}")
@@ -339,7 +339,7 @@ class TestEnhancedNeuralAtoms:
         
         # Test relationship inference between atoms
         total_relationships = stats.get("total_relationships", 0)
-        print(f"✓ Batch processing completed")
+        print("✓ Batch processing completed")
         print(f"  - Atoms processed: {stats['total_atoms']}")
         print(f"  - Total relationships: {total_relationships}")
         print(f"  - Average quality: {stats['average_quality_score']:.2f}")

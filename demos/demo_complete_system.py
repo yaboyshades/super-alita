@@ -128,7 +128,7 @@ async def demonstrate_performance_monitoring():
         # Get performance report
         report = await monitor.get_performance_report()
         
-        print(f"\\n📈 Performance Summary:")
+        print("\\n📈 Performance Summary:")
         print(f"   Total Operations: {report['total_operations']}")
         print(f"   Average Response Time: {report['average_response_time']:.2f}ms")
         print(f"   System Health Score: {report['health_score']:.2f}")
@@ -136,7 +136,7 @@ async def demonstrate_performance_monitoring():
         # Check for performance alerts
         alerts = report.get('alerts', [])
         if alerts:
-            print(f"\\n⚠️  Performance Alerts:")
+            print("\\n⚠️  Performance Alerts:")
             for alert in alerts:
                 print(f"   - {alert['level']}: {alert['message']}")
         else:
@@ -256,7 +256,7 @@ def cache_data(key, value):
         test_code, "test_analysis.py", {"file_type": "python"}
     )
     
-    print(f"   ✓ Pattern analysis completed")
+    print("   ✓ Pattern analysis completed")
     print(f"   ✓ Violations detected: {len(analysis_result)}")
     
     for violation in analysis_result[:3]:  # Show first 3 violations
@@ -286,8 +286,8 @@ def cache_data(key, value):
             status = "✅" if stage_result['success'] else "❌"
             print(f"     {status} {stage_name}: {stage_result['duration']:.2f}s")
             
-    except Exception as e:
-        print(f"   ⚠️  Pipeline simulation completed with demo data")
+    except Exception:
+        print("   ⚠️  Pipeline simulation completed with demo data")
 
 
 async def demonstrate_workflow_automation():
@@ -364,7 +364,7 @@ async def main():
         
         print("\\n🎉 DEMONSTRATION COMPLETE")
         print("=" * 60)
-        print(f"✅ All system components demonstrated successfully!")
+        print("✅ All system components demonstrated successfully!")
         print(f"⏱️  Total demonstration time: {duration:.2f} seconds")
         print(f"📅 Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         

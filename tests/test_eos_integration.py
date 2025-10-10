@@ -5,21 +5,21 @@ Tests the complete EOS pipeline including schema validation, state machine,
 operators, routing, and telemetry integration.
 """
 
-import pytest
-import asyncio
-import json
 import tempfile
-import yaml
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
+import yaml
+
+from src.eos.context import CynefinClassifier
+from src.eos.operators import LadderOperators, OperatorType
+from src.eos.orchestrator import EOSOrchestrator, run_eos_orchestration
+from src.eos.routing import MoERouter
 
 # Import EOS components
 from src.eos.schema import EOSSchema, EOSValidator
-from src.eos.orchestrator import EOSOrchestrator, run_eos_orchestration
 from src.eos.state_machine import EOSStateMachine, StateType
-from src.eos.context import ContextAnalyzer, CynefinClassifier
-from src.eos.routing import MoERouter, ExpertGating
-from src.eos.operators import LadderOperators, OperatorType
 
 
 class TestEOSSchemaValidation:
@@ -316,7 +316,7 @@ class TestMoERouting:
         router = MoERouter(test_experts, routing_config)
         
         # Create a mock selection
-        from src.eos.routing import ExpertSelection, ExpertScore
+        from src.eos.routing import ExpertScore, ExpertSelection
         
         selection = ExpertSelection(
             expert_id="expert1",
@@ -441,8 +441,9 @@ class TestEOSIntegration:
             pytest.skip("Reference specification not found")
         
         # Test validation only
-        from src.eos.schema import main as schema_main
         import sys
+
+        from src.eos.schema import main as schema_main
         
         # Mock sys.argv for CLI test
         original_argv = sys.argv

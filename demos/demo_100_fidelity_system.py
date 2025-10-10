@@ -38,11 +38,13 @@ async def demo_telemetry_system():
     try:
         # Import telemetry components
         from src.performance_monitoring.telemetry.opentelemetry_config import (
-            get_telemetry_collector, telemetry_trace, telemetry_span
+            get_telemetry_collector,
+            telemetry_span,
+            telemetry_trace,
         )
         
         collector = get_telemetry_collector()
-        print(f"✅ Telemetry collector initialized")
+        print("✅ Telemetry collector initialized")
         print(f"   SLOs: p95 < {collector.slos.latency_p95_ms}ms, error rate < {collector.slos.error_rate_threshold * 100}%")
         
         # Demo telemetry tracing
@@ -60,7 +62,7 @@ async def demo_telemetry_system():
         # Get metrics summary
         summary = collector.get_metrics_summary()
         if summary.get("status") != "no_data":
-            print(f"📈 Metrics Summary:")
+            print("📈 Metrics Summary:")
             print(f"   Total requests: {summary['total_requests']}")
             print(f"   Error rate: {summary['error_rate']:.1%}")
             print(f"   Avg latency: {summary['latency_ms']['avg']:.1f}ms")
@@ -83,7 +85,8 @@ async def demo_extension_middleware():
     
     try:
         from src.performance_monitoring.middleware.extension_interceptors import (
-            track_extension_call, get_extension_middleware
+            get_extension_middleware,
+            track_extension_call,
         )
         
         middleware = get_extension_middleware()
@@ -143,7 +146,7 @@ def demo_constitutional_rules():
         for rule_file in rule_files:
             try:
                 import yaml
-                with open(rule_file, 'r', encoding='utf-8') as f:
+                with open(rule_file, encoding='utf-8') as f:
                     rule_data = yaml.safe_load(f)
                 
                 print(f"   📋 {rule_data.get('id', 'Unknown')}: {rule_data.get('description', 'No description')}")
@@ -156,10 +159,10 @@ def demo_constitutional_rules():
         # Check ruleset metadata
         metadata_file = rules_dir / "ruleset_metadata.yaml"
         if metadata_file.exists():
-            with open(metadata_file, 'r', encoding='utf-8') as f:
+            with open(metadata_file, encoding='utf-8') as f:
                 metadata = yaml.safe_load(f)
             
-            print(f"\n📖 Ruleset Metadata:")
+            print("\n📖 Ruleset Metadata:")
             print(f"   Name: {metadata.get('ruleset', {}).get('name', 'Unknown')}")
             print(f"   Version: {metadata.get('ruleset', {}).get('version', 'Unknown')}")
             print(f"   Total Articles: {len(metadata.get('articles', []))}")
@@ -206,7 +209,7 @@ def demo_rule_validator():
                 if result.stdout:
                     try:
                         validation_data = json.loads(result.stdout)
-                        print(f"📊 Validation Results:")
+                        print("📊 Validation Results:")
                         print(f"   Files checked: {validation_data.get('total_files_checked', 0)}")
                         print(f"   Total violations: {validation_data.get('total_violations', 0)}")
                         print(f"   Blockers: {validation_data.get('blocker_count', 0)}")
@@ -221,7 +224,7 @@ def demo_rule_validator():
                             print("   ❌ Constitutional compliance: VIOLATIONS")
                             
                     except json.JSONDecodeError:
-                        print(f"   ⚠️ Validator output not JSON parseable")
+                        print("   ⚠️ Validator output not JSON parseable")
                 
                 else:
                     print("   ⚠️ No validator output received")
@@ -276,7 +279,7 @@ def demo_monitoring_stack():
                 missing_files.append(file_path)
                 print(f"   ❌ {file_path}")
         
-        print(f"\n📈 Monitoring Stack Status:")
+        print("\n📈 Monitoring Stack Status:")
         print(f"   Present files: {len(present_files)}/{len(required_files)}")
         print(f"   Missing files: {len(missing_files)}")
         
@@ -287,13 +290,13 @@ def demo_monitoring_stack():
         dashboard_file = monitoring_dir / "grafana/dashboards/performance_dashboard.json"
         if dashboard_file.exists():
             try:
-                with open(dashboard_file, 'r', encoding='utf-8') as f:
+                with open(dashboard_file, encoding='utf-8') as f:
                     dashboard_data = json.load(f)
                 
                 dashboard_info = dashboard_data.get("dashboard", {})
                 panels = dashboard_info.get("panels", [])
                 
-                print(f"\n📊 Grafana Dashboard:")
+                print("\n📊 Grafana Dashboard:")
                 print(f"   Title: {dashboard_info.get('title', 'Unknown')}")
                 print(f"   Panels: {len(panels)}")
                 
@@ -324,7 +327,7 @@ def demo_ci_integration():
         if workflow_file.exists():
             print("✅ GitHub Actions workflow found")
             
-            with open(workflow_file, 'r', encoding='utf-8') as f:
+            with open(workflow_file, encoding='utf-8') as f:
                 workflow_content = f.read()
             
             # Count jobs and steps
@@ -344,7 +347,7 @@ def demo_ci_integration():
             print("✅ Pre-commit configuration found")
             
             import yaml
-            with open(precommit_file, 'r', encoding='utf-8') as f:
+            with open(precommit_file, encoding='utf-8') as f:
                 precommit_data = yaml.safe_load(f)
             
             repos = precommit_data.get("repos", [])
@@ -410,13 +413,13 @@ def demo_documentation():
             else:
                 print(f"❌ {description} not found")
         
-        print(f"\n📖 Documentation Status:")
+        print("\n📖 Documentation Status:")
         print(f"   Found: {found_docs}/{len(doc_files)} key documents")
         
         # Check for Mermaid diagrams in architecture
         arch_file = Path("docs/architecture.md")
         if arch_file.exists():
-            with open(arch_file, 'r', encoding='utf-8') as f:
+            with open(arch_file, encoding='utf-8') as f:
                 arch_content = f.read()
             
             mermaid_count = arch_content.count("```mermaid")
@@ -464,7 +467,7 @@ async def main():
     # Summary
     execution_time = (time.perf_counter() - start_time) * 1000
     
-    print(f"\n🎯 100% Fidelity System Validation Summary")
+    print("\n🎯 100% Fidelity System Validation Summary")
     print("=" * 80)
     
     passed = sum(1 for _, result in results if result)
@@ -474,7 +477,7 @@ async def main():
         status = "✅ PASS" if result else "❌ FAIL"
         print(f"{status} {name}")
     
-    print(f"\n📊 Overall Results:")
+    print("\n📊 Overall Results:")
     print(f"   Total Components: {len(results)}")
     print(f"   Passed: {passed}")
     print(f"   Failed: {failed}")
@@ -483,7 +486,7 @@ async def main():
     
     # Final verdict
     if failed == 0:
-        print(f"\n🎉 SUCCESS: 100% Fidelity Implementation Complete!")
+        print("\n🎉 SUCCESS: 100% Fidelity Implementation Complete!")
         print("   All components operational and integrated")
         print("   System ready for production deployment")
         return 0

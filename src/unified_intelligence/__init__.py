@@ -19,9 +19,7 @@ from .workflow_detector import WorkflowDetector
 
 # Optional EOS integration
 try:
-    from src.eos.mangle_integration import (
-        EOSMangleOrchestrator, EOSMangleConfig
-    )
+    from src.eos.mangle_integration import EOSMangleConfig, EOSMangleOrchestrator
     EOS_AVAILABLE = True
 except ImportError:
     EOSMangleOrchestrator = None

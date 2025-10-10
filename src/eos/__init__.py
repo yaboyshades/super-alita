@@ -5,12 +5,12 @@ This module provides the core orchestration framework for context-adaptive
 problem solving with LADDER reasoning and Mixture-of-Experts routing.
 """
 
-from .schema import EOSValidator, EOSSchema
-from .state_machine import EOSStateMachine, State, Transition
-from .context import CynefinClassifier, ContextAnalyzer
-from .routing import MoERouter, ExpertGating
-from .operators import LadderOperators, Lift, Decompose, Synthesize, Descend
+from .context import ContextAnalyzer, CynefinClassifier
+from .operators import Decompose, Descend, LadderOperators, Lift, Synthesize
 from .orchestrator import EOSOrchestrator
+from .routing import ExpertGating, MoERouter
+from .schema import EOSSchema, EOSValidator
+from .state_machine import EOSStateMachine, State, Transition
 
 __version__ = "0.9.0"
 __all__ = [

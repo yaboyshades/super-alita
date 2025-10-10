@@ -5,16 +5,16 @@ Generates SARIF reports for API differences and contract violations
 """
 import json
 import sys
-from typing import Dict, Any, List
 from datetime import datetime
+from typing import Any
 
 
 def create_sarif_report(
-    spec_differences: List[Dict[str, Any]], 
-    contract_violations: List[Dict[str, Any]],
-    signature_changes: List[Dict[str, Any]],
-    semver_issues: List[Dict[str, Any]]
-) -> Dict[str, Any]:
+    spec_differences: list[dict[str, Any]], 
+    contract_violations: list[dict[str, Any]],
+    signature_changes: list[dict[str, Any]],
+    semver_issues: list[dict[str, Any]]
+) -> dict[str, Any]:
     """
     Create a SARIF report from spec differences and contract violations.
     """
@@ -284,10 +284,10 @@ def create_sarif_report(
 
 
 def generate_pr_comment(
-    spec_differences: List[Dict[str, Any]], 
-    contract_violations: List[Dict[str, Any]],
-    signature_changes: List[Dict[str, Any]],
-    semver_issues: List[Dict[str, Any]]
+    spec_differences: list[dict[str, Any]], 
+    contract_violations: list[dict[str, Any]],
+    signature_changes: list[dict[str, Any]],
+    semver_issues: list[dict[str, Any]]
 ) -> str:
     """
     Generate a PR comment summarizing the changes.
@@ -425,7 +425,7 @@ def main():
     if len(sys.argv) > 1:
         # Try to load from JSON file
         try:
-            with open(sys.argv[1], 'r') as f:
+            with open(sys.argv[1]) as f:
                 data = json.load(f)
                 spec_differences = data.get('spec_differences', [])
                 contract_violations = data.get('contract_violations', [])

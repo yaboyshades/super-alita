@@ -1,3 +1,5 @@
 """Agent-related utilities and helpers."""
 
-"""Agent utilities for managing dynamic tools."""
+from src.agents.github_agent import GitHubAgent, GitHubAgentContext
+
+__all__ = ["GitHubAgent", "GitHubAgentContext"]

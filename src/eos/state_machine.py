@@ -6,12 +6,13 @@ support for non-linear cycles, guards, triggers, and telemetry.
 """
 
 import asyncio
+import logging
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Any, List, Optional, Callable
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,15 +38,15 @@ class TransitionType(Enum):
 class StateContext:
     """Context passed between states"""
     run_id: str
-    artifacts: Dict[str, Any] = field(default_factory=dict)
-    metrics: Dict[str, float] = field(default_factory=dict)
+    artifacts: dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, float] = field(default_factory=dict)
     evidence_score: float = 0.0
     contradiction_debt: float = 0.0
     breadth: int = 0
     quality: float = 0.0
     chaotic_mode: bool = False
-    budget_remaining: Dict[str, float] = field(default_factory=dict)
-    time_remaining: Dict[str, float] = field(default_factory=dict)
+    budget_remaining: dict[str, float] = field(default_factory=dict)
+    time_remaining: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -62,7 +63,7 @@ class Guard(ABC):
     
     @abstractmethod
     def evaluate(self, context: StateContext, 
-                 spec: Dict[str, Any]) -> bool:
+                 spec: dict[str, Any]) -> bool:
         """Evaluate guard condition"""
         pass
 
@@ -71,7 +72,7 @@ class ContextShiftGuard(Guard):
     """Guard for detecting context shifts to chaotic"""
     
     def evaluate(self, context: StateContext, 
-                 spec: Dict[str, Any]) -> bool:
+                 spec: dict[str, Any]) -> bool:
         # Check if chaotic probability exceeded threshold
         tau_emergency = spec.get("context", {}).get(
             "uncertainty_thresholds", {}
@@ -88,7 +89,7 @@ class SufficiencyGuard(Guard):
     """Guard for checking evidence sufficiency"""
     
     def evaluate(self, context: StateContext, 
-                 spec: Dict[str, Any]) -> bool:
+                 spec: dict[str, Any]) -> bool:
         tau_evidence = 0.5  # Could be configurable
         tau_contra = 0.3    # Could be configurable
         
@@ -100,7 +101,7 @@ class BudgetGuard(Guard):
     """Guard for checking resource budgets"""
     
     def evaluate(self, context: StateContext, 
-                 spec: Dict[str, Any]) -> bool:
+                 spec: dict[str, Any]) -> bool:
         # Check if any budget fell below reserve
         reserve_fraction = spec.get("routing", {}).get(
             "budgets", {}
@@ -115,11 +116,11 @@ class BudgetGuard(Guard):
 class LambdaGuard(Guard):
     """Guard that wraps a lambda function"""
     
-    def __init__(self, func: Callable[[StateContext, Dict[str, Any]], bool]):
+    def __init__(self, func: Callable[[StateContext, dict[str, Any]], bool]):
         self.func = func
     
     def evaluate(self, context: StateContext, 
-                 spec: Dict[str, Any]) -> bool:
+                 spec: dict[str, Any]) -> bool:
         return self.func(context, spec)
 
 
@@ -130,7 +131,7 @@ class TimeGuard(Guard):
         self.state_name = state_name
     
     def evaluate(self, context: StateContext, 
-                 spec: Dict[str, Any]) -> bool:
+                 spec: dict[str, Any]) -> bool:
         # Check if time limit exceeded for this state
         time_limits = spec.get("resources", {}).get(
             "time_limits", {}
@@ -145,12 +146,12 @@ class TimeGuard(Guard):
 class State(ABC):
     """Abstract base class for EOS states"""
     
-    def __init__(self, state_type: StateType, spec: Dict[str, Any]):
+    def __init__(self, state_type: StateType, spec: dict[str, Any]):
         self.state_type = state_type
         self.spec = spec
-        self.entry_guards: List[Guard] = []
-        self.exit_guards: List[Guard] = []
-        self.start_time: Optional[float] = None
+        self.entry_guards: list[Guard] = []
+        self.exit_guards: list[Guard] = []
+        self.start_time: float | None = None
     
     @abstractmethod
     async def execute(self, context: StateContext) -> StateContext:
@@ -185,7 +186,7 @@ class State(ABC):
 class ObserveState(State):
     """Observe state implementation"""
     
-    def __init__(self, spec: Dict[str, Any]):
+    def __init__(self, spec: dict[str, Any]):
         super().__init__(StateType.OBSERVE, spec)
         # Entry guard always true (can always observe)
         self.exit_guards = [SufficiencyGuard(), TimeGuard("Observe")]
@@ -210,7 +211,7 @@ class ObserveState(State):
 class AnalyzeState(State):
     """Analyze state implementation"""
     
-    def __init__(self, spec: Dict[str, Any]):
+    def __init__(self, spec: dict[str, Any]):
         super().__init__(StateType.ANALYZE, spec)
         # Cannot enter if in chaotic mode
         self.entry_guards = [LambdaGuard(
@@ -240,7 +241,7 @@ class AnalyzeState(State):
 class SynthesizeState(State):
     """Synthesize state implementation"""
     
-    def __init__(self, spec: Dict[str, Any]):
+    def __init__(self, spec: dict[str, Any]):
         super().__init__(StateType.SYNTHESIZE, spec)
         self.exit_guards = [
             LambdaGuard(
@@ -271,7 +272,7 @@ class SynthesizeState(State):
 class ImplementState(State):
     """Implement state implementation"""
     
-    def __init__(self, spec: Dict[str, Any]):
+    def __init__(self, spec: dict[str, Any]):
         super().__init__(StateType.IMPLEMENT, spec)
         self.exit_guards = [
             LambdaGuard(
@@ -302,7 +303,7 @@ class ImplementState(State):
 class EvaluateState(State):
     """Evaluate state implementation"""
     
-    def __init__(self, spec: Dict[str, Any]):
+    def __init__(self, spec: dict[str, Any]):
         super().__init__(StateType.EVALUATE, spec)
         self.exit_guards = [
             LambdaGuard(
@@ -337,14 +338,14 @@ class Transition:
     
     def __init__(self, from_state: StateType, to_state: StateType,
                  transition_type: TransitionType,
-                 condition: Callable[[StateContext, Dict[str, Any]], bool]):
+                 condition: Callable[[StateContext, dict[str, Any]], bool]):
         self.from_state = from_state
         self.to_state = to_state
         self.transition_type = transition_type
         self.condition = condition
     
     def can_transition(self, context: StateContext,
-                       spec: Dict[str, Any]) -> bool:
+                       spec: dict[str, Any]) -> bool:
         """Check if transition is allowed"""
         return self.condition(context, spec)
 
@@ -352,10 +353,10 @@ class Transition:
 class EOSStateMachine:
     """E-UPUSF Orchestration State Machine"""
     
-    def __init__(self, spec: Dict[str, Any]):
+    def __init__(self, spec: dict[str, Any]):
         self.spec = spec
-        self.current_state: Optional[State] = None
-        self.context: Optional[StateContext] = None
+        self.current_state: State | None = None
+        self.context: StateContext | None = None
         
         # Initialize states
         self.states = {
@@ -374,7 +375,7 @@ class EOSStateMachine:
         self.sufficiency_guard = SufficiencyGuard()
         self.budget_guard = BudgetGuard()
     
-    def _create_transitions(self) -> List[Transition]:
+    def _create_transitions(self) -> list[Transition]:
         """Create transition rules"""
         transitions = []
         
@@ -466,7 +467,7 @@ class EOSStateMachine:
         logger.info(f"Started EOS state machine with run_id: {run_id}")
         return self.context
     
-    async def step(self) -> Optional[TransitionDecision]:
+    async def step(self) -> TransitionDecision | None:
         """Execute one state machine step"""
         if not self.current_state or not self.context:
             raise RuntimeError("State machine not started")
@@ -482,7 +483,7 @@ class EOSStateMachine:
         
         return decision
     
-    def _decide_transition(self) -> Optional[TransitionDecision]:
+    def _decide_transition(self) -> TransitionDecision | None:
         """Decide on state transition"""
         if not self.current_state or not self.context:
             return None

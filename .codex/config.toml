@@ -1,53 +1,421 @@
-# Codex runtime configuration aligned with Copilot setup
-# Mirrors workspace, instructions, and constitutional requirements defined under .github.
+# ==============================================================================
+# Codex CLI Configuration for Super-Alita Integration
+# ==============================================================================
+# Research Framework: Design Science Research (DSR) + DMAIC
+# Objectives: (a) Reasoning Performance, (b) Modular Control,
+#             (c) Security, (d) Observability
+# Version: 1.0.0 - World-Class Configuration
+# Date: October 8, 2025
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. GLOBAL DEFAULTS (Safe, Transparent, MCP-Ready)
+# ------------------------------------------------------------------------------
+model                          = "gpt-4o"         # Default model (gpt-4o proven stable)
+model_provider                 = "openai"         # Primary provider
+approval_policy                = "on-request"     # Prompt before actions
+sandbox_mode                   = "workspace-write" # Confined edits
+hide_agent_reasoning           = false            # Show reasoning
+show_raw_agent_reasoning       = true             # Detailed traces
+file_opener                    = "vscode"         # IDE integration
+experimental_use_rmcp_client   = true             # Remote MCP ready
+
+# ------------------------------------------------------------------------------
+# 2. SHELL ENVIRONMENT POLICY (Security-First)
+# ------------------------------------------------------------------------------
+[shell_environment_policy]
+inherit = "core"
+exclude = [
+    "AWS_*",
+    "AZURE_*",
+    "*KEY*",
+    "*TOKEN*",
+    "*SECRET*",
+    "*PASSWORD*",
+    "GH_*",
+    "GITHUB_TOKEN",
+    "NPM_TOKEN"
+]
+[shell_environment_policy.set]
+PYTHONPATH = "./src"
+ALITA_MODE = "act"  # Super-Alita execution mode
+
+# ------------------------------------------------------------------------------
+# 3. PROFILE DEFINITIONS (Task-Optimized Contexts)
+# ------------------------------------------------------------------------------
+
+# 3.1 Super-Alita Development Profile (Deep Reasoning + Network + Tools)
+# Use: codex --profile super-alita-dev
+# Context: Primary development with full Super-Alita tool access
+[profiles.super-alita-dev]
+model                   = "gpt-4o"
+model_provider          = "openai"
+approval_policy         = "on-request"
+sandbox_mode            = "workspace-write"
+model_reasoning_effort  = "high"
+model_reasoning_summary = "detailed"
+
+[profiles.super-alita-dev.sandbox_workspace_write]
+network_access = true
+writable_roots = [".", "/tmp"]
+
+# 3.2 Local Development with Ollama (Fast, Offline, Full-Auto)
+# Use: codex --profile local-dev
+# Context: Offline development with local Ollama model
+[profiles.local-dev]
+model           = "second_constantine/gpt-oss-u:20b"
+model_provider  = "ollama"
+approval_policy = "never"           # Full automation
+sandbox_mode    = "workspace-write"
+
+[profiles.local-dev.sandbox_workspace_write]
+network_access = false  # Offline mode
+writable_roots = [".", "/tmp"]
+
+# 3.3 Production / Analysis (Max Safety, Read-Only, High Rigor)
+# Use: codex --profile production
+# Context: Production analysis, code review, security audits
+[profiles.production]
+model                   = "gpt-4o"
+model_provider          = "openai"
+approval_policy         = "untrusted"    # Maximum scrutiny
+sandbox_mode            = "read-only"    # No modifications
+model_reasoning_effort  = "high"
+model_reasoning_summary = "detailed"
+
+[profiles.production.sandbox_read_only]
+network_access = false  # No network in production review
+
+# 3.4 SDD Workflow Integration (Spec-Driven Development)
+# Use: codex --profile sdd-integration
+# Context: SDD pipeline with constitutional validation gates
+[profiles.sdd-integration]
+model           = "gpt-4o"
+model_provider  = "openai"
+approval_policy = "on-request"
+sandbox_mode    = "workspace-write"
+notify          = ["python", "./scripts/codex_sdd_bridge.py"]
+
+[profiles.sdd-integration.sandbox_workspace_write]
+network_access = true
+writable_roots = [".", ".specify", "specs", "templates", "/tmp"]
+
+# 3.5 Constitutional Validation Profile (Compliance Gatekeeper)
+# Use: codex --profile constitutional
+# Context: Validate against constitutional framework (≥0.75 threshold)
+[profiles.constitutional]
+model                   = "gpt-4o"
+model_provider          = "openai"
+approval_policy         = "on-request"
+sandbox_mode            = "read-only"
+model_reasoning_effort  = "high"
+notify                  = ["python", "./scripts/codex_constitutional_validator.py"]
+
+[profiles.constitutional.sandbox_read_only]
+network_access = true  # Need access for Mangle database queries
+
+# ------------------------------------------------------------------------------
+# 4. MCP SERVER INTEGRATION (Super-Alita + GitHub + Context7)
+# ------------------------------------------------------------------------------
+# Super-Alita: Primary orchestration, planning, abilities
+# GitHub:      Repository operations, PRs, issues
+# Context7:    Documentation context and search
+# ------------------------------------------------------------------------------
+
+[mcp_servers.super-alita]
+url                              = "http://127.0.0.1:8080"
+startup_timeout_sec              = 30
+tool_timeout_sec                 = 120
+experimental_use_rmcp_client     = true
+
+[mcp_servers.super-alita.env]
+ALITA_MCP_MODEL                  = "second_constantine/gpt-oss-u:20b"
+ALITA_MCP_TEMPERATURE            = "0.7"
+ALITA_MCP_MAX_TOKENS             = "2000"
+ALITA_CONSTITUTIONAL_THRESHOLD   = "0.75"
+OLLAMA_HOST                      = "http://127.0.0.1:11434"
+ALITA_MODE                       = "act"
+
+[mcp_servers.github]
+command                = "npx"
+args                   = ["-y", "@github/github-mcp-server"]
+startup_timeout_sec    = 20
+tool_timeout_sec       = 60
+
+# Set via environment variable: GITHUB_PERSONAL_ACCESS_TOKEN
+# [mcp_servers.github.env]
+# GITHUB_PERSONAL_ACCESS_TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+[mcp_servers.context7]
+command                = "npx"
+args                   = ["-y", "@upstash/context7-mcp"]
+startup_timeout_sec    = 15
+tool_timeout_sec       = 30
+
+# ------------------------------------------------------------------------------
+# 5. MODEL PROVIDER ROUTING (Cloud + Local + Super-Alita)
+# ------------------------------------------------------------------------------
+
+[model_providers.openai]
+name     = "OpenAI API"
+base_url = "https://api.openai.com/v1"
+env_key  = "OPENAI_API_KEY"
+
+[model_providers.ollama]
+name                    = "Ollama Local"
+base_url                = "http://localhost:11434/v1"
+request_max_retries     = 2
+stream_max_retries      = 5
+stream_idle_timeout_ms  = 600000  # 10 minutes for long operations
+
+# Optional: Super-Alita as a model provider (if exposing chat-like API)
+[model_providers.super-alita-local]
+name                    = "Super-Alita Local"
+base_url                = "http://127.0.0.1:8080"
+env_key                 = "SUPER_ALITA_API_KEY"
+wire_api                = "chat"
+request_max_retries     = 3
+stream_max_retries      = 8
+stream_idle_timeout_ms  = 600000
+
+[model_providers.openai-enhanced]
+name     = "OpenAI Enhanced"
+base_url = "https://api.openai.com/v1"
+env_key  = "OPENAI_API_KEY"
+wire_api = "responses"
+
+[model_providers.openai-enhanced.http_headers]
+"X-Custom-Agent"    = "super-alita-codex"
+"X-Source-Platform" = "codex-cli"
+
+# ------------------------------------------------------------------------------
+# 6. OBSERVABILITY (OpenTelemetry + Notifications)
+# ------------------------------------------------------------------------------
+
+[otel]
+environment = "development"
+
+[otel.exporter.otlp_http]
+endpoint = "http://127.0.0.1:8080/otel/logs"
+protocol = "http/protobuf"
+
+[otel.exporter.otlp_http.headers]
+x-agent-source = "codex-super-alita"
+x-session-id   = "codex-dev-session"
+x-profile      = "${CODEX_PROFILE:-default}"
+
+log_user_prompt = true
+
+# Post-turn notification hook (forwards events to Super-Alita telemetry)
+notify = ["python", "./scripts/codex_notifications.py"]
+
+[tui]
+notifications = [
+    "agent-turn-complete",
+    "approval-requested",
+    "tool-call-started",
+    "tool-call-complete",
+    "error-occurred"
+]
+
+# ------------------------------------------------------------------------------
+# 7. RUNTIME CONFIGURATION
+# ------------------------------------------------------------------------------
 
 [runtime]
-name = "super-alita"
-pythonpath = "./src"
-entrypoint = "mcp_server_entrypoint.py"
-setup_script = "./.codex/setup.sh"
+name                    = "super-alita"
+pythonpath              = "./src"
+entrypoint              = "mcp_server_entrypoint.py"
+setup_script            = "./.codex/setup.sh"
+
+# Zero Data Retention (ZDR) mode - disable local caching
+enable_response_cache   = false
+
+# Timeout for long-running operations
+default_timeout_sec     = 300
+
+# Max tokens for context window
+max_context_tokens      = 128000
 
 [server]
-host = "127.0.0.1"
-port = 8765
+host      = "127.0.0.1"
+port      = 8765
 use_stdio = true
 
 [logging]
 level = "INFO"
 
 [workspace]
-workspace_file = "./workspace.yaml"
-instructions_file = "./instructions.md"
-prompts_dir = "../.github/prompts"
-chatmodes_dir = "../.github/chatmodes"
-agent_manifest = "../.github/agent.yaml"
-constitution = "../.github/CONSTITUTION.md"
+workspace_file     = "./workspace.yaml"
+instructions_file  = "./instructions.md"
+prompts_dir        = "../.github/prompts"
+chatmodes_dir      = "../.github/chatmodes"
+agent_manifest     = "../.github/agent.yaml"
+constitution       = "../.github/CONSTITUTION.md"
 
 [features]
-knowledge_graph = true
-ladder_planner = true
-consensus = true
-mangle = true
-shadow_reward = true
-snippet_optimizer = true
-constitutional_validation = true
-sdd = true
-sdd_cli = true
+knowledge_graph            = true
+ladder_planner             = true
+consensus                  = true
+mangle                     = true
+shadow_reward              = true
+snippet_optimizer          = true
+constitutional_validation  = true
+sdd                        = true
+sdd_cli                    = true
 
 [paths]
-temp_dir = "./.codex/tmp"
+temp_dir    = "./.codex/tmp"
 reports_dir = "./.codex/reports"
 
 [commands]
-sdd_specify = ["python", "-m", "src.sdd", "specify"]
-sdd_plan = ["python", "-m", "src.sdd", "plan"]
-sdd_tasks = ["python", "-m", "src.sdd", "tasks"]
-sdd_validate = ["python", "-m", "src.sdd", "validate"]
+sdd_specify   = ["python", "-m", "src.sdd", "specify"]
+sdd_plan      = ["python", "-m", "src.sdd", "plan"]
+sdd_tasks     = ["python", "-m", "src.sdd", "tasks"]
+sdd_validate  = ["python", "-m", "src.sdd", "validate"]
 
 [security]
 sandbox = false
+
+# Allowed file extensions for code operations
+allowed_extensions = [
+    ".py", ".md", ".toml", ".yaml", ".yml", ".json",
+    ".txt", ".sh", ".ps1", ".ts", ".js", ".html", ".css",
+    ".rs", ".go", ".java", ".c", ".cpp", ".h"
+]
+
+# Blocked paths (never access)
+blocked_paths = [
+    ".env",
+    ".env.local",
+    ".env.*.local",
+    "*.key",
+    "*.pem",
+    "*.p12",
+    "id_rsa*",
+    "id_ed25519*",
+    ".aws/*",
+    ".azure/*",
+    ".ssh/*"
+]
+
+# Max file size for operations (MB)
+max_file_size_mb = 10
+
+# Constitutional validation
+enable_constitutional_validation = true
+constitutional_threshold         = 0.75
 
 [tools]
 enable_dynamic_tools = true
 
 [env]
+
+# ------------------------------------------------------------------------------
+# 8. INTEGRATION HOOKS (Pre/Post Execution)
+# ------------------------------------------------------------------------------
+
+[hooks]
+# Pre-execution hook (validation, setup, checks)
+pre_execute = []
+
+# Post-execution hook (cleanup, notifications, telemetry)
+post_execute = ["python", "./scripts/codex_notifications.py"]
+
+# On error hook (error reporting, rollback, alerts)
+on_error = []
+
+# ------------------------------------------------------------------------------
+# 9. EXPERIMENTAL FEATURES
+# ------------------------------------------------------------------------------
+
+[experimental]
+# Enable advanced reasoning modes when available
+enable_chain_of_thought = true
+
+# Enable multi-agent coordination (future capability)
+enable_multi_agent = false
+
+# Enable automatic constitutional validation on code changes
+auto_validate_constitutional = true
+
+# Enable Mangle reasoning engine integration
+enable_mangle_validation = true
+
+# Enable SDD workflow automation
+enable_sdd_automation = true
+
+# ------------------------------------------------------------------------------
+# 10. OPERATIONS CHEATSHEET (Usage Guide)
+# ------------------------------------------------------------------------------
+# 
+# COMMON LAUNCHES:
+#   
+#   # Deep dev with Super-Alita tools & network
+#   codex --profile super-alita-dev
+#   
+#   # Offline, fast, full-auto refactors (local model)
+#   codex --profile local-dev
+#   
+#   # Safe read-only analysis (production)
+#   codex --profile production
+#   
+#   # SDD workflow with constitutional gates
+#   codex --profile sdd-integration
+#   
+#   # Constitutional compliance validation
+#   codex --profile constitutional
+#
+# AD-HOC OVERRIDES:
+#   
+#   # Temporarily disable network in dev
+#   codex --profile super-alita-dev -c 'sandbox_workspace_write.network_access=false'
+#   
+#   # Make local-dev ask for approvals
+#   codex --profile local-dev -c approval_policy="on-request"
+#   
+#   # Turn on detailed reasoning ad-hoc
+#   codex --profile production -c model_reasoning_summary="detailed"
+#   
+#   # Use different model temporarily
+#   codex --profile super-alita-dev -c model="gpt-4-turbo"
+#
+# SECURITY BEST PRACTICES:
+#   
+#   - Store API keys in environment variables, never in config
+#   - Use Zero-Data-Retention (ZDR) org settings for sensitive work
+#   - Review approval requests carefully before accepting
+#   - Use production profile for security-critical code review
+#   - Keep shell_environment_policy.exclude patterns strict
+#
+# OBSERVABILITY:
+#   
+#   - Check logs: .codex/logs/codex.log
+#   - View notifications: .codex/logs/notifications_*.jsonl
+#   - Monitor telemetry: http://127.0.0.1:8080/otel/logs
+#   - Check constitutional scores: .ai/report.json
+#
+# TROUBLESHOOTING:
+#   
+#   # Test MCP connectivity
+#   curl http://127.0.0.1:8080/health/simple
+#   
+#   # Test Ollama
+#   curl http://127.0.0.1:11434/api/tags
+#   
+#   # Validate config
+#   codex config validate
+#   
+#   # Clear cache
+#   rm -rf .codex/cache/
+#
+# ADAPTIVE LOGIC (Future Improvements):
+#   
+#   - Add per-profile tool allow/deny lists when available
+#   - Implement health probes for MCP servers
+#   - Add per-tool trust lists (reduce approval noise)
+#   - Pipe OTEL into Jaeger/Tempo for dashboards
+#   - Track metrics: tool latency, approval rates, error counts
+#
+# ------------------------------------------------------------------------------
+

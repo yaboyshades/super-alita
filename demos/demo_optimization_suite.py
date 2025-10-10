@@ -186,7 +186,7 @@ async def demonstrate_optimization_suite():
         
         # Demonstrate memory optimization
         optimization_result = await resources.optimize_memory()
-        print(f"   ✓ Memory optimization completed")
+        print("   ✓ Memory optimization completed")
         print(f"     - Objects freed: {optimization_result['gc_stats']['objects_freed']}")
         print(f"     - Collection time: {optimization_result['gc_stats']['collection_time_ms']:.2f}ms")
         
@@ -337,7 +337,7 @@ async def main():
         else:
             print("⚠️  Some tests had issues - Review logs above")
         
-        print(f"\\n📊 Execution Summary:")
+        print("\\n📊 Execution Summary:")
         print(f"   • Total demonstration time: {duration:.2f} seconds")
         print(f"   • Main demo status: {'✅ PASS' if demo_success else '❌ FAIL'}")
         print(f"   • Stress test status: {'✅ PASS' if stress_success else '❌ FAIL'}")

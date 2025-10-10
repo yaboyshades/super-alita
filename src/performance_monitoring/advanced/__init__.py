@@ -2,9 +2,9 @@
 
 from .pattern_analyzer import (
     AdvancedConstitutionalValidator,
-    ViolationPattern,
+    ComplianceRiskAssessment,
     TrendAnalysis,
-    ComplianceRiskAssessment
+    ViolationPattern,
 )
 
 __all__ = [

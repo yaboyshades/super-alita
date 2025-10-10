@@ -31,7 +31,7 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import yaml
 
@@ -50,9 +50,9 @@ class ValidationResult:
     component: str
     status: str  # PASS, WARN, FAIL, SKIP
     message: str
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
     execution_time_ms: float = 0
-    error_code: Optional[str] = None
+    error_code: str | None = None
 
 
 @dataclass
@@ -67,21 +67,21 @@ class UnificationReport:
     failed_checks: int
     skipped_checks: int
     total_execution_time_ms: float
-    validation_results: List[ValidationResult]
-    system_info: Dict[str, Any]
-    recommendations: List[str]
+    validation_results: list[ValidationResult]
+    system_info: dict[str, Any]
+    recommendations: list[str]
 
 
 class UnificationValidator:
     """Master validator for complete system unification."""
     
     def __init__(self, 
-                 config_path: Optional[str] = None, 
+                 config_path: str | None = None, 
                  fast_fail: bool = True):
         self.config_path = config_path
         self.fast_fail = fast_fail
         self.project_root = self._find_project_root()
-        self.validation_results: List[ValidationResult] = []
+        self.validation_results: list[ValidationResult] = []
         self._load_configuration()
     
     def _find_project_root(self) -> Path:
@@ -110,7 +110,7 @@ class UnificationValidator:
         
         if config_file.exists():
             try:
-                with open(config_file, 'r', encoding='utf-8') as f:
+                with open(config_file, encoding='utf-8') as f:
                     self.config = yaml.safe_load(f)
             except Exception as e:
                 logger.warning(f"Failed to load config: {e}")
@@ -118,7 +118,7 @@ class UnificationValidator:
         else:
             self.config = self._get_default_config()
     
-    def _get_default_config(self) -> Dict[str, Any]:
+    def _get_default_config(self) -> dict[str, Any]:
         """Get default validation configuration."""
         return {
             "validation_components": {
@@ -248,7 +248,7 @@ class UnificationValidator:
                     logger.error(f"Fast fail triggered by {component}")
                     break
     
-    async def _execute_validation_component(self, component: str, config: Dict[str, Any]) -> None:
+    async def _execute_validation_component(self, component: str, config: dict[str, Any]) -> None:
         """Execute a single validation component."""
         start_time = time.perf_counter()
         
@@ -297,7 +297,7 @@ class UnificationValidator:
             if rules_dir.exists():
                 for yaml_file in rules_dir.glob("*.yaml"):
                     try:
-                        with open(yaml_file, 'r', encoding='utf-8') as f:
+                        with open(yaml_file, encoding='utf-8') as f:
                             yaml.safe_load(f)
                     except yaml.YAMLError as e:
                         issues.append(f"Invalid YAML in {yaml_file}: {e}")
@@ -308,7 +308,7 @@ class UnificationValidator:
                     continue
                 
                 try:
-                    with open(json_file, 'r', encoding='utf-8') as f:
+                    with open(json_file, encoding='utf-8') as f:
                         json.load(f)
                 except json.JSONDecodeError as e:
                     issues.append(f"Invalid JSON in {json_file}: {e}")
@@ -464,7 +464,7 @@ class UnificationValidator:
                         compatibility_issues.append(f"Module file not found: {file_path}")
                     else:
                         # Basic syntax check
-                        with open(file_path, 'r', encoding='utf-8') as f:
+                        with open(file_path, encoding='utf-8') as f:
                             content = f.read()
                         
                         try:
@@ -632,7 +632,7 @@ class UnificationValidator:
                 # Look for hardcoded secrets (basic check)
                 for py_file in src_dir.rglob("*.py"):
                     try:
-                        with open(py_file, 'r', encoding='utf-8') as f:
+                        with open(py_file, encoding='utf-8') as f:
                             content = f.read()
                         
                         # Basic patterns to avoid
@@ -694,10 +694,11 @@ class UnificationValidator:
                 error_code="SECURITY_ERROR"
             )
     
-    def _collect_system_info(self) -> Dict[str, Any]:
+    def _collect_system_info(self) -> dict[str, Any]:
         """Collect system information for the report."""
         try:
             import platform
+
             import psutil
             
             return {
@@ -730,7 +731,7 @@ class UnificationValidator:
         else:
             return "PASS"
     
-    def _generate_recommendations(self) -> List[str]:
+    def _generate_recommendations(self) -> list[str]:
         """Generate recommendations based on validation results."""
         recommendations = []
         
@@ -902,7 +903,7 @@ Examples:
             else:
                 sys.exit(0)  # Success
         
-        except asyncio.TimeoutError:
+        except TimeoutError:
             print(f"❌ Validation timed out after {args.timeout} seconds", file=sys.stderr)
             sys.exit(3)
         except KeyboardInterrupt:

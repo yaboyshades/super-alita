@@ -1,22 +1,13 @@
+"""Backward compatibility shim for src.mcp_server.result_types."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Generic, TypeVar
+import warnings
 
-T = TypeVar("T")
-E = TypeVar("E")
+warnings.warn(
+    "src.mcp_server.result_types is deprecated; use src.mcp.protocol.result_types instead. "
+    "This shim will be removed in v4.0.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-
-@dataclass(slots=True)
-class Result(Generic[T, E]):
-    ok: bool
-    value: T | None = None
-    error: E | None = None
-
-    @classmethod
-    def Ok(cls, value: T) -> Result[T, E]:
-        return cls(ok=True, value=value)
-
-    @classmethod
-    def Err(cls, error: E) -> Result[T, E]:
-        return cls(ok=False, error=error)
+from src.mcp.protocol.result_types import *  # noqa: F401,F403

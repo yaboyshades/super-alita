@@ -6,14 +6,13 @@ host API calls, WASM operations, and LSP communications.
 """
 
 import asyncio
-import json
-import time
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional, Callable, Union
-from collections import deque
 import logging
 import threading
+from collections import deque
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +24,10 @@ class TelemetryEvent:
     source: str  # host_api, wasm, lsp, extension
     event_type: str  # call, response, error, metric
     timestamp: datetime
-    data: Dict[str, Any]
-    duration_ms: Optional[float] = None
+    data: dict[str, Any]
+    duration_ms: float | None = None
     success: bool = True
-    tags: Dict[str, str] = None
+    tags: dict[str, str] = None
 
     def __post_init__(self):
         if self.tags is None:
@@ -40,12 +39,12 @@ class HostAPICall:
     """Host API call telemetry data."""
     
     function_name: str
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     start_time: datetime
-    end_time: Optional[datetime] = None
+    end_time: datetime | None = None
     result: Any = None
-    error: Optional[str] = None
-    constitutional_impact: Optional[str] = None
+    error: str | None = None
+    constitutional_impact: str | None = None
 
 
 @dataclass
@@ -56,10 +55,10 @@ class WASMOperation:
     operation_type: str  # predict, analyze, validate
     input_size_bytes: int
     start_time: datetime
-    end_time: Optional[datetime] = None
-    memory_usage_bytes: Optional[int] = None
+    end_time: datetime | None = None
+    memory_usage_bytes: int | None = None
     execution_result: Any = None
-    prediction_accuracy: Optional[float] = None
+    prediction_accuracy: float | None = None
 
 
 @dataclass
@@ -70,9 +69,9 @@ class LSPMessage:
     method: str
     message_size_bytes: int
     timestamp: datetime
-    latency_ms: Optional[float] = None
-    diagnostic_count: Optional[int] = None
-    constitutional_relevance: Optional[str] = None
+    latency_ms: float | None = None
+    diagnostic_count: int | None = None
+    constitutional_relevance: str | None = None
 
 
 class TelemetryBridge:
@@ -101,12 +100,12 @@ class TelemetryBridge:
         self.lsp_messages: deque = deque(maxlen=1000)
         
         # Event handlers and filters
-        self.event_handlers: List[Callable] = []
-        self.filters: List[Callable] = []
+        self.event_handlers: list[Callable] = []
+        self.filters: list[Callable] = []
         
         # Background processing
         self._active = False
-        self._flush_task: Optional[asyncio.Task] = None
+        self._flush_task: asyncio.Task | None = None
         self._lock = threading.Lock()
         
         # Constitutional tracking
@@ -144,14 +143,14 @@ class TelemetryBridge:
     def track_host_api_call(
         self,
         function_name: str,
-        parameters: Dict[str, Any],
-        constitutional_impact: Optional[str] = None
+        parameters: dict[str, Any],
+        constitutional_impact: str | None = None
     ) -> HostAPICall:
         """Start tracking a host API call."""
         call = HostAPICall(
             function_name=function_name,
             parameters=parameters,
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
             constitutional_impact=constitutional_impact
         )
         
@@ -177,10 +176,10 @@ class TelemetryBridge:
         self,
         call: HostAPICall,
         result: Any = None,
-        error: Optional[str] = None
+        error: str | None = None
     ) -> None:
         """Complete tracking of a host API call."""
-        call.end_time = datetime.now(timezone.utc)
+        call.end_time = datetime.now(UTC)
         call.result = result
         call.error = error
         
@@ -217,7 +216,7 @@ class TelemetryBridge:
             component_name=component_name,
             operation_type=operation_type,
             input_size_bytes=input_size_bytes,
-            start_time=datetime.now(timezone.utc)
+            start_time=datetime.now(UTC)
         )
         
         with self._lock:
@@ -242,11 +241,11 @@ class TelemetryBridge:
         self,
         operation: WASMOperation,
         result: Any = None,
-        memory_usage_bytes: Optional[int] = None,
-        prediction_accuracy: Optional[float] = None
+        memory_usage_bytes: int | None = None,
+        prediction_accuracy: float | None = None
     ) -> None:
         """Complete tracking of a WASM operation."""
-        operation.end_time = datetime.now(timezone.utc)
+        operation.end_time = datetime.now(UTC)
         operation.execution_result = result
         operation.memory_usage_bytes = memory_usage_bytes
         operation.prediction_accuracy = prediction_accuracy
@@ -274,14 +273,14 @@ class TelemetryBridge:
         message_type: str,
         method: str,
         message_size_bytes: int,
-        constitutional_relevance: Optional[str] = None
+        constitutional_relevance: str | None = None
     ) -> LSPMessage:
         """Track an LSP message."""
         message = LSPMessage(
             message_type=message_type,
             method=method,
             message_size_bytes=message_size_bytes,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             constitutional_relevance=constitutional_relevance
         )
         
@@ -310,8 +309,8 @@ class TelemetryBridge:
     def update_lsp_message(
         self,
         message: LSPMessage,
-        latency_ms: Optional[float] = None,
-        diagnostic_count: Optional[int] = None
+        latency_ms: float | None = None,
+        diagnostic_count: int | None = None
     ) -> None:
         """Update LSP message with response data."""
         message.latency_ms = latency_ms
@@ -341,10 +340,10 @@ class TelemetryBridge:
         self.filters.append(filter_func)
         logger.info(f"Added telemetry filter: {filter_func.__name__}")
 
-    def get_telemetry_summary(self) -> Dict[str, Any]:
+    def get_telemetry_summary(self) -> dict[str, Any]:
         """Get current telemetry summary."""
         with self._lock:
-            current_time = datetime.now(timezone.utc)
+            current_time = datetime.now(UTC)
             
             # Recent events (last 10 minutes)
             recent_cutoff = (current_time.timestamp() - 600)
@@ -376,7 +375,7 @@ class TelemetryBridge:
             }
         }
 
-    def get_constitutional_compliance_data(self) -> Dict[str, Any]:
+    def get_constitutional_compliance_data(self) -> dict[str, Any]:
         """Get constitutional compliance data from telemetry."""
         with self._lock:
             constitutional_events = list(self.constitutional_events)
@@ -404,16 +403,16 @@ class TelemetryBridge:
         self,
         source: str,
         event_type: str,
-        data: Dict[str, Any],
-        duration_ms: Optional[float] = None,
+        data: dict[str, Any],
+        duration_ms: float | None = None,
         success: bool = True,
-        tags: Optional[Dict[str, str]] = None
+        tags: dict[str, str] | None = None
     ) -> None:
         """Add a telemetry event."""
         event = TelemetryEvent(
             source=source,
             event_type=event_type,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             data=data,
             duration_ms=duration_ms,
             success=success,
@@ -447,7 +446,7 @@ class TelemetryBridge:
             "source": source,
             "impact": impact_description,
             "duration_ms": duration_ms,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "category": self._categorize_constitutional_impact(impact_description)
         }
         
@@ -492,7 +491,7 @@ class TelemetryBridge:
         logger.info(f"Telemetry flush: {summary['total_events']} events, "
                    f"rate: {summary['event_rate_per_minute']}/min")
 
-    def _calculate_host_api_stats(self) -> Dict[str, Any]:
+    def _calculate_host_api_stats(self) -> dict[str, Any]:
         """Calculate host API call statistics."""
         completed_calls = [call for call in self.host_api_calls if call.end_time]
         if not completed_calls:
@@ -513,7 +512,7 @@ class TelemetryBridge:
             )
         }
 
-    def _calculate_wasm_stats(self) -> Dict[str, Any]:
+    def _calculate_wasm_stats(self) -> dict[str, Any]:
         """Calculate WASM operation statistics."""
         completed_ops = [op for op in self.wasm_operations if op.end_time]
         if not completed_ops:
@@ -533,7 +532,7 @@ class TelemetryBridge:
             "operations_by_type": self._group_by_field(completed_ops, "operation_type")
         }
 
-    def _calculate_lsp_stats(self) -> Dict[str, Any]:
+    def _calculate_lsp_stats(self) -> dict[str, Any]:
         """Calculate LSP message statistics."""
         if not self.lsp_messages:
             return {"no_data": True}
@@ -554,7 +553,7 @@ class TelemetryBridge:
             )
         }
 
-    def _calculate_constitutional_stats(self) -> Dict[str, Any]:
+    def _calculate_constitutional_stats(self) -> dict[str, Any]:
         """Calculate constitutional compliance statistics."""
         if not self.constitutional_events:
             return {"no_data": True}
@@ -570,11 +569,11 @@ class TelemetryBridge:
             "events_by_category": category_counts,
             "recent_events_count": len([
                 e for e in events
-                if (datetime.now(timezone.utc) - datetime.fromisoformat(e["timestamp"].replace('Z', '+00:00'))).total_seconds() < 3600
+                if (datetime.now(UTC) - datetime.fromisoformat(e["timestamp"].replace('Z', '+00:00'))).total_seconds() < 3600
             ])
         }
 
-    def _group_by_field(self, items: List[Any], field: str) -> Dict[str, int]:
+    def _group_by_field(self, items: list[Any], field: str) -> dict[str, int]:
         """Group items by a field value."""
         groups = {}
         for item in items:
@@ -582,7 +581,7 @@ class TelemetryBridge:
             groups[value] = groups.get(value, 0) + 1
         return groups
 
-    def _extract_compliance_indicators(self, events: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _extract_compliance_indicators(self, events: list[dict[str, Any]]) -> dict[str, Any]:
         """Extract compliance indicators from constitutional events."""
         return {
             "total_compliance_checks": len(events),
@@ -590,7 +589,7 @@ class TelemetryBridge:
             "average_check_duration_ms": sum(e.get("duration_ms", 0) for e in events) / len(events) if events else 0
         }
 
-    def _extract_recent_violations(self, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _extract_recent_violations(self, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Extract recent constitutional violations."""
         # For now, assume violations are events with certain patterns
         violations = []

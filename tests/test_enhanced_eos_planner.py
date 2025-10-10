@@ -12,24 +12,24 @@ Tests the EOS LADDER integration including:
 """
 
 import asyncio
-import sys
 import os
+import sys
 
 # Add src to path for testing
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 try:
     from src.ladder.enhanced_eos_planner import (
-        EOSLadderPlanner,
-        EnhancedTask,
-        EOSTaskContext,
-        TaskAnalysis,
-        MangleTaskValidator,
-        ConstitutionalTaskAnalyzer,
-        EOSStage,
-        TaskComplexity,
         AdaptationTrigger,
-        create_eos_ladder_planner
+        ConstitutionalTaskAnalyzer,
+        EnhancedTask,
+        EOSLadderPlanner,
+        EOSStage,
+        EOSTaskContext,
+        MangleTaskValidator,
+        TaskAnalysis,
+        TaskComplexity,
+        create_eos_ladder_planner,
     )
     EOS_PLANNER_AVAILABLE = True
 except ImportError as e:

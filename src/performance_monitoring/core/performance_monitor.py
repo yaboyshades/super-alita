@@ -6,14 +6,13 @@ according to constitutional principles and design specifications.
 """
 
 import asyncio
-import time
-import threading
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional, Callable
-from collections import defaultdict, deque
 import logging
-import json
+import threading
+from collections import defaultdict, deque
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +25,8 @@ class PerformanceMetric:
     value: float
     timestamp: datetime
     category: str
-    tags: Dict[str, str] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -37,13 +36,13 @@ class ExtensionInteraction:
     extension_id: str
     function_name: str
     start_time: datetime
-    end_time: Optional[datetime] = None
-    duration_ms: Optional[float] = None
+    end_time: datetime | None = None
+    duration_ms: float | None = None
     success: bool = True
-    error_message: Optional[str] = None
-    host_calls: List[str] = field(default_factory=list)
-    wasm_operations: List[str] = field(default_factory=list)
-    lsp_messages: List[str] = field(default_factory=list)
+    error_message: str | None = None
+    host_calls: list[str] = field(default_factory=list)
+    wasm_operations: list[str] = field(default_factory=list)
+    lsp_messages: list[str] = field(default_factory=list)
 
 
 class PerformanceMonitor:
@@ -70,22 +69,22 @@ class PerformanceMonitor:
         self.interactions: deque = deque(maxlen=5000)
         
         # Real-time metric aggregation
-        self.metric_aggregates: Dict[str, Dict[str, float]] = defaultdict(dict)
-        self.interaction_stats: Dict[str, Dict[str, Any]] = defaultdict(dict)
+        self.metric_aggregates: dict[str, dict[str, float]] = defaultdict(dict)
+        self.interaction_stats: dict[str, dict[str, Any]] = defaultdict(dict)
         
         # Alert thresholds and handlers
-        self.alert_thresholds: Dict[str, float] = {
+        self.alert_thresholds: dict[str, float] = {
             "response_time_ms": 1000.0,
             "error_rate": 0.05,
             "memory_usage_mb": 512.0,
             "cpu_usage_percent": 80.0,
             "constitutional_compliance": 0.75
         }
-        self.alert_handlers: List[Callable] = []
+        self.alert_handlers: list[Callable] = []
         
         # Background processing
         self._monitoring_active = False
-        self._background_task: Optional[asyncio.Task] = None
+        self._background_task: asyncio.Task | None = None
         self._lock = threading.Lock()
         
         logger.info("Performance Monitor initialized with constitutional compliance tracking")
@@ -124,7 +123,7 @@ class PerformanceMonitor:
         interaction = ExtensionInteraction(
             extension_id=extension_id,
             function_name=function_name,
-            start_time=datetime.now(timezone.utc)
+            start_time=datetime.now(UTC)
         )
         
         with self._lock:
@@ -137,10 +136,10 @@ class PerformanceMonitor:
         self,
         interaction: ExtensionInteraction,
         success: bool = True,
-        error_message: Optional[str] = None
+        error_message: str | None = None
     ) -> None:
         """Complete tracking of an extension interaction."""
-        end_time = datetime.now(timezone.utc)
+        end_time = datetime.now(UTC)
         duration_ms = (end_time - interaction.start_time).total_seconds() * 1000
         
         interaction.end_time = end_time
@@ -165,14 +164,14 @@ class PerformanceMonitor:
         name: str,
         value: float,
         category: str = "system",
-        tags: Optional[Dict[str, str]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        tags: dict[str, str] | None = None,
+        metadata: dict[str, Any] | None = None
     ) -> None:
         """Add a performance metric."""
         metric = PerformanceMetric(
             name=name,
             value=value,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             category=category,
             tags=tags or {},
             metadata=metadata or {}
@@ -188,10 +187,10 @@ class PerformanceMonitor:
         if self.enable_real_time_alerts:
             self._check_metric_alerts(metric)
 
-    def get_performance_summary(self) -> Dict[str, Any]:
+    def get_performance_summary(self) -> dict[str, Any]:
         """Get current performance summary."""
         with self._lock:
-            current_time = datetime.now(timezone.utc)
+            current_time = datetime.now(UTC)
             
             # Filter recent metrics (last hour)
             recent_metrics = [
@@ -216,7 +215,7 @@ class PerformanceMonitor:
             "constitutional_compliance": self._get_constitutional_compliance_summary()
         }
 
-    def get_extension_statistics(self, extension_id: str) -> Dict[str, Any]:
+    def get_extension_statistics(self, extension_id: str) -> dict[str, Any]:
         """Get statistics for a specific extension."""
         with self._lock:
             extension_interactions = [
@@ -242,7 +241,7 @@ class PerformanceMonitor:
             "lsp_messages_count": sum(len(i.lsp_messages) for i in extension_interactions)
         }
 
-    def add_alert_handler(self, handler: Callable[[str, Dict[str, Any]], None]) -> None:
+    def add_alert_handler(self, handler: Callable[[str, dict[str, Any]], None]) -> None:
         """Add an alert handler function."""
         self.alert_handlers.append(handler)
         logger.info(f"Added alert handler: {handler.__name__}")
@@ -288,7 +287,7 @@ class PerformanceMonitor:
 
     async def _cleanup_old_data(self) -> None:
         """Clean up old metrics and interactions based on retention policy."""
-        current_time = datetime.now(timezone.utc)
+        current_time = datetime.now(UTC)
         retention_seconds = self.metrics_retention_hours * 3600
         
         with self._lock:
@@ -386,12 +385,12 @@ class PerformanceMonitor:
                 }
             )
 
-    def _trigger_alert(self, message: str, details: Dict[str, Any]) -> None:
+    def _trigger_alert(self, message: str, details: dict[str, Any]) -> None:
         """Trigger alert handlers."""
         alert_data = {
             "message": message,
             "details": details,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
         
         for handler in self.alert_handlers:
@@ -400,21 +399,21 @@ class PerformanceMonitor:
             except Exception as e:
                 logger.error(f"Alert handler error: {e}")
 
-    def _calculate_average_response_time(self, interactions: List[ExtensionInteraction]) -> float:
+    def _calculate_average_response_time(self, interactions: list[ExtensionInteraction]) -> float:
         """Calculate average response time for interactions."""
         valid_interactions = [i for i in interactions if i.duration_ms is not None]
         if not valid_interactions:
             return 0.0
         return sum(i.duration_ms for i in valid_interactions) / len(valid_interactions)
 
-    def _calculate_success_rate(self, interactions: List[ExtensionInteraction]) -> float:
+    def _calculate_success_rate(self, interactions: list[ExtensionInteraction]) -> float:
         """Calculate success rate for interactions."""
         if not interactions:
             return 1.0
         successful = sum(1 for i in interactions if i.success)
         return successful / len(interactions)
 
-    def _get_constitutional_compliance_summary(self) -> Dict[str, Any]:
+    def _get_constitutional_compliance_summary(self) -> dict[str, Any]:
         """Get constitutional compliance summary from recent metrics."""
         # Look for constitutional compliance metrics
         compliance_metrics = [

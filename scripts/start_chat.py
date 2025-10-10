@@ -2,7 +2,6 @@
 """Simple startup script for Super Alita with chat interface."""
 
 import uvicorn
-
 from app import app
 
 if __name__ == "__main__":

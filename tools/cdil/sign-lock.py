@@ -2,8 +2,8 @@
 """
 Sign lock files with HMAC for tamper evidence
 """
-import hmac
 import hashlib
+import hmac
 import json
 import os
 import sys
@@ -18,7 +18,7 @@ def sign_lock_file(lock_file_path: str, signing_key: str) -> None:
         signing_key: HMAC signing key
     """
     # Read the lock file
-    with open(lock_file_path, "r", encoding="utf-8") as f:
+    with open(lock_file_path, encoding="utf-8") as f:
         data = json.load(f)
     
     # Canonicalize the data

@@ -15,7 +15,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .orchestrator import EOSOrchestrator, OrchestrationResult
 from .schema import EOSSpec
@@ -52,9 +52,9 @@ class MangleExpertDecision:
     """Decision result from Mangle-enhanced expert routing"""
     expert_id: str
     confidence: float
-    reasoning_steps: List[str]
+    reasoning_steps: list[str]
     logical_justification: str
-    alternatives: List[Dict[str, Any]]
+    alternatives: list[dict[str, Any]]
     constitutional_compliance: float
 
 
@@ -81,9 +81,9 @@ class EOSMangleOrchestrator:
         self.eos_orchestrator = EOSOrchestrator(eos_spec)
         
         # Initialize Mangle components
-        self.mangle_ability: Optional[MangleAbility] = None
-        self.mangle_integration: Optional[MangleIntegration] = None
-        self.mangle_bridge: Optional[MangleBridge] = None
+        self.mangle_ability: MangleAbility | None = None
+        self.mangle_integration: MangleIntegration | None = None
+        self.mangle_bridge: MangleBridge | None = None
         
         # State tracking
         self.knowledge_base_initialized = False
@@ -275,7 +275,7 @@ class EOSMangleOrchestrator:
 
     async def _generate_mangle_insights(
         self, result: OrchestrationResult
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate additional insights using Mangle reasoning."""
         if not self.mangle_bridge:
             return {}
@@ -360,7 +360,7 @@ class EOSMangleOrchestrator:
             logger.warning(f"Constitutional compliance validation failed: {e}")
             return 0.7  # Default score on failure
 
-    def get_integration_status(self) -> Dict[str, Any]:
+    def get_integration_status(self) -> dict[str, Any]:
         """Get status of EOS-Mangle integration."""
         return {
             'mangle_available': MANGLE_AVAILABLE,
@@ -408,8 +408,8 @@ class MangleEnhancedRouter:
         self, 
         current_state: str, 
         current_method: str,
-        required_inputs: List[str], 
-        context: Dict[str, Any]
+        required_inputs: list[str], 
+        context: dict[str, Any]
     ) -> Any:
         """Enhanced expert routing with Mangle reasoning."""
         
@@ -461,9 +461,9 @@ class MangleEnhancedRouter:
     async def execute_expert(
         self, 
         expert_id: str, 
-        inputs: Dict[str, Any],
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        inputs: dict[str, Any],
+        context: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute expert with Mangle validation."""
         
         # Execute through base router

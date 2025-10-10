@@ -7,10 +7,7 @@ system with real-time monitoring, quality gates, and dashboard interface.
 """
 
 import asyncio
-import json
 import logging
-from datetime import datetime
-from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
@@ -64,7 +61,7 @@ async def demo_extension_monitoring(system):
     
     # Show performance summary
     summary = system.performance_monitor.get_performance_summary()
-    logger.info(f"Performance Summary:")
+    logger.info("Performance Summary:")
     logger.info(f"  Total interactions: {summary['interactions_count']}")
     logger.info(f"  Average response time: {summary['average_response_time_ms']:.2f}ms")
     logger.info(f"  Success rate: {summary['success_rate']:.2%}")

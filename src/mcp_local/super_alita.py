@@ -1,14 +1,13 @@
-"""
-Register Super Alita handlers with the MCP server.
+"""Backward compatibility shim for src.mcp_local.super_alita."""
+from __future__ import annotations
 
-This module initializes the Super Alita handlers and includes them in the MCP server.
-"""
+import warnings
 
-from fastapi import FastAPI
+warnings.warn(
+    "src.mcp_local.super_alita is deprecated; use src.mcp.integrations.super_alita instead. "
+    "This shim will be removed in v4.0.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-from .super_alita_handlers import router as super_alita_router
-
-
-def register_super_alita_handlers(app: FastAPI) -> None:
-    """Register Super Alita handlers with the FastAPI app."""
-    app.include_router(super_alita_router)
+from src.mcp.integrations.super_alita import *  # noqa: F401,F403

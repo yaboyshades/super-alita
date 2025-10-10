@@ -9,9 +9,10 @@ import asyncio
 import functools
 import logging
 import time
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, TypeVar
 
 from ..telemetry.opentelemetry_config import (
     get_telemetry_collector,
@@ -31,10 +32,10 @@ class ExtensionMetrics:
     extension_id: str
     interaction_type: str  # query, validation, rule_check
     start_time: float
-    end_time: Optional[float] = None
-    duration_ms: Optional[float] = None
+    end_time: float | None = None
+    duration_ms: float | None = None
     success: bool = True
-    error_type: Optional[str] = None
+    error_type: str | None = None
     payload_size_bytes: int = 0
     response_size_bytes: int = 0
 
@@ -43,7 +44,7 @@ class ExtensionTelemetryMiddleware:
     """Middleware for automatic extension telemetry collection."""
     
     def __init__(self):
-        self.active_interactions: Dict[str, ExtensionMetrics] = {}
+        self.active_interactions: dict[str, ExtensionMetrics] = {}
         self.telemetry_collector = get_telemetry_collector()
         
     def track_extension_call(self,
@@ -198,8 +199,8 @@ class ExtensionTelemetryMiddleware:
                                 payload_size_bytes: int,
                                 response_size_bytes: int,
                                 success: bool,
-                                error_type: Optional[str] = None,
-                                error_message: Optional[str] = None) -> None:
+                                error_type: str | None = None,
+                                error_message: str | None = None) -> None:
         """Log structured interaction metrics."""
         
         metrics = {
@@ -255,7 +256,7 @@ class ExtensionTelemetryMiddleware:
             # Fallback estimation
             return len(str(response))
     
-    def get_interaction_summary(self) -> Dict[str, Any]:
+    def get_interaction_summary(self) -> dict[str, Any]:
         """Get summary of extension interactions."""
         # This would aggregate from telemetry collector
         if self.telemetry_collector:
@@ -350,10 +351,10 @@ class PerformanceThresholdMonitor:
     """Monitor and alert on performance threshold violations."""
     
     def __init__(self):
-        self.slo_violations: List[Dict[str, Any]] = []
+        self.slo_violations: list[dict[str, Any]] = []
         self.telemetry_collector = get_telemetry_collector()
     
-    def check_slo_violations(self) -> List[Dict[str, Any]]:
+    def check_slo_violations(self) -> list[dict[str, Any]]:
         """Check for SLO violations and return them."""
         if self.telemetry_collector:
             summary = self.telemetry_collector.get_metrics_summary()
@@ -387,7 +388,7 @@ class PerformanceThresholdMonitor:
         
         return []
     
-    def get_violation_history(self) -> List[Dict[str, Any]]:
+    def get_violation_history(self) -> list[dict[str, Any]]:
         """Get history of SLO violations."""
         return self.slo_violations[-100:]  # Last 100 violations
 

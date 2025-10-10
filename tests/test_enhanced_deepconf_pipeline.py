@@ -12,8 +12,8 @@ Tests the constitutional compliance integration including:
 """
 
 import asyncio
-import sys
 import os
+import sys
 from unittest.mock import Mock
 
 # Add src to path for testing
@@ -21,14 +21,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 try:
     from src.reasoning.enhanced_deepconf_pipeline import (
+        ComplianceLevel,
+        ConstitutionalAssessment,
         ConstitutionalDeepConfPipeline,
         ConstitutionalValidator,
-        ConstitutionalAssessment,
         ConstitutionalViolation,
-        EnhancedConsensusResult,
-        ComplianceLevel,
         ConstitutionalViolationType,
-        create_constitutional_deepconf_pipeline
+        EnhancedConsensusResult,
+        create_constitutional_deepconf_pipeline,
     )
     ENHANCED_DEEPCONF_AVAILABLE = True
 except ImportError as e:

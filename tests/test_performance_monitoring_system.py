@@ -5,23 +5,24 @@ Tests all components including performance monitoring, constitutional compliance
 telemetry collection, dashboard interface, and CI quality gates.
 """
 
-import pytest
 import asyncio
-import json
-from datetime import datetime, timezone
-from unittest.mock import Mock, patch, AsyncMock
-from pathlib import Path
+from unittest.mock import AsyncMock, Mock
+
+import pytest
+
+from src.performance_monitoring.ci.quality_gates import (
+    ConstitutionalGate,
+    QualityGatePipeline,
+)
+from src.performance_monitoring.core.constitutional_engine import (
+    ConstitutionalArticle,
+    ConstitutionalEngine,
+)
 
 # Import system components
 from src.performance_monitoring.core.performance_monitor import PerformanceMonitor
 from src.performance_monitoring.core.telemetry_bridge import TelemetryBridge
-from src.performance_monitoring.core.constitutional_engine import (
-    ConstitutionalEngine, ConstitutionalArticle, ComplianceViolation
-)
 from src.performance_monitoring.dashboard.dashboard_interface import DashboardInterface
-from src.performance_monitoring.ci.quality_gates import (
-    QualityGatePipeline, ConstitutionalGate, PerformanceGate, SecurityGate
-)
 from src.performance_monitoring.integration import PerformanceMonitoringSystem
 
 

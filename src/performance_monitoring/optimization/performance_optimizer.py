@@ -10,17 +10,16 @@ Provides advanced performance optimization features including:
 """
 
 import asyncio
-import time
 import hashlib
-import pickle
 import logging
-from typing import Dict, Any, Optional, List, Tuple, Union, Callable
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from concurrent.futures import ThreadPoolExecutor
+import pickle
 import threading
-import weakref
+import time
 from collections import OrderedDict, defaultdict
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class CacheEntry:
     accessed_at: datetime
     hit_count: int = 0
     size_bytes: int = 0
-    ttl_seconds: Optional[int] = None
+    ttl_seconds: int | None = None
     
     def is_expired(self) -> bool:
         """Check if cache entry is expired"""
@@ -58,7 +57,7 @@ class ConnectionPoolConfig:
 class MemoryCache:
     """High-performance in-memory cache with LRU eviction"""
     
-    def __init__(self, max_size: int = 1000, default_ttl: Optional[int] = None):
+    def __init__(self, max_size: int = 1000, default_ttl: int | None = None):
         self.max_size = max_size
         self.default_ttl = default_ttl
         self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
@@ -70,7 +69,7 @@ class MemoryCache:
             'size_bytes': 0
         }
     
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from cache"""
         with self._lock:
             if key not in self._cache:
@@ -90,7 +89,7 @@ class MemoryCache:
             self._stats['hits'] += 1
             return entry.value
     
-    def put(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def put(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Put value in cache"""
         with self._lock:
             # Calculate size
@@ -134,7 +133,7 @@ class MemoryCache:
             self._cache.clear()
             self._stats['size_bytes'] = 0
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics"""
         with self._lock:
             total_requests = self._stats['hits'] + self._stats['misses']
@@ -153,8 +152,8 @@ class ConnectionPool:
     def __init__(self, connection_factory: Callable, config: ConnectionPoolConfig):
         self.connection_factory = connection_factory
         self.config = config
-        self._pool: List[Any] = []
-        self._in_use: Dict[int, Any] = {}
+        self._pool: list[Any] = []
+        self._in_use: dict[int, Any] = {}
         self._lock = asyncio.Lock()
         self._created_count = 0
         self._stats = {
@@ -261,7 +260,7 @@ class ConnectionPool:
             self._stats['current_active'] = 0
             self._stats['current_idle'] = 0
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get pool statistics"""
         return {
             **self._stats,
@@ -275,13 +274,13 @@ class PerformanceOptimizer:
     
     def __init__(self):
         self.memory_cache = MemoryCache(max_size=5000, default_ttl=3600)
-        self.connection_pools: Dict[str, ConnectionPool] = {}
+        self.connection_pools: dict[str, ConnectionPool] = {}
         self.query_cache = MemoryCache(max_size=1000, default_ttl=300)
-        self.batch_processors: Dict[str, 'BatchProcessor'] = {}
-        self._performance_profiles: Dict[str, List[float]] = defaultdict(list)
+        self.batch_processors: dict[str, BatchProcessor] = {}
+        self._performance_profiles: dict[str, list[float]] = defaultdict(list)
         
         # Background optimization tasks
-        self._optimization_tasks: List[asyncio.Task] = []
+        self._optimization_tasks: list[asyncio.Task] = []
         self._running = False
     
     async def start(self):
@@ -315,7 +314,7 @@ class PerformanceOptimizer:
         logger.info("Performance optimizer stopped")
     
     def register_connection_pool(self, name: str, connection_factory: Callable, 
-                                config: Optional[ConnectionPoolConfig] = None):
+                                config: ConnectionPoolConfig | None = None):
         """Register a connection pool"""
         if config is None:
             config = ConnectionPoolConfig()
@@ -335,11 +334,11 @@ class PerformanceOptimizer:
         if pool_name in self.connection_pools:
             await self.connection_pools[pool_name].release(connection)
     
-    def cache_result(self, key: str, value: Any, ttl: Optional[int] = None):
+    def cache_result(self, key: str, value: Any, ttl: int | None = None):
         """Cache computation result"""
         self.memory_cache.put(key, value, ttl)
     
-    def get_cached_result(self, key: str) -> Optional[Any]:
+    def get_cached_result(self, key: str) -> Any | None:
         """Get cached computation result"""
         return self.memory_cache.get(key)
     
@@ -347,11 +346,11 @@ class PerformanceOptimizer:
         """Cache query result"""
         self.query_cache.put(query_hash, result, ttl)
     
-    def get_cached_query(self, query_hash: str) -> Optional[Any]:
+    def get_cached_query(self, query_hash: str) -> Any | None:
         """Get cached query result"""
         return self.query_cache.get(query_hash)
     
-    def hash_query(self, query: str, params: Optional[Dict] = None) -> str:
+    def hash_query(self, query: str, params: dict | None = None) -> str:
         """Generate hash for query and parameters"""
         content = f"{query}:{params or {}}"
         return hashlib.sha256(content.encode()).hexdigest()
@@ -365,7 +364,7 @@ class PerformanceOptimizer:
             self._performance_profiles[operation_name] = \
                 self._performance_profiles[operation_name][-100:]
     
-    def get_performance_stats(self) -> Dict[str, Any]:
+    def get_performance_stats(self) -> dict[str, Any]:
         """Get comprehensive performance statistics"""
         stats = {
             'memory_cache': self.memory_cache.get_stats(),
@@ -448,8 +447,8 @@ class PerformanceProfiler:
             self.optimizer.profile_operation(self.operation_name, duration)
 
 # Decorator for automatic caching
-def cached_result(optimizer: PerformanceOptimizer, ttl: Optional[int] = None, 
-                 key_func: Optional[Callable] = None):
+def cached_result(optimizer: PerformanceOptimizer, ttl: int | None = None, 
+                 key_func: Callable | None = None):
     """Decorator for automatic result caching"""
     
     def decorator(func):

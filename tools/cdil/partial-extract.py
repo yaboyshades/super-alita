@@ -7,7 +7,7 @@ import hashlib
 import json
 import os
 import sys
-from typing import Dict, Any, Optional
+from typing import Any
 
 
 def get_file_hash(file_path: str) -> str:
@@ -31,7 +31,7 @@ def get_file_hash(file_path: str) -> str:
         return ""
 
 
-def load_cache_index() -> Dict[str, Any]:
+def load_cache_index() -> dict[str, Any]:
     """
     Load the cache index from disk.
     
@@ -46,7 +46,7 @@ def load_cache_index() -> Dict[str, Any]:
     
     if os.path.exists(index_file):
         try:
-            with open(index_file, 'r') as f:
+            with open(index_file) as f:
                 return json.load(f)
         except Exception as e:
             print(f"Error loading cache index: {e}")
@@ -55,7 +55,7 @@ def load_cache_index() -> Dict[str, Any]:
         return {}
 
 
-def save_cache_index(index: Dict[str, Any]) -> None:
+def save_cache_index(index: dict[str, Any]) -> None:
     """
     Save the cache index to disk.
     
@@ -72,7 +72,7 @@ def save_cache_index(index: Dict[str, Any]) -> None:
         print(f"Error saving cache index: {e}")
 
 
-def get_cached_symbol_graph(file_path: str) -> Optional[Dict[str, Any]]:
+def get_cached_symbol_graph(file_path: str) -> dict[str, Any] | None:
     """
     Get cached symbol graph for a file if it exists and is valid.
     
@@ -98,7 +98,7 @@ def get_cached_symbol_graph(file_path: str) -> Optional[Dict[str, Any]]:
         
         if cache_file and os.path.exists(cache_file):
             try:
-                with open(cache_file, 'r') as f:
+                with open(cache_file) as f:
                     return json.load(f)
             except Exception as e:
                 print(f"Error loading cached symbol graph: {e}")
@@ -112,7 +112,7 @@ def get_cached_symbol_graph(file_path: str) -> Optional[Dict[str, Any]]:
 def cache_symbol_graph(
     file_path: str, 
     file_hash: str, 
-    symbol_graph: Dict[str, Any]
+    symbol_graph: dict[str, Any]
 ) -> None:
     """
     Cache a symbol graph for a file.
@@ -151,7 +151,7 @@ def cache_symbol_graph(
     print(f"Cached symbol graph for {file_path}")
 
 
-def extract_symbol_graph(file_path: str) -> Dict[str, Any]:
+def extract_symbol_graph(file_path: str) -> dict[str, Any]:
     """
     Extract symbol graph from a source file.
     In a real implementation, this would parse the AST and extract symbols.

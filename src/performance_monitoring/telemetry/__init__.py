@@ -5,10 +5,10 @@ from .opentelemetry_config import (
     ServiceLevelObjectives,
     TelemetrySpan,
     get_telemetry_collector,
-    telemetry_trace,
+    start_prometheus_server,
     telemetry_span,
     telemetry_span_sync,
-    start_prometheus_server
+    telemetry_trace,
 )
 
 __all__ = [

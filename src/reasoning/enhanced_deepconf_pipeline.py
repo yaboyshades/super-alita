@@ -63,9 +63,9 @@ except ImportError:
 # Import base DeepConf classes
 try:
     from .deepconf_pipeline import (
-        EnhancedDeepConfPipeline,
         AdvancedConsensusAggregator,
-        ConsensusResult
+        ConsensusResult,
+        EnhancedDeepConfPipeline,
     )
     DEEPCONF_AVAILABLE = True
 except ImportError:

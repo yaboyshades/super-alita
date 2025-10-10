@@ -4,7 +4,7 @@ echo "Running pre-push validation..."
 
 # Ensure the system passes full validation before push
 echo "Running full deployment validation..."
-python run_validation.py || {
+python scripts/run_validation.py || {
     echo "Deployment validation failed! Cannot push broken code."
     echo "Fix issues and try again."
     exit 1

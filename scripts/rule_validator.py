@@ -24,7 +24,7 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import yaml
 
@@ -43,11 +43,11 @@ class RuleViolation:
     category: str
     description: str
     file_path: str
-    line_number: Optional[int] = None
-    column_number: Optional[int] = None
-    suggestion: Optional[str] = None
+    line_number: int | None = None
+    column_number: int | None = None
+    suggestion: str | None = None
     auto_fix_available: bool = False
-    context: Optional[str] = None
+    context: str | None = None
 
 
 @dataclass
@@ -60,7 +60,7 @@ class ValidationResult:
     blocker_count: int
     warning_count: int
     info_count: int
-    violations: List[RuleViolation]
+    violations: list[RuleViolation]
     execution_time_ms: float
     timestamp: str
     ruleset_version: str
@@ -71,8 +71,8 @@ class ConstitutionalRuleEngine:
     
     def __init__(self, rules_dir: str = "rules/constitution"):
         self.rules_dir = Path(rules_dir)
-        self.rules: Dict[str, Dict[str, Any]] = {}
-        self.ruleset_metadata: Dict[str, Any] = {}
+        self.rules: dict[str, dict[str, Any]] = {}
+        self.ruleset_metadata: dict[str, Any] = {}
         self._load_rules()
     
     def _load_rules(self) -> None:
@@ -81,13 +81,13 @@ class ConstitutionalRuleEngine:
             # Load ruleset metadata
             metadata_file = self.rules_dir / "ruleset_metadata.yaml"
             if metadata_file.exists():
-                with open(metadata_file, 'r', encoding='utf-8') as f:
+                with open(metadata_file, encoding='utf-8') as f:
                     self.ruleset_metadata = yaml.safe_load(f)
             
             # Load individual rule files
             for rule_file in self.rules_dir.glob("article_*.yaml"):
                 try:
-                    with open(rule_file, 'r', encoding='utf-8') as f:
+                    with open(rule_file, encoding='utf-8') as f:
                         rule_data = yaml.safe_load(f)
                         rule_id = rule_data.get('id')
                         if rule_id:
@@ -154,7 +154,7 @@ class ConstitutionalRuleEngine:
             )
         )
     
-    def _get_target_files(self, directory: Path) -> List[Path]:
+    def _get_target_files(self, directory: Path) -> list[Path]:
         """Get list of files to validate in directory."""
         target_files = []
         
@@ -180,13 +180,13 @@ class ConstitutionalRuleEngine:
             if not any(exc in str(f) for exc in exclusions)
         ]
     
-    def _validate_file(self, file_path: Path) -> List[RuleViolation]:
+    def _validate_file(self, file_path: Path) -> list[RuleViolation]:
         """Validate a single file against all applicable rules."""
         violations = []
         
         try:
             # Read file content
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(file_path, encoding='utf-8', errors='ignore') as f:
                 content = f.read()
             
             # Apply each rule
@@ -203,10 +203,10 @@ class ConstitutionalRuleEngine:
     
     def _apply_rule(
         self, 
-        rule_data: Dict[str, Any], 
+        rule_data: dict[str, Any], 
         file_path: Path, 
         content: str
-    ) -> List[RuleViolation]:
+    ) -> list[RuleViolation]:
         """Apply a specific rule to file content."""
         violations = []
         
@@ -253,7 +253,7 @@ class ConstitutionalRuleEngine:
         
         return violations
     
-    def _is_file_excluded(self, rule_data: Dict[str, Any], file_path: Path) -> bool:
+    def _is_file_excluded(self, rule_data: dict[str, Any], file_path: Path) -> bool:
         """Check if file is excluded from rule validation."""
         exceptions = rule_data.get("exceptions", [])
         
@@ -268,7 +268,7 @@ class ConstitutionalRuleEngine:
         
         return False
     
-    def _check_test_coverage(self, rule_data: Dict[str, Any], file_path: Path, content: str) -> List[RuleViolation]:
+    def _check_test_coverage(self, rule_data: dict[str, Any], file_path: Path, content: str) -> list[RuleViolation]:
         """Check Article II: Test-First compliance."""
         violations = []
         
@@ -309,7 +309,7 @@ class ConstitutionalRuleEngine:
         
         return violations
     
-    def _find_test_for_function(self, file_path: Path, func_name: str, test_patterns: List[str]) -> bool:
+    def _find_test_for_function(self, file_path: Path, func_name: str, test_patterns: list[str]) -> bool:
         """Check if test exists for a function."""
         # Look for test files
         test_dirs = ["tests", "test"]
@@ -321,7 +321,7 @@ class ConstitutionalRuleEngine:
                 # Look for test files
                 for test_file in test_path.rglob("*.py"):
                     try:
-                        with open(test_file, 'r', encoding='utf-8') as f:
+                        with open(test_file, encoding='utf-8') as f:
                             test_content = f.read()
                         
                         # Check if any test pattern matches
@@ -347,7 +347,7 @@ class ConstitutionalRuleEngine:
         
         return file_path.parent  # Fallback
     
-    def _check_complexity(self, rule_data: Dict[str, Any], file_path: Path, content: str) -> List[RuleViolation]:
+    def _check_complexity(self, rule_data: dict[str, Any], file_path: Path, content: str) -> list[RuleViolation]:
         """Check Article III: Simplicity compliance."""
         violations = []
         
@@ -397,7 +397,7 @@ class ConstitutionalRuleEngine:
         
         return violations
     
-    def _check_docstring_coverage(self, rule_data: Dict[str, Any], file_path: Path, content: str) -> List[RuleViolation]:
+    def _check_docstring_coverage(self, rule_data: dict[str, Any], file_path: Path, content: str) -> list[RuleViolation]:
         """Check Article V: Clarity compliance."""
         violations = []
         
@@ -442,7 +442,7 @@ class ConstitutionalRuleEngine:
         
         return violations
     
-    def _check_integration_tests(self, rule_data: Dict[str, Any], file_path: Path, content: str) -> List[RuleViolation]:
+    def _check_integration_tests(self, rule_data: dict[str, Any], file_path: Path, content: str) -> list[RuleViolation]:
         """Check Article IV: Integration-First compliance."""
         violations = []
         
@@ -464,7 +464,7 @@ class ConstitutionalRuleEngine:
         
         return violations
     
-    def _check_breaking_changes(self, rule_data: Dict[str, Any], file_path: Path, content: str) -> List[RuleViolation]:
+    def _check_breaking_changes(self, rule_data: dict[str, Any], file_path: Path, content: str) -> list[RuleViolation]:
         """Check Article VI: Versioning compliance."""
         violations = []
         
@@ -491,7 +491,7 @@ class ConstitutionalRuleEngine:
         
         return violations
     
-    def _check_code_patterns(self, rule_data: Dict[str, Any], file_path: Path, content: str) -> List[RuleViolation]:
+    def _check_code_patterns(self, rule_data: dict[str, Any], file_path: Path, content: str) -> list[RuleViolation]:
         """Check Article I: Library-First compliance."""
         violations = []
         

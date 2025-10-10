@@ -9,9 +9,13 @@ import sys
 # Force ASCII encoding for all child processes
 os.environ["PYTHONIOENCODING"] = "ascii:replace"
 
+# Get the script directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+validate_script = os.path.join(script_dir, "validate_deployment.py")
+
 # Run the validate_deployment.py script
 result = subprocess.run(
-    [sys.executable, "validate_deployment.py"],
+    [sys.executable, validate_script],
     env=os.environ,
     text=True,
     encoding="ascii",

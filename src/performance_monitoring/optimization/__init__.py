@@ -13,9 +13,9 @@ Components:
 """
 
 from .performance_optimizer import PerformanceOptimizer
+from .resource_manager import ResourceManager
 from .scalability_manager import ScalabilityManager
 from .security_hardening import SecurityHardening
-from .resource_manager import ResourceManager
 
 __all__ = [
     'PerformanceOptimizer',

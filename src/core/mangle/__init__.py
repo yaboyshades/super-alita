@@ -1,4 +1,4 @@
-"""
+﻿"""
 Mangle Integration Orchestrator for Super Alita Agent System
 
 Coordinates all Mangle components: gRPC server, Prometheus metrics,
@@ -10,7 +10,11 @@ import logging
 import signal
 import time
 from pathlib import Path
+
+# ensure protobuf backfill before gRPC binds
 from typing import Any, Dict, Optional
+
+from . import mangle_proto_patch  # noqa: F401
 
 # Import core components that always work
 from .metrics import PrometheusMetricsCollector
@@ -471,3 +475,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+

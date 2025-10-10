@@ -5,13 +5,13 @@ Implements Mixture-of-Experts routing with attention-based gating,
 budget constraints, and exploration policies for E-UPUSF orchestration.
 """
 
+import asyncio
+import logging
 import math
 import random
-import asyncio
 from dataclasses import dataclass, field
-from typing import Dict, Any, List
 from enum import Enum
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -40,28 +40,28 @@ class ExpertSelection:
     """Selected expert for execution"""
     expert_id: str
     score: ExpertScore
-    inputs: List[str]
-    outputs: List[str]
-    estimated_cost: Dict[str, float]
-    estimated_risk: Dict[str, float]
+    inputs: list[str]
+    outputs: list[str]
+    estimated_cost: dict[str, float]
+    estimated_risk: dict[str, float]
 
 
 @dataclass
 class RoutingDecision:
     """Complete routing decision with selected experts"""
     primary_expert: ExpertSelection
-    backup_experts: List[ExpertSelection] = field(default_factory=list)
+    backup_experts: list[ExpertSelection] = field(default_factory=list)
     routing_strategy: str = "single"
-    total_estimated_cost: Dict[str, float] = field(default_factory=dict)
+    total_estimated_cost: dict[str, float] = field(default_factory=dict)
     confidence: float = 1.0
-    reasoning: List[str] = field(default_factory=list)
+    reasoning: list[str] = field(default_factory=list)
 
 
 class ExpertGating:
     """Gating mechanism for expert selection with budget and
     risk constraints"""
     
-    def __init__(self, routing_config: Dict[str, Any]):
+    def __init__(self, routing_config: dict[str, Any]):
         self.config = routing_config
         self.scoring_config = routing_config.get("scoring", {})
         self.weights = self.scoring_config.get("weights", {
@@ -88,12 +88,12 @@ class ExpertGating:
         self.gating_rules = routing_config.get("gating_rules", [])
         
         # Expert usage history for exploration
-        self.expert_usage_history: Dict[str, Dict[str, Any]] = {}
+        self.expert_usage_history: dict[str, dict[str, Any]] = {}
     
-    def score_expert(self, expert: Dict[str, Any],
+    def score_expert(self, expert: dict[str, Any],
                      current_state: str,
                      current_method: str,
-                     context: Dict[str, Any]) -> ExpertScore:
+                     context: dict[str, Any]) -> ExpertScore:
         """Score an expert for current context"""
         
         expert_id = expert["id"]
@@ -135,7 +135,7 @@ class ExpertGating:
             confidence=self._calculate_confidence(expert, context)
         )
     
-    def _calculate_fit_score(self, expert: Dict[str, Any], 
+    def _calculate_fit_score(self, expert: dict[str, Any], 
                             current_state: str,
                             current_method: str) -> float:
         """Calculate how well expert fits current state and method"""
@@ -160,8 +160,8 @@ class ExpertGating:
             return semantic_score
     
     def _calculate_utility_score(self, expert_id: str, 
-                                expert: Dict[str, Any],
-                                context: Dict[str, Any]) -> float:
+                                expert: dict[str, Any],
+                                context: dict[str, Any]) -> float:
         """Calculate expected utility based on prior and history"""
         
         # Base quality prior
@@ -176,8 +176,8 @@ class ExpertGating:
         
         return quality_prior
     
-    def _calculate_cost_score(self, expert: Dict[str, Any], 
-                             context: Dict[str, Any]) -> float:
+    def _calculate_cost_score(self, expert: dict[str, Any], 
+                             context: dict[str, Any]) -> float:
         """Calculate cost score (inverted - lower cost = higher score)"""
         
         expert_cost = expert.get("cost", {})
@@ -193,8 +193,8 @@ class ExpertGating:
         # Invert so lower cost = higher score
         return max(0.0, 1.0 - total_cost)
     
-    def _calculate_risk_score(self, expert: Dict[str, Any],
-                             context: Dict[str, Any]) -> float:
+    def _calculate_risk_score(self, expert: dict[str, Any],
+                             context: dict[str, Any]) -> float:
         """Calculate risk score (inverted - lower risk = higher score)"""
         
         expert_risk = expert.get("risk", {})
@@ -226,8 +226,8 @@ class ExpertGating:
         bonus = self.exploration_c * math.sqrt(math.log(n_total) / n_expert)
         return min(bonus, 0.5)  # Cap bonus to prevent runaway exploration
     
-    def _calculate_confidence(self, expert: Dict[str, Any], 
-                             context: Dict[str, Any]) -> float:
+    def _calculate_confidence(self, expert: dict[str, Any], 
+                             context: dict[str, Any]) -> float:
         """Calculate confidence in expert selection"""
         
         # Base confidence from quality prior
@@ -244,8 +244,8 @@ class ExpertGating:
         
         return min(1.0, base_confidence)
     
-    def apply_gating_rules(self, expert_selections: List[ExpertSelection],
-                          context: Dict[str, Any]) -> List[ExpertSelection]:
+    def apply_gating_rules(self, expert_selections: list[ExpertSelection],
+                          context: dict[str, Any]) -> list[ExpertSelection]:
         """Apply gating rules to filter expert selections"""
         
         filtered_selections = []
@@ -282,7 +282,7 @@ class ExpertGating:
     
     def _evaluate_gating_condition(self, condition: str, 
                                   selection: ExpertSelection,
-                                  context: Dict[str, Any]) -> bool:
+                                  context: dict[str, Any]) -> bool:
         """Evaluate a gating rule condition"""
         
         # Simplified condition evaluation
@@ -304,7 +304,7 @@ class ExpertGating:
     
     def update_expert_history(self, expert_id: str, 
                              success: bool,
-                             actual_cost: Dict[str, float],
+                             actual_cost: dict[str, float],
                              quality_score: float) -> None:
         """Update expert usage history"""
         
@@ -345,16 +345,16 @@ class ExpertGating:
 class MoERouter:
     """Mixture-of-Experts router for E-UPUSF orchestration"""
     
-    def __init__(self, experts: List[Dict[str, Any]], 
-                 routing_config: Dict[str, Any]):
+    def __init__(self, experts: list[dict[str, Any]], 
+                 routing_config: dict[str, Any]):
         self.experts = {expert["id"]: expert for expert in experts}
         self.routing_config = routing_config
         self.gating = ExpertGating(routing_config)
     
     async def route_to_experts(self, current_state: str,
                               current_method: str,
-                              required_inputs: List[str],
-                              context: Dict[str, Any]) -> RoutingDecision:
+                              required_inputs: list[str],
+                              context: dict[str, Any]) -> RoutingDecision:
         """Route task to best expert(s) based on current context"""
         
         # Score all compatible experts
@@ -400,7 +400,7 @@ class MoERouter:
                 expert_scores = [(expert, score)] + [
                     x for x in expert_scores if x[0]["id"] != expert["id"]
                 ]
-                reasoning.append(f"Applied epsilon-greedy exploration")
+                reasoning.append("Applied epsilon-greedy exploration")
         
         # Create expert selections
         selections = []
@@ -448,16 +448,16 @@ class MoERouter:
             reasoning=reasoning
         )
     
-    def _check_input_compatibility(self, required: List[str], 
-                                  provided: List[str]) -> bool:
+    def _check_input_compatibility(self, required: list[str], 
+                                  provided: list[str]) -> bool:
         """Check if expert inputs are compatible with requirements"""
         
         # Simple compatibility check - expert must support all required inputs
         return all(req in provided for req in required)
     
     async def execute_expert(self, selection: ExpertSelection,
-                            inputs: Dict[str, Any],
-                            context: Dict[str, Any]) -> Dict[str, Any]:
+                            inputs: dict[str, Any],
+                            context: dict[str, Any]) -> dict[str, Any]:
         """Execute selected expert with given inputs"""
         
         expert_id = selection.expert_id
@@ -505,9 +505,9 @@ class MoERouter:
             
             raise
     
-    async def _execute_tool(self, expert: Dict[str, Any], 
-                           inputs: Dict[str, Any],
-                           context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_tool(self, expert: dict[str, Any], 
+                           inputs: dict[str, Any],
+                           context: dict[str, Any]) -> dict[str, Any]:
         """Execute tool-based expert"""
         
         # Simulate tool execution
@@ -526,9 +526,9 @@ class MoERouter:
             }
         }
     
-    async def _execute_agent(self, expert: Dict[str, Any],
-                            inputs: Dict[str, Any],
-                            context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_agent(self, expert: dict[str, Any],
+                            inputs: dict[str, Any],
+                            context: dict[str, Any]) -> dict[str, Any]:
         """Execute agent-based expert"""
         
         # Simulate agent execution
@@ -549,9 +549,9 @@ class MoERouter:
             }
         }
     
-    async def _execute_human(self, expert: Dict[str, Any],
-                            inputs: Dict[str, Any],
-                            context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_human(self, expert: dict[str, Any],
+                            inputs: dict[str, Any],
+                            context: dict[str, Any]) -> dict[str, Any]:
         """Execute human-in-loop expert"""
         
         # Simulate human consultation (would be actual HIL in practice)
@@ -572,7 +572,7 @@ class MoERouter:
             }
         }
     
-    def get_routing_statistics(self) -> Dict[str, Any]:
+    def get_routing_statistics(self) -> dict[str, Any]:
         """Get routing and expert usage statistics"""
         
         return {

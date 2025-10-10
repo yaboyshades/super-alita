@@ -6,17 +6,22 @@ monitoring and constitutional compliance system.
 """
 
 import asyncio
-import logging
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, List, Any, Optional
 import json
+import logging
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
+from .ci.quality_gates import (
+    ConstitutionalGate,
+    PerformanceGate,
+    QualityGatePipeline,
+    SecurityGate,
+)
+from .core.constitutional_engine import ConstitutionalEngine
 from .core.performance_monitor import PerformanceMonitor
 from .core.telemetry_bridge import TelemetryBridge
-from .core.constitutional_engine import ConstitutionalEngine
 from .dashboard.dashboard_interface import DashboardInterface
-from .ci.quality_gates import QualityGatePipeline, ConstitutionalGate, PerformanceGate, SecurityGate
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +36,7 @@ class PerformanceMonitoringSystem:
     
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         constitutional_threshold: float = 0.75
     ):
         self.config = config or self._get_default_config()
@@ -126,16 +131,16 @@ class PerformanceMonitoringSystem:
     async def validate_commit(
         self,
         commit_message: str,
-        changed_files: List[str],
+        changed_files: list[str],
         diff_data: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Validate a commit against all quality gates."""
         context = {
             "type": "commit",
             "commit_message": commit_message,
             "changed_files": changed_files,
             "diff_data": diff_data,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
         
         logger.info(f"Validating commit with {len(changed_files)} changed files")
@@ -159,9 +164,9 @@ class PerformanceMonitoringSystem:
     async def validate_code_change(
         self,
         file_path: str,
-        changes: List[str],
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        changes: list[str],
+        metadata: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Validate code changes for constitutional compliance."""
         # Track the validation interaction
         interaction = self.performance_monitor.track_extension_interaction(
@@ -177,7 +182,7 @@ class PerformanceMonitoringSystem:
             
             return {
                 "compliance_score": compliance_score.to_dict(),
-                "validation_timestamp": datetime.now(timezone.utc).isoformat()
+                "validation_timestamp": datetime.now(UTC).isoformat()
             }
             
         except Exception as e:
@@ -186,11 +191,11 @@ class PerformanceMonitoringSystem:
             )
             raise
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         """Get comprehensive system status."""
         return {
             "system_running": self._running,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "component_status": {
                 "performance_monitor": self._running,
                 "telemetry_bridge": self.telemetry_bridge._active,
@@ -205,7 +210,7 @@ class PerformanceMonitoringSystem:
             "quality_gate_statistics": self.quality_pipeline.get_gate_statistics()
         }
 
-    def get_constitutional_dashboard(self) -> Dict[str, Any]:
+    def get_constitutional_dashboard(self) -> dict[str, Any]:
         """Get constitutional compliance focused dashboard."""
         return {
             "constitutional_dashboard": self.dashboard.get_constitutional_dashboard(),
@@ -214,11 +219,11 @@ class PerformanceMonitoringSystem:
             "recent_validations": self.quality_pipeline.get_execution_history(5)
         }
 
-    async def run_health_check(self) -> Dict[str, Any]:
+    async def run_health_check(self) -> dict[str, Any]:
         """Run comprehensive system health check."""
         health_status = {
             "overall_health": "healthy",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "component_health": {},
             "issues": []
         }
@@ -357,13 +362,13 @@ class PerformanceMonitoringSystem:
                 {"source": event.source, "type": event.event_type}
             )
 
-    def _handle_performance_alert(self, message: str, details: Dict[str, Any]) -> None:
+    def _handle_performance_alert(self, message: str, details: dict[str, Any]) -> None:
         """Handle performance alerts for dashboard integration."""
         # Forward performance alerts to dashboard
         alert_level = "warning" if "slow" in message.lower() else "error"
         self.dashboard._add_alert(alert_level, message, "performance")
 
-    def _get_default_config(self) -> Dict[str, Any]:
+    def _get_default_config(self) -> dict[str, Any]:
         """Get default system configuration."""
         return {
             "metrics_retention_hours": 24,
@@ -385,13 +390,13 @@ class PerformanceMonitoringSystem:
 # Convenience functions for easy deployment
 
 async def create_monitoring_system(
-    config_path: Optional[Path] = None,
+    config_path: Path | None = None,
     constitutional_threshold: float = 0.75
 ) -> PerformanceMonitoringSystem:
     """Create and initialize performance monitoring system."""
     config = None
     if config_path and config_path.exists():
-        with open(config_path, 'r') as f:
+        with open(config_path) as f:
             config = json.load(f)
     
     system = PerformanceMonitoringSystem(
@@ -405,10 +410,10 @@ async def create_monitoring_system(
 
 async def run_commit_validation(
     commit_message: str,
-    changed_files: List[str],
+    changed_files: list[str],
     diff_data: str,
-    config_path: Optional[Path] = None
-) -> Dict[str, Any]:
+    config_path: Path | None = None
+) -> dict[str, Any]:
     """Run commit validation with temporary monitoring system."""
     system = await create_monitoring_system(config_path)
     

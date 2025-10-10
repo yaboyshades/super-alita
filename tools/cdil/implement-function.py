@@ -8,14 +8,13 @@ import argparse
 import os
 import subprocess
 import sys
-from typing import Dict, Optional
 
 
-def assemble_spec_context(spec_id: str) -> Dict[str, Optional[str]]:
+def assemble_spec_context(spec_id: str) -> dict[str, str | None]:
     """
     Assemble the specification context for a function.
     """
-    context: Dict[str, Optional[str]] = {
+    context: dict[str, str | None] = {
         "spec": None,
         "stubs": None,
         "validators": None
@@ -24,25 +23,25 @@ def assemble_spec_context(spec_id: str) -> Dict[str, Optional[str]]:
     # Load spec
     spec_file = f"specs/{spec_id}.yaml"
     if os.path.exists(spec_file):
-        with open(spec_file, 'r') as f:
+        with open(spec_file) as f:
             context["spec"] = f.read()
     
     # Load stubs
     stub_file = f"contracts/{spec_id.replace('.', '/')}.pyi"
     if os.path.exists(stub_file):
-        with open(stub_file, 'r') as f:
+        with open(stub_file) as f:
             context["stubs"] = f.read()
     
     # Load validators
     validator_file = f"contracts/{spec_id.replace('.', '/')}/validators.py"
     if os.path.exists(validator_file):
-        with open(validator_file, 'r') as f:
+        with open(validator_file) as f:
             context["validators"] = f.read()
     
     return context
 
 
-def prompt_llm(context: Dict[str, Optional[str]], function_name: str) -> str:
+def prompt_llm(context: dict[str, str | None], function_name: str) -> str:
     """
     Prompt the LLM with the specification context.
     In a real implementation, this would connect to an LLM API.

@@ -17,7 +17,6 @@ import asyncio
 import logging
 import time
 from pathlib import Path
-from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +55,7 @@ async def demo_eos_mangle_integration():
     
     # Check EOS-Mangle integration
     try:
-        from src.eos.mangle_integration import EOSMangleOrchestrator, EOSMangleConfig
+        from src.eos.mangle_integration import EOSMangleConfig, EOSMangleOrchestrator
         integration_available = True
         print("✅ EOS-Mangle Integration: Available")
     except ImportError as e:
@@ -65,9 +64,7 @@ async def demo_eos_mangle_integration():
     
     # Check Unified Intelligence integration
     try:
-        from src.unified_intelligence import (
-            UnifiedIntelligenceEngine, EOS_AVAILABLE
-        )
+        from src.unified_intelligence import EOS_AVAILABLE, UnifiedIntelligenceEngine
         unified_available = True
         eos_status = "Yes" if EOS_AVAILABLE else "No"
         print(f"✅ Unified Intelligence: Available (EOS: {eos_status})")
@@ -160,7 +157,10 @@ async def demo_eos_mangle_integration():
             # Check if reference spec exists
             spec_path = Path("examples/eos/reference-orchestration.yaml")
             if spec_path.exists():
-                from src.eos.mangle_integration import EOSMangleOrchestrator, EOSMangleConfig
+                from src.eos.mangle_integration import (
+                    EOSMangleConfig,
+                    EOSMangleOrchestrator,
+                )
                 
                 # Load EOS specification
                 eos_schema = EOSSchema()
@@ -205,7 +205,7 @@ async def demo_eos_mangle_integration():
                             score = result.governance_report['mangle_constitutional_score']
                             print(f"⚖️ Mangle Constitutional Score: {score:.2f}")
                         
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         print("⏰ Orchestration timed out (15s limit)")
                     except Exception as e:
                         print(f"❌ Orchestration failed: {e}")

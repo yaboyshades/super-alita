@@ -5,15 +5,13 @@ Advanced CI/CD integration system with multi-platform support, unification
 validation, and comprehensive quality orchestration.
 """
 
-import asyncio
-import yaml
-import json
-import subprocess
-from datetime import datetime, timezone
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Callable
-from pathlib import Path
 import logging
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import Any
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +22,10 @@ class PipelineStage:
     
     stage_name: str
     description: str
-    dependencies: List[str] = field(default_factory=list)
-    validation_steps: List[str] = field(default_factory=list)
-    success_criteria: Dict[str, Any] = field(default_factory=dict)
-    failure_actions: List[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
+    validation_steps: list[str] = field(default_factory=list)
+    success_criteria: dict[str, Any] = field(default_factory=dict)
+    failure_actions: list[str] = field(default_factory=list)
     timeout_minutes: int = 30
     retry_count: int = 0
 
@@ -39,10 +37,10 @@ class UnificationValidation:
     validation_id: str
     timestamp: datetime
     overall_status: str  # passed, failed, warning
-    component_results: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    integration_results: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    component_results: dict[str, dict[str, Any]] = field(default_factory=dict)
+    integration_results: dict[str, dict[str, Any]] = field(default_factory=dict)
     unification_score: float = 0.0
-    recommendations: List[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -51,10 +49,10 @@ class DeploymentEnvironment:
     
     name: str
     type: str  # development, staging, production
-    requirements: Dict[str, Any] = field(default_factory=dict)
-    validation_rules: List[str] = field(default_factory=list)
+    requirements: dict[str, Any] = field(default_factory=dict)
+    validation_rules: list[str] = field(default_factory=list)
     rollback_strategy: str = "automatic"
-    monitoring_config: Dict[str, Any] = field(default_factory=dict)
+    monitoring_config: dict[str, Any] = field(default_factory=dict)
 
 
 class ComprehensiveCIPipeline:
@@ -76,15 +74,15 @@ class ComprehensiveCIPipeline:
         self.advanced_validator = advanced_validator
         
         # Pipeline configuration
-        self.pipeline_stages: Dict[str, PipelineStage] = {}
-        self.deployment_environments: Dict[str, DeploymentEnvironment] = {}
+        self.pipeline_stages: dict[str, PipelineStage] = {}
+        self.deployment_environments: dict[str, DeploymentEnvironment] = {}
         
         # Validation framework
-        self.unification_validators: List[Callable] = []
-        self.validation_history: List[UnificationValidation] = []
+        self.unification_validators: list[Callable] = []
+        self.validation_history: list[UnificationValidation] = []
         
         # Platform integrations
-        self.platform_configs: Dict[str, Dict[str, Any]] = {}
+        self.platform_configs: dict[str, dict[str, Any]] = {}
         
         # Initialize default pipeline
         self._initialize_default_pipeline()
@@ -109,9 +107,9 @@ class ComprehensiveCIPipeline:
 
     async def execute_full_pipeline(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         target_environment: str = "staging"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute the complete CI/CD pipeline."""
         pipeline_id = f"pipeline_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
@@ -119,7 +117,7 @@ class ComprehensiveCIPipeline:
         
         pipeline_result = {
             "pipeline_id": pipeline_id,
-            "start_time": datetime.now(timezone.utc).isoformat(),
+            "start_time": datetime.now(UTC).isoformat(),
             "target_environment": target_environment,
             "stages_executed": [],
             "overall_status": "running",
@@ -162,14 +160,14 @@ class ComprehensiveCIPipeline:
             pipeline_result["error"] = str(e)
             logger.error(f"Pipeline execution error: {e}")
         
-        pipeline_result["end_time"] = datetime.now(timezone.utc).isoformat()
+        pipeline_result["end_time"] = datetime.now(UTC).isoformat()
         logger.info(f"Pipeline execution completed: {pipeline_id} - {pipeline_result['overall_status']}")
         
         return pipeline_result
 
     async def perform_unification_validation(
         self,
-        context: Dict[str, Any]
+        context: dict[str, Any]
     ) -> UnificationValidation:
         """Perform comprehensive system unification validation."""
         validation_id = f"unification_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -178,7 +176,7 @@ class ComprehensiveCIPipeline:
         
         validation = UnificationValidation(
             validation_id=validation_id,
-            timestamp=datetime.now(timezone.utc)
+            timestamp=datetime.now(UTC)
         )
         
         try:
@@ -221,7 +219,7 @@ class ComprehensiveCIPipeline:
         
         return validation
 
-    async def generate_platform_configs(self) -> Dict[str, str]:
+    async def generate_platform_configs(self) -> dict[str, str]:
         """Generate platform-specific CI/CD configurations."""
         configs = {}
         
@@ -243,7 +241,7 @@ class ComprehensiveCIPipeline:
         
         return configs
 
-    def get_pipeline_statistics(self) -> Dict[str, Any]:
+    def get_pipeline_statistics(self) -> dict[str, Any]:
         """Get pipeline execution statistics."""
         if not self.validation_history:
             return {"status": "no_data"}
@@ -347,8 +345,8 @@ class ComprehensiveCIPipeline:
     async def _execute_pipeline_stage(
         self,
         stage_name: str,
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        context: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute a single pipeline stage."""
         stage = self.pipeline_stages.get(stage_name)
         if not stage:
@@ -358,7 +356,7 @@ class ComprehensiveCIPipeline:
         
         stage_result = {
             "stage": stage_name,
-            "start_time": datetime.now(timezone.utc).isoformat(),
+            "start_time": datetime.now(UTC).isoformat(),
             "status": "running",
             "validation_results": {}
         }
@@ -383,10 +381,10 @@ class ComprehensiveCIPipeline:
             stage_result["error"] = str(e)
             logger.error(f"Stage execution error in {stage_name}: {e}")
         
-        stage_result["end_time"] = datetime.now(timezone.utc).isoformat()
+        stage_result["end_time"] = datetime.now(UTC).isoformat()
         return stage_result
 
-    async def _validate_components(self, context: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    async def _validate_components(self, context: dict[str, Any]) -> dict[str, dict[str, Any]]:
         """Validate individual system components."""
         component_results = {}
         
@@ -422,7 +420,7 @@ class ComprehensiveCIPipeline:
         
         return component_results
 
-    async def _validate_integrations(self, context: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    async def _validate_integrations(self, context: dict[str, Any]) -> dict[str, dict[str, Any]]:
         """Validate system integrations."""
         integration_results = {}
         
@@ -439,7 +437,7 @@ class ComprehensiveCIPipeline:
         
         return integration_results
 
-    async def _validate_system_unification(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _validate_system_unification(self, context: dict[str, Any]) -> dict[str, Any]:
         """Validate overall system unification."""
         return {
             "data_flow": {"status": "healthy", "score": 0.9},
@@ -449,9 +447,9 @@ class ComprehensiveCIPipeline:
 
     def _calculate_unification_score(
         self,
-        component_results: Dict[str, Dict[str, Any]],
-        integration_results: Dict[str, Dict[str, Any]],
-        system_results: Dict[str, Any]
+        component_results: dict[str, dict[str, Any]],
+        integration_results: dict[str, dict[str, Any]],
+        system_results: dict[str, Any]
     ) -> float:
         """Calculate overall unification score."""
         scores = []
@@ -587,7 +585,7 @@ pipeline {
         
         return yaml.dump(config, default_flow_style=False)
 
-    async def _validate_performance_integration(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _validate_performance_integration(self, context: dict[str, Any]) -> dict[str, Any]:
         """Validate performance monitoring integration."""
         try:
             summary = self.performance_system.get_system_status()
@@ -599,7 +597,7 @@ pipeline {
         except Exception as e:
             return {"status": "error", "score": 0.0, "error": str(e)}
 
-    async def _validate_constitutional_integration(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _validate_constitutional_integration(self, context: dict[str, Any]) -> dict[str, Any]:
         """Validate constitutional compliance integration."""
         try:
             trend = self.performance_system.constitutional_engine.get_compliance_trend()
@@ -615,7 +613,7 @@ pipeline {
         except Exception as e:
             return {"status": "error", "score": 0.0, "error": str(e)}
 
-    async def _validate_workflow_integration(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _validate_workflow_integration(self, context: dict[str, Any]) -> dict[str, Any]:
         """Validate workflow engine integration."""
         try:
             stats = self.workflow_engine.get_workflow_statistics()
@@ -631,7 +629,7 @@ pipeline {
         except Exception as e:
             return {"status": "error", "score": 0.0, "error": str(e)}
 
-    async def _validate_monitoring_integration(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _validate_monitoring_integration(self, context: dict[str, Any]) -> dict[str, Any]:
         """Validate monitoring system integration."""
         try:
             health = await self.performance_system.run_health_check()
@@ -643,7 +641,7 @@ pipeline {
         except Exception as e:
             return {"status": "error", "score": 0.0, "error": str(e)}
 
-    def _calculate_stage_order(self) -> List[str]:
+    def _calculate_stage_order(self) -> list[str]:
         """Calculate execution order for pipeline stages."""
         # Simplified topological sort based on dependencies
         stages = list(self.pipeline_stages.keys())
@@ -668,7 +666,7 @@ pipeline {
         
         return ordered_stages
 
-    async def _execute_validation_step(self, step: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_validation_step(self, step: str, context: dict[str, Any]) -> dict[str, Any]:
         """Execute a validation step."""
         # Simplified step execution
         logger.info(f"Executing validation step: {step}")
@@ -694,17 +692,17 @@ pipeline {
         else:
             return {"success": True, "message": f"Step {step} executed successfully"}
 
-    async def _check_success_criteria(self, criteria: Dict[str, Any], context: Dict[str, Any]) -> bool:
+    async def _check_success_criteria(self, criteria: dict[str, Any], context: dict[str, Any]) -> bool:
         """Check if success criteria are met."""
         # Simplified criteria checking
         return True  # Would implement actual criteria validation
 
-    async def _handle_pipeline_failure(self, stage_name: str, stage_result: Dict[str, Any], context: Dict[str, Any]) -> None:
+    async def _handle_pipeline_failure(self, stage_name: str, stage_result: dict[str, Any], context: dict[str, Any]) -> None:
         """Handle pipeline failure."""
         logger.error(f"Pipeline failed at stage: {stage_name}")
         # Would implement failure handling logic
 
-    async def _deploy_to_environment(self, environment_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _deploy_to_environment(self, environment_name: str, context: dict[str, Any]) -> dict[str, Any]:
         """Deploy to specified environment."""
         logger.info(f"Deploying to environment: {environment_name}")
         
@@ -713,15 +711,15 @@ pipeline {
             "status": "success",
             "environment": environment_name,
             "deployment_id": f"deploy_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
     async def _generate_unification_recommendations(
         self,
-        component_results: Dict[str, Dict[str, Any]],
-        integration_results: Dict[str, Dict[str, Any]],
-        system_results: Dict[str, Any]
-    ) -> List[str]:
+        component_results: dict[str, dict[str, Any]],
+        integration_results: dict[str, dict[str, Any]],
+        system_results: dict[str, Any]
+    ) -> list[str]:
         """Generate recommendations for unification improvement."""
         recommendations = []
         
@@ -749,41 +747,41 @@ pipeline {
         return recommendations
 
     # Simplified validation methods
-    async def _check_compilation(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _check_compilation(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Compilation successful"}
 
-    async def _check_dependencies(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _check_dependencies(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Dependencies resolved"}
 
-    async def _run_unit_tests(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_unit_tests(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Unit tests passed"}
 
-    async def _run_integration_tests(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_integration_tests(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Integration tests passed"}
 
-    async def _check_coverage(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _check_coverage(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Coverage threshold met"}
 
-    async def _validate_constitutional(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _validate_constitutional(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Constitutional validation passed"}
 
-    async def _validate_performance(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _validate_performance(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Performance validation passed"}
 
-    async def _run_security_scan(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_security_scan(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Security scan completed"}
 
-    async def _create_artifact(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_artifact(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Artifact created"}
 
-    async def _validate_artifact(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _validate_artifact(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Artifact validated"}
 
-    async def _prepare_environment(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _prepare_environment(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Environment prepared"}
 
-    async def _execute_deployment(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_deployment(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Deployment executed"}
 
-    async def _check_health(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _check_health(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "message": "Health check passed"}

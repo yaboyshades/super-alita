@@ -10,6 +10,7 @@ import asyncio
 import json
 from pathlib import Path
 
+
 # Test enhanced DeepCode MCP tool
 async def test_enhanced_deepcode_mcp():
     """Test enhanced DeepCode MCP tool capabilities."""
@@ -164,8 +165,8 @@ async def test_native_deepcode_plugin():
     print("=" * 60)
     
     try:
-        from src.plugins.native_deepcode_plugin import NativeDeepCodePlugin
         from src.core.plugin_registry import register_plugin
+        from src.plugins.native_deepcode_plugin import NativeDeepCodePlugin
         
         # Initialize plugin
         plugin = NativeDeepCodePlugin()

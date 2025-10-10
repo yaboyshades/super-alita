@@ -6,7 +6,7 @@ Extends existing DeepCode integration with Text2Web and Text2Backend capabilitie
 integrated with EOS orchestration and Mangle reasoning validation.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from ..plugins.native_deepcode_plugin import NativeDeepCodePlugin
 
@@ -32,7 +32,7 @@ class EnhancedDeepCodeTools:
     
     async def generate_text2web(self, description: str, 
                                framework: str = "react",
-                               styling: str = "tailwind") -> Dict[str, Any]:
+                               styling: str = "tailwind") -> dict[str, Any]:
         """Generate frontend application from text description."""
         
         # Enhanced requirements for web generation
@@ -68,7 +68,7 @@ class EnhancedDeepCodeTools:
     
     async def generate_text2backend(self, description: str,
                                    architecture: str = "microservices",
-                                   database: str = "postgresql") -> Dict[str, Any]:
+                                   database: str = "postgresql") -> dict[str, Any]:
         """Generate backend system from text description."""
         
         # Enhanced requirements for backend generation
@@ -105,7 +105,7 @@ class EnhancedDeepCodeTools:
     
     async def generate_paper2code_enhanced(self, paper_content: str,
                                           paper_title: str = "",
-                                          implementation_focus: str = "") -> Dict[str, Any]:
+                                          implementation_focus: str = "") -> dict[str, Any]:
         """Enhanced paper2code with better context analysis."""
         
         enhanced_requirements = f"""
@@ -139,11 +139,11 @@ class EnhancedDeepCodeTools:
         
         return result
     
-    def get_capabilities(self) -> Dict[str, str]:
+    def get_capabilities(self) -> dict[str, str]:
         """Get available capabilities."""
         return self.capabilities.copy()
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Check health of all integrated systems."""
         return {
             'status': 'healthy',
@@ -155,7 +155,7 @@ class EnhancedDeepCodeTools:
 
 
 # MCP Tool Functions for integration
-async def deepcode_text2web(params: Dict[str, Any]) -> Dict[str, Any]:
+async def deepcode_text2web(params: dict[str, Any]) -> dict[str, Any]:
     """MCP tool for Text2Web generation."""
     tools = EnhancedDeepCodeTools()
     await tools.start()
@@ -173,7 +173,7 @@ async def deepcode_text2web(params: Dict[str, Any]) -> Dict[str, Any]:
         await tools.stop()
 
 
-async def deepcode_text2backend(params: Dict[str, Any]) -> Dict[str, Any]:
+async def deepcode_text2backend(params: dict[str, Any]) -> dict[str, Any]:
     """MCP tool for Text2Backend generation."""
     tools = EnhancedDeepCodeTools()
     await tools.start()
@@ -191,7 +191,7 @@ async def deepcode_text2backend(params: Dict[str, Any]) -> Dict[str, Any]:
         await tools.stop()
 
 
-async def deepcode_paper2code_enhanced(params: Dict[str, Any]) -> Dict[str, Any]:
+async def deepcode_paper2code_enhanced(params: dict[str, Any]) -> dict[str, Any]:
     """MCP tool for enhanced Paper2Code generation."""
     tools = EnhancedDeepCodeTools()
     await tools.start()
@@ -214,28 +214,28 @@ def register_enhanced_deepcode_tools(app):
     """Register enhanced DeepCode tools with MCP server."""
     
     @app.tool("deepcode_text2web")
-    async def text2web_tool(params: Dict[str, Any]) -> Dict[str, Any]:
+    async def text2web_tool(params: dict[str, Any]) -> dict[str, Any]:
         """Generate frontend application from text description."""
         return await deepcode_text2web(params)
     
     @app.tool("deepcode_text2backend") 
-    async def text2backend_tool(params: Dict[str, Any]) -> Dict[str, Any]:
+    async def text2backend_tool(params: dict[str, Any]) -> dict[str, Any]:
         """Generate backend system from text description."""
         return await deepcode_text2backend(params)
     
     @app.tool("deepcode_paper2code_enhanced")
-    async def paper2code_enhanced_tool(params: Dict[str, Any]) -> Dict[str, Any]:
+    async def paper2code_enhanced_tool(params: dict[str, Any]) -> dict[str, Any]:
         """Enhanced paper to code generation with better context."""
         return await deepcode_paper2code_enhanced(params)
     
     @app.tool("deepcode_capabilities")
-    async def capabilities_tool(params: Dict[str, Any]) -> Dict[str, Any]:
+    async def capabilities_tool(params: dict[str, Any]) -> dict[str, Any]:
         """Get DeepCode integration capabilities."""
         tools = EnhancedDeepCodeTools()
         return {'success': True, 'capabilities': tools.get_capabilities()}
     
     @app.tool("deepcode_health")
-    async def health_tool(params: Dict[str, Any]) -> Dict[str, Any]:
+    async def health_tool(params: dict[str, Any]) -> dict[str, Any]:
         """Check DeepCode integration health."""
         tools = EnhancedDeepCodeTools()
         await tools.start()

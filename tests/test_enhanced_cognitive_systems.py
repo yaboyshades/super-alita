@@ -12,9 +12,9 @@ Version: 2.0.0
 
 import asyncio
 import logging
-import pytest
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 # Configure logging for tests
 logging.basicConfig(level=logging.INFO)
@@ -29,8 +29,8 @@ class TestEnhancedCognitiveSystems:
         """Create cognitive orchestrator for testing"""
         try:
             from src.cognitive.enhanced_cognitive_systems import (
+                CognitiveOperation,
                 CognitiveSystemsOrchestrator,
-                CognitiveOperation
             )
             return CognitiveSystemsOrchestrator(config={
                 "test_mode": True,
@@ -270,8 +270,8 @@ class TestIntegrationScenarios:
         
         try:
             from src.cognitive.enhanced_cognitive_systems import (
+                CognitiveOperation,
                 CognitiveSystemsOrchestrator,
-                CognitiveOperation
             )
             
             # Create orchestrator
@@ -313,7 +313,9 @@ class TestIntegrationScenarios:
         logger.info("🧪 Testing system scalability...")
         
         try:
-            from src.cognitive.enhanced_cognitive_systems import CognitiveSystemsOrchestrator
+            from src.cognitive.enhanced_cognitive_systems import (
+                CognitiveSystemsOrchestrator,
+            )
             
             orchestrator = CognitiveSystemsOrchestrator()
             await orchestrator.initialize()

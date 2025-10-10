@@ -5,13 +5,13 @@ Analyzes API changes and recommends appropriate version bumps
 """
 import json
 import sys
-from typing import Dict, Any, List, Tuple
+from typing import Any
 
 
 def analyze_api_changes(
-    spec_diff: Dict[str, Any],
-    signature_changes: List[Dict[str, Any]]
-) -> Tuple[str, str]:
+    spec_diff: dict[str, Any],
+    signature_changes: list[dict[str, Any]]
+) -> tuple[str, str]:
     """
     Analyze API changes and determine required SemVer bump.
     
@@ -62,7 +62,7 @@ def evaluate_semver_compliance(
     current_version: str,
     new_version: str,
     required_bump: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Evaluate if the version bump complies with SemVer requirements.
     
@@ -140,7 +140,7 @@ def main():
     
     # Load changes data
     try:
-        with open(changes_file, 'r') as f:
+        with open(changes_file) as f:
             data = json.load(f)
     except Exception as e:
         print(f"Error loading changes file: {e}")
