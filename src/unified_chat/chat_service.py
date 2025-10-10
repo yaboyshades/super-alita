@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Unified chat service abstraction.
 
 This module provides a thin orchestration layer that:
@@ -12,6 +10,8 @@ The goal is to supply a stable surface for API endpoints / UI without
 adding heavy persistence requirements. If persistence is needed later,
 an adapter can be injected implementing the same interface.
 """
+
+from __future__ import annotations
 
 import asyncio
 import uuid

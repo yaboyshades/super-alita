@@ -11,4 +11,4 @@ warnings.warn(
     stacklevel=2,
 )
 
-from src.mcp.server.main import *  # noqa: F401,F403
+from src.mcp.server.main import *  # noqa: E402,F401,F403

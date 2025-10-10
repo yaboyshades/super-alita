@@ -20,11 +20,11 @@ if project_root not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from src.core.llm_client import LLMUnavailable, generate  # noqa: E402
-from src.core.settings import (
+from src.core.settings import (  # noqa: E402
     LLM_MODEL,
     LLM_RETRIES,
     LLM_TIMEOUT_SEC,
-)  # noqa: E402
+)
 
 # Configure logging
 logging.basicConfig(

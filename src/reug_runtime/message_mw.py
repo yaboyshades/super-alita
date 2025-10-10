@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Lightweight message middleware registry for pre-dispatch transforms.
 
 This module allows registering simple functions that take a raw user message
@@ -7,6 +5,8 @@ and a small context object and return a possibly transformed message plus a
 metadata dict. It is intentionally minimal to avoid coupling to the rest of
 the runtime.
 """
+
+from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass

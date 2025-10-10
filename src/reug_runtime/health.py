@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Shared health checks for runtime dependencies."""
+
+from __future__ import annotations
 
 import contextlib
 from builtins import anext

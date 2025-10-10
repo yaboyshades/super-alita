@@ -1,10 +1,10 @@
-from __future__ import annotations
-
 """MCP Abstractor: normalize, deduplicate and index MCP specs in .mcp_box.
 
 Creates/updates `.mcp_box/index.json` with a canonical view of MCP specs so the
 runtime can avoid overload and surface a coherent, deduplicated catalog.
 """
+
+from __future__ import annotations
 
 import hashlib
 import json

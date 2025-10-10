@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Async event bus implementations for the REUG runtime."""
+
+from __future__ import annotations
 
 import asyncio
 import json

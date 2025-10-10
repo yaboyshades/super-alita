@@ -13,10 +13,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import core services for unified architecture
-from src.core.global_workspace import (
+from src.core.global_workspace import (  # noqa: E402
     AttentionLevel,
     GlobalWorkspace,
-)  # noqa: E402
+)
 from src.core.neural_atom import NeuralStore  # noqa: E402
 from src.core.plugin_interface import PluginInterface  # noqa: E402
 from src.core.schemas import SystemState  # noqa: E402
