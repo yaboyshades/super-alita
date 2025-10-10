@@ -8,9 +8,13 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
+# Setup path before imports
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "mcp_server" / "src"))
-from mcp_server.server import load_tools
+_mcp_path = str(ROOT / "mcp_server" / "src")
+if _mcp_path not in sys.path:
+    sys.path.insert(0, _mcp_path)
+
+from mcp_server.server import load_tools  # noqa: E402
 
 
 def _sanitize_name(name: str) -> str:

@@ -56,7 +56,8 @@ class MangleValidator:
                 if isinstance(v, int | float):
                     tfacts.append(f"{k}({v})")
                 elif isinstance(v, str):
-                    tfacts.append(f"{k}('{v.replace("'", ' ')}')")
+                    safe_v = v.replace("'", " ")
+                    tfacts.append(f"{k}('{safe_v}')")
 
         violations: list[str] = []
         confidence_penalty = 0.0
@@ -117,12 +118,14 @@ class MangleValidator:
             return {"authorized": True, "reason": None}
 
         tfacts: list[str] = []
-        tfacts.append(f"tool_name('{tool_name.replace("'", ' ')}')")
+        safe_tool_name = tool_name.replace("'", " ")
+        tfacts.append(f"tool_name('{safe_tool_name}')")
         for k, v in params.items():
             if isinstance(v, int | float):
                 tfacts.append(f"param('{k}', {v})")
             elif isinstance(v, str):
-                tfacts.append(f"param('{k}', '{v.replace("'", ' ')}')")
+                safe_v = v.replace("'", " ")
+                tfacts.append(f"param('{k}', '{safe_v}')")
             elif isinstance(v, bool):
                 tfacts.append(f"param('{k}', {str(v).lower()})")
         if context:
@@ -130,7 +133,8 @@ class MangleValidator:
                 if isinstance(v, int | float):
                     tfacts.append(f"context('{k}', {v})")
                 elif isinstance(v, str):
-                    tfacts.append(f"context('{k}', '{v.replace("'", ' ')}')")
+                    safe_v = v.replace("'", " ")
+                    tfacts.append(f"context('{k}', '{safe_v}')")
                 elif isinstance(v, bool):
                     tfacts.append(f"context('{k}', {str(v).lower()})")
 
@@ -186,13 +190,15 @@ class MangleValidator:
 
         tfacts: list[str] = [f"sample_count({sample_count})"]
         if domain:
-            tfacts.append(f"domain('{domain.replace("'", ' ')}')")
+            safe_domain = domain.replace("'", " ")
+            tfacts.append(f"domain('{safe_domain}')")
         if meta:
             for k, v in meta.items():
                 if isinstance(v, int | float):
                     tfacts.append(f"{k}({v})")
                 elif isinstance(v, str):
-                    tfacts.append(f"{k}('{v.replace("'", ' ')}')")
+                    safe_v = v.replace("'", " ")
+                    tfacts.append(f"{k}('{safe_v}')")
 
         try:
             rules_data = json.loads(rules_file.read_text(encoding="utf-8"))
@@ -265,7 +271,8 @@ class MangleValidator:
                 if isinstance(v, int | float):
                     tfacts.append(f"{k}({v})")
                 elif isinstance(v, str):
-                    tfacts.append(f"{k}('{v.replace("'", ' ')}')")
+                    safe_v = v.replace("'", " ")
+                    tfacts.append(f"{k}('{safe_v}')")
 
         try:
             rules_data = json.loads(rules_file.read_text(encoding="utf-8"))

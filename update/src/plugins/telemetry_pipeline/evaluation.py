@@ -32,7 +32,9 @@ class PipelineEvaluator:
         precision = self._calculate_precision(extracted_facts, golden_facts)
         recall = self._calculate_recall(extracted_facts, golden_facts)
         redundancy = self._calculate_redundancy(extracted_facts)
-        efficiency = self._calculate_efficiency(extracted_facts, pipeline_output)
+        efficiency = self._calculate_efficiency(
+            extracted_facts, pipeline_output
+        )
         conflicts = self._calculate_conflict_coverage(pipeline_output)
 
         return PipelineMetrics(

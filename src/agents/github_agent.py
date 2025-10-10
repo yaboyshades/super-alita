@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Agent wrapper that coordinates GitHub MCP operations for Super-Alita."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any

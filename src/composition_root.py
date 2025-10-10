@@ -19,14 +19,6 @@ import logging
 import os
 from typing import Any
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
-logger = logging.getLogger(__name__)
-
-# Import core infrastructure
 from src.adapters.cma_adapter import CMAAdapter
 from src.adapters.codex_adapter import CodexAdapter
 from src.adapters.super_alita_adapter import SuperAlitaAdapter
@@ -42,6 +34,13 @@ from src.orchestration.constitutional_middleware import (
 )
 from src.orchestration.event_orchestrator import EventOrchestrator
 from src.orchestration.event_store import EventStore
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 # Stub implementations for Memory and Compliance
