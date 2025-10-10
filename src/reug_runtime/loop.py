@@ -575,9 +575,14 @@ async def execute_turn(
         "success": 1.0 if final_atom_id else 0.0,
         "tools": sorted({t for t in tools_seen if isinstance(t, str)}),
     }
-    transition_event = await emit_state_transition("RESPONDING_SUCCESS")
-    if transition_event:
-        yield transition_event
+    if final_atom_id:
+        transition_event = await emit_state_transition("RESPONDING_SUCCESS")
+        if transition_event:
+            yield transition_event
+    else:
+        transition_event = await emit_state_transition("RESPONDING_FAILURE")
+        if transition_event:
+            yield transition_event
 
     loop_alignment_event = {
         "type": "LoopAlignmentTelemetry",
