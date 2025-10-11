@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+import logging
 import os
 import re
 import time
@@ -26,6 +27,33 @@ from .config import SETTINGS
 from .formatting import normalize_output_contract
 from .message_mw import MessageContext, apply_all
 from .tools.service import ToolCatalogService
+from src.security.maestro_hardening import MaestroSecurity
+
+
+logger = logging.getLogger(__name__)
+
+_maestro_security: MaestroSecurity | None = None
+_maestro_hardening_applied = False
+
+
+def ensure_maestro_hardening() -> None:
+    """Apply MAESTRO hardening once when enabled."""
+
+    global _maestro_security, _maestro_hardening_applied
+    if _maestro_hardening_applied:
+        return
+
+    if not SETTINGS.maestro_hardening_enabled:
+        _maestro_hardening_applied = True
+        logger.debug("MAESTRO hardening disabled via configuration")
+        return
+
+    if _maestro_security is None:
+        _maestro_security = MaestroSecurity()
+
+    logger.debug("Enforcing MAESTRO hardening before agent activation")
+    _maestro_security.enforce()
+    _maestro_hardening_applied = True
 
 
 def parse_tool_calls(text: str) -> list[dict[str, Any]]:
@@ -294,6 +322,8 @@ async def execute_turn(
         answer payload. Consumers forward these as SSE frames or use them for
         observability pipelines.
     """
+    ensure_maestro_hardening()
+
     correlation_id = f"{session_id}-{int(time.time()*1000)}"
     if not isinstance(user_msg, str):
         user_msg = "" if user_msg is None else str(user_msg)
