@@ -15,6 +15,8 @@ from pathlib import Path
 from threading import Lock
 from typing import Any
 
+from src.events import ComplexEventProcessor
+
 logger = logging.getLogger(__name__)
 
 
@@ -183,6 +185,7 @@ class ProductionEventBus(InMemoryPubSubEventBus):
         queue_max_sizes: Mapping[str, int] | None = None,
         degraded_error_rate: float = 0.1,
         fallback_bus: BaseEventBus | None = None,
+        complex_processor: ComplexEventProcessor | None = None,
     ) -> None:
         super().__init__(log_dir)
         self.metrics = EventMetricsCollector()
@@ -196,6 +199,15 @@ class ProductionEventBus(InMemoryPubSubEventBus):
         }
         self._fallback_bus = fallback_bus or FileEventBus(log_dir)
         self._degraded_error_rate = degraded_error_rate
+        self._complex_processor = complex_processor
+        if self._complex_processor is None:
+            self._complex_processor = ComplexEventProcessor(
+                self._emit_clarification_opportunity
+            )
+        else:
+            self._complex_processor.update_emit_callback(
+                self._emit_clarification_opportunity
+            )
 
     async def publish(
         self, event: dict[str, Any], priority: str | None = None
@@ -228,6 +240,7 @@ class ProductionEventBus(InMemoryPubSubEventBus):
         except Exception:
             self.metrics.record_publish_failure()
             logger.exception("degraded publish failed", extra={"event": event})
+        await self._maybe_process_complex_event(event)
         return event
 
     async def handle_backpressure(self, event: dict[str, Any]) -> None:
@@ -270,6 +283,7 @@ class ProductionEventBus(InMemoryPubSubEventBus):
             await self.dead_letter_queue.put({**event, "dead_letter_reason": "failure"})
         else:
             self.metrics.record_publish_success()
+            await self._maybe_process_complex_event(event)
 
     def _resolve_priority(self, priority: str | None, event: dict[str, Any]) -> str:
         requested = priority or str(event.get("priority", "medium")).lower()
@@ -278,6 +292,23 @@ class ProductionEventBus(InMemoryPubSubEventBus):
         if requested not in self.queues:
             return "medium"
         return requested
+
+    async def _emit_clarification_opportunity(
+        self, event: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Emit clarification events without re-entering the queue pipeline."""
+
+        return await super().publish(event)
+
+    async def _maybe_process_complex_event(self, event: dict[str, Any]) -> None:
+        if not self._complex_processor:
+            return
+        try:
+            await self._complex_processor.observe(event)
+        except Exception:
+            logger.exception(
+                "complex processor failed", extra={"event": event, "processor": "ComplexEventProcessor"}
+            )
 
 class RedisEventBus(BaseEventBus):
     """Publish events to a Redis channel asynchronously."""
