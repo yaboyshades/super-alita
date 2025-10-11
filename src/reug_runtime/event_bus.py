@@ -9,6 +9,7 @@ import os
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Mapping
+from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Lock
@@ -71,6 +72,7 @@ class InMemoryPubSubEventBus(FileEventBus):
     def __init__(self, log_dir: str | None):
         super().__init__(log_dir)
         self._subs: dict[str, list[Callable[[dict[str, Any]], Awaitable[None]]]] = {}
+        self._state_cache: dict[str, dict[str, Any]] = {}
 
     async def subscribe(
         self, event_type: str, handler: Callable[[dict[str, Any]], Awaitable[None]]
@@ -88,10 +90,47 @@ class InMemoryPubSubEventBus(FileEventBus):
                 asyncio.create_task(h(event))
             except Exception:
                 logger.exception("failed to dispatch event", extra={"event": event})
+        self._update_agent_state_cache(event)
         return event
 
     async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
         return await self.publish(event)
+
+    # ---- Agent state cache helpers -------------------------------------------------
+
+    def _update_agent_state_cache(self, event: dict[str, Any]) -> None:
+        kind = str(event.get("kind", "")).lower()
+        event_type = str(event.get("event_type", "")).lower()
+        if kind != "agent_state" and event_type != "agentstateevent":
+            return
+
+        change = event.get("change")
+        if not isinstance(change, dict):
+            return
+
+        agent_id = change.get("agent_id") or event.get("agent_id")
+        state_key = change.get("state_key")
+        if not agent_id or not state_key:
+            return
+
+        entry = self._state_cache.setdefault(str(agent_id), {})
+        entry[str(state_key)] = {
+            "value": change.get("value"),
+            "previous_value": change.get("previous_value"),
+            "metadata": deepcopy(change.get("metadata", {})),
+            "change_id": change.get("change_id"),
+            "timestamp": event.get("timestamp"),
+        }
+
+    def get_agent_state(self, agent_id: str) -> dict[str, Any]:
+        """Return a copy of the cached state for the provided agent."""
+
+        return deepcopy(self._state_cache.get(str(agent_id), {}))
+
+    def snapshot_agent_states(self) -> dict[str, dict[str, Any]]:
+        """Return a copy of the entire cached agent state registry."""
+
+        return deepcopy(self._state_cache)
 
 
 class EventMetricsCollector:
