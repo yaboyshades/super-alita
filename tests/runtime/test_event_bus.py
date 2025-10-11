@@ -1,8 +1,14 @@
+import asyncio
 import json
+from typing import Any
 
 import pytest
 
-from reug_runtime.event_bus import FileEventBus, RedisEventBus
+from reug_runtime.event_bus import (
+    FileEventBus,
+    ProductionEventBus,
+    RedisEventBus,
+)
 
 
 @pytest.mark.asyncio
@@ -45,3 +51,58 @@ async def test_redis_event_bus_publishes():
     assert message is not None
     data = json.loads(message["data"])
     assert data["event_type"] == "PING"
+
+
+@pytest.mark.asyncio
+async def test_production_event_bus_dispatches_and_tracks_metrics(tmp_path):
+    bus = ProductionEventBus(str(tmp_path), queue_max_sizes={"high": 5, "medium": 5, "low": 5})
+    handled = asyncio.Event()
+    events: list[dict[str, Any]] = []
+
+    async def handler(event: dict[str, Any]) -> None:
+        events.append(event)
+        handled.set()
+
+    await bus.subscribe("PING", handler)
+    payload = {"event_type": "PING", "data": {"value": 1}}
+    await bus.publish(payload, priority="high")
+
+    await asyncio.wait_for(handled.wait(), timeout=1.0)
+
+    snapshot = bus.metrics.snapshot()
+    assert snapshot["success"] == 1
+    assert events and events[0]["event_type"] == "PING"
+
+
+@pytest.mark.asyncio
+async def test_production_event_bus_backpressure_routes_to_dead_letter(tmp_path):
+    bus = ProductionEventBus(str(tmp_path), queue_max_sizes={"medium": 1, "high": 1, "low": 1})
+    # Prevent the worker from draining the queue so the second publish hits backpressure
+    bus._ensure_worker = lambda priority: None  # type: ignore[attr-defined]
+    await bus.publish({"event_type": "PING", "priority": "low"})
+    await bus.publish({"event_type": "PING", "priority": "low", "importance": 0.1})
+
+    assert bus.dead_letter_queue.qsize() == 1
+    dead_letter_event = await bus.dead_letter_queue.get()
+    assert dead_letter_event["dead_letter_reason"] == "backpressure"
+
+
+@pytest.mark.asyncio
+async def test_production_event_bus_degraded_publish_uses_fallback(tmp_path):
+    captured: list[dict[str, Any]] = []
+
+    class DummyFallback(FileEventBus):
+        async def emit(self, event: dict[str, Any]) -> dict[str, Any]:  # type: ignore[override]
+            captured.append(event)
+            return await super().emit(event)
+
+    fallback = DummyFallback(str(tmp_path / "fallback"))
+    bus = ProductionEventBus(str(tmp_path), fallback_bus=fallback)
+    # Simulate high error rate
+    bus.metrics.record_publish_failure()
+    bus.metrics.record_publish_failure()
+
+    event = {"event_type": "PING", "data": {}}
+    await bus.publish(event)
+
+    assert captured == [event]
