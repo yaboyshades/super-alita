@@ -1,9 +1,16 @@
 """Context pack composition."""
 from __future__ import annotations
 
-from typing import Dict, List
+import logging
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from src.models import ContextPack, Decision, Memory
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from src.controller.ace_evolver import ACEvolver
+
+
+logger = logging.getLogger(__name__)
 
 
 def compose_context_pack(
@@ -76,3 +83,42 @@ def _truncate_tokens(text: str, max_tokens: int) -> str:
     if len(words) <= max_tokens:
         return text
     return " ".join(words[:max_tokens])
+
+
+def compose_ace_context(
+    decisions: List[Decision],
+    memories: List[Memory],
+    *,
+    budget: int = 700,
+    query: str = "",
+    feedback: Optional[Dict[str, Any]] = None,
+    evolver: Optional["ACEvolver"] = None,
+) -> ContextPack:
+    """Compose an ACE-aware context pack.
+
+    The function first composes a traditional context pack and then optionally evolves it
+    via the provided ``ACEvolver``. Provenance keys flag whether ACE processing occurred
+    and surface the applied feedback keys for observability.
+    """
+
+    base_pack = compose_context_pack(decisions, memories, budget=budget, query=query)
+    if not feedback or evolver is None:
+        return base_pack
+
+    payload: Dict[str, Any] = dict(feedback)
+    payload.setdefault("memories", list(memories))
+    payload.setdefault("decisions", list(decisions))
+    payload.setdefault("budget", budget)
+    payload.setdefault("query", query)
+    payload.setdefault("composer", compose_context_pack)
+
+    try:
+        evolved_pack = evolver.evolve_context(base_pack, payload)
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        logger.warning("ACE evolution failed, falling back to base context: %s", exc)
+        base_pack.provenance.setdefault("ace_error", str(exc))
+        return base_pack
+
+    evolved_pack.provenance.setdefault("ace_enabled", "true")
+    evolved_pack.provenance["ace_feedback_keys"] = ",".join(sorted(payload.keys()))
+    return evolved_pack

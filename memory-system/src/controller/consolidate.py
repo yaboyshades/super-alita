@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from src.models import ConsolidationBatch, Memory
 from src.stores.episodic import episodic_store
@@ -28,6 +28,43 @@ def run_consolidation() -> Dict[str, any]:
     }
 
 
+def run_ace_informed_consolidation() -> Dict[str, Any]:
+    print("🔁 Starting ACE-informed consolidation...")
+    candidates = _get_ace_consolidation_candidates()
+    if not candidates:
+        return {
+            "consolidated": 0,
+            "clusters_processed": 0,
+            "strategies": [],
+            "message": "No ACE candidates found",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    clusters = _ace_context_clustering(candidates)
+    strategies: List[Dict[str, Any]] = []
+    consolidated = 0
+
+    for cluster in clusters:
+        strategy = _select_consolidation_strategy(cluster)
+        success = _consolidate_cluster(cluster)
+        strategies.append(
+            {
+                "strategy": strategy,
+                "cluster_size": len(cluster),
+                "succeeded": success,
+            }
+        )
+        if success:
+            consolidated += 1
+
+    return {
+        "consolidated": consolidated,
+        "clusters_processed": len(clusters),
+        "strategies": strategies,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
 def _get_consolidation_candidates() -> List[Memory]:
     candidates = episodic_store.get_by_importance(min_importance=0.6)
     cutoff = datetime.utcnow() - timedelta(days=1)
@@ -37,6 +74,29 @@ def _get_consolidation_candidates() -> List[Memory]:
         reverse=True,
     )
     return candidates[:200]
+
+
+def _get_ace_consolidation_candidates() -> List[Memory]:
+    baseline = episodic_store.get_by_importance(min_importance=0.4)
+    enriched: List[Memory] = []
+    for memory in baseline:
+        if memory.importance >= 0.7:
+            enriched.append(memory)
+            continue
+        meta = memory.meta if isinstance(memory.meta, dict) else {}
+        contradiction_count = int(meta.get("contradiction_count", 0) or 0)
+        clarity = float(meta.get("clarity_score", memory.confidence))
+        if contradiction_count > 0 or clarity < 0.6:
+            enriched.append(memory)
+    enriched.sort(
+        key=lambda memory: (
+            memory.importance,
+            -int(memory.meta.get("contradiction_count", 0)) if isinstance(memory.meta, dict) else 0,
+            _recency_score(memory.last_access),
+        ),
+        reverse=True,
+    )
+    return enriched[:250]
 
 
 def _recency_score(last_access: datetime) -> float:
@@ -58,6 +118,20 @@ def _cluster_memories(memories: List[Memory]) -> List[List[Memory]]:
         if not placed:
             clusters.append([memory])
     return [cluster for cluster in clusters if len(cluster) >= 2]
+
+
+def _ace_context_clustering(memories: List[Memory]) -> List[List[Memory]]:
+    if not memories:
+        return []
+    buckets: Dict[str, List[Memory]] = {}
+    for memory in memories:
+        meta = memory.meta if isinstance(memory.meta, dict) else {}
+        stance = meta.get("stance", "support")
+        topic = meta.get("topic") or (memory.tags[0] if memory.tags else "general")
+        contradiction_bucket = "contradiction" if meta.get("contradiction_count") else "support"
+        key = f"{topic}:{stance}:{contradiction_bucket}"
+        buckets.setdefault(key, []).append(memory)
+    return [cluster for cluster in buckets.values() if len(cluster) >= 1]
 
 
 def _cluster_similarity(memory: Memory, cluster: List[Memory]) -> float:
@@ -111,6 +185,17 @@ def _consolidate_cluster(cluster: List[Memory]) -> bool:
     except Exception as exc:  # pragma: no cover - defensive
         print(f"❌ Consolidation failed: {exc}")
         return False
+
+
+def _select_consolidation_strategy(cluster: List[Memory]) -> str:
+    meta_values = [memory.meta if isinstance(memory.meta, dict) else {} for memory in cluster]
+    contradiction_total = sum(int(meta.get("contradiction_count", 0) or 0) for meta in meta_values)
+    avg_confidence = sum(memory.confidence for memory in cluster) / len(cluster)
+    if contradiction_total:
+        return "counterexample-first"
+    if avg_confidence < 0.5:
+        return "evidence-expansion"
+    return "standard"
 
 
 def _generate_summary(cluster: List[Memory]) -> str:
