@@ -4,6 +4,7 @@
 import hashlib
 import logging
 import time
+from datetime import UTC, datetime
 from typing import Any
 
 from src.core.global_workspace import AttentionLevel, GlobalWorkspace, WorkspaceEvent
@@ -48,11 +49,6 @@ class MemoryManagerPlugin(PluginInterface):
     def __init__(self):
         super().__init__()
         self.workspace: GlobalWorkspace | None = None
-
-    @property
-    def name(self) -> str:
-        """Return the unique name identifier for this plugin."""
-        return "memory_manager"
         self.store: NeuralStore | None = None
 
         # Memory storage components
@@ -80,6 +76,11 @@ class MemoryManagerPlugin(PluginInterface):
             "semantic_memories_stored": 0,
             "average_retrieval_time": 0.0,
         }
+
+    @property
+    def name(self) -> str:
+        """Return the unique name identifier for this plugin."""
+        return "memory_manager"
 
     async def setup(
         self, workspace: GlobalWorkspace, store: NeuralStore, config: dict[str, Any]
@@ -191,14 +192,17 @@ class MemoryManagerPlugin(PluginInterface):
         start_time = time.time()
         self.memory_stats["total_queries"] += 1
 
-        logger.info(f"🧠 MEMORY: Processing {request.memory_type.value} request")
+        memory_type = self._extract_memory_type(request)
+        request_id = self._extract_request_id(request)
+
+        logger.info(f"🧠 MEMORY: Processing {memory_type.value} request")
 
         try:
-            if request.memory_type == MemoryType.WORKING:
+            if memory_type == MemoryType.WORKING:
                 result = await self._query_working_memory(request)
-            elif request.memory_type == MemoryType.EPISODIC:
+            elif memory_type == MemoryType.EPISODIC:
                 result = await self._query_episodic_memory(request)
-            elif request.memory_type == MemoryType.SEMANTIC:
+            elif memory_type == MemoryType.SEMANTIC:
                 result = await self._query_semantic_memory(request)
             else:
                 result = await self._query_long_term_memory(request)
@@ -206,20 +210,20 @@ class MemoryManagerPlugin(PluginInterface):
             retrieval_time = time.time() - start_time
             self._update_memory_stats(retrieval_time, True)
 
-            # Send result back to workspace
-            memory_result = MemoryResult(
-                request_id=request.request_id,
-                success=True,
-                result=result,
-                memory_type=request.memory_type,
+            memory_result = self._build_memory_result(
+                request_id=request_id,
+                memory_type=memory_type,
+                content=result,
                 retrieval_time=retrieval_time,
+                success=True,
             )
 
-            await self.workspace.update(
-                data={"type": "memory_result", **memory_result.model_dump()},
-                source="memory",
-                attention_level=AttentionLevel.MEDIUM,
-            )
+            if self.workspace:
+                await self.workspace.update(
+                    data={"type": "memory_result", **memory_result.model_dump()},
+                    source="memory",
+                    attention_level=AttentionLevel.MEDIUM,
+                )
 
             self.memory_stats["successful_retrievals"] += 1
 
@@ -229,25 +233,28 @@ class MemoryManagerPlugin(PluginInterface):
             retrieval_time = time.time() - start_time
             self._update_memory_stats(retrieval_time, False)
 
-            error_result = MemoryResult(
-                request_id=request.request_id,
+            error_result = self._build_memory_result(
+                request_id=request_id,
+                memory_type=memory_type,
+                content={"error": str(e)},
+                retrieval_time=retrieval_time,
                 success=False,
                 error=str(e),
-                memory_type=request.memory_type,
-                retrieval_time=retrieval_time,
             )
 
-            await self.workspace.update(
-                data={"type": "memory_result", **error_result.model_dump()},
-                source="memory",
-                attention_level=AttentionLevel.MEDIUM,
-            )
+            if self.workspace:
+                await self.workspace.update(
+                    data={"type": "memory_result", **error_result.model_dump()},
+                    source="memory",
+                    attention_level=AttentionLevel.MEDIUM,
+                )
 
             self.memory_stats["failed_retrievals"] += 1
 
     async def _query_working_memory(self, request: MemoryRequest) -> dict[str, Any]:
         """Query working memory."""
-        query = request.query.lower() if request.query else ""
+        raw_query = getattr(request, "query", "") or ""
+        query = raw_query.lower()
 
         # Direct key lookup
         if query in self.working_memory:
@@ -273,11 +280,12 @@ class MemoryManagerPlugin(PluginInterface):
 
         try:
             # Query vector database
-            query_embedding = await self._generate_embedding(request.query)
+            query_text = getattr(request, "query", "") or ""
+            query_embedding = await self._generate_embedding(query_text)
 
             results = self.episodic_collection.query(
                 query_embeddings=[query_embedding],
-                n_results=min(request.limit or 5, 20),
+                n_results=min(self._extract_limit(request, default=5), 20),
             )
 
             episodes = []
@@ -313,11 +321,12 @@ class MemoryManagerPlugin(PluginInterface):
 
         try:
             # Query vector database
-            query_embedding = await self._generate_embedding(request.query)
+            query_text = getattr(request, "query", "") or ""
+            query_embedding = await self._generate_embedding(query_text)
 
             results = self.semantic_collection.query(
                 query_embeddings=[query_embedding],
-                n_results=min(request.limit or 10, 50),
+                n_results=min(self._extract_limit(request, default=10), 50),
             )
 
             knowledge = []
@@ -361,22 +370,32 @@ class MemoryManagerPlugin(PluginInterface):
     async def _update_working_memory(self, update: WorkingMemoryUpdate):
         """Update working memory with new information."""
         try:
-            if update.operation == "store":
-                # Check capacity and evict if necessary
+            key = getattr(update, "key", None) or getattr(update, "memory_id", None)
+            value = getattr(update, "value", None)
+            if value is None and hasattr(update, "content"):
+                value = update.content
+
+            operation = (getattr(update, "operation", "store") or "store").lower()
+
+            if operation in {"store", "update", "add"}:
+                if key is None:
+                    logger.debug("Skipping working memory store without key")
+                    return
+
                 await self._ensure_working_memory_capacity()
 
-                self.working_memory[update.key] = update.value
-                self.working_memory_access_times[update.key] = time.time()
+                self.working_memory[key] = value
+                self.working_memory_access_times[key] = time.time()
 
-                logger.debug(f"Stored in working memory: {update.key}")
+                logger.debug(f"Stored in working memory: {key}")
 
-            elif update.operation == "remove":
-                if update.key in self.working_memory:
-                    del self.working_memory[update.key]
-                    if update.key in self.working_memory_access_times:
-                        del self.working_memory_access_times[update.key]
+            elif operation in {"remove", "delete"}:
+                if key in self.working_memory:
+                    del self.working_memory[key]
+                    if key in self.working_memory_access_times:
+                        del self.working_memory_access_times[key]
 
-            elif update.operation == "clear":
+            elif operation == "clear":
                 self.working_memory.clear()
                 self.working_memory_access_times.clear()
 
@@ -384,6 +403,80 @@ class MemoryManagerPlugin(PluginInterface):
 
         except Exception as e:
             logger.error(f"Failed to update working memory: {e}")
+
+    def _extract_memory_type(self, request: MemoryRequest | Any) -> MemoryType:
+        """Determine the memory type for a request with safe fallbacks."""
+        candidate = getattr(request, "memory_type", None)
+        if candidate is None:
+            metadata = getattr(request, "metadata", {}) or {}
+            candidate = metadata.get("memory_type", MemoryType.WORKING.value)
+
+        if isinstance(candidate, MemoryType):
+            return candidate
+
+        try:
+            return MemoryType(candidate)
+        except Exception:
+            logger.debug(f"Unknown memory type '{candidate}', defaulting to working")
+            return MemoryType.WORKING
+
+    def _extract_request_id(self, request: MemoryRequest | Any) -> str:
+        """Extract a request identifier with defaults."""
+        request_id = getattr(request, "request_id", None)
+        if request_id:
+            return request_id
+
+        metadata = getattr(request, "metadata", {}) or {}
+        request_id = metadata.get("request_id")
+        if request_id:
+            return request_id
+
+        return f"memory-{int(time.time() * 1000)}"
+
+    def _extract_limit(self, request: MemoryRequest | Any, default: int) -> int:
+        """Extract result limit with fallback to metadata."""
+        limit = getattr(request, "limit", None)
+        if isinstance(limit, int) and limit > 0:
+            return limit
+
+        metadata = getattr(request, "metadata", {}) or {}
+        limit = metadata.get("limit")
+        if isinstance(limit, int) and limit > 0:
+            return limit
+
+        return default
+
+    def _build_memory_result(
+        self,
+        *,
+        request_id: str,
+        memory_type: MemoryType,
+        content: Any,
+        retrieval_time: float,
+        success: bool,
+        error: str | None = None,
+    ) -> MemoryResult:
+        """Create a MemoryResult instance compatible with current schemas."""
+
+        metadata = {
+            "memory_type": memory_type.value,
+            "request_id": request_id,
+            "success": success,
+            "retrieval_time": retrieval_time,
+        }
+        if error:
+            metadata["error"] = error
+
+        similarity_score = 1.0 if success else 0.0
+
+        return MemoryResult(
+            memory_id=request_id,
+            content=content,
+            similarity_score=similarity_score,
+            metadata=metadata,
+            hierarchy_path=[],
+            timestamp=datetime.now(UTC),
+        )
 
     async def _ensure_working_memory_capacity(self):
         """Ensure working memory doesn't exceed capacity."""
