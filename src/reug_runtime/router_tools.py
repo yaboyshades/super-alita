@@ -81,6 +81,7 @@ async def reug_start_turn(
         registry=state.ability_registry,
         kg=state.kg,
         model=state.llm_model,
+        output_validator=getattr(state, "output_validator", None),
     )
     run_id = f"run_{hash((message, session_id)) & 0xffff_ffff:x}"
     _STREAMS[run_id] = gen.__aiter__()

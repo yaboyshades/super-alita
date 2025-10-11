@@ -26,6 +26,11 @@ from .config import SETTINGS
 from .formatting import normalize_output_contract
 from .message_mw import MessageContext, apply_all
 from .tools.service import ToolCatalogService
+from src.testing.llm_validation import (
+    LLMOutputValidator,
+    OutputValidationError,
+    ValidationSummary,
+)
 
 
 def parse_tool_calls(text: str) -> list[dict[str, Any]]:
@@ -277,7 +282,13 @@ class Orchestrator:
 
 
 async def execute_turn(
-    user_msg: str, session_id: str, event_bus: Any, registry: Any, kg: Any, model: Any
+    user_msg: str,
+    session_id: str,
+    event_bus: Any,
+    registry: Any,
+    kg: Any,
+    model: Any,
+    output_validator: LLMOutputValidator | None = None,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Run a single agent turn and stream events to downstream consumers.
 
@@ -529,6 +540,38 @@ async def execute_turn(
         "citations": [],
     }
 
+    validation_summary: ValidationSummary | None = None
+    if output_validator is not None:
+        try:
+            validation_summary = await output_validator.validate_agent_output(
+                content_out,
+                context={
+                    "session_id": session_id,
+                    "correlation_id": correlation_id,
+                    "final_answer": final_answer,
+                    "user_message": original_user_msg,
+                },
+            )
+        except OutputValidationError as exc:
+            summary_payload = exc.args[0] if exc.args else {"passed": False}
+            transition_event = await emit_state_transition(
+                "RESPONDING_FAILURE", reason="output_validation_failed"
+            )
+            if transition_event:
+                yield transition_event
+            failure_event = {
+                "type": "TaskFailed",
+                "correlation_id": correlation_id,
+                "session_id": session_id,
+                "goal": user_msg,
+                "user_input": original_user_msg,
+                "reason": "output_validation_failed",
+                "validation": summary_payload,
+            }
+            await event_bus.emit(failure_event)
+            yield failure_event
+            return
+
     created_atom_ids: list[str] = []
     pending_bonds: list[tuple[str, str, str]] = []
     bond_previews: list[dict[str, str]] = []
@@ -627,5 +670,7 @@ async def execute_turn(
         "goal": user_msg,
         "user_input": original_user_msg,
     }
+    if validation_summary is not None:
+        task_succeeded_event["validation"] = validation_summary.to_dict()
     await event_bus.emit(task_succeeded_event)
     yield task_succeeded_event

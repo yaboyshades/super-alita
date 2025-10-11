@@ -100,6 +100,7 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
         state.ability_registry,
         state.kg,
         state.llm_model,
+        getattr(state, "output_validator", None),
     )
 
     sse_gen = sse_transformer(event_gen)
@@ -133,6 +134,7 @@ async def chat_stream_get(request: Request) -> StreamingResponse:
         state.ability_registry,
         state.kg,
         state.llm_model,
+        getattr(state, "output_validator", None),
     )
 
     sse_gen = sse_transformer(event_gen)
