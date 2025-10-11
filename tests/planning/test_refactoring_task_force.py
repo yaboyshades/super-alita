@@ -155,3 +155,62 @@ def test_status_board_tracks_assignments_and_states():
     assert rhea_summary["available_capacity"] == pytest.approx(
         rhea_summary["capacity"] - rhea_summary["allocation"]
     )
+
+
+def test_apply_file_scopes_enforces_disjoint_assignments():
+    force = build_sample_force()
+
+    scope_map = {
+        "runtime-stability:analysis": [
+            "src/reug_runtime/router.py",
+            "src/reug_runtime/config.py",
+        ],
+        "coverage-upgrade:analysis": ["tests/runtime/test_router_smoke.py"],
+    }
+
+    force.apply_file_scopes(scope_map)
+
+    stability_analysis = next(
+        task
+        for task in force.get_tasks_for_objective("runtime-stability")
+        if task.stage == TaskStage.ANALYSIS
+    )
+    assert stability_analysis.file_scope == (
+        "src/reug_runtime/config.py",
+        "src/reug_runtime/router.py",
+    )
+
+    coverage_analysis = next(
+        task
+        for task in force.get_tasks_for_objective("coverage-upgrade")
+        if task.stage == TaskStage.ANALYSIS
+    )
+    assert coverage_analysis.file_scope == (
+        "tests/runtime/test_router_smoke.py",
+    )
+
+    integration_task = next(
+        task
+        for task in force.get_tasks_for_objective("runtime-stability")
+        if task.stage == TaskStage.INTEGRATION
+    )
+    assert integration_task.file_scope == ()
+
+
+def test_apply_file_scopes_detects_conflicts_and_unknown_tasks():
+    force = build_sample_force()
+
+    with pytest.raises(ValueError):
+        force.apply_file_scopes(
+            {
+                "runtime-stability:analysis": ["src/reug_runtime/router.py"],
+                "coverage-upgrade:analysis": ["src/reug_runtime/router.py"],
+            }
+        )
+
+    with pytest.raises(KeyError):
+        force.apply_file_scopes(
+            {
+                "unknown:analysis": ["src/reug_runtime/router.py"],
+            }
+        )

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -88,6 +88,7 @@ class RefactoringTask:
     state: RefactoringTaskState = RefactoringTaskState.READY
     progress: float = 0.0
     blockers: list[str] = field(default_factory=list)
+    file_scope: tuple[str, ...] = field(default_factory=tuple)
 
     def copy(self) -> RefactoringTask:
         """Return a shallow copy for safe external consumption."""
@@ -103,6 +104,7 @@ class RefactoringTask:
             state=self.state,
             progress=self.progress,
             blockers=list(self.blockers),
+            file_scope=tuple(self.file_scope),
         )
 
 
@@ -430,6 +432,56 @@ class RefactoringTaskForce:
             "members": member_summaries,
             "ready_next": ready_next,
         }
+
+    def apply_file_scopes(
+        self,
+        scope_map: Mapping[str, Iterable[str]],
+        *,
+        require_non_empty: bool = True,
+    ) -> None:
+        """Assign immutable file scopes to tasks and enforce disjoint coverage.
+
+        Args:
+            scope_map: Mapping of task_id to iterable of file paths/patterns that
+                the task owns.
+            require_non_empty: When True, all provided scopes must include at
+                least one file path. Set to False to allow explicit empty scopes
+                for specific tasks.
+
+        Raises:
+            KeyError: If a task_id is not known by the task force.
+            ValueError: If any scope is empty when not allowed or if two tasks
+                claim the same file path.
+        """
+
+        ownership: dict[str, str] = {}
+        normalized_scopes: dict[str, tuple[str, ...]] = {}
+
+        for task_id, files in scope_map.items():
+            if task_id not in self._tasks:
+                raise KeyError(f"Unknown task_id: {task_id}")
+
+            unique_files = [file_path.strip() for file_path in files if file_path.strip()]
+            unique_sorted = tuple(sorted(dict.fromkeys(unique_files)))
+
+            if require_non_empty and not unique_sorted:
+                raise ValueError(
+                    f"Task {task_id} must declare at least one file in its scope."
+                )
+
+            for file_path in unique_sorted:
+                claimed_by = ownership.get(file_path)
+                if claimed_by and claimed_by != task_id:
+                    raise ValueError(
+                        "File scope conflict detected for "
+                        f"{file_path!r} between tasks {claimed_by!r} and {task_id!r}."
+                    )
+                ownership[file_path] = task_id
+
+            normalized_scopes[task_id] = unique_sorted
+
+        for task_id, task in self._tasks.items():
+            task.file_scope = normalized_scopes.get(task_id, tuple())
 
 
 __all__ = [
