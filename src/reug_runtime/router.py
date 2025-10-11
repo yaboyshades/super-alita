@@ -33,6 +33,7 @@ from .loop import Orchestrator, execute_turn, parse_tool_calls
 from .loop import execute_turn, parse_tool_calls
 
 from .streaming import sse_transformer
+from src.agents.communication import A2AProtocol
 
 __all__ = [
     "router",
@@ -49,6 +50,37 @@ __all__ = [
     "chat_stream_get",
     "parse_tool_calls",
 ]
+
+
+def _get_a2a_protocol(state: Any) -> A2AProtocol:
+    protocol = getattr(state, "_a2a_protocol", None)
+    if not isinstance(protocol, A2AProtocol):
+        protocol = A2AProtocol(state.event_bus)
+        setattr(state, "_a2a_protocol", protocol)
+    return protocol
+
+
+async def _route_agent_message(
+    state: Any,
+    message: str,
+    session_id: str,
+    *,
+    priority: str = "medium",
+    sender_id: str = "client",
+    message_type: str = "user_message",
+) -> None:
+    if not message:
+        return
+    protocol = _get_a2a_protocol(state)
+    await protocol.agent_to_agent(
+        sender_id=sender_id,
+        recipient_id="runtime.loop",
+        message_type=message_type,
+        payload={"content": message, "session_id": session_id},
+        priority=priority,
+        correlation_id=session_id,
+        metadata={"claims": {"source": "router"}},
+    )
 
 
 @router.post("/chat/stream", response_model=None)
@@ -93,6 +125,16 @@ async def chat_stream(request: Request) -> StreamingResponse | JSONResponse:
 
     state = cast(Any, request.app.state)
 
+    priority = str(body.get("priority", "medium")) if isinstance(body, dict) else "medium"
+    await _route_agent_message(
+        state,
+        user_msg,
+        session_id,
+        priority=priority,
+        sender_id=str(body.get("sender_id", "client")) if isinstance(body, dict) else "client",
+        message_type=str(body.get("message_type", "user_message")) if isinstance(body, dict) else "user_message",
+    )
+
     event_gen = execute_turn(
         user_msg,
         session_id,
@@ -125,6 +167,15 @@ async def chat_stream_get(request: Request) -> StreamingResponse:
     session_id = qp.get("session") or qp.get("session_id") or "default"
 
     state = cast(Any, request.app.state)
+
+    await _route_agent_message(
+        state,
+        user_msg,
+        session_id,
+        priority="medium",
+        sender_id="client",
+        message_type="user_message",
+    )
 
     event_gen = execute_turn(
         user_msg,
