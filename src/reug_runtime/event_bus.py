@@ -8,9 +8,10 @@ import logging
 import os
 import time
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
+from threading import Lock
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -93,6 +94,152 @@ class InMemoryPubSubEventBus(FileEventBus):
         return await self.publish(event)
 
 
+class EventMetricsCollector:
+    """Track success/failure counts for event publication health."""
+
+    def __init__(self) -> None:
+        self._success = 0
+        self._failure = 0
+        self._dropped = 0
+        self._lock = Lock()
+
+    def record_publish_success(self) -> None:
+        with self._lock:
+            self._success += 1
+
+    def record_publish_failure(self) -> None:
+        with self._lock:
+            self._failure += 1
+
+    def record_publish_dropped(self) -> None:
+        with self._lock:
+            self._dropped += 1
+
+    @property
+    def error_rate(self) -> float:
+        with self._lock:
+            total = self._success + self._failure
+            if total == 0:
+                return 0.0
+            return self._failure / total
+
+    def snapshot(self) -> dict[str, int | float]:
+        with self._lock:
+            total = self._success + self._failure
+            error_rate = self._failure / total if total else 0.0
+            return {
+                "success": self._success,
+                "failure": self._failure,
+                "dropped": self._dropped,
+                "error_rate": error_rate,
+            }
+
+
+class ProductionEventBus(InMemoryPubSubEventBus):
+    """Resilient event bus with priority queues and circuit breaker logic."""
+
+    def __init__(
+        self,
+        log_dir: str | None,
+        queue_max_sizes: Mapping[str, int] | None = None,
+        degraded_error_rate: float = 0.1,
+        fallback_bus: BaseEventBus | None = None,
+    ) -> None:
+        super().__init__(log_dir)
+        self.metrics = EventMetricsCollector()
+        max_sizes = queue_max_sizes or {"high": 1000, "medium": 5000, "low": 10000}
+        self.queues: dict[str, asyncio.Queue[dict[str, Any]]] = {
+            key: asyncio.Queue(maxsize=value) for key, value in max_sizes.items()
+        }
+        self.dead_letter_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+        self._workers: dict[str, asyncio.Task[None] | None] = {
+            key: None for key in self.queues
+        }
+        self._fallback_bus = fallback_bus or FileEventBus(log_dir)
+        self._degraded_error_rate = degraded_error_rate
+
+    async def publish(
+        self, event: dict[str, Any], priority: str | None = None
+    ) -> dict[str, Any]:
+        resolved_priority = self._resolve_priority(priority, event)
+        if self.metrics.error_rate > self._degraded_error_rate:
+            return await self.degraded_publish(event)
+        queue = self.queues.get(resolved_priority)
+        if queue is None:
+            queue = self.queues["medium"]
+            resolved_priority = "medium"
+        try:
+            queue.put_nowait(event)
+        except asyncio.QueueFull:
+            await self.handle_backpressure(event)
+            self.metrics.record_publish_dropped()
+            return event
+        self._ensure_worker(resolved_priority)
+        return event
+
+    async def emit(self, event: dict[str, Any]) -> dict[str, Any]:
+        return await self.publish(event)
+
+    async def degraded_publish(self, event: dict[str, Any]) -> dict[str, Any]:
+        """Fallback path when error rate exceeds threshold."""
+
+        try:
+            await self._fallback_bus.emit(event)
+            self.metrics.record_publish_success()
+        except Exception:
+            self.metrics.record_publish_failure()
+            logger.exception("degraded publish failed", extra={"event": event})
+        return event
+
+    async def handle_backpressure(self, event: dict[str, Any]) -> None:
+        """Handle queue saturation with importance-aware logic."""
+
+        importance = float(event.get("importance", 0.0) or 0.0)
+        if importance > 0.8:
+            await self.force_process_important(event)
+            return
+        logger.warning("dropping event due to backpressure", extra={"event": event})
+        await self.dead_letter_queue.put({**event, "dead_letter_reason": "backpressure"})
+
+    async def force_process_important(self, event: dict[str, Any]) -> None:
+        await self._process_event(event)
+
+    def _ensure_worker(self, priority: str) -> None:
+        worker = self._workers.get(priority)
+        if worker is None or worker.done():
+            self._workers[priority] = asyncio.create_task(self._drain_queue(priority))
+
+    async def _drain_queue(self, priority: str) -> None:
+        queue = self.queues[priority]
+        while True:
+            try:
+                event = queue.get_nowait()
+            except asyncio.QueueEmpty:
+                self._workers[priority] = None
+                break
+            try:
+                await self._process_event(event)
+            finally:
+                queue.task_done()
+
+    async def _process_event(self, event: dict[str, Any]) -> None:
+        try:
+            await super().publish(event)
+        except Exception:
+            self.metrics.record_publish_failure()
+            logger.exception("failed to publish event", extra={"event": event})
+            await self.dead_letter_queue.put({**event, "dead_letter_reason": "failure"})
+        else:
+            self.metrics.record_publish_success()
+
+    def _resolve_priority(self, priority: str | None, event: dict[str, Any]) -> str:
+        requested = priority or str(event.get("priority", "medium")).lower()
+        if requested.endswith("_priority"):
+            requested = requested.rsplit("_priority", 1)[0]
+        if requested not in self.queues:
+            return "medium"
+        return requested
+
 class RedisEventBus(BaseEventBus):
     """Publish events to a Redis channel asynchronously."""
 
@@ -128,8 +275,10 @@ def make_event_bus() -> BaseEventBus:
                 e,
                 extra={"error": str(e)},
             )
+    if backend in {"production", "resilient"}:
+        return ProductionEventBus(os.getenv("REUG_EVENT_LOG_DIR"))
     # Default to in-memory pub/sub with file logging to support plugins
-    return InMemoryPubSubEventBus(os.getenv("REUG_EVENT_LOG_DIR"))
+    return ProductionEventBus(os.getenv("REUG_EVENT_LOG_DIR"))
 
 
 # ---- Typed helper emitters (optional) --------------------------------------
@@ -236,6 +385,8 @@ __all__ = [
     "FileEventBus",
     "InMemoryPubSubEventBus",
     "RedisEventBus",
+    "EventMetricsCollector",
+    "ProductionEventBus",
     "make_event_bus",
     # helpers
     "evt_task_started",
