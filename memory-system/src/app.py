@@ -9,14 +9,16 @@ try:  # pragma: no cover - psutil optional for tests
     import psutil  # type: ignore
 except Exception:  # pragma: no cover
     psutil = None
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
+from fastapi import BackgroundTasks, Body, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.controller.conflict import detect_and_resolve_conflicts
-from src.controller.context_pack import compose_context_pack
-from src.controller.consolidate import run_consolidation
+from src.controller.ace_evolver import ACEvolver
+from src.controller.context_pack import compose_ace_context, compose_context_pack
+from src.controller.consolidate import run_ace_informed_consolidation, run_consolidation
 from src.controller.forget import run_forgetting_policy
 from src.controller.inspector import make_decisions
+from src.controller.self_improving import SelfImprovingMemoryController
 from src.controller.score import calculate_importance
 from src.mangle.rules import apply_ingest_rules, apply_retrieval_rules, load_rules
 from src.models import Conflict, ContextPack, Decision, Memory, Message
@@ -27,6 +29,10 @@ from src.stores.working import working_buffer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+ace_evolver = ACEvolver()
+strategy_controller = SelfImprovingMemoryController()
+_last_context_pack: Optional[ContextPack] = None
 
 app = FastAPI(
     title="Passive Memory + Mangle API",
@@ -107,18 +113,86 @@ def get_context(
         curated = apply_retrieval_rules(all_candidates, k)
         decisions = make_decisions(curated, q) if explain else []
         pack = compose_context_pack(decisions, curated, budget=budget, query=q)
+        global _last_context_pack
+        _last_context_pack = pack
         return pack
     except Exception as exc:
         logger.error("Context retrieval failed for query '%s': %s", q, exc)
         raise HTTPException(500, f"Context retrieval failed: {exc}") from exc
 
 
+@app.post("/context/evolve", response_model=ContextPack)
+def get_evolved_context(
+    q: str = Query(..., min_length=1),
+    k: int = Query(12, ge=1, le=50),
+    budget: int = Query(700, ge=100, le=2000),
+    enable_ace: bool = Query(True),
+    include_semantic: bool = Query(True),
+    evolution_feedback: Optional[Dict[str, Any]] = Body(None),
+) -> ContextPack:
+    try:
+        episodic_candidates = episodic_store.search(q, k * 2)
+        semantic_candidates: List[Memory] = []
+        if include_semantic:
+            semantic_candidates = semantic_store.search(q, k // 2)
+        curated = apply_retrieval_rules(episodic_candidates + semantic_candidates, k)
+        decisions = make_decisions(curated, q)
+        base_pack = compose_context_pack(decisions, curated, budget=budget, query=q)
+        if not enable_ace:
+            pack = base_pack
+        else:
+            feedback = evolution_feedback or {}
+            pack = compose_ace_context(
+                decisions,
+                curated,
+                budget=budget,
+                query=q,
+                feedback=feedback,
+                evolver=ace_evolver,
+            )
+        global _last_context_pack
+        _last_context_pack = pack
+        return pack
+    except Exception as exc:
+        logger.error("ACE context retrieval failed for query '%s': %s", q, exc)
+        raise HTTPException(500, f"ACE context retrieval failed: {exc}") from exc
+
+
+@app.post("/ace/strategies/evaluate", response_model=Dict[str, Any])
+def evaluate_strategies(feedback: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
+    if _last_context_pack is None:
+        raise HTTPException(400, "No context available for evaluation")
+    try:
+        record = strategy_controller.evaluate_context_strategy(_last_context_pack, feedback)
+        return record
+    except Exception as exc:
+        logger.error("Strategy evaluation failed: %s", exc)
+        raise HTTPException(500, f"Strategy evaluation failed: {exc}") from exc
+
+
+@app.get("/ace/evolution/history", response_model=Dict[str, Any])
+def get_evolution_history(limit: int = Query(10, ge=1, le=100)) -> Dict[str, Any]:
+    history = strategy_controller.evolution_history[-limit:]
+    return {
+        "history": list(reversed(history)),
+        "total_cycles": strategy_controller.evolution_cycle,
+    }
+
+
 @app.post("/consolidate", response_model=Dict[str, Any])
-def trigger_consolidation(background_tasks: BackgroundTasks) -> Dict[str, Any]:
-    background_tasks.add_task(run_consolidation)
+def trigger_consolidation(
+    background_tasks: BackgroundTasks,
+    ace: bool = Query(False, description="Run ACE-informed consolidation"),
+) -> Dict[str, Any]:
+    task = run_ace_informed_consolidation if ace else run_consolidation
+    background_tasks.add_task(task)
     return {
         "status": "started",
-        "message": "Consolidation job started in background",
+        "message": (
+            "ACE-informed consolidation started"
+            if ace
+            else "Consolidation job started in background"
+        ),
         "timestamp": datetime.utcnow().isoformat(),
     }
 

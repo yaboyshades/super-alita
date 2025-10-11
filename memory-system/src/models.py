@@ -90,7 +90,11 @@ class Decision(BaseModel):
 
 
 class ContextPack(BaseModel):
-    """Response payload for /context."""
+    """Response payload for /context.
+
+    Provenance keys include the originating query, policy, memory and decision counts,
+    and, when ACE evolution is enabled, cycle identifiers and applied operations.
+    """
 
     text: str
     citations: List[str]
@@ -119,3 +123,27 @@ class Conflict(BaseModel):
     conflict_type: Literal["contradiction", "temporal", "confidence"]
     resolution: Optional[str] = None
     resolved_at: Optional[datetime] = None
+
+
+class ACEContextStrategy(BaseModel):
+    """ACE-inspired context evolution strategy metadata."""
+
+    strategy_id: str
+    trigger_condition: str = Field(
+        ..., description="contradiction_detected|low_confidence|new_insight"
+    )
+    context_transform: str = Field(
+        ..., description="expand_evidence|add_counterexamples|restructure"
+    )
+    success_metrics: List[str] = Field(default_factory=list)
+    last_applied: Optional[datetime] = None
+    success_rate: float = Field(ge=0.0, le=1.0, default=0.0)
+
+
+class EvolvableMemory(Memory):
+    """Memory enriched with ACE evolution telemetry."""
+
+    context_strategies: List[ACEContextStrategy] = Field(default_factory=list)
+    revision_history: List[Dict[str, Any]] = Field(default_factory=list)
+    contradiction_count: int = Field(ge=0, default=0)
+    clarity_score: float = Field(ge=0.0, le=1.0, default=1.0)
