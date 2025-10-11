@@ -102,6 +102,9 @@ class Settings:
     retry_base_ms: int = _getenv_int("REUG_RETRY_BASE_MS", 250)
     schema_enforce: bool = _getenv_bool("REUG_SCHEMA_ENFORCE", True)
     copilot_context: bool = _getenv_bool("REUG_COPILOT_CONTEXT", True)
+    maestro_hardening_enabled: bool = _getenv_bool(
+        "REUG_MAESTRO_HARDENING", False
+    )
 
     # Message optimizer (intercept/optimize/amplify)
     message_optimizer_enabled: bool = _getenv_bool(
