@@ -23,11 +23,14 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+pytest_plugins = ("reug_pytest_asyncio",)
+
 # Ensure project src is importable when running tests standalone
 repo_root = Path(__file__).resolve().parents[1]
 src_path = repo_root / "src"
 if src_path.exists():
     sys.path.insert(0, str(src_path))
+    sys.path.insert(0, str(repo_root))
 
 # --- Discovery: locate a MetricsRegistry class/instance if present ---
 _MR_CLASS = None

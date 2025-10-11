@@ -15,10 +15,10 @@ run: ## Start FastAPI dev server on :8080
         uvicorn app:app --reload --port 8080
 
 test: ## Run full tests (runtime suite)
-        PYTHONPATH=./src pytest -v tests/runtime/
+        PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=./src python -m pytest -v tests/runtime/
 
 test-smoke: ## Quick smoke test
-	PYTHONPATH=./src pytest -q tests/runtime/test_router_smoke.py
+        PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=./src python -m pytest -q tests/runtime/test_router_smoke.py
 
 lint: ## Run pre-commit hooks
         pre-commit run --all-files

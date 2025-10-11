@@ -316,7 +316,7 @@ class TestEdgeCases:
 
 
 # Pytest configuration for asyncio
-pytest_plugins = ("pytest_asyncio",)
+pytest_plugins = ("reug_pytest_asyncio",)
 
 
 if __name__ == "__main__":

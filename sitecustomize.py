@@ -15,20 +15,13 @@ from collections.abc import Sequence
 from contextlib import suppress
 from types import ModuleType
 
+from reug_pytest_asyncio._compat import ensure_fixturedef_alias
+
 
 def _install_fixturedef_alias(pytest_module: ModuleType) -> bool:
     """Install ``pytest.FixtureDef`` for legacy plugins."""
 
-    try:
-        from _pytest.fixtures import FixtureDef
-    except ImportError:  # pragma: no cover - internal API moved.
-        return False
-
-    if hasattr(pytest_module, "FixtureDef"):
-        return True
-
-    pytest_module.FixtureDef = FixtureDef  # type: ignore[attr-defined]
-    return True
+    return ensure_fixturedef_alias(pytest_module)
 
 
 def _ensure_pytest_alias() -> bool:
