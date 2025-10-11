@@ -1,0 +1,32 @@
+ingest:
+  - id: keep_code
+    when:
+      - "content.contains:```"
+    then:
+      - "ttl_days=365"
+      - "tag:code"
+      - "keep"
+  - id: drop_secrets
+    when:
+      - "content.regex:(?i)(api[_-]?key|secret|token)\\s*[:=]"
+    then:
+      - "action:quarantine"
+  - id: prefer_user_facts
+    when:
+      - "meta.role==user"
+      - "content.len>80"
+    then:
+      - "tag:user_fact"
+      - "keep"
+retrieval:
+  topk: 40
+  promote:
+    - "recent<=30d"
+    - "importance>=0.5"
+    - "tag:profile"
+  demote:
+    - "dup_sim>=0.9"
+    - "stale>365d"
+  ensure:
+    - "at_least_one:profile"
+  diversity_threshold: 0.85
