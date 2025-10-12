@@ -36,7 +36,7 @@ def test_streaming_single_turn_smoke(request_path: str) -> None:
 
     # events emitted as the loop progressed
     evts = app.state.event_bus.events
-    kinds = {e["type"] for e in evts}
+    kinds = {e.get("type") or e.get("event_type") for e in evts if e.get("type") or e.get("event_type")}
     assert "TaskStarted" in kinds
     assert "AbilityCalled" in kinds
     assert "AbilitySucceeded" in kinds

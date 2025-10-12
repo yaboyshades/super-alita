@@ -25,14 +25,21 @@ def _get_mode(config: pytest.Config) -> str:
 
 def pytest_addoption(parser: pytest.Parser) -> None:  # pragma: no cover - exercised via integration
     group = parser.getgroup("asyncio")
-    group.addoption(
-        "--asyncio-mode",
-        action="store",
-        dest="asyncio_mode",
-        choices=sorted(_VALID_MODES),
-        help="Set asyncio plugin mode (auto, strict, legacy).",
-    )
-    parser.addini("asyncio_mode", "Asyncio handling mode.", default="auto")
+    try:
+        group.addoption(
+            "--asyncio-mode",
+            action="store",
+            dest="asyncio_mode",
+            choices=sorted(_VALID_MODES),
+            help="Set asyncio plugin mode (auto, strict, legacy).",
+        )
+    except ValueError:  # pragma: no cover - option already registered.
+        pass
+
+    try:
+        parser.addini("asyncio_mode", "Asyncio handling mode.", default="auto")
+    except ValueError:  # pragma: no cover - ini option already registered.
+        pass
 
 
 def pytest_configure(config: pytest.Config) -> None:
