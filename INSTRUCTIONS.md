@@ -111,10 +111,12 @@ Environment variables:
 
 ## Development Workflow
 
-1. **Code Style**: Run `ruff check .` and `black .`
-2. **Testing**: Use `pytest -q` for quick tests
-3. **Debugging**: Utilities available in `scripts/` directory
-4. **Validation**: Run deployment checks with validation scripts
+1. **Start with OpenSpec**: Run `openspec list` and `openspec list --specs` to review active changes and baseline capabilities. Create or update proposals under `openspec/changes/<change-id>/` before touching code; validate with `openspec validate <change-id> --strict`.
+2. **Trace to Specs**: Read relevant capability specs in `openspec/specs/` and link tasks to modules (e.g., orchestrator, REUG runtime, plugins). Keep `tasks.md` synchronized with implementation progress.
+3. **Code Style**: Run `ruff check .` and `black .`
+4. **Testing**: Use `pytest -q` for quick tests
+5. **Debugging**: Utilities available in `scripts/` directory
+6. **Validation**: Run deployment checks with validation scripts
 
 ## Contact
 
