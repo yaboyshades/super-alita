@@ -11,7 +11,10 @@ class FakeEventBus:
 
     async def emit(self, event: dict[str, Any]) -> None:
         # store a shallow copy so tests can assert
-        self.events.append(dict(event))
+        snapshot = dict(event)
+        if "type" not in snapshot and "event_type" in snapshot:
+            snapshot["type"] = snapshot["event_type"]
+        self.events.append(snapshot)
 
 
 class FakeAbilityRegistry:
