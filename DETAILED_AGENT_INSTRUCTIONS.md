@@ -71,6 +71,13 @@ REDIS_URL=redis://localhost:6379
 REUG_EVENT_LOG_DIR=./logs/events
 ```
 
+## OpenSpec-First Workflow Alignment
+
+1. **Survey Context**: Run `openspec list` and `openspec list --specs` to inventory active changes and baseline capabilities. Read `openspec/project.md` plus any relevant Spec-Kit memories (`memory/sdd/`) before drafting proposals.
+2. **Scaffold Changes**: Create `openspec/changes/<change-id>/proposal.md`, `tasks.md`, and spec deltas mapped to modules (orchestration, REUG runtime, plugins, adapters, telemetry). Reference guardian guardrails from `docs/orchestration/rules/` inside each requirement.
+3. **Validate Early**: Execute `openspec validate <change-id> --strict` after every substantial edit to catch formatting or scenario omissions. Keep `tasks.md` synchronized with implementation progress and ensure each task ties back to specs.
+4. **Close the Loop**: Update specs in `openspec/specs/` once features ship, run pytest + lint/type gates, and note expected telemetry signals so guardian audits can confirm behavior before archiving with `openspec archive`.
+
 ## Code Standards & Quality Requirements
 
 ### Formatting & Linting
