@@ -177,10 +177,9 @@ class IntelligenceConsolidator:
             return [
                 result
             ]  # type: ignore[list-item] - best effort; consumer handles schema
-        coerced: list[dict[str, Any]] = []
-        for candidate in result:
-            if isinstance(candidate, dict):
-                coerced.append(candidate)
+        coerced: list[dict[str, Any]] = [
+            candidate for candidate in result if isinstance(candidate, dict)
+        ]
         return coerced
 
     async def _evolve_context(
