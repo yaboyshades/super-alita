@@ -27,7 +27,10 @@ from .config import SETTINGS
 from .formatting import normalize_output_contract
 from .message_mw import MessageContext, apply_all
 from .tools.service import ToolCatalogService
+from src.events import ComplexEventProcessor
+from src.governance import ConstitutionalReasoner
 from src.intelligence import IntelligenceConsolidator
+from src.memory import ACEvolver, LearningMemoryStack
 from src.security.maestro_hardening import MaestroSecurity
 
 
@@ -55,6 +58,50 @@ def ensure_maestro_hardening() -> None:
     logger.debug("Enforcing MAESTRO hardening before agent activation")
     _maestro_security.enforce()
     _maestro_hardening_applied = True
+
+
+class _ConstitutionalLearningValidator:
+    """Validate consolidation outcomes using constitutional guardrails."""
+
+    def __init__(self, checker: ConstitutionalReasoner) -> None:
+        self._checker = checker
+
+    async def validate_outcome(self, outcome: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(outcome, dict):
+            return {"approved": False, "reasoning": "invalid_outcome_payload"}
+        context = {
+            "goal": outcome.get("goal"),
+            "user_goal": outcome.get("user_input"),
+            "requires_confirmation": outcome.get("requires_confirmation", False),
+            "affected_segments": outcome.get("affected_segments"),
+        }
+        approved, reasoning = await self._checker.evaluate_action(
+            proposed_action={"ability": "learning.consolidate", "args": outcome},
+            current_context={k: v for k, v in context.items() if v},
+        )
+        return {"approved": approved, "reasoning": reasoning}
+
+
+def initialize_learning_stack(event_bus: Any) -> IntelligenceConsolidator:
+    """Compose the learning stack with ACE evolver, validator, and memory."""
+
+    constitutional_checker = ConstitutionalReasoner()
+    ace_evolver = ACEvolver(constitutional_reasoner=constitutional_checker)
+    validator = _ConstitutionalLearningValidator(constitutional_checker)
+    existing_processor = getattr(event_bus, "_complex_processor", None)
+    if isinstance(existing_processor, ComplexEventProcessor):
+        event_processor = existing_processor
+        event_processor.update_emit_callback(event_bus.emit)
+    else:
+        event_processor = ComplexEventProcessor(event_bus.emit)
+    memory_stack = LearningMemoryStack(event_bus=event_bus)
+    return IntelligenceConsolidator(
+        ace_evolver=ace_evolver,
+        event_processor=event_processor,
+        validator=validator,
+        memory_stack=memory_stack,
+        event_bus=event_bus,
+    )
 
 
 def parse_tool_calls(text: str) -> list[dict[str, Any]]:
@@ -389,7 +436,7 @@ async def execute_turn(
         user_msg = optimized
 
     orchestrator = Orchestrator(event_bus, registry, model, correlation_id)
-    consolidator = IntelligenceConsolidator(event_bus=event_bus)
+    consolidator = initialize_learning_stack(event_bus)
 
     start_event = {
         "type": "TaskStarted",

@@ -202,6 +202,53 @@ class ComplexEventProcessor:
         await self._emit_callback(payload)
         self._last_emitted[dedupe_key] = observed_at
 
+    async def extract_patterns(
+        self, session_id: str, outcome: Mapping[str, Any]
+    ) -> list[dict[str, Any]]:
+        """Derive learning-ready patterns from observed outcome payloads."""
+
+        events_payload = outcome.get("events") if isinstance(outcome, Mapping) else None
+        events: list[Mapping[str, Any]] = []
+        if isinstance(events_payload, Iterable):
+            for entry in events_payload:
+                if isinstance(entry, Mapping):
+                    events.append(entry)
+        frustration_reason = detect_frustration_pattern(events)
+        repeated_text = detect_repetition_pattern(
+            events, minimum_repetition=self._minimum_repetition
+        )
+        patterns: list[dict[str, Any]] = []
+        if repeated_text:
+            context = build_clarification_context(
+                events,
+                repeated_text,
+                frustration_reason or "repetition_detected",
+            )
+            patterns.append(
+                {
+                    "type": "repetition_signal",
+                    "session_id": session_id,
+                    "text": repeated_text,
+                    "reason": frustration_reason or "repetition_detected",
+                    "context": context,
+                }
+            )
+        elif frustration_reason:
+            patterns.append(
+                {
+                    "type": "frustration_signal",
+                    "session_id": session_id,
+                    "reason": frustration_reason,
+                }
+            )
+
+        fallback = outcome.get("patterns") if isinstance(outcome, Mapping) else None
+        if not patterns and isinstance(fallback, Iterable):
+            for candidate in fallback:
+                if isinstance(candidate, Mapping):
+                    patterns.append(dict(candidate))
+        return patterns
+
     def _is_relevant(self, event: Mapping[str, Any]) -> bool:
         event_type = self._extract_type(event)
         if not event_type:
