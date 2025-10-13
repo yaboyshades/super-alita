@@ -27,6 +27,7 @@ from .config import SETTINGS
 from .formatting import normalize_output_contract
 from .message_mw import MessageContext, apply_all
 from .tools.service import ToolCatalogService
+from src.intelligence import IntelligenceConsolidator
 from src.security.maestro_hardening import MaestroSecurity
 
 
@@ -388,6 +389,7 @@ async def execute_turn(
         user_msg = optimized
 
     orchestrator = Orchestrator(event_bus, registry, model, correlation_id)
+    consolidator = IntelligenceConsolidator(event_bus=event_bus)
 
     start_event = {
         "type": "TaskStarted",
@@ -659,3 +661,20 @@ async def execute_turn(
     }
     await event_bus.emit(task_succeeded_event)
     yield task_succeeded_event
+
+    interaction_outcome = {
+        "success": bool(final_atom_id),
+        "validation": {
+            "reward": reward_payload,
+            "energy": energy_signal,
+        },
+        "patterns": bond_previews,
+        "tools_used": tools_seen,
+        "constitutional_alignment": None,
+    }
+    try:
+        await consolidator.consolidate_interaction(
+            session_id=session_id, interaction_outcome=interaction_outcome
+        )
+    except Exception:
+        logger.exception("Consolidation pipeline failed")

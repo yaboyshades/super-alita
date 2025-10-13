@@ -79,6 +79,10 @@ from reug_runtime.event_bus import (  # noqa: E402
 )
 from reug_runtime.llm_client import LLMClient, get_llm_client  # noqa: E402
 from src.constitutional_gateway import constitutional_router  # noqa: E402
+from src.governance import (  # noqa: E402
+    ConstitutionalReasoner,
+    ConstitutionalViolationError,
+)
 from src.core.env import ensure_env_loaded  # noqa: E402
 from src.core.events import create_event  # noqa: E402
 from src.gui.router import router as gui_router  # noqa: E402
@@ -596,6 +600,7 @@ class SimpleAbilityRegistry:
         }
         # Dynamic executors registered at runtime (tool_name -> async executor(args)->dict)
         self._executors: dict[str, Callable[[dict[str, Any]], Any]] = {}
+        self._constitutional_reasoner = ConstitutionalReasoner()
 
     def register_tool(
         self, *, contract: dict[str, Any], executor: Callable[[dict[str, Any]], Any]
@@ -662,6 +667,12 @@ class SimpleAbilityRegistry:
         except Exception:
             # Never block execution due to validator crash
             pass
+        approved, reasoning = await self._constitutional_reasoner.evaluate_action(
+            {"ability": tool_name, "args": args},
+            {"goal": contract.get("description"), "requires_confirmation": False},
+        )
+        if not approved:
+            raise ConstitutionalViolationError(reasoning)
         # Prefer dynamically registered executors
         exec_fn = self._executors.get(tool_name)
         if exec_fn is not None:

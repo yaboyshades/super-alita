@@ -13,11 +13,23 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Lock
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from src.events import ComplexEventProcessor
 
 logger = logging.getLogger(__name__)
+
+
+LEARNING_TRIGGER_EVENTS = {
+    "AbilitySucceeded",
+    "AbilityFailed",
+    "KnowledgeAtomCreated",
+    "LoopAlignmentTelemetry",
+    "TaskSucceeded",
+}
+
+if TYPE_CHECKING:  # pragma: no cover - runtime import only for static typing
+    from src.intelligence import RealtimeLearningEngine
 
 
 class BaseEventBus(ABC):
@@ -208,6 +220,7 @@ class ProductionEventBus(InMemoryPubSubEventBus):
             self._complex_processor.update_emit_callback(
                 self._emit_clarification_opportunity
             )
+        self.learning_engine: "RealtimeLearningEngine | None" = None
 
     async def publish(
         self, event: dict[str, Any], priority: str | None = None
@@ -284,6 +297,7 @@ class ProductionEventBus(InMemoryPubSubEventBus):
         else:
             self.metrics.record_publish_success()
             await self._maybe_process_complex_event(event)
+            await self._maybe_route_learning(event)
 
     def _resolve_priority(self, priority: str | None, event: dict[str, Any]) -> str:
         requested = priority or str(event.get("priority", "medium")).lower()
@@ -309,6 +323,21 @@ class ProductionEventBus(InMemoryPubSubEventBus):
             logger.exception(
                 "complex processor failed", extra={"event": event, "processor": "ComplexEventProcessor"}
             )
+
+    async def _maybe_route_learning(self, event: dict[str, Any]) -> None:
+        if not getattr(self, "learning_engine", None):
+            return
+        event_type = str(event.get("type", ""))
+        if event_type in LEARNING_TRIGGER_EVENTS or event.get("learning_trigger"):
+            try:
+                await self.learning_engine.process_learning_event(event)  # type: ignore[union-attr]
+            except Exception:
+                logger.exception("learning engine failed", extra={"event": event})
+
+    def attach_learning_engine(self, engine: "RealtimeLearningEngine | None") -> None:
+        """Attach or detach the real-time learning engine integration."""
+
+        self.learning_engine = engine
 
 class RedisEventBus(BaseEventBus):
     """Publish events to a Redis channel asynchronously."""
