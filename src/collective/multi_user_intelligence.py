@@ -129,9 +129,7 @@ class CollectiveIntelligenceNetwork:
 
     async def _find_relevant_users(self, learning: dict[str, Any]) -> list[str]:
         audience = learning.get("audience")
-        if isinstance(audience, list):
-            return [str(uid) for uid in audience]
-        return []
+        return [str(uid) for uid in audience] if isinstance(audience, list) else []
 
     async def _send_learning_update(
         self, *, user_id: str, learning: dict[str, Any]
