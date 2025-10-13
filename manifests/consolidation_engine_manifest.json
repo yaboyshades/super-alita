@@ -1,0 +1,90 @@
+{
+  "$schema": "../schema/reug_subsystem_manifest.schema.json",
+  "module": "consolidation_engine",
+  "runtime": "REUG",
+  "version": "v0.1.0",
+  "feature_flag": "fea.consolidation.post_turn",
+  "constraints": [
+    "<=20ms post-turn avg",
+    "idempotent updates"
+  ],
+  "artifacts": {
+    "docs": [
+      "docs/reug_runtime/consolidation_engine.md"
+    ],
+    "code": [
+      "domain/consolidation_engine/__init__.py",
+      "domain/consolidation_engine/models.py",
+      "domain/consolidation_engine/service.py",
+      "adapters/consolidation_engine/__init__.py",
+      "adapters/consolidation_engine/feature_flags.py",
+      "adapters/consolidation_engine/event_publisher.py",
+      "adapters/consolidation_engine/ability_registry.py",
+      "app/consolidation_engine/__init__.py",
+      "app/consolidation_engine/hooks.py"
+    ],
+    "tests": [
+      "tests/consolidation_engine/test_consolidation_engine.py"
+    ],
+    "manifests": [
+      "manifests/consolidation_engine_manifest.json"
+    ]
+  },
+  "interfaces": {
+    "python": [
+      "domain.consolidation_engine.service.ConsolidationEngine.consolidate_post_turn",
+      "domain.consolidation_engine.service.ConsolidationEngine.build_event",
+      "app.consolidation_engine.hooks.configure_post_turn_consolidation"
+    ],
+    "events": [
+      "reug.consolidation.v1"
+    ]
+  },
+  "events": {
+    "topics": [
+      {
+        "name": "reug.consolidation",
+        "version": "v1",
+        "schema": "docs/reug_runtime/consolidation_engine.md#consolidationeventv1",
+        "description": "Post-turn consolidation telemetry payload."
+      }
+    ]
+  },
+  "tests": {
+    "paths": [
+      "tests/consolidation_engine/test_consolidation_engine.py"
+    ],
+    "levels": [
+      "unit",
+      "integration-plan",
+      "property"
+    ]
+  },
+  "observability": {
+    "metrics": [
+      "consolidation_latency_ms",
+      "patterns_extracted_total",
+      "consolidation_skips_total",
+      "ace_patch_idempotent_total"
+    ],
+    "logs": [
+      "structured consolidation logs with skip reasons"
+    ],
+    "traces": [
+      "reug.consolidation.post_turn"
+    ],
+    "slos": [
+      "p95 latency <= 25ms",
+      "error rate <1%"
+    ],
+    "alerts": [
+      "histogram_quantile(0.95, rate(consolidation_latency_ms_bucket[5m])) > 0.04",
+      "rate(consolidation_failures_total[10m]) / rate(consolidation_attempts_total[10m]) > 0.01"
+    ]
+  },
+  "rollout": {
+    "plan": "Phase 0 scaffold -> Phase 1 shadow rollout -> Phase 2 gradual enablement",
+    "rollback": "Disable feature flag and unregister post-turn hook",
+    "kill_switch": "Disable fea.consolidation.post_turn or set CONSOLIDATION_FORCE_DISABLED=true"
+  }
+}
