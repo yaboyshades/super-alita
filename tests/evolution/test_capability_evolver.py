@@ -17,8 +17,7 @@ class _Monitor:
 
 class _Generator:
     async def propose(self, gap):
-        proposal = dict(gap)
-        proposal.update({"id": "cap-1", "success_metrics": ["latency"]})
+        proposal = dict(gap) | {"id": "cap-1", "success_metrics": ["latency"]}
         return proposal
 
 
