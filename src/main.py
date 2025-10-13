@@ -496,7 +496,9 @@ class SimpleAbilityRegistry:
       - execute(): your dispatch to MCP / SDK / code
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self, constitutional_checker: ConstitutionalReasoner | None = None
+    ) -> None:
         # Seed with initial tools
         self._known: set[str] = {
             "echo",
@@ -600,7 +602,9 @@ class SimpleAbilityRegistry:
         }
         # Dynamic executors registered at runtime (tool_name -> async executor(args)->dict)
         self._executors: dict[str, Callable[[dict[str, Any]], Any]] = {}
-        self._constitutional_reasoner = ConstitutionalReasoner()
+        self._constitutional_checker = (
+            constitutional_checker or ConstitutionalReasoner()
+        )
 
     def register_tool(
         self, *, contract: dict[str, Any], executor: Callable[[dict[str, Any]], Any]
@@ -667,12 +671,13 @@ class SimpleAbilityRegistry:
         except Exception:
             # Never block execution due to validator crash
             pass
-        approved, reasoning = await self._constitutional_reasoner.evaluate_action(
-            {"ability": tool_name, "args": args},
-            {"goal": contract.get("description"), "requires_confirmation": False},
-        )
-        if not approved:
-            raise ConstitutionalViolationError(reasoning)
+        if self._constitutional_checker:
+            approved, reasoning = await self._constitutional_checker.evaluate_action(
+                {"ability": tool_name, "args": args},
+                self._build_constitutional_context(tool_name, args, contract),
+            )
+            if not approved:
+                raise ConstitutionalViolationError(reasoning)
         # Prefer dynamically registered executors
         exec_fn = self._executors.get(tool_name)
         if exec_fn is not None:
@@ -793,6 +798,40 @@ class SimpleAbilityRegistry:
             }
         # Fallback generic - echo contract
         return {"ok": True, "tool": tool_name, "args": args}
+
+    def _build_constitutional_context(
+        self,
+        ability_name: str,
+        args: dict[str, Any],
+        contract: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        """Assemble contextual metadata for constitutional evaluation."""
+
+        contract = contract or {}
+        metadata = contract.get("metadata")
+        context: dict[str, Any] = {
+            "goal": contract.get("description"),
+            "requires_confirmation": bool(
+                contract.get("requires_confirmation")
+                or (isinstance(metadata, dict) and metadata.get("requires_confirmation"))
+            ),
+            "ability": ability_name,
+        }
+        if isinstance(metadata, dict):
+            affected = metadata.get("affected_segments")
+            if isinstance(affected, list):
+                context["affected_segments"] = affected
+            user_goal = metadata.get("user_goal")
+            if isinstance(user_goal, str):
+                context["user_goal"] = user_goal
+        for key in ("risk_level", "requires_confirmation", "user_goal"):
+            value = args.get(key)
+            if value is not None:
+                context[key] = value
+        context["args_preview"] = {
+            k: type(v).__name__ for k, v in args.items() if k not in {"payload"}
+        }
+        return {k: v for k, v in context.items() if v is not None}
 
 
 # --- Knowledge graph (minimal; replace with your store/driver) ---
