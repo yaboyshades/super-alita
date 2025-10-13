@@ -56,6 +56,14 @@ class ConstitutionalCodeGenerator:
             return code
         violations = validation.get("violations", [])
         code = await self._refine_until_compliant(code, violations, openspec_constraints)
+        # After refinement, validate again
+        final_validation = await self._validate_against_openspec(code, openspec_constraints)
+        if not final_validation.get("compliant"):
+            unresolved_violations = final_validation.get("violations", [])
+            logger.warning(
+                "Code generation did not reach compliance after all refinement attempts. Unresolved violations: %s",
+                unresolved_violations
+            )
         return code
 
     async def _build_constitutional_prompt(
