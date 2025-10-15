@@ -3,15 +3,63 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+
+SentenceTransformer: Any | None = None
+_SENTENCE_TRANSFORMERS_ERROR: Exception | None = None
+
+
+__all__ = [
+    "ConstitutionalPrinciple",
+    "EvaluationResult",
+    "ConstitutionalReasoner",
+    "SimpleSentenceEncoder",
+]
+
+
+class SimpleSentenceEncoder:
+    """Lightweight, deterministic embedding fallback.
+
+    The fallback approximates semantic similarity using hashed token
+    frequencies. It keeps the interface compatible with
+    ``SentenceTransformer.encode`` so the rest of the runtime can operate
+    without heavyweight ML dependencies.
+    """
+
+    def __init__(self, dimensions: int = 256) -> None:
+        self.dimensions = dimensions
+
+    def encode(self, texts: Sequence[str]) -> np.ndarray:
+        vectors = np.zeros((len(texts), self.dimensions), dtype=np.float32)
+
+        for row, text in enumerate(texts):
+            tokens = re.findall(r"[a-z0-9]+", text.lower())
+            if not tokens:
+                continue
+
+            for token in tokens:
+                digest = hashlib.sha256(token.encode("utf-8")).digest()
+                # Spread token influence across the vector for stability.
+                for offset in range(0, len(digest), 4):
+                    bucket = int.from_bytes(
+                        digest[offset : offset + 4], "big", signed=False
+                    ) % self.dimensions
+                    vectors[row, bucket] += 1.0
+
+            norm = float(np.linalg.norm(vectors[row]))
+            if norm > 0:
+                vectors[row] /= norm
+
+        return vectors
 
 
 @dataclass(slots=True)
@@ -44,10 +92,11 @@ class ConstitutionalReasoner:
         self,
         constitution_path: str = ".github/CONSTITUTION.md",
         *,
-        embedding_model: SentenceTransformer | None = None,
+        embedding_model: Any | None = None,
     ) -> None:
         self.logger = logging.getLogger(__name__)
-        self.embedding_model = embedding_model or SentenceTransformer("all-MiniLM-L6-v2")
+        self.embedding_model = embedding_model or self._load_default_encoder()
+        self._embedding_dimension: int | None = None
         self.constitution_path = Path(constitution_path)
         self.constitution_principles = self._load_constitution(self.constitution_path)
         self.violation_patterns = self._load_violation_patterns()
@@ -153,9 +202,52 @@ class ConstitutionalReasoner:
             principles.append(principle)
         return principles
 
+    def _load_default_encoder(self) -> Any:
+        """Load the preferred embedding backend with safe fallback."""
+
+        use_sentence_transformers = os.getenv(
+            "SUPER_ALITA_USE_SENTENCE_TRANSFORMERS", "false"
+        ).lower() in {"1", "true", "yes", "on"}
+
+        global SentenceTransformer, _SENTENCE_TRANSFORMERS_ERROR
+
+        if use_sentence_transformers and SentenceTransformer is None and _SENTENCE_TRANSFORMERS_ERROR is None:
+            try:  # pragma: no cover - optional dependency import
+                from sentence_transformers import SentenceTransformer as _SentenceTransformer
+
+                SentenceTransformer = _SentenceTransformer
+            except Exception as exc:  # pragma: no cover - import guard
+                _SENTENCE_TRANSFORMERS_ERROR = exc
+
+        if use_sentence_transformers and SentenceTransformer is not None:
+            try:
+                return SentenceTransformer("all-MiniLM-L6-v2")  # type: ignore[call-arg]
+            except Exception as exc:  # pragma: no cover - depends on optional deps
+                self.logger.warning(
+                    "Failed to initialize sentence-transformers backend; using fallback: %s",
+                    exc,
+                )
+        elif use_sentence_transformers and _SENTENCE_TRANSFORMERS_ERROR is not None:
+            self.logger.warning(
+                "sentence_transformers unavailable, falling back to SimpleSentenceEncoder: %s",
+                _SENTENCE_TRANSFORMERS_ERROR,
+            )
+
+        return SimpleSentenceEncoder()
+
     def _encode_text(self, text: str) -> np.ndarray:
-        embedding = self.embedding_model.encode([text])[0]
-        return np.asarray(embedding)
+        try:
+            embedding = self.embedding_model.encode([text])[0]
+        except Exception as exc:  # pragma: no cover - defensive guard
+            self.logger.error("Embedding backend failed for text '%s': %s", text, exc)
+            size = self._embedding_dimension or getattr(self.embedding_model, "dimensions", 1)
+            return np.zeros(int(size), dtype=float)
+
+        vector = np.asarray(embedding, dtype=float)
+        if vector.ndim != 1:
+            vector = vector.reshape(-1)
+        self._embedding_dimension = vector.shape[0]
+        return vector
 
     def _load_violation_patterns(self) -> dict[str, dict[str, Any]]:
         return {
