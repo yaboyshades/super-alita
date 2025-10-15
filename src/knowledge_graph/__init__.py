@@ -12,6 +12,7 @@ from .models import (
     PlanningPattern,
     RelationType,
 )
+from .production_kg import ProductionKnowledgeGraph, create_knowledge_graph
 
 __all__ = [
     "KnowledgeGraphInterface",
@@ -24,4 +25,6 @@ __all__ = [
     "PlanningContext",
     "KnowledgeQuery",
     "KnowledgeQueryResult",
+    "ProductionKnowledgeGraph",
+    "create_knowledge_graph",
 ]
