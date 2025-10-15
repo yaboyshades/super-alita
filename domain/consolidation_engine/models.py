@@ -1,11 +1,10 @@
 """Data models for the Intelligence Consolidation Engine domain layer."""
-
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Mapping
+from typing import Any, Mapping, Literal
 
-from pydantic import BaseModel, Field, RootModel, validator
+from pydantic import BaseModel, Field, RootModel, field_validator
 
 
 class ConsolidationEnvelope(BaseModel):
@@ -20,7 +19,8 @@ class ConsolidationEnvelope(BaseModel):
     metadata: Mapping[str, Any] = Field(default_factory=dict)
     deduplication_key: str = Field(..., min_length=1)
 
-    @validator("timestamp", pre=True)
+    @field_validator("timestamp", mode="before")
+    @classmethod
     def _coerce_timestamp(cls, value: Any) -> datetime:  # noqa: D401
         """Ensure timestamp inputs are timezone-aware datetimes."""
 
@@ -65,7 +65,7 @@ class ConsolidationEventPayload(BaseModel):
     ace_patch: Mapping[str, Any] = Field(default_factory=dict)
     skip_reason: str | None = None
     trace_id: str
-    schema_version: str = Field(default="v1", const=True)
+    schema_version: Literal["v1"] = "v1"
 
 
 class ConsolidationEvent(BaseModel):
