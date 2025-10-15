@@ -97,17 +97,117 @@ async def test_consolidation_skips_when_flag_disabled(
     assert len(latencies) == 1
 
 
+class _ConstitutionalChecker:
+    def __init__(self, approved: bool = True, reasoning: str = "ok") -> None:
+        self.approved = approved
+        self.reasoning = reasoning
+        self.calls: list[tuple[Mapping[str, Any], Mapping[str, Any]]] = []
+
+    async def evaluate_action(
+        self, proposed_action: Mapping[str, Any], current_context: Mapping[str, Any]
+    ) -> tuple[bool, str]:
+        self.calls.append((proposed_action, current_context))
+        return self.approved, self.reasoning
+
+
+class _Publisher:
+    def __init__(self) -> None:
+        self.events: list[ConsolidationEvent] = []
+
+    async def publish(self, event: ConsolidationEvent) -> None:
+        self.events.append(event)
+
+
 @pytest.mark.asyncio()
-async def test_consolidation_raises_when_flag_enabled(
+async def test_consolidation_executes_when_flag_enabled(
     sample_envelope: ConsolidationEnvelope,
     request_context: ConsolidationRequestContext,
 ) -> None:
-    engine = ConsolidationEngine(feature_flags=_ToggleFlagProvider(True))
+    publisher = _Publisher()
+    checker = _ConstitutionalChecker()
+    ability_calls: list[Mapping[str, Any]] = []
 
-    with pytest.raises(NotImplementedError):
-        await engine.consolidate_post_turn(
-            sample_envelope, request_context=request_context
-        )
+    class _AbilityRegistry:
+        async def execute(
+            self,
+            name: str,
+            payload: Mapping[str, Any],
+            *,
+            correlation_id: str,
+        ) -> Mapping[str, Any]:
+            record = {
+                "name": name,
+                "payload": dict(payload),
+                "correlation_id": correlation_id,
+            }
+            ability_calls.append(record)
+            return record
+
+    class _ACEStore:
+        async def apply_patch(
+            self, patch: Mapping[str, Any], *, dedupe_key: str
+        ) -> Mapping[str, Any]:
+            return {"applied": True, "dedupe_hit": False, "metadata": {"key": dedupe_key}}
+
+    enriched_envelope = sample_envelope.model_copy(
+        update={
+            "tool_outputs": [{"tool": "echo", "result": "pong"}],
+            "metadata": {
+                "follow_up_ability": {"name": "post_process", "payload": {"foo": "bar"}}
+            },
+        }
+    )
+
+    engine = ConsolidationEngine(
+        feature_flags=_ToggleFlagProvider(True),
+        event_publisher=publisher,
+        ace_store=_ACEStore(),
+        ability_registry=_AbilityRegistry(),
+        constitutional_checker=checker,
+    )
+
+    result = await engine.consolidate_post_turn(
+        enriched_envelope, request_context=request_context
+    )
+
+    assert result.status == "applied"
+    assert result.ace_receipt is not None
+    assert result.ace_receipt.applied is True
+    assert result.validation["approved"] is True
+    assert "follow_up" in result.validation
+    assert ability_calls
+    assert publisher.events
+    event = publisher.events[0]
+    assert event.payload.session_id == enriched_envelope.session_id
+    assert checker.calls
+
+
+@pytest.mark.asyncio()
+async def test_consolidation_rejects_on_constitutional_failure(
+    sample_envelope: ConsolidationEnvelope,
+    request_context: ConsolidationRequestContext,
+) -> None:
+    checker = _ConstitutionalChecker(approved=False, reasoning="denied")
+    skips: list[str] = []
+    metrics = ConsolidationMetrics(skips_counter=skips.append)
+    publisher = _Publisher()
+
+    engine = ConsolidationEngine(
+        feature_flags=_ToggleFlagProvider(True),
+        constitutional_checker=checker,
+        metrics=metrics,
+        event_publisher=publisher,
+    )
+
+    result = await engine.consolidate_post_turn(
+        sample_envelope, request_context=request_context
+    )
+
+    assert result.status == "rejected"
+    assert result.skip_reason == "constitutional_rejection"
+    assert result.validation["reasoning"] == "denied"
+    assert skips == ["constitutional_rejection"]
+    assert publisher.events
 
 
 def test_build_event_serializes_result(
