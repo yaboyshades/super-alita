@@ -15,14 +15,32 @@ import os
 import sys
 from pathlib import Path
 
-import uvicorn
-from rich.console import Console
-from rich.panel import Panel
+try:
+    import uvicorn
+    from rich.console import Console
+    from rich.panel import Panel
+    RICH_AVAILABLE = True
+except ImportError:
+    RICH_AVAILABLE = False
+    # Fallback console
+    class Console:
+        def print(self, *args, **kwargs):
+            print(*args)
+    
+    class Panel:
+        @staticmethod
+        def fit(text, title="", border_style=""):
+            return f"=== {title} ===\n{text}"
+    
+    console = Console()
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-console = Console()
+if RICH_AVAILABLE:
+    console = Console()
+else:
+    console = Console()
 
 class UnifiedLauncher:
     """Unified launcher with feature flags and mode selection."""
@@ -35,6 +53,7 @@ class UnifiedLauncher:
             "dev": self._launch_dev_mode,
             "mcp": self._launch_mcp_server,
             "test": self._launch_test_mode,
+            "research": self._launch_research_mode,
         }
         
     def _get_feature_flags(self) -> dict[str, bool]:
@@ -45,6 +64,7 @@ class UnifiedLauncher:
             "autogen_demo": os.getenv("ENABLE_AUTOGEN_DEMO", "false").lower() == "true",
             "consensus_enhanced": os.getenv("ENABLE_ENHANCED_CONSENSUS", "true").lower() == "true",
             "dev_mode": os.getenv("SUPER_ALITA_DEV", "false").lower() == "true",
+            "research_enabled": os.getenv("RESEARCH_ENABLED", "false").lower() == "true",
         }
     
     def _setup_logging(self, verbose: bool = False):
@@ -76,8 +96,9 @@ class UnifiedLauncher:
         try:
             from src.main import create_app
             checks["main_app"] = True
-        except ImportError:
+        except ImportError as e:
             checks["main_app"] = False
+            print(f"Main app import error: {e}")
             
         return checks
     
@@ -86,7 +107,7 @@ class UnifiedLauncher:
         flags = self._get_feature_flags()
         enabled_features = [k for k, v in flags.items() if v]
         
-        info_text = "[bold green]Super Alita v3.0 Unified Launcher[/bold green]\n"
+        info_text = "Super Alita v3.0 Unified Launcher\n"
         info_text += f"Mode: {mode}\n"
         info_text += f"Features: {', '.join(enabled_features) or 'None'}\n"
         
@@ -94,11 +115,14 @@ class UnifiedLauncher:
             for key, value in kwargs.items():
                 info_text += f"{key.replace('_', ' ').title()}: {value}\n"
         
-        self.console.print(Panel.fit(
-            info_text.strip(),
-            title="Starting Super Alita",
-            border_style="green"
-        ))
+        if RICH_AVAILABLE:
+            self.console.print(Panel.fit(
+                info_text.strip(),
+                title="Starting Super Alita",
+                border_style="green"
+            ))
+        else:
+            print(f"=== Starting Super Alita ===\n{info_text}")
     
     def _launch_web_server(self, host: str = "127.0.0.1", port: int = 8080, **kwargs):
         """Launch main web server mode."""
@@ -107,10 +131,13 @@ class UnifiedLauncher:
             
             self._display_startup_info("web", host=host, port=port)
             
-            # Import and run with timeout/retry patterns from GitHub examples
             app = create_app()
             
-            # Uvicorn configuration adapted from production patterns
+            if not app:
+                self.console.print("❌ Failed to create FastAPI app")
+                return False
+            
+            # Uvicorn configuration
             config = uvicorn.Config(
                 app,
                 host=host,
@@ -124,32 +151,30 @@ class UnifiedLauncher:
             server = uvicorn.Server(config)
             server.run()
             
+            return True
+            
         except ImportError as e:
-            self.console.print(f"[red]Error: Failed to import main app - {e}[/red]")
+            self.console.print(f"❌ Error: Failed to import main app - {e}")
             return False
         except Exception as e:
-            self.console.print(f"[red]Error starting web server: {e}[/red]")
+            self.console.print(f"❌ Error starting web server: {e}")
             return False
-        
-        return True
     
     def _launch_cli_mode(self, **kwargs):
         """Launch CLI interface mode."""
         try:
-            # Import CLI dependencies
             from src.vscode_integration.agent_mcp_server import main as cli_main
             
             self._display_startup_info("cli")
-            self.console.print("[yellow]Starting CLI mode...[/yellow]")
+            self.console.print("Starting CLI mode...")
             
-            # Run CLI with feature flag support
             return cli_main()
             
         except ImportError:
-            self.console.print("[red]Error: CLI mode not available[/red]")
+            self.console.print("❌ Error: CLI mode not available")
             return False
         except Exception as e:
-            self.console.print(f"[red]Error in CLI mode: {e}[/red]")
+            self.console.print(f"❌ Error in CLI mode: {e}")
             return False
     
     def _launch_dev_mode(self, **kwargs):
@@ -173,10 +198,10 @@ class UnifiedLauncher:
             return mcp_main()
             
         except ImportError:
-            self.console.print("[red]Error: MCP server not available[/red]")
+            self.console.print("❌ Error: MCP server not available")
             return False
         except Exception as e:
-            self.console.print(f"[red]Error starting MCP server: {e}[/red]")
+            self.console.print(f"❌ Error starting MCP server: {e}")
             return False
     
     def _launch_test_mode(self, **kwargs):
@@ -187,22 +212,67 @@ class UnifiedLauncher:
             import subprocess
             
             # Run deployment validation
-            self.console.print("[yellow]Running deployment validation...[/yellow]")
+            self.console.print("Running deployment validation...")
             result = subprocess.run([sys.executable, "validate_deployment.py"], 
                                   capture_output=True, text=True, timeout=60)
             
             if result.returncode == 0:
-                self.console.print("[green]✅ All validation tests passed![/green]")
+                self.console.print("✅ All validation tests passed!")
                 return True
             else:
-                self.console.print(f"[red]❌ Validation failed:\n{result.stdout}\n{result.stderr}[/red]")
+                self.console.print(f"❌ Validation failed:\n{result.stdout}\n{result.stderr}")
                 return False
                 
         except subprocess.TimeoutExpired:
-            self.console.print("[red]❌ Validation timed out[/red]")
+            self.console.print("❌ Validation timed out")
             return False
         except Exception as e:
-            self.console.print(f"[red]❌ Error running validation: {e}[/red]")
+            self.console.print(f"❌ Error running validation: {e}")
+            return False
+    
+    def _launch_research_mode(self, **kwargs):
+        """Launch research mode with advanced capabilities."""
+        self._display_startup_info("research", experimental=True)
+        
+        # Check if research dependencies are available
+        try:
+            import torch
+            import transformers
+            self.console.print("✅ Research dependencies available")
+        except ImportError as e:
+            self.console.print(f"❌ Missing research dependencies: {e}")
+            self.console.print("Install with: pip install -r requirements-research.txt")
+            return False
+        
+        # Check if research components exist
+        research_path = Path("src/research")
+        if not research_path.exists():
+            self.console.print("❌ Research components not found")
+            self.console.print("Merge PR #330 to get research capabilities")
+            return False
+        
+        try:
+            # Set environment for research mode
+            os.environ["RESEARCH_ENABLED"] = "true"
+            os.environ["ALITA_ENABLE_Z3"] = "true"
+            
+            # Import and run research application
+            from src.main_research import main as research_main
+            
+            self.console.print("🔬 Starting Super Alita Research Edition...")
+            import asyncio
+            asyncio.run(research_main())
+            return True
+            
+        except ImportError as e:
+            self.console.print(f"❌ Research mode import failed: {e}")
+            self.console.print("Research components may not be installed")
+            return False
+        except KeyboardInterrupt:
+            self.console.print("\n⚠️ Research demo interrupted")
+            return True
+        except Exception as e:
+            self.console.print(f"❌ Research mode failed: {e}")
             return False
     
     def run(self, mode: str, **kwargs) -> bool:
@@ -215,21 +285,23 @@ class UnifiedLauncher:
         failed_checks = [k for k, v in checks.items() if not v]
         
         if failed_checks:
-            self.console.print(f"[red]❌ Prerequisites failed: {', '.join(failed_checks)}[/red]")
+            self.console.print(f"❌ Prerequisites failed: {', '.join(failed_checks)}")
             
             # Provide helpful suggestions
             if "python_version" in failed_checks:
-                self.console.print("[yellow]Please upgrade to Python 3.9+[/yellow]")
+                self.console.print("Please upgrade to Python 3.9+")
             if "env_file" in failed_checks:
-                self.console.print("[yellow]Hint: Copy .env.example to .env[/yellow]")
+                self.console.print("Hint: Copy .env.example to .env")
             if "fastapi" in failed_checks:
-                self.console.print("[yellow]Hint: Run 'pip install -r requirements.txt'[/yellow]")
+                self.console.print("Hint: Run 'pip install -r requirements.txt'")
+            if "main_app" in failed_checks:
+                self.console.print("Hint: Check src/main.py imports")
                 
             return False
         
         # Validate mode
         if mode not in self.modes:
-            self.console.print(f"[red]❌ Unknown mode: {mode}[/red]")
+            self.console.print(f"❌ Unknown mode: {mode}")
             self.console.print(f"Available modes: {', '.join(self.modes.keys())}")
             return False
         
@@ -242,26 +314,27 @@ def main():
     parser = argparse.ArgumentParser(
         description="Super Alita v3.0 Unified Launcher",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
+        epilog="""Examples:
   python start.py --mode web                    # Start web server
   python start.py --mode web --port 8080       # Custom port
   python start.py --mode dev                   # Development mode  
   python start.py --mode cli                   # CLI interface
   python start.py --mode mcp                   # MCP server
   python start.py --mode test                  # Run validation tests
+  python start.py --mode research              # Research edition
 
 Environment Variables:
   ENABLE_GITHUB_DEMO=true                      # Enable GitHub integration demo
   ENABLE_PERPLEXICA_DEMO=true                  # Enable Perplexica search demo
   ENABLE_AUTOGEN_DEMO=true                     # Enable AutoGen pipeline demo
   SUPER_ALITA_DEV=true                         # Enable development features
+  RESEARCH_ENABLED=true                        # Enable research capabilities
         """
     )
     
     parser.add_argument(
         "--mode", 
-        choices=["web", "cli", "dev", "mcp", "test"],
+        choices=["web", "cli", "dev", "mcp", "test", "research"],
         default="web",
         help="Launch mode (default: web)"
     )
@@ -316,10 +389,10 @@ Environment Variables:
         sys.exit(0 if success else 1)
         
     except KeyboardInterrupt:
-        console.print("\n[yellow]⚠️ Interrupted by user[/yellow]")
+        console.print("\n⚠️ Interrupted by user")
         sys.exit(130)
     except Exception as e:
-        console.print(f"[red]❌ Unexpected error: {e}[/red]")
+        console.print(f"❌ Unexpected error: {e}")
         if args.verbose:
             import traceback
             console.print(traceback.format_exc())

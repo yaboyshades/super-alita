@@ -1,60 +1,43 @@
-# Core dependencies
-pydantic>=2.5
-protobuf  # Let pip solve version conflicts
-pyyaml
-numpy>=1.20.0
-networkx>=2.5
-redis>=4.0.0
-python-dotenv>=0.19.0
-orjson>=3.8.0
-# settings and YAML parsing for mode validation
-pydantic-settings>=2.2
-ruamel.yaml>=0.18
-# optional but recommended: faster Redis protocol parsing
-hiredis>=2.0.0
+# Core Super Alita Dependencies
 
-# Vector storage and embeddings
-faiss-cpu>=1.7.0
-chromadb>=0.4.0
-sentence-transformers>=2.7.0
-openai>=1.0
-openai-agents>=0.1
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
 
-# ML and evolution
-scikit-learn>=1.2.0
-scipy>=1.9.0
-torch>=2.0.0  # CPU build; GPU extras in requirements-gpu.txt
-watchdog>=4.0.0
-
-# Graph export
-# python-graphml>=1.0  # optional, install manually if available
-
-# Testing
-pytest>=8.2.0
-pytest-asyncio>=1.2.0
-pytest-cov>=4.0
-
-# Development and linting
-ruff>=0.4.0
-black
-mypy
-
-# Web framework and API
-fastapi>=0.111.0
-uvicorn[standard]>=0.30.0
-aiohttp>=3.8.0
-websockets>=11.0
-
-# LLM integrations
-google-generativeai>=0.5.0
-
-# Utilities
+# HTTP and Networking
+httpx>=0.25.0
 requests>=2.31.0
 
-# ACP server and search tooling
-acp-sdk>=0.1.0
-tenacity>=8.0.0
+# Data Processing
+numpy>=1.24.0
+scikit-learn>=1.3.0
 
-# gRPC for external consensus service
-grpcio>=1.60.0
-grpcio-tools>=1.60.0
+# Optional ML Dependencies
+# sentence-transformers>=2.2.0  # Uncomment if using SUPER_ALITA_USE_SENTENCE_TRANSFORMERS=true
+
+# Development and CLI
+rich>=13.0.0
+click>=8.1.0
+
+# Configuration
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+
+# Async and Concurrency  
+aiofiles>=23.0.0
+
+# Optional Dependencies
+# redis>=4.5.0  # Uncomment if using Redis for rate limiting
+# chromadb>=0.4.0  # Uncomment if using ChromaDB for knowledge graph
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Code Quality
+ruff>=0.1.0
+mypy>=1.5.0
+
+# Logging and Monitoring
+structlog>=23.1.0
