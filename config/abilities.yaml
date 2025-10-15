@@ -1,0 +1,64 @@
+abilities:
+  code_analysis:
+    description: "Analyze code for security issues, performance problems, and bugs"
+    parameters:
+      code: "string"
+      context: "dict"
+      analysis_type: "string"
+    required_parameters: ["code"]
+    cost_estimate: 0.5
+    risk_level: "low"
+    timeout_seconds: 30
+    constitutional_risk_factors: ["code_review"]
+    fallback_ability: "local_analysis"
+
+  search_code:
+    description: "Search for code patterns in repositories"
+    parameters:
+      query: "string"
+      repository: "string"
+      filters: "dict"
+    required_parameters: ["query"]
+    cost_estimate: 0.3
+    risk_level: "low"
+    timeout_seconds: 20
+    constitutional_risk_factors: ["information_gathering"]
+
+  code_generation:
+    description: "Generate code based on requirements and context"
+    parameters:
+      requirements: "string"
+      context: "dict"
+      language: "string"
+    required_parameters: ["requirements"]
+    cost_estimate: 1.0
+    risk_level: "medium"
+    timeout_seconds: 60
+    constitutional_risk_factors: ["code_creation", "potential_misuse"]
+    fallback_ability: "code_review"
+
+  api_call:
+    description: "Make API calls to external services"
+    parameters:
+      endpoint: "string"
+      method: "string"
+      payload: "dict"
+      headers: "dict"
+    required_parameters: ["endpoint", "method"]
+    cost_estimate: 0.7
+    risk_level: "medium"
+    timeout_seconds: 30
+    constitutional_risk_factors: ["external_dependency", "data_exposure"]
+
+  file_operation:
+    description: "Read, write, or modify files"
+    parameters:
+      operation: "string"
+      path: "string"
+      content: "string"
+    required_parameters: ["operation", "path"]
+    cost_estimate: 0.8
+    risk_level: "high"
+    timeout_seconds: 15
+    constitutional_risk_factors: ["file_modification", "system_access"]
+    fallback_ability: "file_analysis"
