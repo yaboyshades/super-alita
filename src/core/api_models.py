@@ -1,18 +1,29 @@
-from __future__ import annotations
+"""API response models and utilities."""
 
-from datetime import UTC, datetime
-from typing import Any
+from typing import Dict, Any
 
-
-def api_error(
-    error: str, code: str, details: dict[str, Any] | None = None
-) -> dict[str, Any]:
+def api_error(error_type: str, category: str, details: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Create standardized API error response."""
     return {
-        "error": error,
-        "code": code,
-        "timestamp": datetime.now(UTC).isoformat(),
-        **({"details": details} if details else {}),
+        "error": {
+            "type": error_type,
+            "category": category,
+            "details": details or {},
+            "timestamp": __import__('time').time()
+        }
     }
 
-
-__all__ = ["api_error"]
+def api_success(data: Any = None, message: str = None) -> Dict[str, Any]:
+    """Create standardized API success response."""
+    response = {
+        "success": True,
+        "timestamp": __import__('time').time()
+    }
+    
+    if data is not None:
+        response["data"] = data
+        
+    if message:
+        response["message"] = message
+        
+    return response
