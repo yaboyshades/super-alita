@@ -97,6 +97,23 @@ TOOL_CATALOG = [
         },
     },
     {
+        "name": "super_alita_v4_instructions",
+        "description": "Return structured runtime setup instructions with constitutional validation metadata.",
+        "input_schema": {"type": "object", "properties": {}},
+        "output_schema": {
+            "type": "object",
+            "properties": {
+                "profile": {"type": "object"},
+                "sections": {
+                    "type": "array",
+                    "items": {"type": "object"},
+                },
+                "validation": {"type": "object"},
+            },
+            "required": ["profile", "sections", "validation"],
+        },
+    },
+    {
         "name": "git_apply_patch",
         "description": "Apply a unified diff patch to the repo.",
         "input_schema": {
@@ -142,4 +159,7 @@ TOOL_CATALOG = [
 
 from .service import ToolCatalogService
 
-__all__ = ["TOOL_CATALOG", "ToolCatalogService"]
+__all__ = [
+    "TOOL_CATALOG",
+    "ToolCatalogService",
+]

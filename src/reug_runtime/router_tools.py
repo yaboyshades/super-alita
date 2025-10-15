@@ -26,6 +26,7 @@ from fastapi.responses import JSONResponse
 from .config import SETTINGS
 from .loop import execute_turn
 from .mcp_abstractor import abstract_mcp_box
+from .tools.instructions import build_super_alita_v4_instruction_payload
 from .tools.service import ToolCatalogService
 
 tools = APIRouter(prefix="/tools", tags=["tools"])
@@ -55,6 +56,14 @@ async def get_catalog(request: Request) -> JSONResponse:
             status_code=500,
             content={"error": f"Failed to load tool catalog: {str(e)}", "tools": []}
         )
+
+
+@tools.get("/super_alita_v4/instructions")
+async def super_alita_v4_instructions() -> JSONResponse:
+    """Expose the maintainer-authored Super Alita v4.0 execution checklist."""
+
+    payload = await build_super_alita_v4_instruction_payload()
+    return JSONResponse(payload)
 
 
 @tools.post("/reug_start_turn")
