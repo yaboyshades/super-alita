@@ -17,7 +17,7 @@ detect-secrets>=1.5
 
 # Dependency conflict resolution for protobuf and OpenTelemetry
 protobuf==4.25.3
-opentelemetry-proto==1.15.0
+opentelemetry-proto==1.38.0
 opentelemetry-sdk==1.15.0
 opentelemetry-api==1.15.0
 opentelemetry-exporter-otlp-proto-grpc==1.15.0
